@@ -1,0 +1,495 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "../Collections/Array.h"
+
+/// <summary>
+/// Template for dynamic array with variable capacity that uses fixed size memory chunks for data storage rather than linear allocation.
+/// </summary>
+/// <remarks>
+/// Array with variable capacity that does not moves elements when it grows so you can add item and use pointer to it while still keep adding new items.
+/// </remarks>
+template<typename T, int32 ChunkSize>
+class ChunkedArray
+{
+    friend ChunkedArray;
+
+private:
+
+    // TODO: don't use Array but small struct and don't InlinedArray or Chunk* but Chunk (less dynamic allocations)
+    typedef Array<T> Chunk;
+
+    int32 _count;
+    Array<Chunk*, InlinedAllocation<32>> _chunks;
+
+public:
+
+    /// <summary>
+    /// Default constructor
+    /// </summary>
+    ChunkedArray()
+        : _count(0)
+    {
+    }
+
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    ~ChunkedArray()
+    {
+        _chunks.ClearDelete();
+    }
+
+public:
+
+    /// <summary>
+    /// Gets the amount of the elements in the collection.
+    /// </summary>
+    /// <returns>The amount of the elements in the collection.</returns>
+    FORCE_INLINE int32 Count() const
+    {
+        return _count;
+    }
+
+    /// <summary>
+    /// Gets the amount of the elements that can be hold by collection without resizing.
+    /// </summary>
+    /// <returns>The current capacity of the collection.</returns>
+    FORCE_INLINE int32 Capacity() const
+    {
+        return _chunks.Count() * ChunkSize;
+    }
+
+    /// <summary>
+    /// Returns true if array isn't empty.
+    /// </summary>
+    /// <returns>True if array has any elements added, otherwise it is empty.</returns>
+    FORCE_INLINE bool HasItems() const
+    {
+        return _count != 0;
+    }
+
+    /// <summary>
+    /// Returns true if collection is empty.
+    /// </summary>
+    /// <returns>True if array is empty, otherwise it has any elements added.</returns>
+    FORCE_INLINE bool IsEmpty() const
+    {
+        return _count == 0;
+    }
+
+public:
+
+    // Gets element by index
+    FORCE_INLINE T& At(int32 index) const
+    {
+        ASSERT(index >= 0 && index < _count);
+        return _chunks[index / ChunkSize]->At(index % ChunkSize);
+    }
+
+    // Gets/Sets element by index
+    FORCE_INLINE T& operator[](int32 index)
+    {
+        ASSERT(index >= 0 && index < _count);
+        return _chunks[index / ChunkSize]->At(index % ChunkSize);
+    }
+
+    // Gets/Sets element by index
+    FORCE_INLINE const T& operator[](int32 index) const
+    {
+        ASSERT(index >= 0 && index < _count);
+        return _chunks[index / ChunkSize]->At(index % ChunkSize);
+    }
+
+public:
+
+    /// <summary>
+    /// Chunked array iterator.
+    /// </summary>
+    struct Iterator
+    {
+        friend ChunkedArray;
+
+    private:
+
+        ChunkedArray* _collection;
+        int32 _chunkIndex;
+        int32 _index;
+
+        Iterator(ChunkedArray const* collection, const int32 index)
+            : _collection(const_cast<ChunkedArray*>(collection))
+            , _chunkIndex(index / ChunkSize)
+            , _index(index % ChunkSize)
+        {
+        }
+
+    public:
+
+        Iterator()
+            : _collection(nullptr)
+            , _chunkIndex(INVALID_INDEX)
+            , _index(INVALID_INDEX)
+        {
+        }
+
+        Iterator(const Iterator& i)
+            : _collection(i._collection)
+            , _chunkIndex(i._chunkIndex)
+            , _index(i._index)
+        {
+        }
+
+    public:
+
+        FORCE_INLINE ChunkedArray* GetChunkedArray() const
+        {
+            return _collection;
+        }
+
+        FORCE_INLINE int32 Index() const
+        {
+            return _chunkIndex * ChunkSize + _index;
+        }
+
+    public:
+
+        /// <summary>
+        /// Checks if iterator is in the end of the collection.
+        /// </summary>
+        /// <returns>True if is in the end, otherwise false.</returns>
+        bool IsEnd() const
+        {
+            ASSERT(_collection);
+            return Index() == _collection->Count();
+        }
+
+        /// <summary>
+        /// Checks if iterator is not in the end of the collection.
+        /// </summary>
+        /// <returns>True if is not in the end, otherwise false.</returns>
+        bool IsNotEnd() const
+        {
+            ASSERT(_collection);
+            return Index() != _collection->Count();
+        }
+
+    public:
+
+        FORCE_INLINE T& operator*() const
+        {
+            return _collection->_chunks[_chunkIndex]->At(_index);
+        }
+
+        FORCE_INLINE T* operator->() const
+        {
+            return &_collection->_chunks[_chunkIndex]->At(_index);
+        }
+
+    public:
+
+        FORCE_INLINE bool operator==(const Iterator& v) const
+        {
+            return _collection == v._collection && _chunkIndex == v._chunkIndex && _index == v._index;
+        }
+
+        FORCE_INLINE bool operator!=(const Iterator& v) const
+        {
+            return _collection != v._collection || _chunkIndex != v._chunkIndex || _index != v._index;
+        }
+
+    public:
+
+        Iterator& operator++()
+        {
+            ASSERT(_collection);
+
+            // Check if it is not at end
+            const int32 end = _collection->Count();
+            if (Index() != end)
+            {
+                // Move forward within chunk
+                _index++;
+
+                // Check if need to change chunk
+                if (_index == ChunkSize && _chunkIndex < _collection->_chunks.Count() - 1)
+                {
+                    // Move to next chunk
+                    _chunkIndex++;
+                    _index = 0;
+                }
+            }
+
+            return *this;
+        }
+
+        Iterator operator++(int)
+        {
+            ASSERT(_collection);
+            Iterator temp = *this;
+
+            // Check if it is not at end
+            const int32 end = _collection->Count();
+            if (Index() != end)
+            {
+                // Move forward within chunk
+                _index++;
+
+                // Check if need to change chunk
+                if (_index == ChunkSize && _chunkIndex < _collection->_chunks.Count() - 1)
+                {
+                    // Move to next chunk
+                    _chunkIndex++;
+                    _index = 0;
+                }
+            }
+
+            return temp;
+        }
+
+        Iterator& operator--()
+        {
+            ASSERT(_collection);
+
+            // Check if it's not at beginning
+            if (_index != 0 || _chunkIndex != 0)
+            {
+                // Check if need to change chunk
+                if (_index == 0)
+                {
+                    // Move to previous chunk
+                    _chunkIndex--;
+                    _index = ChunkSize - 1;
+                }
+                else
+                {
+                    // Move backward within chunk
+                    _index--;
+                }
+            }
+
+            return *this;
+        }
+
+        Iterator operator--(int)
+        {
+            ASSERT(_collection);
+            Iterator temp = *this;
+
+            // Check if it's not at beginning
+            if (_index != 0 || _chunkIndex != 0)
+            {
+                // Check if need to change chunk
+                if (_index == 0)
+                {
+                    // Move to previous chunk
+                    _chunkIndex--;
+                    _index = ChunkSize - 1;
+                }
+                else
+                {
+                    // Move backward within chunk
+                    _index--;
+                }
+            }
+
+            return temp;
+        }
+    };
+
+public:
+
+    /// <summary>
+    /// Adds the specified item to the collection.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The pointer to the allocated item in the storage.</returns>
+    T* Add(const T& item)
+    {
+        // Find first chunk with some space
+        Chunk* chunk = nullptr;
+        for (int32 i = 0; i < _chunks.Count(); i++)
+        {
+            if (_chunks[i]->Count() < ChunkSize)
+            {
+                chunk = _chunks[i];
+                break;
+            }
+        }
+
+        // Allocate chunk if missing
+        if (chunk == nullptr)
+        {
+            chunk = New<Chunk>();
+            chunk->SetCapacity(ChunkSize);
+            _chunks.Add(chunk);
+        }
+
+        // Add item
+        _count++;
+        chunk->Add(item);
+        return &chunk->At(chunk->Count() - 1);
+    }
+
+    /// <summary>
+    /// Removes the element at specified iterator position.
+    /// </summary>
+    /// <param name="i">The element iterator to remove.</param>
+    void Remove(Iterator& i)
+    {
+        if (IsEmpty())
+            return;
+        ASSERT(i.GetChunkedArray() == this);
+        ASSERT(i._chunkIndex < _chunks.Count() && i._index < ChunkSize);
+        ASSERT(i.Index() < Count());
+
+        auto lastChunkIndex = (_count - 1) / ChunkSize;
+        auto lastIndex = (_count - 1) % ChunkSize;
+        auto& lastChunk = *_chunks[lastChunkIndex];
+
+        // Check if remove element from the last chunk
+        if (i._chunkIndex == lastChunkIndex)
+        {
+            // Remove that item
+            lastChunk.RemoveAt(i._index);
+        }
+        else
+        {
+            // Swap that item with the last item from the last chunk
+            (*_chunks[i._chunkIndex])[i._index] = lastChunk[lastIndex];
+            lastChunk.RemoveLast();
+        }
+
+        _count--;
+    }
+
+    /// <summary>
+    /// Clears the collection but without changing its capacity.
+    /// </summary>
+    void Clear()
+    {
+        _count = 0;
+        for (int32 i = 0; i < _chunks.Count(); i++)
+        {
+            _chunks[i]->Clear();
+        }
+    }
+
+    /// <summary>
+    /// Clears the collection and releases the dynamic memory allocated within the container.
+    /// </summary>
+    void Release()
+    {
+        Clear();
+        _chunks.ClearDelete();
+        _chunks.Resize(0);
+    }
+
+    /// <summary>
+    /// Ensures that collection has a given capacity. It does not preserve collection contents.
+    /// </summary>
+    /// <param name="minCapacity">The minimum required capacity.</param>
+    void EnsureCapacity(int32 minCapacity)
+    {
+        int32 minChunks = minCapacity / ChunkSize;
+        if (minCapacity % ChunkSize != 0)
+            ++minChunks;
+        while (_chunks.Count() < minChunks)
+        {
+            auto chunk = New<Chunk>();
+            chunk->SetCapacity(ChunkSize);
+            _chunks.Add(chunk);
+        }
+    }
+
+    /// <summary>
+    /// Resizes that collection to the specified new size. It may not preserve collection contents in case of shrinking.
+    /// </summary>
+    /// <param name="newSize">The new size.</param>
+    void Resize(int32 newSize)
+    {
+        // Check if shrink
+        if (newSize < Count())
+        {
+            MISSING_CODE("shrinking ChunkedArray on Resize");
+        }
+        else
+        {
+            // Require enough space at once
+            EnsureCapacity(newSize);
+
+            // Add more items until reach the new size
+            int32 chunkIndex = 0;
+            int32 itemsReaming = newSize - Count();
+            while (itemsReaming != 0)
+            {
+                ASSERT(chunkIndex != _chunks.Count());
+                auto& chunk = _chunks[chunkIndex];
+
+                // Insert some items to this chunk if can
+                const int32 spaceLeft = chunk->Capacity() - chunk->Count();
+                int32 itemsToInsert = Math::Min(itemsReaming, spaceLeft);
+                chunk->Resize(chunk->Count() + itemsToInsert);
+                _count += itemsToInsert;
+
+                // Update counter
+                itemsReaming = newSize - Count();
+
+                // Move to the next chunk to fill it
+                chunkIndex++;
+            }
+        }
+
+        ASSERT(newSize == Count());
+    }
+
+    /// <summary>
+    /// Searches for the specified object and returns the zero-based index of the first occurrence within the entire collection.
+    /// </summary>
+    /// <param name="item">The item to find.</param>
+    /// <returns>The zero-based index of the first occurrence of itm within the entire collection, if found; otherwise, INVALID_INDEX.</returns>
+    int32 Find(const T& item) const
+    {
+        int32 startIndex = 0;
+        for (int32 chunkIndex = 0; chunkIndex < _chunks.Count(); chunkIndex++)
+        {
+            const int32 index = _chunks[chunkIndex]->Find(item);
+            if (index != INVALID_INDEX)
+                return startIndex + index;
+            startIndex += ChunkSize;
+            if (startIndex > _count)
+                break;
+        }
+        return INVALID_INDEX;
+    }
+
+public:
+
+    /// <summary>
+    /// Gets iterator for beginning of the collection.
+    /// </summary>
+    /// <returns>Iterator for beginning of the collection.</returns>
+    Iterator Begin() const
+    {
+        return Iterator(this, 0);
+    }
+
+    /// <summary>
+    /// Gets iterator for ending of the collection.
+    /// </summary>
+    /// <returns>Iterator for ending of the collection.</returns>
+    Iterator End() const
+    {
+        return Iterator(this, Count());
+    }
+
+    /// <summary>
+    /// Gets iterator for the specified index.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>Iterator for the specified index.</returns>
+    Iterator IteratorAt(int32 index) const
+    {
+        return Iterator(this, index);
+    }
+};

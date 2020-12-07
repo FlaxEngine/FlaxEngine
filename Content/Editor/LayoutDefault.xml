@@ -1,0 +1,23 @@
+﻿<DockPanelLayout Version="4">
+	<MainWindow IsMaximized="True">
+		<Bounds X="0" Y="23" Width="1920" Height="1017" />
+	</MainWindow>
+	<MasterPanel SelectedTab="0">
+		<Window Typename="::FlaxEditor.Windows.EditGameWindow" />
+		<Window Typename="::FlaxEditor.Windows.GameWindow" />
+		<Panel DockState="10" SplitterValue="0.24" SelectedTab="0">
+			<Window Typename="::FlaxEditor.Windows.PropertiesWindow" />
+			<Panel DockState="7" SplitterValue="0.25" SelectedTab="0">
+				<Window Typename="::FlaxEditor.Windows.ToolboxWindow" />
+			</Panel>
+		</Panel>
+		<Panel DockState="9" SplitterValue="0.37" SelectedTab="0">
+			<Window Typename="::FlaxEditor.Windows.ContentWindow" />
+			<Window Typename="::FlaxEditor.Windows.DebugLogWindow" />
+			<Window Typename="::FlaxEditor.Windows.OutputLogWindow" />
+		</Panel>
+		<Panel DockState="8" SplitterValue="0.25" SelectedTab="0">
+			<Window Typename="::FlaxEditor.Windows.SceneTreeWindow" />
+		</Panel>
+	</MasterPanel>
+</DockPanelLayout>

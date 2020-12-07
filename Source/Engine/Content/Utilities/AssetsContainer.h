@@ -1,0 +1,47 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "Engine/Content/Content.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Content/AssetReference.h"
+#include "../Asset.h"
+
+/// <summary>
+/// Assets Container allows to load collection of assets and keep references to them.
+/// </summary>
+class AssetsContainer : public Array<AssetReference<Asset>>
+{
+public:
+
+    /// <summary>
+    /// Loads an asset.
+    /// </summary>
+    /// <param name="id">The asset id.</param>
+    /// <returns>Loaded asset of null.</returns>
+    template<typename T>
+    T* LoadAsync(const Guid& id)
+    {
+        for (auto& e : *this)
+        {
+            if (e.GetID() == id)
+                return (T*)e.Get();
+        }
+
+        auto asset = Content::LoadAsync<T>(id);
+        if (asset)
+        {
+            Add(asset);
+        }
+
+        return asset;
+    }
+
+    /// <summary>
+    /// Release all referenced assets.
+    /// </summary>
+    void ReleaseAll()
+    {
+        Resize(0);
+    }
+};

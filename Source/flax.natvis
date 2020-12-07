@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <!-- Array<T, FixedAllocation<Capacity>> -->
+  <Type Name="Array&lt;*,FixedAllocation&lt;*&gt;&gt;">
+    <DisplayString>{{ Size={_count} Capacity={_capacity} }}</DisplayString>
+    <Expand>
+      <Item Name="[Size]" ExcludeView="simple">_count</Item>
+      <Item Name="[Capacity]" ExcludeView="simple">_capacity</Item>
+      <ArrayItems Condition="_count &lt;= _capacity">
+        <Size>_count</Size>
+        <ValuePointer>(Array&lt;$T1,FixedAllocation&lt;$T2&gt; &gt;::ItemType*)_allocation._data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Array<T, InlinedAllocation<Capacity>> -->
+  <Type Name="Array&lt;*,InlinedAllocation&lt;*&gt;&gt;">
+    <DisplayString>{{ Size={_count} Capacity={_capacity} }}</DisplayString>
+    <Expand>
+      <Item Name="[Size]" ExcludeView="simple">_count</Item>
+      <Item Name="[Capacity]" ExcludeView="simple">_capacity</Item>
+      <ArrayItems Condition="_count &lt;= _capacity">
+        <Size>_count</Size>
+        <ValuePointer Condition="!_allocation._useOther">(Array&lt;$T1,InlinedAllocation&lt;$T2,$T3&gt; &gt;::ItemType*)_allocation._data</ValuePointer>
+        <ValuePointer Condition=" _allocation._useOther">(Array&lt;$T1,InlinedAllocation&lt;$T2,$T3&gt; &gt;::ItemType*)_allocation._other._data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Array<T, HeapAllocation> -->
+	<Type Name="Array&lt;*,*&gt;">
+		<DisplayString>{{ Size={_count} Capacity={_capacity} }}</DisplayString>
+		<Expand>
+			<Item Name="[Size]" ExcludeView="simple">_count</Item>
+			<Item Name="[Capacity]" ExcludeView="simple">_capacity</Item>
+      <ArrayItems Condition="_count &lt;= _capacity">
+				<Size>_count</Size>
+				<ValuePointer>_allocation._data</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	
+  <!-- Dictionary<Key, Value> -->
+	<Type Name="Dictionary&lt;*,*&gt;">
+		<DisplayString>{{ Size={_elementsCount} Capacity={_tableSize} }}</DisplayString>
+		<Expand>
+			<Item Name="[Size]" ExcludeView="simple">_elementsCount</Item>
+			<Item Name="[Capacity]" ExcludeView="simple">_tableSize</Item>
+      <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
+        <Variable Name="i" InitialValue="0" />
+        <Size>_elementsCount</Size>
+        <Loop>
+          <Break Condition="i == _tableSize" />
+          <If Condition="_table[i]._state != 0">  
+            <Item>_table[i]</Item>
+          </If>
+          <Exec>i++</Exec>
+        </Loop>
+      </CustomListItems>
+		</Expand>
+	</Type>
+
+  <!-- HashSet<T> -->
+  <Type Name="HashSet&lt;*&gt;">
+    <DisplayString>{{ Size={_elementsCount} Capacity={_tableSize} }}</DisplayString>
+    <Expand>
+      <Item Name="[Size]" ExcludeView="simple">_elementsCount</Item>
+      <Item Name="[Capacity]" ExcludeView="simple">_tableSize</Item>
+      <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
+        <Variable Name="i" InitialValue="0" />
+        <Size>_elementsCount</Size>
+        <Loop>
+          <Break Condition="i == _tableSize" />
+          <If Condition="_table[i]._state != 0">  
+            <Item>_table[i]</Item>
+          </If>
+          <Exec>i++</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- String -->
+	<Type Name="String">
+    <DisplayString Condition="_length == 0">Empty</DisplayString>
+    <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
+    <DisplayString>{_data,su}</DisplayString>
+    <StringView>_data</StringView>
+    <Expand>
+      <Item Name="[Length]" ExcludeView="simple">_length</Item>
+      <ArrayItems>
+        <Size>_length</Size>
+        <ValuePointer>_data</ValuePointer>
+      </ArrayItems>
+		</Expand>
+	</Type>
+
+  <!-- StringView -->
+	<Type Name="StringView">
+    <DisplayString Condition="_length == 0">Empty</DisplayString>
+    <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
+    <DisplayString>{_data,su}</DisplayString>
+    <StringView>_data</StringView>
+    <Expand>
+      <Item Name="[Length]" ExcludeView="simple">_length</Item>
+      <ArrayItems>
+        <Size>_length</Size>
+        <ValuePointer>_data</ValuePointer>
+      </ArrayItems>
+		</Expand>
+	</Type>
+
+  <!-- StringAnsi -->
+  <Type Name="StringAnsi">
+    <DisplayString Condition="_length == 0">Empty</DisplayString>
+    <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
+    <DisplayString>{_data}</DisplayString>
+    <StringView>_data</StringView>
+    <Expand>
+      <Item Name="[Length]" ExcludeView="simple">_length</Item>
+      <ArrayItems>
+        <Size>_length</Size>
+        <ValuePointer>_data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- StringAnsiView -->
+  <Type Name="StringAnsiView">
+    <DisplayString Condition="_length == 0">Empty</DisplayString>
+    <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
+    <DisplayString>{_data}</DisplayString>
+    <StringView>_data</StringView>
+    <Expand>
+      <Item Name="[Length]" ExcludeView="simple">_length</Item>
+      <ArrayItems>
+        <Size>_length</Size>
+        <ValuePointer>_data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- StringBuilder -->
+  <Type Name="StringBuilder">
+		<DisplayString>{_data_allocation.._data,su}</DisplayString>
+		<Expand>
+			<Item Name="[Raw]" ExcludeView="simple">_data._data</Item>
+			<Item Name="[Size]" ExcludeView="simple">_data._count</Item>
+			<ArrayItems>
+				<Size>_data._count</Size>
+				<ValuePointer>_data._allocation._data</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	
+  <!-- Vector2 -->
+	<Type Name="Vector2">
+		<DisplayString>{{ X={X}, Y={Y} }}</DisplayString>
+	</Type>
+	
+  <!-- Vector3 -->
+	<Type Name="Vector3">
+		<DisplayString>{{ X={X}, Y={Y}, Z={Z} }}</DisplayString>
+	</Type>
+	
+  <!-- Vector4 -->
+	<Type Name="Vector4">
+		<DisplayString>{{ X={X}, Y={Y}, Z={Z}, W={W} }}</DisplayString>
+	</Type>
+    
+  <!-- Quaternion -->
+  <Type Name="Quaternion">
+		<DisplayString>{{ X={X}, Y={Y}, Z={Z}, W={W} }}</DisplayString>
+	</Type>
+	
+  <!-- Rect -->
+	<Type Name="Rect">
+		<DisplayString>{{ X={Location.X}, Y={Location.Y}, Width={Size.X}, Height={Size.Y} }}</DisplayString>
+	</Type>
+	
+  <!-- Transform -->
+	<Type Name="Transform">
+		<DisplayString>{{ Translation={Translation}, Orientation={Orientation}, Scale={Scale} }}</DisplayString>
+		<Expand>
+			<Item Name="[Translation]" ExcludeView="simple" >Translation</Item>
+			<Item Name="[Orientation]" ExcludeView="simple">Orientation</Item>
+			<Item Name="[Scale]" ExcludeView="simple">Scale</Item>
+		</Expand>
+	</Type>
+
+  <!-- Nullable<T> -->
+  <Type Name="Nullable&lt;*&gt;">
+    <DisplayString Condition="_hasValue == false">Not Set</DisplayString> 
+    <DisplayString>Value={_value}</DisplayString> 
+  </Type>
+
+  <!-- Guid -->
+  <Type Name="Guid">
+    <DisplayString>{A,hb}{B,hb}{C,hb}{D,hb}</DisplayString>
+    <Expand>
+      <Item Name="[A]" ExcludeView="simple" >A</Item>
+      <Item Name="[B]" ExcludeView="simple" >B</Item>
+      <Item Name="[C]" ExcludeView="simple" >C</Item>
+      <Item Name="[D]" ExcludeView="simple" >D</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

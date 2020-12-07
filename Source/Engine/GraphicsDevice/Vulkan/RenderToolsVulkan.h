@@ -1,0 +1,367 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/Config.h"
+#include "Engine/Graphics/Textures/GPUSamplerDescription.h"
+#include "IncludeVulkanHeaders.h"
+
+#if GRAPHICS_API_VULKAN
+
+#if GPU_ENABLE_ASSERTION
+
+// Vulkan results validation
+#define VALIDATE_VULKAN_RESULT(x) { VkResult result = x; if (result != VK_SUCCESS) RenderToolsVulkan::ValidateVkResult(result, __FILE__, __LINE__); }
+#define LOG_VULKAN_RESULT(result) if (result != VK_SUCCESS) RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__)
+#define LOG_VULKAN_RESULT_WITH_RETURN(result) if (result != VK_SUCCESS) { RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__); return true; }
+#define VK_SET_DEBUG_NAME(device, handle, type, name) RenderToolsVulkan::SetObjectName(device->Device, (uint64)handle, type, name)
+
+#else
+
+#define VALIDATE_VULKAN_RESULT(x) x
+#define LOG_VULKAN_RESULT(result) if (result != VK_SUCCESS) RenderToolsVulkan::LogVkResult(result)
+#define LOG_VULKAN_RESULT_WITH_RETURN(result) if (result != VK_SUCCESS) { RenderToolsVulkan::LogVkResult(result); return true; }
+#define VK_SET_DEBUG_NAME(device, handle, type, name)
+
+#endif
+
+/// <summary>
+/// Set of utilities for rendering on Vulkan platform.
+/// </summary>
+class RenderToolsVulkan
+{
+private:
+
+    static VkFormat PixelFormatToVkFormat[static_cast<int32>(PixelFormat::MAX)];
+    static VkBlendFactor BlendToVkBlendFactor[static_cast<int32>(BlendingMode::Blend::MAX)];
+    static VkBlendOp OperationToVkBlendOp[static_cast<int32>(BlendingMode::Operation::MAX)];
+    static VkCompareOp ComparisonFuncToVkCompareOp[static_cast<int32>(ComparisonFunc::MAX)];
+
+public:
+
+#if GPU_ENABLE_RESOURCE_NAMING
+
+    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name);
+
+    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name)
+    {
+#if VULKAN_SUPPORTS_DEBUG_UTILS
+        // Check for valid function pointer (may not be present if not running in a debugging application)
+        if (vkSetDebugUtilsObjectNameEXT != nullptr && name != nullptr && *name != 0)
+        {
+            VkDebugUtilsObjectNameInfoEXT objectNameInfo;
+            ZeroStruct(objectNameInfo, VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+            objectNameInfo.objectType = objectType;
+            objectNameInfo.objectHandle = objectHandle;
+            objectNameInfo.pObjectName = name;
+            const VkResult result = vkSetDebugUtilsObjectNameEXT(device, &objectNameInfo);
+            LOG_VULKAN_RESULT(result);
+        }
+#endif
+    }
+
+#endif
+
+    static String GetVkErrorString(VkResult result);
+    static void ValidateVkResult(VkResult result, const char* file, uint32 line);
+    static void LogVkResult(VkResult result, const char* file, uint32 line);
+    static void LogVkResult(VkResult result);
+
+    static inline VkPipelineStageFlags GetBufferBarrierFlags(VkAccessFlags accessFlags)
+    {
+        VkPipelineStageFlags stageFlags = (VkPipelineStageFlags)0;
+        switch (accessFlags)
+        {
+        case 0:
+            stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            break;
+
+        case VK_ACCESS_TRANSFER_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            break;
+
+        case VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            break;
+
+        case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
+
+#if VULKAN_SUPPORTS_MAINTENANCE_LAYER2
+		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
+		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
+			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+			break;
+#endif
+
+        case VK_ACCESS_TRANSFER_READ_BIT:
+            stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            break;
+
+        case VK_ACCESS_SHADER_READ_BIT:
+        case VK_ACCESS_SHADER_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            break;
+
+        default:
+        CRASH;
+            break;
+        }
+
+        return stageFlags;
+    }
+
+    static inline VkPipelineStageFlags GetImageBarrierFlags(VkImageLayout layout, VkAccessFlags& accessFlags)
+    {
+        VkPipelineStageFlags stageFlags;
+        switch (layout)
+        {
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+            accessFlags = 0;
+            stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            accessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            accessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+            accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
+#if VULKAN_SUPPORTS_MAINTENANCE_LAYER2
+		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+			accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+			break;
+#endif
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+            accessFlags = VK_ACCESS_TRANSFER_READ_BIT;
+            stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+            accessFlags = 0;
+            stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            accessFlags = VK_ACCESS_SHADER_READ_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+            accessFlags = VK_ACCESS_SHADER_READ_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_GENERAL:
+            accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return stageFlags;
+    }
+
+    static inline void SetBufferBarrierInfo(VkAccessFlags source, VkAccessFlags dest, VkPipelineStageFlags& sourceStage, VkPipelineStageFlags& destStage)
+    {
+        sourceStage |= GetBufferBarrierFlags(source);
+        destStage |= GetBufferBarrierFlags(dest);
+    }
+
+    static inline void SetImageBarrierInfo(VkImageLayout source, VkImageLayout dest, VkImageMemoryBarrier& barrier, VkPipelineStageFlags& sourceStage, VkPipelineStageFlags& destStage)
+    {
+        barrier.oldLayout = source;
+        barrier.newLayout = dest;
+
+        sourceStage |= GetImageBarrierFlags(source, barrier.srcAccessMask);
+        destStage |= GetImageBarrierFlags(dest, barrier.dstAccessMask);
+    }
+
+    static void ImagePipelineBarrier(VkCommandBuffer cmdBuffer, VkImage img, VkImageLayout src, VkImageLayout dest, const VkImageSubresourceRange& subresourceRange)
+    {
+        VkImageMemoryBarrier imageBarrier;
+        ZeroStruct(imageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        imageBarrier.image = img;
+        imageBarrier.subresourceRange = subresourceRange;
+        imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        VkPipelineStageFlags srcStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages = (VkPipelineStageFlags)0;
+        SetImageBarrierInfo(src, dest, imageBarrier, srcStages, destStages);
+
+        vkCmdPipelineBarrier(cmdBuffer, srcStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+    }
+
+    template<class T>
+    static FORCE_INLINE void ZeroStruct(T& data, VkStructureType type)
+    {
+        static_assert(!TIsPointer<T>::Value, "Don't use a pointer.");
+        static_assert(OFFSET_OF(T, sType) == 0, "Assumes type is the first member in the Vulkan type.");
+        data.sType = type;
+        Platform::MemoryClear(((uint8*)&data) + sizeof(VkStructureType), sizeof(T) - sizeof(VkStructureType));
+    }
+
+    /// <summary>
+    /// Converts Flax Pixel Format to the Vulkan Format.
+    /// </summary>
+    /// <param name="value">The Flax Pixel Format.</param>
+    /// <returns>The Vulkan Format.</returns>
+    static FORCE_INLINE VkFormat ToVulkanFormat(const PixelFormat value)
+    {
+        return PixelFormatToVkFormat[(int32)value];
+    }
+
+    /// <summary>
+    /// Converts Flax blend mode to the Vulkan blend factor.
+    /// </summary>
+    /// <param name="value">The Flax blend mode.</param>
+    /// <returns>The Vulkan blend factor.</returns>
+    static FORCE_INLINE VkBlendFactor ToVulkanBlendFactor(const BlendingMode::Blend value)
+    {
+        return BlendToVkBlendFactor[(int32)value];
+    }
+
+    /// <summary>
+    /// Converts Flax blend operation to the Vulkan blend operation.
+    /// </summary>
+    /// <param name="value">The Flax blend operation.</param>
+    /// <returns>The Vulkan blend operation.</returns>
+    static FORCE_INLINE VkBlendOp ToVulkanBlendOp(const BlendingMode::Operation value)
+    {
+        return OperationToVkBlendOp[(int32)value];
+    }
+
+    /// <summary>
+    /// Converts Flax comparision function to the Vulkan comparision operation.
+    /// </summary>
+    /// <param name="value">The Flax comparision function.</param>
+    /// <returns>The Vulkan comparision operation.</returns>
+    static FORCE_INLINE VkCompareOp ToVulkanCompareOp(const ComparisonFunc value)
+    {
+        return ComparisonFuncToVkCompareOp[(int32)value];
+    }
+
+    static VkSamplerMipmapMode ToVulkanMipFilterMode(GPUSamplerFilter filter)
+    {
+        VkSamplerMipmapMode result;
+        switch (filter)
+        {
+        case GPUSamplerFilter::Point:
+            result = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+            break;
+        case GPUSamplerFilter::Bilinear:
+            result = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+            break;
+        case GPUSamplerFilter::Trilinear:
+            result = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            break;
+        case GPUSamplerFilter::Anisotropic:
+            result = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return result;
+    }
+
+    static VkFilter ToVulkanMagFilterMode(GPUSamplerFilter filter)
+    {
+        VkFilter result;
+        switch (filter)
+        {
+        case GPUSamplerFilter::Point:
+            result = VK_FILTER_NEAREST;
+            break;
+        case GPUSamplerFilter::Bilinear:
+            result = VK_FILTER_LINEAR;
+            break;
+        case GPUSamplerFilter::Trilinear:
+            result = VK_FILTER_LINEAR;
+            break;
+        case GPUSamplerFilter::Anisotropic:
+            result = VK_FILTER_LINEAR;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return result;
+    }
+
+    static VkFilter ToVulkanMinFilterMode(GPUSamplerFilter filter)
+    {
+        VkFilter result;
+        switch (filter)
+        {
+        case GPUSamplerFilter::Point:
+            result = VK_FILTER_NEAREST;
+            break;
+        case GPUSamplerFilter::Bilinear:
+            result = VK_FILTER_LINEAR;
+            break;
+        case GPUSamplerFilter::Trilinear:
+            result = VK_FILTER_LINEAR;
+            break;
+        case GPUSamplerFilter::Anisotropic:
+            result = VK_FILTER_LINEAR;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return result;
+    }
+
+    static VkSamplerAddressMode ToVulkanWrapMode(GPUSamplerAddressMode addressMode, const bool supportsMirrorClampToEdge)
+    {
+        VkSamplerAddressMode result;
+        switch (addressMode)
+        {
+        case GPUSamplerAddressMode::Wrap:
+            result = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            break;
+        case GPUSamplerAddressMode::Clamp:
+            result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            break;
+        case GPUSamplerAddressMode::Mirror:
+            result = supportsMirrorClampToEdge ? VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            break;
+        case GPUSamplerAddressMode::Border:
+            result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return result;
+    }
+
+    static VkCompareOp ToVulkanSamplerCompareFunction(GPUSamplerCompareFunction samplerComparisonFunction)
+    {
+        VkCompareOp result;
+        switch (samplerComparisonFunction)
+        {
+        case GPUSamplerCompareFunction::Less:
+            result = VK_COMPARE_OP_LESS;
+            break;
+        case GPUSamplerCompareFunction::Never:
+            result = VK_COMPARE_OP_NEVER;
+            break;
+        default:
+        CRASH;
+            break;
+        }
+        return result;
+    }
+};
+
+#endif

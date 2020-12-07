@@ -1,0 +1,159 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#ifndef __LIGHTING__
+#define __LIGHTING__
+
+#if !defined(USE_GBUFFER_CUSTOM_DATA)
+#error "Canot calculate lighting without custom data in GBuffer. Define USE_GBUFFER_CUSTOM_DATA."
+#endif
+
+#include "./Flax/LightingCommon.hlsl"
+
+ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
+{
+	ShadowData shadow;
+	shadow.SurfaceShadow = gBuffer.AO * shadowMask.r;
+	shadow.TransmissionShadow = shadowMask.g;
+	return shadow;
+}
+
+LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+{
+	float3 diffuseColor = GetDiffuseColor(gBuffer);
+	float3 specularColor = GetSpecularColor(gBuffer);
+
+	float3 H = normalize(V + L);
+	float NoL = saturate(dot(N, L));
+	float NoV = max(dot(N, V), 1e-5);
+	float NoH = saturate(dot(N, H));
+	float VoH = saturate(dot(V, H));
+
+	// Generalized microfacet specular
+	float D = D_GGX(gBuffer.Roughness, NoH) * energy;
+	float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
+	float3 F = F_Schlick(specularColor, VoH);
+
+	LightingData lighting;
+	lighting.Diffuse = Diffuse_Lambert(diffuseColor);
+	lighting.Specular = (D * Vis) * F;
+	lighting.Transmission = 0;
+	return lighting;
+}
+
+LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+{
+	LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
+
+	// Fake effect of the light going through the material
+	float3 subsurfaceColor = gBuffer.CustomData.rgb;
+	float opacity = gBuffer.CustomData.a;
+	float3 H = normalize(V + L);
+	float inscatter = pow(saturate(dot(L, -V)), 12.1f) * lerp(3, 0.1f, opacity);
+	float normalContribution = saturate(dot(N, H) * opacity + 1.0f - opacity);
+	float backScatter = gBuffer.AO * normalContribution / (PI * 2.0f);
+	lighting.Transmission = lerp(backScatter, 1, inscatter) * subsurfaceColor;
+
+	return lighting;
+}
+
+LightingData FoliageShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+{
+	LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
+
+	// Fake effect of the light going through the thin foliage
+	float3 subsurfaceColor = gBuffer.CustomData.rgb;
+	float wrapNoL = saturate((-dot(N, L) + 0.5f) / 2.25);
+	float VoL = dot(V, L);
+	float scatter = D_GGX(0.36, saturate(-VoL));
+	lighting.Transmission = subsurfaceColor * (wrapNoL * scatter);
+
+	return lighting;
+}
+
+LightingData SurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+{
+	switch (gBuffer.ShadingModel)
+	{
+	case SHADING_MODEL_UNLIT:
+	case SHADING_MODEL_LIT:
+		return StandardShading(gBuffer, energy, L, V, N);
+	case SHADING_MODEL_SUBSURFACE:
+		return SubsurfaceShading(gBuffer, energy, L, V, N);
+	case SHADING_MODEL_FOLIAGE:
+		return FoliageShading(gBuffer, energy, L, V, N);
+	default:
+		return (LightingData)0;
+	}
+}
+
+float4 GetSkyLightLighting(LightData lightData, GBufferSample gBuffer, TextureCube ibl)
+{
+	// Get material diffuse color
+	float3 diffuseColor = GetDiffuseColor(gBuffer);
+
+	// Compute the preconvolved incoming lighting with the normal direction (apply ambient color)
+	// Some data is packed, see C++ RendererSkyLightData::SetupLightData
+	float mip = lightData.SourceLength;
+	float3 diffuseLookup = ibl.SampleLevel(SamplerLinearClamp, gBuffer.Normal, mip).rgb * lightData.Color.rgb;
+	diffuseLookup += float3(lightData.SpotAngles.rg, lightData.SourceRadius);
+
+	// Fade out based on distance to capture
+	float3 captureVector = gBuffer.WorldPos - lightData.Position;
+	float captureVectorLength = length(captureVector);
+	float normalizedDistanceToCapture = saturate(captureVectorLength / lightData.Radius);
+	float distanceAlpha = 1.0 - smoothstep(0.6, 1, normalizedDistanceToCapture);
+
+	// Calculate final light
+	float3 color = diffuseLookup * diffuseColor;
+	float luminance = Luminance(diffuseLookup);
+	return float4(color, luminance) * (distanceAlpha * gBuffer.AO);
+}
+
+float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, float4 shadowMask, bool isRadial, bool isSpotLight)
+{
+	float4 result = 0;
+	float3 V = normalize(viewPos - gBuffer.WorldPos);
+	float3 ToLight = lightData.Direction;
+	float3 N = gBuffer.Normal;
+	float3 L = lightData.Direction;	// no need to normalize
+	float NoL = saturate(dot(N, L));
+	float distanceAttenuation = 1;
+	float lightRadiusMask = 1;
+	float spotAttenuation = 1;
+
+	// Calculate attenuation
+	if (isRadial)
+	{
+		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, ToLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+	}
+	float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
+
+	// Calculate shadow
+	ShadowData shadow = GetShadow(lightData, gBuffer, shadowMask);
+
+	// Reduce shadow mapping artifacts
+	shadow.SurfaceShadow *= saturate(NoL * 6 - 0.2);
+
+	BRANCH
+	if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
+	{
+		gBuffer.Roughness = max(gBuffer.Roughness, lightData.MinRoughness);
+		float energy = AreaLightSpecular(lightData, gBuffer.Roughness, ToLight, L, V, N);
+
+		// Calculate direct lighting
+		LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
+#if NO_SPECULAR
+		lighting.Specular = 0;
+#endif
+
+		// Calculate final light color
+		float3 surfaceLight = (lighting.Diffuse + lighting.Specular) * (NoL * attenuation * shadow.SurfaceShadow);
+		float3 subsurfaceLight = lighting.Transmission * (attenuation * shadow.TransmissionShadow);
+		result.rgb = lightData.Color * (surfaceLight + subsurfaceLight);
+		result.a = 1;
+	}
+
+	return result;
+}
+
+#endif

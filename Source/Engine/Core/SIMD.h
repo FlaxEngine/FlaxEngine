@@ -1,0 +1,229 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "Engine/Platform/Platform.h"
+#if PLATFORM_SIMD_SSE2
+#ifdef _WIN32
+#include <xmmintrin.h>
+#endif
+#else
+#include <math.h>
+#endif
+
+#if PLATFORM_SIMD_SSE2
+
+// Vector of four floating point values stored in vector register.
+typedef __m128 SimdVector4;
+
+namespace SIMD
+{
+    FORCE_INLINE SimdVector4 Load(float x, float y, float z, float w)
+    {
+        return _mm_set_ps(x, y, z, w);
+    }
+
+    FORCE_INLINE SimdVector4 Load(const void* src)
+    {
+        return _mm_load_ps((const float*)(src));
+    }
+
+    FORCE_INLINE SimdVector4 Splat(float value)
+    {
+        return _mm_set_ps1(value);
+    }
+
+    FORCE_INLINE void Store(void* dst, SimdVector4 src)
+    {
+        _mm_store_ps((float*)dst, src);
+    }
+
+    FORCE_INLINE int MoveMask(SimdVector4 a)
+    {
+        return _mm_movemask_ps(a);
+    }
+
+    FORCE_INLINE SimdVector4 Add(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_add_ps(a, b);
+    }
+
+    FORCE_INLINE SimdVector4 Sub(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_sub_ps(a, b);
+    }
+
+    FORCE_INLINE SimdVector4 Mul(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_mul_ps(a, b);
+    }
+
+    FORCE_INLINE SimdVector4 Div(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_div_ps(a, b);
+    }
+
+    FORCE_INLINE SimdVector4 Rcp(SimdVector4 a)
+    {
+        return _mm_rcp_ps(a);
+    }
+
+    FORCE_INLINE SimdVector4 Sqrt(SimdVector4 a)
+    {
+        return _mm_sqrt_ps(a);
+    }
+
+    FORCE_INLINE SimdVector4 Rsqrt(SimdVector4 a)
+    {
+        return _mm_rsqrt_ps(a);
+    }
+
+    FORCE_INLINE SimdVector4 Min(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_min_ps(a, b);
+    }
+
+    FORCE_INLINE SimdVector4 Max(SimdVector4 a, SimdVector4 b)
+    {
+        return _mm_max_ps(a, b);
+    }
+}
+
+#else
+
+struct SimdFloat4
+{
+	float X, Y, Z, W;
+};
+
+namespace SIMD
+{
+    FORCE_INLINE SimdFloat4 Load(float x, float y, float z, float w)
+    {
+		return { x, y, z, w };
+    }
+
+	FORCE_INLINE SimdFloat4 Load(const void* src)
+	{
+		return *(const SimdFloat4*)src;
+	}
+
+	FORCE_INLINE SimdFloat4 Splat(float value)
+	{
+		return { value, value, value, value };
+	}
+
+	FORCE_INLINE void Store(void* dst, SimdFloat4 src)
+	{
+		(*(SimdFloat4*)dst) = src;
+	}
+
+	FORCE_INLINE int MoveMask(SimdFloat4 a)
+	{
+		return (a.W < 0 ? (1 << 3) : 0) |
+				(a.Z < 0 ? (1 << 2) : 0) |
+				(a.Y < 0 ? (1 << 1) : 0) |
+				(a.X < 0 ? 1 : 0);
+	}
+
+	FORCE_INLINE SimdFloat4 Add(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X + b.X,
+			a.Y + b.Y,
+			a.Z + b.Z,
+			a.W + b.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Sub(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X - b.X,
+			a.Y - b.Y,
+			a.Z - b.Z,
+			a.W - b.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Mul(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X * b.X,
+			a.Y * b.Y,
+			a.Z * b.Z,
+			a.W * b.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Div(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X / b.X,
+			a.Y / b.Y,
+			a.Z / b.Z,
+			a.W / b.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Rcp(SimdFloat4 a)
+	{
+		return
+		{
+			1 / a.X,
+			1 / a.Y,
+			1 / a.Z,
+			1 / a.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Sqrt(SimdFloat4 a)
+	{
+		return
+		{
+			(float)sqrt(a.X),
+			(float)sqrt(a.Y),
+			(float)sqrt(a.Z),
+			(float)sqrt(a.W)
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Rsqrt(SimdFloat4 a)
+	{
+		return
+		{
+			1 / (float)sqrt(a.X),
+			1 / (float)sqrt(a.Y),
+			1 / (float)sqrt(a.Z),
+			1 / (float)sqrt(a.W)
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Min(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X < b.X ? a.X : b.X,
+			a.Y < b.Y ? a.Y : b.Y,
+			a.Z < b.Z ? a.Z : b.Z,
+			a.W < b.W ? a.W : b.W
+		};
+	}
+
+	FORCE_INLINE SimdFloat4 Max(SimdFloat4 a, SimdFloat4 b)
+	{
+		return
+		{
+			a.X > b.X ? a.X : b.X,
+			a.Y > b.Y ? a.Y : b.Y,
+			a.Z > b.Z ? a.Z : b.Z,
+			a.W > b.W ? a.W : b.W
+		};
+	}
+}
+
+#endif

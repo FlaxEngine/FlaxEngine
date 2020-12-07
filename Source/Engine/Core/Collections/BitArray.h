@@ -1,0 +1,324 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "Engine/Platform/Platform.h"
+#include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Math/Math.h"
+
+/// <summary>
+/// Template for dynamic array with variable capacity that stores the bit values.
+/// </summary>
+template<typename AllocationType = HeapAllocation>
+API_CLASS(InBuild) class BitArray
+{
+    friend BitArray;
+
+public:
+
+    typedef uint64 ItemType;
+    typedef typename AllocationType::template Data<ItemType> AllocationData;
+
+private:
+
+    int32 _count;
+    int32 _capacity;
+    AllocationData _allocation;
+
+public:
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    FORCE_INLINE BitArray()
+        : _count(0)
+        , _capacity(0)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    /// <param name="capacity">The initial capacity.</param>
+    BitArray(int32 capacity)
+        : _count(0)
+        , _capacity(capacity)
+    {
+        if (capacity > 0)
+            _allocation.Allocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1));
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    /// <param name="other">The other collection to copy.</param>
+    BitArray(const BitArray& other)
+    {
+        _count = _capacity = other._count;
+        if (_capacity > 0)
+            _allocation.Allocate(Math::Max<ItemType>(_capacity / sizeof(ItemType), 1));
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    /// <param name="other">The other collection to move.</param>
+    FORCE_INLINE BitArray(BitArray&& other) noexcept
+    {
+        _count = other._count;
+        _capacity = other._capacity;
+        other._count = 0;
+        other._capacity = 0;
+        _allocation.Swap(other._allocation);
+    }
+
+    /// <summary>
+    /// The assignment operator that deletes the current collection of items and the copies items from the other array.
+    /// </summary>
+    /// <param name="other">The other collection to copy.</param>
+    /// <returns>The reference to this.</returns>
+    BitArray& operator=(const BitArray& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (_capacity < other._count)
+            {
+                _allocation.Free();
+                _capacity = other._count;
+                _allocation.Allocate(Math::Max<ItemType>(_capacity / sizeof(ItemType), 1));
+            }
+            _count = other._count;
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// The move assignment operator that deletes the current collection of items and the moves items from the other array.
+    /// </summary>
+    /// <param name="other">The other collection to move.</param>
+    /// <returns>The reference to this.</returns>
+    BitArray& operator=(BitArray&& other) noexcept
+    {
+        if (this != &other)
+        {
+            _allocation.Free();
+            _count = other._count;
+            _capacity = other._capacity;
+            other._count = 0;
+            other._capacity = 0;
+            _allocation.Swap(other._allocation);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    ~BitArray()
+    {
+    }
+
+public:
+
+    /// <summary>
+    /// Gets the pointer to the bits storage data (linear allocation).
+    /// </summary>
+    /// <returns>The data pointer.</returns>
+    FORCE_INLINE ItemType* Get()
+    {
+        return _allocation.Get();
+    }
+
+    /// <summary>
+    /// Gets the pointer to the bits storage data (linear allocation).
+    /// </summary>
+    /// <returns>The data pointer.</returns>
+    FORCE_INLINE const ItemType* Get() const
+    {
+        return _allocation.Get();
+    }
+
+    /// <summary>
+    /// Gets the amount of the items in the collection.
+    /// </summary>
+    /// <returns>The amount of items.</returns>
+    FORCE_INLINE int32 Count() const
+    {
+        return _count;
+    }
+
+    /// <summary>
+    /// Gets the amount of the items that can be contained by collection without resizing.
+    /// </summary>
+    /// <returns>The collection capacity.</returns>
+    FORCE_INLINE int32 Capacity() const
+    {
+        return _capacity;
+    }
+
+    /// <summary>
+    /// Returns true if collection isn't empty.
+    /// </summary>
+    /// <returns>True if collection isn't empty, otherwise false.</returns>
+    FORCE_INLINE bool HasItems() const
+    {
+        return _count != 0;
+    }
+
+    /// <summary>
+    /// Returns true if collection is empty.
+    /// </summary>
+    /// <returns>True if collection is empty, otherwise false.</returns>
+    FORCE_INLINE bool IsEmpty() const
+    {
+        return _count == 0;
+    }
+
+    /// <summary>
+    /// Gets the item at the given index.
+    /// </summary>
+    /// <param name="index">The index of the item.</param>
+    /// <returns>The value of the item.</returns>
+    FORCE_INLINE bool operator[](int32 index) const
+    {
+        return Get(index);
+    }
+
+    /// <summary>
+    /// Gets the item at the given index.
+    /// </summary>
+    /// <param name="index">The index of the item.</param>
+    /// <returns>The value of the item.</returns>
+    bool Get(int32 index) const
+    {
+        ASSERT(index >= 0 && index < _count);
+        const ItemType offset = index / sizeof(ItemType);
+        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1)));
+        const ItemType item = ((ItemType*)_allocation.Get())[offset];
+        return (item & bitMask) != 0;
+    }
+
+    /// <summary>
+    /// Sets the item at the given index.
+    /// </summary>
+    /// <param name="index">The index of the item.</param>
+    /// <param name="value">The value to set.</param>
+    void Set(int32 index, bool value) const
+    {
+        ASSERT(index >= 0 && index < _count);
+        const ItemType offset = index / sizeof(ItemType);
+        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1)));
+        ItemType& item = ((ItemType*)_allocation.Get())[offset];
+        if (value)
+            item |= bitMask;
+        else
+            item &= ~bitMask;
+    }
+
+public:
+
+    /// <summary>
+    /// Clear the collection without changing its capacity.
+    /// </summary>
+    FORCE_INLINE void Clear()
+    {
+        _count = 0;
+    }
+
+    /// <summary>
+    /// Changes the capacity of the collection.
+    /// </summary>
+    /// <param name="capacity">The new capacity.</param>
+    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
+    void SetCapacity(const int32 capacity, bool preserveContents = true)
+    {
+        if (capacity == _capacity)
+            return;
+        ASSERT(capacity >= 0);
+        const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
+        _allocation.Relocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1), _count, count);
+        _capacity = capacity;
+        _count = count;
+    }
+
+    /// <summary>
+    /// Resizes the collection to the specified size. If the size is equal or less to the current capacity no additional memory reallocation in performed.
+    /// </summary>
+    /// <param name="size">The new collection size.</param>
+    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
+    void Resize(int32 size, bool preserveContents = true)
+    {
+        if (_count <= size)
+            EnsureCapacity(size, preserveContents);
+        _count = size;
+    }
+
+    /// <summary>
+    /// Ensures the collection has given capacity (or more).
+    /// </summary>
+    /// <param name="minCapacity">The minimum capacity.</param>
+    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
+    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    {
+        if (_capacity < minCapacity)
+        {
+            const int32 capacity = _allocation.CalculateCapacityGrow(Math::Max<int32>(_capacity / sizeof(ItemType), 1), minCapacity);
+            SetCapacity(capacity, preserveContents);
+        }
+    }
+
+    /// <summary>
+    /// Sets all items to the given value
+    /// </summary>
+    /// <param name="value">The value to assign to all the collection items.</param>
+    void SetAll(const bool value)
+    {
+        if (_count != 0)
+            Platform::MemorySet(_allocation.Get(), Math::Max<ItemType>(_count / sizeof(ItemType), 1), value ? MAX_int32 : 0);
+    }
+
+    /// <summary>
+    /// Adds the specified item to the collection.
+    /// </summary>
+    /// <param name="item">The item to add.</param>
+    void Add(const bool item)
+    {
+        EnsureCapacity(_count + 1);
+        _count++;
+        Set(_count - 1, item);
+    }
+
+    /// <summary>
+    /// Adds the specified item to the collection.
+    /// </summary>
+    /// <param name="items">The items to add.</param>
+    /// <param name="count">The items count.</param>
+    void Add(const bool* items, int32 count)
+    {
+        EnsureCapacity(_count + count);
+        for (int32 i = 0; i < count; i++)
+            Add(items[i]);
+    }
+
+    /// <summary>
+    /// Adds the other collection to the collection.
+    /// </summary>
+    /// <param name="other">The other collection to add.</param>
+    void Add(const BitArray& other)
+    {
+        EnsureCapacity(_count, other.Count());
+        for (int32 i = 0; i < other.Count(); i++)
+            Add(other[i]);
+    }
+
+    /// <summary>
+    /// Swaps the contents of collection with the other object without copy operation. Performs fast internal data exchange.
+    /// </summary>
+    /// <param name="other">The other collection.</param>
+    void Swap(BitArray& other)
+    {
+        ::Swap(_count, other._count);
+        ::Swap(_capacity, other._capacity);
+        _allocation.Swap(other._allocation);
+    }
+};

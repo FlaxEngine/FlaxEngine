@@ -1,0 +1,154 @@
+// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using Flax.Build;
+
+namespace Flax.Deps.Dependencies
+{
+    /// <summary>
+    /// OpenAL Soft is a software implementation of the OpenAL 3D audio API.
+    /// </summary>
+    /// <seealso cref="Flax.Deps.Dependency" />
+    class OpenAL : Dependency
+    {
+        /// <inheritdoc />
+        public override TargetPlatform[] Platforms
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetPlatform.Windows,
+                        TargetPlatform.Android,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                        TargetPlatform.Android,
+                    };
+                default: return new TargetPlatform[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Build(BuildOptions options)
+        {
+            var root = options.IntermediateFolder;
+            var version = "1.19.1";
+            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
+
+            foreach (var platform in options.Platforms)
+            {
+                switch (platform)
+                {
+                case TargetPlatform.Windows:
+                {
+                    // Get the binaries
+                    var packagePath = Path.Combine(root, "package.zip");
+                    File.Delete(packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath);
+                    using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                    {
+                        archive.ExtractToDirectory(root);
+                        root = Path.Combine(root, archive.Entries.First().FullName);
+                    }
+
+                    // Deploy Win64 binaries
+                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    Utilities.FileCopy(Path.Combine(root, "bin", "Win64", "soft_oal.dll"), Path.Combine(depsFolder, "OpenAL32.dll"));
+                    Utilities.FileCopy(Path.Combine(root, "libs", "Win64", "OpenAL32.lib"), Path.Combine(depsFolder, "OpenAL32.lib"));
+
+                    // Deploy license
+                    Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"));
+
+                    // Deploy header files
+                    var files = Directory.GetFiles(Path.Combine(root, "include", "AL"));
+                    foreach (var file in files)
+                    {
+                        Utilities.FileCopy(file, Path.Combine(dstIncludePath, Path.GetFileName(file)));
+                    }
+
+                    break;
+                }
+                case TargetPlatform.Linux:
+                {
+                    var binariesToCopy = new[]
+                    {
+                        "libopenal.a",
+                    };
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CC", "clang-7" },
+                        { "CC_FOR_BUILD", "clang-7" }
+                    };
+                    var config = "-DALSOFT_REQUIRE_ALSA=ON -DALSOFT_REQUIRE_OSS=ON -DALSOFT_REQUIRE_PORTAUDIO=ON -DALSOFT_REQUIRE_PULSEAUDIO=ON -DALSOFT_REQUIRE_JACK=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+
+                    // Get the source
+                    var packagePath = Path.Combine(root, "package.zip");
+                    File.Delete(packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.None);
+
+                    // Use separate build directory
+                    root = Path.Combine(root, "openal-soft-" + version);
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+
+                    // Build for Linux
+                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None, envVars);
+                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    foreach (var file in binariesToCopy)
+                        Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+                    break;
+                }
+                case TargetPlatform.Android:
+                {
+                    var binariesToCopy = new[]
+                    {
+                        "libopenal.a",
+                    };
+                    var config = "-DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+
+                    // Get the source
+                    var packagePath = Path.Combine(root, "package.zip");
+                    File.Delete(packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
+                    {
+                        var sevenZip = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
+                        Utilities.Run(sevenZip, "x package.zip", null, root);
+                        Utilities.Run(sevenZip, "x package", null, root);
+                    }
+                    else
+                    {
+                        Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.None);
+                    }
+
+                    // Use separate build directory
+                    root = Path.Combine(root, "openal-soft-" + version);
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+
+                    // Build
+                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Android, TargetArchitecture.ARM64);
+                    foreach (var file in binariesToCopy)
+                        Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+                    break;
+                }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,33 @@
+apply plugin: 'com.android.application'
+android {
+    compileSdkVersion 24
+    defaultConfig {
+        applicationId "${PackageName}"
+        minSdkVersion 24
+        targetSdkVersion 24
+        versionCode 1
+        versionName "${ProjectVersion}"
+        ndk {
+            abiFilter "${PackageAbi}"
+        }
+    }
+    sourceSets {
+        main {
+            jni.srcDirs = []
+            jniLibs.srcDirs = ['jniLibs']
+            assets.srcDirs = ['assets']
+        }
+    } 
+    buildTypes {
+        release {
+            debuggable true
+            minifyEnabled false
+        }
+    }
+    packagingOptions {
+        doNotStrip '**.so'
+    }
+}
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+}
