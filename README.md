@@ -55,31 +55,31 @@ Follow the instructions below to compile and run the engine from source.
 ## Workspace directory
 
 - **Binaries/** - executable files
- - **Editor/** - Flax Editor binaries
- - **Tools/** - tools binaries
+  - **Editor/** - Flax Editor binaries
+  - **Tools/** - tools binaries
 - **Cache/** - local data cache folder used by engine and tools
- - **Intermediate/** - intermediate files and cache for engine build
-   - ***ProjectName*/** - per-project build cache data
-   - **Deps/** - Flax.Build dependencies building cache
+  - **Intermediate/** - intermediate files and cache for engine build
+    - ***ProjectName*/** - per-project build cache data
+    - **Deps/** - Flax.Build dependencies building cache
   - **Projects/** - project files location
 - **Content/** - assets and binary files used by engine and editor
 - **Development/** - engine development files
- - **Scripts/** - utility scripts
+  - **Scripts/** - utility scripts
 - **packages/** - Nuget packages cache location
 - **Source/** - source code lcoation
- - **Editor/** - Flax Editor source code
- - **Engine/** - Flax Engine source code
- - **Platforms/** - per-platform sources and dependency files
-   - **DotNet/** - C# dependencies
-   - **Editor/** - Flax Editor binaries
-   - ***PlatformName*/** - per-platform files
-     - **Binaries/** - per-platform binaries
-       - **Game/** - Flax Game binaries
-       - **Mono/** - Mono runtime files and data
-       - **ThirdParty/** - prebuild 3rd Party binaries
- - **Shaders/** - shaders source code
- - **ThirdParty/** - 3rd Party source code
- - **Tools/** - development tools source code
+  - **Editor/** - Flax Editor source code
+  - **Engine/** - Flax Engine source code
+  - **Platforms/** - per-platform sources and dependency files
+    - **DotNet/** - C# dependencies
+    - **Editor/** - Flax Editor binaries
+    - ***PlatformName*/** - per-platform files
+      - **Binaries/** - per-platform binaries
+        - **Game/** - Flax Game binaries
+        - **Mono/** - Mono runtime files and data
+        - **ThirdParty/** - prebuild 3rd Party binaries
+  - **Shaders/** - shaders source code
+  - **ThirdParty/** - 3rd Party source code
+  - **Tools/** - development tools source code
 
 # Licensing and Contributions
 
