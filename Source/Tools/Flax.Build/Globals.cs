@@ -21,5 +21,40 @@ namespace Flax.Build
         /// The project loaded from the workspace directory.
         /// </summary>
         public static ProjectInfo Project;
+
+        /// <summary>
+        /// All platforms array.
+        /// </summary>
+        public static readonly TargetPlatform[] AllPlatforms =
+        {
+            TargetPlatform.Windows,
+            TargetPlatform.UWP,
+            TargetPlatform.XboxOne,
+            TargetPlatform.Linux,
+            TargetPlatform.PS4,
+            TargetPlatform.XboxScarlett,
+            TargetPlatform.Android,
+        };
+
+        /// <summary>
+        /// All architectures array.
+        /// </summary>
+        public static readonly TargetArchitecture[] AllArchitectures =
+        {
+            TargetArchitecture.x64,
+            TargetArchitecture.x86,
+            TargetArchitecture.ARM,
+            TargetArchitecture.ARM64,
+        };
+
+        /// <summary>
+        /// All configurations array.
+        /// </summary>
+        public static readonly TargetConfiguration[] AllConfigurations =
+        {
+            TargetConfiguration.Debug,
+            TargetConfiguration.Development,
+            TargetConfiguration.Release,
+        };
     }
 }

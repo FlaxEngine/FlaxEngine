@@ -31,16 +31,7 @@ namespace Flax.Deps
             var depsToBuild = string.IsNullOrEmpty(Configuration.DepsToBuild) ? new string[0] : Configuration.DepsToBuild.Trim().ToLower().Split(',');
 
             // Pick platforms for build
-            var platforms = new[]
-            {
-                TargetPlatform.Windows,
-                TargetPlatform.UWP,
-                TargetPlatform.XboxOne,
-                TargetPlatform.Linux,
-                TargetPlatform.PS4,
-                TargetPlatform.XboxScarlett,
-                TargetPlatform.Android,
-            };
+            var platforms = Globals.AllPlatforms;
             if (Configuration.BuildPlatforms != null && Configuration.BuildPlatforms.Length != 0)
                 platforms = Configuration.BuildPlatforms;
             platforms = platforms.Where(x => buildPlatform.CanBuildPlatform(x)).ToArray();

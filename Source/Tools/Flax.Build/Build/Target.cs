@@ -119,37 +119,17 @@ namespace Flax.Build
         /// <summary>
         /// The target platforms.
         /// </summary>
-        public TargetPlatform[] Platforms =
-        {
-            TargetPlatform.Windows,
-            TargetPlatform.UWP,
-            TargetPlatform.XboxOne,
-            TargetPlatform.Linux,
-            TargetPlatform.PS4,
-            TargetPlatform.XboxScarlett,
-            TargetPlatform.Android,
-        };
+        public TargetPlatform[] Platforms = Globals.AllPlatforms;
 
         /// <summary>
         /// The target platform architectures.
         /// </summary>
-        public TargetArchitecture[] Architectures =
-        {
-            TargetArchitecture.x64,
-            TargetArchitecture.x86,
-            TargetArchitecture.ARM,
-            TargetArchitecture.ARM64,
-        };
+        public TargetArchitecture[] Architectures = Globals.AllArchitectures;
 
         /// <summary>
         /// The target build configurations.
         /// </summary>
-        public TargetConfiguration[] Configurations =
-        {
-            TargetConfiguration.Debug,
-            TargetConfiguration.Development,
-            TargetConfiguration.Release,
-        };
+        public TargetConfiguration[] Configurations = Globals.AllConfigurations;
 
         /// <summary>
         /// The custom prefix for the target configuration. Null value indicates the project name as a prefix (or gathered from CustomExternalProjectFilePath).
