@@ -424,7 +424,7 @@ public:
             if (f._function != nullptr)
             {
                 f._callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings[i]._callee);
-                f(Forward<Params>(params)...);
+                f._function(f._callee, Forward<Params>(params)...);
             }
         }
     }
