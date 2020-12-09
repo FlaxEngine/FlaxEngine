@@ -31,10 +31,21 @@ namespace Flax.Deploy
 
                 if (Configuration.DeployPlatforms)
                 {
-                    BuildPlatform(TargetPlatform.Linux, TargetArchitecture.x64);
-                    BuildPlatform(TargetPlatform.UWP, TargetArchitecture.x64);
-                    BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
-                    BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
+                    if (Configuration.BuildPlatforms == null || Configuration.BuildPlatforms.Length == 0)
+                    {
+                        BuildPlatform(TargetPlatform.Linux, TargetArchitecture.x64);
+                        BuildPlatform(TargetPlatform.UWP, TargetArchitecture.x64);
+                        BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
+                        BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
+                    }
+                    else
+                    {
+                        var architectures = Configuration.BuildArchitectures == null || Configuration.BuildArchitectures.Length == 0 ? Globals.AllArchitectures : Configuration.BuildArchitectures;
+                        foreach (var platform in Configuration.BuildPlatforms)
+                        {
+                            BuildPlatform(platform, architectures);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -115,9 +126,12 @@ namespace Flax.Deploy
 
             foreach (var architecture in architectures)
             {
-                FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Debug);
-                FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Development);
-                FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Release);
+                if (Platform.IsPlatformSupported(platform, architecture))
+                {
+                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Debug);
+                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Development);
+                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Release);
+                }
             }
 
             Deployment.Platforms.Package(platform);
