@@ -1,2 +1,0 @@
-# Ignore Git LFS for images to be used on web without pulling LFS
-* !filter !diff !merge text=auto
