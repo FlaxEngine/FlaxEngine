@@ -1,7 +1,7 @@
 <img align="left" src="Development/Images/Logo.png" width="100px"/>
 # Flax Engine
-[![VS Extension](https://img.shields.io/badge/vs-extension-green.svg)](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS)
-[![Discord](https://discordapp.com/api/guilds/437989205315158016/widget.png)](https://flaxengine.com/discord)
+<a href="https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS"><img src="https://img.shields.io/badge/vs-extension-green.svg"/></a>
+<a href="https://flaxengine.com/discord"><img src="https://discordapp.com/api/guilds/437989205315158016/widget.png"/></a>
 
 Flax Engine is a high quality modern 3D game engine written in C++ and C#.
 From stunning graphics to powerful scripts - Flax can give everything for your games. Designed for fast workflow with many ready to use features waiting for you right now. To learn more see the website ([www.flaxengine.com](https://flaxengine.com)).
@@ -17,9 +17,7 @@ This repository contains full source code of the Flax (excluding NDA-protected p
 
 # Flax plugin for Visual Studio
 
-Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source.
-
-This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
+Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source. This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
 
 # Screenshots
 
