@@ -238,11 +238,11 @@ namespace FlaxEditor.GUI
         public static void BuildEntriesDefault(Type type, List<Entry> entries, EnumDisplayAttribute.FormatMode formatMode = EnumDisplayAttribute.FormatMode.Default)
         {
             FieldInfo[] fields = type.GetFields();
-            entries.Capacity = fields.Length - 1;
+            entries.Capacity = Mathf.Max(fields.Length - 1, entries.Capacity);
             for (int i = 0; i < fields.Length; i++)
             {
                 var field = fields[i];
-                if (field.Name.Equals("value__"))
+                if (field.Name.Equals("value__", StringComparison.Ordinal))
                     continue;
 
                 var attributes = (Attribute[])field.GetCustomAttributes();
