@@ -13,6 +13,7 @@ This repository contains full source code of the Flax (excluding NDA-protected p
 * [Homepage](https://flaxengine.com)
 * [Dev Blog](https://flaxengine.com/blog)
 * [Documentation](https://docs.flaxengine.com)
+* [Forum](https://forum.flaxengine.com)
 * [Roadmap](https://trello.com/b/NQjLXRCP/flax-roadmap)
 
 # Flax plugin for Visual Studio
