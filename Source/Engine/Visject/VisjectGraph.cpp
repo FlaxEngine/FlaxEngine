@@ -690,6 +690,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         case PlatformType::XboxScarlett:
             boxId = 7;
             break;
+        case PlatformType::Android:
+            boxId = 8;
+            break;
         default: ;
         }
         value = tryGetValue(node->GetBox(node->GetBox(boxId)->HasConnection() ? boxId : 1), Value::Zero);
