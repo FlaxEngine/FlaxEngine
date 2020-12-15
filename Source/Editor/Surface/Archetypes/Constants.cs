@@ -19,13 +19,11 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private EnumComboBox _picker;
 
-            /// <inheritdoc />
             public EnumNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
             }
 
-            /// <inheritdoc />
             public override void OnValuesChanged()
             {
                 base.OnValuesChanged();
@@ -36,7 +34,6 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = new ScriptType(Values[0].GetType());
             }
 
-            /// <inheritdoc />
             public override void OnLoaded()
             {
                 base.OnLoaded();
@@ -66,7 +63,6 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = new ScriptType(type);
             }
 
-            /// <inheritdoc />
             public override void OnDestroy()
             {
                 _picker = null;

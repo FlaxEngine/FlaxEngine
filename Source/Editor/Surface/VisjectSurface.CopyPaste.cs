@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
@@ -15,6 +16,12 @@ namespace FlaxEditor.Surface
 {
     public partial class VisjectSurface
     {
+        private struct DataModelValue
+        {
+            public string EnumTypeName;
+            public object Value;
+        }
+
         private class DataModelBox
         {
             public int ID;
@@ -29,7 +36,7 @@ namespace FlaxEditor.Surface
             public uint ID;
             public float X;
             public float Y;
-            public object[] Values;
+            public DataModelValue[] Values;
             public DataModelBox[] Boxes;
         }
 
@@ -76,8 +83,21 @@ namespace FlaxEditor.Surface
                     ID = node.ID,
                     X = node.Location.X,
                     Y = node.Location.Y,
-                    Values = node.Values,
                 };
+                if (node.Values != null)
+                {
+                    dataModelNode.Values = new DataModelValue[node.Values.Length];
+                    for (int j = 0; j < node.Values.Length; j++)
+                    {
+                        var value = new DataModelValue
+                        {
+                            Value = node.Values[j],
+                        };
+                        if (value.Value != null && value.Value.GetType().IsEnum)
+                            value.EnumTypeName = value.Value.GetType().FullName;
+                        dataModelNode.Values[j] = value;
+                    }
+                }
 
                 if (node.Elements != null && node.Elements.Count > 0)
                 {
@@ -252,10 +272,18 @@ namespace FlaxEditor.Surface
                             // Copy and fix values (Json deserializes may output them in a different format)
                             for (int l = 0; l < node.Values.Length; l++)
                             {
-                                var src = nodeData.Values[l];
+                                var src = nodeData.Values[l].Value;
                                 var dst = node.Values[l];
 
-                                if (src is JToken token)
+                                if (nodeData.Values[l].EnumTypeName != null)
+                                {
+                                    var enumType = TypeUtils.GetManagedType(nodeData.Values[l].EnumTypeName);
+                                    if (enumType != null)
+                                    {
+                                        src = Enum.ToObject(enumType, src);
+                                    }
+                                }
+                                else if (src is JToken token)
                                 {
                                     if (dst is Vector2)
                                     {
