@@ -2,35 +2,11 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Core/Math/Vector3.h"
+#include "NavigationTypes.h"
 
 class Scene;
 
 #define NAV_MESH_PATH_MAX_SIZE 200
-
-/// <summary>
-/// The result information for navigation mesh queries.
-/// </summary>
-API_STRUCT() struct NavMeshHit
-{
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
-
-    /// <summary>
-    /// The hit point position.
-    /// </summary>
-    API_FIELD() Vector3 Position;
-
-    /// <summary>
-    /// The distance to hit point (from the query origin).
-    /// </summary>
-    API_FIELD() float Distance;
-
-    /// <summary>
-    /// The hit point normal vector.
-    /// </summary>
-    API_FIELD() Vector3 Normal;
-};
 
 /// <summary>
 /// The navigation service used for path finding and agents navigation system.
