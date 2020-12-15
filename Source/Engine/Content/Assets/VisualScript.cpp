@@ -1118,6 +1118,18 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Sequence
+    case 4:
+    {
+        const int32 count = (int32)node->Values[0];
+        for (int32 i = 0; i < count; i++)
+        {
+            boxBase = node->GetBox(i + 1);
+            if (boxBase->HasConnection())
+                eatBox(node, boxBase->FirstConnection());
+        }
+        break;
+    }
     }
 }
 
