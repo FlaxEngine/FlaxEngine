@@ -4,11 +4,12 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Vector3.h"
+#include "FlaxEngine.Gen.h"
 
 /// <summary>
 /// The navigation system agent properties container for navmesh building and querying.
 /// </summary>
-API_STRUCT() struct NavAgentProperties
+API_STRUCT() struct FLAXENGINE_API NavAgentProperties
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 
@@ -36,7 +37,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 /// <summary>
 /// The result information for navigation mesh queries.
 /// </summary>
-API_STRUCT() struct NavMeshHit
+API_STRUCT() struct FLAXENGINE_API NavMeshHit
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 

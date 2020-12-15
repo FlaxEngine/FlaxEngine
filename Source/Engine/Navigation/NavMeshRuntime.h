@@ -49,7 +49,6 @@ public:
     /// <summary>
     /// Gets the size of the tile (in world-units). Returns zero if not initialized yet.
     /// </summary>
-    /// <returns>The tile size.</returns>
     FORCE_INLINE float GetTileSize() const
     {
         return _tileSize;
