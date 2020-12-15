@@ -25,6 +25,16 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                // Restore saved output boxes layout
+                var count = (int)Values[0];
+                for (int i = 0; i < count; i++)
+                    AddBox(true, i + 1, i, string.Empty, new ScriptType(typeof(void)), true);
+            }
+
             public override void OnSurfaceLoaded()
             {
                 base.OnSurfaceLoaded();
@@ -68,17 +78,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var count = (int)Values[0];
                 var countMin = 0;
-                var countMax = 16;
+                var countMax = 20;
                 for (int i = 0; i < count; i++)
-                {
-                    var box = GetBox(i + 1);
-                    box.Visible = true;
-                }
+                    AddBox(true, i + 1, i, string.Empty, new ScriptType(typeof(void)), true);
                 for (int i = count; i <= countMax; i++)
                 {
                     var box = GetBox(i + 1);
-                    box.RemoveConnections();
-                    box.Visible = false;
+                    if (box == null)
+                        break;
+                    RemoveElement(box);
                 }
 
                 _addButton.Enabled = count < countMax && Surface.CanEdit;
@@ -103,7 +111,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                // Restore saved input boxes layout
+                // Restore saved output boxes layout
                 if (Values[0] is byte[] data)
                 {
                     for (int i = 0; i < data.Length / 4; i++)
@@ -267,23 +275,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 1, true),
-                    NodeElementArchetype.Factory.Output(1, string.Empty, typeof(void), 2, true),
-                    NodeElementArchetype.Factory.Output(2, string.Empty, typeof(void), 3, true),
-                    NodeElementArchetype.Factory.Output(3, string.Empty, typeof(void), 4, true),
-                    NodeElementArchetype.Factory.Output(4, string.Empty, typeof(void), 5, true),
-                    NodeElementArchetype.Factory.Output(5, string.Empty, typeof(void), 6, true),
-                    NodeElementArchetype.Factory.Output(6, string.Empty, typeof(void), 7, true),
-                    NodeElementArchetype.Factory.Output(7, string.Empty, typeof(void), 8, true),
-                    NodeElementArchetype.Factory.Output(8, string.Empty, typeof(void), 9, true),
-                    NodeElementArchetype.Factory.Output(9, string.Empty, typeof(void), 10, true),
-                    NodeElementArchetype.Factory.Output(10, string.Empty, typeof(void), 11, true),
-                    NodeElementArchetype.Factory.Output(11, string.Empty, typeof(void), 12, true),
-                    NodeElementArchetype.Factory.Output(12, string.Empty, typeof(void), 13, true),
-                    NodeElementArchetype.Factory.Output(13, string.Empty, typeof(void), 14, true),
-                    NodeElementArchetype.Factory.Output(14, string.Empty, typeof(void), 15, true),
-                    NodeElementArchetype.Factory.Output(15, string.Empty, typeof(void), 16, true),
-                    NodeElementArchetype.Factory.Output(16, string.Empty, typeof(void), 17, true),
                 }
             },
             new NodeArchetype
