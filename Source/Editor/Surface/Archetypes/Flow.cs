@@ -1,5 +1,9 @@
 // Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
+using FlaxEditor.GUI;
+using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -84,6 +88,112 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _addButton.Location = new Vector2(Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX, Height - 20 - FlaxEditor.Surface.Constants.NodeMarginY - FlaxEditor.Surface.Constants.NodeFooterSize);
                 _removeButton.Location = new Vector2(_addButton.X - _removeButton.Width - 4, _addButton.Y);
+            }
+        }
+
+
+        private class BranchOnEnumNode : SurfaceNode
+        {
+            public BranchOnEnumNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                // Restore saved input boxes layout
+                if (Values[0] is byte[] data)
+                {
+                    for (int i = 0; i < data.Length / 4; i++)
+                        AddBox(true, i + 2, i, string.Empty, new ScriptType(typeof(void)), true);
+                }
+            }
+
+            public override void OnSurfaceLoaded()
+            {
+                base.OnSurfaceLoaded();
+
+                UpdateBoxes();
+                GetBox(1).CurrentTypeChanged += box => UpdateBoxes();
+            }
+
+            public override void ConnectionTick(Box box)
+            {
+                base.ConnectionTick(box);
+
+                UpdateBoxes();
+            }
+
+            private unsafe void UpdateBoxes()
+            {
+                var valueBox = (InputBox)GetBox(1);
+                const int firstBox = 2;
+                const int maxBoxes = 40;
+                bool isInvalid = false;
+                var data = Utils.GetEmptyArray<byte>();
+
+                if (valueBox.HasAnyConnection)
+                {
+                    var valueType = valueBox.CurrentType;
+                    if (valueType.IsEnum)
+                    {
+                        // Get enum entries
+                        var entries = new List<EnumComboBox.Entry>();
+                        EnumComboBox.BuildEntriesDefault(valueType.Type, entries);
+
+                        // Setup switch value inputs
+                        int id = firstBox;
+                        for (; id < entries.Count + firstBox; id++)
+                        {
+                            var e = entries[id - firstBox];
+                            var box = AddBox(true, id, id - firstBox, e.Name, new ScriptType(typeof(void)), true);
+                            if (!string.IsNullOrEmpty(e.Tooltip))
+                                box.TooltipText = e.Tooltip;
+                        }
+                        for (; id < maxBoxes; id++)
+                        {
+                            var box = GetBox(id);
+                            if (box == null)
+                                break;
+                            RemoveElement(box);
+                        }
+
+                        // Build data about enum entries values for the runtime
+                        if (Values[0] is byte[] dataPrev && dataPrev.Length == entries.Count * 4)
+                            data = dataPrev;
+                        else
+                            data = new byte[entries.Count * 4];
+                        fixed (byte* dataPtr = data)
+                        {
+                            int* dataValues = (int*)dataPtr;
+                            for (int i = 0; i < entries.Count; i++)
+                                dataValues[i] = entries[i].Value;
+                        }
+                    }
+                    else
+                    {
+                        // Not an enum
+                        isInvalid = true;
+                    }
+                }
+
+                if (isInvalid)
+                {
+                    // Remove input values boxes if switch value is unused
+                    for (int id = firstBox; id < maxBoxes; id++)
+                    {
+                        var box = GetBox(id);
+                        if (box == null)
+                            break;
+                        RemoveElement(box);
+                    }
+                }
+
+                Values[0] = data;
+
+                ResizeAuto();
             }
         }
 
@@ -174,6 +284,22 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(14, string.Empty, typeof(void), 15, true),
                     NodeElementArchetype.Factory.Output(15, string.Empty, typeof(void), 16, true),
                     NodeElementArchetype.Factory.Output(16, string.Empty, typeof(void), 17, true),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 5,
+                Title = "Branch On Enum",
+                Create = (id, context, arch, groupArch) => new BranchOnEnumNode(id, context, arch, groupArch),
+                Description = "Performs the flow logic branch based on the enum value",
+                Flags = NodeFlags.VisualScriptGraph,
+                Size = new Vector2(160, 60),
+                DefaultValues = new object[] { Utils.GetEmptyArray<byte>() },
+                ConnectionsHints = ConnectionsHint.Enum,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(1, "Value", true, null, 1),
                 }
             },
         };

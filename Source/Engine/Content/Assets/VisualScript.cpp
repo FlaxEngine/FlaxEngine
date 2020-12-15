@@ -1130,6 +1130,28 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Branch On Enum
+    case 5:
+    {
+        const Value v = tryGetValue(node->GetBox(1), Value::Null);
+        if (v.Type.Type == VariantType::Enum && node->Values.Count() == 1 && node->Values[0].Type.Type == VariantType::Blob)
+        {
+            int32* dataValues = (int32*)node->Values[0].AsBlob.Data;
+            int32 dataValuesCount = node->Values[0].AsBlob.Length / 4;
+            int32 vAsInt = (int32)v;
+            for (int32 i = 0; i < dataValuesCount; i++)
+            {
+                if (dataValues[i] == vAsInt)
+                {
+                    boxBase = node->GetBox(i + 2);
+                    if (boxBase->HasConnection())
+                        eatBox(node, boxBase->FirstConnection());
+                    break;
+                }
+            }
+        }
+        break;
+    }
     }
 }
 
