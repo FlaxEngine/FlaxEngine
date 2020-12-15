@@ -21,8 +21,12 @@ public:
     BytesContainer Data;
 };
 
-class FLAXENGINE_API NavMesh
+class NavMeshRuntime
 {
+public:
+
+    static NavMeshRuntime* Get();
+
 private:
 
     dtNavMesh* _navMesh;
@@ -32,14 +36,13 @@ private:
 
 public:
 
-    NavMesh();
-
-    ~NavMesh();
+    NavMeshRuntime();
+    ~NavMeshRuntime();
 
 public:
 
     /// <summary>
-    /// The NavMesh object locker.
+    /// The object locker.
     /// </summary>
     CriticalSection Locker;
 
@@ -110,7 +113,7 @@ public:
     /// </summary>
     /// <param name="prediction">The prediction callback, returns true for tiles to remove and false for tiles to preserve.</param>
     /// <param name="userData">The user data passed to the callback method.</param>
-    void RemoveTiles(bool (*prediction)(const NavMesh* navMesh, const NavMeshTile& tile, void* customData), void* userData);
+    void RemoveTiles(bool (*prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData);
 
     /// <summary>
     /// Releases the navmesh.

@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
 #include "NavigationScene.h"
-#include "NavMesh.h"
 #include "Navigation.h"
+#include "NavMeshRuntime.h"
 #include "NavMeshBoundsVolume.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -101,14 +101,14 @@ void NavigationScene::SaveNavMesh()
 
 void NavigationScene::OnEnable()
 {
-    auto navMesh = Navigation::GetNavMesh();
-    if (navMesh)
-        navMesh->AddTiles(this);
+    auto navMesh = NavMeshRuntime::Get();
+    CHECK(navMesh);
+    navMesh->AddTiles(this);
 }
 
 void NavigationScene::OnDisable()
 {
-    auto navMesh = Navigation::GetNavMesh();
+    auto navMesh = NavMeshRuntime::Get();
     if (navMesh)
         navMesh->RemoveTiles(this);
 }

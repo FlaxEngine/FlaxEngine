@@ -6,7 +6,6 @@
 #include "Engine/Core/Math/Vector3.h"
 
 class Scene;
-class NavMesh;
 
 #define NAV_MESH_PATH_MAX_SIZE 200
 
@@ -39,14 +38,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 API_CLASS(Static) class FLAXENGINE_API Navigation
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Navigation);
-public:
-
-    /// <summary>
-    /// Gets the navigation mesh (read-only). Use the other API to request data to use safe access to the navigation system.
-    /// </summary>
-    /// <returns>The navigation mesh.</returns>
-    static NavMesh* GetNavMesh();
-
 public:
 
     /// <summary>

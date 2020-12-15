@@ -18,9 +18,9 @@
 #include "NavigationScene.h"
 #include "NavigationSettings.h"
 #include "NavMeshBoundsVolume.h"
-#include "NavMesh.h"
 #include "NavLink.h"
 #include "Navigation.h"
+#include "NavMeshRuntime.h"
 #include <ThirdParty/recastnavigation/Recast.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshBuilder.h>
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
@@ -184,9 +184,9 @@ void RasterizeGeometry(const BoundingBox& tileBounds, rcContext* context, rcConf
 bool GetNavMeshTileBounds(NavigationScene* scene, int32 x, int32 y, float tileSize, BoundingBox& tileBounds)
 {
     // Build initial tile bounds (with infinite extent)
-    tileBounds.Minimum.X = x * tileSize;
+    tileBounds.Minimum.X = (float)x * tileSize;
     tileBounds.Minimum.Y = -NAV_MESH_TILE_MAX_EXTENT;
-    tileBounds.Minimum.Z = y * tileSize;
+    tileBounds.Minimum.Z = (float)y * tileSize;
     tileBounds.Maximum.X = tileBounds.Minimum.X + tileSize;
     tileBounds.Maximum.Y = NAV_MESH_TILE_MAX_EXTENT;
     tileBounds.Maximum.Z = tileBounds.Minimum.Z + tileSize;
@@ -224,7 +224,7 @@ bool GetNavMeshTileBounds(NavigationScene* scene, int32 x, int32 y, float tileSi
     return foundAnyVolume;
 }
 
-void RemoveTile(NavMesh* navMesh, NavigationScene* scene, int32 x, int32 y, int32 layer)
+void RemoveTile(NavMeshRuntime* navMesh, NavigationScene* scene, int32 x, int32 y, int32 layer)
 {
     ScopeLock lock(navMesh->Locker);
 
@@ -250,7 +250,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     int32 layer = 0;
 
     // Expand tile bounds by a certain margin
-    const float tileBorderSize = (1 + config.borderSize) * config.cs;
+    const float tileBorderSize = (1.0f + (float)config.borderSize) * config.cs;
     tileBounds.Minimum -= tileBorderSize;
     tileBounds.Maximum += tileBorderSize;
 
@@ -347,7 +347,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     rcFreeCompactHeightfield(compactHeightfield);
     rcFreeContourSet(contourSet);
 
-    for (int i = 0; i < polyMesh->npolys; ++i)
+    for (int i = 0; i < polyMesh->npolys; i++)
     {
         polyMesh->flags[i] = polyMesh->areas[i] == RC_WALKABLE_AREA ? 1 : 0;
     }
@@ -355,7 +355,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     if (polyMesh->nverts == 0)
     {
         // Empty tile
-        RemoveTile(Navigation::GetNavMesh(), scene, x, y, layer);
+        RemoveTile(NavMeshRuntime::Get(), scene, x, y, layer);
         return false;
     }
 
@@ -373,9 +373,9 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     params.detailVertsCount = detailMesh->nverts;
     params.detailTris = detailMesh->tris;
     params.detailTriCount = detailMesh->ntris;
-    params.walkableHeight = config.walkableHeight * config.ch;
-    params.walkableRadius = config.walkableRadius * config.cs;
-    params.walkableClimb = config.walkableClimb * config.ch;
+    params.walkableHeight = (float)config.walkableHeight * config.ch;
+    params.walkableRadius = (float)config.walkableRadius * config.cs;
+    params.walkableClimb = (float)config.walkableClimb * config.ch;
     params.tileX = x;
     params.tileY = y;
     params.tileLayer = layer;
@@ -438,7 +438,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     {
         PROFILE_CPU_NAMED("Navigation.CreateTile");
 
-        ScopeLock lock(Navigation::GetNavMesh()->Locker);
+        ScopeLock lock(NavMeshRuntime::Get()->Locker);
 
         // Add tile data
         scene->IsDataDirty = true;
@@ -451,7 +451,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
         tile.Data.Copy(navData, navDataSize);
 
         // Add tile to navmesh
-        Navigation::GetNavMesh()->AddTile(scene, tile);
+        NavMeshRuntime::Get()->AddTile(scene, tile);
     }
 
     dtFree(navData);
@@ -635,7 +635,7 @@ void BuildTileAsync(NavigationScene* scene, int32 x, int32 y, rcConfig& config, 
 void BuildWholeScene(NavigationScene* scene)
 {
     const float tileSize = GetTileSize();
-    const auto navMesh = Navigation::GetNavMesh();
+    const auto navMesh = NavMeshRuntime::Get();
 
     // Compute total navigation area bounds
     const BoundingBox worldBounds = scene->GetNavigationBounds();
@@ -674,9 +674,9 @@ void BuildWholeScene(NavigationScene* scene)
     {
         PROFILE_CPU_NAMED("StartBuildingTiles");
 
-        for (int32 y = tilesMin.Z; y < tilesMax.Z; y ++)
+        for (int32 y = tilesMin.Z; y < tilesMax.Z; y++)
         {
-            for (int32 x = tilesMin.X; x < tilesMax.X; x ++)
+            for (int32 x = tilesMin.X; x < tilesMax.X; x++)
             {
                 BoundingBox tileBounds;
                 if (GetNavMeshTileBounds(scene, x, y, tileSize, tileBounds))
@@ -695,7 +695,7 @@ void BuildWholeScene(NavigationScene* scene)
 void BuildDirtyBounds(NavigationScene* scene, const BoundingBox& dirtyBounds)
 {
     const float tileSize = GetTileSize();
-    const auto navMesh = Navigation::GetNavMesh();
+    const auto navMesh = NavMeshRuntime::Get();
 
     // Align dirty bounds to tile size
     BoundingBox dirtyBoundsAligned;
@@ -739,9 +739,9 @@ void BuildDirtyBounds(NavigationScene* scene, const BoundingBox& dirtyBounds)
     {
         PROFILE_CPU_NAMED("StartBuildingTiles");
 
-        for (int32 y = tilesMin.Z; y < tilesMax.Z; y ++)
+        for (int32 y = tilesMin.Z; y < tilesMax.Z; y++)
         {
-            for (int32 x = tilesMin.X; x < tilesMax.X; x ++)
+            for (int32 x = tilesMin.X; x < tilesMax.X; x++)
             {
                 BoundingBox tileBounds;
                 if (GetNavMeshTileBounds(scene, x, y, tileSize, tileBounds))

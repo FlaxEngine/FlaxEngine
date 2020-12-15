@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
-#include "NavMesh.h"
-#include "Engine/Core/Log.h"
+#include "NavMeshRuntime.h"
 #include "NavigationScene.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
@@ -12,25 +12,25 @@
 #define USE_DATA_LINK 0
 #define USE_NAV_MESH_ALLOC 1
 
-NavMesh::NavMesh()
+NavMeshRuntime::NavMeshRuntime()
 {
     _navMesh = nullptr;
     _navMeshQuery = dtAllocNavMeshQuery();
     _tileSize = 0;
 }
 
-NavMesh::~NavMesh()
+NavMeshRuntime::~NavMeshRuntime()
 {
     dtFreeNavMesh(_navMesh);
     dtFreeNavMeshQuery(_navMeshQuery);
 }
 
-int32 NavMesh::GetTilesCapacity() const
+int32 NavMeshRuntime::GetTilesCapacity() const
 {
     return _navMesh ? _navMesh->getMaxTiles() : 0;
 }
 
-void NavMesh::SetTileSize(float tileSize)
+void NavMeshRuntime::SetTileSize(float tileSize)
 {
     ScopeLock lock(Locker);
 
@@ -49,7 +49,7 @@ void NavMesh::SetTileSize(float tileSize)
     _tileSize = tileSize;
 }
 
-void NavMesh::EnsureCapacity(int32 tilesToAddCount)
+void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
 {
     ScopeLock lock(Locker);
 
@@ -58,7 +58,7 @@ void NavMesh::EnsureCapacity(int32 tilesToAddCount)
     if (newTilesCount <= capacity)
         return;
 
-    PROFILE_CPU_NAMED("NavMesh.EnsureCapacity");
+    PROFILE_CPU_NAMED("NavMeshRuntime.EnsureCapacity");
 
     // Navmesh tiles capacity growing rule
     int32 newCapacity = 0;
@@ -132,7 +132,7 @@ void NavMesh::EnsureCapacity(int32 tilesToAddCount)
     }
 }
 
-void NavMesh::AddTiles(NavigationScene* scene)
+void NavMeshRuntime::AddTiles(NavigationScene* scene)
 {
     // Skip if no data
     ASSERT(scene);
@@ -140,7 +140,7 @@ void NavMesh::AddTiles(NavigationScene* scene)
         return;
     auto& data = scene->Data;
 
-    PROFILE_CPU_NAMED("NavMesh.AddTiles");
+    PROFILE_CPU_NAMED("NavMeshRuntime.AddTiles");
 
     ScopeLock lock(Locker);
 
@@ -168,12 +168,12 @@ void NavMesh::AddTiles(NavigationScene* scene)
     }
 }
 
-void NavMesh::AddTile(NavigationScene* scene, NavMeshTileData& tileData)
+void NavMeshRuntime::AddTile(NavigationScene* scene, NavMeshTileData& tileData)
 {
     ASSERT(scene);
     auto& data = scene->Data;
 
-    PROFILE_CPU_NAMED("NavMesh.AddTile");
+    PROFILE_CPU_NAMED("NavMeshRuntime.AddTile");
 
     ScopeLock lock(Locker);
 
@@ -198,17 +198,17 @@ void NavMesh::AddTile(NavigationScene* scene, NavMeshTileData& tileData)
     AddTileInternal(scene, tileData);
 }
 
-bool IsTileFromScene(const NavMesh* navMesh, const NavMeshTile& tile, void* customData)
+bool IsTileFromScene(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData)
 {
     return tile.Scene == (NavigationScene*)customData;
 }
 
-void NavMesh::RemoveTiles(NavigationScene* scene)
+void NavMeshRuntime::RemoveTiles(NavigationScene* scene)
 {
     RemoveTiles(IsTileFromScene, scene);
 }
 
-void NavMesh::RemoveTile(int32 x, int32 y, int32 layer)
+void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
 {
     ScopeLock lock(Locker);
 
@@ -216,7 +216,7 @@ void NavMesh::RemoveTile(int32 x, int32 y, int32 layer)
     if (!_navMesh)
         return;
 
-    PROFILE_CPU_NAMED("NavMesh.RemoveTile");
+    PROFILE_CPU_NAMED("NavMeshRuntime.RemoveTile");
 
     const auto tileRef = _navMesh->getTileRefAt(x, y, layer);
     if (tileRef == 0)
@@ -240,7 +240,7 @@ void NavMesh::RemoveTile(int32 x, int32 y, int32 layer)
     }
 }
 
-void NavMesh::RemoveTiles(bool (* prediction)(const NavMesh* navMesh, const NavMeshTile& tile, void* customData), void* userData)
+void NavMeshRuntime::RemoveTiles(bool (* prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData)
 {
     ScopeLock lock(Locker);
 
@@ -249,7 +249,7 @@ void NavMesh::RemoveTiles(bool (* prediction)(const NavMesh* navMesh, const NavM
     if (!_navMesh)
         return;
 
-    PROFILE_CPU_NAMED("NavMesh.RemoveTiles");
+    PROFILE_CPU_NAMED("NavMeshRuntime.RemoveTiles");
 
     for (int32 i = 0; i < _tiles.Count(); i++)
     {
@@ -274,7 +274,7 @@ void NavMesh::RemoveTiles(bool (* prediction)(const NavMesh* navMesh, const NavM
     }
 }
 
-void NavMesh::Dispose()
+void NavMeshRuntime::Dispose()
 {
     if (_navMesh)
     {
@@ -284,7 +284,7 @@ void NavMesh::Dispose()
     _tiles.Resize(0);
 }
 
-void NavMesh::AddTileInternal(NavigationScene* scene, NavMeshTileData& tileData)
+void NavMeshRuntime::AddTileInternal(NavigationScene* scene, NavMeshTileData& tileData)
 {
     // Check if that tile has been added to navmesh
     NavMeshTile* tile = nullptr;

@@ -14,7 +14,6 @@ NavLink::NavLink(const SpawnParams& params)
 
 void NavLink::UpdateBounds()
 {
-    // Cache bounds
     const auto start = _transform.LocalToWorld(Start);
     const auto end = _transform.LocalToWorld(End);
     BoundingBox::FromPoints(start, end, _box);

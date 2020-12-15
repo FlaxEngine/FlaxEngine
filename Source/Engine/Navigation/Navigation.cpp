@@ -1,11 +1,12 @@
 // Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
 #include "Navigation.h"
+#include "NavMeshRuntime.h"
+#include "NavMeshBuilder.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/EngineService.h"
-#include "NavMeshBuilder.h"
-#include "NavMesh.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/recastnavigation/RecastAlloc.h>
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshQuery.h>
@@ -13,7 +14,15 @@
 #define DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL 50.0f
 #define DEFAULT_NAV_QUERY_EXTENT_VERTICAL 250.0f
 
-NavMesh* _navMesh = nullptr;
+namespace
+{
+    NavMeshRuntime* _navMesh;
+}
+
+NavMeshRuntime* NavMeshRuntime::Get()
+{
+    return ::_navMesh;
+}
 
 class NavigationService : public EngineService
 {
@@ -36,11 +45,6 @@ public:
 
 NavigationService NavigationServiceInstance;
 
-NavMesh* Navigation::GetNavMesh()
-{
-    return _navMesh;
-}
-
 void* dtAllocDefault(size_t size, dtAllocHint)
 {
     return Allocator::Allocate(size);
@@ -58,7 +62,7 @@ bool NavigationService::Init()
     rcAllocSetCustom(rcAllocDefault, Allocator::Free);
 
     // Create global nav mesh
-    _navMesh = New<NavMesh>();
+    _navMesh = New<NavMeshRuntime>();
 
     return false;
 }
