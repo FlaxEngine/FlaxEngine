@@ -3,8 +3,10 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Core/Types/String.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Vector3.h"
-#include "FlaxEngine.Gen.h"
+#include "Engine/Core/Math/Quaternion.h"
 
 /// <summary>
 /// The navigation system agent properties container for navmesh building and querying.
@@ -32,6 +34,34 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
     /// The maximum slope (in degrees) that is considered walkable for navigation. Agents can't go up or down slopes higher than this value.
     /// </summary>
     API_FIELD() float MaxSlopeAngle = 60.0f;
+};
+
+/// <summary>
+/// The navigation mesh properties container for navmesh building.
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API NavMeshProperties
+{
+DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
+
+    /// <summary>
+    /// The navmesh type name (for debugging).
+    /// </summary>
+    API_FIELD() String Name;
+
+    /// <summary>
+    /// The navmesh type color (for debugging).
+    /// </summary>
+    API_FIELD() Color Color;
+
+    /// <summary>
+    /// The navmesh rotation applied to navigation surface. Used during building to the rotate scene geometry and to revert back result during path finding queries. Can be used to generate navmesh on walls.
+    /// </summary>
+    API_FIELD() Quaternion Rotation;
+
+    /// <summary>
+    /// The properties of the agent used to generate walkable navigation surface.
+    /// </summary>
+    API_FIELD() NavAgentProperties Agent;
 };
 
 /// <summary>
