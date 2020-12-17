@@ -431,6 +431,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
         {
+            var useUnmanaged = classInfo.IsStatic || classInfo.IsScriptingObject;
             contents.AppendLine();
 
             // Namespace begin
@@ -446,7 +447,7 @@ namespace Flax.Build.Bindings
             GenerateCSharpComment(contents, indent, classInfo.Comment);
 
             // Class begin
-            GenerateCSharpAttributes(buildData, contents, indent, classInfo, true);
+            GenerateCSharpAttributes(buildData, contents, indent, classInfo, useUnmanaged);
             contents.Append(indent);
             if (classInfo.Access == AccessLevel.Public)
                 contents.Append("public ");
@@ -482,6 +483,9 @@ namespace Flax.Build.Bindings
             // Events
             foreach (var eventInfo in classInfo.Events)
             {
+                if (!useUnmanaged)
+                    throw new NotImplementedException("TODO: support events inside non-static and non-scripting API class types.");
+
                 contents.AppendLine();
 
                 foreach (var comment in eventInfo.Comment)
@@ -494,7 +498,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, eventInfo, true);
+                GenerateCSharpAttributes(buildData, contents, indent, eventInfo, useUnmanaged);
                 contents.Append(indent);
                 if (eventInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -593,7 +597,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, fieldInfo, true);
+                GenerateCSharpAttributes(buildData, contents, indent, fieldInfo, useUnmanaged);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -604,8 +608,13 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.IsStatic)
                     contents.Append("static ");
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
-                contents.Append(returnValueType).Append(' ').AppendLine(fieldInfo.Name);
-                contents.AppendLine(indent + "{");
+                contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
+                if (!useUnmanaged)
+                {
+                    contents.AppendLine(";");
+                    continue;
+                }
+                contents.AppendLine().AppendLine(indent + "{");
                 indent += "    ";
 
                 contents.Append(indent).Append("get { ");
@@ -615,7 +624,7 @@ namespace Flax.Build.Bindings
                 if (!fieldInfo.IsReadOnly)
                 {
                     contents.Append(indent).Append("set { ");
-                    GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, fieldInfo.Setter, true);
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, fieldInfo.Setter, useUnmanaged);
                     contents.Append(" }").AppendLine();
                 }
 
@@ -630,6 +639,9 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
+                if (!useUnmanaged)
+                    throw new NotImplementedException("TODO: support properties inside non-static and non-scripting API class types.");
+
                 contents.AppendLine();
 
                 foreach (var comment in propertyInfo.Comment)
@@ -646,7 +658,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, propertyInfo, true);
+                GenerateCSharpAttributes(buildData, contents, indent, propertyInfo, useUnmanaged);
                 contents.Append(indent);
                 if (propertyInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -692,6 +704,9 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in classInfo.Functions)
             {
+                if (!useUnmanaged)
+                    throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
+
                 if (!functionInfo.NoProxy)
                 {
                     contents.AppendLine();
