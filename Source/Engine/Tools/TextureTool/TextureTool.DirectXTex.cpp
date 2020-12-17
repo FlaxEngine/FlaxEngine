@@ -635,7 +635,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     {
         sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
-        for (int32 i = 0; i < currentImage->GetImageCount(); i++)
+        for (size_t i = 0; i < currentImage->GetImageCount(); i++)
             ((DirectX::Image*)currentImage->GetImages())[i].format = sourceDxgiFormat;
     }
 
