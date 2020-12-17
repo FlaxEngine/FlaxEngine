@@ -443,6 +443,23 @@ void PlatformBase::TrackAllocation(uint64 size)
 
 #endif
 
+void PlatformBase::GetEnvironmentVariables(Dictionary<String, String>& result)
+{
+    // Not supported
+}
+
+bool PlatformBase::GetEnvironmentVariable(const String& name, String& value)
+{
+    // Not supported
+    return true;
+}
+
+bool PlatformBase::SetEnvironmentVariable(const String& name, const String& value)
+{
+    // Not supported
+    return true;
+}
+
 int32 PlatformBase::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
 {
     // Not supported
