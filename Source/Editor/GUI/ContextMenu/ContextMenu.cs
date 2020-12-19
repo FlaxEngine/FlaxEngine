@@ -159,7 +159,7 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <summary>
         /// Sort all <see cref="ContextMenuButton"/> alphabetically.
         /// </summary>
-        /// <param name="force">Override <see cref="Autosort"/></param>
+        /// <param name="force">Override <see cref="AutoSort"/></param>
         public void SortButtons(bool force = false)
         {
             if (!_autosort && !force)
