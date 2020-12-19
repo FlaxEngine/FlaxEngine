@@ -193,41 +193,64 @@ namespace FlaxEditor.GUI
             if (!_window.IsMaximized)
             {
                 var winSize = RootWindow.Size * Platform.DpiScale;
-
-                if (pos.Y > winSize.Y - 5 && pos.X < 5)
+                /*
+                 * Distance from which the mouse is considered to be on the border/corner
+                 * You can change the distance by modifying the x value in : (int)(x * Platform.DpiScale)
+                 */
+                int distance = (int)(10 * Platform.DpiScale);
+                
+                if (pos.Y > winSize.Y - distance && pos.X < distance)
                     return WindowHitCodes.BottomLeft;
 
-                if (pos.X > winSize.X - 5 && pos.Y > winSize.Y - 5)
+                if (pos.X > winSize.X - distance && pos.Y > winSize.Y - distance)
                     return WindowHitCodes.BottomRight;
 
-                if (pos.Y < 5 && pos.X < 5)
+                if (pos.Y < distance && pos.X < distance)
                     return WindowHitCodes.TopLeft;
 
-                if (pos.Y < 5 && pos.X > winSize.X - 5)
+                if (pos.Y < distance && pos.X > winSize.X - distance)
                     return WindowHitCodes.TopRight;
 
-                if (pos.X > winSize.X - 5)
+                if (pos.X > winSize.X - distance)
                     return WindowHitCodes.Right;
 
-                if (pos.X < 5)
+                if (pos.X < distance)
                     return WindowHitCodes.Left;
 
-                if (pos.Y < 5)
+                if (pos.Y < distance)
                     return WindowHitCodes.Top;
 
-                if (pos.Y > winSize.Y - 5)
+                if (pos.Y > winSize.Y - distance)
                     return WindowHitCodes.Bottom;
             }
 
             var menuPos = PointFromWindow(pos);
             var controlUnderMouse = GetChildAt(menuPos);
             var isMouseOverSth = controlUnderMouse != null && controlUnderMouse != _title;
-            if (new Rectangle(Vector2.Zero, Size).Contains(ref menuPos) && !isMouseOverSth)
+            var rb = GetRightButton();
+            if (rb != null && _minimizeButton != null && new Rectangle(rb.UpperRight * Platform.DpiScale, (_minimizeButton.BottomLeft - rb.UpperRight) * Platform.DpiScale).Contains(ref menuPos) && !isMouseOverSth)
                 return WindowHitCodes.Caption;
 
             return WindowHitCodes.Client;
         }
 
+        /// <summary>
+        /// Return the rightmost button.
+        /// </summary>
+        /// <returns>Rightmost button, null if there is no <see cref="MainMenuButton"/></returns>
+        private MainMenuButton GetRightButton()
+        {
+            MainMenuButton b = null;
+            foreach (var control in Children)
+            {
+                if (b == null && control is MainMenuButton)
+                    b = (MainMenuButton)control;
+                if (control is MainMenuButton && control.Right > b.Right)
+                    b = (MainMenuButton)control;
+            }
+            return b;
+        }
+        
         /// <summary>
         /// Adds the button.
         /// </summary>
