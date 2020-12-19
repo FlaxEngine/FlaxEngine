@@ -286,11 +286,11 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 
     // Dynamic
     RenderToolsVulkan::ZeroStruct(_descDynamic, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-    _dynamicStates.Push(VK_DYNAMIC_STATE_VIEWPORT);
-    _dynamicStates.Push(VK_DYNAMIC_STATE_SCISSOR);
-    _dynamicStates.Push(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
-    _descDynamic.dynamicStateCount = _dynamicStates.Count();
-    _descDynamic.pDynamicStates = _dynamicStates.Get();
+    _descDynamic.pDynamicStates = _dynamicStates;
+    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
+    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
+    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
     // Multisample

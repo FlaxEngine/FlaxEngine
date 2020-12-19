@@ -15,6 +15,9 @@
 
 #if GRAPHICS_API_VULKAN
 
+#define VULKAN_DESCRIPTOR_TYPE_BEGIN VK_DESCRIPTOR_TYPE_SAMPLER
+#define VULKAN_DESCRIPTOR_TYPE_END VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT
+
 class GPUDeviceVulkan;
 class CmdBufferVulkan;
 class GPUContextVulkan;
@@ -110,7 +113,7 @@ public:
 
 protected:
 
-    uint32 LayoutTypes[VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT];
+    uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
     Array<SetLayout> SetLayouts;
 
     uint32 _hash = 0;
@@ -259,9 +262,9 @@ private:
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     const DescriptorSetLayoutVulkan& Layout;
 #else
-	int32 MaxAllocatedTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
-	int32 NumAllocatedTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
-	int32 PeakAllocatedTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+	int32 MaxAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
+	int32 NumAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
+	int32 PeakAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
 #endif
 
 public:
@@ -291,7 +294,7 @@ public:
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         return MaxDescriptorSets > NumAllocatedDescriptorSets + layout.GetLayouts().Count();
 #else
-		for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex < VK_DESCRIPTOR_TYPE_END_RANGE; typeIndex++)
+		for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
 		{
 			if (NumAllocatedTypes[typeIndex] + (int32)layout.GetTypesUsed((VkDescriptorType)typeIndex) > MaxAllocatedTypes[typeIndex])
 			{

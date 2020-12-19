@@ -131,7 +131,7 @@ private:
     VkPipelineTessellationStateCreateInfo _descTessellation;
     VkPipelineViewportStateCreateInfo _descViewport;
     VkPipelineDynamicStateCreateInfo _descDynamic;
-    Array<VkDynamicState> _dynamicStates;
+    VkDynamicState _dynamicStates[3];
     VkPipelineMultisampleStateCreateInfo _descMultisample;
     VkPipelineDepthStencilStateCreateInfo _descDepthStencil;
     VkPipelineRasterizationStateCreateInfo _descRasterization;
