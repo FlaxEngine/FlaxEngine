@@ -115,7 +115,7 @@ void DescriptorSetLayoutVulkan::Compile()
 
     // Check for maxDescriptorSetStorageBuffersDynamic
     if (LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] > limits.maxDescriptorSetUniformBuffersDynamic)
-    {
+    { 
         // TODO: Downgrade to non-dynamic?
     }
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC]
@@ -172,7 +172,7 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device)
     , Layout(layout)
 #endif
 {
-    Array<VkDescriptorPoolSize, FixedAllocation<VK_DESCRIPTOR_TYPE_RANGE_SIZE>> types;
+    Array<VkDescriptorPoolSize, FixedAllocation<VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT>> types;
 
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     // Max number of descriptor sets layout allocations
@@ -183,7 +183,7 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device)
     // In the latter case we'll be probably overallocating the descriptor types but given the relatively small number of max allocations this should not have
     // a serious impact.
     MaxDescriptorSets = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? 1 : Layout.GetLayouts().Count());
-    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex < VK_DESCRIPTOR_TYPE_END_RANGE; ++typeIndex)
+    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_SAMPLER; typeIndex < VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1; ++typeIndex)
     {
         const VkDescriptorType descriptorType = (VkDescriptorType)typeIndex;
         const uint32 typesUsed = Layout.GetTypesUsed(descriptorType);
@@ -258,7 +258,7 @@ DescriptorPoolVulkan::~DescriptorPoolVulkan()
 void DescriptorPoolVulkan::TrackAddUsage(const DescriptorSetLayoutVulkan& layout)
 {
     // Check and increment our current type usage
-    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex < VK_DESCRIPTOR_TYPE_END_RANGE; typeIndex++)
+    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_SAMPLER; typeIndex < VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1; typeIndex++)
     {
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         ASSERT(Layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
@@ -275,7 +275,7 @@ void DescriptorPoolVulkan::TrackAddUsage(const DescriptorSetLayoutVulkan& layout
 void DescriptorPoolVulkan::TrackRemoveUsage(const DescriptorSetLayoutVulkan& layout)
 {
     // Check and increment our current type usage
-    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex < VK_DESCRIPTOR_TYPE_END_RANGE; typeIndex++)
+    for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_SAMPLER; typeIndex < VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1; typeIndex++)
     {
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         ASSERT(Layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
