@@ -244,7 +244,9 @@ String RenderToolsVulkan::GetVkErrorString(VkResult result)
     VKERR(VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT);
     VKERR(VK_ERROR_FRAGMENTATION_EXT);
     VKERR(VK_ERROR_NOT_PERMITTED_EXT);
+#if VK_HEADER_VERSION < 140
     VKERR(VK_RESULT_RANGE_SIZE);
+#endif
     default:
         sb.AppendFormat(TEXT("0x{0:x}"), static_cast<uint32>(result));
         break;
