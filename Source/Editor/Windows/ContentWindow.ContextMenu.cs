@@ -139,6 +139,7 @@ namespace FlaxEditor.Windows
 
             c = cm.AddChildMenu("New");
             c.ContextMenu.Tag = item;
+            c.ContextMenu.AutoSort = true;
             int newItems = 0;
             for (int i = 0; i < Editor.ContentDatabase.Proxy.Count; i++)
             {
