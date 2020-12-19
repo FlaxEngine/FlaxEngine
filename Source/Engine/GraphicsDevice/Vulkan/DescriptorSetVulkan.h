@@ -110,7 +110,7 @@ public:
 
 protected:
 
-    uint32 LayoutTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+    uint32 LayoutTypes[VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT];
     Array<SetLayout> SetLayouts;
 
     uint32 _hash = 0;
