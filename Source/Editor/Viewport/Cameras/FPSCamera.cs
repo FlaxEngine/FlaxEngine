@@ -160,8 +160,8 @@ namespace FlaxEditor.Viewport.Cameras
             if (IsAnimatingMove)
                 return;
 
-            EditorViewport.Input input;
-            Viewport.GetInput(out input);
+            Viewport.GetInput(out var input);
+            Viewport.GetPrevInput(out var prevInput);
             var mainViewport = Viewport as MainEditorGizmoViewport;
             bool isUsingGizmo = mainViewport != null && mainViewport.TransformGizmo.ActiveAxis != TransformGizmo.Axis.None;
 
@@ -202,7 +202,7 @@ namespace FlaxEditor.Viewport.Cameras
             }
 
             // Rotate or orbit
-            if (input.IsRotating || (input.IsOrbiting && !isUsingGizmo))
+            if (input.IsRotating || (input.IsOrbiting && !isUsingGizmo && prevInput.IsOrbiting))
             {
                 yaw += mouseDelta.X;
                 pitch += mouseDelta.Y;
