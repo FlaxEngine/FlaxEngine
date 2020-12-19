@@ -123,6 +123,25 @@ namespace FlaxEditor.GUI.ContextMenu
         public Panel ItemsContainer => _panel;
 
         /// <summary>
+        /// The auto sort.
+        /// </summary>
+        private bool _autosort;
+
+        /// <summary>
+        /// The auto sort property.
+        /// </summary>
+        public bool AutoSort
+        {
+            get => _autosort;
+            set
+            {
+                _autosort = value;
+                if (_autosort)
+                    SortButtons();
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenu"/> class.
         /// </summary>
         public ContextMenu()
@@ -135,6 +154,24 @@ namespace FlaxEditor.GUI.ContextMenu
                 ClipChildren = false,
                 Parent = this,
             };
+        }
+
+        /// <summary>
+        /// Sort all <see cref="ContextMenuButton"/> alphabetically.
+        /// </summary>
+        /// <param name="force">Override <see cref="Autosort"/></param>
+        public void SortButtons(bool force = false)
+        {
+            if (!_autosort && !force)
+                return;
+            _panel.Children.Sort(((control, control1) =>
+                                     {
+                                         if (control is ContextMenuButton cmb && control1 is ContextMenuButton cmb1)
+                                             return String.Compare(cmb.Text, cmb1.Text, StringComparison.OrdinalIgnoreCase);
+                                         if (!(control is ContextMenuButton))
+                                             return (1);
+                                         return (-1);
+                                     }));
         }
 
         /// <summary>
@@ -158,6 +195,7 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             var item = new ContextMenuButton(this, text);
             item.Parent = _panel;
+            SortButtons();
             return item;
         }
 
@@ -171,6 +209,7 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             var item = new ContextMenuButton(this, text, shortKeys);
             item.Parent = _panel;
+            SortButtons();
             return item;
         }
 
@@ -185,6 +224,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var item = new ContextMenuButton(this, text);
             item.Parent = _panel;
             item.Clicked += clicked;
+            SortButtons();
             return item;
         }
 
@@ -199,6 +239,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var item = new ContextMenuButton(this, text);
             item.Parent = _panel;
             item.ButtonClicked += clicked;
+            SortButtons();
             return item;
         }
 
@@ -214,6 +255,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var item = new ContextMenuButton(this, text, shortKeys);
             item.Parent = _panel;
             item.Clicked += clicked;
+            SortButtons();
             return item;
         }
 
