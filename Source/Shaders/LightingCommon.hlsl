@@ -47,8 +47,8 @@ struct LightingData
 // WorldLightVector is the vector from the position being shaded to the light, divided by the radius of the light. 
 float RadialAttenuation(float3 worldLightVector, half falloffExponent)
 {
-	float normalizeDistanceSquared = dot(worldLightVector, worldLightVector);
-	return pow(1.0f - saturate(normalizeDistanceSquared), falloffExponent); 
+	float t = dot(worldLightVector, worldLightVector);
+	return pow(1.0f - saturate(t), falloffExponent); 
 }
 
 // Calculates attenuation for a spot light. Where L normalize vector to light.

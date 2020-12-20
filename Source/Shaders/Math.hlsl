@@ -5,8 +5,8 @@
 
 uint NextPow2(uint value)
 {
-    uint mask = (1 << firstbithigh(value)) - 1;
-    return (value + mask) & ~mask;
+	uint mask = (1 << firstbithigh(value)) - 1;
+	return (value + mask) & ~mask;
 }
 
 float3 SafeNormalize(float3 v)
@@ -17,7 +17,6 @@ float3 SafeNormalize(float3 v)
 float3 ExtractLargestComponent(float3 v)
 {
 	float3 a = abs(v);
-
 	if (a.x > a.y)
 	{
 		if (a.x > a.z)
@@ -32,161 +31,160 @@ float3 ExtractLargestComponent(float3 v)
 			return float3(0, v.y > 0 ? 1 : -1, 0);
 		}
 	}
-
 	return float3(0, 0, v.z > 0 ? 1 : -1);
 }
 
 float Square(float x)
 {
-	return x*x;
+	return x * x;
 }
 
 float2 Square(float2 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float3 Square(float3 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float4 Square(float4 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float Pow2(float x)
 {
-	return x*x;
+	return x * x;
 }
 
 float2 Pow2(float2 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float3 Pow2(float3 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float4 Pow2(float4 x)
 {
-	return x*x;
+	return x * x;
 }
 
 float Pow3(float x)
 {
-	return x*x*x;
+	return x * x * x;
 }
 
 float2 Pow3(float2 x)
 {
-	return x*x*x;
+	return x * x * x;
 }
 
 float3 Pow3(float3 x)
 {
-	return x*x*x;
+	return x * x * x;
 }
 
 float4 Pow3(float4 x)
 {
-	return x*x*x;
+	return x * x * x;
 }
 
 float Pow4(float x)
 {
-	float xx = x*x;
+	float xx = x * x;
 	return xx * xx;
 }
 
 float2 Pow4(float2 x)
 {
-	float2 xx = x*x;
+	float2 xx = x * x;
 	return xx * xx;
 }
 
 float3 Pow4(float3 x)
 {
-	float3 xx = x*x;
+	float3 xx = x * x;
 	return xx * xx;
 }
 
 float4 Pow4(float4 x)
 {
-	float4 xx = x*x;
+	float4 xx = x * x;
 	return xx * xx;
 }
 
 float Pow5(float x)
 {
-	float xx = x*x;
+	float xx = x * x;
 	return xx * xx * x;
 }
 
 float2 Pow5(float2 x)
 {
-	float2 xx = x*x;
+	float2 xx = x * x;
 	return xx * xx * x;
 }
 
 float3 Pow5(float3 x)
 {
-	float3 xx = x*x;
+	float3 xx = x * x;
 	return xx * xx * x;
 }
 
 float4 Pow5(float4 x)
 {
-	float4 xx = x*x;
+	float4 xx = x * x;
 	return xx * xx * x;
 }
 
 float Pow6(float x)
 {
-	float xx = x*x;
+	float xx = x * x;
 	return xx * xx * xx;
 }
 
 float2 Pow6(float2 x)
 {
-	float2 xx = x*x;
+	float2 xx = x * x;
 	return xx * xx * xx;
 }
 
 float3 Pow6(float3 x)
 {
-	float3 xx = x*x;
+	float3 xx = x * x;
 	return xx * xx * xx;
 }
 
 float4 Pow6(float4 x)
 {
-	float4 xx = x*x;
+	float4 xx = x * x;
 	return xx * xx * xx;
 }
 
-float ClampedPow(float x,float y)
+float ClampedPow(float x, float y)
 {
-	return pow(max(abs(x), 0.000001f),y);
+	return pow(max(abs(x), 0.000001f), y);
 }
 
-float2 ClampedPow(float2 x,float2 y)
+float2 ClampedPow(float2 x, float2 y)
 {
 	return pow(max(abs(x), float2(0.000001f, 0.000001f)), y);
 }
 
-float3 ClampedPow(float3 x,float3 y)
+float3 ClampedPow(float3 x, float3 y)
 {
 	return pow(max(abs(x), float3(0.000001f, 0.000001f, 0.000001f)), y);
-}  
+}
 
-float4 ClampedPow(float4 x,float4 y)
+float4 ClampedPow(float4 x, float4 y)
 {
 	return pow(max(abs(x), float4(0.000001f, 0.000001f, 0.000001f, 0.000001f)), y);
-} 
+}
 
 float4 FindQuatBetween(float3 from, float3 to)
 {
@@ -208,8 +206,8 @@ float4 FindQuatBetween(float3 from, float3 to)
 	{
 		w = 0.f;
 		result = abs(from.x) > abs(from.y)
-				? float4(-from.z, 0.f, from.x, w)
-				: float4(0.f, -from.z, from.y, w);
+			         ? float4(-from.z, 0.f, from.x, w)
+			         : float4(0.f, -from.z, from.y, w);
 	}
 
 	return normalize(result);
@@ -218,23 +216,13 @@ float4 FindQuatBetween(float3 from, float3 to)
 // Rotates Position about the given axis by the given angle, in radians, and returns the offset to position
 float3 RotateAboutAxis(float4 normalizedRotationAxisAndAngle, float3 positionOnAxis, float3 position)
 {
-    // Project position onto the rotation axis and find the closest point on the axis to Position
-    float3 closestPointOnAxis = positionOnAxis + normalizedRotationAxisAndAngle.xyz * dot(normalizedRotationAxisAndAngle.xyz, position - positionOnAxis);
-
-    // Construct orthogonal axes in the plane of the rotation
-    float3 axisU = position - closestPointOnAxis;
-    float3 axisV = cross(normalizedRotationAxisAndAngle.xyz, axisU);
-    float cosAngle, sinAngle;
-    sincos(normalizedRotationAxisAndAngle.w, sinAngle, cosAngle);
-
-    // Rotate using the orthogonal axes
-    float3 rotation = axisU * cosAngle + axisV * sinAngle;
-
-    // Reconstruct the rotated world space position
-    float3 rotatedPosition = closestPointOnAxis + rotation;
-
-    // Convert from position to a position offset
-    return rotatedPosition - position;
+	float3 pointOnAxis = positionOnAxis + normalizedRotationAxisAndAngle.xyz * dot(normalizedRotationAxisAndAngle.xyz, position - positionOnAxis);
+	float3 axisU = position - pointOnAxis;
+	float3 axisV = cross(normalizedRotationAxisAndAngle.xyz, axisU);
+	float cosAngle, sinAngle;
+	sincos(normalizedRotationAxisAndAngle.w, sinAngle, cosAngle);
+	float3 rotation = axisU * cosAngle + axisV * sinAngle;
+	return pointOnAxis + rotation - position;
 }
 
 #endif

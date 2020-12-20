@@ -107,7 +107,6 @@ half3 ColorLookupTable(half3 linearColor)
 {
 	// Move from linear color to encoded LUT color space
 	//float3 encodedColor = linearColor; // Default
-	//float3 encodedColor = saturate(LinearToLogC(linearColor)); // LogC
 	float3 encodedColor = LinearToLog(linearColor + LogToLinear(0)); // Log
 
 	float3 uvw = encodedColor * ((LUTSize - 1) / LUTSize) + (0.5f / LUTSize);

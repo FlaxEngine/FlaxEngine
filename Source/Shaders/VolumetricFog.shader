@@ -103,30 +103,12 @@ float3 ComputeVolumeUV(float3 worldPosition, float4x4 worldToClip)
 	return float3(ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f, ComputeNormalizedZSliceFromDepth(ndcPosition.w));
 }
 
-float IsotropicPhase()
-{
-	return 1 / (4 * PI);
-}
-
 float HenyeyGreensteinPhase(float g, float cosTheta)
 {
 	return (1 - g * g) / (4 * PI * pow(1 + g * g + 2 * g * cosTheta, 1.5f));
 }
 
-float SchlickPhase(float k, float cosTheta)
-{
-	float t = (1 + k * cosTheta);
-	return (1 - k * k) / (4 * PI * t * t);
-}
-
-float RaleighPhase(float cosTheta)
-{
-	return 3.0f * (1.0f + cosTheta * cosTheta) / (16.0f * PI);
-}
-
-// Positive g = forward scattering
-// Zero g = isotropic
-// Negative g = backward scattering
+// +g = forward scattering, 0=g = isotropic, -g = backward scattering
 float PhaseFunction(float g, float cosTheta)
 {
 	return HenyeyGreensteinPhase(g, cosTheta);

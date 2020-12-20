@@ -25,44 +25,42 @@ float4 SampleCubemap(float3 uv)
 	return Cube.SampleLevel(SamplerLinearClamp, uv, SourceMipIndex);
 }
 
-float3 GetCubemapVector(float2 scaledUVs)
+float3 GetCubemapVector(float2 uv)
 {
-	float3 cubeCoordinates;
-
+	float3 coords;
 	if (CubeFace == 0)
 	{
-		cubeCoordinates = float3(1, -scaledUVs.y, -scaledUVs.x);
+		coords = float3(1, -uv.y, -uv.x);
 	}
 	else if (CubeFace == 1)
 	{
-		cubeCoordinates = float3(-1, -scaledUVs.y, scaledUVs.x);
+		coords = float3(-1, -uv.y, uv.x);
 	}
 	else if (CubeFace == 2)
 	{
-		cubeCoordinates = float3(scaledUVs.x, 1, scaledUVs.y);
+		coords = float3(uv.x, 1, uv.y);
 	}
 	else if (CubeFace == 3)
 	{
-		cubeCoordinates = float3(scaledUVs.x, -1, -scaledUVs.y);
+		coords = float3(uv.x, -1, -uv.y);
 	}
 	else if (CubeFace == 4)
 	{
-		cubeCoordinates = float3(scaledUVs.x, -scaledUVs.y, 1);
+		coords = float3(uv.x, -uv.y, 1);
 	}
 	else
 	{
-		cubeCoordinates = float3(-scaledUVs.x, -scaledUVs.y, -1);
+		coords = float3(-uv.x, -uv.y, -1);
 	}
-
-	return cubeCoordinates;
+	return coords;
 }
 
 // Pixel Shader for filtring probe mip levels
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_FilterFace(Quad_VS2PS input) : SV_Target
 {
-	float2 scaledUVs = input.TexCoord * 2 - 1;
-	float3 cubeCoordinates = GetCubemapVector(scaledUVs);
+	float2 uv = input.TexCoord * 2 - 1;
+	float3 cubeCoordinates = GetCubemapVector(uv);
 
 	#define NUM_FILTER_SAMPLES 512
 
@@ -102,10 +100,9 @@ float4 PS_CopyFace(Quad_VS2PS input) : SV_Target
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_CalcDiffuseIrradiance(Quad_VS2PS input) : SV_Target
 {
-	float2 scaledUVs = input.TexCoord * 2 - 1;	
-	float3 cubeCoordinates = normalize(GetCubemapVector(scaledUVs));
-
-	float squaredUVs = 1 + dot(scaledUVs, scaledUVs);
+	float2 uv = input.TexCoord * 2 - 1;	
+	float3 cubeCoordinates = normalize(GetCubemapVector(uv));
+	float squaredUVs = 1 + dot(uv, uv);
 
 	// Dividing by NumSamples here to keep the sum in the range of fp16, once we get down to the 1x1 mip
 	float weight = 4 / (sqrt(squaredUVs) * squaredUVs);
@@ -124,23 +121,23 @@ float4 PS_AccDiffuseIrradiance(Quad_VS2PS input) : SV_Target
 {
 	float4 result = 0;
 	{
-		float2 scaledUVs = saturate(input.TexCoord + Sample01.xy) * 2 - 1;
-		float3 cubeCoordinates = GetCubemapVector(scaledUVs);
+		float2 uv = saturate(input.TexCoord + Sample01.xy) * 2 - 1;
+		float3 cubeCoordinates = GetCubemapVector(uv);
 		result += SampleCubemap(cubeCoordinates);
 	}
 	{
-		float2 scaledUVs = saturate(input.TexCoord + Sample01.zw) * 2 - 1;
-		float3 cubeCoordinates = GetCubemapVector(scaledUVs);
+		float2 uv = saturate(input.TexCoord + Sample01.zw) * 2 - 1;
+		float3 cubeCoordinates = GetCubemapVector(uv);
 		result += SampleCubemap(cubeCoordinates);
 	}
 	{
-		float2 scaledUVs = saturate(input.TexCoord + Sample23.xy) * 2 - 1;
-		float3 cubeCoordinates = GetCubemapVector(scaledUVs);
+		float2 uv = saturate(input.TexCoord + Sample23.xy) * 2 - 1;
+		float3 cubeCoordinates = GetCubemapVector(uv);
 		result += SampleCubemap(cubeCoordinates);
 	}
 	{
-		float2 scaledUVs = saturate(input.TexCoord + Sample23.zw) * 2 - 1;
-		float3 cubeCoordinates = GetCubemapVector(scaledUVs);
+		float2 uv = saturate(input.TexCoord + Sample23.zw) * 2 - 1;
+		float3 cubeCoordinates = GetCubemapVector(uv);
 		result += SampleCubemap(cubeCoordinates);
 	}
 	return result / 4.0f;

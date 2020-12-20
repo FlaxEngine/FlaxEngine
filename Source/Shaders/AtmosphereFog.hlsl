@@ -298,57 +298,6 @@ float3 inscatter(inout float3 x, inout float t, float3 v, float3 s, out float r,
 
     return result;
 }
-/*
-//ground radiance at end of ray x+tv, when sun in direction s
-//attenuated bewteen ground and viewer (=R[L0]+R[L*])
-float3 groundColor(float3 x, float t, float3 v, float3 s, float r, float mu, float3 attenuation)
-{
-    float3 result;
-    if (t > 0.0)
-	{
-		// if ray hits ground surface
-        // ground reflectance at end of ray, x0
-        float3 x0 = x + t * v;
-        float r0 = length(x0);
-        float3 n = x0 / r0;
-
-		float4 SceneColor = 0;
-		
-		SceneColor.xyz = saturate(SceneColor.xyz + 0.05);
-		
-		float4 Reflectance = SceneColor * float4(0.2, 0.2, 0.2, 1.0);
-		
-		if (r0 > RadiusGround + 0.01)
-		{
-			reflectance = float4(0.4, 0.4, 0.4, 0.0);
-        }
-		
-        // direct sun light (radiance) reaching x0
-        float muS = dot(n, s);
-        float3 sunLight = transmittanceWithShadow(r0, muS);
-		
-        // precomputed sky light (irradiance) (=E[L*]) at x0
-        float3 groundSkyLight = Irradiance(AtmosphereIrradianceTexture, r0, muS);
-		
-        // light reflected at x0 (=(R[L0]+R[L*])/T(x,x0))
-        float3 groundColor = reflectance.rgb * (max(muS, 0.0) * sunLight + groundSkyLight) * ISun / M_PI;
-
-        // water specular color due to sunLight
-        if (reflectance.w > 0.0)
-		{
-            float3 h = normalize(s - v);
-            float fresnel = 0.02 + 0.98 * pow(1.0 - dot(-v, h), 5.0);
-            float waterBrdf = fresnel * pow(max(dot(h, n), 0.0), 150.0);
-          groundColor += reflectance.w * max(waterBrdf, 0.0) * sunLight * ISun;
-        }
-
-        result = attenuation * groundColor; //=R[L0]+R[L*]
-    } else { // ray looking at the sky
-        result = 0.0;
-    }
-return result;
-}
-*/
 
 static const float EPSILON_ATMOSPHERE = 0.002f;
 static const float EPSILON_INSCATTER = 0.004f;
@@ -534,7 +483,7 @@ float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float
 	
 #if 1
 
-	// TODO: scale viewPosition from cm to km !!!!!!!
+	// TODO: scale viewPosition from cm to km
 	
 	float scale = 0.0001f * atmosphericFog.AtmosphericFogDistanceScale;
 	viewPosition.y = (viewPosition.y - atmosphericFog.AtmosphericFogGroundOffset) * atmosphericFog.AtmosphericFogAltitudeScale;

@@ -66,16 +66,16 @@ void GS_Atmosphere(triangle Quad_VS2PS input[3], inout TriangleStream<Atmosphere
 float OpticalDepth(float H, float radius, float Mu) 
 {
     float result = 0.0;
-    float Dx = Limit(radius, Mu) / float(TransmittanceIntegralSamples);
+    float Ti = Limit(radius, Mu) / float(TransmittanceIntegralSamples);
     float Xi = 0.0;
     float Yi = exp(-(radius - RadiusGround) / H);
 
 	LOOP
     for (int i = 1; i <= TransmittanceIntegralSamples; i++) 
 	{
-        float Xj = float(i) * Dx;
+        float Xj = float(i) * Ti;
         float Yj = exp(-(sqrt(radius * radius + Xj * Xj + 2.0 * Xj * radius * Mu) - RadiusGround) / H);
-        result += (Yi + Yj) / 2.0 * Dx;
+        result += (Yi + Yj) / 2.0 * Ti;
         Xi = Xj;
         Yi = Yj;
     }
@@ -221,8 +221,8 @@ void Inscatter(float Radius, float Mu, float MuS, float Nu, out float3 RayMie)
 	Radius = clamp(Radius, RadiusGround, RadiusAtmosphere);
 	Mu = clamp(Mu, -1.0, 1.0);
 	MuS = clamp(MuS, -1.0, 1.0);
-	float Variation = sqrt(1.0 - Mu * Mu) * sqrt(1.0 - MuS * MuS);
-	Nu = clamp(Nu, MuS * Mu - Variation, MuS * Mu + Variation);
+	float variation = sqrt(1.0 - Mu * Mu) * sqrt(1.0 - MuS * MuS);
+	Nu = clamp(Nu, MuS * Mu - variation, MuS * Mu + variation);
 
 	float cThetaMin = -sqrt(1.0 - (RadiusGround / Radius) * (RadiusGround / Radius));
 
@@ -358,7 +358,5 @@ float4 PS_Inscatter1_B(AtmosphereGSOutput input) : SV_Target
     float Mu, MuS, Nu;
     GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
     Inscatter(AtmosphereR, Mu, MuS, Nu, Ray, Mie);
-
-    // Store separately Rayleigh and Mie contributions, WITHOUT the phase function factor (cf "Angular precision")
     return float4(Mie, 1);
 }

@@ -60,18 +60,6 @@ void CS_GenerateHistogram(uint3 groupId : SV_GroupID, uint3 dispatchThreadId : S
 	if (dispatchThreadId.x < InputSize.x && dispatchThreadId.y < InputSize.y)
 	{
 		uint weight = 1u;
-
-		// Vignette weighting to add more focus on the center of the screen
-#if 0
-		{
-			float2 uv = float2(dispatchThreadId.xy) / float2(InputSize.x, InputSize.y);
-			float2 d = abs(uv - (0.5).xx);
-			float factor = saturate(1.0 - dot(d, d));
-			factor *= factor;
-			weight = (uint)(64.0 * factor);
-		}
-#endif
-
 		float3 color = Input[dispatchThreadId.xy].xyz;
 		float luminance = Luminance(color);
 		float logLuminance = ComputeHistogramPositionFromLuminance(luminance);
