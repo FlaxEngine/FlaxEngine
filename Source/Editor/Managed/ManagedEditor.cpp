@@ -98,7 +98,7 @@ void OnFinishBake(const ProbesRenderer::Entry& e)
 
 void OnBrushModified(CSG::Brush* brush)
 {
-    if (Editor::Managed->CanAutoBuildCSG())
+    if (brush && Editor::Managed && Editor::Managed->CanAutoBuildCSG())
     {
         CSG::Builder::Build(brush->GetBrushScene(), ManagedEditor::ManagedEditorOptions.AutoRebuildCSGTimeoutMs);
     }
