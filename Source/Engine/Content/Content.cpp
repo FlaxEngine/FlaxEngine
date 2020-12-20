@@ -574,7 +574,7 @@ bool Content::RenameAsset(const StringView& oldPath, const StringView& newPath)
     Asset* newAsset = GetAsset(newPath);
 
     // Validate name
-    if (newAsset != nullptr || FileSystem::FileExists(newPath))
+    if (newAsset != nullptr && newAsset != oldAsset)
     {
         LOG(Error, "Invalid name '{0}' when trying to rename '{1}'.", newPath, oldPath);
         return true;

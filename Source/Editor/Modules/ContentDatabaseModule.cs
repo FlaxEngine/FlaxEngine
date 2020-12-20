@@ -464,12 +464,6 @@ namespace FlaxEditor.Modules
                 MessageBox.Show("Cannot move folder. Target location already exists.");
                 return;
             }
-            if (!item.IsFolder && File.Exists(newPath))
-            {
-                // Error
-                MessageBox.Show("Cannot move file. Target location already exists.");
-                return;
-            }
 
             // Find target parent
             var newDirPath = Path.GetDirectoryName(newPath);
