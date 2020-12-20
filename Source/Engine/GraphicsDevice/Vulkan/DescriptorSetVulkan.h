@@ -9,9 +9,7 @@
 #include "IncludeVulkanHeaders.h"
 #include "Types.h"
 #include "Config.h"
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
 #include "Engine/Platform/CriticalSection.h"
-#endif
 
 #if GRAPHICS_API_VULKAN
 
@@ -42,7 +40,7 @@ namespace DescriptorSet
         Domain = 4,
 
         // Graphics pipeline stages count
-        NumGfxStages = 5,
+        GraphicsStagesCount = 5,
 
         // Compute pipeline slot
         Compute = 0,
@@ -113,48 +111,42 @@ public:
 
 protected:
 
-    uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
-    Array<SetLayout> SetLayouts;
-
+    uint32 _layoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
+    Array<SetLayout> _setLayouts;
     uint32 _hash = 0;
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     uint32 _typesUsageID = ~0;
 
     void CacheTypesUsageID();
-#endif
     void AddDescriptor(int32 descriptorSetIndex, const VkDescriptorSetLayoutBinding& descriptor);
 
 public:
 
     DescriptorSetLayoutInfoVulkan()
     {
-        Platform::MemoryClear(LayoutTypes, sizeof(LayoutTypes));
+        Platform::MemoryClear(_layoutTypes, sizeof(_layoutTypes));
     }
 
 public:
 
     inline uint32 GetTypesUsed(VkDescriptorType type) const
     {
-        return LayoutTypes[type];
+        return _layoutTypes[type];
     }
 
     const Array<SetLayout>& GetLayouts() const
     {
-        return SetLayouts;
+        return _setLayouts;
     }
 
     inline const uint32* GetLayoutTypes() const
     {
-        return LayoutTypes;
+        return _layoutTypes;
     }
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     inline uint32 GetTypesUsageID() const
     {
         return _typesUsageID;
     }
-#endif
 
 public:
 
@@ -162,40 +154,27 @@ public:
 
     void CopyFrom(const DescriptorSetLayoutInfoVulkan& info)
     {
-        Platform::MemoryCopy(LayoutTypes, info.LayoutTypes, sizeof(LayoutTypes));
+        Platform::MemoryCopy(_layoutTypes, info._layoutTypes, sizeof(_layoutTypes));
         _hash = info._hash;
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         _typesUsageID = info._typesUsageID;
-#endif
-        SetLayouts = info.SetLayouts;
+        _setLayouts = info._setLayouts;
     }
 
     inline bool operator ==(const DescriptorSetLayoutInfoVulkan& other) const
     {
-        if (other.SetLayouts.Count() != SetLayouts.Count())
-        {
+        if (other._setLayouts.Count() != _setLayouts.Count())
             return false;
-        }
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         if (other._typesUsageID != _typesUsageID)
-        {
             return false;
-        }
-#endif
 
-        for (int32 index = 0; index < other.SetLayouts.Count(); index++)
+        for (int32 index = 0; index < other._setLayouts.Count(); index++)
         {
-            const int32 numBindings = SetLayouts[index].LayoutBindings.Count();
-            if (other.SetLayouts[index].LayoutBindings.Count() != numBindings)
-            {
+            const int32 bindingsCount = _setLayouts[index].LayoutBindings.Count();
+            if (other._setLayouts[index].LayoutBindings.Count() != bindingsCount)
                 return false;
-            }
 
-            if (numBindings != 0 && Platform::MemoryCompare(other.SetLayouts[index].LayoutBindings.Get(), SetLayouts[index].LayoutBindings.Get(), numBindings * sizeof(VkDescriptorSetLayoutBinding)))
-            {
+            if (bindingsCount != 0 && Platform::MemoryCompare(other._setLayouts[index].LayoutBindings.Get(), _setLayouts[index].LayoutBindings.Get(), bindingsCount * sizeof(VkDescriptorSetLayoutBinding)))
                 return false;
-            }
         }
 
         return true;
@@ -217,9 +196,7 @@ private:
 
     GPUDeviceVulkan* _device;
     DescriptorSetLayoutHandlesArray _handles;
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     VkDescriptorSetAllocateInfo _allocateInfo;
-#endif
 
 public:
 
@@ -228,24 +205,22 @@ public:
 
 public:
 
-    void Compile();
-
     inline const DescriptorSetLayoutHandlesArray& GetHandles() const
     {
         return _handles;
     }
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     inline const VkDescriptorSetAllocateInfo& GetAllocateInfo() const
     {
         return _allocateInfo;
     }
-#endif
 
     friend inline uint32 GetHash(const DescriptorSetLayoutVulkan& key)
     {
         return key._hash;
     }
+
+    void Compile();
 };
 
 class DescriptorPoolVulkan
@@ -255,25 +230,15 @@ private:
     GPUDeviceVulkan* _device;
     VkDescriptorPool _handle;
 
-    uint32 MaxDescriptorSets;
-    uint32 NumAllocatedDescriptorSets;
-    uint32 PeakAllocatedDescriptorSets;
+    uint32 DescriptorSetsMax;
+    uint32 AllocatedDescriptorSetsCount;
+    uint32 AllocatedDescriptorSetsCountMax;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     const DescriptorSetLayoutVulkan& Layout;
-#else
-	int32 MaxAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
-	int32 NumAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
-	int32 PeakAllocatedTypes[VULKAN_DESCRIPTOR_TYPE_END];
-#endif
 
 public:
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     DescriptorPoolVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutVulkan& layout);
-#else
-	DescriptorPoolVulkan(GPUDeviceVulkan* device);
-#endif
 
     ~DescriptorPoolVulkan();
 
@@ -286,42 +251,27 @@ public:
 
     inline bool IsEmpty() const
     {
-        return NumAllocatedDescriptorSets == 0;
+        return AllocatedDescriptorSetsCount == 0;
     }
 
     inline bool CanAllocate(const DescriptorSetLayoutVulkan& layout) const
     {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-        return MaxDescriptorSets > NumAllocatedDescriptorSets + layout.GetLayouts().Count();
-#else
-		for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
-		{
-			if (NumAllocatedTypes[typeIndex] + (int32)layout.GetTypesUsed((VkDescriptorType)typeIndex) > MaxAllocatedTypes[typeIndex])
-			{
-				return false;
-			}
-		}
-		return true;
-#endif
+        return DescriptorSetsMax > AllocatedDescriptorSetsCount + layout.GetLayouts().Count();
+    }
+
+    inline uint32 GetAllocatedDescriptorSetsCount() const
+    {
+        return AllocatedDescriptorSetsCount;
     }
 
     void TrackAddUsage(const DescriptorSetLayoutVulkan& layout);
 
     void TrackRemoveUsage(const DescriptorSetLayoutVulkan& layout);
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     void Reset();
 
     bool AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& descriptorSetAllocateInfo, VkDescriptorSet* result);
-
-    inline uint32 GetNumAllocatedDescriptorSets() const
-    {
-        return NumAllocatedDescriptorSets;
-    }
-#endif
 };
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
 
 class DescriptorPoolSetContainerVulkan;
 
@@ -428,8 +378,6 @@ public:
     void GC();
 };
 
-#endif
-
 class PipelineLayoutVulkan
 {
 private:
@@ -479,115 +427,6 @@ struct DescriptorSetWriteContainerVulkan
     }
 };
 
-#if !VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-
-class DescriptorSetsVulkan
-{
-public:
-
-	typedef Array<VkDescriptorSet, FixedAllocation<DescriptorSet::NumGfxStages>> DescriptorSetArray;
-
-private:
-
-	GPUDeviceVulkan* _device;
-	DescriptorPoolVulkan* _pool;
-	const DescriptorSetLayoutVulkan* _layout;
-	DescriptorSetArray _sets;
-
-public:
-
-	DescriptorSetsVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutVulkan& layout, GPUContextVulkan* context);
-	~DescriptorSetsVulkan();
-
-public:
-
-	inline const DescriptorSetArray& GetHandles() const
-	{
-		return _sets;
-	}
-
-	inline void Bind(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout, VkPipelineBindPoint bindPoint, const Array<uint32>& dynamicOffsets) const
-	{
-		vkCmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0, _sets.Count(), _sets.Get(), dynamicOffsets.Count(), dynamicOffsets.Get());
-	}
-};
-
-class DescriptorSetRingBufferVulkan
-{
-private:
-
-	GPUDeviceVulkan* _device;
-	DescriptorSetsVulkan* _currDescriptorSets;
-
-	struct DescriptorSetsPair
-	{
-		uint64 FenceCounter;
-		DescriptorSetsVulkan* DescriptorSets;
-
-		DescriptorSetsPair()
-			: FenceCounter(0)
-			, DescriptorSets(nullptr)
-		{
-		}
-	};
-
-	struct DescriptorSetsEntry
-	{
-		CmdBufferVulkan* CmdBuffer;
-		Array<DescriptorSetsPair> Pairs;
-
-		DescriptorSetsEntry(CmdBufferVulkan* cmdBuffer)
-			: CmdBuffer(cmdBuffer)
-		{
-		}
-
-		~DescriptorSetsEntry()
-		{
-			for (auto& pair : Pairs)
-			{
-				Delete(pair.DescriptorSets);
-			}
-		}
-	};
-
-	Array<DescriptorSetsEntry*> DescriptorSetsEntries;
-
-public:
-
-	DescriptorSetRingBufferVulkan(GPUDeviceVulkan* device);
-
-	virtual ~DescriptorSetRingBufferVulkan()
-	{
-	}
-
-public:
-
-	void Reset()
-	{
-		_currDescriptorSets = nullptr;
-	}
-
-	void Release()
-	{
-		DescriptorSetsEntries.ClearDelete();
-	}
-
-	void Set(DescriptorSetsVulkan* newDescriptorSets)
-	{
-		_currDescriptorSets = newDescriptorSets;
-	}
-
-	inline void Bind(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout, VkPipelineBindPoint bindPoint, const Array<uint32>& dynamicOffsets)
-	{
-		ASSERT(_currDescriptorSets);
-		_currDescriptorSets->Bind(cmdBuffer, pipelineLayout, bindPoint, dynamicOffsets);
-	}
-
-	DescriptorSetsVulkan* RequestDescriptorSets(GPUContextVulkan* context, CmdBufferVulkan* cmdBuffer, const PipelineLayoutVulkan* layout);
-};
-
-#endif
-
 class DescriptorSetWriterVulkan
 {
 public:
@@ -595,7 +434,7 @@ public:
     VkWriteDescriptorSet* WriteDescriptors;
     uint8* BindingToDynamicOffsetMap;
     uint32* DynamicOffsets;
-    uint32 NumWrites;
+    uint32 WritesCount;
 
 public:
 
@@ -603,7 +442,7 @@ public:
         : WriteDescriptors(nullptr)
         , BindingToDynamicOffsetMap(nullptr)
         , DynamicOffsets(nullptr)
-        , NumWrites(0)
+        , WritesCount(0)
     {
     }
 
@@ -613,7 +452,7 @@ public:
 
     bool WriteUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         VkDescriptorBufferInfo* bufferInfo = const_cast<VkDescriptorBufferInfo*>(WriteDescriptors[descriptorIndex].pBufferInfo);
         ASSERT(bufferInfo);
@@ -625,7 +464,7 @@ public:
 
     bool WriteDynamicUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
         VkDescriptorBufferInfo* bufferInfo = const_cast<VkDescriptorBufferInfo*>(WriteDescriptors[descriptorIndex].pBufferInfo);
         ASSERT(bufferInfo);
@@ -639,7 +478,7 @@ public:
 
     bool WriteSampler(uint32 descriptorIndex, VkSampler sampler) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         VkDescriptorImageInfo* imageInfo = const_cast<VkDescriptorImageInfo*>(WriteDescriptors[descriptorIndex].pImageInfo);
         ASSERT(imageInfo);
@@ -649,7 +488,7 @@ public:
 
     bool WriteImage(uint32 descriptorIndex, VkImageView imageView, VkImageLayout layout) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         VkDescriptorImageInfo* imageInfo = const_cast<VkDescriptorImageInfo*>(WriteDescriptors[descriptorIndex].pImageInfo);
         ASSERT(imageInfo);
@@ -660,7 +499,7 @@ public:
 
     bool WriteStorageImage(uint32 descriptorIndex, VkImageView imageView, VkImageLayout layout) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         VkDescriptorImageInfo* imageInfo = const_cast<VkDescriptorImageInfo*>(WriteDescriptors[descriptorIndex].pImageInfo);
         ASSERT(imageInfo);
@@ -671,7 +510,7 @@ public:
 
     bool WriteStorageTexelBuffer(uint32 descriptorIndex, const VkBufferView* bufferView) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
         WriteDescriptors[descriptorIndex].pTexelBufferView = bufferView;
         return true;
@@ -679,7 +518,7 @@ public:
 
     bool WriteStorageBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER || WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
         VkDescriptorBufferInfo* bufferInfo = const_cast<VkDescriptorBufferInfo*>(WriteDescriptors[descriptorIndex].pBufferInfo);
         ASSERT(bufferInfo);
@@ -691,14 +530,14 @@ public:
 
     bool WriteUniformTexelBuffer(uint32 descriptorIndex, const VkBufferView* view) const
     {
-        ASSERT(descriptorIndex < NumWrites);
+        ASSERT(descriptorIndex < WritesCount);
         ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER);
         return DescriptorSet::CopyAndReturnNotEqual(WriteDescriptors[descriptorIndex].pTexelBufferView, view);
     }
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet) const
     {
-        for (uint32 i = 0; i < NumWrites; i++)
+        for (uint32 i = 0; i < WritesCount; i++)
         {
             WriteDescriptors[i].dstSet = descriptorSet;
         }

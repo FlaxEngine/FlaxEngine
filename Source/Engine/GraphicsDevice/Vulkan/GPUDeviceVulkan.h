@@ -26,9 +26,7 @@ class RenderPassVulkan;
 class FenceManagerVulkan;
 class GPUDeviceVulkan;
 class UniformBufferUploaderVulkan;
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
 class DescriptorPoolsManagerVulkan;
-#endif
 
 class SemaphoreVulkan
 {
@@ -637,9 +635,10 @@ public:
     /// </summary>
     UniformBufferUploaderVulkan* UniformBufferUploader;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
+    /// <summary>
+    /// The descriptor pools manager.
+    /// </summary>
     DescriptorPoolsManagerVulkan* DescriptorPoolsManager;
-#endif
 
     /// <summary>
     /// The physical device limits.

@@ -1096,9 +1096,7 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
     , ValidationCache(VK_NULL_HANDLE)
 #endif
     , UniformBufferUploader(nullptr)
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     , DescriptorPoolsManager(nullptr)
-#endif
 {
 }
 
@@ -1871,9 +1869,7 @@ bool GPUDeviceVulkan::Init()
     // Prepare stuff
     FenceManager.Init(this);
     UniformBufferUploader = New<UniformBufferUploaderVulkan>(this);
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     DescriptorPoolsManager = New<DescriptorPoolsManagerVulkan>(this);
-#endif
     MainContext = New<GPUContextVulkan>(this, GraphicsQueue);
     // TODO: create and load PipelineCache
 #if VULKAN_SUPPORTS_VALIDATION_CACHE
@@ -1895,9 +1891,7 @@ void GPUDeviceVulkan::DrawBegin()
     // Flush resources
     DeferredDeletionQueue.ReleaseResources();
     StagingManager.ProcessPendingFree();
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     DescriptorPoolsManager->GC();
-#endif
 }
 
 void GPUDeviceVulkan::Dispose()
@@ -1925,9 +1919,7 @@ void GPUDeviceVulkan::Dispose()
     StagingManager.Dispose();
     TimestampQueryPools.ClearDelete();
     SAFE_DELETE_GPU_RESOURCE(UniformBufferUploader);
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     Delete(DescriptorPoolsManager);
-#endif
     SAFE_DELETE(MainContext);
     SAFE_DELETE(GraphicsQueue);
     SAFE_DELETE(ComputeQueue);

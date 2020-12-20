@@ -36,23 +36,23 @@ void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 numSignalSemaphores,
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     Array<VkSemaphore> waitSemaphores;
-    if (cmdBuffer->WaitSemaphores.HasItems())
+    if (cmdBuffer->_waitSemaphores.HasItems())
     {
-        waitSemaphores.EnsureCapacity((uint32)cmdBuffer->WaitSemaphores.Count());
-        for (auto semaphore : cmdBuffer->WaitSemaphores)
+        waitSemaphores.EnsureCapacity((uint32)cmdBuffer->_waitSemaphores.Count());
+        for (auto semaphore : cmdBuffer->_waitSemaphores)
         {
             waitSemaphores.Add(semaphore->GetHandle());
         }
-        submitInfo.waitSemaphoreCount = (uint32)cmdBuffer->WaitSemaphores.Count();
+        submitInfo.waitSemaphoreCount = (uint32)cmdBuffer->_waitSemaphores.Count();
         submitInfo.pWaitSemaphores = waitSemaphores.Get();
-        submitInfo.pWaitDstStageMask = cmdBuffer->WaitFlags.Get();
+        submitInfo.pWaitDstStageMask = cmdBuffer->_waitFlags.Get();
     }
 
     VALIDATE_VULKAN_RESULT(vkQueueSubmit(_queue, 1, &submitInfo, fence->GetHandle()));
 
     cmdBuffer->_state = CmdBufferVulkan::State::Submitted;
     cmdBuffer->MarkSemaphoresAsSubmitted();
-    cmdBuffer->SubmittedFenceCounter = cmdBuffer->FenceSignaledCounter;
+    cmdBuffer->_submittedFenceCounter = cmdBuffer->_fenceSignaledCounter;
 
 #if 0
 	// Wait for the GPU to be idle on every submit (useful for tracking GPU hangs)
