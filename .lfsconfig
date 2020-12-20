@@ -1,3 +1,4 @@
 # Redirect to our own Git LFS server
 [lfs]
 url="https://gitlab.flaxengine.com/flax/flaxengine.git/info/lfs"
+locksverify = false
