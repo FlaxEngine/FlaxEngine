@@ -157,21 +157,21 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <summary>
-        /// Sort all <see cref="ContextMenuButton"/> alphabetically.
+        /// Sorts all <see cref="ContextMenuButton"/> alphabetically.
         /// </summary>
-        /// <param name="force">Override <see cref="AutoSort"/></param>
+        /// <param name="force">Overrides <see cref="AutoSort"/> property.</param>
         public void SortButtons(bool force = false)
         {
             if (!_autosort && !force)
                 return;
-            _panel.Children.Sort(((control, control1) =>
-                                     {
-                                         if (control is ContextMenuButton cmb && control1 is ContextMenuButton cmb1)
-                                             return String.Compare(cmb.Text, cmb1.Text, StringComparison.OrdinalIgnoreCase);
-                                         if (!(control is ContextMenuButton))
-                                             return (1);
-                                         return (-1);
-                                     }));
+            _panel.Children.Sort((control, control1) =>
+            {
+                if (control is ContextMenuButton cmb && control1 is ContextMenuButton cmb1)
+                    return string.Compare(cmb.Text, cmb1.Text, StringComparison.OrdinalIgnoreCase);
+                if (!(control is ContextMenuButton))
+                    return 1;
+                return -1;
+            });
         }
 
         /// <summary>
