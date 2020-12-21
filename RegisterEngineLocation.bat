@@ -20,7 +20,7 @@ goto Done
 
 rem Register the location (append to the end)
 :notfound
-echo Location '%EngineLocation%' is not registered. Adding it to the lsit of engine versions.
+echo Location '%EngineLocation%' is not registered. Adding it to the list of engine versions.
 echo %EngineLocation%>>"%appdata%\Flax\Versions.txt"
 goto Done
 
