@@ -2,7 +2,6 @@
 
 #include "PhysicalMaterial.h"
 #include "PhysicsSettings.h"
-#include "Engine/Serialization/JsonTools.h"
 #include "Physics.h"
 #include <ThirdParty/PhysX/PxPhysics.h>
 #include <ThirdParty/PhysX/PxMaterial.h>
@@ -50,19 +49,4 @@ void PhysicalMaterial::UpdatePhysXMaterial()
         const PhysicsCombineMode useRestitutionCombineMode = (OverrideRestitutionCombineMode ? RestitutionCombineMode : PhysicsSettings::Instance()->RestitutionCombineMode);
         _material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
     }
-}
-
-void PhysicalMaterial::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    MISSING_CODE("PhysicalMaterial::Serialize is not implemented");
-}
-
-void PhysicalMaterial::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    Friction = JsonTools::GetFloat(stream, "Friction", PhysicalMaterial_Friction);
-    FrictionCombineMode = JsonTools::GetEnum(stream, "FrictionCombineMode", PhysicalMaterial_FrictionCombineMode);
-    OverrideFrictionCombineMode = JsonTools::GetBool(stream, "OverrideFrictionCombineMode", PhysicalMaterial_OverrideFrictionCombineMode);
-    Restitution = JsonTools::GetFloat(stream, "Restitution", PhysicalMaterial_Restitution);
-    RestitutionCombineMode = JsonTools::GetEnum(stream, "RestitutionCombineMode", PhysicalMaterial_RestitutionCombineMode);
-    OverrideRestitutionCombineMode = JsonTools::GetBool(stream, "OverrideRestitutionCombineMode", PhysicalMaterial_OverrideRestitutionCombineMode);
 }

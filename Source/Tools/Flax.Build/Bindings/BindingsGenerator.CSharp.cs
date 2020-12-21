@@ -393,7 +393,7 @@ namespace Flax.Build.Bindings
             {
                 // Write attributes
                 contents.Append(indent).Append('[').Append(attributes).Append(']').AppendLine();
-                writeTooltip = !attributes.Contains("Tooltip(");
+                writeTooltip = !attributes.Contains("Tooltip(") && !attributes.Contains("HideInEditor");
             }
 
             if (useUnmanaged)
@@ -462,7 +462,7 @@ namespace Flax.Build.Bindings
             else if (classInfo.IsAbstract)
                 contents.Append("abstract ");
             contents.Append("unsafe partial class ").Append(classInfo.Name);
-            if (classInfo.BaseType != null && classInfo.BaseTypeInheritance != AccessLevel.Private)
+            if (classInfo.BaseType != null && !classInfo.IsBaseTypeHidden)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, classInfo.BaseType, classInfo));
             contents.AppendLine();
             contents.Append(indent + "{");

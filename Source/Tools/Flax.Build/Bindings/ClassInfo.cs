@@ -25,6 +25,7 @@ namespace Flax.Build.Bindings
         public AccessLevel Access;
         public TypeInfo BaseType;
         public AccessLevel BaseTypeInheritance;
+        public bool IsBaseTypeHidden;
         public bool IsStatic;
         public bool IsSealed;
         public bool IsAbstract;
@@ -49,6 +50,9 @@ namespace Flax.Build.Bindings
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
+
+            // Internal base types are usually hidden from bindings (used in core-only internally)
+            IsBaseTypeHidden = BaseTypeInheritance == AccessLevel.Private || BaseType.Type == "ISerializable";
 
             // Cache if it it Scripting Object type
             if (InBuildScriptingObjectTypes.Contains(Name))

@@ -190,13 +190,11 @@ ISerializable* Create()
     return New<T>();
 }
 
+// Key: managed class typename, Value: unmanaged instance spawner function
 Dictionary<String, UnmanagedJsonInstanceCreator> UnmanagedTypes(32);
 
 void InitUnmanagedJsonTypes()
 {
-    ASSERT(UnmanagedTypes.IsEmpty());
-
-    // Key: managed class typename, Value: unmanaged instance spawner function
     UnmanagedTypes[TEXT("FlaxEngine.PhysicalMaterial")] = &Create<PhysicalMaterial>;
 }
 

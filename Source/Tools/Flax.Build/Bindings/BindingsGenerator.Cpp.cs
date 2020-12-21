@@ -949,6 +949,8 @@ namespace Flax.Build.Bindings
             var baseType = classInfo?.BaseType ?? structureInfo?.BaseType;
             if (baseType != null && baseType.Type == "ISerializable")
                 baseType = null;
+            else if (classInfo != null && classInfo.IsBaseTypeHidden)
+                baseType = null;
             CppAutoSerializeFields.Clear();
             CppAutoSerializeProperties.Clear();
             CppIncludeFiles.Add("Engine/Serialization/Serialization.h");
