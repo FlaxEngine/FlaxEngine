@@ -57,9 +57,8 @@ const static int InscatterNuNum = 8;
 const static int AtmosphericFogInscatterAltitudeSampleNum = 4;
 
 // Configuration
-#define TRANSMITTANCE_NON_LINEAR         1
-#define INSCATTER_NON_LINEAR             1
-#define ATMOSPHERIC_TEXTURE_SAMPLE_FIX   1
+#define TRANSMITTANCE_NON_LINEAR 1
+#define INSCATTER_NON_LINEAR 1
 
 #ifndef ATMOSPHERIC_NO_SUN_DISK
 #define	ATMOSPHERIC_NO_SUN_DISK				0
