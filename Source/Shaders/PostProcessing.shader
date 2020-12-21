@@ -15,6 +15,10 @@
 // 
 // Perlin noise shader by toneburst:
 // http://machinesdontcare.wordpress.com/2009/06/25/3d-perlin-noise-sphere-vertex-shader-sourcecode/
+// 
+// Lens flares by John Chapman:
+//https://john-chapman.github.io/2017/11/05/pseudo-lens-flare.html
+// 
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Random.hlsl"

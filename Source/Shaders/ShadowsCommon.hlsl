@@ -39,22 +39,6 @@ struct LightShadowData
 #define DECLARE_LIGHTSHADOWDATA_ACCESS(uniformName) LightShadowData Get##uniformName##Data() { return uniformName; }
 #endif
 
-// Gets the cube texture face index to use for shadow map sampling for the given view-to-light direction vector
-// Where: direction = normalize(worldPosition - lightPosition)
-int GetCubeFaceIndex(float3 direction)
-{
-	int cubeFaceIndex;
-	float3 absDirection = abs(direction);
-	float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
-	if (maxDirection == absDirection.x)
-		cubeFaceIndex = absDirection.x == direction.x ? 0 : 1;
-	else if (maxDirection == absDirection.y)
-		cubeFaceIndex = absDirection.y == direction.y ? 2 : 3;
-	else
-		cubeFaceIndex = absDirection.z == direction.z ? 4 : 5;
-	return cubeFaceIndex;
-}
-
 float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 {
 	float normalOffsetScale = saturate(1.0f - NoL);

@@ -90,7 +90,7 @@ float3 WhiteBalance(float3 linearColor)
 	float2 srcWhitePlankian = PlanckianLocusChromaticity(WhiteTemp);
 
 	float2 srcWhite = WhiteTemp < 4000 ? srcWhitePlankian : srcWhiteDaylight;
-	float2 d65White = float2(0.31270,  0.32900);
+	float2 d65White = float2(0.31270f, 0.32900f);
 	float2 isothermal = PlanckianIsothermal(WhiteTemp, WhiteTint) - srcWhitePlankian;
 	srcWhite += isothermal;
 
@@ -103,8 +103,8 @@ float3 WhiteBalance(float3 linearColor)
 float3 ColorCorrect(float3 color, float luma, float4 saturation, float4 contrast, float4 gamma, float4 gain, float4 offset)
 {
 	color = max(0, lerp(luma.xxx, color, saturation.xyz * saturation.w));
-	color = pow(color * (1.0 / 0.18), contrast.xyz * contrast.w) * 0.18;
-	color = pow(color, 1.0 / (gamma.xyz * gamma.w));
+	color = pow(color * (1.0f / 0.18f), contrast.xyz * contrast.w) * 0.18f;
+	color = pow(color, 1.0f / (gamma.xyz * gamma.w));
 	color = color * (gain.xyz * gain.w) + (offset.xyz + offset.w);
 	return color;
 }
@@ -112,35 +112,12 @@ float3 ColorCorrect(float3 color, float luma, float4 saturation, float4 contrast
 float3 ColorCorrectAll(float3 color)
 {
 	float luma = dot(color, AP1_RGB2Y);
-
-	// Shadow CC
-	float3 ccColorShadows = ColorCorrect(color, luma,
-		ColorSaturationShadows, 
-		ColorContrastShadows, 
-		ColorGammaShadows, 
-		ColorGainShadows, 
-		ColorOffsetShadows);
+	float3 ccColorShadows = ColorCorrect(color, luma, ColorSaturationShadows, ColorContrastShadows, ColorGammaShadows, ColorGainShadows, ColorOffsetShadows);
 	float ccWeightShadows = 1 - smoothstep(0, ColorCorrectionShadowsMax, luma);
-
-	// Highlight CC
-	float3 ccColorHighlights = ColorCorrect(color, luma,
-		ColorSaturationHighlights, 
-		ColorContrastHighlights, 
-		ColorGammaHighlights, 
-		ColorGainHighlights, 
-		ColorOffsetHighlights);
+	float3 ccColorHighlights = ColorCorrect(color, luma,ColorSaturationHighlights, ColorContrastHighlights, ColorGammaHighlights, ColorGainHighlights, ColorOffsetHighlights);
 	float ccWeightHighlights = smoothstep(ColorCorrectionHighlightsMin, 1, luma);
-
-	// Midtone CC
-	float3 ccColorMidtones = ColorCorrect(color, luma,
-		ColorSaturationMidtones, 
-		ColorContrastMidtones, 
-		ColorGammaMidtones, 
-		ColorGainMidtones, 
-		ColorOffsetMidtones);
+	float3 ccColorMidtones = ColorCorrect(color, luma, ColorSaturationMidtones, ColorContrastMidtones, ColorGammaMidtones, ColorGainMidtones, ColorOffsetMidtones);
 	float ccWeightMidtones = 1 - ccWeightShadows - ccWeightHighlights;
-
-	// Blend shadow, midtone and highlight CCs
 	return ccColorShadows * ccWeightShadows + ccColorMidtones * ccWeightMidtones + ccColorHighlights * ccWeightHighlights;
 }
 
@@ -189,8 +166,7 @@ float3 TonemapNeutral(float3 linearColor)
 
 float3 TonemapACES(float3 linearColor)
 {
-	// The code in this file was originally written by Stephen Hill (@self_shadow), who deserves all
-	// credit for coming up with this fit and implementing it. Buy him a beer next time you see him. :)
+	// The code was originally written by Stephen Hill (@self_shadow).
 
 	// sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT
 	static const float3x3 ACESInputMat =

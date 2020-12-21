@@ -28,7 +28,6 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
 	float NoH = saturate(dot(N, H));
 	float VoH = saturate(dot(V, H));
 
-	// Generalized microfacet specular
 	float D = D_GGX(gBuffer.Roughness, NoH) * energy;
 	float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
 	float3 F = F_Schlick(specularColor, VoH);
@@ -113,7 +112,6 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 {
 	float4 result = 0;
 	float3 V = normalize(viewPos - gBuffer.WorldPos);
-	float3 ToLight = lightData.Direction;
 	float3 N = gBuffer.Normal;
 	float3 L = lightData.Direction;	// no need to normalize
 	float NoL = saturate(dot(N, L));
@@ -124,7 +122,7 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 	// Calculate attenuation
 	if (isRadial)
 	{
-		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, ToLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, lightData.Direction, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 	}
 	float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
@@ -132,13 +130,13 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 	ShadowData shadow = GetShadow(lightData, gBuffer, shadowMask);
 
 	// Reduce shadow mapping artifacts
-	shadow.SurfaceShadow *= saturate(NoL * 6 - 0.2);
+	shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f);
 
 	BRANCH
 	if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
 	{
 		gBuffer.Roughness = max(gBuffer.Roughness, lightData.MinRoughness);
-		float energy = AreaLightSpecular(lightData, gBuffer.Roughness, ToLight, L, V, N);
+		float energy = AreaLightSpecular(lightData, gBuffer.Roughness, lightData.Direction, L, V, N);
 
 		// Calculate direct lighting
 		LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);

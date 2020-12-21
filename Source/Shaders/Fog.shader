@@ -38,22 +38,14 @@ float4 CalculateCombinedFog(float3 worldPosition, float sceneDepth, float3 volum
 	float excludeDistance = 0;
 
 #if VOLUMETRIC_FOG
-
-	// Volumetric fog covers up to MaxDistance along ViewZ, exclude analytical fog from this range
 	excludeDistance = max(ExponentialHeightFog.VolumetricFogMaxDistance - 100, 0);
-
 #endif
 
 	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, worldPosition, GBuffer.ViewPos, excludeDistance);
 
 #if VOLUMETRIC_FOG
-
-	// Sample volumetric fog lookup table
 	float4 volumetricFog = IntegratedLightScattering.SampleLevel(SamplerLinearClamp, volumeUV, 0);
-
-	// Mix volumetric and analytical fog
 	fog = float4(volumetricFog.rgb + fog.rgb * volumetricFog.a, volumetricFog.a * fog.a);
-
 #endif
 
 	return fog;
