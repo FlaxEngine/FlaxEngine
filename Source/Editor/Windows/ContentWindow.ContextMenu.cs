@@ -93,7 +93,7 @@ namespace FlaxEditor.Windows
                         {
                             cm.AddButton("Generate collision data", () =>
                                                                         {
-                                                                            var model = FlaxEngine.Content.Load<Model>(assetItem.ID);
+                                                                            var model = FlaxEngine.Content.Load<Model>(modelAssetItem.ID);
                                                                             var cdProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
                                                                             cdProxy.CreateCollisionDataFromModel(model);
                                                                         });
