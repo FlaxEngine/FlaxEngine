@@ -16,7 +16,6 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
 #include "ThirdParty/meshoptimizer/meshoptimizer.h"
-#include <regex>
 
 void RemoveNamespace(String& name)
 {
@@ -1193,27 +1192,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
 
 int32 ModelTool::DetectLodIndex(const String& nodeName)
 {
-    // Try detect mesh lod index
-    int32 index;
-    String result;
-    std::match_results<const Char*> match;
-    String reversed = nodeName;
-    reversed.Reverse();
-
-    // Find '<name>LOD<index>' case
-    const std::wregex regex2(TEXT("^(\\d+)DOL"));
-    if (regex_search(*reversed, match, regex2) && match.size() == 2)
+    const int32 index = nodeName.FindLast(TEXT("LOD"));
+    if (index != -1)
     {
-        // Get result
-        String num(match[1].str().c_str());
-        num.Reverse();
-
-        // Parse value
-        if (!StringUtils::Parse(*num, num.Length(), &index))
+        int32 num;
+        if (!StringUtils::Parse(nodeName.Get() + index + 3, &num))
         {
-            if (index >= 0 && index < MODEL_MAX_LODS)
+            if (num >= 0 && num < MODEL_MAX_LODS)
             {
-                return index;
+                return num;
             }
 
             LOG(Warning, "Invalid mesh level of detail index at node \'{0}\'. Maximum supported amount of LODs is {1}.", nodeName, MODEL_MAX_LODS);
