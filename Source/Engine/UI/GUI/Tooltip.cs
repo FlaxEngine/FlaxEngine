@@ -194,7 +194,7 @@ namespace FlaxEngine.GUI
         {
             // Auto hide if mouse leaves control area
             Vector2 mousePos = Input.MouseScreenPosition;
-            Vector2 location = _showTarget.ScreenToClient(mousePos / Platform.DpiScale);
+            Vector2 location = _showTarget.ScreenToClient(mousePos);
             if (!_showTarget.OnTestTooltipOverControl(ref location))
             {
                 // Mouse left or sth
