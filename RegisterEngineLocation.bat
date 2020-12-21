@@ -3,7 +3,7 @@
 rem Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
 setlocal
-pushd
+pushd %~dp0
 echo Registering Flax Engine project files...
 
 rem Check the current versions config
