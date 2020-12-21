@@ -377,13 +377,21 @@ namespace FlaxEditor.Windows.Assets
         {
             MarkAsEdited();
             UpdateToolstrip();
-            _propertiesEditor1.BuildLayoutOnUpdate();
-            _propertiesEditor2.BuildLayoutOnUpdate();
+
+            if (!_isEditingInstancedParameterValue)
+            {
+                _propertiesEditor1.BuildLayoutOnUpdate();
+                _propertiesEditor2.BuildLayoutOnUpdate();
+            }
         }
 
         private void OnTimelineModified()
         {
-            _tmpParticleSystemIsDirty = true;
+            if (!_isEditingInstancedParameterValue)
+            {
+                _tmpParticleSystemIsDirty = true;
+            }
+
             MarkAsEdited();
         }
 
