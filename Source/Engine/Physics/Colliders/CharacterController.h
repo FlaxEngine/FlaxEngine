@@ -143,7 +143,7 @@ public:
     API_PROPERTY() void SetStepOffset(float value);
 
     /// <summary>
-    /// Gets the minimum move distance of the character controller. The minimum travelled distance to consider. If travelled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
+    /// Gets the minimum move distance of the character controller. The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(230), DefaultValue(0.0f), Limit(0, 1000), EditorDisplay(\"Character Controller\")")
     FORCE_INLINE float GetMinMoveDistance() const
@@ -152,7 +152,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the minimum move distance of the character controller.The minimum travelled distance to consider. If travelled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
+    /// Sets the minimum move distance of the character controller.The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
     API_PROPERTY() void SetMinMoveDistance(float value);
 
