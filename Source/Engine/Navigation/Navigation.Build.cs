@@ -15,6 +15,7 @@ public class Navigation : EngineModule
 
         options.PublicDefinitions.Add("COMPILE_WITH_NAV_MESH_BUILDER");
 
+        options.PrivateDependencies.Add("Level");
         options.PrivateDependencies.Add("recastnavigation");
 
         if (options.Target.IsEditor)

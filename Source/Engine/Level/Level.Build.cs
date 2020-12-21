@@ -21,7 +21,6 @@ public class Level : EngineModule
 
         options.PublicDependencies.Add("Scripting");
         options.PublicDependencies.Add("Serialization");
-        options.PublicDependencies.Add("Navigation");
 
         if (options.Target.IsEditor)
         {
