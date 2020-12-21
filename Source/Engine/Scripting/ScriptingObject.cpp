@@ -72,6 +72,12 @@ ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
     return ptr;
 }
 
+bool ScriptingObject::Is(const ScriptingTypeHandle& type) const
+{
+    CHECK_RETURN(type, false);
+    return _type == type || CanCast(GetClass(), type.GetType().ManagedClass);
+}
+
 void ScriptingObject::ChangeID(const Guid& newId)
 {
     ASSERT(newId.IsValid() && newId != _id);
@@ -204,6 +210,14 @@ void ScriptingObject::UnregisterObject()
 
     Flags &= ~ObjectFlags::IsRegistered;
     Scripting::UnregisterObject(this);
+}
+
+bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to)
+{
+    if (!from && !to)
+        return true;
+    CHECK_RETURN(from && to, false);
+    return CanCast(from.GetType().ManagedClass, to.GetType().ManagedClass);
 }
 
 bool ScriptingObject::CanCast(MClass* from, MClass* to)
