@@ -136,6 +136,10 @@ namespace FlaxEditor.GUI.ContextMenu
                 // Direction: up
                 isUp = true;
                 locationSS.Y -= dpiSize.Y;
+
+                // Offset to fix sub-menu location
+                if (parent is ContextMenu menu && menu._childCM != null)
+                    locationSS.Y += 30.0f * dpiScale;
             }
             if (monitorBounds.Right < rightBottomLocationSS.X)
             {
