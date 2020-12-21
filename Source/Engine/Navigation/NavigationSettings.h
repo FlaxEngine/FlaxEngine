@@ -82,7 +82,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         CellHeight = 10.0f;

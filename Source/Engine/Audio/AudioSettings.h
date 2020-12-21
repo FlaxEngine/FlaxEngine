@@ -8,8 +8,8 @@
 /// <summary>
 /// Audio settings container.
 /// </summary>
-/// <seealso cref="Settings{AudioSettings}" />
-class AudioSettings : public Settings<AudioSettings>
+/// <seealso cref="SettingsBase{AudioSettings}" />
+class AudioSettings : public SettingsBase<AudioSettings>
 {
 public:
 
@@ -30,7 +30,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         DisableAudio = false;

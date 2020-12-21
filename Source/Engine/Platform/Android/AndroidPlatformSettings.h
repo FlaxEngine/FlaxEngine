@@ -9,8 +9,8 @@
 /// <summary>
 /// Android platform settings.
 /// </summary>
-/// <seealso cref="Settings{AndroidPlatformSettings}" />
-class AndroidPlatformSettings : public Settings<AndroidPlatformSettings>
+/// <seealso cref="SettingsBase{AndroidPlatformSettings}" />
+class AndroidPlatformSettings : public SettingsBase<AndroidPlatformSettings>
 {
 public:
 
@@ -36,7 +36,7 @@ public:
         RestoreDefault();
     }
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         PackageName = TEXT("com.${COMPANY_NAME}.${PROJECT_NAME}");

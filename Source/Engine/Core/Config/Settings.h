@@ -7,16 +7,16 @@
 #include "Engine/Serialization/ISerializable.h"
 
 /// <summary>
-/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to c#.
+/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to engine/game.
 /// </summary>
-class SettingsBase
+class FLAXENGINE_API Settings
 {
 public:
 
     /// <summary>
     /// The settings containers.
     /// </summary>
-    static Array<SettingsBase*> Containers;
+    static Array<Settings*> Containers;
 
     /// <summary>
     /// Restores the default settings for all the registered containers.
@@ -30,19 +30,19 @@ public:
 private:
 
     // Disable copy/move
-    SettingsBase(const SettingsBase&) = delete;
-    SettingsBase& operator=(const SettingsBase&) = delete;
+    Settings(const Settings&) = delete;
+    Settings& operator=(const Settings&) = delete;
 
 protected:
 
-    SettingsBase()
+    Settings()
     {
         Containers.Add(this);
     }
 
 public:
 
-    virtual ~SettingsBase() = default;
+    virtual ~Settings() = default;
 
 public:
 
@@ -69,14 +69,14 @@ public:
 };
 
 /// <summary>
-/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to c#.
+/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to engine/game.
 /// </summary>
 template<class T>
-class Settings : public SettingsBase, public Singleton<T>
+class SettingsBase : public Settings, public Singleton<T>
 {
 protected:
 
-    Settings()
+    SettingsBase()
     {
     }
 };

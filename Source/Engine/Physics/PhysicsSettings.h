@@ -25,8 +25,8 @@
 /// <summary>
 /// Physics simulation settings container.
 /// </summary>
-/// <seealso cref="Settings{PhysicsSettings}" />
-class PhysicsSettings : public Settings<PhysicsSettings>
+/// <seealso cref="SettingsBase{PhysicsSettings}" />
+class PhysicsSettings : public SettingsBase<PhysicsSettings>
 {
 public:
 
@@ -115,7 +115,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void Apply() override;
     void RestoreDefault() override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;

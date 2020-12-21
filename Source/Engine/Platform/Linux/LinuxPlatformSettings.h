@@ -9,8 +9,8 @@
 /// <summary>
 /// Linux platform settings.
 /// </summary>
-/// <seealso cref="Settings{LinuxPlatformSettings}" />
-class LinuxPlatformSettings : public Settings<LinuxPlatformSettings>
+/// <seealso cref="SettingsBase{LinuxPlatformSettings}" />
+class LinuxPlatformSettings : public SettingsBase<LinuxPlatformSettings>
 {
 public:
 
@@ -56,7 +56,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         WindowMode = GameWindowMode::Windowed;

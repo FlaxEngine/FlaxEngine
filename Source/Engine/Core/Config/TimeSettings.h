@@ -8,8 +8,7 @@
 /// <summary>
 /// Time and game simulation settings container.
 /// </summary>
-/// <seealso cref="Settings{TimeSettings}" />
-class TimeSettings : public Settings<TimeSettings>
+class TimeSettings : public SettingsBase<TimeSettings>
 {
 public:
 
@@ -40,7 +39,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void Apply() override;
 
     void RestoreDefault() override

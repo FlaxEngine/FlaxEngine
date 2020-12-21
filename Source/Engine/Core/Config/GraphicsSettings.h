@@ -9,8 +9,7 @@
 /// <summary>
 /// Graphics rendering settings.
 /// </summary>
-/// <seealso cref="Settings{GraphicsSettings}" />
-class GraphicsSettings : public Settings<GraphicsSettings>
+class GraphicsSettings : public SettingsBase<GraphicsSettings>
 {
 public:
 
@@ -56,7 +55,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void Apply() override;
 
     void RestoreDefault() final override

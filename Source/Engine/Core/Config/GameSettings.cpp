@@ -28,7 +28,7 @@ bool GameSettings::NoSplashScreen = false;
 Guid GameSettings::SplashScreen;
 Dictionary<String, Guid> GameSettings::CustomSettings;
 
-Array<SettingsBase*> SettingsBase::Containers(32);
+Array<Settings*> Settings::Containers(32);
 
 #if USE_EDITOR
 extern void LoadPlatformSettingsEditor(ISerializable::DeserializeStream& data);

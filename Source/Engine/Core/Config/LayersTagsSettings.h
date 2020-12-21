@@ -7,8 +7,7 @@
 /// <summary>
 /// Layers and objects tags settings.
 /// </summary>
-/// <seealso cref="Settings{LayersAndTagsSettings}" />
-class LayersAndTagsSettings : public Settings<LayersAndTagsSettings>
+class LayersAndTagsSettings : public SettingsBase<LayersAndTagsSettings>
 {
 public:
 
@@ -54,7 +53,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() override
     {
         Tags.Clear();

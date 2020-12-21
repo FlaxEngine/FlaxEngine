@@ -10,8 +10,7 @@
 /// <summary>
 /// The game building rendering settings.
 /// </summary>
-/// <seealso cref="Settings{BuildSettings}" />
-class BuildSettings : public Settings<BuildSettings>
+class BuildSettings : public SettingsBase<BuildSettings>
 {
 public:
 
@@ -62,7 +61,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         MaxAssetsPerPackage = 1024;

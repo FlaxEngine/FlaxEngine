@@ -9,8 +9,8 @@
 /// <summary>
 /// Universal Windows Platform settings.
 /// </summary>
-/// <seealso cref="Settings{UWPPlatformSettings}" />
-class UWPPlatformSettings : public Settings<UWPPlatformSettings>
+/// <seealso cref="SettingsBase{UWPPlatformSettings}" />
+class UWPPlatformSettings : public SettingsBase<UWPPlatformSettings>
 {
 public:
 
@@ -95,7 +95,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         PreferredLaunchWindowingMode = WindowMode::FullScreen;

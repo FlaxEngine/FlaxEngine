@@ -1,0 +1,6 @@
+[submodule "Source/Platforms/PS4"]
+	path = Source/Platforms/PS4
+	url = https://gitlab.flaxengine.com/flax/flaxengine-ps4.git
+[submodule "Source/Platforms/XboxScarlett"]
+	path = Source/Platforms/XboxScarlett
+	url = https://gitlab.flaxengine.com/flax/flaxengine-xboxscarlett.git

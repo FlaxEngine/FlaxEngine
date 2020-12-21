@@ -9,8 +9,8 @@
 /// <summary>
 /// Windows platform settings.
 /// </summary>
-/// <seealso cref="Settings{WindowsPlatformSettings}" />
-class WindowsPlatformSettings : public Settings<WindowsPlatformSettings>
+/// <seealso cref="SettingsBase{WindowsPlatformSettings}" />
+class WindowsPlatformSettings : public SettingsBase<WindowsPlatformSettings>
 {
 public:
 
@@ -71,7 +71,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void RestoreDefault() final override
     {
         WindowMode = GameWindowMode::Windowed;

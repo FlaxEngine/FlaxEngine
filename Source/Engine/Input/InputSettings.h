@@ -10,8 +10,8 @@
 /// <summary>
 /// Input settings container.
 /// </summary>
-/// <seealso cref="Settings{InputSettings}" />
-class InputSettings : public Settings<InputSettings>
+/// <seealso cref="SettingsBase{InputSettings}" />
+class InputSettings : public SettingsBase<InputSettings>
 {
 public:
 
@@ -27,7 +27,7 @@ public:
 
 public:
 
-    // [Settings]
+    // [SettingsBase]
     void Apply() override
     {
         Input::ActionMappings = ActionMappings;
