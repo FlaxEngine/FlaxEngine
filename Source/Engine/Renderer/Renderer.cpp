@@ -306,6 +306,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 #endif
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
 
+
     // Prepare
     renderContext.View.Prepare(renderContext);
     renderContext.Buffers->Prepare();
@@ -484,7 +485,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
-        MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
+        context->Clear(frameBuffer->View(), Color::Black);
+        //MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         return;
     }
 

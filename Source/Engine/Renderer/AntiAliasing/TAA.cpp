@@ -12,7 +12,7 @@
 bool TAA::Init()
 {
     // Create pipeline state
-    _psTAA.CreatePipelineStates();
+    //_psTAA.CreatePipelineStates();
 
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/TAA"));
@@ -34,22 +34,6 @@ bool TAA::setupResources()
     }
     const auto shader = _shader->GetShader();
 
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
-
-    // Create pipeline state
-    GPUPipelineState::Description psDesc;
-    if (!_psTAA.IsValid())
-    {
-        psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-        if (_psTAA.Create(psDesc, shader, "PS"))
-            return true;
-    }
-
     return false;
 }
 
@@ -58,10 +42,7 @@ void TAA::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
-    _psTAA.Delete();
-
-    // Release asset
+    _psTAA = nullptr;
     _shader.Unlink();
 }
 
@@ -75,7 +56,7 @@ void TAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView
     auto context = GPUDevice::Instance->GetMainContext();
 
     // Ensure to have valid data
-    if (checkIfSkipPass())
+    //if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy source frame.
         context->SetRenderTarget(output);
@@ -119,32 +100,5 @@ void TAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView
         blendStrength = 0.0f;
     }
 
-    // Bind input
-    Data data;
-    data.ScreenSize = renderContext.View.ScreenSize;
-    data.TaaJitterStrength.X = renderContext.View.TemporalAAJitter.X;
-    data.TaaJitterStrength.Y = renderContext.View.TemporalAAJitter.Y;
-    data.TaaJitterStrength.Z = data.TaaJitterStrength.X / tempDesc.Width;
-    data.TaaJitterStrength.W = data.TaaJitterStrength.Y / tempDesc.Height;
-    data.FinalBlendParameters.X = settings.TAA_StationaryBlending * blendStrength;
-    data.FinalBlendParameters.Y = settings.TAA_MotionBlending * blendStrength;
-    data.FinalBlendParameters.Z = 100.0f * 60.0f;
-    data.FinalBlendParameters.W = settings.TAA_Sharpness;
-    const auto cb = _shader->GetShader()->GetCB(0);
-    context->UpdateCB(cb, &data);
-    context->BindCB(0, cb);
-    context->BindSR(0, input);
-    context->BindSR(1, inputHistory);
-    context->BindSR(2, renderContext.Buffers->MotionVectors);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
-
-    // Render
-    GPUTextureView* rts[] = { output, outputHistory->View() };
-    context->SetRenderTarget(nullptr, ToSpan(rts, ARRAY_COUNT(rts)));
-    context->SetState(_psTAA.Get(renderContext.View.IsOrthographicProjection() ? 1 : 0));
-    context->DrawFullscreenTriangle();
-
-    // Swap the history
-    RenderTargetPool::Release(inputHistory);
-    renderContext.Buffers->TemporalAA = outputHistory;
+    // ...
 }

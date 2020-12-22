@@ -10,43 +10,11 @@
 class MotionBlurPass : public RendererPass<MotionBlurPass>
 {
 private:
-    PACK_STRUCT(struct Data {
-        GBufferData GBuffer;
-        Matrix CurrentVP;
-        Matrix PreviousVP;
-        Vector4 TemporalAAJitter;
-        Vector2 TileMaxOffs;
-        float VelocityScale;
-        int32 TileMaxLoop;
-        float MaxBlurRadius;
-        float RcpMaxBlurRadius;
-        Vector2 TexelSize1;
-        Vector2 TexelSize2;
-        Vector2 TexelSize4;
-        Vector2 TexelSizeV;
-        Vector2 TexelSizeNM;
-        float LoopCount;
-        float Dummy0;
-        Vector2 MotionVectorsTexelSize;
-        float DebugBlend;
-        float DebugAmplitude;
-        int32 DebugColumnCount;
-        int32 DebugRowCount;
-        });
 
     PixelFormat _motionVectorsFormat;
     PixelFormat _velocityFormat;
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psCameraMotionVectors;
-    GPUPipelineState* _psMotionVectorsDebug;
-    GPUPipelineState* _psMotionVectorsDebugArrow;
-    GPUPipelineState* _psVelocitySetup;
-    GPUPipelineState* _psTileMax1;
-    GPUPipelineState* _psTileMax2;
-    GPUPipelineState* _psTileMax4;
-    GPUPipelineState* _psTileMaxV;
-    GPUPipelineState* _psNeighborMax;
-    GPUPipelineState* _psReconstruction;
+    GPUPipelineState* _psCameraMotionVectors = nullptr;
 
 public:
 
@@ -84,15 +52,6 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psCameraMotionVectors->ReleaseGPU();
-        _psMotionVectorsDebug->ReleaseGPU();
-        _psMotionVectorsDebugArrow->ReleaseGPU();
-        _psVelocitySetup->ReleaseGPU();
-        _psTileMax1->ReleaseGPU();
-        _psTileMax2->ReleaseGPU();
-        _psTileMax4->ReleaseGPU();
-        _psTileMaxV->ReleaseGPU();
-        _psNeighborMax->ReleaseGPU();
-        _psReconstruction->ReleaseGPU();
         invalidateResources();
     }
 #endif
