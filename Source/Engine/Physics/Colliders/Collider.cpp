@@ -207,7 +207,7 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     rigidBody->GetPhysXRigidActor()->attachShape(*_shape);
-        _shape->setLocalPose(PxTransform(C2P((_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale()), C2P(_localTransform.Orientation)));
+    _shape->setLocalPose(PxTransform(C2P((_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale()), C2P(_localTransform.Orientation)));
     if (rigidBody->IsDuringPlay())
         rigidBody->UpdateBounds();
 }
@@ -246,7 +246,7 @@ void Collider::CreateShapeBase(const PxGeometry& geometry)
     const bool isTrigger = _isTrigger && CanBeTrigger();
     const PxShapeFlags shapeFlags = GetShapeFlags(isTrigger, IsActiveInHierarchy());
     PxMaterial* material = Physics::GetDefaultMaterial();
-    if (Material && !Material->WaitForLoaded())
+    if (Material && !Material->WaitForLoaded() && Material->Instance)
     {
         material = ((PhysicalMaterial*)Material->Instance)->GetPhysXMaterial();
     }
@@ -291,12 +291,9 @@ void Collider::OnMaterialChanged()
     if (_shape)
     {
         PxMaterial* material = Physics::GetDefaultMaterial();
-        if (Material)
+        if (Material && !Material->WaitForLoaded() && Material->Instance)
         {
-            if (!Material->WaitForLoaded())
-            {
-                material = ((PhysicalMaterial*)Material->Instance)->GetPhysXMaterial();
-            }
+            material = ((PhysicalMaterial*)Material->Instance)->GetPhysXMaterial();
         }
         _shape->setMaterials(&material, 1);
     }
