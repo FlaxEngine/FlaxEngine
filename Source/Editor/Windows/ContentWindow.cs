@@ -296,9 +296,14 @@ namespace FlaxEditor.Windows
                 return;
             }
 
+            // Renaming a file to an extension it already has
+            if (!item.IsFolder && StringUtils.NormalizeExtension(Path.GetExtension(newShortName)) == StringUtils.NormalizeExtension(Path.GetExtension(item.Path)))
+            {
+                newShortName = StringUtils.GetPathWithoutExtension(newShortName);
+            }
+
             // Check if name is valid
-            string hint;
-            if (!Editor.ContentEditing.IsValidAssetName(item, newShortName, out hint))
+            if (!Editor.ContentEditing.IsValidAssetName(item, newShortName, out string hint))
             {
                 // Invalid name
                 MessageBox.Show("Given asset name is invalid. " + hint,
@@ -317,8 +322,8 @@ namespace FlaxEditor.Windows
             }
 
             // Cache data
-            var extension = Path.GetExtension(item.Path);
-            var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, Path.ChangeExtension(newShortName, extension));
+            string extension = Path.GetExtension(item.Path);
+            var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);
 
             // Check if was renaming mock element
             // Note: we create `_newElement` and then rename it to create new asset
