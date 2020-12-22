@@ -968,7 +968,7 @@ namespace FlaxEditor.Viewport
                                 _wheelMovementChangeDeltaSum -= step;
                                 MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
                             }
-                            else if (_wheelMovementChangeDeltaSum <= step)
+                            else if (_wheelMovementChangeDeltaSum <= -step)
                             {
                                 _wheelMovementChangeDeltaSum += step;
                                 MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
