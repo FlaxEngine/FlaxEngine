@@ -15,6 +15,10 @@
 // 
 // Perlin noise shader by toneburst:
 // http://machinesdontcare.wordpress.com/2009/06/25/3d-perlin-noise-sphere-vertex-shader-sourcecode/
+// 
+// Lens flares by John Chapman:
+//https://john-chapman.github.io/2017/11/05/pseudo-lens-flare.html
+// 
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Random.hlsl"
@@ -107,7 +111,6 @@ half3 ColorLookupTable(half3 linearColor)
 {
 	// Move from linear color to encoded LUT color space
 	//float3 encodedColor = linearColor; // Default
-	//float3 encodedColor = saturate(LinearToLogC(linearColor)); // LogC
 	float3 encodedColor = LinearToLog(linearColor + LogToLinear(0)); // Log
 
 	float3 uvw = encodedColor * ((LUTSize - 1) / LUTSize) + (0.5f / LUTSize);

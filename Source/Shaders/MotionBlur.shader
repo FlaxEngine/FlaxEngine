@@ -43,16 +43,16 @@ Texture2D Input0 : register(t0);
 Texture2D Input1 : register(t1);
 Texture2D Input2 : register(t2);
 
-// Converts a motion vector into RGBA color.
-float4 VectorToColor(float2 mv)
+// Calculates the color for the a motion vector debugging
+float4 VectorToColor(float2 motionVector)
 {
-    float phi = atan2(mv.x, mv.y);
+    float phi = atan2(motionVector.x, motionVector.y);
     float hue = (phi / PI + 1) * 0.5;
 
     float r = abs(hue * 6 - 3) - 1;
     float g = 2 - abs(hue * 6 - 2);
     float b = 2 - abs(hue * 6 - 4);
-    float a = length(mv);
+    float a = length(motionVector);
 
     return saturate(float4(r, g, b, a));
 }
@@ -61,18 +61,15 @@ float4 VectorToColor(float2 mv)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_MotionVectorsDebug(Quad_VS2PS input) : SV_Target
 {
-	float4 src = SAMPLE_RT(Input0, input.TexCoord);
+	float4 color = SAMPLE_RT(Input0, input.TexCoord);
+    float2 motionVector = SAMPLE_RT(Input1, input.TexCoord).rg * (DebugAmplitude * 5.0f);
+    float4 motionColor = VectorToColor(motionVector);
 
-    float2 mv = SAMPLE_RT(Input1, input.TexCoord).rg * (DebugAmplitude * 5.0f);
-    float4 mc = VectorToColor(mv);
+    float colorRation = saturate(2 - DebugBlend * 2);
+    float motionColorRatio = saturate(DebugBlend * 2);
+    color.rgb = lerp(color.rgb * colorRation, motionColor.rgb, motionColor.a * motionColorRatio);
 
-    float3 rgb = mc.rgb;
-
-    float src_ratio = saturate(2 - DebugBlend * 2);
-    float mc_ratio = saturate(DebugBlend * 2);
-    rgb = lerp(src.rgb * src_ratio, rgb, mc.a * mc_ratio);
-
-    return float4(rgb, src.a);
+    return color;
 }
 
 // Motion vector arrow data from VS to PS
@@ -88,60 +85,51 @@ ArrowVaryings VS_DebugArrow(uint VertexId : SV_VertexID)
 {
     // Screen aspect ratio
     float aspect = GBuffer.ScreenSize.x * GBuffer.ScreenSize.w;
-    float inv_aspect = GBuffer.ScreenSize.y * GBuffer.ScreenSize.z;
+    float aspectInv = GBuffer.ScreenSize.y * GBuffer.ScreenSize.z;
 
     // Vertex IDs
-    uint arrow_id = VertexId / 6;
-    uint point_id = VertexId - arrow_id * 6;
+    uint arrowId = VertexId / 6;
+    uint pointId = VertexId - arrowId * 6;
 
-    // Column/Row number of the arrow
-    uint row = arrow_id / DebugColumnCount;
-    uint col = arrow_id - row * DebugColumnCount;
+    // Column and row number of the arrow
+    uint row = arrowId / DebugColumnCount;
+    uint col = arrowId - row * DebugColumnCount;
 
-    // Texture coordinate of the reference point
+    // Get the motion vector
     float2 uv = float2((col + 0.5) / DebugColumnCount, (row + 0.5) / DebugRowCount);
-
-    // Retrieve the motion vector
-    float2 mv = SAMPLE_RT(Input1, uv).rg * DebugAmplitude;
+    float2 motionVector = SAMPLE_RT(Input1, uv).rg * DebugAmplitude;
 
     // Arrow color
-    float4 color = VectorToColor(mv);
+    float4 color = VectorToColor(motionVector);
 
-    // Arrow vertex position parameter (0 = origin, 1 = head)
-    float arrow_l = point_id > 0;
-
-    // Rotation matrix for the arrow head
-    float2 head_dir = normalize(mv * float2(aspect, 1));
-    float2x2 head_rot = float2x2(head_dir.y, head_dir.x, -head_dir.x, head_dir.y);
-
-    // Offset for arrow head vertices
-    float head_x = point_id == 3 ? -1 : (point_id == 5 ? 1 : 0);
-    head_x *= arrow_l * 0.3 * saturate(length(mv) * DebugRowCount);
-
-    float2 head_offs = float2(head_x, -abs(head_x));
-    head_offs = mul(head_rot, head_offs) * float2(inv_aspect, 1);
+    // Arrow transformation
+    float isEnd = pointId > 0;
+    float2 direction = normalize(motionVector * float2(aspect, 1));
+    float2x2 rotation = float2x2(direction.y, direction.x, -direction.x, direction.y);
+    float offsetStart = pointId == 3 ? -1 : (pointId == 5 ? 1 : 0);
+    offsetStart *= isEnd * 0.3f * saturate(length(motionVector) * DebugRowCount);
+    float2 offset = float2(offsetStart, -abs(offsetStart));
+    offset = mul(rotation, offset) * float2(aspectInv, 1);
 
     // Vertex position in the clip space
-    float2 vp = mv * arrow_l + head_offs * 2 / DebugRowCount + uv * 2 - 1;
+    float2 pos = motionVector * isEnd + offset * 2 / DebugRowCount + uv * 2.0f - 1.0f;
 
     // Convert to the screen coordinates
-    float2 scoord = (vp + 1) * 0.5 * GBuffer.ScreenSize.xy;
-
-    // Snap to a pixel-perfect position.
-    scoord = round(scoord);
+    float2 posSS = (pos + 1) * 0.5f * GBuffer.ScreenSize.xy;
+    posSS = round(posSS);
 
     // Bring back to the clip space
-    vp = (scoord + 0.5) * GBuffer.ScreenSize.zw * 2 - 1;
-    vp.y *= -1;
+    pos = (posSS + 0.5f) * GBuffer.ScreenSize.zw * 2.0f - 1.0f;
+    pos.y *= -1;
 
     // Color tweaks
-    color.rgb = lerp(color.rgb, 1, 0.5);
+    color.rgb = lerp(color.rgb, 1, 0.5f);
     color.a = DebugBlend;
 
     // Output
     ArrowVaryings output;
-    output.Position = float4(vp, 0, 1);
-    output.ScreenUV = scoord;
+    output.Position = float4(pos, 0, 1);
+    output.ScreenUV = posSS;
     output.Color = color;
     return output;
 }
@@ -150,8 +138,8 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_DebugArrow(ArrowVaryings input) : SV_Target
 {
     // Pseudo anti-aliasing
-    float aa = length(frac(input.ScreenUV) - 0.5) / 0.707;
-    aa *= (aa * (aa * 0.305306011 + 0.682171111) + 0.012522878); // gamma
+    float aa = length(frac(input.ScreenUV) - 0.5f) / 0.707f;
+    aa *= (aa * (aa * 0.305306011f + 0.682171111f) + 0.012522878f);
     return float4(input.Color.rgb, input.Color.a * aa);
 }
 
@@ -190,10 +178,10 @@ float4 PS_VelocitySetup(Quad_VS2PS input) : SV_Target
 	float2 v = SAMPLE_RT(Input0, input.TexCoord).rg;
 
 	// Apply the exposure time and convert to the pixel space
-	v *= (VelocityScale * 0.5) * GBuffer.ScreenSize.xy;
+	v *= (VelocityScale * 0.5f) * GBuffer.ScreenSize.xy;
 
 	// Clamp the vector with the maximum blur radius
-	v /= max(1.0, length(v) * RcpMaxBlurRadius);
+	v /= max(1.0f, length(v) * RcpMaxBlurRadius);
 
 	// Sample the depth of the pixel
 	float depth = SAMPLE_RT(Input1, input.TexCoord).r;
@@ -201,7 +189,7 @@ float4 PS_VelocitySetup(Quad_VS2PS input) : SV_Target
 	depth = LinearizeZ(gBufferData, depth);
 
 	// Pack into 10/10/10/2 format
-	return float4((v * RcpMaxBlurRadius + 1.0) * 0.5, depth, 0.0);
+	return float4((v * RcpMaxBlurRadius + 1.0f) * 0.5f, depth, 0.0f);
 }
 
 float2 MaxV(float2 v1, float2 v2)
@@ -220,40 +208,40 @@ float4 PS_TileMax1(Quad_VS2PS input) : SV_Target
 	float2 v3 = SAMPLE_RT(Input0, input.TexCoord + d.xw).rg;
 	float2 v4 = SAMPLE_RT(Input0, input.TexCoord + d.zw).rg;
 
-	v1 = (v1 * 2.0 - 1.0) * MaxBlurRadius;
-	v2 = (v2 * 2.0 - 1.0) * MaxBlurRadius;
-	v3 = (v3 * 2.0 - 1.0) * MaxBlurRadius;
-	v4 = (v4 * 2.0 - 1.0) * MaxBlurRadius;
+	v1 = (v1 * 2.0f - 1.0f) * MaxBlurRadius;
+	v2 = (v2 * 2.0f - 1.0f) * MaxBlurRadius;
+	v3 = (v3 * 2.0f - 1.0f) * MaxBlurRadius;
+	v4 = (v4 * 2.0f - 1.0f) * MaxBlurRadius;
 
-	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0, 0.0);
+	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0f, 0.0f);
 }
 
 // Pixel Shader for TileMax filter (2 pixel width)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_TileMax2(Quad_VS2PS input) : SV_Target
 {
-	float4 d = TexelSize2.xyxy * float4(-0.5, -0.5, 0.5, 0.5);
+	float4 d = TexelSize2.xyxy * float4(-0.5f, -0.5f, 0.5f, 0.5f);
 
 	float2 v1 = SAMPLE_RT(Input0, input.TexCoord + d.xy).rg;
 	float2 v2 = SAMPLE_RT(Input0, input.TexCoord + d.zy).rg;
 	float2 v3 = SAMPLE_RT(Input0, input.TexCoord + d.xw).rg;
 	float2 v4 = SAMPLE_RT(Input0, input.TexCoord + d.zw).rg;
 
-	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0, 0.0);
+	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0f, 0.0f);
 }
 
 // Pixel Shader for TileMax filter (2 pixel width)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_TileMax4(Quad_VS2PS input) : SV_Target
 {
-	float4 d = TexelSize4.xyxy * float4(-0.5, -0.5, 0.5, 0.5);
+	float4 d = TexelSize4.xyxy * float4(-0.5f, -0.5f, 0.5f, 0.5f);
 
 	float2 v1 = SAMPLE_RT(Input0, input.TexCoord + d.xy).rg;
 	float2 v2 = SAMPLE_RT(Input0, input.TexCoord + d.zy).rg;
 	float2 v3 = SAMPLE_RT(Input0, input.TexCoord + d.xw).rg;
 	float2 v4 = SAMPLE_RT(Input0, input.TexCoord + d.zw).rg;
 
-	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0, 0.0);
+	return float4(MaxV(MaxV(MaxV(v1, v2), v3), v4), 0.0f, 0.0f);
 }
 
 // Pixel Shader for TileMax filter (variable width)
@@ -306,7 +294,7 @@ float4 PS_NeighborMax(Quad_VS2PS input) : SV_Target
 	float2 vb = MaxV(v4, MaxV(v5, v6));
 	float2 vc = MaxV(v7, MaxV(v8, v9));
 
-	return float4(MaxV(va, MaxV(vb, vc)) * (1.0 / cw), 0.0, 0.0);
+	return float4(MaxV(va, MaxV(vb, vc)) * (1.0f / cw), 0.0f, 0.0f);
 }
 
 // Interleaved gradient function from Jimenez 2014
@@ -314,8 +302,8 @@ float4 PS_NeighborMax(Quad_VS2PS input) : SV_Target
 float GradientNoise(float2 uv)
 {
     uv = floor(uv * GBuffer.ScreenSize.xy);
-    float f = dot(float2(0.06711056, 0.00583715), uv);
-    return frac(52.9829189 * frac(f));
+    float f = dot(float2(0.06711056f, 0.00583715f), uv);
+    return frac(52.9829189f * frac(f));
 }
 
 // Returns true or false with a given interval
@@ -328,103 +316,77 @@ bool Interval(float phase, float interval)
 float2 JitterTile(float2 uv)
 {
 	float rx, ry;
-	sincos(GradientNoise(uv + float2(2.0, 0.0)) * (2.0f * PI), ry, rx);
-	return float2(rx, ry) * TexelSizeNM.xy * 0.25;
+	sincos(GradientNoise(uv + float2(2.0f, 0.0f)) * (2.0f * PI), ry, rx);
+	return float2(rx, ry) * TexelSizeNM.xy * 0.25f;
 }
 
 // Velocity sampling function
 float3 SampleVelocity(float2 uv)
 {
 	float3 v = SAMPLE_RT(Input1, uv).xyz;
-	return float3((v.xy * 2.0 - 1.0) * MaxBlurRadius, v.z);
+	return float3((v.xy * 2.0f - 1.0f) * MaxBlurRadius, v.z);
 }
 
 // Pixel Shader for reconstruction filter (applies the motion blur to the frame)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Reconstruction(Quad_VS2PS input) : SV_Target
 {
-	// Color sample at the center point
-	const float4 c_p = SAMPLE_RT(Input0, input.TexCoord);
+	// Sample at the current location
+	const float4 color = SAMPLE_RT(Input0, input.TexCoord);
+	const float3 velocity = SampleVelocity(input.TexCoord);
+	const float velocityLen = max(length(velocity.xy), 0.5);
+	const float depthInv = 1.0 / velocity.z;
 
-	// Velocity/Depth sample at the center point
-	const float3 vd_p = SampleVelocity(input.TexCoord);
-	const float l_v_p = max(length(vd_p.xy), 0.5);
-	const float rcp_d_p = 1.0 / vd_p.z;
+	const float2 velocityMax = SAMPLE_RT(Input2, input.TexCoord + JitterTile(input.TexCoord)).xy;
+	const float velocityMaxLength = length(velocityMax);
+	if (velocityMaxLength < 2.0f)
+		return color;
+	const float2 velocityWeighted = (velocityLen * 2.0f > velocityMaxLength) ? velocity.xy * (velocityMaxLength / velocityLen) : velocityMax;
 
-	// NeighborMax vector sample at the center point
-	const float2 v_max = SAMPLE_RT(Input2, input.TexCoord + JitterTile(input.TexCoord)).xy;
-	const float l_v_max = length(v_max);
-	const float rcp_l_v_max = 1.0 / l_v_max;
+	// Calculate the amount of samples
+	const float sc = floor(min(LoopCount, velocityMaxLength * 0.5f));
 
-	// Escape early if the NeighborMax vector is small enough
-	if (l_v_max < 2.0)
-		return c_p;
-
-	// Use V_p as a secondary sampling direction except when it's too small
-	// compared to V_max. This vector is rescaled to be the length of V_max.
-	const float2 v_alt = (l_v_p * 2.0 > l_v_max) ? vd_p.xy * (l_v_max / l_v_p) : v_max;
-
-	// Determine the sample count.
-	const float sc = floor(min(LoopCount, l_v_max * 0.5));
-
-	// Loop variables (starts from the outermost sample)
-	const float dt = 1.0 / sc;
-	const float t_offs = (GradientNoise(input.TexCoord) - 0.5) * dt;
-	float t = 1.0 - dt * 0.5;
-	float count = 0.0;
-
-	// Background velocity
-	// This is used for tracking the maximum velocity in the background layer
-	float l_v_bg = max(l_v_p, 1.0);
-
-	// Color accumlation
-	float4 acc = 0.0;
+	// Accumlation loop
+	float backgroudVelocity = max(velocityLen, 1.0f);
+	const float dt = 1.0f / sc;
+	const float offsetNoise = (GradientNoise(input.TexCoord) - 0.5f) * dt;
+	float t = 1.0f - dt * 0.5f;
+	float count = 0.0f;
+	float4 sum = 0.0f;
 	LOOP
 	while (t > dt * 0.25)
 	{
 		// Sampling direction (switched per every two samples)
-		const float2 v_s = Interval(count, 4.0) ? v_alt : v_max;
+		const float2 sampleVelocity = Interval(count, 4.0) ? velocityWeighted : velocityMax;
 
 		// Sample position (inverted per every sample)
-		const float t_s = (Interval(count, 2.0) ? -t : t) + t_offs;
+		const float samplePosition = (Interval(count, 2.0) ? -t : t) + offsetNoise;
 
-		// Distance to the sample position
-		const float l_t = l_v_max * abs(t_s);
+		// Calculate UVs for the sample position
+		const float2 sampleUV = input.TexCoord + sampleVelocity * samplePosition * GBuffer.ScreenSize.zw;
 
-		// UVs for the sample position
-		const float2 uv0 = input.TexCoord + v_s * t_s * GBuffer.ScreenSize.zw;
-		//const float2 uv1 = input.TexCoord + v_s * t_s * MotionVectorsTexelSize.xy;
-		const float2 uv1 = uv0;
-
-		// Color sample
-		const float3 c = SAMPLE_RT(Input0, uv0).rgb;
-
-		// Velocity/Depth sample
-		const float3 vd = SampleVelocity(uv1);
-
-		// Background/Foreground separation
-		const float fg = saturate((vd_p.z - vd.z) * 20.0 * rcp_d_p);
+		// Sample color and velocity with depth
+		const float3 c = SAMPLE_RT(Input0, sampleUV).rgb;
+		const float3 velocityDepth = SampleVelocity(sampleUV);
 
 		// Length of the velocity vector
-		const float l_v = lerp(l_v_bg, length(vd.xy), fg);
+		const float foreground = saturate((velocity.z - velocityDepth.z) * 20.0f * depthInv);
+		const float sampleVelocityLength = lerp(backgroudVelocity, length(velocityDepth.xy), foreground);
 
-		// Sample weight
-		// (Distance test) * (Spreading out by motion) * (Triangular window)
-		const float w = saturate(l_v - l_t) / l_v * (1.2 - t);
+		// Apply color accumulation
+		float weight = saturate(sampleVelocityLength - (velocityMaxLength * abs(samplePosition))) / sampleVelocityLength * (1.2f - t);
+		sum += float4(c, 1.0) * weight;
 
-		// Color accumulation
-		acc += float4(c, 1.0) * w;
+		// Calculate the background velocity
+		backgroudVelocity = max(backgroudVelocity, sampleVelocityLength);
 
-		// Update the background velocity.
-		l_v_bg = max(l_v_bg, l_v);
-
-		// Advance to the next sample.
-		t = Interval(count, 2.0) ? t - dt : t;
-		count += 1.0;
+		// Move to the next sample
+		t = Interval(count, 2.0f) ? t - dt : t;
+		count += 1.0f;
 	}
 
 	// Add the center sample
-	acc += float4(c_p.rgb, 1.0) * (1.2 / (l_v_bg * sc * 2.0));
+	sum += float4(color.rgb, 1.0f) * (1.2f / (backgroudVelocity * sc * 2.0f));
 
-	return float4(acc.rgb / acc.a, c_p.a);
+	return float4(sum.rgb / sum.a, color.a);
 }

@@ -476,6 +476,25 @@ namespace Flax.Build
                             "System.Core",
                         };
                         SetupProjectConfigurations(project, rootProject);
+                        if (project.Configurations.Count == 0)
+                        {
+                            // Hardcoded dummy configuration even if platform tools are missing for this platform
+                            var platform = Platform.BuildPlatform;
+                            var architecture = TargetArchitecture.x64;
+                            var configuration = TargetConfiguration.Debug;
+                            project.Configurations.Add(new Project.ConfigurationData
+                            {
+                                Platform = platform.Target,
+                                PlatformName = platform.Target.ToString(),
+                                Architecture = architecture,
+                                ArchitectureName = architecture.ToString(),
+                                Configuration = configuration,
+                                ConfigurationName = configuration.ToString(),
+                                Target = target,
+                                TargetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.WorkspaceRootPath),
+                                Modules = new Dictionary<Module, BuildOptions>(),
+                            });
+                        }
                         var c = project.Configurations[0];
                         c.Name = "Debug|AnyCPU";
                         c.Text = "Debug";

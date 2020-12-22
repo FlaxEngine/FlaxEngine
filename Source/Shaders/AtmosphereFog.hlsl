@@ -24,39 +24,38 @@
 
 static const float HeightOffset = 0.01f;
 
-/** inscattered light along ray x+tv, when sun in direction s (=S[L]-T(x,x0)S[L]|x0) */
-float3 GetInscatterColor(float fogDepth, float3 X, float T, float3 V, float3 S, float radius, float Mu, out float3 attenuation, bool isSceneGeometry) 
+// inscattered light along ray x+tv, when sun in direction s (=S[L]-T(x,x0)S[L]|x0)
+float3 GetInscatterColor(float fogDepth, float3 X, float T, float3 V, float3 S, float radius, float Mu, out float3 attenuation, bool isSceneGeometry)
 {
-    float3 result = float3(0.f, 0.f, 0.f); 	// X in space and ray looking in space, intialize
-	attenuation = float3(1.f, 1.f, 1.f);
+	float3 result = float3(0.0f, 0.0f, 0.0f);
+	attenuation = float3(1.0f, 1.0f, 1.0f);
 
-	float D = -radius * Mu - sqrt(radius * radius * (Mu * Mu - 1.0) + RadiusAtmosphere * RadiusAtmosphere);
-    if (D > 0.0) 
-	{ 
-		// if X in space and ray intersects atmosphere
-        // move X to nearest intersection of ray with top atmosphere boundary
-        X += D * V;
-        T -= D;
-        Mu = (radius * Mu + D) / RadiusAtmosphere;
-        radius = RadiusAtmosphere;
-    }
-
-	float Epsilon = 0.005f;//maybe 0.004?
-
-	if (radius < RadiusGround + HeightOffset + Epsilon)
+	float d = -radius * Mu - sqrt(radius * radius * (Mu * Mu - 1.0) + RadiusAtmosphere * RadiusAtmosphere);
+	if (d > 0.0f)
 	{
-		float Diff = (RadiusGround + HeightOffset + Epsilon) - radius;
-		X -= Diff * V;
-		T -= Diff;
-		radius = RadiusGround + HeightOffset + Epsilon;
+		// if X in space and ray intersects atmosphere
+		// move X to nearest intersection of ray with top atmosphere boundary
+		X += d * V;
+		T -= d;
+		Mu = (radius * Mu + d) / RadiusAtmosphere;
+		radius = RadiusAtmosphere;
+	}
+
+	float epsilon = 0.005f;
+
+	if (radius < RadiusGround + HeightOffset + epsilon)
+	{
+		float diff = (RadiusGround + HeightOffset + epsilon) - radius;
+		X -= diff * V;
+		T -= diff;
+		radius = RadiusGround + HeightOffset + epsilon;
 		Mu = dot(X, V) / radius;
 	}
 
-	if (radius <= RadiusAtmosphere && fogDepth > 0.f) 
-	{ 
+	if (radius <= RadiusAtmosphere && fogDepth > 0.0f)
+	{
 		float3 X0 = X + T * V;
 		float R0 = length(X0);
-		// if ray intersects atmosphere
 		float Nu = dot(V, S);
 		float MuS = dot(X, S) / radius;
 
@@ -64,11 +63,11 @@ float3 GetInscatterColor(float fogDepth, float3 X, float T, float3 V, float3 S, 
 
 		if (isSceneGeometry)
 		{
-			Mu = max(Mu, MuHorizon + Epsilon + 0.15);
+			Mu = max(Mu, MuHorizon + epsilon + 0.15f);
 		}
 		else
-		{ 
-			Mu = max(Mu, MuHorizon + Epsilon);
+		{
+			Mu = max(Mu, MuHorizon + epsilon);
 		}
 
 		float MuOriginal = Mu;
@@ -81,9 +80,8 @@ float3 GetInscatterColor(float fogDepth, float3 X, float T, float3 V, float3 S, 
 			{
 				V.z = max(V.z, 0.15);
 				V = normalize(V);
-				float3 X1 = X + T * V;
-				float R1 = length(X1);
-				Mu = dot(X1, V) / R1; 
+				float3 x1 = X + T * V;
+				Mu = dot(x1, V) / length(x1);
 			}
 		}
 
@@ -91,264 +89,186 @@ float3 GetInscatterColor(float fogDepth, float3 X, float T, float3 V, float3 S, 
 		float phaseM = PhaseFunctionM(Nu);
 		float4 inscatter = max(Texture4DSample(AtmosphereInscatterTexture, radius, Mu, MuS, Nu), 0.0);
 
-		if (T > 0.0) 
+		if (T > 0.0)
 		{
-#if ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-			// Avoids imprecision problems in transmittance computations based on textures
 			attenuation = AnalyticTransmittance(radius, Mu, T);
-#else
-			attenuation = TransmittanceWithDistance(radius, Mu, V, X0);
-#endif
-
 			float Mu0 = dot(X0, V) / R0;
 			float MuS0 = dot(X0, S) / R0;
-			
 			if (isSceneGeometry)
 			{
 				R0 = max(R0, radius);
 			}
-			
+
 			if (R0 > RadiusGround + HeightOffset)
 			{
 				if (blendRatio < 1.0)
 				{
 					inscatter = max(inscatter - attenuation.rgbr * Texture4DSample(AtmosphereInscatterTexture, R0, Mu0, MuS0, Nu), 0.0);
-#if ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-					// avoids imprecision problems near horizon by interpolating between two points above and below horizon
-					if (!isSceneGeometry ) 
+					if (!isSceneGeometry)
 					{
-						if (abs(Mu - MuHorizon) < Epsilon)
+						if (abs(Mu - MuHorizon) < epsilon)
 						{
-							float Alpha = ((Mu - MuHorizon) + Epsilon) * 0.5f / Epsilon;
-
-							Mu = MuHorizon - Epsilon;
+							Mu = MuHorizon - epsilon;
 							R0 = sqrt(radius * radius + T * T + 2.0 * radius * T * Mu);
 							Mu0 = (radius * Mu + T) / R0;
 
-							Mu0 = max(MuHorizon + Epsilon, Mu0);
-							float4 Inscatter0 = Texture4DSample(AtmosphereInscatterTexture, radius, Mu, MuS, Nu);
-							float4 Inscatter1 = Texture4DSample(AtmosphereInscatterTexture, R0, Mu0, MuS0, Nu);
-							float4 InscatterA = max(Inscatter0 - attenuation.rgbr * Inscatter1, 0.0);
+							Mu0 = max(MuHorizon + epsilon, Mu0);
+							float4 inscatter0 = Texture4DSample(AtmosphereInscatterTexture, radius, Mu, MuS, Nu);
+							float4 inscatter1 = Texture4DSample(AtmosphereInscatterTexture, R0, Mu0, MuS0, Nu);
+							float4 inscatterA = max(inscatter0 - attenuation.rgbr * inscatter1, 0.0);
 
-							Mu = MuHorizon + Epsilon;
+							Mu = MuHorizon + epsilon;
 							R0 = sqrt(radius * radius + T * T + 2.0 * radius * T * Mu);
 
 							Mu0 = (radius * Mu + T) / R0;
-							Mu0 = max(MuHorizon + Epsilon, Mu0);
-							Inscatter0 = Texture4DSample(AtmosphereInscatterTexture, radius, Mu, MuS, Nu);
-							Inscatter1 = Texture4DSample(AtmosphereInscatterTexture, R0, Mu0, MuS0, Nu);
-							float4 InscatterB = max(Inscatter0 - attenuation.rgbr * Inscatter1, 0.0);
+							Mu0 = max(MuHorizon + epsilon, Mu0);
+							inscatter0 = Texture4DSample(AtmosphereInscatterTexture, radius, Mu, MuS, Nu);
+							inscatter1 = Texture4DSample(AtmosphereInscatterTexture, R0, Mu0, MuS0, Nu);
+							float4 inscatterB = max(inscatter1 - attenuation.rgbr * inscatter1, 0.0);
 
-							inscatter = lerp(InscatterA, InscatterB, Alpha);
+							float alpha = ((Mu - MuHorizon) + epsilon) * 0.5f / epsilon;
+							inscatter = lerp(inscatterA, inscatterB, alpha);
 						}
 					}
 					else if (blendRatio > 0.0)
 					{
-						inscatter = lerp(inscatter, (1.0 - attenuation.rgbr) * max(Texture4DSample(AtmosphereInscatterTexture, radius, MuOriginal, MuS, Nu), 0.0),  blendRatio);
+						inscatter = lerp(inscatter, (1.0 - attenuation.rgbr) * max(Texture4DSample(AtmosphereInscatterTexture, radius, MuOriginal, MuS, Nu), 0.0), blendRatio);
 					}
-#endif
 				}
 				else
 				{
-					inscatter = (1.0 - attenuation.rgbr) * inscatter; 
+					inscatter = (1.0 - attenuation.rgbr) * inscatter;
 				}
 			}
 		}
-#if ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-        // Avoids imprecision problems in Mie scattering when sun is below horizon
-        inscatter.w *= smoothstep(0.00, 0.02, MuS);
-#endif
-        result = max(inscatter.rgb * phaseR + GetMie(inscatter) * phaseM, 0.0);
-    } 
-	
+
+		inscatter.w *= smoothstep(0.00, 0.02, MuS);
+		result = max(inscatter.rgb * phaseR + GetMie(inscatter) * phaseM, 0.0);
+	}
+
 	return result;
 }
 
-// Ground radiance at end of ray x+tv, when sun in direction s attenuated bewteen ground and viewer (=R[L0]+R[L*])
+// Ground radiance at end of ray x+tv, when sun in direction s attenuated between ground and viewer (=R[L0]+R[L*])
 float3 GetGroundColor(float4 sceneColor, float3 X, float T, float3 V, float3 S, float radius, float3 attenuation, bool isSceneGeometry)
 {
-    float3 result = float3(0.f, 0.f, 0.f); 	// ray looking at the sky (for intial value)
-    if (T > 0.0) 
-	{ 
+	float3 result = float3(0.0f, 0.0f, 0.0f);
+	if (T > 0.0f)
+	{
 		// if ray hits ground surface
-        // ground Reflectance at end of ray, X0
-        float3 X0 = X + T * V;
-        float R0 = length(X0);
-        float3 N = X0 / R0;
-		N = X0 / R0;
+		// ground Reflectance at end of ray, X0
+		float3 X0 = X + T * V;
+		float R0 = length(X0);
+		float3 N = X0 / R0;
 		sceneColor.xyz = saturate(sceneColor.xyz + 0.05);
 
-        float4 reflectance = sceneColor * float4(0.2, 0.2, 0.2, 1.0);
+		float4 reflectance = sceneColor * float4(0.2, 0.2, 0.2, 1.0);
 
-        // direct sun light (radiance) reaching X0
-        float MuS = dot(N, S);
-        float3 SunLight = isSceneGeometry ? float3(0.f, 0.f, 0.f) : TransmittanceWithShadow(R0, MuS);
+		// direct sun light (radiance) reaching X0
+		float MuS = dot(N, S);
+		float3 sunLight = isSceneGeometry ? float3(0.f, 0.f, 0.f) : TransmittanceWithShadow(R0, MuS);
 
-        // precomputed sky light (irradiance) (=E[L*]) at X0
-        float3 GroundSkyLight = Irradiance(AtmosphereIrradianceTexture, R0, MuS);
+		// precomputed sky light (irradiance) (=E[L*]) at X0
+		float3 groundSkyLight = Irradiance(AtmosphereIrradianceTexture, R0, MuS);
 
-        // light reflected at X0 (=(R[L0]+R[L*])/T(X,X0))
-		float3 groundColor = (reflectance.rgb * (max(MuS, 0.0) * SunLight + GroundSkyLight)) / PI;
+		// light reflected at X0 (=(R[L0]+R[L*])/T(X,X0))
+		float3 groundColor = reflectance.rgb * ((max(MuS, 0.0) * sunLight + groundSkyLight) / PI);
 
-        // water specular color due to SunLight
-        if (!isSceneGeometry && reflectance.w > 0.0) 
+		// water specular color due to SunLight
+		if (!isSceneGeometry && reflectance.w > 0.0)
 		{
-            float3 H = normalize(S - V);
-            float fresnel = 0.02 + 0.98 * pow(1.0 - dot(-V, H), 5.0);
-            float waterBrdf = fresnel * pow(max(dot(H, N), 0.0), 150.0);
-            groundColor += reflectance.w * max(waterBrdf, 0.0) * SunLight;
-        }
+			float3 H = normalize(S - V);
+			float fresnel = 0.02 + 0.98 * pow(1.0 - dot(-V, H), 5.0);
+			float waterBrdf = fresnel * pow(max(dot(H, N), 0.0), 150.0);
+			groundColor += reflectance.w * max(waterBrdf, 0.0) * sunLight;
+		}
 
 		result = attenuation * groundColor; //=R[L0]+R[L*]
-    } 
-    return result;
+	}
+	return result;
 }
 
 // Direct sun light for ray x+tv, when sun in direction s (=L0)
-float3 GetSunColor(AtmosphericFogData atmosphericFog, float3 X, float T, float3 V, float3 S, float radius, float Mu) 
+float3 GetSunColor(AtmosphericFogData atmosphericFog, float3 X, float T, float3 V, float3 S, float radius, float Mu)
 {
 	if (T > 0.0)
-	{
 		return float3(0.0f, 0.0f, 0.0f);
-	}
-	else
-	{
-		float3 transmittance = radius <= RadiusAtmosphere ? TransmittanceWithShadow(radius, Mu) : float3(1.0, 1.0, 1.0); // T(X,xo)
-		float sunIntensity = step(cos(PI * atmosphericFog.AtmosphericFogSunDiscScale / 180.0), dot(V, S)); // Lsun
-		return transmittance * sunIntensity; // Eq (9)
-	}
+
+	float3 transmittance = radius <= RadiusAtmosphere ? TransmittanceWithShadow(radius, Mu) : float3(1.0, 1.0, 1.0); // T(X,xo)
+	float sunIntensity = step(cos(PI * atmosphericFog.AtmosphericFogSunDiscScale / 180.0), dot(V, S)); // Lsun
+	return transmittance * sunIntensity; // Eq (9)
 }
 
 float3 inscatter(inout float3 x, inout float t, float3 v, float3 s, out float r, out float mu, out float3 attenuation)
 {
-    float3 result = 0;
-    r = length(x);
-    mu = dot(x, v) / r;
-    float d = -r * mu - sqrt(r * r * (mu * mu - 1.0) + RadiusAtmosphere * RadiusAtmosphere);
+	float3 result = 0;
+	r = length(x);
+	mu = dot(x, v) / r;
+	float d = -r * mu - sqrt(r * r * (mu * mu - 1.0) + RadiusAtmosphere * RadiusAtmosphere);
 
 	// if x in space and ray intersects atmosphere
-    if (d > 0.0)
+	if (d > 0.0)
 	{
-        // move x to nearest intersection of ray with top atmosphere boundary
-        x += d * v;
-        t -= d;
-        mu = (r * mu + d) / RadiusAtmosphere;
-        r = RadiusAtmosphere;
-    }
+		// move x to nearest intersection of ray with top atmosphere boundary
+		x += d * v;
+		t -= d;
+		mu = (r * mu + d) / RadiusAtmosphere;
+		r = RadiusAtmosphere;
+	}
+
+	float epsilon = 0.0045f;
 
 	// if ray intersects atmosphere
-    if (r <= RadiusAtmosphere)
+	if (r <= RadiusAtmosphere)
 	{
-        float nu = dot(v, s);
-        float muS = dot(x, s) / r;
-        float phaseR = PhaseFunctionR(nu);
-        float phaseM = PhaseFunctionM(nu);
-        float4 inscatter = max(Texture4DSample(AtmosphereInscatterTexture, r, mu, muS, nu), 0.0);
+		float nu = dot(v, s);
+		float muS = dot(x, s) / r;
+		float phaseR = PhaseFunctionR(nu);
+		float phaseM = PhaseFunctionM(nu);
+		float4 inscatter = max(Texture4DSample(AtmosphereInscatterTexture, r, mu, muS, nu), 0.0);
 
-        if (t > 0.0)
+		if (t > 0.0)
 		{
-            float3 x0 = x + t * v;
-            float r0 = length(x0);
-            float rMu0 = dot(x0, v);
-            float mu0 = rMu0 / r0;
-            float muS0 = dot(x0, s) / r0;
-#ifdef ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-            // avoids imprecision problems in transmittance computations based on textures
+			float3 x0 = x + t * v;
+			float r0 = length(x0);
+			float rMu0 = dot(x0, v);
+			float mu0 = rMu0 / r0;
+			float muS0 = dot(x0, s) / r0;
             attenuation = AnalyticTransmittance(r, mu, t);
-#else
-            attenuation = TransmittanceWithDistance(r, mu, v, x0);
-#endif
-            if (r0 > RadiusGround + 0.01)
+			if (r0 > RadiusGround + 0.01)
 			{
-                // computes S[L]-T(x,x0)S[L]|x0
-                inscatter = max(inscatter - attenuation.rgbr * Texture4DSample(AtmosphereInscatterTexture, r0, mu0, muS0, nu), 0.0);
-#ifdef ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-                // avoids imprecision problems near horizon by interpolating between two points above and below horizon
-                const float EPS = 0.004;
+				// computes S[L]-T(x,x0)S[L]|x0
+				inscatter = max(inscatter - attenuation.rgbr * Texture4DSample(AtmosphereInscatterTexture, r0, mu0, muS0, nu), 0.0);
                 float muHoriz = -sqrt(1.0 - (RadiusGround / r) * (RadiusGround / r));
-                if (abs(mu - muHoriz) < EPS)
+                if (abs(mu - muHoriz) < epsilon)
 				{
-                    float a = ((mu - muHoriz) + EPS) / (2.0 * EPS);
 
-                    mu = muHoriz - EPS;
+                    mu = muHoriz - epsilon;
                     r0 = sqrt(r * r + t * t + 2.0 * r * t * mu);
                     mu0 = (r * mu + t) / r0;
                     float4 inScatter0 = Texture4DSample(AtmosphereInscatterTexture, r, mu, muS, nu);
                     float4 inScatter1 = Texture4DSample(AtmosphereInscatterTexture, r0, mu0, muS0, nu);
                     float4 inScatterA = max(inScatter0 - attenuation.rgbr * inScatter1, 0.0);
 
-                    mu = muHoriz + EPS;
+                    mu = muHoriz + epsilon;
                     r0 = sqrt(r * r + t * t + 2.0 * r * t * mu);
                     mu0 = (r * mu + t) / r0;
                     inScatter0 = Texture4DSample(AtmosphereInscatterTexture, r, mu, muS, nu);
                     inScatter1 = Texture4DSample(AtmosphereInscatterTexture, r0, mu0, muS0, nu);
                     float4 inScatterB = max(inScatter0 - attenuation.rgbr * inScatter1, 0.0);
-
-                    inscatter = lerp(inScatterA, inScatterB, a);
+					
+                    float alpha = ((mu - muHoriz) + epsilon) / (2.0 * epsilon);
+                    inscatter = lerp(inScatterA, inScatterB, alpha);
                 }
-#endif
-            }
-        }
-#ifdef ATMOSPHERIC_TEXTURE_SAMPLE_FIX
-        // avoids imprecision problems in Mie scattering when sun is below horizon
+			}
+		}
+
         inscatter.w *= smoothstep(0.00, 0.02, muS);
-#endif
-        result = max(inscatter.rgb * phaseR + GetMie(inscatter) * phaseM, 0.0);
-    }
+		result = max(inscatter.rgb * phaseR + GetMie(inscatter) * phaseM, 0.0);
+	}
 
-    return result;
+	return result;
 }
-/*
-//ground radiance at end of ray x+tv, when sun in direction s
-//attenuated bewteen ground and viewer (=R[L0]+R[L*])
-float3 groundColor(float3 x, float t, float3 v, float3 s, float r, float mu, float3 attenuation)
-{
-    float3 result;
-    if (t > 0.0)
-	{
-		// if ray hits ground surface
-        // ground reflectance at end of ray, x0
-        float3 x0 = x + t * v;
-        float r0 = length(x0);
-        float3 n = x0 / r0;
-
-		float4 SceneColor = 0;
-		
-		SceneColor.xyz = saturate(SceneColor.xyz + 0.05);
-		
-		float4 Reflectance = SceneColor * float4(0.2, 0.2, 0.2, 1.0);
-		
-		if (r0 > RadiusGround + 0.01)
-		{
-			reflectance = float4(0.4, 0.4, 0.4, 0.0);
-        }
-		
-        // direct sun light (radiance) reaching x0
-        float muS = dot(n, s);
-        float3 sunLight = transmittanceWithShadow(r0, muS);
-		
-        // precomputed sky light (irradiance) (=E[L*]) at x0
-        float3 groundSkyLight = Irradiance(AtmosphereIrradianceTexture, r0, muS);
-		
-        // light reflected at x0 (=(R[L0]+R[L*])/T(x,x0))
-        float3 groundColor = reflectance.rgb * (max(muS, 0.0) * sunLight + groundSkyLight) * ISun / M_PI;
-
-        // water specular color due to sunLight
-        if (reflectance.w > 0.0)
-		{
-            float3 h = normalize(s - v);
-            float fresnel = 0.02 + 0.98 * pow(1.0 - dot(-v, h), 5.0);
-            float waterBrdf = fresnel * pow(max(dot(h, n), 0.0), 150.0);
-          groundColor += reflectance.w * max(waterBrdf, 0.0) * sunLight * ISun;
-        }
-
-        result = attenuation * groundColor; //=R[L0]+R[L*]
-    } else { // ray looking at the sky
-        result = 0.0;
-    }
-return result;
-}
-*/
 
 static const float EPSILON_ATMOSPHERE = 0.002f;
 static const float EPSILON_INSCATTER = 0.004f;
@@ -359,19 +279,19 @@ static const float EPSILON_INSCATTER = 0.004f;
 // output - maxPathLength: distance traversed within atmosphere
 // output - return value: intersection occurred true/false
 bool intersectAtmosphere(in float3 viewPosition, in float3 d, out float offset, out float maxPathLength)
-{  
+{
 	offset = 0.0f;
 	maxPathLength = 0.0f;
-	
+
 	// vector from ray origin to center of the sphere
 	float3 l = -viewPosition;
-	float l2 = dot(l,l);
-	float s = dot(l,d);
-	
+	float l2 = dot(l, l);
+	float s = dot(l, d);
+
 	// adjust top atmosphere boundary by small epsilon to prevent artifacts
 	float r = Rt - EPSILON_ATMOSPHERE;
-	float r2 = r*r;
-	if(l2 <= r2)
+	float r2 = r * r;
+	if (l2 <= r2)
 	{
 		// ray origin inside sphere, hit is ensured
 		float m2 = l2 - (s * s);
@@ -379,11 +299,11 @@ bool intersectAtmosphere(in float3 viewPosition, in float3 d, out float offset, 
 		maxPathLength = s + q;
 		return true;
 	}
-	else if(s >= 0)
+	else if (s >= 0)
 	{
 		// ray starts outside in front of sphere, hit is possible
 		float m2 = l2 - (s * s);
-		if(m2 <= r2)
+		if (m2 <= r2)
 		{
 			// ray hits atmosphere definitely
 			float q = sqrt(r2 - m2);
@@ -392,7 +312,7 @@ bool intersectAtmosphere(in float3 viewPosition, in float3 d, out float offset, 
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -409,7 +329,7 @@ float3 GetInscatteredLight(AtmosphericFogData atmosphericFog, in float3 viewPosi
 
 	if (intersectAtmosphere(viewPosition, viewDir, offset, maxPathLength))
 	{
-		return float3(offset / 10,0,0);
+		return float3(offset / 10, 0, 0);
 
 		float pathLength = distance(viewPosition, surfacePos);
 		//return pathLength.xxx;
@@ -418,10 +338,11 @@ float3 GetInscatteredLight(AtmosphericFogData atmosphericFog, in float3 viewPosi
 		if (pathLength > offset)
 		{
 			//return float3(1,0,0);
-			
+
 			// offsetting camera 
 			float3 startPos = viewPosition + offset * viewDir;
-			float startPosHeight = length(startPos);  pathLength -= offset;
+			float startPosHeight = length(startPos);
+			pathLength -= offset;
 
 			// starting position of path is now ensured to be inside atmosphere
 			// was either originally there or has been moved to top boundary
@@ -508,9 +429,9 @@ float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float
 	viewPosition.y = (viewPosition.y - atmosphericFog.AtmosphericFogGroundOffset) * atmosphericFog.AtmosphericFogAltitudeScale;
 	//viewPosition *= atmosphericFog.AtmosphericFogDistanceScale;
 	//viewPosition *= scale;
-	
+
 	//viewPosition *= scale;
-	
+
 	//if(length(worldPosition) > Rg)
 	//	return float4(0, 0,0 ,0);
 	
@@ -531,27 +452,27 @@ float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float
 	return float4(0, 0, 0, 1);
 
 #endif
-	
+
 #if 1
 
-	// TODO: scale viewPosition from cm to km !!!!!!!
-	
+	// TODO: scale viewPosition from cm to km
+
 	float scale = 0.0001f * atmosphericFog.AtmosphericFogDistanceScale;
 	viewPosition.y = (viewPosition.y - atmosphericFog.AtmosphericFogGroundOffset) * atmosphericFog.AtmosphericFogAltitudeScale;
 	//viewPosition *= atmosphericFog.AtmosphericFogDistanceScale;
 	viewPosition *= scale;
 	//viewPosition.xz *= 0.00001f;
-	
+
 	//viewPosition *= scale;
 	viewPosition.y += RadiusGround + HeightOffset;
-	
+
 	//viewPosition.y -= atmosphericFog.AtmosphericFogGroundOffset;
 	//worldPosition
 	float Radius = length(viewPosition);
 	float3 V = normalize(viewVector);
 	float Mu = dot(viewPosition, V) / Radius;
 	float T = -Radius * Mu - sqrt(Radius * Radius * (Mu * Mu - 1.0) + RadiusGround * RadiusGround);
-	
+
 	//-Radius * Mu > sqrt(Radius * Radius * (Mu * Mu - 1.0) + RadiusGround * RadiusGround)
 	/*
 	float3 g = viewPosition - float3(0.0, 0.0, RadiusGround + 10.0);

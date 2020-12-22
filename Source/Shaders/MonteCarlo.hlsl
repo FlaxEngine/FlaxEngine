@@ -133,10 +133,10 @@ float4 ImportanceSampleGGX(float2 e, float roughness)
 
 // Multiple importance sampling power heuristic of two functions with a power of two. 
 // [Veach 1997, "Robust Monte Carlo Methods for Light Transport Simulation"]
-float MISWeight(uint number, float pdf, uint otherNumber, float otherpdf)
+float MISWeight(uint number, float PDF, uint otherNumber, float otherPDF)
 {
-	float weight = number * pdf;
-	float otherWeight = otherNumber * otherpdf;
+	float weight = number * PDF;
+	float otherWeight = otherNumber * otherPDF;
 	return weight * weight / (weight * weight + otherWeight * otherWeight);
 }
 

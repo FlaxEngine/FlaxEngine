@@ -11,9 +11,7 @@
 class GPUDeviceVulkan;
 class CmdBufferPoolVulkan;
 class QueueVulkan;
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
 class DescriptorPoolSetContainerVulkan;
-#endif
 
 /// <summary>
 /// Implementation of the command buffer for the Vulkan backend.
@@ -36,20 +34,20 @@ public:
 private:
 
     GPUDeviceVulkan* _device;
-    VkCommandBuffer CommandBufferHandle;
+    VkCommandBuffer _commandBufferHandle;
     State _state;
 
-    Array<VkPipelineStageFlags> WaitFlags;
-    Array<SemaphoreVulkan*> WaitSemaphores;
-    Array<SemaphoreVulkan*> SubmittedWaitSemaphores;
+    Array<VkPipelineStageFlags> _waitFlags;
+    Array<SemaphoreVulkan*> _waitSemaphores;
+    Array<SemaphoreVulkan*> _submittedWaitSemaphores;
 
     void MarkSemaphoresAsSubmitted()
     {
-        WaitFlags.Clear();
+        _waitFlags.Clear();
 
         // Move to pending delete list
-        SubmittedWaitSemaphores = WaitSemaphores;
-        WaitSemaphores.Clear();
+        _submittedWaitSemaphores = _waitSemaphores;
+        _waitSemaphores.Clear();
     }
 
     FenceVulkan* _fence;
@@ -58,12 +56,14 @@ private:
 #endif
 
     // Last value passed after the fence got signaled
-    volatile uint64 FenceSignaledCounter;
+    volatile uint64 _fenceSignaledCounter;
 
     // Last value when we submitted the cmd buffer; useful to track down if something waiting for the fence has actually been submitted
-    volatile uint64 SubmittedFenceCounter;
+    volatile uint64 _submittedFenceCounter;
 
-    CmdBufferPoolVulkan* CommandBufferPool;
+    CmdBufferPoolVulkan* _commandBufferPool;
+
+    DescriptorPoolSetContainerVulkan* _descriptorPoolSetContainer = nullptr;
 
 public:
 
@@ -75,7 +75,7 @@ public:
 
     CmdBufferPoolVulkan* GetOwner()
     {
-        return CommandBufferPool;
+        return _commandBufferPool;
     }
 
     State GetState()
@@ -115,17 +115,17 @@ public:
 
     inline VkCommandBuffer GetHandle() const
     {
-        return CommandBufferHandle;
+        return _commandBufferHandle;
     }
 
     inline volatile uint64 GetFenceSignaledCounter() const
     {
-        return FenceSignaledCounter;
+        return _fenceSignaledCounter;
     }
 
     inline volatile uint64 GetSubmittedFenceCounter() const
     {
-        return SubmittedFenceCounter;
+        return _submittedFenceCounter;
     }
 
 public:
@@ -138,11 +138,12 @@ public:
     void BeginRenderPass(RenderPassVulkan* renderPass, FramebufferVulkan* framebuffer, uint32 clearValueCount, VkClearValue* clearValues);
     void EndRenderPass();
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-    DescriptorPoolSetContainerVulkan* CurrentDescriptorPoolSetContainer = nullptr;
+    DescriptorPoolSetContainerVulkan* GetDescriptorPoolSet() const
+    {
+        return _descriptorPoolSetContainer;
+    }
 
     void AcquirePoolSet();
-#endif
 
 #if GPU_ALLOW_PROFILE_EVENTS
     void BeginEvent(const Char* name);

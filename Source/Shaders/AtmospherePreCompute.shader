@@ -3,6 +3,23 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/Atmosphere.hlsl"
 
+// Provides functions for atmospheric scattering and aerial perspective.
+//
+// Explanations:
+// Scale Height = the altitude (height above ground) at which the average
+//                atmospheric density is found.
+// Optical Depth = also called optical length, airmass, etc.
+//
+// References:
+// [GPUGems2] GPU Gems 2: Accurate Atmospheric Scattering by Sean O'Neil.
+// [GPUPro3]  An Approximation to the Chapman Grazing-Incidence Function for
+//            Atmospheric Scattering, GPU Pro3, pp. 105.
+// Papers bei Bruneton, Nishita, etc.
+//
+// This code contains embedded portions of free sample source code from 
+// http://www-evasion.imag.fr/Membres/Eric.Bruneton/PrecomputedAtmosphericScattering2.zip, Author: Eric Bruneton, 
+// 08/16/2011, Copyright (c) 2008 INRIA, All Rights Reserved, which have been altered from their original version.
+
 const static int TransmittanceIntegralSamples = 500;
 const static int InscatterIntegralSamples = 50;
 const static int IrradianceIntegralSamples = 32;
@@ -14,11 +31,11 @@ const static float InscatterDeltaPhi = PI / float(InscatterSphericalIntegralSamp
 const static float InscatterDeltaTheta = PI / float(InscatterSphericalIntegralSamples);
 
 META_CB_BEGIN(0, Data)
-float FirstOrder;
+float First;
 float AtmosphereR;
 int AtmosphereLayer;
 float Dummy0;
-float4 DhdH;
+float4 dhdh;
 META_CB_END
 
 Texture2D AtmosphereDeltaETexture  : register(t3);
@@ -26,117 +43,72 @@ Texture3D AtmosphereDeltaSRTexture : register(t4);
 Texture3D AtmosphereDeltaSMTexture : register(t5);
 Texture3D AtmosphereDeltaJTexture  : register(t6);
 
-struct AtmosphereGSOutput
+float GetOpticalDepth(float h, float radius, float mu) 
 {
-	float4 Position : SV_Position;
-	float2 TexCoord : TEXCOORD0;
-    //uint LayerIndex : SV_RenderTargetArrayIndex;
-};
-
-/*
-META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-Quad_VS2PS VS(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
-{
-	Quad_VS2PS output;
-	
-	output.Position = float4(Position, 0, 1);
-	output.TexCoord = TexCoord;
-	
-	return output;
-}
-
-META_GS(true, FEATURE_LEVEL_SM4)
-[maxvertexcount(3)]
-void GS_Atmosphere(triangle Quad_VS2PS input[3], inout TriangleStream<AtmosphereGSOutput> output)
-{
-	AtmosphereGSOutput vertex;
-	
-	for(int i = 0; i < 3; i++)
-	{
-		vertex.Position = input[i].Position;
-		vertex.TexCoord = input[i].TexCoord;
-		vertex.LayerIndex = AtmosphereLayer;
-		
-		output.Append(vertex);
-	}
-}
-*/
-float OpticalDepth(float H, float radius, float Mu) 
-{
-    float result = 0.0;
-    float Dx = Limit(radius, Mu) / float(TransmittanceIntegralSamples);
-    float Xi = 0.0;
-    float Yi = exp(-(radius - RadiusGround) / H);
-
+    float result = 0.0f;
+    float ti = Limit(radius, mu) / float(TransmittanceIntegralSamples);
+    float xi = 0.0f;
+    float yi = exp(-(radius - RadiusGround) / h);
 	LOOP
     for (int i = 1; i <= TransmittanceIntegralSamples; i++) 
 	{
-        float Xj = float(i) * Dx;
-        float Yj = exp(-(sqrt(radius * radius + Xj * Xj + 2.0 * Xj * radius * Mu) - RadiusGround) / H);
-        result += (Yi + Yj) / 2.0 * Dx;
-        Xi = Xj;
-        Yi = Yj;
+        float xj = float(i) * ti;
+        float yj = exp(-(sqrt(radius * radius + xj * xj + 2.0f * xj * radius * mu) - RadiusGround) / h);
+        result += (yi + yj) * 0.5f * ti;
+        xi = xj;
+        yi = yj;
     }
-
-    return Mu < -sqrt(1.0 - (RadiusGround / radius) * (RadiusGround / radius)) ? 1e9 : result;
+    return mu < -sqrt(1.0f - (RadiusGround / radius) * (RadiusGround / radius)) ? 1e9 : result;
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Transmittance(Quad_VS2PS input) : SV_Target0
 {
-	float radius, MuS;
-	GetTransmittanceRMuS(input.TexCoord, radius, MuS);
-	float3 depth = BetaRayleighScattering * OpticalDepth(HeightScaleRayleigh, radius, MuS) + BetaMieExtinction * OpticalDepth(HeightScaleMie, radius, MuS);
-	return float4(exp(-depth), 0.0f); // Eq (5)
+	float radius, mus;
+	GetTransmittanceRMuS(input.TexCoord, radius, mus);
+	float3 depth = BetaRayleighScattering * GetOpticalDepth(HeightScaleRayleigh, radius, mus) + BetaMieExtinction * GetOpticalDepth(HeightScaleMie, radius, mus);
+	return float4(exp(-depth), 0.0f);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Irradiance1(Quad_VS2PS input) : SV_Target0
 {
-	float radius, MuS;
-	GetIrradianceRMuS(input.TexCoord, radius, MuS);
-	return float4(Transmittance(radius, MuS) * max(MuS, 0.0), 0.0);
+	float radius, mus;
+	GetIrradianceRMuS(input.TexCoord, radius, mus);
+	return float4(Transmittance(radius, mus) * max(mus, 0.0f), 0.0f);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_IrradianceN(Quad_VS2PS input) : SV_Target0
 {
-	float radius, MuS;
-	GetIrradianceRMuS(input.TexCoord, radius, MuS);
-	float3 S = float3(sqrt(max(1.0 - MuS * MuS, 0.0)), 0.0, MuS);
-	float3 result = float3(0.0f, 0.0f, 0.0f);
-
-	// Integral over 2.PI around x with two nested loops over W directions (theta, phi) -- Eq (15)
+	float radius, mus;
+	GetIrradianceRMuS(input.TexCoord, radius, mus);
+	float3 s = float3(sqrt(max(1.0f - mus * mus, 0.0f)), 0.0f, mus);
+	float3 result = float3(0, 0, 0);
 	for (int iPhi = 0; iPhi < 4 * IrradianceIntegralSamplesHalf; iPhi++) 
 	{
-		float phi = (float(iPhi) + 0.5) * IrradianceDeltaPhi;
+		float phi = (float(iPhi) + 0.5f) * IrradianceDeltaPhi;
 		for (int iTheta = 0; iTheta < IrradianceIntegralSamplesHalf; iTheta++) 
 		{
-			float theta = (float(iTheta) + 0.5) * IrradianceDeltaTheta;
-			float Dw = IrradianceDeltaTheta * IrradianceDeltaPhi * sin(theta);
-			float3 W = float3(cos(phi) * sin(theta), sin(phi) * sin(theta), cos(theta));
-			float Nu = dot(S, W);
+			float theta = (float(iTheta) + 0.5f) * IrradianceDeltaTheta;
+			float dw = IrradianceDeltaTheta * IrradianceDeltaPhi * sin(theta);
+			float3 w = float3(cos(phi) * sin(theta), sin(phi) * sin(theta), cos(theta));
+			float nu = dot(s, w);
 
-			if (FirstOrder == 1.0)
+			if (First == 1.0f)
 			{
-				// First iteration is special because Rayleigh and Mie were stored separately,
-				// without the phase functions factors; they must be reintroduced here
-				float Pr1 = PhaseFunctionR(Nu);
-				float Pm1 = PhaseFunctionM(Nu);
-				float3 Ray1 = Texture4DSample(AtmosphereDeltaSRTexture, radius, W.z, MuS, Nu).rgb;
-				float3 Mie1 = Texture4DSample(AtmosphereDeltaSMTexture, radius, W.z, MuS, Nu).rgb;
-
-				result += (Ray1 * Pr1 + Mie1 * Pm1) * W.z * Dw;
+				float pr1 = PhaseFunctionR(nu);
+				float pm1 = PhaseFunctionM(nu);
+				float3 ray1 = Texture4DSample(AtmosphereDeltaSRTexture, radius, w.z, mus, nu).xyz;
+				float3 mie1 = Texture4DSample(AtmosphereDeltaSMTexture, radius, w.z, mus, nu).xyz;
+				result += (ray1 * pr1 + mie1 * pm1) * w.z * dw;
 			}
 			else 
 			{
-				result += Texture4DSample(AtmosphereDeltaSRTexture, radius, W.z, MuS, Nu).rgb * W.z * Dw;
+				result += Texture4DSample(AtmosphereDeltaSRTexture, radius, w.z, mus, nu).xyz * w.z * dw;
 			}
 		}
 	}
-
 	return float4(result, 0.0);
 }
 
@@ -146,219 +118,185 @@ float4 PS_CopyIrradiance1(Quad_VS2PS input) : SV_Target0
 	return AtmosphereDeltaETexture.Sample(SamplerLinearClamp, input.TexCoord);
 }
 
-void Integrand(float radius, float Mu, float MuS, float Nu, float T, out float3 Ray, out float3 Mie) 
+void Integrand(float radius, float mu, float mus, float nu, float t, out float3 ray, out float3 mie) 
 {
-    Ray = float3(0, 0, 0);
-    Mie = float3(0, 0, 0);
-    float Ri = sqrt(radius * radius + T * T + 2.0 * radius * Mu * T);
-    float MuSi = (Nu * T + MuS * radius) / Ri;
-	Ri = max(RadiusGround, Ri);
-	if (MuSi >= -sqrt(1.0 - RadiusGround * RadiusGround / (Ri * Ri)) ) 
+    ray = float3(0, 0, 0);
+    mie = float3(0, 0, 0);
+    float ri = sqrt(radius * radius + t * t + 2.0f * radius * mu * t);
+    float musi = (nu * t + mus * radius) / ri;
+	ri = max(RadiusGround, ri);
+	if (musi >= -sqrt(1.0 - RadiusGround * RadiusGround / (ri * ri)) ) 
 	{
-		float3 Ti = TransmittanceWithDistance(radius, Mu, T) * Transmittance(Ri, MuSi);
-		Ray = exp(-(Ri - RadiusGround) / HeightScaleRayleigh) * Ti;
-		Mie = exp(-(Ri - RadiusGround) / HeightScaleMie) * Ti;
+		float3 ti = TransmittanceWithDistance(radius, mu, t) * Transmittance(ri, musi);
+		ray = exp(-(ri - RadiusGround) / HeightScaleRayleigh) * ti;
+		mie = exp(-(ri - RadiusGround) / HeightScaleMie) * ti;
 	}
 }
 
-// For Inscatter 1
-void Inscatter(float radius, float Mu, float MuS, float Nu, out float3 Ray, out float3 Mie)
+void Inscatter(float radius, float mu, float mus, float nu, out float3 ray, out float3 mie)
 {
-    Ray = float3(0, 0, 0);
-    Mie = float3(0, 0, 0);
-    float Dx = Limit(radius, Mu) / float(InscatterIntegralSamples);
-    float Xi = 0.0;
-    float3 Rayi;
-    float3 Miei;
-    Integrand(radius, Mu, MuS, Nu, 0.0, Rayi, Miei);
+    ray = float3(0, 0, 0);
+    mie = float3(0, 0, 0);
+    float dx = Limit(radius, mu) / float(InscatterIntegralSamples);
+    float xi = 0.0f;
+    float3 rayi;
+    float3 miei;
+    Integrand(radius, mu, mus, nu, 0.0f, rayi, miei);
     for (int i = 1; i <= InscatterIntegralSamples; i++) 
 	{
-        float Xj = float(i) * Dx;
+        float xj = float(i) * dx;
         float3 Rayj;
         float3 Miej;
-        Integrand(radius, Mu, MuS, Nu, Xj, Rayj, Miej);
-        Ray += (Rayi + Rayj) / 2.0 * Dx;
-        Mie += (Miei + Miej) / 2.0 * Dx;
-        Xi = Xj;
-        Rayi = Rayj;
-        Miei = Miej;
+        Integrand(radius, mu, mus, nu, xj, Rayj, Miej);
+        ray += (rayi + Rayj) * 0.5f * dx;
+        mie += (miei + Miej) * 0.5f * dx;
+        xi = xj;
+        rayi = Rayj;
+        miei = Miej;
     }
-    Ray *= BetaRayleighScattering;
-    Mie *= BetaMieScattering;
-}
-
-struct Inscatter1Output
-{
-	float4 DeltaSR : SV_Target0;
-	float4 DeltaSM : SV_Target1;
-};
-
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Inscatter1_A(AtmosphereGSOutput input) : SV_Target
-{
-    float3 Ray;
-    float3 Mie;
-    float Mu, MuS, Nu;
-    GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
-    Inscatter(AtmosphereR, Mu, MuS, Nu, Ray, Mie);
-
-    // Store separately Rayleigh and Mie contributions, WITHOUT the phase function factor (cf "Angular precision")
-    return float4(Ray, 1);
+    ray *= BetaRayleighScattering;
+    mie *= BetaMieScattering;
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_CopyInscatter1(AtmosphereGSOutput input) : SV_Target0
+float4 PS_Inscatter1_A(Quad_VS2PS input) : SV_Target
 {
-	float3 UVW = float3(input.TexCoord, (float(AtmosphereLayer) + 0.5f) / float(AtmosphericFogInscatterAltitudeSampleNum));
-    float4 Ray = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, UVW);
-    float4 Mie = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, UVW);
-	return float4(Ray.rgb, Mie.r);
+    float3 ray;
+    float3 mie;
+    float mu, mus, nu;
+    GetMuMuSNu(input.TexCoord, AtmosphereR, dhdh, mu, mus, nu);
+    Inscatter(AtmosphereR, mu, mus, nu, ray, mie);
+    return float4(ray, 1);
 }
 
-// For Inscatter S
-void Inscatter(float Radius, float Mu, float MuS, float Nu, out float3 RayMie) 
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_CopyInscatter1(Quad_VS2PS input) : SV_Target0
 {
-	Radius = clamp(Radius, RadiusGround, RadiusAtmosphere);
-	Mu = clamp(Mu, -1.0, 1.0);
-	MuS = clamp(MuS, -1.0, 1.0);
-	float Variation = sqrt(1.0 - Mu * Mu) * sqrt(1.0 - MuS * MuS);
-	Nu = clamp(Nu, MuS * Mu - Variation, MuS * Mu + Variation);
+	float3 uvw = float3(input.TexCoord, (float(AtmosphereLayer) + 0.5f) / float(AtmosphericFogInscatterAltitudeSampleNum));
+    float4 ray = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, uvw);
+    float4 mie = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, uvw);
+	return float4(ray.xyz, mie.x);
+}
 
-	float cThetaMin = -sqrt(1.0 - (RadiusGround / Radius) * (RadiusGround / Radius));
+void Inscatter(float radius, float mu, float mus, float nu, out float3 rayMie) 
+{
+	radius = clamp(radius, RadiusGround, RadiusAtmosphere);
+	mu = clamp(mu, -1.0f, 1.0f);
+	mus = clamp(mus, -1.0f, 1.0f);
+	float variation = sqrt(1.0f - mu * mu) * sqrt(1.0f - mus * mus);
+	nu = clamp(nu, mus * mu - variation, mus * mu + variation);
+	float cThetaMin = -sqrt(1.0f - (RadiusGround / radius) * (RadiusGround / radius));
+	float3 v = float3(sqrt(1.0f - mu * mu), 0.0f, mu);
+	float sx = v.x == 0.0f ? 0.0f : (nu - mus * mu) / v.x;
+	float3 s = float3(sx, sqrt(max(0.0f, 1.0f - sx * sx - mus * mus)), mus);
+	rayMie = float3(0, 0, 0);
 
-	float3 V = float3(sqrt(1.0 - Mu * Mu), 0.0, Mu);
-	float Sx = V.x == 0.0 ? 0.0 : (Nu - MuS * Mu) / V.x;
-	float3 S = float3(Sx, sqrt(max(0.0, 1.0 - Sx * Sx - MuS * MuS)), MuS);
-
-	RayMie = float3(0.f, 0.f, 0.f);
-
-	// Integral over 4.PI around x with two nested loops over W directions (theta, phi) - Eq (7)
 	for (int iTheta = 0; iTheta < InscatterSphericalIntegralSamples; iTheta++)
 	{
-		float theta = (float(iTheta) + 0.5) * InscatterDeltaTheta;
+		float theta = (float(iTheta) + 0.5f) * InscatterDeltaTheta;
 		float cTheta = cos(theta);
-		
-		float GReflectance = 0.0;
-		float DGround = 0.0;
-		float3 GTransmittance = float3(0.f, 0.f, 0.f);
+
+		float ground = 0.0f;
+		float3 transmittance = float3(0, 0, 0);
+		float reflectance = 0.0f;
 		if (cTheta < cThetaMin)
-		{ 
-			// If ground visible in direction W, Compute transparency GTransmittance between x and ground
-			GReflectance = AverageGroundRelectance / PI;
-			DGround = -Radius * cTheta - sqrt(Radius * Radius * (cTheta * cTheta - 1.0) + RadiusGround * RadiusGround);
-			GTransmittance = TransmittanceWithDistance(RadiusGround, -(Radius * cTheta + DGround) / RadiusGround, DGround);
+		{
+			ground = -radius * cTheta - sqrt(radius * radius * (cTheta * cTheta - 1.0f) + RadiusGround * RadiusGround);
+			transmittance = TransmittanceWithDistance(RadiusGround, -(radius * cTheta + ground) / RadiusGround, ground);
+			reflectance = AverageGroundRelectance / PI;
 		}
 		
 		for (int iPhi = 0; iPhi < 2 * InscatterSphericalIntegralSamples; iPhi++)
 		{
 			float phi = (float(iPhi) + 0.5) * InscatterDeltaPhi;
-			float Dw = InscatterDeltaTheta * InscatterDeltaPhi * sin(theta);
-			float3 W = float3(cos(phi) * sin(theta), sin(phi) * sin(theta), cTheta);
+			float dw = InscatterDeltaTheta * InscatterDeltaPhi * sin(theta);
+			float3 w = float3(cos(phi) * sin(theta), sin(phi) * sin(theta), cTheta);
+			float nu1 = dot(s, w);
+			float nu2 = dot(v, w);
+			float pr2 = PhaseFunctionR(nu2);
+			float pm2 = PhaseFunctionM(nu2);
+			float3 normal = (float3(0.0f, 0.0f, radius) + ground * w) / RadiusGround;
+			float3 irradiance = Irradiance(AtmosphereDeltaETexture, RadiusGround, dot(normal, s));
+			float3 rayMie1 = reflectance * irradiance * transmittance;
 
-			float Nu1 = dot(S, W);
-			float Nu2 = dot(V, W);
-			float Pr2 = PhaseFunctionR(Nu2);
-			float Pm2 = PhaseFunctionM(Nu2);
-
-			// Compute irradiance received at ground in direction W (if ground visible) =deltaE
-			float3 GNormal = (float3(0.0, 0.0, Radius) + DGround * W) / RadiusGround;
-			float3 GIrradiance = Irradiance(AtmosphereDeltaETexture, RadiusGround, dot(GNormal, S));
-
-			float3 RayMie1; // light arriving at x from direction W
-
-			// First term = light reflected from the ground and attenuated before reaching x, =T.alpha/PI.deltaE
-			RayMie1 = GReflectance * GIrradiance * GTransmittance;
-
-			// Second term = inscattered light, =deltaS
-			if (FirstOrder == 1.0) 
+			if (First == 1.0f)
 			{
-				// First iteration is special because Rayleigh and Mie were stored separately,
-				// without the phase functions factors; they must be reintroduced here
-				float Pr1 = PhaseFunctionR(Nu1);
-				float Pm1 = PhaseFunctionM(Nu1);
-				float3 Ray1 = Texture4DSample(AtmosphereDeltaSRTexture, Radius, W.z, MuS, Nu1).rgb;
-				float3 Mie1 = Texture4DSample(AtmosphereDeltaSMTexture, Radius, W.z, MuS, Nu1).rgb;
-				RayMie1 += Ray1 * Pr1 + Mie1 * Pm1;
-			} 
-			else 
+				float pr1 = PhaseFunctionR(nu1);
+				float pm1 = PhaseFunctionM(nu1);
+				float3 ray1 = Texture4DSample(AtmosphereDeltaSRTexture, radius, w.z, mus, nu1).xyz;
+				float3 mie1 = Texture4DSample(AtmosphereDeltaSMTexture, radius, w.z, mus, nu1).xyz;
+				rayMie1 += ray1 * pr1 + mie1 * pm1;
+			}
+			else
 			{
-				RayMie1 += Texture4DSample(AtmosphereDeltaSRTexture, Radius, W.z, MuS, Nu1).rgb;
+				rayMie1 += Texture4DSample(AtmosphereDeltaSRTexture, radius, w.z, mus, nu1).xyz;
 			}
 
-			// Light coming from direction W and scattered in direction V
-			// = light arriving at x from direction W (RayMie1) * SUM(scattering coefficient * phaseFunction) - Eq (7)
-			RayMie += RayMie1 * (BetaRayleighScattering * exp(-(Radius - RadiusGround) / HeightScaleRayleigh) * Pr2 + BetaMieScattering * exp(-(Radius - RadiusGround) / HeightScaleMie) * Pm2) * Dw;
+			rayMie += rayMie1 * (BetaRayleighScattering * exp(-(radius - RadiusGround) / HeightScaleRayleigh) * pr2 + BetaMieScattering * exp(-(radius - RadiusGround) / HeightScaleMie) * pm2) * dw;
 		}
 	}
-
-	// output RayMie = J[T.alpha/PI.deltaE + deltaS] (line 7 in algorithm 4.1)
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_InscatterS(AtmosphereGSOutput input) : SV_Target0
+float4 PS_InscatterS(Quad_VS2PS input) : SV_Target0
 {
-	float3 RayMie;
-	float Mu, MuS, Nu;
-	GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
-	Inscatter(AtmosphereR, Mu, MuS, Nu, RayMie);
-	return float4(RayMie, 0);
+	float3 rayMie;
+	float mu, mus, nu;
+	GetMuMuSNu(input.TexCoord, AtmosphereR, dhdh, mu, mus, nu);
+	Inscatter(AtmosphereR, mu, mus, nu, rayMie);
+	return float4(rayMie, 0);
 }
 
-float3 Integrand(float Radius, float Mu, float MuS, float Nu, float T) 
+float3 Integrand(float radius, float mu, float mus, float nu, float t) 
 {
-    float Ri = sqrt(Radius * Radius + T * T + 2.0 * Radius * Mu * T);
-    float Mui = (Radius * Mu + T) / Ri;
-    float MuSi = (Nu * T + MuS * Radius) / Ri;
-    return Texture4DSample(AtmosphereDeltaJTexture, Ri, Mui, MuSi, Nu).rgb * TransmittanceWithDistance(Radius, Mu, T);
+    float ri = sqrt(radius * radius + t * t + 2.0 * radius * mu * t);
+    float mui = (radius * mu + t) / ri;
+    float musi = (nu * t + mus * radius) / ri;
+    return Texture4DSample(AtmosphereDeltaJTexture, ri, mui, musi, nu).xyz * TransmittanceWithDistance(radius, mu, t);
 }
 
-// InscatterN
-float3 Inscatter(float Radius, float Mu, float MuS, float Nu) 
+float3 Inscatter(float radius, float mu, float mus, float nu) 
 {
-	float3 RayMie = float3(0.f, 0.f, 0.f);
-	float Dx = Limit(Radius, Mu) / float(InscatterIntegralSamples);
-	float Xi = 0.0;
-	float3 RayMiei = Integrand(Radius, Mu, MuS, Nu, 0.0);
-
+	float3 rayMie = float3(0, 0, 0);
+	float dx = Limit(radius, mu) / float(InscatterIntegralSamples);
+	float xi = 0.0f;
+	float3 raymiei = Integrand(radius, mu, mus, nu, 0.0f);
 	for (int i = 1; i <= InscatterIntegralSamples; i++) 
 	{
-		float Xj = float(i) * Dx;
-		float3 RayMiej = Integrand(Radius, Mu, MuS, Nu, Xj);
-		RayMie += (RayMiei + RayMiej) / 2.0 * Dx;
-		Xi = Xj;
-		RayMiei = RayMiej;
+		float xj = float(i) * dx;
+		float3 RayMiej = Integrand(radius, mu, mus, nu, xj);
+		rayMie += (raymiei + RayMiej) * 0.5f * dx;
+		xi = xj;
+		raymiei = RayMiej;
 	}
-
-	return RayMie;
+	return rayMie;
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_InscatterN(AtmosphereGSOutput input) : SV_Target0
+float4 PS_InscatterN(Quad_VS2PS input) : SV_Target0
 {
-	float Mu, MuS, Nu;
-	GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
-	return float4(Inscatter(AtmosphereR, Mu, MuS, Nu), 0);
+	float mu, mus, nu;
+	GetMuMuSNu(input.TexCoord, AtmosphereR, dhdh, mu, mus, nu);
+	return float4(Inscatter(AtmosphereR, mu, mus, nu), 0);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_CopyInscatterN(AtmosphereGSOutput input) : SV_Target0
+float4 PS_CopyInscatterN(Quad_VS2PS input) : SV_Target0
 {
-    float Mu, MuS, Nu;
-    GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
-	float3 UVW = float3(input.TexCoord, (float(AtmosphereLayer) + 0.5f) / float(AtmosphericFogInscatterAltitudeSampleNum));
-	float4 Ray = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, UVW) / PhaseFunctionR(Nu);
-	return float4(Ray.rgb, 0);
+    float mu, mus, nu;
+    GetMuMuSNu(input.TexCoord, AtmosphereR, dhdh, mu, mus, nu);
+	float3 uvw = float3(input.TexCoord, (float(AtmosphereLayer) + 0.5f) / float(AtmosphericFogInscatterAltitudeSampleNum));
+	float4 ray = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, uvw) / PhaseFunctionR(nu);
+	return float4(ray.xyz, 0);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Inscatter1_B(AtmosphereGSOutput input) : SV_Target
+float4 PS_Inscatter1_B(Quad_VS2PS input) : SV_Target
 {
-    float3 Ray;
-    float3 Mie;
-    float Mu, MuS, Nu;
-    GetMuMuSNu(input.TexCoord, AtmosphereR, DhdH, Mu, MuS, Nu);
-    Inscatter(AtmosphereR, Mu, MuS, Nu, Ray, Mie);
-
-    // Store separately Rayleigh and Mie contributions, WITHOUT the phase function factor (cf "Angular precision")
-    return float4(Mie, 1);
+    float3 ray;
+    float3 mie;
+    float mu, mus, nu;
+    GetMuMuSNu(input.TexCoord, AtmosphereR, dhdh, mu, mus, nu);
+    Inscatter(AtmosphereR, mu, mus, nu, ray, mie);
+    return float4(mie, 1);
 }

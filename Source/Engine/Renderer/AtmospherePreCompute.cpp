@@ -61,11 +61,11 @@ protected:
 
 PACK_STRUCT(struct Data
     {
-    float FirstOrder;
+    float First;
     float AtmosphereR;
     int AtmosphereLayer;
     float Dummy0;
-    Vector4 DhdH;
+    Vector4 dhdh;
     });
 
 namespace AtmospherePreComputeImpl
@@ -367,17 +367,17 @@ void AtmospherePreComputeService::Dispose()
     release();
 }
 
-void GetLayerValue(int32 layer, float& atmosphereR, Vector4& DhdH)
+void GetLayerValue(int32 layer, float& atmosphereR, Vector4& dhdh)
 {
     float r = layer / Math::Max<float>(InscatterAltitudeSampleNum - 1.0f, 1.0f);
     r = r * r;
     r = Math::Sqrt(RadiusGround * RadiusGround + r * (RadiusAtmosphere * RadiusAtmosphere - RadiusGround * RadiusGround)) + (layer == 0 ? 0.01f : (layer == InscatterAltitudeSampleNum - 1 ? -0.001f : 0.0f));
-    float dMin = RadiusAtmosphere - r;
-    float dMax = Math::Sqrt(r * r - RadiusGround * RadiusGround) + Math::Sqrt(RadiusAtmosphere * RadiusAtmosphere - RadiusGround * RadiusGround);
-    float dMinP = r - RadiusGround;
-    float dMaxP = Math::Sqrt(r * r - RadiusGround * RadiusGround);
+    const float dMin = RadiusAtmosphere - r;
+    const float dMax = Math::Sqrt(r * r - RadiusGround * RadiusGround) + Math::Sqrt(RadiusAtmosphere * RadiusAtmosphere - RadiusGround * RadiusGround);
+    const float dMinP = r - RadiusGround;
+    const float dMaxP = Math::Sqrt(r * r - RadiusGround * RadiusGround);
     atmosphereR = r;
-    DhdH = Vector4(dMin, dMax, dMinP, dMaxP);
+    dhdh = Vector4(dMin, dMax, dMinP, dMaxP);
 }
 
 void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
@@ -390,8 +390,8 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     }
     ASSERT(_isUpdatePending && _updateFrameNumber == 0);
 
-    auto shader = _shader->GetShader();
-    auto cb = shader->GetCB(0);
+    const auto shader = _shader->GetShader();
+    const auto cb = shader->GetCB(0);
     Data data;
 
     // Compute transmittance texture T (line 1 in algorithm 4.1)
@@ -415,7 +415,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     context->SetState(_psInscatter1_A);
     for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
     {
-        GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+        GetLayerValue(layer, data.AtmosphereR, data.dhdh);
         data.AtmosphereLayer = layer;
         context->UpdateCB(cb, &data);
         context->BindCB(0, cb);
@@ -426,7 +426,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     context->SetState(_psInscatter1_B);
     for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
     {
-        GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+        GetLayerValue(layer, data.AtmosphereR, data.dhdh);
         data.AtmosphereLayer = layer;
         context->UpdateCB(cb, &data);
         context->BindCB(0, cb);
@@ -439,7 +439,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     //// old way to render Inscatter1 to DeltaSR and DeltaSM at once but didn't work well :/ (no time to find out why)
     //for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
     //{
-    //	GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+    //	GetLayerValue(layer, data.AtmosphereR, data.dhdh);
     //	data.AtmosphereLayer = layer;
     //	cb->SetData(&data);
     //	context->Bind(0, cb);
@@ -472,7 +472,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     context->BindSR(5, AtmosphereDeltaSM->ViewVolume());
     for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
     {
-        GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+        GetLayerValue(layer, data.AtmosphereR, data.dhdh);
         data.AtmosphereLayer = layer;
         context->UpdateCB(cb, &data);
         context->BindCB(0, cb);
@@ -489,14 +489,14 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         context->UnBindSR(6);
         context->SetViewportAndScissors((float)InscatterWidth, (float)InscatterHeight);
         context->SetState(_psInscatterS);
-        data.FirstOrder = order == 2 ? 1.0f : 0.0f;
+        data.First = order == 2 ? 1.0f : 0.0f;
         context->BindSR(0, AtmosphereTransmittance);
         context->BindSR(3, AtmosphereDeltaE);
         context->BindSR(4, AtmosphereDeltaSR->ViewVolume());
         context->BindSR(5, AtmosphereDeltaSM->ViewVolume());
         for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
         {
-            GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+            GetLayerValue(layer, data.AtmosphereR, data.dhdh);
             data.AtmosphereLayer = layer;
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
@@ -523,7 +523,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         context->BindSR(6, AtmosphereDeltaJ->ViewVolume());
         for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
         {
-            GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+            GetLayerValue(layer, data.AtmosphereR, data.dhdh);
             data.AtmosphereLayer = layer;
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
@@ -545,7 +545,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         context->BindSR(4, AtmosphereDeltaSR->ViewVolume());
         for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
         {
-            GetLayerValue(layer, data.AtmosphereR, data.DhdH);
+            GetLayerValue(layer, data.AtmosphereR, data.dhdh);
             data.AtmosphereLayer = layer;
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);

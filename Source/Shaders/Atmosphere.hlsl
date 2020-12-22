@@ -57,9 +57,8 @@ const static int InscatterNuNum = 8;
 const static int AtmosphericFogInscatterAltitudeSampleNum = 4;
 
 // Configuration
-#define TRANSMITTANCE_NON_LINEAR         1
-#define INSCATTER_NON_LINEAR             1
-#define ATMOSPHERIC_TEXTURE_SAMPLE_FIX   1
+#define TRANSMITTANCE_NON_LINEAR 1
+#define INSCATTER_NON_LINEAR 1
 
 #ifndef ATMOSPHERIC_NO_SUN_DISK
 #define	ATMOSPHERIC_NO_SUN_DISK				0
@@ -90,15 +89,15 @@ Texture3D AtmosphereInscatterTexture     : register(t2);
 
 float2 GetTransmittanceUV(float radius, float Mu) 
 {
-    float U, V;
+    float u, v;
 #if TRANSMITTANCE_NON_LINEAR
-	V = sqrt((radius - RadiusGround) / (RadiusAtmosphere - RadiusGround));
-	U = atan((Mu + 0.15) / (1.0 + 0.15) * tan(1.5)) / 1.5;
+	v = sqrt((radius - RadiusGround) / (RadiusAtmosphere - RadiusGround));
+	u = atan((Mu + 0.15) / (1.0 + 0.15) * tan(1.5)) / 1.5;
 #else
-	V = (radius - RadiusGround) / (RadiusAtmosphere - RadiusGround);
-	U = (Mu + 0.15) / (1.0 + 0.15);
+	v = (radius - RadiusGround) / (RadiusAtmosphere - RadiusGround);
+	u = (Mu + 0.15) / (1.0 + 0.15);
 #endif
-    return float2(U, V);
+    return float2(u, v);
 }
 
 void GetTransmittanceRMuS(float2 uv, out float radius, out float MuS) 
@@ -116,9 +115,9 @@ void GetTransmittanceRMuS(float2 uv, out float radius, out float MuS)
 
 float2 GetIrradianceUV(float radius, float MuS) 
 {
-    float V = (radius - RadiusGround) / (RadiusAtmosphere - RadiusGround);
-    float U = (MuS + 0.2) / (1.0 + 0.2);
-    return float2(U, V);
+    float v = (radius - RadiusGround) / (RadiusAtmosphere - RadiusGround);
+    float u = (MuS + 0.2) / (1.0 + 0.2);
+    return float2(u, v);
 }
 
 void GetIrradianceRMuS(float2 uv, out float radius, out float MuS) 
@@ -137,9 +136,6 @@ float4 Texture4DSample(Texture3D tex, float radius, float Mu, float MuS, float N
 	float4 TexOffset = RMu < 0.0 && Delta > 0.0 ? float4(1.0, 0.0, 0.0, 0.5 - 0.5 / float(InscatterMuNum)) : float4(-1.0, H * H, H, 0.5 + 0.5 / float(InscatterMuNum));
 	float MuR = 0.5 / float(AtmosphericFogInscatterAltitudeSampleNum) + Rho / H * (1.0 - 1.0 / float(AtmosphericFogInscatterAltitudeSampleNum));
 	float MuMu = TexOffset.w + (RMu * TexOffset.x + sqrt(Delta + TexOffset.y)) / (Rho + TexOffset.z) * (0.5 - 1.0 / float(InscatterMuNum));
-	// paper formula
-	//float MuMuS = 0.5 / float(InscatterMuSNum) + max((1.0 - exp(-3.0 * MuS - 0.6)) / (1.0 - exp(-3.6)), 0.0) * (1.0 - 1.0 / float(InscatterMuSNum));
-	// better formula
 	float MuMuS = 0.5 / float(InscatterMuSNum) + (atan(max(MuS, -0.1975) * tan(1.26 * 1.1)) / 1.1 + (1.0 - 0.26)) * 0.5 * (1.0 - 1.0 / float(InscatterMuSNum));
 #else
 	float MuR = 0.5 / float(AtmosphericFogInscatterAltitudeSampleNum) + Rho / H * (1.0 - 1.0 / float(AtmosphericFogInscatterAltitudeSampleNum));
@@ -154,35 +150,32 @@ float4 Texture4DSample(Texture3D tex, float radius, float Mu, float MuS, float N
 		 + tex.SampleLevel(SamplerLinearClamp, float3((MuNu + MuMuS + 1.0) / float(InscatterNuNum), MuMu, MuR), 0) * LerpValue;
 }
 
-float Mod(float X, float Y)
+float Mod(float x, float y)
 {
-	return X - Y * floor(X/Y);
+	return x - y * floor(x / y);
 }
 
 void GetMuMuSNu(float2 uv, float radius, float4 DhdH, out float Mu, out float MuS, out float Nu) 
 {
-    float X = uv.x * float(InscatterMuSNum * InscatterNuNum) - 0.5;
-    float Y = uv.y * float(InscatterMuNum) - 0.5;
+    float x = uv.x * float(InscatterMuSNum * InscatterNuNum) - 0.5;
+    float y = uv.y * float(InscatterMuNum) - 0.5;
 #if INSCATTER_NON_LINEAR
-    if (Y < float(InscatterMuNum) * 0.5f) 
+    if (y < float(InscatterMuNum) * 0.5f) 
 	{
-        float D = 1.0 - Y / (float(InscatterMuNum) * 0.5f - 1.0);
-        D = min(max(DhdH.z, D * DhdH.w), DhdH.w * 0.999);
-        Mu = (RadiusGround * RadiusGround - radius * radius - D * D) / (2.0 * radius * D);
+        float d = 1.0 - y / (float(InscatterMuNum) * 0.5f - 1.0);
+        d = min(max(DhdH.z, d * DhdH.w), DhdH.w * 0.999);
+        Mu = (RadiusGround * RadiusGround - radius * radius - d * d) / (2.0 * radius * d);
         Mu = min(Mu, -sqrt(1.0 - (RadiusGround / radius) * (RadiusGround / radius)) - 0.001);
     }
 	else 
 	{
-        float D = (Y - float(InscatterMuNum) * 0.5f) / (float(InscatterMuNum) * 0.5f - 1.0);
-        D = min(max(DhdH.x, D * DhdH.y), DhdH.y * 0.999);
-        Mu = (RadiusAtmosphere * RadiusAtmosphere - radius * radius - D * D) / (2.0 * radius * D);
+        float d = (y - float(InscatterMuNum) * 0.5f) / (float(InscatterMuNum) * 0.5f - 1.0);
+        d = min(max(DhdH.x, d * DhdH.y), DhdH.y * 0.999);
+        Mu = (RadiusAtmosphere * RadiusAtmosphere - radius * radius - d * d) / (2.0 * radius * d);
     }
-    MuS = Mod(X, float(InscatterMuSNum)) / (float(InscatterMuSNum) - 1.0);
-    // paper formula
-    //MuS = -(0.6 + log(1.0 - MuS * (1.0 -  exp(-3.6)))) / 3.0;
-    // better formula
+    MuS = Mod(x, float(InscatterMuSNum)) / (float(InscatterMuSNum) - 1.0);
     MuS = tan((2.0 * MuS - 1.0 + 0.26) * 1.1) / tan(1.26 * 1.1);
-    Nu = -1.0 + floor(X / float(InscatterMuSNum)) / (float(InscatterNuNum) - 1.0) * 2.0;
+    Nu = -1.0 + floor(x / float(InscatterMuSNum)) / (float(InscatterNuNum) - 1.0) * 2.0;
 #else
     Mu = -1.0 + 2.0 * Y / (float(InscatterMuNum) - 1.0);
     MuS = Mod(X, float(InscatterMuSNum)) / (float(InscatterMuSNum) - 1.0);
@@ -191,10 +184,7 @@ void GetMuMuSNu(float2 uv, float radius, float4 DhdH, out float Mu, out float Mu
 #endif
 }
 
-/**
- * Nearest intersection of ray r,mu with ground or top atmosphere boundary
- * mu=cos(ray zenith angle at ray origin)
- */
+// Nearest intersection of ray r,mu with ground or top atmosphere boundary, mu=cos(ray zenith angle at ray origin)
 float Limit(float radius, float Mu) 
 {
     float Dout = -radius * Mu + sqrt(radius * radius * (Mu * Mu - 1.0) + RadiusLimit * RadiusLimit);
@@ -210,32 +200,20 @@ float Limit(float radius, float Mu)
     return Dout;
 }
 
-/**
- * Transmittance(=transparency) of atmosphere for infinite ray (r,mu)
- * (mu=cos(view zenith angle)), intersections with ground ignored
- */
+// Transmittance(=transparency) of atmosphere for infinite ray (r,mu) (mu=cos(view zenith angle)), intersections with ground ignored
 float3 Transmittance(float radius, float Mu) 
 {
 	float2 uv = GetTransmittanceUV(radius, Mu);
 	return AtmosphereTransmittanceTexture.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
 }
 
-/**
- * Transmittance(=transparency) of atmosphere for infinite ray (r,mu)
- * (mu=cos(view zenith angle)), or zero if ray intersects ground
- */
+// Transmittance(=transparency) of atmosphere for infinite ray (r,mu) (mu=cos(view zenith angle)), or zero if ray intersects ground
 float3 TransmittanceWithShadow(float radius, float Mu) 
 {
-	// Need to correct calculation based on shadow feature, currently don't consider
-    //return Mu < -sqrt(1.0 - (RadiusGround / radius) * (RadiusGround / radius)) ? float3(0.f, 0.f, 0.f) : Transmittance(Radius, Mu);
 	return Transmittance(radius, Mu);
 }
 
-/**
- * Transmittance(=transparency) of atmosphere between x and x0
- * Assume segment x,x0 not intersecting ground
- * D = Distance between x and x0, mu=cos(zenith angle of [x,x0) ray at x)
- */
+//Transmittance(=transparency) of atmosphere between x and x0. Assume segment x,x0 not intersecting ground. D = Distance between x and x0, mu=cos(zenith angle of [x,x0) ray at x)
 float3 TransmittanceWithDistance(float radius, float Mu, float D) 
 {
     float3 result;
@@ -252,42 +230,36 @@ float3 TransmittanceWithDistance(float radius, float Mu, float D)
     return result;
 }
 
-/**
- * Transmittance(=transparency) of atmosphere between x and x0
- * Assume segment x,x0 not intersecting ground
- * radius=||x||, Mu=cos(zenith angle of [x,x0) ray at x), v=unit direction vector of [x,x0) ray
- */
+// Transmittance(=transparency) of atmosphere between x and x0. Assume segment x,x0 not intersecting ground radius=||x||, Mu=cos(zenith angle of [x,x0) ray at x), v=unit direction vector of [x,x0) ray
 float3 TransmittanceWithDistance(float radius, float Mu, float3 V, float3 X0) 
 {
     float3 result;
-    float R1 = length(X0);
+    float d1 = length(X0);
     float Mu1 = dot(X0, V) / radius;
     if (Mu > 0.0) 
-	{
-        result = min(Transmittance(radius, Mu) / Transmittance(R1, Mu1), 1.0);
-    } 
+        result = min(Transmittance(radius, Mu) / Transmittance(d1, Mu1), 1.0);
 	else 
-	{
-        result = min(Transmittance(R1, -Mu1) / Transmittance(radius, -Mu), 1.0);
-    }
+        result = min(Transmittance(d1, -Mu1) / Transmittance(radius, -Mu), 1.0);
     return result;
 }
 
-/**
- * Optical depth for ray (r,mu) of length d, using analytic formula
- * (mu=cos(view zenith angle)), intersections with ground ignored
- * H=height scale of exponential density function
- */
+// Optical depth for ray (r,mu) of length d, using analytic formula (mu=cos(view zenith angle)), intersections with ground ignored H=height scale of exponential density function
 float OpticalDepthWithDistance(float H, float radius, float Mu, float D) 
 {
 	float particleDensity = 6.2831; // REK 04, Table 2
-    float A = sqrt((0.5/H)*radius);
-    float2 A01 = A * float2(Mu, Mu + D / radius);
+    float a = sqrt(0.5 / H * radius);
+    float2 A01 = a * float2(Mu, Mu + D / radius);
     float2 A01Sign = sign(A01);
     float2 A01Squared = A01*A01;
-    float X = A01Sign.y > A01Sign.x ? exp(A01Squared.x) : 0.0;
-    float2 Y = A01Sign / (2.3193 * abs(A01) + sqrt(1.52 * A01Squared + 4.0)) * float2(1.0, exp(-D / H*(D / (2.0 * radius) + Mu)));
-    return sqrt((particleDensity * H)*radius) * exp((RadiusGround - radius) / H) * (X + dot(Y, float2(1.0, -1.0)));
+    float x = A01Sign.y > A01Sign.x ? exp(A01Squared.x) : 0.0;
+    float2 y = A01Sign / (2.3193 * abs(A01) + sqrt(1.52 * A01Squared + 4.0)) * float2(1.0, exp(-D / H*(D / (2.0 * radius) + Mu)));
+    return sqrt((particleDensity * H)*radius) * exp((RadiusGround - radius) / H) * (x + dot(y, float2(1.0, -1.0)));
+}
+
+// Transmittance(=transparency) of atmosphere for ray (r,mu) of length d (mu=cos(view zenith angle)), intersections with ground ignored uses analytic formula instead of transmittance texture, REK 04, Atmospheric Transparency
+float3 AnalyticTransmittance(float R, float Mu, float D) 
+{
+    return exp(- BetaRayleighScattering * OpticalDepthWithDistance(HeightScaleRayleigh, R, Mu, D) - BetaMieExtinction * OpticalDepthWithDistance(HeightScaleMie, R, Mu, D));
 }
 
 float3 Irradiance(Texture2D tex, float r, float muS) 
@@ -296,32 +268,23 @@ float3 Irradiance(Texture2D tex, float r, float muS)
 	return tex.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
 }
 
-/** Rayleigh phase function */
+// Rayleigh phase function
 float PhaseFunctionR(float Mu) 
 {
     return (3.0 / (16.0 * PI)) * (1.0 + Mu * Mu);
 }
 
-/** Mie phase function */
+// Mie phase function
 float PhaseFunctionM(float Mu) 
 {
 	return 1.5 * 1.0 / (4.0 * PI) * (1.0 - MieG * MieG) * pow(1.0 + (MieG * MieG) - 2.0 * MieG * Mu, -3.0/2.0) * (1.0 + Mu * Mu) / (2.0 + MieG * MieG);
 }
 
-/** Approximated single Mie scattering (cf. approximate Cm in paragraph "Angular precision") */
+// Approximated single Mie scattering (cf. approximate Cm in paragraph "Angular precision")
 float3 GetMie(float4 RayMie) 
 { 
 	// RayMie.rgb=C*, RayMie.w=Cm,r
 	return RayMie.rgb * RayMie.w / max(RayMie.r, 1e-4) * (BetaRayleighScattering.rrr / BetaRayleighScattering.rgb);
-}
-
-/** Transmittance(=transparency) of atmosphere for ray (r,mu) of length d
- * (mu=cos(view zenith angle)), intersections with ground ignored
- * uses analytic formula instead of transmittance texture, REK 04, Atmospheric Transparency
- */
-float3 AnalyticTransmittance(float R, float Mu, float D) 
-{
-    return exp(- BetaRayleighScattering * OpticalDepthWithDistance(HeightScaleRayleigh, R, Mu, D) - BetaMieExtinction * OpticalDepthWithDistance(HeightScaleMie, R, Mu, D));
 }
 
 #endif

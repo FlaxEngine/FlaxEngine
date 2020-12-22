@@ -114,12 +114,8 @@ private:
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
-#else
-	Array<DescriptorPoolVulkan*> _descriptorPools;
-#endif
 
 public:
 

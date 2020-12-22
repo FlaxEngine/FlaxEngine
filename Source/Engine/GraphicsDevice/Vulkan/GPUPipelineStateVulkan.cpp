@@ -47,11 +47,8 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     _pipelineState = New<ComputePipelineStateVulkan>(_device, pipeline, layout);
 
     _pipelineState->DescriptorInfo = &DescriptorInfo;
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     _pipelineState->DescriptorSetsLayout = &layout->GetDescriptorSetLayout();
     _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->GetHandles().Count());
-#endif
 
     uint32 totalNumDynamicOffsets = 0;
 
@@ -89,13 +86,9 @@ ComputePipelineStateVulkan::ComputePipelineStateVulkan(GPUDeviceVulkan* device, 
 ComputePipelineStateVulkan::~ComputePipelineStateVulkan()
 {
     DSWriteContainer.Release();
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     CurrentTypedDescriptorPoolSet = nullptr;
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
-#else
-	DSRingBuffer.Release();
-#endif
     DynamicOffsets.Resize(0);
     _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, _handle);
     _layout = nullptr;
@@ -105,9 +98,6 @@ GPUPipelineStateVulkan::GPUPipelineStateVulkan(GPUDeviceVulkan* device)
     : GPUResourceVulkan<GPUPipelineState>(device, StringView::Empty)
     , _pipelines(16)
     , _layout(nullptr)
-#if !VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-	, DSRingBuffer(device)
-#endif
 {
 }
 
@@ -132,10 +122,8 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 
     _layout = _device->GetOrCreateLayout(descriptorSetLayoutInfo);
     ASSERT(_layout);
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     DescriptorSetsLayout = &_layout->GetDescriptorSetLayout();
     DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->GetHandles().Count());
-#endif
 
     return _layout;
 }
@@ -192,13 +180,9 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
 void GPUPipelineStateVulkan::OnReleaseGPU()
 {
     DSWriteContainer.Release();
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     CurrentTypedDescriptorPoolSet = nullptr;
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
-#else
-	DSRingBuffer.Release();
-#endif
     DynamicOffsets.Resize(0);
     for (auto i = _pipelines.Begin(); i.IsNotEnd(); ++i)
     {
@@ -290,6 +274,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
     // Multisample
@@ -350,7 +335,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pColorBlendState = &_descColorBlend;
 
     ASSERT(DSWriteContainer.DescriptorWrites.IsEmpty());
-    for (int32 stage = 0; stage < DescriptorSet::NumGfxStages; stage++)
+    for (int32 stage = 0; stage < DescriptorSet::GraphicsStagesCount; stage++)
     {
         const auto descriptor = DescriptorInfoPerStage[stage];
         if (descriptor == nullptr || descriptor->DescriptorTypesCount == 0)
@@ -369,9 +354,9 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     VkDescriptorImageInfo* currentImageInfo = DSWriteContainer.DescriptorImageInfo.Get();
     VkDescriptorBufferInfo* currentBufferInfo = DSWriteContainer.DescriptorBufferInfo.Get();
     uint8* currentBindingToDynamicOffsetMap = DSWriteContainer.BindingToDynamicOffsetMap.Get();
-    uint32 dynamicOffsetsStart[DescriptorSet::NumGfxStages];
+    uint32 dynamicOffsetsStart[DescriptorSet::GraphicsStagesCount];
     uint32 totalNumDynamicOffsets = 0;
-    for (int32 stage = 0; stage < DescriptorSet::NumGfxStages; stage++)
+    for (int32 stage = 0; stage < DescriptorSet::GraphicsStagesCount; stage++)
     {
         dynamicOffsetsStart[stage] = totalNumDynamicOffsets;
 
@@ -389,7 +374,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     }
 
     DynamicOffsets.AddZeroed(totalNumDynamicOffsets);
-    for (int32 stage = 0; stage < DescriptorSet::NumGfxStages; stage++)
+    for (int32 stage = 0; stage < DescriptorSet::GraphicsStagesCount; stage++)
     {
         DSWriter[stage].DynamicOffsets = dynamicOffsetsStart[stage] + DynamicOffsets.Get();
     }

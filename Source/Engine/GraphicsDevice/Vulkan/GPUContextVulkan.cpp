@@ -102,15 +102,11 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
 
 GPUContextVulkan::~GPUContextVulkan()
 {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     for (int32 i = 0; i < _descriptorPools.Count(); i++)
     {
         _descriptorPools[i].ClearDelete();
     }
     _descriptorPools.Clear();
-#else
-	_descriptorPools.ClearDelete();
-#endif
     Delete(_cmdBufferManager);
 }
 
@@ -297,7 +293,6 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
 {
     VkResult result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
     VkDescriptorSetAllocateInfo allocateInfo = descriptorSetAllocateInfo;
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     DescriptorPoolVulkan* pool = nullptr;
 
     const uint32 hash = VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? layout.GetTypesUsageID() : GetHash(layout);
@@ -317,15 +312,6 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
     {
         typedDescriptorPools = &_descriptorPools.Add(hash, DescriptorPoolArray())->Value;
     }
-#else
-	DescriptorPoolVulkan* pool = _descriptorPools.HasItems() ? _descriptorPools.Last() : nullptr;
-
-	if (pool && pool->CanAllocate(layout))
-	{
-		allocateInfo.descriptorPool = pool->GetHandle();
-		result = vkAllocateDescriptorSets(_device->Device, &allocateInfo, outSets);
-	}
-#endif
 
     if (result < VK_SUCCESS)
     {
@@ -336,13 +322,8 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
         else
         {
             // Spec says any negative value could be due to fragmentation, so create a new Pool. If it fails here then we really are out of memory!
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
             pool = New<DescriptorPoolVulkan>(_device, layout);
             typedDescriptorPools->Add(pool);
-#else
-			pool = New<DescriptorPoolVulkan>(_device);
-			_descriptorPools.Add(pool);
-#endif
             allocateInfo.descriptorPool = pool->GetHandle();
             VALIDATE_VULKAN_RESULT(vkAllocateDescriptorSets(_device->Device, &allocateInfo, outSets));
         }
@@ -540,23 +521,13 @@ void GPUContextVulkan::UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineStat
     ASSERT(pipelineLayout);
     bool needsWrite = false;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     // No current descriptor pools set - acquire one and reset
-    bool newDescriptorPool = pipelineState->AcquirePoolSet(cmdBuffer);
+    const bool newDescriptorPool = pipelineState->AcquirePoolSet(cmdBuffer);
     needsWrite |= newDescriptorPool;
-#else
-	const auto newDescriptorSets = pipelineState->DSRingBuffer.RequestDescriptorSets(this, cmdBuffer, pipelineLayout);
-	pipelineState->DSRingBuffer.Set(newDescriptorSets);
-	if (!newDescriptorSets)
-	{
-		return;
-	}
-	const auto& descriptorSetHandles = newDescriptorSets->GetHandles();
-#endif
 
     // Update descriptors for every used shader stage
     uint32 remainingHasDescriptorsPerStageMask = pipelineState->HasDescriptorsPerStageMask;
-    for (int32 stage = 0; stage < DescriptorSet::NumGfxStages && remainingHasDescriptorsPerStageMask; stage++)
+    for (int32 stage = 0; stage < DescriptorSet::GraphicsStagesCount && remainingHasDescriptorsPerStageMask; stage++)
     {
         // Only process stages that exist in this pipeline and use descriptors
         if (remainingHasDescriptorsPerStageMask & 1)
@@ -568,27 +539,19 @@ void GPUContextVulkan::UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineStat
     }
 
     // Allocate sets based on what changed
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     //if (needsWrite) // TODO: write on change only?
-#endif
     {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         if (!pipelineState->AllocateDescriptorSets())
         {
             return;
         }
-#endif
         uint32 remainingStagesMask = pipelineState->HasDescriptorsPerStageMask;
         uint32 stage = 0;
         while (remainingStagesMask)
         {
             if (remainingStagesMask & 1)
             {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
                 const VkDescriptorSet descriptorSet = pipelineState->DescriptorSetHandles[stage];
-#else
-				const VkDescriptorSet descriptorSet = descriptorSetHandles[stage];
-#endif
                 pipelineState->DSWriter[stage].SetDescriptorSet(descriptorSet);
             }
 
@@ -608,39 +571,21 @@ void GPUContextVulkan::UpdateDescriptorSets(ComputePipelineStateVulkan* pipeline
 
     bool needsWrite = false;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     // No current descriptor pools set - acquire one and reset
-    bool newDescriptorPool = pipelineState->AcquirePoolSet(cmdBuffer);
+    const bool newDescriptorPool = pipelineState->AcquirePoolSet(cmdBuffer);
     needsWrite |= newDescriptorPool;
-#else
-	const auto newDescriptorSets = pipelineState->DSRingBuffer.RequestDescriptorSets(this, cmdBuffer, pipelineLayout);
-	pipelineState->DSRingBuffer.Set(newDescriptorSets);
-	if (!newDescriptorSets)
-	{
-		return;
-	}
-	const auto& descriptorSetHandles = newDescriptorSets->GetHandles();
-#endif
 
     // Update descriptors
     UpdateDescriptorSets(*pipelineState->DescriptorInfo, pipelineState->DSWriter, needsWrite);
 
     // Allocate sets based on what changed
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-    //if (needsWrite) // TODO: write on change only?
-#endif
+    //if (needsWrite) // TODO: write on change only?f
     {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         if (!pipelineState->AllocateDescriptorSets())
         {
             return;
         }
-#endif
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         const VkDescriptorSet descriptorSet = pipelineState->DescriptorSetHandles[DescriptorSet::Compute];
-#else
-		const VkDescriptorSet descriptorSet = descriptorSetHandles[DescriptorSet::Compute];
-#endif
         pipelineState->DSWriter.SetDescriptorSet(descriptorSet);
 
         vkUpdateDescriptorSets(_device->Device, pipelineState->DSWriteContainer.DescriptorWrites.Count(), pipelineState->DSWriteContainer.DescriptorWrites.Get(), 0, nullptr);
@@ -674,8 +619,6 @@ void GPUContextVulkan::OnDrawCall()
     // End previous render pass if render targets layout was modified
     if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
-
-    _currentState->Reset();
 
     if (pipelineState->HasDescriptorsPerStageMask)
     {

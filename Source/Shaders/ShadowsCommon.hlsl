@@ -39,25 +39,8 @@ struct LightShadowData
 #define DECLARE_LIGHTSHADOWDATA_ACCESS(uniformName) LightShadowData Get##uniformName##Data() { return uniformName; }
 #endif
 
-// Gets the cube texture face index to use for shadow map sampling for the given view-to-light direction vector
-// Where: direction = normalize(worldPosition - lightPosition)
-int GetCubeFaceIndex(float3 direction)
-{
-	int cubeFaceIndex;
-	float3 absDirection = abs(direction);
-	float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
-	if (maxDirection == absDirection.x)
-		cubeFaceIndex = absDirection.x == direction.x ? 0 : 1;
-	else if (maxDirection == absDirection.y)
-		cubeFaceIndex = absDirection.y == direction.y ? 2 : 3;
-	else
-		cubeFaceIndex = absDirection.z == direction.z ? 4 : 5;
-	return cubeFaceIndex;
-}
-
 float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 {
-	// Note: offsetScale should be multiplied by 2*ShadowMapTextureTexelSize on CPU
 	float normalOffsetScale = saturate(1.0f - NoL);
 	return normal * (offsetScale * normalOffsetScale);
 }
@@ -65,8 +48,6 @@ float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 float CalculateSubsurfaceOcclusion(float opacity, float sceneDepth, float shadowMapDepth)
 {
 	float thickness = max(sceneDepth - shadowMapDepth, 0);
-	//float density = -0.05f * log(1 - min(opacity, 0.999f));
-	//float occlusion = saturate(exp(-thickness * density));
 	float occlusion = 1 - thickness * lerp(1.0f, 100.0f, opacity);
 	return shadowMapDepth > 0.99f ? 1 : occlusion;
 }

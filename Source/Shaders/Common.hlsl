@@ -196,25 +196,6 @@ struct Quad_GS2PS
 	uint LayerIndex : SV_RenderTargetArrayIndex;
 };
 
-float VisualizeTextureGrid(float2 texCoord, float2 textureSize, float gridSize)
-{
-	if (gridSize > 0)
-	{
-		float2 t = frac(texCoord * textureSize);
-		return (t.x < gridSize || t.x > 1 - gridSize) || (t.y < gridSize || t.y > 1 - gridSize);
-	}
-	else
-	{
-		int2 t = int2(texCoord * textureSize);
-		return (t.x % 2 == 0 && t.y % 2 == 0) || (t.x % 2 == 1 && t.y % 2 == 1);
-	}
-}
-
-float BiasedNDotL(float NoL)
-{
-	return saturate(NoL * 1.08f - 0.08f);
-}
-
 float Luminance(float3 color)
 {
 	return dot(color, float3(0.299f, 0.587f, 0.114f));

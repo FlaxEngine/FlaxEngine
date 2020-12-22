@@ -7,15 +7,13 @@
 #include "QueueVulkan.h"
 #include "GPUContextVulkan.h"
 #include "GPUTimerQueryVulkan.h"
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
 #include "DescriptorSetVulkan.h"
-#endif
 
 void CmdBufferVulkan::AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore)
 {
-    WaitFlags.Add(waitFlags);
-    ASSERT(!WaitSemaphores.Contains(waitSemaphore));
-    WaitSemaphores.Add(waitSemaphore);
+    _waitFlags.Add(waitFlags);
+    ASSERT(!_waitSemaphores.Contains(waitSemaphore));
+    _waitSemaphores.Add(waitSemaphore);
 }
 
 void CmdBufferVulkan::Begin()
@@ -25,11 +23,11 @@ void CmdBufferVulkan::Begin()
     VkCommandBufferBeginInfo beginInfo;
     RenderToolsVulkan::ZeroStruct(beginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VALIDATE_VULKAN_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &beginInfo));
+    VALIDATE_VULKAN_RESULT(vkBeginCommandBuffer(_commandBufferHandle, &beginInfo));
 
 #if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
     // Acquire a descriptor pool set on
-    if (CurrentDescriptorPoolSetContainer == nullptr)
+    if (_descriptorPoolSetContainer == nullptr)
     {
         AcquirePoolSet();
     }
@@ -72,26 +70,22 @@ void CmdBufferVulkan::BeginRenderPass(RenderPassVulkan* renderPass, FramebufferV
     info.clearValueCount = clearValueCount;
     info.pClearValues = clearValues;
 
-    vkCmdBeginRenderPass(CommandBufferHandle, &info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_commandBufferHandle, &info, VK_SUBPASS_CONTENTS_INLINE);
     _state = State::IsInsideRenderPass;
 }
 
 void CmdBufferVulkan::EndRenderPass()
 {
     ASSERT(IsInsideRenderPass());
-    vkCmdEndRenderPass(CommandBufferHandle);
+    vkCmdEndRenderPass(_commandBufferHandle);
     _state = State::IsInsideBegin;
 }
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-
 void CmdBufferVulkan::AcquirePoolSet()
 {
-    ASSERT(!CurrentDescriptorPoolSetContainer);
-    CurrentDescriptorPoolSetContainer = &_device->DescriptorPoolsManager->AcquirePoolSetContainer();
+    ASSERT(!_descriptorPoolSetContainer);
+    _descriptorPoolSetContainer = &_device->DescriptorPoolsManager->AcquirePoolSetContainer();
 }
-
-#endif
 
 #if GPU_ALLOW_PROFILE_EVENTS
 
@@ -138,19 +132,17 @@ void CmdBufferVulkan::RefreshFenceStatus()
         {
             _state = State::ReadyForBegin;
 
-            SubmittedWaitSemaphores.Clear();
+            _submittedWaitSemaphores.Clear();
 
-            vkResetCommandBuffer(CommandBufferHandle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+            vkResetCommandBuffer(_commandBufferHandle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
             _fence->GetOwner()->ResetFence(_fence);
-            FenceSignaledCounter++;
+            _fenceSignaledCounter++;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-            if (CurrentDescriptorPoolSetContainer)
+            if (_descriptorPoolSetContainer)
             {
-                _device->DescriptorPoolsManager->ReleasePoolSet(*CurrentDescriptorPoolSetContainer);
-                CurrentDescriptorPoolSetContainer = nullptr;
+                _device->DescriptorPoolsManager->ReleasePoolSet(*_descriptorPoolSetContainer);
+                _descriptorPoolSetContainer = nullptr;
             }
-#endif
         }
     }
     else
@@ -161,20 +153,20 @@ void CmdBufferVulkan::RefreshFenceStatus()
 
 CmdBufferVulkan::CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* pool)
     : _device(device)
-    , CommandBufferHandle(VK_NULL_HANDLE)
+    , _commandBufferHandle(VK_NULL_HANDLE)
     , _state(State::ReadyForBegin)
     , _fence(nullptr)
-    , FenceSignaledCounter(0)
-    , SubmittedFenceCounter(0)
-    , CommandBufferPool(pool)
+    , _fenceSignaledCounter(0)
+    , _submittedFenceCounter(0)
+    , _commandBufferPool(pool)
 {
     VkCommandBufferAllocateInfo createCmdBufInfo;
     RenderToolsVulkan::ZeroStruct(createCmdBufInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     createCmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     createCmdBufInfo.commandBufferCount = 1;
-    createCmdBufInfo.commandPool = CommandBufferPool->GetHandle();
+    createCmdBufInfo.commandPool = _commandBufferPool->GetHandle();
 
-    VALIDATE_VULKAN_RESULT(vkAllocateCommandBuffers(_device->Device, &createCmdBufInfo, &CommandBufferHandle));
+    VALIDATE_VULKAN_RESULT(vkAllocateCommandBuffers(_device->Device, &createCmdBufInfo, &_commandBufferHandle));
     _fence = _device->FenceManager.AllocateFence();
 }
 
@@ -193,7 +185,7 @@ CmdBufferVulkan::~CmdBufferVulkan()
         fenceManager.ReleaseFence(_fence);
     }
 
-    vkFreeCommandBuffers(_device->Device, CommandBufferPool->GetHandle(), 1, &CommandBufferHandle);
+    vkFreeCommandBuffers(_device->Device, _commandBufferPool->GetHandle(), 1, &_commandBufferHandle);
 }
 
 CmdBufferVulkan* CmdBufferPoolVulkan::Create()

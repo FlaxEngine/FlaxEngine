@@ -37,7 +37,7 @@ namespace Flax.Build.Platforms
             if (string.IsNullOrEmpty(sdkPath))
             {
                 // Look for ndk installed side-by-side with an sdk
-                if (AndroidSdk.Instance.IsValid)
+                if (AndroidSdk.Instance.IsValid && Directory.Exists(Path.Combine(AndroidSdk.Instance.RootPath, "ndk")))
                 {
                     var subdirs = Directory.GetDirectories(Path.Combine(AndroidSdk.Instance.RootPath, "ndk"));
                     if (subdirs.Length != 0)

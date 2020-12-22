@@ -700,6 +700,15 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets the input state data (from the previous update).
+        /// </summary>
+        /// <param name="input">The input.</param>
+        public void GetPrevInput(out Input input)
+        {
+            input = _prevInput;
+        }
+
+        /// <summary>
         /// Creates the projection matrix.
         /// </summary>
         /// <param name="result">The result.</param>

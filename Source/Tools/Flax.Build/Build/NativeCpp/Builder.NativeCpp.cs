@@ -946,7 +946,7 @@ namespace Flax.Build
                     {
                         using (new ProfileEventScope(reference.Project.Name))
                         {
-                            if (Configuration.BuildBindingsOnly || reference.Project.IsCSharpOnlyProject)
+                            if (Configuration.BuildBindingsOnly || reference.Project.IsCSharpOnlyProject || !platform.HasRequiredSDKsInstalled)
                             {
                                 BuildTargetReferenceNativeCppBindingsOnly(buildContext, buildData, reference);
                             }

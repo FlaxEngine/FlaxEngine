@@ -45,31 +45,20 @@ Texture2D LutTexture : register(t0);
 // [Krystek 1985, "An algorithm to calculate correlated colour temperature"]
 float2 PlanckianLocusChromaticity(float temp)
 {
-	float u = ( 0.860117757f + 1.54118254e-4f * temp + 1.28641212e-7f * temp*temp ) / ( 1.0f + 8.42420235e-4f * temp + 7.08145163e-7f * temp*temp );
-	float v = ( 0.317398726f + 4.22806245e-5f * temp + 4.20481691e-8f * temp*temp ) / ( 1.0f - 2.89741816e-5f * temp + 1.61456053e-7f * temp*temp );
-
-	float x = 3*u / ( 2*u - 8*v + 4 );
-	float y = 2*v / ( 2*u - 8*v + 4 );
-
-	return float2(x,y);
+	float u = (0.860117757f + 1.54118254e-4f * temp + 1.28641212e-7f * temp * temp) / (1.0f + 8.42420235e-4f * temp + 7.08145163e-7f * temp * temp);
+	float v = (0.317398726f + 4.22806245e-5f * temp + 4.20481691e-8f * temp * temp) / (1.0f - 2.89741816e-5f * temp + 1.61456053e-7f * temp * temp);
+	float x = 3 * u / (2 * u - 8 * v + 4);
+	float y = 2 * v / (2 * u - 8 * v + 4);
+	return float2(x, y);
 }
 
-// Accurate for 4000K < temp < 25000K
-// in: correlated color temperature
-// out: CIE 1931 chromaticity
-float2 D_IlluminantChromaticity(float temp)
+// Calculates chromaticity from temperature
+float2 IlluminantChromaticity(float temp)
 {
-	// Correct for revision of Plank's law
-	// This makes 6500 == D65
 	temp *= 1.4388 / 1.438;
-
-	float x =	temp <= 7000 ?
-				0.244063 + ( 0.09911e3 + ( 2.9678e6 - 4.6070e9 / temp ) / temp ) / temp :
-				0.237040 + ( 0.24748e3 + ( 1.9018e6 - 2.0064e9 / temp ) / temp ) / temp;
-	
-	float y = -3 * x*x + 2.87 * x - 0.275;
-
-	return float2(x,y);
+	float x = temp <= 7000 ? 0.244063 + (0.09911e3 + (2.9678e6 - 4.6070e9 / temp) / temp) / temp : 0.237040 + (0.24748e3 + (1.9018e6 - 2.0064e9 / temp) / temp) / temp;
+	float y = -3 * x * x + 2.87 * x - 0.275;
+	return float2(x, y);
 }
 
 // Find closest color temperature to chromaticity
@@ -77,38 +66,31 @@ float2 D_IlluminantChromaticity(float temp)
 float CorrelatedColortemperature(float x, float y)
 {
 	float n = (x - 0.3320) / (0.1858 - y);
-	return -449 * n*n*n + 3525 * n*n - 6823.3 * n + 5520.33;
+	return -449 * n * n * n + 3525 * n * n - 6823.3 * n + 5520.33;
 }
 
+// [McCamy 1992, "Correlated color temperature as an explicit function of chromaticity coordinates"]
 float2 PlanckianIsothermal(float temp, float tint)
 {
-	float u = ( 0.860117757f + 1.54118254e-4f * temp + 1.28641212e-7f * temp*temp ) / ( 1.0f + 8.42420235e-4f * temp + 7.08145163e-7f * temp*temp );
-	float v = ( 0.317398726f + 4.22806245e-5f * temp + 4.20481691e-8f * temp*temp ) / ( 1.0f - 2.89741816e-5f * temp + 1.61456053e-7f * temp*temp );
-
-	float ud = ( -1.13758118e9f - 1.91615621e6f * temp - 1.53177f * temp*temp ) / Square( 1.41213984e6f + 1189.62f * temp + temp*temp );
-	float vd = (  1.97471536e9f - 705674.0f * temp - 308.607f * temp*temp ) / Square( 6.19363586e6f - 179.456f * temp + temp*temp );
-
-	float2 uvd = normalize( float2( u, v ) );
-
-	// Correlated color temperature is meaningful within +/- 0.05
+	float u = (0.860117757f + 1.54118254e-4f * temp + 1.28641212e-7f * temp * temp) / (1.0f + 8.42420235e-4f * temp + 7.08145163e-7f * temp * temp);
+	float v = (0.317398726f + 4.22806245e-5f * temp + 4.20481691e-8f * temp * temp) / (1.0f - 2.89741816e-5f * temp + 1.61456053e-7f * temp * temp);
+	float ud = (-1.13758118e9f - 1.91615621e6f * temp - 1.53177f * temp * temp) / Square(1.41213984e6f + 1189.62f * temp + temp * temp);
+	float vd = (1.97471536e9f - 705674.0f * temp - 308.607f * temp * temp) / Square(6.19363586e6f - 179.456f * temp + temp * temp);
+	float2 uvd = normalize(float2(u, v));
 	u += -uvd.y * tint * 0.05;
 	v +=  uvd.x * tint * 0.05;
-
-	float x = 3*u / ( 2*u - 8*v + 4 );
-	float y = 2*v / ( 2*u - 8*v + 4 );
-
+	float x = 3 * u / (2 * u - 8 * v + 4);
+	float y = 2 * v / (2 * u - 8 * v + 4);
 	return float2(x,y);
 }
 
 float3 WhiteBalance(float3 linearColor)
 {
-	float2 srcWhiteDaylight = D_IlluminantChromaticity(WhiteTemp);
+	float2 srcWhiteDaylight = IlluminantChromaticity(WhiteTemp);
 	float2 srcWhitePlankian = PlanckianLocusChromaticity(WhiteTemp);
 
 	float2 srcWhite = WhiteTemp < 4000 ? srcWhitePlankian : srcWhiteDaylight;
-	float2 d65White = float2(0.31270,  0.32900);
-
-	// Offset along isotherm
+	float2 d65White = float2(0.31270f, 0.32900f);
 	float2 isothermal = PlanckianIsothermal(WhiteTemp, WhiteTint) - srcWhitePlankian;
 	srcWhite += isothermal;
 
@@ -121,8 +103,8 @@ float3 WhiteBalance(float3 linearColor)
 float3 ColorCorrect(float3 color, float luma, float4 saturation, float4 contrast, float4 gamma, float4 gain, float4 offset)
 {
 	color = max(0, lerp(luma.xxx, color, saturation.xyz * saturation.w));
-	color = pow(color * (1.0 / 0.18), contrast.xyz * contrast.w) * 0.18;
-	color = pow(color, 1.0 / (gamma.xyz * gamma.w));
+	color = pow(color * (1.0f / 0.18f), contrast.xyz * contrast.w) * 0.18f;
+	color = pow(color, 1.0f / (gamma.xyz * gamma.w));
 	color = color * (gain.xyz * gain.w) + (offset.xyz + offset.w);
 	return color;
 }
@@ -130,35 +112,12 @@ float3 ColorCorrect(float3 color, float luma, float4 saturation, float4 contrast
 float3 ColorCorrectAll(float3 color)
 {
 	float luma = dot(color, AP1_RGB2Y);
-
-	// Shadow CC
-	float3 ccColorShadows = ColorCorrect(color, luma,
-		ColorSaturationShadows, 
-		ColorContrastShadows, 
-		ColorGammaShadows, 
-		ColorGainShadows, 
-		ColorOffsetShadows);
+	float3 ccColorShadows = ColorCorrect(color, luma, ColorSaturationShadows, ColorContrastShadows, ColorGammaShadows, ColorGainShadows, ColorOffsetShadows);
 	float ccWeightShadows = 1 - smoothstep(0, ColorCorrectionShadowsMax, luma);
-
-	// Highlight CC
-	float3 ccColorHighlights = ColorCorrect(color, luma,
-		ColorSaturationHighlights, 
-		ColorContrastHighlights, 
-		ColorGammaHighlights, 
-		ColorGainHighlights, 
-		ColorOffsetHighlights);
+	float3 ccColorHighlights = ColorCorrect(color, luma,ColorSaturationHighlights, ColorContrastHighlights, ColorGammaHighlights, ColorGainHighlights, ColorOffsetHighlights);
 	float ccWeightHighlights = smoothstep(ColorCorrectionHighlightsMin, 1, luma);
-
-	// Midtone CC
-	float3 ccColorMidtones = ColorCorrect(color, luma,
-		ColorSaturationMidtones, 
-		ColorContrastMidtones, 
-		ColorGammaMidtones, 
-		ColorGainMidtones, 
-		ColorOffsetMidtones);
+	float3 ccColorMidtones = ColorCorrect(color, luma, ColorSaturationMidtones, ColorContrastMidtones, ColorGammaMidtones, ColorGainMidtones, ColorOffsetMidtones);
 	float ccWeightMidtones = 1 - ccWeightShadows - ccWeightHighlights;
-
-	// Blend shadow, midtone and highlight CCs
 	return ccColorShadows * ccWeightShadows + ccColorMidtones * ccWeightMidtones + ccColorHighlights * ccWeightHighlights;
 }
 
@@ -207,8 +166,7 @@ float3 TonemapNeutral(float3 linearColor)
 
 float3 TonemapACES(float3 linearColor)
 {
-	// The code in this file was originally written by Stephen Hill (@self_shadow), who deserves all
-	// credit for coming up with this fit and implementing it. Buy him a beer next time you see him. :)
+	// The code was originally written by Stephen Hill (@self_shadow).
 
 	// sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT
 	static const float3x3 ACESInputMat =
@@ -280,7 +238,6 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 
 	// Move from encoded LUT color space to linear color
 	//float3 linearColor = encodedColor.rgb; // Default
-	//float3 linearColor = LogCToLinear(encodedColor.rgb); // LogC
 	float3 linearColor = LogToLinear(encodedColor.rgb) - LogToLinear(0); // Log
 
 	// Apply white balance

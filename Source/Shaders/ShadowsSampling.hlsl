@@ -42,6 +42,22 @@
 #include "./Flax/PCFKernels.hlsl"
 #endif
 
+// Gets the cube texture face index to use for shadow map sampling for the given view-to-light direction vector
+// Where: direction = normalize(worldPosition - lightPosition)
+int GetCubeFaceIndex(float3 direction)
+{
+	int cubeFaceIndex;
+	float3 absDirection = abs(direction);
+	float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
+	if (maxDirection == absDirection.x)
+		cubeFaceIndex = absDirection.x == direction.x ? 0 : 1;
+	else if (maxDirection == absDirection.y)
+		cubeFaceIndex = absDirection.y == direction.y ? 2 : 3;
+	else
+		cubeFaceIndex = absDirection.z == direction.z ? 4 : 5;
+	return cubeFaceIndex;
+}
+
 // Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmpRed.
 // Uses code from "Fast Conventional Shadow Filtering" by Holger Gruen, in GPU Pro.
 float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize, float sceneDepth, float2 shadowPos, uint cascadeIndex)

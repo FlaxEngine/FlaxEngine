@@ -44,8 +44,6 @@ public:
     DescriptorSetWriteContainerVulkan DSWriteContainer;
     DescriptorSetWriterVulkan DSWriter;
 
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-
     const DescriptorSetLayoutVulkan* DescriptorSetsLayout = nullptr;
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
     Array<VkDescriptorSet> DescriptorSetHandles;
@@ -53,7 +51,7 @@ public:
     inline bool AcquirePoolSet(CmdBufferVulkan* cmdBuffer)
     {
         // Pipeline state has no current descriptor pools set or set owner is not current - acquire a new pool set
-        DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->CurrentDescriptorPoolSetContainer;
+        DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
             ASSERT(cmdBufferPoolSet);
@@ -70,26 +68,12 @@ public:
         return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
     }
 
-#else
-
-	DescriptorSetRingBufferVulkan DSRingBuffer;
-
-#endif
-
     Array<uint32> DynamicOffsets;
 
 public:
 
-    void Reset()
-    {
-#if !VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-		DSRingBuffer.Reset();
-#endif
-    }
-
     void Bind(CmdBufferVulkan* cmdBuffer)
     {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         vkCmdBindDescriptorSets(
             cmdBuffer->GetHandle(),
             VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -99,9 +83,6 @@ public:
             DescriptorSetHandles.Get(),
             DynamicOffsets.Count(),
             DynamicOffsets.Get());
-#else
-		DSRingBuffer.Bind(cmdBuffer->GetHandle(), GetLayout()->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, DynamicOffsets);
-#endif
     }
 
 public:
@@ -131,7 +112,7 @@ private:
     VkPipelineTessellationStateCreateInfo _descTessellation;
     VkPipelineViewportStateCreateInfo _descViewport;
     VkPipelineDynamicStateCreateInfo _descDynamic;
-    VkDynamicState _dynamicStates[VK_DYNAMIC_STATE_RANGE_SIZE];
+    VkDynamicState _dynamicStates[3];
     VkPipelineMultisampleStateCreateInfo _descMultisample;
     VkPipelineDepthStencilStateCreateInfo _descDepthStencil;
     VkPipelineRasterizationStateCreateInfo _descRasterization;
@@ -162,17 +143,15 @@ public:
     /// <summary>
     /// The cached shader bindings per stage.
     /// </summary>
-    const ShaderBindings* ShaderBindingsPerStage[DescriptorSet::NumGfxStages];
+    const ShaderBindings* ShaderBindingsPerStage[DescriptorSet::GraphicsStagesCount];
 
     /// <summary>
     /// The cached shader descriptor infos per stage.
     /// </summary>
-    const SpirvShaderDescriptorInfo* DescriptorInfoPerStage[DescriptorSet::NumGfxStages];
+    const SpirvShaderDescriptorInfo* DescriptorInfoPerStage[DescriptorSet::GraphicsStagesCount];
 
     DescriptorSetWriteContainerVulkan DSWriteContainer;
-    DescriptorSetWriterVulkan DSWriter[DescriptorSet::NumGfxStages];
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
+    DescriptorSetWriterVulkan DSWriter[DescriptorSet::GraphicsStagesCount];
 
     const DescriptorSetLayoutVulkan* DescriptorSetsLayout = nullptr;
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
@@ -181,7 +160,7 @@ public:
     inline bool AcquirePoolSet(CmdBufferVulkan* cmdBuffer)
     {
         // Pipeline state has no current descriptor pools set or set owner is not current - acquire a new pool set
-        DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->CurrentDescriptorPoolSetContainer;
+        DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
             ASSERT(cmdBufferPoolSet);
@@ -198,26 +177,12 @@ public:
         return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
     }
 
-#else
-
-	DescriptorSetRingBufferVulkan DSRingBuffer;
-
-#endif
-
     Array<uint32> DynamicOffsets;
 
 public:
 
-    void Reset()
-    {
-#if !VULKAN_USE_DESCRIPTOR_POOL_MANAGER
-		DSRingBuffer.Reset();
-#endif
-    }
-
     void Bind(CmdBufferVulkan* cmdBuffer)
     {
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
         vkCmdBindDescriptorSets(
             cmdBuffer->GetHandle(),
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -227,9 +192,6 @@ public:
             DescriptorSetHandles.Get(),
             DynamicOffsets.Count(),
             DynamicOffsets.Get());
-#else
-		DSRingBuffer.Bind(cmdBuffer->GetHandle(), GetLayout()->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, DynamicOffsets);
-#endif
     }
 
     /// <summary>

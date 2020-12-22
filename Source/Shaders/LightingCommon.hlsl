@@ -47,8 +47,8 @@ struct LightingData
 // WorldLightVector is the vector from the position being shaded to the light, divided by the radius of the light. 
 float RadialAttenuation(float3 worldLightVector, half falloffExponent)
 {
-	float normalizeDistanceSquared = dot(worldLightVector, worldLightVector);
-	return pow(1.0f - saturate(normalizeDistanceSquared), falloffExponent); 
+	float t = dot(worldLightVector, worldLightVector);
+	return pow(1.0f - saturate(t), falloffExponent); 
 }
 
 // Calculates attenuation for a spot light. Where L normalize vector to light.
@@ -127,30 +127,21 @@ float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLig
 	BRANCH
 	if (lightData.SourceLength > 0)
 	{
-		// Energy conservation
 		float lineAngle = saturate(lightData.SourceLength * invDistToLight);
 		energy *= m / saturate(m + 0.5 * lineAngle);
-
-		// Closest point on line segment to ray
 		float3 l01 = lightData.Direction * lightData.SourceLength;
 		float3 l0 = toLight - 0.5 * l01;
-		float3 l1 = toLight + 0.5 * l01;
-
 		float a = Square(lightData.SourceLength);
 		float b = dot(r, l01);
 		float t = saturate(dot(l0, b * r - l01) / (a - b * b));
-
 		toLight = l0 + t * l01;
 	}
 
 	BRANCH
 	if (lightData.SourceRadius > 0)
 	{
-		// Energy conservation
 		float sphereAngle = saturate(lightData.SourceRadius * invDistToLight);
 		energy *= Square(m / saturate(m + 0.5 * sphereAngle));
-
-		// Closest point on sphere to ray
 		float3 closestPointOnRay = dot(toLight, r) * r;
 		float3 centerToRay = closestPointOnRay - toLight;
 		float3 closestPointOnSphere = toLight + centerToRay * saturate(lightData.SourceRadius * rsqrt(dot(centerToRay, centerToRay)));
