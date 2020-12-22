@@ -65,7 +65,7 @@ float4 PS_FilterFace(Quad_VS2PS input) : SV_Target
 #define NUM_FILTER_SAMPLES 512
 
 	float3 N = normalize(cubeCoordinates);
-	float roughness = ComputeReflectionCaptureRoughnessFromMip(SourceMipIndex);
+	float roughness = ProbeRoughnessFromMip(SourceMipIndex);
 
 	float4 filteredColor = 0;
 	float weight = 0;

@@ -29,29 +29,29 @@ struct ExponentialHeightFogData
 	float StartDistance;
 };
 
-half4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, float3 worldPosition, float3 cameraPosition, float excludeDistance)
+float4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, float3 posWS, float3 camWS, float skipDistance)
 {
-	float3 cameraToReceiver = worldPosition - cameraPosition;
-	float cameraToReceiverLengthSqr = dot(cameraToReceiver, cameraToReceiver);
-	float cameraToReceiverLengthInv = rsqrt(cameraToReceiverLengthSqr);
-	float cameraToReceiverLength = cameraToReceiverLengthSqr * cameraToReceiverLengthInv;
-	half3 cameraToReceiverNormalized = cameraToReceiver * cameraToReceiverLengthInv;
+	float3 cameraToPos = posWS - camWS;
+	float cameraToPosSqr = dot(cameraToPos, cameraToPos);
+	float cameraToPosLenInv = rsqrt(cameraToPosSqr);
+	float cameraToPosLen = cameraToPosSqr * cameraToPosLenInv;
+	float3 cameraToReceiverNorm = cameraToPos * cameraToPosLenInv;
 
 	float rayOriginTerms = exponentialHeightFog.FogAtViewPosition;	
-	float rayLength = cameraToReceiverLength;
-	float rayDirectionY = cameraToReceiver.y;
+	float rayLength = cameraToPosLen;
+	float rayDirectionY = cameraToPos.y;
 
 	// Apply start distance offset
-	excludeDistance = max(excludeDistance, exponentialHeightFog.StartDistance);
-	if (excludeDistance > 0)
+	skipDistance = max(skipDistance, exponentialHeightFog.StartDistance);
+	if (skipDistance > 0)
 	{
-		float excludeIntersectionTime = excludeDistance * cameraToReceiverLengthInv;
-		float cameraToExclusionIntersectionY = excludeIntersectionTime * cameraToReceiver.y;
-		float exclusionIntersectionY = cameraPosition.y + cameraToExclusionIntersectionY;
-		float exclusionIntersectionToReceiverY = cameraToReceiver.y - cameraToExclusionIntersectionY;
+		float excludeIntersectionTime = skipDistance * cameraToPosLenInv;
+		float cameraToExclusionIntersectionY = excludeIntersectionTime * cameraToPos.y;
+		float exclusionIntersectionY = camWS.y + cameraToExclusionIntersectionY;
+		float exclusionIntersectionToReceiverY = cameraToPos.y - cameraToExclusionIntersectionY;
 
 		// Calculate fog off of the ray starting from the exclusion distance, instead of starting from the camera
-		rayLength = (1.0f - excludeIntersectionTime) * cameraToReceiverLength;
+		rayLength = (1.0f - excludeIntersectionTime) * cameraToPosLen;
 		rayDirectionY = exclusionIntersectionToReceiverY;
 
 		// Move off the viewer
@@ -67,22 +67,22 @@ half4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, flo
 	float exponentialHeightLineIntegral = exponentialHeightLineIntegralCalc * rayLength;
 
 	// Calculate the amount of light that made it through the fog using the transmission equation
-	half expFogFactor = max(saturate(exp2(-exponentialHeightLineIntegral)), exponentialHeightFog.FogMinOpacity);
+	float expFogFactor = max(saturate(exp2(-exponentialHeightLineIntegral)), exponentialHeightFog.FogMinOpacity);
 
 	// Calculate the directional light inscattering
-	half3 inscatteringColor = exponentialHeightFog.FogInscatteringColor;
-	half3 directionalInscattering = 0;
+	float3 inscatteringColor = exponentialHeightFog.FogInscatteringColor;
+	float3 directionalInscattering = 0;
 	BRANCH
 	if (exponentialHeightFog.ApplyDirectionalInscattering > 0)
 	{
 		// Setup a cosine lobe around the light direction to approximate inscattering from the directional light off of the ambient haze
-		half3 directionalLightInscattering = exponentialHeightFog.DirectionalInscatteringColor * pow(saturate(dot(cameraToReceiverNormalized, exponentialHeightFog.InscatteringLightDirection)), exponentialHeightFog.DirectionalInscatteringExponent);
+		float3 directionalLightInscattering = exponentialHeightFog.DirectionalInscatteringColor * pow(saturate(dot(cameraToReceiverNorm, exponentialHeightFog.InscatteringLightDirection)), exponentialHeightFog.DirectionalInscatteringExponent);
 		
 		// Calculate the line integral of the eye ray through the haze, using a special starting distance to limit the inscattering to the distance
 		float dirExponentialHeightLineIntegral = exponentialHeightLineIntegralCalc * max(rayLength - exponentialHeightFog.DirectionalInscatteringStartDistance, 0.0f);
 		
 		// Calculate the amount of light that made it through the fog using the transmission equation
-		half directionalInscatteringFogFactor = saturate(exp2(-dirExponentialHeightLineIntegral));
+		float directionalInscatteringFogFactor = saturate(exp2(-dirExponentialHeightLineIntegral));
 		
 		// Final inscattering from the light
 		directionalInscattering = directionalLightInscattering * (1 - directionalInscatteringFogFactor);
@@ -90,13 +90,13 @@ half4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, flo
 
 	// Disable fog after a certain distance
 	FLATTEN
-	if (exponentialHeightFog.FogCutoffDistance > 0 && cameraToReceiverLength > exponentialHeightFog.FogCutoffDistance)
+	if (exponentialHeightFog.FogCutoffDistance > 0 && cameraToPosLen > exponentialHeightFog.FogCutoffDistance)
 	{
 		expFogFactor = 1;
 		directionalInscattering = 0;
 	}
 
-	return half4((inscatteringColor) * (1 - expFogFactor) + directionalInscattering, expFogFactor);
+	return float4(inscatteringColor * (1.0f - expFogFactor) + directionalInscattering, expFogFactor);
 }
 
 #endif

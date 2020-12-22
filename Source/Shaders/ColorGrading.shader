@@ -264,37 +264,33 @@ META_VS(true, FEATURE_LEVEL_SM4)
 META_FLAG(VertexToGeometryShader)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-Quad_VS2GS VS_WriteToSlice(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_InstanceID)
+Quad_VS2GS VS_WriteToSlice(float2 position : POSITION0, float2 texCoord : TEXCOORD0, uint layerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;
-
-	output.Vertex.Position = float4(Position, 0, 1);
-	output.Vertex.TexCoord = TexCoord;
-	output.LayerIndex = LayerIndex;
-
+	output.Vertex.Position = float4(position, 0, 1);
+	output.Vertex.TexCoord = texCoord;
+	output.LayerIndex = layerIndex;
 	return output;
 }
 
 // Geometry shader that writes to a range of slices of a volume texture
 META_GS(true, FEATURE_LEVEL_SM4)
 [maxvertexcount(3)]
-void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2PS> OutStream)
+void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2PS> stream)
 {
-	Quad_GS2PS vertex0;
-	vertex0.Vertex = input[0].Vertex;
-	vertex0.LayerIndex = input[0].LayerIndex;
+	Quad_GS2PS vertex;
 
-	Quad_GS2PS vertex1;
-	vertex1.Vertex = input[1].Vertex;
-	vertex1.LayerIndex = input[1].LayerIndex;
+	vertex.Vertex = input[0].Vertex;
+	vertex.LayerIndex = input[0].LayerIndex;
+	stream.Append(vertex);
 
-	Quad_GS2PS vertex2;
-	vertex2.Vertex = input[2].Vertex;
-	vertex2.LayerIndex = input[2].LayerIndex;
+	vertex.Vertex = input[1].Vertex;
+	vertex.LayerIndex = input[1].LayerIndex;
+	stream.Append(vertex);
 
-	OutStream.Append(vertex0);
-	OutStream.Append(vertex1);
-	OutStream.Append(vertex2);
+	vertex.Vertex = input[2].Vertex;
+	vertex.LayerIndex = input[2].LayerIndex;
+	stream.Append(vertex);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)

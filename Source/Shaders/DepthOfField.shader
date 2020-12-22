@@ -571,9 +571,9 @@ StructuredBuffer<BokehPoint> BokehPointBuffer : register(t2);
 // Vertex Shader, positions and scales the bokeh point
 META_VS(true, FEATURE_LEVEL_SM5)
 META_FLAG(VertexToGeometryShader)
-BokehVSOutput VS_Bokeh(in uint VertexID	: SV_VertexID)
+BokehVSOutput VS_Bokeh(in uint vertexID : SV_VertexID)
 {
-	BokehPoint bPoint = BokehPointBuffer[VertexID];
+	BokehPoint bPoint = BokehPointBuffer[vertexID];
 	BokehVSOutput output;
 
 	// Position the vertex in normalized device coordinate space [-1, 1]
@@ -599,7 +599,7 @@ BokehVSOutput VS_Bokeh(in uint VertexID	: SV_VertexID)
 // Geometry Shader, expands a vertex into a quad with two triangles
 META_GS(true, FEATURE_LEVEL_SM5)
 [maxvertexcount(4)]
-void GS_Bokeh(point BokehVSOutput input[1], inout TriangleStream<BokehGSOutput> SpriteStream)
+void GS_Bokeh(point BokehVSOutput input[1], inout TriangleStream<BokehGSOutput> stream)
 {
 	BokehGSOutput output;
 
@@ -613,9 +613,9 @@ void GS_Bokeh(point BokehVSOutput input[1], inout TriangleStream<BokehGSOutput> 
 		output.Color = input[0].Color;
 		output.Depth = input[0].Depth;
 		
-		SpriteStream.Append(output);
+		stream.Append(output);
 	}
-	SpriteStream.RestartStrip();
+	stream.RestartStrip();
 }
 
 // Pixel Shader, applies the bokeh shape texture
