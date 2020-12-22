@@ -30,15 +30,6 @@ public:
     /// </summary>
     SemaphoreVulkan* RenderingDoneSemaphore;
 
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-
-    /// <summary>
-    /// The image acquired fence handle.
-    /// </summary>
-    FenceVulkan* ImageAcquiredFence;
-
-#endif
-
     /// <summary>
     /// The render target surface handle.
     /// </summary>

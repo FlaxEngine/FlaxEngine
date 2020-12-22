@@ -8,7 +8,6 @@
 
 #define VULKAN_USE_DEBUG_LAYER GPU_ENABLE_DIAGNOSTICS
 #define VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2 1
-#define VULKAN_ENABLE_DESKTOP_HMD_SUPPORT 0
 
 /// <summary>
 /// The implementation for the Vulkan API support for Linux platform.
