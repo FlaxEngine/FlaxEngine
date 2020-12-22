@@ -13,5 +13,6 @@ public class lz4 : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.BSD2Clause;
+        LicenseFilePath = "LICENSE.txt";
     }
 }

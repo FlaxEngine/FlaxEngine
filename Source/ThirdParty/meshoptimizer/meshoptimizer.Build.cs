@@ -13,5 +13,6 @@ public class meshoptimizer : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "LICENSE.md";
     }
 }

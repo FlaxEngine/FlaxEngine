@@ -14,6 +14,7 @@ public class UniversalAnalytics : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.BSD3Clause;
+        LicenseFilePath = "LICENSE.txt";
     }
 
     /// <inheritdoc />
