@@ -85,17 +85,17 @@ namespace FlaxEditor.Gizmo
                 var boxSize = 0.07f;
 
                 // XY plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 150f, boxSize * 150f, 0.0f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 135f, boxSize * 135f, 0.0f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.XY ? _materialAxisFocus : _materialAxisX, ref m3);
 
                 // ZX plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 150f, 0.0f, boxSize * 150f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 135f, 0.0f, boxSize * 135f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.ZX ? _materialAxisFocus : _materialAxisZ, ref m3);
 
                 // YZ plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 150f, boxSize * 150f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 135f, boxSize * 135f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.YZ ? _materialAxisFocus : _materialAxisY, ref m3);
 
