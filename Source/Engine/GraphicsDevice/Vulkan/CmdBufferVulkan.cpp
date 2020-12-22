@@ -24,14 +24,12 @@ void CmdBufferVulkan::Begin()
     RenderToolsVulkan::ZeroStruct(beginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     VALIDATE_VULKAN_RESULT(vkBeginCommandBuffer(_commandBufferHandle, &beginInfo));
-
-#if VULKAN_USE_DESCRIPTOR_POOL_MANAGER
+    
     // Acquire a descriptor pool set on
     if (_descriptorPoolSetContainer == nullptr)
     {
         AcquirePoolSet();
     }
-#endif
 
     _state = State::IsInsideBegin;
 

@@ -33,9 +33,6 @@ public:
     {
         Gpu = other.Gpu;
         GpuProps = other.GpuProps;
-#if VULKAN_ENABLE_DESKTOP_HMD_SUPPORT
-        GpuIdProps = other.GpuIdProps;
-#endif
         Description = other.Description;
         return *this;
     }
@@ -57,15 +54,6 @@ public:
     /// The GPU device properties.
     /// </summary>
     VkPhysicalDeviceProperties GpuProps;
-
-#if VULKAN_ENABLE_DESKTOP_HMD_SUPPORT
-
-	/// <summary>
-	/// The GPU device extended properties.
-	/// </summary>
-	VkPhysicalDeviceIDPropertiesKHR GpuIdProps;
-
-#endif
 
     /// <summary>
     /// The GPU description.

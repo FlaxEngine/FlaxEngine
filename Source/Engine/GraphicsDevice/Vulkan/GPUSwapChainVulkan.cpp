@@ -17,9 +17,6 @@ void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, Pix
 
     Device = window->GetDevice();
     Handle.Init(window->GetDevice(), this, backbuffer, 1, format, MSAALevel::None, extent, VK_IMAGE_VIEW_TYPE_2D);
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-    ImageAcquiredFence = Device->FenceManager.AllocateFence(true);
-#endif
     RenderingDoneSemaphore = New<SemaphoreVulkan>(Device);
     ImageAcquiredSemaphore = New<SemaphoreVulkan>(Device);
 }
@@ -27,9 +24,6 @@ void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, Pix
 void BackBufferVulkan::Release()
 {
     Handle.Release();
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-    Device->FenceManager.ReleaseFence(ImageAcquiredFence);
-#endif
     Delete(RenderingDoneSemaphore);
     Delete(ImageAcquiredSemaphore);
 }
@@ -509,19 +503,9 @@ int32 GPUSwapChainVulkan::AcquireImageIndex(SemaphoreVulkan** outSemaphore)
 {
     ASSERT(_swapChain && _backBuffers.HasItems());
 
-    // Get the index of the next swap chain image to render to.
-    // Wait with an "infinite" timeout, the function will block until an image is ready.
-    // The semaphore will get signaled when the image is ready (upon function return).
-
     uint32 imageIndex = 0;
     const int32 prevSemaphoreIndex = _semaphoreIndex;
     _semaphoreIndex = (_semaphoreIndex + 1) % _backBuffers.Count();
-
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-    const auto fence = _backBuffers[_semaphoreIndex].ImageAcquiredFence;
-    _device->FenceManager.ResetFence(fence);
-#endif
-
     const auto semaphore = _backBuffers[_semaphoreIndex].ImageAcquiredSemaphore;
 
     const VkResult result = vkAcquireNextImageKHR(
@@ -529,11 +513,7 @@ int32 GPUSwapChainVulkan::AcquireImageIndex(SemaphoreVulkan** outSemaphore)
         _swapChain,
         UINT64_MAX,
         semaphore->GetHandle(),
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-        fence->GetHandle(),
-#else
         VK_NULL_HANDLE,
-#endif
         &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -561,10 +541,6 @@ int32 GPUSwapChainVulkan::AcquireImageIndex(SemaphoreVulkan** outSemaphore)
 #endif
     }
     _currentImageIndex = (int32)imageIndex;
-
-#if VULKAN_USE_IMAGE_ACQUIRE_FENCES
-    ASSERT(_device->FenceManager.WaitForFence(fence, UINT64_MAX));
-#endif
 
     return _currentImageIndex;
 }

@@ -78,13 +78,10 @@ bool GameSettings::Load()
 		if (id.IsValid()) \
 		{ \
 			AssetReference<JsonAsset> subAsset = Content::LoadAsync<JsonAsset>(id); \
-			if (subAsset) \
+			if (subAsset && !subAsset->WaitForLoaded()) \
 			{ \
-				if (!subAsset->WaitForLoaded()) \
-				{ \
-					settingsType::Instance()->Deserialize(*subAsset->Data, nullptr); \
-                    settingsType::Instance()->Apply(); \
-				} \
+				settingsType::Instance()->Deserialize(*subAsset->Data, nullptr); \
+                settingsType::Instance()->Apply(); \
 			} \
 			else \
 			{ LOG(Warning, "Cannot load " nodeName " settings"); } \
@@ -143,7 +140,6 @@ bool GameSettings::Load()
     LOAD_SETTINGS("Navigation", NavigationSettings);
 
     // Load platform settings
-    // TODO: refactor platform settings impl to be more modular (better multi-platform handling)
 #if PLATFORM_WINDOWS
     LOAD_SETTINGS("WindowsPlatform", WindowsPlatformSettings);
 #endif
