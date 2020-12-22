@@ -818,7 +818,7 @@ namespace Flax.Build.Bindings
 
             contents.AppendLine("        ScriptingTypeHandle managedTypeHandle = object->GetTypeHandle();");
             contents.AppendLine("        const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();");
-            contents.AppendLine("        while (managedTypePtr->Class.Spawn != &ManagedBinaryModule::ManagedObjectSpawn)");
+            contents.AppendLine("        while (managedTypePtr->Script.Spawn != &ManagedBinaryModule::ManagedObjectSpawn)");
             contents.AppendLine("        {");
             contents.AppendLine("            managedTypeHandle = managedTypePtr->GetBaseType();");
             contents.AppendLine("            managedTypePtr = &managedTypeHandle.GetType();");
@@ -827,7 +827,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        if (IsDuringWrapperCall)");
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
-            contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Class.ScriptVTableBase;");
+            contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
             contents.Append($"            return (object->**({functionInfo.UniqueName}_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
             separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -840,7 +840,7 @@ namespace Flax.Build.Bindings
             }
             contents.AppendLine(");");
             contents.AppendLine("        }");
-            contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Class.ScriptVTable;");
+            contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
             contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
             contents.AppendLine($"        auto method = scriptVTable[{scriptVTableIndex}];");
             contents.AppendLine("        MonoObject* exception = nullptr;");

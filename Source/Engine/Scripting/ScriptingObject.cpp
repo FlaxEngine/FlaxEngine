@@ -371,7 +371,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
@@ -414,7 +414,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), type);
-        ScriptingObject* obj = type.GetType().Class.Spawn(params);
+        ScriptingObject* obj = type.GetType().Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeName));
@@ -468,7 +468,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));

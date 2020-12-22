@@ -1290,11 +1290,11 @@ Asset::LoadResult VisualScript::load()
 
             // Hack vtable similarly to VisualScriptObjectSpawn
             ScriptingType& visualScriptType = (ScriptingType&)object->GetType();
-            if (visualScriptType.Class.ScriptVTable)
+            if (visualScriptType.Script.ScriptVTable)
             {
                 // Override object vtable with hacked one that has Visual Script functions calls
-                ASSERT(visualScriptType.Class.VTable);
-                *(void**)object = visualScriptType.Class.VTable;
+                ASSERT(visualScriptType.Script.VTable);
+                *(void**)object = visualScriptType.Script.VTable;
             }
         }
         const int32 oldCount = _oldParamsLayout.Count();
@@ -1361,10 +1361,10 @@ void VisualScript::unload(bool isReloading)
     if (_scriptingTypeHandle)
     {
         auto& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
-        if (type.Class.DefaultInstance)
+        if (type.Script.DefaultInstance)
         {
-            Delete(type.Class.DefaultInstance);
-            type.Class.DefaultInstance = nullptr;
+            Delete(type.Script.DefaultInstance);
+            type.Script.DefaultInstance = nullptr;
         }
         VisualScriptingModule.TypeNameToTypeIndex.RemoveValue(_scriptingTypeHandle.TypeIndex);
         VisualScriptingModule.Scripts[_scriptingTypeHandle.TypeIndex] = nullptr;
@@ -1389,7 +1389,7 @@ void VisualScript::CacheScriptingType()
     {
         // Find first native base C++ class of this Visual Script class
         ScriptingTypeHandle nativeType = baseType;
-        while (nativeType && nativeType.GetType().Class.ScriptVTable)
+        while (nativeType && nativeType.GetType().Script.ScriptVTable)
         {
             nativeType = nativeType.GetType().GetBaseType();
         }
@@ -1437,14 +1437,14 @@ void VisualScript::CacheScriptingType()
         for (ScriptingTypeHandle e = nativeType; e;)
         {
             const ScriptingType& eType = e.GetType();
-            if (eType.Class.SetupScriptVTable)
+            if (eType.Script.SetupScriptVTable)
             {
                 ASSERT(eType.ManagedClass);
-                eType.Class.SetupScriptVTable(eType.ManagedClass, type.Class.ScriptVTable, type.Class.ScriptVTableBase);
+                eType.Script.SetupScriptVTable(eType.ManagedClass, type.Script.ScriptVTable, type.Script.ScriptVTableBase);
             }
             e = eType.GetBaseType();
         }
-        MMethod** scriptVTable = (MMethod**)type.Class.ScriptVTable;
+        MMethod** scriptVTable = (MMethod**)type.Script.ScriptVTable;
         while (scriptVTable && *scriptVTable)
         {
             const MMethod* referenceMethod = *scriptVTable;
@@ -1498,12 +1498,12 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     ScriptingType& visualScriptType = (ScriptingType&)params.Type.GetType();
     ScriptingTypeHandle baseTypeHandle = visualScriptType.GetBaseType();
     const ScriptingType* baseTypePtr = &baseTypeHandle.GetType();
-    while (baseTypePtr->Class.Spawn == &VisualScriptObjectSpawn)
+    while (baseTypePtr->Script.Spawn == &VisualScriptObjectSpawn)
     {
         baseTypeHandle = baseTypePtr->GetBaseType();
         baseTypePtr = &baseTypeHandle.GetType();
     }
-    ScriptingObject* object = baseTypePtr->Class.Spawn(params);
+    ScriptingObject* object = baseTypePtr->Script.Spawn(params);
     if (!object)
     {
         return nullptr;
@@ -1514,9 +1514,9 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     // We create a custom vtable for the Visual Script objects that use a native class object with virtual functions overrides.
     // To make it easy to use in C++ we inject custom wrapper methods into C++ object vtable to execute Visual Script graph from them.
     // Because virtual member functions calls are C++ ABI and impl-defined this is quite hard. But works.
-    if (visualScriptType.Class.ScriptVTable)
+    if (visualScriptType.Script.ScriptVTable)
     {
-        if (!visualScriptType.Class.VTable)
+        if (!visualScriptType.Script.VTable)
         {
             // Duplicate vtable
             void** vtable = *(void***)object;
@@ -1525,21 +1525,21 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
             while (vtable[entriesCount] && entriesCount < 200)
                 entriesCount++;
             const int32 size = entriesCount * sizeof(void*);
-            visualScriptType.Class.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
-            Platform::MemoryCopy((byte*)visualScriptType.Class.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
+            visualScriptType.Script.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
+            Platform::MemoryCopy((byte*)visualScriptType.Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
 
             // Override vtable entries by the class
             for (ScriptingTypeHandle e = baseTypeHandle; e;)
             {
                 const ScriptingType& eType = e.GetType();
-                if (eType.Class.SetupScriptObjectVTable)
-                    eType.Class.SetupScriptObjectVTable(visualScriptType.Class.ScriptVTable, visualScriptType.Class.ScriptVTableBase, visualScriptType.Class.VTable, entriesCount, 1);
+                if (eType.Script.SetupScriptObjectVTable)
+                    eType.Script.SetupScriptObjectVTable(visualScriptType.Script.ScriptVTable, visualScriptType.Script.ScriptVTableBase, visualScriptType.Script.VTable, entriesCount, 1);
                 e = eType.GetBaseType();
             }
         }
 
         // Override object vtable with hacked one that has Visual Script functions calls
-        *(void**)object = visualScriptType.Class.VTable;
+        *(void**)object = visualScriptType.Script.VTable;
     }
 
     // Mark as custom scripting type
@@ -1573,10 +1573,10 @@ void VisualScriptingBinaryModule::OnScriptsReloading()
         if (script->_scriptingTypeHandle)
         {
             auto& type = VisualScriptingModule.Types[script->_scriptingTypeHandle.TypeIndex];
-            if (type.Class.DefaultInstance)
+            if (type.Script.DefaultInstance)
             {
-                Delete(type.Class.DefaultInstance);
-                type.Class.DefaultInstance = nullptr;
+                Delete(type.Script.DefaultInstance);
+                type.Script.DefaultInstance = nullptr;
             }
             VisualScriptingModule.TypeNameToTypeIndex.RemoveValue(script->_scriptingTypeHandle.TypeIndex);
             script->_scriptingTypeHandleCached = script->_scriptingTypeHandle;
@@ -1862,7 +1862,7 @@ ScriptingTypeHandle VisualScript::GetScriptingType()
 ScriptingObject* VisualScript::CreateInstance()
 {
     const auto scriptingTypeHandle = GetScriptingType();
-    return scriptingTypeHandle ? scriptingTypeHandle.GetType().Class.Spawn(ScriptingObjectSpawnParams(Guid::New(), scriptingTypeHandle)) : nullptr;
+    return scriptingTypeHandle ? scriptingTypeHandle.GetType().Script.Spawn(ScriptingObjectSpawnParams(Guid::New(), scriptingTypeHandle)) : nullptr;
 }
 
 Variant VisualScript::GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const

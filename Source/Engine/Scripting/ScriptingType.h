@@ -93,9 +93,10 @@ inline uint32 GetHash(const ScriptingTypeHandle& key)
 /// </summary>
 enum class ScriptingTypes
 {
-    Class = 0,
+    Script = 0,
     Structure = 1,
     Enum = 2,
+    Class = 3,
 };
 
 /// <summary>
@@ -193,6 +194,15 @@ struct FLAXENGINE_API ScriptingType
             /// The default instance of the scripting type. Used by serialization system for comparision to save only modified properties of the object.
             /// </summary>
             mutable ScriptingObject* DefaultInstance;
+        } Script;
+
+        struct
+        {
+            // Class constructor method pointer
+            Ctor Ctor;
+
+            // Class destructor method pointer
+            Dtor Dtor;
         } Class;
 
         struct
@@ -223,6 +233,7 @@ struct FLAXENGINE_API ScriptingType
     ScriptingType();
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, SpawnHandler spawn, const ScriptingTypeHandle& baseType, SetupScriptVTableHandler setupScriptVTable = nullptr, SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr);
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime = DefaultInitRuntime, SpawnHandler spawn = DefaultSpawn, ScriptingTypeInitializer* baseType = nullptr, SetupScriptVTableHandler setupScriptVTable = nullptr, SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr);
+    ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, ScriptingTypeInitializer* baseType);
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, Copy copy, Box box, Unbox unbox, GetField getField, SetField setField, ScriptingTypeInitializer* baseType);
     ScriptingType(const ScriptingType& other);
     ScriptingType(ScriptingType&& other);
@@ -268,6 +279,7 @@ struct FLAXENGINE_API ScriptingType
 struct FLAXENGINE_API ScriptingTypeInitializer : ScriptingTypeHandle
 {
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime = ScriptingType::DefaultInitRuntime, ScriptingType::SpawnHandler spawn = ScriptingType::DefaultSpawn, ScriptingTypeInitializer* baseType = nullptr, ScriptingType::SetupScriptVTableHandler setupScriptVTable = nullptr, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr);
+    ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType = nullptr);
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType = nullptr);
 };
 
