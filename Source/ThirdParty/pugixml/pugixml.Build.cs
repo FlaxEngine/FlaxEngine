@@ -13,5 +13,6 @@ public class pugixml : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "pugixml license.txt";
     }
 }
