@@ -36,7 +36,7 @@ namespace FlaxEditor.Progress.Handlers
             _selectionCache.Cache();
 
             // Clear references to the user scripts (we gonna reload an assembly)
-            Editor.Instance.Scene.ClearRefsToSceneObjects();
+            Editor.Instance.Scene.ClearRefsToSceneObjects(true);
         }
 
         private void OnScriptsReload()

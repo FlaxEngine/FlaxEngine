@@ -119,7 +119,7 @@ namespace FlaxEditor.States
             CacheSelection();
 
             // Remove references to the scene objects
-            Editor.Scene.ClearRefsToSceneObjects(true);
+            Editor.Scene.ClearRefsToSceneObjects();
 
             // Apply game settings (user may modify them before the gameplay)
             GameSettingsApplying?.Invoke();
@@ -158,7 +158,7 @@ namespace FlaxEditor.States
             IsPaused = true;
 
             // Remove references to the scene objects
-            Editor.Scene.ClearRefsToSceneObjects(true);
+            Editor.Scene.ClearRefsToSceneObjects();
 
             // Restore editor scene
             SceneRestoring?.Invoke();

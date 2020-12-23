@@ -359,9 +359,7 @@ namespace FlaxEditor.Modules
         {
             Editor.SceneEditing.Deselect();
 
-            // TODO: this works in most cases fine but we still need to handle the case when assembly gets reloaded and type references are invalid
-            // TODO: To solve this: serialize type reference as 'namespace.name' in undo data storage
-            //if (fullCleanup)
+            if (fullCleanup)
             {
                 Undo.Clear();
             }
