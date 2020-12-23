@@ -60,6 +60,13 @@ namespace FlaxEditor.Gizmo
             {
             case Mode.Translate:
             {
+                 DebugDraw.DrawBox(BoundingBox.Transform(XAxisBox, _gizmoWorld), Color.Red, 0, false);
+                 DebugDraw.DrawBox(BoundingBox.Transform(YAxisBox, _gizmoWorld), Color.Green, 0, false);
+                 DebugDraw.DrawBox(BoundingBox.Transform(ZAxisBox, _gizmoWorld), Color.Blue, 0, false);
+                 DebugDraw.DrawBox(BoundingBox.Transform(XYBox, _gizmoWorld), Color.Red, 0, false);
+                 DebugDraw.DrawBox(BoundingBox.Transform(YZBox, _gizmoWorld), Color.Green, 0, false);
+                 DebugDraw.DrawBox(BoundingBox.Transform(XZBox, _gizmoWorld), Color.Blue, 0, false);
+
                 // Axis boxes collision
                 if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
                 {
@@ -167,7 +174,7 @@ namespace FlaxEditor.Gizmo
                 }
 
                 // Center
-                if (CenterBox.Intersects(ref ray, out intersection) && intersection < closestintersection)
+                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection > closestintersection)
                 {
                     _activeAxis = Axis.Center;
                     closestintersection = intersection;
