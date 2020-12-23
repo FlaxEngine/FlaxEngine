@@ -151,7 +151,7 @@ public:
 public:
 
     // [Graph]
-    bool onNodeLoaded(Node* n) override
+    bool onNodeLoaded(NodeType* n) override
     {
         // Check if this node needs a state or data cache
         switch (n->GroupID)

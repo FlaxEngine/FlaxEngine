@@ -313,6 +313,7 @@ namespace ShadowsOfMordor
         bool waitForJobDataSync();
         static bool sortCharts(const LightmapUVsChart& a, const LightmapUVsChart& b);
 
+        bool doWorkInner(DateTime buildStart);
         int32 doWork();
 
         void cacheEntries();

@@ -257,7 +257,7 @@ void OptimizeCurve(LinearCurve<T>& curve)
 {
     auto& oldKeyframes = curve.GetKeyframes();
     const int32 keyCount = oldKeyframes.Count();
-    LinearCurve<T>::KeyFrameCollection newKeyframes(keyCount);
+    typename LinearCurve<T>::KeyFrameCollection newKeyframes(keyCount);
     bool lastWasEqual = false;
 
     for (int32 i = 0; i < keyCount; i++)

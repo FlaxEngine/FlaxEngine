@@ -49,8 +49,17 @@ public class ModelTool : EngineModule
         options.PrivateDependencies.Add("TextureTool");
         options.PrivateDefinitions.Add("COMPILE_WITH_ASSETS_IMPORTER");
 
-        options.PrivateDependencies.Add("DirectXMesh");
-        options.PrivateDependencies.Add("UVAtlas");
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Windows:
+            options.PrivateDependencies.Add("DirectXMesh");
+            options.PrivateDependencies.Add("UVAtlas");
+            break;
+        case TargetPlatform.Linux:
+            break;
+        default: throw new InvalidPlatformException(options.Platform.Target);
+        }
+
         options.PrivateDependencies.Add("meshoptimizer");
 
         options.PublicDefinitions.Add("COMPILE_WITH_MODEL_TOOL");

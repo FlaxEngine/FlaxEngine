@@ -93,6 +93,7 @@ void CSG::Mesh::Build(Brush* parentBrush)
             for (int32 planeIndex3 = planeIndex2 + 1; planeIndex3 < surfacesCount; planeIndex3++)
             {
                 Surface plane3 = _surfaces[planeIndex3];
+                int32 vertexIndex;
 
                 // Calculate the intersection point
                 Vector3 vertex = Plane::Intersection(plane1, plane2, plane3);
@@ -127,7 +128,7 @@ void CSG::Mesh::Build(Brush* parentBrush)
                         goto SkipIntersection;
                 }
 
-                int32 vertexIndex = _vertices.Count();
+                vertexIndex = _vertices.Count();
                 _vertices.Add(vertex);
 
                 // Add intersection point to our list

@@ -34,6 +34,8 @@ public class curl : DepsModule
             options.OutputFiles.Add("wldap32.lib");
             options.OutputFiles.Add("crypt32.lib");
             break;
+        case TargetPlatform.Linux:
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }

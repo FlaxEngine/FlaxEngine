@@ -103,6 +103,8 @@ void EditorAnalytics::StartSession()
             { UA_DOCUMENT_TITLE, 0, "Flax Editor" },
 #if PLATFORM_WINDOWS
             { UA_USER_AGENT, 0, "Windows " FLAXENGINE_VERSION_TEXT },
+#elif PLATFORM_LINUX
+            { UA_USER_AGENT, 0, "Linux " FLAXENGINE_VERSION_TEXT },
 #else
 #error "Unknown platform"
 #endif

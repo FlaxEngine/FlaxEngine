@@ -7,7 +7,6 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/ImportTexture.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include <ThirdParty/DirectXTex/DirectXTex.h>
 
 ShadowsOfMordor::Builder::LightmapBuildCache::~LightmapBuildCache()
 {
