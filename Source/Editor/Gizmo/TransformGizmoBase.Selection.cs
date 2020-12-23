@@ -95,7 +95,6 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.YZ;
                     closestintersection = intersection;
                 }
-
                 break;
             }
 

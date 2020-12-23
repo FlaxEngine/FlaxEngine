@@ -7,7 +7,7 @@ namespace FlaxEditor.Gizmo
 {
     public partial class TransformGizmoBase
     {
-        private const float GizmoScaleFactor = 18;
+        private const float GizmoScaleFactor = 24;
         private const float LineLength = 3.5f;
         private const float LineOffset = 1.0f;
         private const float MultiAxisThickness = 0.03f;
