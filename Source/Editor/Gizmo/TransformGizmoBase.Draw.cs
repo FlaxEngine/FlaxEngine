@@ -8,7 +8,6 @@ namespace FlaxEditor.Gizmo
     {
         private Model _modelTranslateAxis;
         private Model _modelScaleAxis;
-        private Model _modelBox;
         private Model _modelCircle;
         private Model _modelSphere;
         private Model _modelCube;
@@ -25,7 +24,6 @@ namespace FlaxEditor.Gizmo
             // Load content (but async - don't wait and don't block execution)
             _modelTranslateAxis = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/TranslateAxis");
             _modelScaleAxis     = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/ScaleAxis");
-            _modelBox           = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/WireBox");
             _modelCircle        = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/WireCircle");
             _modelSphere        = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/Sphere");
             _modelCube          = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/Cube");
@@ -40,7 +38,7 @@ namespace FlaxEditor.Gizmo
             // Ensure that every asset was loaded
             if (_modelTranslateAxis == null ||
                 _modelScaleAxis     == null ||
-                _modelBox           == null ||
+                _modelCube          == null ||
                 _modelCircle        == null ||
                 _materialAxisX      == null ||
                 _materialAxisY      == null ||
@@ -74,7 +72,7 @@ namespace FlaxEditor.Gizmo
             {
             case Mode.Translate:
             {
-                if (!_modelTranslateAxis || !_modelTranslateAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
+                if (!_modelTranslateAxis || !_modelTranslateAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
                     break;
 
                 // Cache data
@@ -122,7 +120,7 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Rotate:
             {
-                if (!_modelCircle || !_modelCircle.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
+                if (!_modelCircle || !_modelCircle.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
                     break;
 
                 // Cache data
@@ -153,7 +151,7 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Scale:
             {
-                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
+                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
                     break;
 
                 // Cache data

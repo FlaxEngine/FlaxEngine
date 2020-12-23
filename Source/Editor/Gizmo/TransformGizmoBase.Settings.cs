@@ -53,11 +53,6 @@ namespace FlaxEditor.Gizmo
         private BoundingBox CenterBoxRaw = new BoundingBox(new Vector3(-0.5f * CenterBoxSize), new Vector3(0.5f * CenterBoxSize));
         private float RotateRadiusRaw = 4.0f;
 
-        private BoundingSphere ScaleXSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[1], _gizmoWorld), ScaleSpheresRadius * _screenScale);
-        private BoundingSphere ScaleYSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[7], _gizmoWorld), ScaleSpheresRadius * _screenScale);
-        private BoundingSphere ScaleZSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[13], _gizmoWorld), ScaleSpheresRadius * _screenScale);
-        private OrientedBoundingBox CenterBox => new OrientedBoundingBox(CenterBoxRaw) * _gizmoWorld;
-
         private Mode _activeMode = Mode.Translate;
         private Axis _activeAxis = Axis.None;
         private TransformSpace _activeTransformSpace = TransformSpace.World;
