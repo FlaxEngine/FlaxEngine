@@ -29,6 +29,9 @@ namespace FlaxEditor.States
         public override bool CanEditScene => true;
 
         /// <inheritdoc />
+        public override bool CanUseUndoRedo => false;
+
+        /// <inheritdoc />
         public override bool CanEnterPlayMode => true;
 
         /// <summary>
