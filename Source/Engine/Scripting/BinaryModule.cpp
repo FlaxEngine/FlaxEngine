@@ -170,6 +170,10 @@ ScriptingType::ScriptingType(const ScriptingType& other)
         Struct.GetField = other.Struct.GetField;
         Struct.SetField = other.Struct.SetField;
         break;
+    case ScriptingTypes::Class:
+        Class.Ctor = other.Class.Ctor;
+        Class.Dtor = other.Class.Dtor;
+        break;
     case ScriptingTypes::Enum:
         break;
     default: ;
@@ -209,6 +213,10 @@ ScriptingType::ScriptingType(ScriptingType&& other)
         Struct.Unbox = other.Struct.Unbox;
         Struct.GetField = other.Struct.GetField;
         Struct.SetField = other.Struct.SetField;
+        break;
+    case ScriptingTypes::Class:
+        Class.Ctor = other.Class.Ctor;
+        Class.Dtor = other.Class.Dtor;
         break;
     case ScriptingTypes::Enum:
         break;
