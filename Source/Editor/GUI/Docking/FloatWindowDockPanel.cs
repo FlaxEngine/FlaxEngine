@@ -76,7 +76,7 @@ namespace FlaxEditor.GUI.Docking
             settings.Size = size;
             settings.Position = location;
             settings.MinimumSize = new Vector2(1);
-            settings.MaximumSize = new Vector2(2000);
+            settings.MaximumSize = new Vector2(4096);
             settings.Fullscreen = false;
             settings.HasBorder = true;
             settings.SupportsTransparency = false;
