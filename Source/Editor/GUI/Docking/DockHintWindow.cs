@@ -223,8 +223,7 @@ namespace FlaxEditor.GUI.Docking
             _mouse = FlaxEngine.Input.MouseScreenPosition;
 
             // Check intersection with any dock panel
-            var dpiScale = Platform.DpiScale;
-            var uiMouse = _mouse / dpiScale;
+            var uiMouse = _mouse;
             _toDock = _toMove.MasterPanel.HitTest(ref uiMouse, _toMove);
 
             // Check dock state to use
