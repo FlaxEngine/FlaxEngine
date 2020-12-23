@@ -24,6 +24,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Windows,
                     };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -71,8 +76,8 @@ namespace Flax.Deps.Dependencies
                     RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
-                    // TODO: copy binaries
-                    throw new NotImplementedException("TODO: building Assimp for Linux");
+                    Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.so"), Path.Combine(depsFolder, "libassimp.so"));
+                    break;
                 }
                 }
             }
