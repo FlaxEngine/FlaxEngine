@@ -92,7 +92,7 @@ namespace FlaxEngine
         /// <returns>The normalized extension.</returns>
         public static string NormalizeExtension(string extension)
         {
-            if (extension[0] == '.')
+            if (extension.Length != 0 && extension[0] == '.')
                 extension = extension.Remove(0, 1);
             return extension.ToLower();
         }
