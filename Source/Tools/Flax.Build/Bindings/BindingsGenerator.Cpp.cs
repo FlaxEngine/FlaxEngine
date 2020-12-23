@@ -1046,7 +1046,7 @@ namespace Flax.Build.Bindings
             var classTypeNameInternal = classInfo.NativeName;
             if (classInfo.Parent != null && !(classInfo.Parent is FileInfo))
                 classTypeNameInternal = classInfo.Parent.FullNameNative + '_' + classTypeNameInternal;
-            var useUnmanaged = classInfo.IsStatic || classInfo.IsScriptingObject;
+            var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
 
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
@@ -1059,7 +1059,7 @@ namespace Flax.Build.Bindings
             // Events
             foreach (var eventInfo in classInfo.Events)
             {
-                if (!useUnmanaged)
+                if (!useScripting)
                     continue;
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
 
@@ -1131,7 +1131,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (!useUnmanaged)
+                if (!useScripting)
                     continue;
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
@@ -1142,7 +1142,7 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
-                if (!useUnmanaged)
+                if (!useScripting)
                     continue;
                 if (propertyInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, propertyInfo.Getter);
@@ -1153,7 +1153,7 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in classInfo.Functions)
             {
-                if (!useUnmanaged)
+                if (!useScripting)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
                 GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
             }
@@ -1264,7 +1264,7 @@ namespace Flax.Build.Bindings
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
-            if (useUnmanaged)
+            if (useScripting)
             {
                 foreach (var eventInfo in classInfo.Events)
                 {
@@ -1291,10 +1291,24 @@ namespace Flax.Build.Bindings
             }
             GenerateCppClassInitRuntime?.Invoke(buildData, classInfo, contents);
 
-            contents.AppendLine("    }");
-            contents.Append('}');
-            contents.Append(';');
-            contents.AppendLine();
+            contents.AppendLine("    }").AppendLine();
+
+            if (!useScripting)
+            {
+                // Constructor
+                contents.AppendLine("    static void Ctor(void* ptr)");
+                contents.AppendLine("    {");
+                contents.AppendLine($"        new(ptr){classTypeNameNative}();");
+                contents.AppendLine("    }").AppendLine();
+
+                // Destructor
+                contents.AppendLine("    static void Dtor(void* ptr)");
+                contents.AppendLine("    {");
+                contents.AppendLine($"        (({classTypeNameNative}*)ptr)->~{classInfo.NativeName}();");
+                contents.AppendLine("    }").AppendLine();
+            }
+
+            contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
             // Type initializer
@@ -1302,15 +1316,22 @@ namespace Flax.Build.Bindings
             contents.Append($"StringAnsiView(\"{classTypeNameManaged}\", {classTypeNameManaged.Length}), ");
             contents.Append($"sizeof({classTypeNameNative}), ");
             contents.Append($"&{classTypeNameInternal}Internal::InitRuntime, ");
-            if (!classInfo.IsStatic && !classInfo.NoSpawn && useUnmanaged)
-                contents.Append($"(ScriptingType::SpawnHandler)&{classTypeNameNative}::Spawn, ");
+            if (useScripting)
+            {
+                if (classInfo.IsStatic || classInfo.NoSpawn)
+                    contents.Append("&ScriptingType::DefaultSpawn, ");
+                else
+                    contents.Append($"(ScriptingType::SpawnHandler)&{classTypeNameNative}::Spawn, ");
+                if (classInfo.BaseType != null && useScripting)
+                    contents.Append($"&{classInfo.BaseType}::TypeInitializer, ");
+                else
+                    contents.Append("nullptr, ");
+                contents.Append(setupScriptVTable);
+            }
             else
-                contents.Append("&ScriptingType::DefaultSpawn, ");
-            if (classInfo.BaseType != null && useUnmanaged)
-                contents.Append($"&{classInfo.BaseType}::TypeInitializer, ");
-            else
-                contents.Append("nullptr, ");
-            contents.Append(setupScriptVTable);
+            {
+                contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor");
+            }
             contents.Append(");");
             contents.AppendLine();
 
