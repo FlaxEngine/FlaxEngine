@@ -199,9 +199,9 @@ namespace Flax.Build
             // Perform license validation
             if (LicenseType == LicenseTypes.Invalid)
                 throw new Exception(string.Format("Cannot build module {0}. Third Party modules must have license type specified.", Name));
-            if (LicenseType == LicenseTypes.Custom && LicenseFilePath == null)
-                throw new Exception(string.Format("Cannot build module {0}. Third Party modules with Custom license must have license file specified.", Name));
-            if (LicenseFilePath != null && !File.Exists(Path.Combine(FolderPath, LicenseFilePath)))
+            if (LicenseFilePath == null)
+                throw new Exception(string.Format("Cannot build module {0}. Third Party modules must have license file specified.", Name));
+            if (!File.Exists(Path.Combine(FolderPath, LicenseFilePath)))
                 throw new Exception(string.Format("Cannot build module {0}. Specified license file does not exist.", Name));
         }
 

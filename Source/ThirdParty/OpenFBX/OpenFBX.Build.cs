@@ -13,5 +13,6 @@ public class OpenFBX : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "LICENSE.txt";
     }
 }

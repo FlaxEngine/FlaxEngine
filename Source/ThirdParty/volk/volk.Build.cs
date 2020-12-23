@@ -14,6 +14,7 @@ public class volk : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "LICENSE.txt";
     }
 
     /// <inheritdoc />

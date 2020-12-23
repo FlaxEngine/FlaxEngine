@@ -25,9 +25,9 @@ float D_GGX(float roughness, float NoH)
 float Vis_Schlick(float roughness, float NoV, float NoL)
 {
 	float k = Square(roughness) * 0.5;
-	float vis_SchlickV = NoV * (1 - k) + k;
-	float vis_SchlickL = NoL * (1 - k) + k;
-	return 0.25 / (vis_SchlickV * vis_SchlickL);
+	float visSchlickV = NoV * (1 - k) + k;
+	float visSchlickL = NoL * (1 - k) + k;
+	return 0.25 / (visSchlickV * visSchlickL);
 }
 
 // Smith term for GGX
@@ -36,9 +36,9 @@ float Vis_Smith(float roughness, float NoV, float NoL)
 {
 	float a = Square(roughness);
 	float a2 = a * a;
-	float vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * a2) + a2);
-	float vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * a2) + a2);
-	return rcp(vis_SmithV * vis_SmithL);
+	float visSmithV = NoV + sqrt(NoV * (NoV - NoV * a2) + a2);
+	float visSmithL = NoL + sqrt(NoL * (NoL - NoL * a2) + a2);
+	return rcp(visSmithV * visSmithL);
 }
 
 // Appoximation of joint Smith term for GGX
@@ -74,7 +74,7 @@ half SSRMipFromRoughness(half roughness)
 	return max(1, 10 - mip1px);
 }
 
-float ComputeReflectionCaptureRoughnessFromMip(float mip)
+float ProbeRoughnessFromMip(float mip)
 {
 	float mip1px = REFLECTION_CAPTURE_NUM_MIPS - 1 - mip;
 	return exp2((REFLECTION_CAPTURE_ROUGHEST_MIP - mip1px) / REFLECTION_CAPTURE_ROUGHNESS_MIP_SCALE);
@@ -98,8 +98,6 @@ float3 EnvBRDF(Texture2D preIntegratedGF, float3 specularColor, float roughness,
 	float2 ab = preIntegratedGF.SampleLevel(SamplerLinearClamp, float2(NoV, roughness), 0).rg;
 	return specularColor * ab.x + saturate(50.0 * specularColor.g) * ab.y;
 }
-
-#define MAX_SPECULAR_POWER 10000000000.0f
 
 float RoughnessToSpecularPower(float roughness)
 {

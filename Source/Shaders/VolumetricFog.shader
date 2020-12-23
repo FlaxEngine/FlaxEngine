@@ -61,7 +61,7 @@ META_CB_END
 META_CB_BEGIN(1, PerLight)
 
 float2 Dummy1;
-int MinZ; // Z index of the minimum slice in the range
+int MinZ;
 float LocalLightScatteringIntensity;
 
 float4 ViewSpaceBoundingSphere;
@@ -72,46 +72,42 @@ LightShadowData LocalLightShadow;
 
 META_CB_END
 
-float ComputeDepthFromZSlice(float zSlice)
-{
-	return (zSlice / GridSize.z) * VolumetricFogMaxDistance;
-}
-
-float3 ComputeCellWorldPosition(uint3 gridCoordinate, float3 cellOffset, out float sceneDepth)
-{
-	float2 volumeUV = (gridCoordinate.xy + cellOffset.xy) / GridSize.xy;
-	sceneDepth = ComputeDepthFromZSlice(gridCoordinate.z + cellOffset.z) / GBuffer.ViewFar;
-	float deviceDepth = LinearZ2DeviceDepth(GBuffer, sceneDepth);
-	return GetWorldPos(GBuffer, volumeUV, deviceDepth);
-}
-
-float3 ComputeCellWorldPosition(uint3 gridCoordinate, float3 cellOffset)
-{
-	float unused;
-	return ComputeCellWorldPosition(gridCoordinate, cellOffset, unused);
-}
-
-float ComputeNormalizedZSliceFromDepth(float sceneDepth)
-{
-	return sceneDepth / VolumetricFogMaxDistance;
-}
-
-float3 ComputeVolumeUV(float3 worldPosition, float4x4 worldToClip)
-{
-	float4 ndcPosition = mul(float4(worldPosition, 1), worldToClip);
-	ndcPosition.xy /= ndcPosition.w;
-	return float3(ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f, ComputeNormalizedZSliceFromDepth(ndcPosition.w));
-}
-
+// The Henyey-Greenstein phase function
+// [Henyey and Greenstein 1941, https://www.astro.umd.edu/~jph/HG_note.pdf]
 float HenyeyGreensteinPhase(float g, float cosTheta)
 {
 	return (1 - g * g) / (4 * PI * pow(1 + g * g + 2 * g * cosTheta, 1.5f));
 }
 
-// +g = forward scattering, 0=g = isotropic, -g = backward scattering
-float PhaseFunction(float g, float cosTheta)
+float GetPhase(float g, float cosTheta)
 {
 	return HenyeyGreensteinPhase(g, cosTheta);
+}
+
+float GetSliceDepth(float zSlice)
+{
+	return (zSlice / GridSize.z) * VolumetricFogMaxDistance;
+}
+
+float3 GetCellPositionWS(uint3 gridCoordinate, float3 cellOffset, out float sceneDepth)
+{
+	float2 volumeUV = (gridCoordinate.xy + cellOffset.xy) / GridSize.xy;
+	sceneDepth = GetSliceDepth(gridCoordinate.z + cellOffset.z) / GBuffer.ViewFar;
+	float deviceDepth = LinearZ2DeviceDepth(GBuffer, sceneDepth);
+	return GetWorldPos(GBuffer, volumeUV, deviceDepth);
+}
+
+float3 GetCellPositionWS(uint3 gridCoordinate, float3 cellOffset)
+{
+	float temp;
+	return GetCellPositionWS(gridCoordinate, cellOffset, temp);
+}
+
+float3 GetVolumeUV(float3 worldPosition, float4x4 worldToClip)
+{
+	float4 ndcPosition = mul(float4(worldPosition, 1), worldToClip);
+	ndcPosition.xy /= ndcPosition.w;
+	return float3(ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f, ndcPosition.w / VolumetricFogMaxDistance);
 }
 
 // Vertex shader that writes to a range of slices of a volume texture
@@ -123,22 +119,18 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 	Quad_VS2GS output;
 
 	uint slice = LayerIndex + MinZ;
-	float sliceDepth = ComputeDepthFromZSlice(slice);
-	float sliceDepthOffset = abs(sliceDepth - ViewSpaceBoundingSphere.z);
+	float depth = GetSliceDepth(slice);
+	float depthOffset = abs(depth - ViewSpaceBoundingSphere.z);
 
-	if (sliceDepthOffset < ViewSpaceBoundingSphere.w)
+	if (depthOffset < ViewSpaceBoundingSphere.w)
 	{
-		// Compute the radius of the circle formed by the intersection of the bounding sphere and the current depth slice
-		float sliceRadius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - sliceDepthOffset * sliceDepthOffset);
-
-		// Place the quad vertex to tightly bound the circle
-		float3 viewSpaceVertexPosition = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * sliceRadius, sliceDepth);
-		output.Vertex.Position = mul(float4(viewSpaceVertexPosition, 1), ViewToVolumeClip);
+		float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
+		float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
+		output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
 	}
 	else
 	{
-		// Slice does not intersect bounding sphere, emit degenerate triangle
-		output.Vertex.Position = 0;
+		output.Vertex.Position = float4(0, 0, 0, 0);
 	}
 
 	output.Vertex.TexCoord = 0;
@@ -150,23 +142,21 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 // Geometry shader that writes to a range of slices of a volume texture
 META_GS(true, FEATURE_LEVEL_SM5)
 [maxvertexcount(3)]
-void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2PS> OutStream)
+void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2PS> stream)
 {
-	Quad_GS2PS vertex0;
-	vertex0.Vertex = input[0].Vertex;
-	vertex0.LayerIndex = input[0].LayerIndex;
+	Quad_GS2PS vertex;
 
-	Quad_GS2PS vertex1;
-	vertex1.Vertex = input[1].Vertex;
-	vertex1.LayerIndex = input[1].LayerIndex;
+	vertex.Vertex = input[0].Vertex;
+	vertex.LayerIndex = input[0].LayerIndex;
+	stream.Append(vertex);
 
-	Quad_GS2PS vertex2;
-	vertex2.Vertex = input[2].Vertex;
-	vertex2.LayerIndex = input[2].LayerIndex;
+	vertex.Vertex = input[1].Vertex;
+	vertex.LayerIndex = input[1].LayerIndex;
+	stream.Append(vertex);
 
-	OutStream.Append(vertex0);
-	OutStream.Append(vertex1);
-	OutStream.Append(vertex2);
+	vertex.Vertex = input[2].Vertex;
+	vertex.LayerIndex = input[2].LayerIndex;
+	stream.Append(vertex);
 }
 
 #if USE_SHADOW
@@ -208,18 +198,16 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		return 0;
 
 #if USE_TEMPORAL_REPROJECTION
-	float3 historyUV = ComputeVolumeUV(ComputeCellWorldPosition(gridCoordinate, 0.5f), PrevWorldToClip);
+	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
-
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
 	{
 		historyAlpha = 0;
 	}
-
-	uint numSuperSamples = historyAlpha < .001f ? HistoryMissSuperSampleCount : 1;
+	uint samplesCount = historyAlpha < 0.001f ? HistoryMissSuperSampleCount : 1;
 #else
-	uint numSuperSamples = 1;
+	uint samplesCount = 1;
 #endif
 
 	float3 L = 0;
@@ -229,22 +217,19 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	float lightRadiusMask = 1;
 	float spotAttenuation = 1;
 	bool isSpotLight = LocalLight.SpotAngles.x > -2.0f;
-
 	float4 scattering = 0;
-	for (uint sampleIndex = 0; sampleIndex < numSuperSamples; sampleIndex++)
+	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
 		float3 cellOffset = FrameJitterOffsets[sampleIndex].xyz;
 		//float cellOffset = 0.5f;
 
-		float3 worldPosition = ComputeCellWorldPosition(gridCoordinate, cellOffset);
-		float3 cameraVector = normalize(worldPosition - GBuffer.ViewPos);
-		float cellRadius = length(worldPosition - ComputeCellWorldPosition(gridCoordinate + uint3(1, 1, 1), cellOffset));
-
-		// Bias the inverse squared light falloff based on voxel size to prevent aliasing near the light source
+		float3 positionWS = GetCellPositionWS(gridCoordinate, cellOffset);
+		float3 cameraVector = normalize(positionWS - GBuffer.ViewPos);
+		float cellRadius = length(positionWS - GetCellPositionWS(gridCoordinate + uint3(1, 1, 1), cellOffset));
 		float distanceBias = max(cellRadius * InverseSquaredLightDistanceBiasScale, 1);
 
-		// Get the light attenuation
-		GetRadialLightAttenuation(LocalLight, isSpotLight, worldPosition, float3(0, 0, 1), distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		// Calculate the light attenuation
+		GetRadialLightAttenuation(LocalLight, isSpotLight, positionWS, float3(0, 0, 1), distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 		float combinedAttenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
 		// Peek the shadow
@@ -252,16 +237,14 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 #if USE_SHADOW
 		if (combinedAttenuation > 0)
 		{
-			shadowFactor = ComputeVolumeShadowing(worldPosition, isSpotLight);
+			shadowFactor = ComputeVolumeShadowing(positionWS, isSpotLight);
 		}
 #endif
 
-		scattering.rgb += LocalLight.Color * (PhaseFunction(PhaseG, dot(L, -cameraVector)) * combinedAttenuation * shadowFactor * LocalLightScatteringIntensity);
+		scattering.rgb += LocalLight.Color * (GetPhase(PhaseG, dot(L, -cameraVector)) * combinedAttenuation * shadowFactor * LocalLightScatteringIntensity);
 	}
 
-	// Normalize
-	scattering.rgb /= (float)numSuperSamples;
-
+	scattering.rgb /= (float)samplesCount;
 	return scattering;
 }
 
@@ -280,7 +263,7 @@ void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispa
 
 	// Center of the voxel
 	float voxelOffset = 0.5f;
-	float3 worldPosition = ComputeCellWorldPosition(gridCoordinate, voxelOffset);
+	float3 positionWS = GetCellPositionWS(gridCoordinate, voxelOffset);
 
 	// Unpack the fog parameters (packing done in C++ ExponentialHeightFog::GetVolumetricFogOptions)
 	float fogDensity = FogParameters.x;
@@ -288,7 +271,7 @@ void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispa
 	float fogHeightFalloff = FogParameters.z;
 
 	// Calculate the global fog density that matches the exponential height fog density
-	float globalDensity = fogDensity * exp2(-fogHeightFalloff * (worldPosition.y - fogHeight));
+	float globalDensity = fogDensity * exp2(-fogHeightFalloff * (positionWS.y - fogHeight));
 	float matchFactor = 0.24f;
 	float extinction = max(globalDensity * GlobalExtinctionScale * matchFactor, 0);
 
@@ -326,7 +309,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 	uint numSuperSamples = 1;
 	
 #if USE_TEMPORAL_REPROJECTION
-	float3 historyUV = ComputeVolumeUV(ComputeCellWorldPosition(gridCoordinate, 0.5f), PrevWorldToClip);
+	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
 	
 	// Discard history if it lays outside the current view
@@ -347,8 +330,8 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 		//float3 cellOffset = 0.5f;
 
 		float sceneDepth;
-		float3 worldPosition = ComputeCellWorldPosition(gridCoordinate, cellOffset, sceneDepth);
-		float3 cameraVector = worldPosition - GBuffer.ViewPos;
+		float3 positionWS = GetCellPositionWS(gridCoordinate, cellOffset, sceneDepth);
+		float3 cameraVector = positionWS - GBuffer.ViewPos;
 		float cameraVectorLength = length(cameraVector);
 		float3 cameraVectorNormalized = cameraVector / cameraVectorLength;
 
@@ -360,10 +343,10 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			float shadow = 1;
 			if (DirectionalLightShadow.NumCascades > 0)
 			{
-				shadow = SampleShadow(DirectionalLight, DirectionalLightShadow, ShadowMapCSM, worldPosition, cameraVectorLength);
+				shadow = SampleShadow(DirectionalLight, DirectionalLightShadow, ShadowMapCSM, positionWS, cameraVectorLength);
 			}
 
-			lightScattering += DirectionalLight.Color * (8 * shadow * PhaseFunction(PhaseG, dot(DirectionalLight.Direction, cameraVectorNormalized)));
+			lightScattering += DirectionalLight.Color * (8 * shadow * GetPhase(PhaseG, dot(DirectionalLight.Direction, cameraVectorNormalized)));
 		}
 
 		// Sky light
@@ -414,38 +397,30 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_FinalIntegration(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
-
-	float4 accumulatedLightingAndTransmittance = float4(0, 0, 0, 1);
-	float3 previousSliceWorldPosition = GBuffer.ViewPos;
+	float4 acc = float4(0, 0, 0, 1);
+	float3 prevPositionWS = GBuffer.ViewPos;
 
 	for (uint layerIndex = 0; layerIndex < GridSizeInt.z; layerIndex++)
 	{
-		uint3 layerCoordinate = uint3(gridCoordinate.xy, layerIndex);
-		float4 scatteringAndExtinction = LightScattering[layerCoordinate];
-
-		float3 layerWorldPosition = ComputeCellWorldPosition(layerCoordinate, 0.5f);
-		float stepLength = length(layerWorldPosition - previousSliceWorldPosition);
-		previousSliceWorldPosition = layerWorldPosition;
-		
-		float transmittance = exp(-scatteringAndExtinction.w * stepLength);
+		uint3 coords = uint3(gridCoordinate.xy, layerIndex);
+		float4 scatteringExtinction = LightScattering[coords];
+		float3 positionWS = GetCellPositionWS(coords, 0.5f);
 		
 		// Ref: "Physically Based and Unified Volumetric Rendering in Frostbite"
-#define ENERGY_CONSERVING_INTEGRATION 1
-#if ENERGY_CONSERVING_INTEGRATION
-		float3 scatteringIntegratedOverSlice = (scatteringAndExtinction.rgb - scatteringAndExtinction.rgb * transmittance) / max(scatteringAndExtinction.w, .00001f);
-		accumulatedLightingAndTransmittance.rgb += scatteringIntegratedOverSlice * accumulatedLightingAndTransmittance.a;
-#else
-		accumulatedLightingAndTransmittance.rgb += scatteringAndExtinction.rgb * accumulatedLightingAndTransmittance.a;
-#endif
-		accumulatedLightingAndTransmittance.a *= transmittance;
-		
+		float transmittance = exp(-scatteringExtinction.w * length(positionWS - prevPositionWS));
+		float3 scatteringIntegratedOverSlice = (scatteringExtinction.rgb - scatteringExtinction.rgb * transmittance) / max(scatteringExtinction.w, 0.00001f);
+		acc.rgb += scatteringIntegratedOverSlice * acc.a;
+		acc.a *= transmittance;
+	
 #if DEBUG_VOXELS
-		RWIntegratedLightScattering[layerCoordinate] = float4(scatteringAndExtinction.rgb, 1.0f);
+		RWIntegratedLightScattering[coords] = float4(scatteringExtinction.rgb, 1.0f);
 #elif DEBUG_VOXEL_WS_POS
-		RWIntegratedLightScattering[layerCoordinate] = float4(layerWorldPosition.rgb, 1.0f);
+		RWIntegratedLightScattering[coords] = float4(positionWS.rgb, 1.0f);
 #else
-		RWIntegratedLightScattering[layerCoordinate] = accumulatedLightingAndTransmittance;
+		RWIntegratedLightScattering[coords] = acc;
 #endif
+
+		prevPositionWS = positionWS;
 	}
 }
 

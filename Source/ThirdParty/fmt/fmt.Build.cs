@@ -15,6 +15,7 @@ public class fmt : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.BSD2Clause;
+        LicenseFilePath = "cppformat license.txt";
     }
 
     /// <inheritdoc />

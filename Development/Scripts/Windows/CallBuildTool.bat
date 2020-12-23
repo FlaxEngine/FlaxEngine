@@ -34,24 +34,16 @@ if errorlevel 1 goto Error_FlaxBuildFailed
 exit /B 0
 
 :Error_InvalidLocation
-echo.
 echo CallBuildTool ERROR: The script is in invalid directory.
-echo.
 goto Exit
 :Error_NoVisualStudioEnvironment
-echo.
 echo CallBuildTool ERROR: Missing Visual Studio 2015 or newer.
-echo.
 goto Exit
 :Error_CompilationFailed
-echo.
 echo CallBuildTool ERROR: Failed to compile Flax.Build project.
-echo.
 goto Exit
 :Error_FlaxBuildFailed
-echo.
 echo CallBuildTool ERROR: Flax.Build tool failed.
-echo.
 goto Exit
 :Exit
 exit /B 1

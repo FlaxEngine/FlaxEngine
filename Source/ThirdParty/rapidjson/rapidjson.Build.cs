@@ -15,6 +15,7 @@ public class rapidjson : HeaderOnlyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "RapidJSON license.txt";
     }
 
     /// <inheritdoc />

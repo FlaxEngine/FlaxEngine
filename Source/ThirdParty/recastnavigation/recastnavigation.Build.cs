@@ -13,5 +13,6 @@ public class recastnavigation : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.zLib;
+        LicenseFilePath = "License.txt";
     }
 }

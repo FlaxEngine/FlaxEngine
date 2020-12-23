@@ -12,15 +12,8 @@ class TAA : public RendererPass<TAA>
 {
 private:
 
-    PACK_STRUCT(struct Data
-        {
-        Vector4 ScreenSize;
-        Vector4 TaaJitterStrength;
-        Vector4 FinalBlendParameters;
-        });
-
     AssetReference<Shader> _shader;
-    GPUPipelineStatePermutationsPs<2> _psTAA;
+    GPUPipelineState* _psTAA;
 
 public:
 
@@ -44,7 +37,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psTAA.Release();
+        _psTAA = nullptr;
         invalidateResources();
     }
 #endif
