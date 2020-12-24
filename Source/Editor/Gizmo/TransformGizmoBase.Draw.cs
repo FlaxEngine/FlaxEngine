@@ -112,7 +112,7 @@ namespace FlaxEditor.Gizmo
                 axisMesh.Draw(ref renderContext, isZAxis ? _materialAxisFocus : _materialAxisZ, ref m3);
 
                 // Center box
-                Matrix.Scaling(0.065f, out m2);
+                Matrix.Scaling(0.085f, out m2);
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 sphereMesh.Draw(ref renderContext, isCenter ? _materialAxisFocus : _materialSphere, ref m3);
                 break;
@@ -142,7 +142,7 @@ namespace FlaxEditor.Gizmo
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 circleMesh.Draw(ref renderContext, isZAxis ? _materialAxisFocus : _materialAxisZ, ref m3);
 
-                Matrix.Scaling(0.2f, out m2);
+                Matrix.Scaling(0.25f, out m2);
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 sphereMesh.Draw(ref renderContext, isCenter ? _materialAxisFocus : _materialSphere, ref m3);
 
@@ -194,7 +194,7 @@ namespace FlaxEditor.Gizmo
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.YZ ? _materialAxisFocus : _materialAxisY, ref m3);
 
                 // Center box
-                Matrix.Scaling(0.065f, out m2);
+                Matrix.Scaling(0.085f, out m2);
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 sphereMesh.Draw(ref renderContext, isCenter ? _materialAxisFocus : _materialSphere, ref m3);
 
