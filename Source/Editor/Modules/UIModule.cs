@@ -162,6 +162,7 @@ namespace FlaxEditor.Modules
             var gizmo = Editor.MainTransformGizmo;
             var state = Editor.StateMachine.CurrentState;
             var canEditScene = state.CanEditScene;
+            var canUseUndoRedo = state.CanUseUndoRedo;
             var canEnterPlayMode = state.CanEnterPlayMode && Level.IsAnySceneLoaded;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
             var isDuringBreakpointHang = Editor.Simulation.IsDuringBreakpointHang;
@@ -170,8 +171,8 @@ namespace FlaxEditor.Modules
             //
             _toolStripSaveAll.Enabled = !isDuringBreakpointHang;
             //
-            _toolStripUndo.Enabled = canEditScene && undoRedo.CanUndo;
-            _toolStripRedo.Enabled = canEditScene && undoRedo.CanRedo;
+            _toolStripUndo.Enabled = canEditScene && undoRedo.CanUndo && canUseUndoRedo;
+            _toolStripRedo.Enabled = canEditScene && undoRedo.CanRedo && canUseUndoRedo;
             //
             var gizmoMode = gizmo.ActiveMode;
             _toolStripTranslate.Checked = gizmoMode == TransformGizmoBase.Mode.Translate;
@@ -594,14 +595,15 @@ namespace FlaxEditor.Modules
 
             var undoRedo = Editor.Undo;
             var hasSthSelected = Editor.SceneEditing.HasSthSelected;
-
-            bool canUndo = undoRedo.CanUndo;
-            _menuEditUndo.Enabled = canUndo;
-            _menuEditUndo.Text = canUndo ? string.Format("Undo \'{0}\'", undoRedo.FirstUndoName) : "No undo";
-
-            bool canRedo = undoRedo.CanRedo;
-            _menuEditRedo.Enabled = canRedo;
-            _menuEditRedo.Text = canRedo ? string.Format("Redo \'{0}\'", undoRedo.FirstRedoName) : "No redo";
+            var state = Editor.StateMachine.CurrentState;
+            var canEditScene = state.CanEditScene;
+            var canUseUndoRedo = state.CanUseUndoRedo;
+            
+            _menuEditUndo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanUndo;
+            _menuEditUndo.Text = undoRedo.CanUndo ? string.Format("Undo \'{0}\'", undoRedo.FirstUndoName) : "No undo";
+            
+            _menuEditRedo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanRedo;
+            _menuEditRedo.Text = undoRedo.CanRedo ? string.Format("Redo \'{0}\'", undoRedo.FirstRedoName) : "No redo";
 
             _menuEditCut.Enabled = hasSthSelected;
             _menuEditCopy.Enabled = hasSthSelected;
