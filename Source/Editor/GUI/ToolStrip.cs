@@ -64,15 +64,15 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets the height for the items.
         /// </summary>
-        public float ItemsHeight => Height - itemScale * DefaultMarginV;
+        public float ItemsHeight => Height + itemScale * DefaultMarginV;
 
-        private float itemScale = 2;
-        /// <summary>
+        private float itemScale;
+        /// <summarys
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
         /// </summary>
         public ToolStrip()
         {
-            itemScale = Editor.Instance.Options.Options.Interface.ToolStripScale;
+            itemScale = Style.Current.IconSizeExtra;
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
             BackgroundColor = Style.Current.LightBackground;

@@ -69,6 +69,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Size of toolbar icons
+        /// </summary>
+        [EditorOrder(50)]
+        public int IconSizeExtra;
+
+        /// <summary>
         /// The background color.
         /// </summary>
         [EditorOrder(60)]
