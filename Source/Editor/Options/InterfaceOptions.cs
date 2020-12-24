@@ -45,6 +45,20 @@ namespace FlaxEditor.Options
         public float InterfaceScale { get; set; } = 1.0f;
 
         /// <summary>
+        /// Gets or sets the ToolStrip item scale. Applied to ToolStrip UI elements, windows and text. Can be used to scale the toolstrip size to fit display needs. Editor restart required..
+        /// </summary>
+        [DefaultValue(2.0f), Limit(1f, 10.0f)]
+        [EditorDisplay("Interface"), EditorOrder(20), Tooltip("Editor ToolStrip scale. Applied to ToolStrip UI elements, windows and text. Can be used to scale the toolstrip size to fit display needs. Editor restart required.")]
+        public float ToolStripScale { get; set; } = 2.0f;
+
+        /// <summary>
+        /// Gets or sets the ToolBox Icon scale. Editor ToolBox Icon scale. Applied to ToolBox Icon UI elements. Can be used to scale the toolbox icon size to fit display needs. Editor restart required.
+        /// </summary>
+        [DefaultValue(32.0f), Limit(1f, 64.0f)]
+        [EditorDisplay("Interface"), EditorOrder(30), Tooltip("Editor ToolBox Icon scale. Applied to ToolBox Icon UI elements. Can be used to scale the toolbox icon size to fit display needs. Editor restart required.")]
+        public float ToolBoxIconScale { get; set; } = 32.0f;
+
+        /// <summary>
         /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
         /// </summary>
         [DefaultValue(false)]
