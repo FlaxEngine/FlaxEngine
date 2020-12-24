@@ -56,6 +56,8 @@ namespace FlaxEditor.Gizmo
             float closestintersection = float.MaxValue;
             float intersection;
             _activeAxis = Axis.None;
+
+          
             switch (_activeMode)
             {
             case Mode.Translate:

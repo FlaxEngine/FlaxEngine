@@ -81,20 +81,20 @@ namespace FlaxEditor.Gizmo
                 var axisMesh = _modelTranslateAxis.LODs[0].Meshes[0];
                 var sphereMesh = _modelSphere.LODs[0].Meshes[0];
                 var cubeMesh = _modelCube.LODs[0].Meshes[0];
-                var boxSize = 0.07f;
+                var boxSize = 0.085f;
 
                 // XY plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 200f, boxSize * 200f, 0.0f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 300f, boxSize * 300f, 0.0f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.XY ? _materialAxisFocus : _materialAxisX, ref m3);
 
                 // ZX plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 200f, 0.0f, boxSize * 200f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 300f, 0.0f, boxSize * 300f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.ZX ? _materialAxisFocus : _materialAxisZ, ref m3);
 
                 // YZ plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 200f, boxSize * 200f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 300f, boxSize * 300f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.YZ ? _materialAxisFocus : _materialAxisY, ref m3);
 
@@ -161,7 +161,7 @@ namespace FlaxEditor.Gizmo
                 var sphereMesh = _modelSphere.LODs[0].Meshes[0];
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
-                var boxSize = 0.07f;
+                var boxSize = 0.085f;
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
@@ -179,17 +179,17 @@ namespace FlaxEditor.Gizmo
                 axisMesh.Draw(ref renderContext, isZAxis ? _materialAxisFocus : _materialAxisZ, ref m3);
 
                 // XY plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 200f, boxSize * 200f, 0.0f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationX(Mathf.PiOverTwo), new Vector3(boxSize * 300f, boxSize * 300f, 0.0f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.XY ? _materialAxisFocus : _materialAxisX, ref m3);
                 
                 // ZX plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 200f, 0.0f, boxSize * 200f));
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.Identity, new Vector3(boxSize * 300f, 0.0f, boxSize * 300f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.ZX ? _materialAxisFocus : _materialAxisZ, ref m3);
                 
-                // YZ plane
-                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 200f, boxSize * 200f));
+                // YZ 300f
+                m2 = Matrix.Transformation(new Vector3(boxSize, boxSize * 0.1f, boxSize), Quaternion.RotationZ(Mathf.PiOverTwo), new Vector3(0.0f, boxSize * 300f, boxSize * 300f));
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 cubeMesh.Draw(ref renderContext, _activeAxis == Axis.YZ ? _materialAxisFocus : _materialAxisY, ref m3);
 
