@@ -308,7 +308,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
-           float tabSize = Editor.Instance.Options.Options.Interface.ToolBoxIconScale;
+            float tabSize = Editor.Options.Options.Interface.ToolBoxIconScale;
             TabsControl = new Tabs
             {
                 AnchorPreset = AnchorPresets.StretchAll,
