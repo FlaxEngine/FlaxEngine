@@ -303,7 +303,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (_parentCM != null)
             {
                 // Focus parent if user clicked over the parent popup
-                var mouse = _parentCM.ScreenToClient(FlaxEngine.Input.MouseScreenPosition / Platform.DpiScale);
+                var mouse = _parentCM.ScreenToClient(FlaxEngine.Input.MouseScreenPosition);
                 if (_parentCM.ContainsPoint(ref mouse))
                 {
                     _parentCM._window.Focus();

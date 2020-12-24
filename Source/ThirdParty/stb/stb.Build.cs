@@ -14,6 +14,7 @@ public class stb : HeaderOnlyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "LICENSE.txt";
     }
 
     /// <inheritdoc />
