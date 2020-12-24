@@ -9,7 +9,7 @@ namespace FlaxEditor.Gizmo
     {
         private const float GizmoScaleFactor = 24;
         private const float LineLength = 3.5f;
-        private const float LineOffset = 1.0f;
+        private const float LineOffset = 0.8f;
         private const float MultiAxisThickness = 0.03f;
         private const float SingleAxisThickness = 0.3f;
         private const float ScaleSpheresRadius = 1.5f;
@@ -47,9 +47,9 @@ namespace FlaxEditor.Gizmo
         private BoundingBox XAxisBox = new BoundingBox(new Vector3(LineOffset, -SingleAxisThickness, -SingleAxisThickness), new Vector3(LineOffset + LineLength, SingleAxisThickness, SingleAxisThickness));
         private BoundingBox YAxisBox = new BoundingBox(new Vector3(-SingleAxisThickness, LineOffset, -SingleAxisThickness), new Vector3(SingleAxisThickness, LineOffset + LineLength, SingleAxisThickness));
         private BoundingBox ZAxisBox = new BoundingBox(new Vector3(-SingleAxisThickness, -SingleAxisThickness, LineOffset), new Vector3(SingleAxisThickness, SingleAxisThickness, LineOffset + LineLength));
-        private BoundingBox XZBox = new BoundingBox(new Vector3(LineOffset - 0.2f, MultiAxisThickness, LineOffset - 0.2f), new Vector3(LineOffset * 1.6f, MultiAxisThickness, LineOffset * 1.6f));
-        private BoundingBox XYBox = new BoundingBox(new Vector3(LineOffset - 0.2f, LineOffset - 0.2f, MultiAxisThickness), new Vector3(LineOffset * 1.6f, LineOffset * 1.6f, MultiAxisThickness));
-        private BoundingBox YZBox = new BoundingBox(new Vector3(MultiAxisThickness, LineOffset - 0.2f, LineOffset - 0.2f), new Vector3(MultiAxisThickness, LineOffset * 1.6f, LineOffset * 1.6f));
+        private BoundingBox XZBox = new BoundingBox(new Vector3(LineOffset + 0.5f, MultiAxisThickness, LineOffset + 0.5f), new Vector3(LineOffset * 3.5f, MultiAxisThickness, LineOffset * 3.5f));
+        private BoundingBox XYBox = new BoundingBox(new Vector3(LineOffset + 0.5f, LineOffset + 0.5f, MultiAxisThickness), new Vector3(LineOffset * 3.5f, LineOffset * 3.5f, MultiAxisThickness));
+        private BoundingBox YZBox = new BoundingBox(new Vector3(MultiAxisThickness, LineOffset + 0.5f, LineOffset + 0.5f), new Vector3(MultiAxisThickness, LineOffset * 3.5f, LineOffset * 3.5f));
         private BoundingBox CenterBoxRaw = new BoundingBox(new Vector3(-0.5f * CenterBoxSize), new Vector3(0.5f * CenterBoxSize));
         private float RotateRadiusRaw = 4.0f;
 
