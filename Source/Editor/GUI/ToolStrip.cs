@@ -67,6 +67,7 @@ namespace FlaxEditor.GUI
         public float ItemsHeight => Height + itemScale * DefaultMarginV;
 
         private float itemScale;
+        
         /// <summarys
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
         /// </summary>
