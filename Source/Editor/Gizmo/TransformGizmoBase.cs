@@ -325,7 +325,9 @@ namespace FlaxEditor.Gizmo
 
         private void UpdateRotate(float dt)
         {
-            float delta = Owner.MouseDelta.X * dt;
+            float mouseDelta = _activeAxis == Axis.Y ? -Owner.MouseDelta.X : Owner.MouseDelta.X;
+
+            float delta = mouseDelta * dt;
 
             if (RotationSnapEnabled || Owner.UseSnapping)
             {
