@@ -65,9 +65,9 @@ namespace FlaxEditor.GUI
         /// Gets the height for the items.
         /// </summary>
         public float ItemsHeight => Height + itemScale * DefaultMarginV;
-
         private float itemScale;
-        /// <summarys
+        
+        /// <summary>
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
         /// </summary>
         public ToolStrip()
