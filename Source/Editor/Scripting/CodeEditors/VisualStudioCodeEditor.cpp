@@ -8,8 +8,9 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 
-VisualStudioCodeEditor::VisualStudioCodeEditor(const String& execPath)
+VisualStudioCodeEditor::VisualStudioCodeEditor(const String& execPath, const bool isInsiders)
     : _execPath(execPath)
+    , _isInsiders(isInsiders)
     , _workspacePath(Globals::ProjectFolder / Editor::Project->Name + TEXT(".code-workspace"))
 {
 }
@@ -18,29 +19,40 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
 {
 #if PLATFORM_WINDOWS
     String cmd;
+    bool isInsiders = false;
     if (Platform::ReadRegValue(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Classes\\Applications\\Code.exe\\shell\\open\\command"), TEXT(""), &cmd) || cmd.IsEmpty())
     {
         if (Platform::ReadRegValue(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Classes\\Applications\\Code.exe\\shell\\open\\command"), TEXT(""), &cmd) || cmd.IsEmpty())
         {
-            return;
+            if (Platform::ReadRegValue(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Classes\\Applications\\Code - Insiders.exe\\shell\\open\\command"), TEXT(""), &cmd) || cmd.IsEmpty())
+            {
+                if (Platform::ReadRegValue(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Classes\\Applications\\Code - Insiders.exe\\shell\\open\\command"), TEXT(""), &cmd) || cmd.IsEmpty())
+                {
+                    return;
+                }
+                else
+                    isInsiders = true;
+            }
+            else
+                isInsiders = true;
         }
     }
     const String path = cmd.Substring(1, cmd.Length() - String(TEXT("\" \"%1\"")).Length() - 1);
     if (FileSystem::FileExists(path))
     {
-        output->Add(New<VisualStudioCodeEditor>(path));
+        output->Add(New<VisualStudioCodeEditor>(path, isInsiders));
     }
 #endif
 }
 
 CodeEditorTypes VisualStudioCodeEditor::GetType() const
 {
-    return CodeEditorTypes::VSCode;
+    return _isInsiders ? CodeEditorTypes::VSCodeInsiders : CodeEditorTypes::VSCode;
 }
 
 String VisualStudioCodeEditor::GetName() const
 {
-    return TEXT("Visual Studio Code");
+    return _isInsiders ? TEXT("Visual Studio Code - Insiders") : TEXT("Visual Studio Code");
 }
 
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
