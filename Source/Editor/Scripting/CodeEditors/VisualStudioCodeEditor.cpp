@@ -10,8 +10,8 @@
 
 VisualStudioCodeEditor::VisualStudioCodeEditor(const String& execPath, const bool isInsiders)
     : _execPath(execPath)
-    , _isInsiders(isInsiders)
     , _workspacePath(Globals::ProjectFolder / Editor::Project->Name + TEXT(".code-workspace"))
+    , _isInsiders(isInsiders)
 {
 }
 
