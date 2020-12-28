@@ -13,6 +13,7 @@ private:
 
     String _execPath;
     String _workspacePath;
+    bool _isInsiders;
 
 public:
 
@@ -20,7 +21,8 @@ public:
     /// Initializes a new instance of the <see cref="VisualStudioEditor"/> class.
     /// </summary>
     /// <param name="execPath">Executable file path</param>
-    VisualStudioCodeEditor(const String& execPath);
+    /// <param name="isInsiders">Is insiders edition</param>
+    VisualStudioCodeEditor(const String& execPath, const bool isInsiders);
 
 public:
 
