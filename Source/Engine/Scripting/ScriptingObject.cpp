@@ -131,7 +131,7 @@ MonoObject* ScriptingObject::CreateManagedInternal()
     MClass* monoClass = GetClass();
     if (monoClass == nullptr)
     {
-        LOG(Warning, "Missing managed class for objecct '{0}'.", ToString());
+        LOG(Warning, "Missing managed class for object with id {0}", GetID());
         return nullptr;
     }
 
