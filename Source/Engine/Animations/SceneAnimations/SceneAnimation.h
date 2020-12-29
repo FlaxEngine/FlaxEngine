@@ -102,7 +102,7 @@ public:
         void* Data;
 
         /// <summary>
-        /// The track dependant data (from the shared runtime allocation).
+        /// The track dependent data (from the shared runtime allocation).
         /// </summary>
         void* RuntimeData;
 
