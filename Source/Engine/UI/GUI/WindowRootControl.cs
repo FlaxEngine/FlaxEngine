@@ -232,15 +232,15 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 ScreenToClient(Vector2 location)
+        public override Vector2 PointFromScreen(Vector2 location)
         {
-            return _window.ScreenToClient(location) / Platform.DpiScale;
+            return _window.ScreenToClient(location) / _window._dpiScale;
         }
 
         /// <inheritdoc />
-        public override Vector2 ClientToScreen(Vector2 location)
+        public override Vector2 PointToScreen(Vector2 location)
         {
-            return _window.ClientToScreen(location);
+            return _window.ClientToScreen(location * _window._dpiScale);
         }
 
         /// <inheritdoc />
