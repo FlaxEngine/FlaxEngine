@@ -42,7 +42,7 @@ public:
 public:
 
     /// <summary>
-    /// Determinates whenever the virtual assets are supported by this asset tpe factory.
+    /// Determines whenever the virtual assets are supported by this asset tpe factory.
     /// </summary>
     /// <returns>True if can create virtual assets, otherwise false.</returns>
     virtual bool SupportsVirtualAssets() const

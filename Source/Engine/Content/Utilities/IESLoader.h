@@ -54,7 +54,7 @@ public:
     /// <returns>Width in pixels</returns>
     FORCE_INLINE uint32 GetWidth() const
     {
-        // We use contant size
+        // We use constant size
         return 256;
     }
 
@@ -64,7 +64,7 @@ public:
     /// <returns>Height in pixels</returns>
     FORCE_INLINE uint32 GetHeight() const
     {
-        // We use contant size
+        // We use constant size
         return 1;
     }
 

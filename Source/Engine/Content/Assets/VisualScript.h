@@ -370,7 +370,7 @@ public:
     /// <summary>
     /// Gets the current stack trace of the current thread Visual Script execution.
     /// </summary>
-    /// <returns>The the stack trace string.</returns>
+    /// <returns>The stack trace string.</returns>
     static String GetStackTrace();
 
     /// <summary>
