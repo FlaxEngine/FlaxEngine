@@ -127,7 +127,7 @@ void Audio::OnAddListener(AudioListener* listener)
 
     if (Listeners.Count() >= AUDIO_MAX_LISTENERS)
     {
-        LOG(Error, "Unsupported amount of the audio listneres!");
+        LOG(Error, "Unsupported amount of the audio listeners!");
         return;
     }
 

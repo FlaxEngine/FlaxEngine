@@ -311,7 +311,7 @@ public:
 public:
 
     /// <summary>
-    /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to enure data is valid.
+    /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
     uint32 Version = 0;
 
@@ -443,7 +443,7 @@ public:
     struct MultiBlend1DData
     {
         /// <summary>
-        /// The computed length of the mixes animations. Shared for all blend points to provide mor stabilization during looped playback.
+        /// The computed length of the mixes animations. Shared for all blend points to provide more stabilization during looped playback.
         /// </summary>
         float Length;
 
@@ -456,7 +456,7 @@ public:
     struct MultiBlend2DData
     {
         /// <summary>
-        /// The computed length of the mixes animations. Shared for all blend points to provide mor stabilization during looped playback.
+        /// The computed length of the mixes animations. Shared for all blend points to provide more stabilization during looped playback.
         /// </summary>
         float Length;
 
@@ -757,7 +757,7 @@ public:
 public:
 
     /// <summary>
-    /// The Anim Graph data version number. Used to sync the Anim Graph data with the instances state. Handles Anim Graph reloads to enure data is valid.
+    /// The Anim Graph data version number. Used to sync the Anim Graph data with the instances state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
     uint32 Version = 0;
 
@@ -834,7 +834,7 @@ private:
 public:
 
 #if USE_EDITOR
-    // Custom event that is called every time the Anim Graph signal flows over the graph (including the data connections). Can be used to read nad visualize the animation blending logic.
+    // Custom event that is called every time the Anim Graph signal flows over the graph (including the data connections). Can be used to read and visualize the animation blending logic.
     static Delegate<Asset*, ScriptingObject*, uint32, uint32> DebugFlow;
 #endif
 

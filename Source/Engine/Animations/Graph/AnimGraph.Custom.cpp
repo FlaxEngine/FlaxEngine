@@ -178,12 +178,12 @@ bool AnimGraph::InitCustomNode(Node* node)
     MMethod* evaluate = type->GetMethod("Evaluate", 1);
     if (load == nullptr)
     {
-        LOG(Warning, "Invalid custom node type {0}. Missng Load method.", typeName);
+        LOG(Warning, "Invalid custom node type {0}. Missing Load method.", typeName);
         return false;
     }
     if (evaluate == nullptr)
     {
-        LOG(Warning, "Invalid custom node type {0}. Missng Evaluate method.", typeName);
+        LOG(Warning, "Invalid custom node type {0}. Missing Evaluate method.", typeName);
         return false;
     }
 

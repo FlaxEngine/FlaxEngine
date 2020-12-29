@@ -346,7 +346,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
         // Check if storage contains ID which has been already registered
         if (FindAsset(e.ID, info))
         {
-            LOG(Warning, "Founded dupplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
+            LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
             duplicatedEntries.Add(i);
         }
     }

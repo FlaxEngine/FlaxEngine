@@ -196,7 +196,7 @@ public:
     API_FUNCTION() void Stop();
 
     /// <summary>
-    /// Gets the the current state of the audio playback (playing/paused/stopped).
+    /// Gets the current state of the audio playback (playing/paused/stopped).
     /// </summary>
     /// <returns>The value.</returns>
     API_PROPERTY() FORCE_INLINE States GetState() const
