@@ -580,11 +580,15 @@ bool Content::RenameAsset(const StringView& oldPath, const StringView& newPath)
         return true;
     }
 
-    // Check if is create
+    // Ensure asset is ready for renaming
     if (oldAsset)
     {
         // Wait for data loaded
-        oldAsset->WaitForLoaded();
+        if (oldAsset->WaitForLoaded())
+        {
+            LOG(Error, "Failed to load asset '{0}'.", oldAsset->ToString());
+            return true;
+        }
 
         // Unload
         // Don't unload asset fully, only release ref to file, don't call OnUnload so managed asset and all refs will remain alive
