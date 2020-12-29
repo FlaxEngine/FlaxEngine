@@ -21,7 +21,7 @@ void RemoveNamespace(String& name)
 {
     const int32 namespaceStart = name.Find(':');
     if (namespaceStart != -1)
-        name = name.Substring(namespaceStart + 2);
+        name = name.Substring(namespaceStart + 1);
 }
 
 bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options options, String& errorMsg)
