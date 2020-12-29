@@ -359,13 +359,13 @@ namespace FlaxEditor.Modules
             // Place dialog nearby the target control
             if (targetControl != null)
             {
-                var targetControlDesktopCenter = targetControl.ClientToScreen(targetControl.Size * 0.5f);
+                var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
                 var pos = targetControlDesktopCenter + new Vector2(10.0f, -dialog.Height * 0.5f);
                 var dialogEnd = pos + dialog.Size;
                 var desktopEnd = desktopSize.BottomRight - new Vector2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.ClientToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
                 var desktopBounds = Platform.VirtualDesktopBounds;
                 pos = Vector2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
                 dialog.RootWindow.Window.Position = pos;
