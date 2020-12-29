@@ -197,21 +197,14 @@ bool Win32FileSystem::SetReadOnly(const StringView& path, bool isReadOnly)
 
 bool Win32FileSystem::MoveFile(const StringView& dst, const StringView& src, bool overwrite)
 {
-    DWORD flags = overwrite ? MOVEFILE_REPLACE_EXISTING : 0;
+    const DWORD flags = MOVEFILE_COPY_ALLOWED | (overwrite ? MOVEFILE_REPLACE_EXISTING : 0);
 
-    // Allow to copy files, needed in cases when Temp folder is 
-    // located on different volume (eg.: Temp is on C:\ and Project in on D:\)
-    flags |= MOVEFILE_COPY_ALLOWED;
-
-    // If paths are almost the same but some characters have different case we need to use proxy file
+    // If paths are almost the same but some characters have different case we need to use a proxy file
     if (StringUtils::CompareIgnoreCase(*dst, *src) == 0)
     {
-        // Get temporary file path
         String tmp;
         GetTempFilePath(tmp);
-
-        // Move file
-        return MoveFileExW(*src, *tmp, MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, *dst, flags) == 0;
+        return MoveFileExW(*src, *tmp, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, *dst, flags) == 0;
     }
 
     return MoveFileExW(*src, *dst, flags) == 0;
