@@ -1203,7 +1203,7 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.ScreenToClient(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.Window.ScreenToClient(pos)));
                 }
                 else
                 {

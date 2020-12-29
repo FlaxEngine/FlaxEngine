@@ -114,7 +114,7 @@ namespace FlaxEditor.GUI.ContextMenu
             // Check if show menu inside the other menu - then link as a child to prevent closing the calling menu window on lost focus
             if (_parentCM == null && parentWin.ChildrenCount == 1 && parentWin.Children[0] is ContextMenuBase parentCM)
             {
-                parentCM.ShowChild(this, parentCM.ScreenToClient(parent.ClientToScreen(location)), false);
+                parentCM.ShowChild(this, parentCM.PointFromScreen(parent.PointToScreen(location)), false);
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var dpiScale = Platform.DpiScale;
             Vector2 dpiSize = Size * dpiScale;
             Vector2 locationWS = parent.PointToWindow(location);
-            Vector2 locationSS = parentWin.ClientToScreen(locationWS * dpiScale);
+            Vector2 locationSS = parentWin.PointToScreen(locationWS);
             Location = Vector2.Zero;
             Rectangle monitorBounds = Platform.GetMonitorBounds(locationSS);
             Vector2 rightBottomLocationSS = locationSS + dpiSize;
@@ -303,7 +303,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (_parentCM != null)
             {
                 // Focus parent if user clicked over the parent popup
-                var mouse = _parentCM.ScreenToClient(FlaxEngine.Input.MouseScreenPosition);
+                var mouse = _parentCM.PointFromScreen(FlaxEngine.Input.MouseScreenPosition);
                 if (_parentCM.ContainsPoint(ref mouse))
                 {
                     _parentCM._window.Focus();

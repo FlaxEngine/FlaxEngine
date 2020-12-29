@@ -58,7 +58,7 @@ namespace FlaxEditor.Content
 
             public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
             {
-                return Item.OnMouseDoubleClick(Item.ScreenToClient(ClientToScreen(location)), button);
+                return Item.OnMouseDoubleClick(Item.PointFromScreen(PointToScreen(location)), button);
             }
         }
 
