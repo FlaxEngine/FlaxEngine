@@ -309,7 +309,7 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     PlatformTools* tools = GetTools(platform);
     if (tools == nullptr)
     {
-        LOG(Error, "Build platform {0} is not suppoerd.", ::ToString(platform));
+        LOG(Error, "Build platform {0} is not supported.", ::ToString(platform));
         return;
     }
 
