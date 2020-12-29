@@ -19,7 +19,7 @@ public:
     bool DisableAudio = false;
 
     /// <summary>
-    /// The doppler doppler effect factor. Scale for source and listener velocities. Default is 1.
+    /// The doppler effect factor. Scale for source and listener velocities. Default is 1.
     /// </summary>
     float DopplerFactor = 1.0f;
 
