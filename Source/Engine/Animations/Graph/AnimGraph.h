@@ -311,7 +311,7 @@ public:
 public:
 
     /// <summary>
-    /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to enure data is valid.
+    /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
     uint32 Version = 0;
 
