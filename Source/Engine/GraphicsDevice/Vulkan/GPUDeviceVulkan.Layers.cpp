@@ -34,7 +34,7 @@ static const char* GValidationLayers[] =
 
 static const char* GInstanceExtensions[] =
 {
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
     nullptr
@@ -43,39 +43,41 @@ static const char* GInstanceExtensions[] =
 static const char* GDeviceExtensions[] =
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-#if VULKAN_SUPPORTS_MAINTENANCE_LAYER1
+#if VK_KHR_maintenance1
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 #endif
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
+#if VK_KHR_sampler_mirror_clamp_to_edge
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+#endif
     nullptr
 };
 
 struct LayerExtension
 {
-    VkLayerProperties LayerProps;
-    Array<VkExtensionProperties> ExtensionProps;
+    VkLayerProperties Layer;
+    Array<VkExtensionProperties> Extensions;
 
     LayerExtension()
     {
-        Platform::MemoryClear(&LayerProps, sizeof(LayerProps));
+        Platform::MemoryClear(&Layer, sizeof(Layer));
     }
 
-    void AddUniqueExtensionNames(Array<StringAnsi>& result)
+    void GetExtensions(Array<StringAnsi>& result)
     {
-        for (int32 index = 0; index < ExtensionProps.Count(); index++)
+        for (auto& e : Extensions)
         {
-            result.AddUnique(StringAnsi(ExtensionProps[index].extensionName));
+            result.AddUnique(StringAnsi(e.extensionName));
         }
     }
 
-    void AddAnsiExtensionNames(Array<const char*>& result)
+    void GetExtensions(Array<const char*>& result)
     {
-        for (int32 index = 0; index < ExtensionProps.Count(); index++)
+        for (auto& e : Extensions)
         {
-            result.AddUnique(ExtensionProps[index].extensionName);
+            result.AddUnique(e.extensionName);
         }
     }
 };
@@ -91,9 +93,9 @@ static void EnumerateInstanceExtensionProperties(const char* layerName, LayerExt
 
         if (count > 0)
         {
-            outLayer.ExtensionProps.Clear();
-            outLayer.ExtensionProps.AddDefault(count);
-            result = vkEnumerateInstanceExtensionProperties(layerName, &count, outLayer.ExtensionProps.Get());
+            outLayer.Extensions.Clear();
+            outLayer.Extensions.AddDefault(count);
+            result = vkEnumerateInstanceExtensionProperties(layerName, &count, outLayer.Extensions.Get());
             ASSERT(result >= VK_SUCCESS);
         }
     } while (result == VK_INCOMPLETE);
@@ -110,9 +112,9 @@ static void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const ch
 
         if (count > 0)
         {
-            outLayer.ExtensionProps.Clear();
-            outLayer.ExtensionProps.AddDefault(count);
-            result = vkEnumerateDeviceExtensionProperties(device, layerName, &count, outLayer.ExtensionProps.Get());
+            outLayer.Extensions.Clear();
+            outLayer.Extensions.AddDefault(count);
+            result = vkEnumerateDeviceExtensionProperties(device, layerName, &count, outLayer.Extensions.Get());
             ASSERT(result >= VK_SUCCESS);
         }
     } while (result == VK_INCOMPLETE);
@@ -120,31 +122,29 @@ static void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const ch
 
 static void TrimDuplicates(Array<const char*>& array)
 {
-    for (int32 outerIndex = array.Count() - 1; outerIndex >= 0; --outerIndex)
+    for (int32 i = array.Count() - 1; i >= 0; i--)
     {
         bool found = false;
-        for (int32 innerIndex = outerIndex - 1; innerIndex >= 0; --innerIndex)
+        for (int32 j = i - 1; j >= 0; j--)
         {
-            if (!StringUtils::Compare(array[outerIndex], array[innerIndex]))
+            if (!StringUtils::Compare(array[i], array[j]))
             {
                 found = true;
                 break;
             }
         }
-
         if (found)
         {
-            array.RemoveAt(outerIndex);
+            array.RemoveAt(i);
         }
     }
 }
 
-static inline int FindLayerIndexInList(const Array<LayerExtension>& list, const char* layerName)
+static int FindLayerIndex(const Array<LayerExtension>& list, const char* layerName)
 {
-    // 0 is reserved for NULL/instance
     for (int32 i = 1; i < list.Count(); i++)
     {
-        if (!StringUtils::Compare(list[i].LayerProps.layerName, layerName))
+        if (!StringUtils::Compare(list[i].Layer.layerName, layerName))
         {
             return i;
         }
@@ -152,20 +152,20 @@ static inline int FindLayerIndexInList(const Array<LayerExtension>& list, const 
     return INVALID_INDEX;
 }
 
-static bool FindLayerInList(const Array<LayerExtension>& list, const char* layerName)
+static bool ContainsLayer(const Array<LayerExtension>& list, const char* layerName)
 {
-    return FindLayerIndexInList(list, layerName) != INVALID_INDEX;
+    return FindLayerIndex(list, layerName) != INVALID_INDEX;
 }
 
-static bool FindLayerExtensionInList(const Array<LayerExtension>& list, const char* extensionName, const char*& foundLayer)
+static bool FindLayerExtension(const Array<LayerExtension>& list, const char* extensionName, const char*& foundLayer)
 {
     for (int32 extIndex = 0; extIndex < list.Count(); extIndex++)
     {
-        for (int32 i = 0; i < list[extIndex].ExtensionProps.Count(); i++)
+        for (int32 i = 0; i < list[extIndex].Extensions.Count(); i++)
         {
-            if (!StringUtils::Compare(list[extIndex].ExtensionProps[i].extensionName, extensionName))
+            if (!StringUtils::Compare(list[extIndex].Extensions[i].extensionName, extensionName))
             {
-                foundLayer = list[extIndex].LayerProps.layerName;
+                foundLayer = list[extIndex].Layer.layerName;
                 return true;
             }
         }
@@ -173,10 +173,10 @@ static bool FindLayerExtensionInList(const Array<LayerExtension>& list, const ch
     return false;
 }
 
-static bool FindLayerExtensionInList(const Array<LayerExtension>& list, const char* extensionName)
+static bool FindLayerExtension(const Array<LayerExtension>& list, const char* extensionName)
 {
     const char* dummy = nullptr;
-    return FindLayerExtensionInList(list, extensionName, dummy);
+    return FindLayerExtension(list, extensionName, dummy);
 }
 
 void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
@@ -185,17 +185,14 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     outDebugUtils = false;
 
     Array<LayerExtension> globalLayerExtensions;
-    // 0 is reserved for NULL/instance
     globalLayerExtensions.AddDefault(1);
-
-    // Global extensions
     EnumerateInstanceExtensionProperties(nullptr, globalLayerExtensions[0]);
 
     Array<StringAnsi> foundUniqueExtensions;
     Array<StringAnsi> foundUniqueLayers;
-    for (int32 i = 0; i < globalLayerExtensions[0].ExtensionProps.Count(); i++)
+    for (int32 i = 0; i < globalLayerExtensions[0].Extensions.Count(); i++)
     {
-        foundUniqueExtensions.AddUnique(StringAnsi(globalLayerExtensions[0].ExtensionProps[i].extensionName));
+        foundUniqueExtensions.AddUnique(StringAnsi(globalLayerExtensions[0].Extensions[i].extensionName));
     }
 
     {
@@ -219,9 +216,9 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         {
             LayerExtension* layer = &globalLayerExtensions[i + 1];
             auto& prop = globalLayerProperties[i];
-            layer->LayerProps = prop;
+            layer->Layer = prop;
             EnumerateInstanceExtensionProperties(prop.layerName, *layer);
-            layer->AddUniqueExtensionNames(foundUniqueExtensions);
+            layer->GetExtensions(foundUniqueExtensions);
             foundUniqueLayers.AddUnique(StringAnsi(prop.layerName));
         }
     }
@@ -254,7 +251,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     if (useVkTrace)
     {
         const char* VkTraceName = "VK_LAYER_LUNARG_vktrace";
-        if (FindLayerInList(globalLayerExtensions, VkTraceName))
+        if (ContainsLayer(globalLayerExtensions, VkTraceName))
         {
             outInstanceLayers.Add(VkTraceName);
             vkTrace = true;
@@ -282,7 +279,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION
         const char* vkLayerKhronosValidation = "VK_LAYER_KHRONOS_validation";
-        hasKhronosStandardValidationLayer = FindLayerInList(globalLayerExtensions, vkLayerKhronosValidation);
+        hasKhronosStandardValidationLayer = ContainsLayer(globalLayerExtensions, vkLayerKhronosValidation);
         if (hasKhronosStandardValidationLayer)
         {
             outInstanceLayers.Add(vkLayerKhronosValidation);
@@ -296,7 +293,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         if (!hasKhronosStandardValidationLayer)
         {
             const char* vkLayerLunargStandardValidation = "VK_LAYER_LUNARG_standard_validation";
-            hasLunargStandardValidationLayer = FindLayerInList(globalLayerExtensions, vkLayerLunargStandardValidation);
+            hasLunargStandardValidationLayer = ContainsLayer(globalLayerExtensions, vkLayerLunargStandardValidation);
             if (hasLunargStandardValidationLayer)
             {
                 outInstanceLayers.Add(vkLayerLunargStandardValidation);
@@ -311,25 +308,25 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         {
             for (uint32 i = 0; GValidationLayers[i] != nullptr; i++)
             {
-                const char* currValidationLayer = GValidationLayers[i];
-                const bool validationFound = FindLayerInList(globalLayerExtensions, currValidationLayer);
+                const char* validationLayer = GValidationLayers[i];
+                const bool validationFound = ContainsLayer(globalLayerExtensions, validationLayer);
                 if (validationFound)
                 {
-                    outInstanceLayers.Add(currValidationLayer);
+                    outInstanceLayers.Add(validationLayer);
                 }
                 else
                 {
-                    LOG(Warning, "Unable to find Vulkan instance validation layer {0}", String(currValidationLayer));
+                    LOG(Warning, "Unable to find Vulkan instance validation layer {0}", String(validationLayer));
                 }
             }
         }
     }
 
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
     if (!vkTrace && ValidationLevel != VulkanValidationLevel::Disabled)
     {
         const char* foundDebugUtilsLayer = nullptr;
-        outDebugUtils = FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, foundDebugUtilsLayer);
+        outDebugUtils = FindLayerExtension(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, foundDebugUtilsLayer);
         if (outDebugUtils && *foundDebugUtilsLayer)
         {
             outInstanceLayers.Add(foundDebugUtilsLayer);
@@ -343,7 +340,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
 
     for (const char* extension : platformExtensions)
     {
-        if (FindLayerExtensionInList(globalLayerExtensions, extension))
+        if (FindLayerExtension(globalLayerExtensions, extension))
         {
             outInstanceExtensions.Add(extension);
         }
@@ -351,21 +348,21 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
 
     for (int32 i = 0; GInstanceExtensions[i] != nullptr; i++)
     {
-        if (FindLayerExtensionInList(globalLayerExtensions, GInstanceExtensions[i]))
+        if (FindLayerExtension(globalLayerExtensions, GInstanceExtensions[i]))
         {
             outInstanceExtensions.Add(GInstanceExtensions[i]);
         }
     }
 
-#if VULKAN_SUPPORTS_DEBUG_UTILS
-    if (!vkTrace && outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+#if VK_EXT_debug_utils
+    if (!vkTrace && outDebugUtils && FindLayerExtension(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
     {
         outInstanceExtensions.Add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 #endif
     if (!vkTrace && ValidationLevel == VulkanValidationLevel::Disabled)
     {
-        if (FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+        if (FindLayerExtension(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
         {
             outInstanceExtensions.Add(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         }
@@ -415,26 +412,26 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         for (const VkLayerProperties& Property : properties)
         {
             deviceLayerExtensions.AddDefault(1);
-            deviceLayerExtensions.Last().LayerProps = Property;
+            deviceLayerExtensions.Last().Layer = Property;
         }
     }
 
     Array<StringAnsi> foundUniqueLayers;
     Array<StringAnsi> foundUniqueExtensions;
 
-    for (int32 index = 0; index < deviceLayerExtensions.Count(); index++)
+    for (int32 i = 0; i < deviceLayerExtensions.Count(); i++)
     {
-        if (index == 0)
+        if (i == 0)
         {
-            EnumerateDeviceExtensionProperties(gpu, nullptr, deviceLayerExtensions[index]);
+            EnumerateDeviceExtensionProperties(gpu, nullptr, deviceLayerExtensions[i]);
         }
         else
         {
-            foundUniqueLayers.AddUnique(StringAnsi(deviceLayerExtensions[index].LayerProps.layerName));
-            EnumerateDeviceExtensionProperties(gpu, deviceLayerExtensions[index].LayerProps.layerName, deviceLayerExtensions[index]);
+            foundUniqueLayers.AddUnique(StringAnsi(deviceLayerExtensions[i].Layer.layerName));
+            EnumerateDeviceExtensionProperties(gpu, deviceLayerExtensions[i].Layer.layerName, deviceLayerExtensions[i]);
         }
 
-        deviceLayerExtensions[index].AddUniqueExtensionNames(foundUniqueExtensions);
+        deviceLayerExtensions[i].GetExtensions(foundUniqueExtensions);
     }
 
     if (foundUniqueLayers.HasItems())
@@ -464,7 +461,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION
     const char* vkLayerKhronosValidation = "VK_LAYER_KHRONOS_validation";
-    hasKhronosStandardValidationLayer = FindLayerInList(deviceLayerExtensions, vkLayerKhronosValidation);
+    hasKhronosStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerKhronosValidation);
     if (hasKhronosStandardValidationLayer)
     {
         outDeviceLayers.Add(vkLayerKhronosValidation);
@@ -474,7 +471,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     if (!hasKhronosStandardValidationLayer)
     {
         const char* vkLayerLunargStandardValidation = "VK_LAYER_LUNARG_standard_validation";
-        hasLunargStandardValidationLayer = FindLayerInList(deviceLayerExtensions, vkLayerLunargStandardValidation);
+        hasLunargStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerLunargStandardValidation);
         if (hasLunargStandardValidationLayer)
         {
             outDeviceLayers.Add(vkLayerLunargStandardValidation);
@@ -486,7 +483,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         for (uint32 i = 0; GValidationLayers[i] != nullptr; i++)
         {
             const char* validationLayer = GValidationLayers[i];
-            if (FindLayerInList(deviceLayerExtensions, validationLayer))
+            if (ContainsLayer(deviceLayerExtensions, validationLayer))
             {
                 outDeviceLayers.Add(validationLayer);
             }
@@ -494,23 +491,19 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 #endif
 
-    // Now gather the actually used extensions based on the enabled layers
     Array<const char*> availableExtensions;
     {
-        // All global
-        for (int32 i = 0; i < deviceLayerExtensions[0].ExtensionProps.Count(); i++)
+        for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
         {
-            availableExtensions.Add(deviceLayerExtensions[0].ExtensionProps[i].extensionName);
+            availableExtensions.Add(deviceLayerExtensions[0].Extensions[i].extensionName);
         }
 
-        // Now only find enabled layers
         for (int32 layerIndex = 0; layerIndex < outDeviceLayers.Count(); layerIndex++)
         {
-            // Skip 0 as it's the null layer
             int32 findLayerIndex;
             for (findLayerIndex = 1; findLayerIndex < deviceLayerExtensions.Count(); findLayerIndex++)
             {
-                if (!StringUtils::Compare(deviceLayerExtensions[findLayerIndex].LayerProps.layerName, outDeviceLayers[layerIndex]))
+                if (!StringUtils::Compare(deviceLayerExtensions[findLayerIndex].Layer.layerName, outDeviceLayers[layerIndex]))
                 {
                     break;
                 }
@@ -518,7 +511,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
 
             if (findLayerIndex < deviceLayerExtensions.Count())
             {
-                deviceLayerExtensions[findLayerIndex].AddAnsiExtensionNames(availableExtensions);
+                deviceLayerExtensions[findLayerIndex].GetExtensions(availableExtensions);
             }
         }
     }
@@ -589,18 +582,14 @@ void GPUDeviceVulkan::ParseOptionalDeviceExtensions(const Array<const char*>& de
         return ArrayExtensions::Any(deviceExtensions, CheckCallback);
     };
 
-#if VULKAN_SUPPORTS_MAINTENANCE_LAYER1
+#if VK_KHR_maintenance1
     OptionalDeviceExtensions.HasKHRMaintenance1 = HasExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 #endif
-#if VULKAN_SUPPORTS_MAINTENANCE_LAYER2
+#if VK_KHR_maintenance2
     OptionalDeviceExtensions.HasKHRMaintenance2 = HasExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME);
 #endif
     OptionalDeviceExtensions.HasMirrorClampToEdge = HasExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
-#if VULKAN_ENABLE_DESKTOP_HMD_SUPPORT
-	OptionalDeviceExtensions.HasKHRExternalMemoryCapabilities = HasExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-	OptionalDeviceExtensions.HasKHRGetPhysicalDeviceProperties2 = HasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-#endif
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     OptionalDeviceExtensions.HasEXTValidationCache = HasExtension(VK_EXT_VALIDATION_CACHE_EXTENSION_NAME);
 #endif
 }

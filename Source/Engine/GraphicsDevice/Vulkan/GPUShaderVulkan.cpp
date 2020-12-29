@@ -118,7 +118,7 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
     createInfo.codeSize = (size_t)spirv.Length();
     createInfo.pCode = (const uint32_t*)spirv.Get();
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     VkShaderModuleValidationCacheCreateInfoEXT validationInfo;
     if (_device->ValidationCache != VK_NULL_HANDLE)
     {

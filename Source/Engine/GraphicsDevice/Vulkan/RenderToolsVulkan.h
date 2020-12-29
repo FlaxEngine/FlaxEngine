@@ -48,7 +48,7 @@ public:
 
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name)
     {
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
         // Check for valid function pointer (may not be present if not running in a debugging application)
         if (vkSetDebugUtilsObjectNameEXT != nullptr && name != nullptr && *name != 0)
         {
@@ -94,7 +94,7 @@ public:
         case VK_ACCESS_SHADER_WRITE_BIT:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
-#if VULKAN_SUPPORTS_MAINTENANCE_LAYER2
+#if VK_KHR_maintenance2
 		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
 		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
 			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
@@ -144,7 +144,7 @@ public:
             accessFlags = VK_ACCESS_SHADER_READ_BIT;
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
-#if VULKAN_SUPPORTS_MAINTENANCE_LAYER2
+#if VK_KHR_maintenance2
 		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
 			accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;

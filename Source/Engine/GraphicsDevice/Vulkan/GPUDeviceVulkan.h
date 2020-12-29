@@ -621,7 +621,7 @@ public:
     /// </summary>
     VkPipelineCache PipelineCache;
 
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
 
     /// <summary>
     /// The optional validation cache.
@@ -706,7 +706,7 @@ public:
     /// <returns>The output format.</returns>
     PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling);
 
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
 
     /// <summary>
     /// Loads the validation cache.

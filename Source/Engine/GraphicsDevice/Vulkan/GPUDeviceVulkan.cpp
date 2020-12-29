@@ -43,7 +43,7 @@ Array<const char*> GPUDeviceVulkan::InstanceLayers;
 
 bool SupportsDebugUtilsExt = false;
 #if VULKAN_USE_DEBUG_LAYER
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
 VkDebugUtilsMessengerEXT Messenger = VK_NULL_HANDLE;
 #endif
 
@@ -138,7 +138,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     return VK_FALSE;
 }
 
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
 
 static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity, VkDebugUtilsMessageTypeFlagsEXT msgType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData)
 {
@@ -242,7 +242,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
 
 void SetupDebugLayerCallback()
 {
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
     if (SupportsDebugUtilsExt)
     {
         if (vkCreateDebugUtilsMessengerEXT)
@@ -324,7 +324,7 @@ void SetupDebugLayerCallback()
 
 void RemoveDebugLayerCallback()
 {
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
     if (Messenger != VK_NULL_HANDLE)
     {
         if (vkDestroyDebugUtilsMessengerEXT)
@@ -1092,7 +1092,7 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
     , PresentQueue(nullptr)
     , Allocator(VK_NULL_HANDLE)
     , PipelineCache(VK_NULL_HANDLE)
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     , ValidationCache(VK_NULL_HANDLE)
 #endif
     , UniformBufferUploader(nullptr)
@@ -1438,7 +1438,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
     return format;
 }
 
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
 
 void GetValidationCachePath(String& path)
 {
@@ -1872,7 +1872,7 @@ bool GPUDeviceVulkan::Init()
     DescriptorPoolsManager = New<DescriptorPoolsManagerVulkan>(this);
     MainContext = New<GPUContextVulkan>(this, GraphicsQueue);
     // TODO: create and load PipelineCache
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
         LoadValidationCache();
@@ -1934,7 +1934,7 @@ void GPUDeviceVulkan::Dispose()
         vkDestroyPipelineCache(Device, PipelineCache, nullptr);
         PipelineCache = VK_NULL_HANDLE;
     }
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
     if (ValidationCache != VK_NULL_HANDLE)
     {
         if (SaveValidationCache())

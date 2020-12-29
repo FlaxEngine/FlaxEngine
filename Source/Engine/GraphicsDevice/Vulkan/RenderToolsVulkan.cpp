@@ -199,7 +199,7 @@ VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[static_cast<int32>(Co
 
 void RenderToolsVulkan::SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name)
 {
-#if VULKAN_SUPPORTS_DEBUG_UTILS
+#if VK_EXT_debug_utils
     auto str = name.ToStringAnsi();
     SetObjectName(device, objectHandle, objectType, str.Get());
 #endif
