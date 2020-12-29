@@ -89,6 +89,15 @@ namespace FlaxEditor.Windows
                     if (item is AssetItem assetItem)
                     {
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
+                        if (item is ModelAssetItem modelAssetItem)
+                        {
+                            cm.AddButton("Generate collision data", () =>
+                                                                        {
+                                                                            var model = FlaxEngine.Content.Load<Model>(modelAssetItem.ID);
+                                                                            var cdProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
+                                                                            cdProxy.CreateCollisionDataFromModel(model);
+                                                                        });
+                        }
                     }
 
                     if (Editor.CanExport(item.Path))
