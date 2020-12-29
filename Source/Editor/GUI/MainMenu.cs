@@ -192,13 +192,12 @@ namespace FlaxEditor.GUI
 
             if (!_window.IsMaximized)
             {
-                var winSize = RootWindow.Size * Platform.DpiScale;
-                /*
-                 * Distance from which the mouse is considered to be on the border/corner
-                 * You can change the distance by modifying the x value in : (int)(x * Platform.DpiScale)
-                 */
-                int distance = (int)(10 * Platform.DpiScale);
-                
+                var dpiScale = Platform.DpiScale;
+                var winSize = RootWindow.Size * dpiScale;
+
+                // Distance from which the mouse is considered to be on the border/corner
+                float distance = 5.0f * dpiScale;
+
                 if (pos.Y > winSize.Y - distance && pos.X < distance)
                     return WindowHitCodes.BottomLeft;
 
@@ -250,7 +249,7 @@ namespace FlaxEditor.GUI
             }
             return b;
         }
-        
+
         /// <summary>
         /// Adds the button.
         /// </summary>
