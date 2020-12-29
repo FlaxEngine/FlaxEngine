@@ -107,13 +107,20 @@ float GPUTimerQueryDX11::GetResult()
 
         if (disjointData.Disjoint == FALSE)
         {
-            const float frequency = static_cast<float>(disjointData.Frequency);
             const UINT64 delta = timeEnd - timeStart;
-            _timeDelta = (float)((delta / frequency) * 1000.0);
+            _timeDelta = (float)(((double)delta / (double)disjointData.Frequency) * 1000.0);
         }
         else
         {
-            LOG(Warning, "Unrealiable GPU timer query detected.");
+            _timeDelta = 0.0f;
+#if !BUILD_RELEASE
+            static bool SingleShotLog = false;
+            if (!SingleShotLog)
+            {
+                SingleShotLog = true;
+                LOG(Warning, "Unrealiable GPU timer query detected.");
+            }
+#endif
         }
 
         _finalized = true;
