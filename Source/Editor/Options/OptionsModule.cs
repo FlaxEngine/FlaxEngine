@@ -196,9 +196,9 @@ namespace FlaxEditor.Options
 
             // If a non-default style was chosen, switch to that style
             string styleName = themeOptions.SelectedStyle;
-            if (styleName != "Default" && themeOptions.Styles.ContainsKey(styleName))
+            if (styleName != "Default" && themeOptions.Styles.TryGetValue(styleName, out var style) && style != null)
             {
-                Style.Current = themeOptions.Styles[themeOptions.SelectedStyle];
+                Style.Current = style;
             }
             else
             {
