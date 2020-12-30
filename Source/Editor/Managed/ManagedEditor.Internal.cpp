@@ -1016,7 +1016,7 @@ public:
         document.Parse(json.Get(), json.Length());
         if (document.HasParseError())
         {
-            Log::JsonParseException(document.GetParseError());
+            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
             DebugLog::ThrowException("Failed to parse Json.");
         }
 

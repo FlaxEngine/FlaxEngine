@@ -128,7 +128,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     Document.Parse(data.Get<char>(), data.Length());
     if (Document.HasParseError())
     {
-        Log::JsonParseException(Document.GetParseError());
+        Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
         return LoadResult::CannotLoadData;
     }
 

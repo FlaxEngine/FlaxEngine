@@ -1547,7 +1547,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         document.Parse(buffer, bufferSize);
         if (document.HasParseError())
         {
-            Log::JsonParseException(document.GetParseError());
+            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
             return true;
         }
 
@@ -1587,7 +1587,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         document.Parse(buffer, bufferSize);
         if (document.HasParseError())
         {
-            Log::JsonParseException(document.GetParseError());
+            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
             return true;
         }
 
@@ -1699,7 +1699,7 @@ void Actor::FromJson(const StringAnsiView& json)
     document.Parse(json.Get(), json.Length());
     if (document.HasParseError())
     {
-        Log::JsonParseException(document.GetParseError());
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
         return;
     }
 

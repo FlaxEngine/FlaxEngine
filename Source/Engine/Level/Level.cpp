@@ -786,7 +786,7 @@ bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scen
     document.Parse(sceneData.Get<char>(), sceneData.Length());
     if (document.HasParseError())
     {
-        Log::JsonParseException(document.GetParseError());
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
         return true;
     }
 

@@ -35,7 +35,7 @@ bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, Stri
     document.Parse((const char*)fileData.Get(), fileData.Count());
     if (document.HasParseError())
     {
-        Log::JsonParseException(document.GetParseError(), String(path));
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), String(path));
         return false;
     }
 
@@ -104,7 +104,7 @@ bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
     document.Parse((const char*)fileData.Get(), fileData.Count());
     if (document.HasParseError())
     {
-        Log::JsonParseException(document.GetParseError(), String(path));
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), String(path));
         return false;
     }
 
