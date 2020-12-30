@@ -4,7 +4,9 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/Platform.h"
 
-// Use CRC 32 polynomial
+// Based on the Slicing-by-8 implementation found here:
+// http://slicing-by-8.sourceforge.net/
+
 enum { Crc32Poly = 0x04c11db7 };
 
 uint32 Crc::CachedCRCTablesSB8[8][256] =

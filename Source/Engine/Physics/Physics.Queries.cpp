@@ -78,7 +78,7 @@ protected:
     {
         if (this->hasBlock)
         {
-            // Copy blocking hit to hits
+            // Blocking hits go to hits
             processTouches(&this->block, 1);
         }
     }

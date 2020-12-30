@@ -86,7 +86,7 @@ void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
 {
     ASSERT(_currentBatch.Open);
 
-    // Discard empty batches
+    // Skip empty batches
     if (_currentBatch.Count == 0)
     {
         return;

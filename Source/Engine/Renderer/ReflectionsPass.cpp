@@ -12,6 +12,10 @@
 
 #if GENERATE_GF_CACHE
 
+// This code below (PreIntegratedGF namespace) is based on many Siggraph presentations about BRDF shading:
+// https://blog.selfshadow.com/publications/s2015-shading-course/
+// https://blog.selfshadow.com/publications/s2012-shading-course/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

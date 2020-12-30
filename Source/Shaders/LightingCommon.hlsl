@@ -82,19 +82,16 @@ void GetRadialLightAttenuation(
 		BRANCH
 		if (lightData.SourceLength > 0)
 		{
-			// Line segment irradiance
-			float3 L01 = lightData.Direction * lightData.SourceLength;
-			float3 L0 = toLight - 0.5 * L01;
-			float3 L1 = toLight + 0.5 * L01;
-			float LengthL0 = length(L0);
-			float LengthL1 = length(L1);
-			
-			distanceAttenuation = rcp((LengthL0 * LengthL1 + dot(L0, L1)) * 0.5 + distanceBiasSqr);
-			NoL = saturate(0.5 * (dot(N, L0) / LengthL0 + dot(N, L1) / LengthL1));
+			float3 l01 = lightData.Direction * lightData.SourceLength;
+			float3 l0 = toLight - 0.5 * l01;
+			float3 l1 = toLight + 0.5 * l01;
+			float lengthL0 = length(l0);
+			float lengthL1 = length(l1);
+			distanceAttenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqr);
+			NoL = saturate(0.5 * (dot(N, l0) / lengthL0 + dot(N, l1) / lengthL1));
 		}
 		else
 		{
-			// Sphere irradiance (technically just 1/d^2 but this avoids inf)
 			distanceAttenuation = rcp(distanceSqr + distanceBiasSqr);
 			NoL = saturate(dot(N, L));
 		}

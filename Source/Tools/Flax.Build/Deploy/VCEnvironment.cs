@@ -71,7 +71,7 @@ namespace Flax.Deploy
                     }
                 }
 
-                if (TryReadInstallPath("Microsoft\\VisualStudio\\SxS\\VS7", "15.0", "MSBuild\\15.0\\bin\\MSBuild.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\VisualStudio\\SxS\\VS7", "15.0", "MSBuild\\15.0\\bin\\MSBuild.exe", out toolPath))
                 {
                     return toolPath;
                 }
@@ -82,17 +82,17 @@ namespace Flax.Deploy
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\14.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\14.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
                 {
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\12.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\12.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
                 {
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\4.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\4.0", "MSBuildToolsPath", "MSBuild.exe", out toolPath))
                 {
                     return toolPath;
                 }
@@ -121,7 +121,7 @@ namespace Flax.Deploy
             }
             case TargetPlatform.Windows:
             {
-                if (TryReadInstallPath("Microsoft\\VisualStudio\\SxS\\VS7", "15.0", "MSBuild\\15.0\\bin\\csc.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\VisualStudio\\SxS\\VS7", "15.0", "MSBuild\\15.0\\bin\\csc.exe", out toolPath))
                 {
                     return toolPath;
                 }
@@ -132,17 +132,17 @@ namespace Flax.Deploy
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\14.0", "MSBuildToolsPath", "csc.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\14.0", "MSBuildToolsPath", "csc.exe", out toolPath))
                 {
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\12.0", "MSBuildToolsPath", "csc.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\12.0", "MSBuildToolsPath", "csc.exe", out toolPath))
                 {
                     return toolPath;
                 }
 
-                if (TryReadInstallPath("Microsoft\\MSBuild\\ToolsVersions\\4.0", "MSBuildToolsPath", "csc.exe", out toolPath))
+                if (CheckMsBuildPathFromRegistry("Microsoft\\MSBuild\\ToolsVersions\\4.0", "MSBuildToolsPath", "csc.exe", out toolPath))
                 {
                     return toolPath;
                 }
@@ -154,13 +154,9 @@ namespace Flax.Deploy
             return string.Empty;
         }
 
-        /// <summary>
-        /// Queries the registry entries for a certain install directory of the MsBuild.
-        /// </summary>
-        /// <returns>True if found MsBuild tool, otherwise false.</returns>
-        private static bool TryReadInstallPath(string keyRelativePath, string keyName, string msBuildRelativePath, out string outMsBuildPath)
+        private static bool CheckMsBuildPathFromRegistry(string keyRelativePath, string keyName, string msBuildRelativePath, out string outMsBuildPath)
         {
-            string[] keyBasePaths =
+            string[] prefixes =
             {
                 @"HKEY_CURRENT_USER\SOFTWARE\",
                 @"HKEY_LOCAL_MACHINE\SOFTWARE\",
@@ -168,9 +164,9 @@ namespace Flax.Deploy
                 @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\"
             };
 
-            foreach (string keyBasePath in keyBasePaths)
+            for (var i = 0; i < prefixes.Length; i++)
             {
-                if (Registry.GetValue(keyBasePath + keyRelativePath, keyName, null) is string value)
+                if (Registry.GetValue(prefixes[i] + keyRelativePath, keyName, null) is string value)
                 {
                     string msBuildPath = Path.Combine(value, msBuildRelativePath);
                     if (File.Exists(msBuildPath))

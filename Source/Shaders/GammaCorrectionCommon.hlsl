@@ -60,34 +60,18 @@ half3 sRGBToLinear(half3 color)
 
 float3 LogToLinear(float3 logColor)
 {
-	const float linearRange = 14;
-	const float linearGrey = 0.18;
-	const float exposureGrey = 444;
-
-	// Using stripped down, 'pure log', formula. Parameterized by grey points and dynamic range covered.
-	float3 linearColor = exp2((logColor - exposureGrey / 1023.0) * linearRange) * linearGrey;
-	//float3 linearColor = 2 * (pow(10.0, ((logColor - 0.616596 - 0.03) / 0.432699)) - 0.037584); // SLog
-	//float3 linearColor = (pow( 10, (1023 * logColor - 685) / 300) - 0.0108) / (1 - 0.0108); // Cineon
-	//linearColor = max(0, linearColor);
-
-	return linearColor;
+	const float linearRange = 14.0f;
+	const float linearGrey = 0.18f;
+	const float exposureGrey = 444.0f;
+	return exp2((logColor - exposureGrey / 1023.0) * linearRange) * linearGrey;
 }
 
 float3 LinearToLog(float3 linearColor)
 {
-	const float linearRange = 14;
-	const float linearGrey = 0.18;
-	const float exposureGrey = 444;
-
-	// Using stripped down, 'pure log', formula. Parameterized by grey points and dynamic range covered.
-	float3 logColor = log2(linearColor) / linearRange - log2(linearGrey) / linearRange + exposureGrey / 1023.0; // scalar: 3log2 3mad
-	//float3 logColor = (log2(linearColor) - log2(linearGrey)) / linearRange + exposureGrey / 1023.0;
-	//float3 logColor = log2(linearColor / linearGrey) / linearRange + exposureGrey / 1023.0;
-	//float3 logColor = (0.432699 * log10(0.5 * linearColor + 0.037584) + 0.616596) + 0.03; // SLog
-	//float3 logColor = (300 * log10(linearColor * (1 - 0.0108) + 0.0108) + 685) / 1023; // Cineon
-	logColor = saturate(logColor);
-
-	return logColor;
+	const float linearRange = 14.0f;
+	const float linearGrey = 0.18f;
+	const float exposureGrey = 444.0f;
+	return saturate(log2(linearColor) / linearRange - log2(linearGrey) / linearRange + exposureGrey / 1023.0f);
 }
 
 #endif

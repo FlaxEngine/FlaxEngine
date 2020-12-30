@@ -49,8 +49,10 @@ public:
     {
     }
 
-    // Init
-    // @param ticks The number of ticks
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TimeSpan"/> struct.
+    /// </summary>
+    /// <param name="ticks">The ticks in 100 nanoseconds resolution.</param>
     TimeSpan(int64 ticks)
         : Ticks(ticks)
     {
@@ -62,7 +64,7 @@ public:
     // @param Minutes Amount of minutes
     TimeSpan(int32 days, int32 hours, int32 minutes)
     {
-        Assign(days, hours, minutes, 0, 0);
+        Set(days, hours, minutes, 0, 0);
     }
 
     // Init
@@ -72,7 +74,7 @@ public:
     // @param Seconds Amount of seconds
     TimeSpan(int32 days, int32 hours, int32 minutes, int32 seconds)
     {
-        Assign(days, hours, minutes, seconds, 0);
+        Set(days, hours, minutes, seconds, 0);
     }
 
     // Init
@@ -83,7 +85,7 @@ public:
     // @param Milliseconds Amount of milliseconds
     TimeSpan(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds)
     {
-        Assign(days, hours, minutes, seconds, milliseconds);
+        Set(days, hours, minutes, seconds, milliseconds);
     }
 
 public:
@@ -325,7 +327,7 @@ public:
 
 private:
 
-    void Assign(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds);
+    void Set(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds);
 };
 
 inline TimeSpan operator*(float scalar, const TimeSpan& timespan)

@@ -109,8 +109,14 @@ float3 ColorCorrect(float3 color, float luma, float4 saturation, float4 contrast
 	return color;
 }
 
-float3 ColorCorrectAll(float3 color)
+float3 ColorGrade(float3 linearColor)
 {
+	// Convert into ACEScg color
+	const float3x3 sRGB_2_AP1 = mul(XYZ_2_AP1_MAT,  mul(D65_2_D60_CAT, sRGB_2_XYZ_MAT));
+	const float3x3 AP1_2_sRGB = mul(XYZ_2_sRGB_MAT, mul(D60_2_D65_CAT, AP1_2_XYZ_MAT));
+	float3 color = mul(sRGB_2_AP1, linearColor);
+
+	// Perform color grading with CC wheels
 	float luma = dot(color, AP1_RGB2Y);
 	float3 ccColorShadows = ColorCorrect(color, luma, ColorSaturationShadows, ColorContrastShadows, ColorGammaShadows, ColorGainShadows, ColorOffsetShadows);
 	float ccWeightShadows = 1 - smoothstep(0, ColorCorrectionShadowsMax, luma);
@@ -118,18 +124,7 @@ float3 ColorCorrectAll(float3 color)
 	float ccWeightHighlights = smoothstep(ColorCorrectionHighlightsMin, 1, luma);
 	float3 ccColorMidtones = ColorCorrect(color, luma, ColorSaturationMidtones, ColorContrastMidtones, ColorGammaMidtones, ColorGainMidtones, ColorOffsetMidtones);
 	float ccWeightMidtones = 1 - ccWeightShadows - ccWeightHighlights;
-	return ccColorShadows * ccWeightShadows + ccColorMidtones * ccWeightMidtones + ccColorHighlights * ccWeightHighlights;
-}
-
-float3 ColorGrade(float3 linearColor)
-{
-	// ACEScg working space
-	const float3x3 sRGB_2_AP1 = mul(XYZ_2_AP1_MAT,  mul(D65_2_D60_CAT, sRGB_2_XYZ_MAT));
-	const float3x3 AP1_2_sRGB = mul(XYZ_2_sRGB_MAT, mul(D60_2_D65_CAT, AP1_2_XYZ_MAT));
-	float3 color = mul(sRGB_2_AP1, linearColor);
-
-	// Nuke-style color correct
-	color = ColorCorrectAll(color);
+	color = ccColorShadows * ccWeightShadows + ccColorMidtones * ccWeightMidtones + ccColorHighlights * ccWeightHighlights;
 
 	// Convert back to linear color
 	return mul(AP1_2_sRGB, color);
@@ -216,23 +211,20 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 {
 	float3 encodedColor;
 #if USE_VOLUME_LUT
-	// Construct the neutral color from a 3d position volume texture	
+	// Calculate the neutral color from 3d position	
 	{
 		uv = uv - float2(0.5f / LUTSize, 0.5f / LUTSize);
 		encodedColor = float3(uv * LUTSize / (LUTSize - 1), layerIndex / (LUTSize - 1));
 	}
 #else
-	// Construct the neutral color from a 2d position in 256x16
+	// Calculate the neutral color from 2d position
 	{
 		uv -= float2(0.49999f / (LUTSize * LUTSize), 0.49999f / LUTSize);
-
 		float3 rgb;
 		rgb.r = frac(uv.x * LUTSize);
 		rgb.b = uv.x - rgb.r / LUTSize;
 		rgb.g = uv.y;
-
-		float scale = LUTSize / (LUTSize - 1);
-		encodedColor = rgb * scale;
+		encodedColor = rgb * (LUTSize / (LUTSize - 1));
 	}
 #endif
 

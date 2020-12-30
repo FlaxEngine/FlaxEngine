@@ -216,7 +216,6 @@ void Plane::Transform(Plane planes[], int32 planesCount, const Quaternion& rotat
         const float y = planes[i].Normal.Y;
         const float z = planes[i].Normal.Z;
 
-        // Factor common arithmetic out of loop
         planes[i].Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
         planes[i].Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
         planes[i].Normal.Z = x * (xz - wy) + y * (yz + wx) + z * (1.0f - xx - yy);

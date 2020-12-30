@@ -330,8 +330,7 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Programmatically set the line number after all the material inputs which have a variable number of line endings
-// This allows shader error line numbers after this point to be the same regardless of which material is being compiled
+// Fix line for errors/warnings for shader code from template
 #line 1000
 
 // Calculates the transform matrix from mesh tangent space to local space
@@ -834,7 +833,7 @@ float4 PS_Distortion(PixelInput input) : SV_Target0
 	// Scale up for better precision in low/subtle refractions at the expense of artefacts at higher refraction
 	distortion *= 4.0f;
 
-	// Store positive and negative offsets separately
+	// Use separate storage for positive and negative offsets
 	float2 addOffset = max(distortion, 0);
 	float2 subOffset = abs(min(distortion, 0));
 	return float4(addOffset.x, addOffset.y, subOffset.x, subOffset.y);

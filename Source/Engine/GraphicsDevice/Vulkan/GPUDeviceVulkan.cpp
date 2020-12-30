@@ -345,10 +345,6 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
 void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 {
     ScopeLock lock(&_locker);
-
-    const VkDevice device = _device->Device;
-
-    // Traverse list backwards so the swap switches to elements already tested
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
     for (int32 i = 0; i < _entries.Count(); i++)
     {
@@ -361,24 +357,26 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
             {
                 switch (e->StructureType)
                 {
-#define VK_SWITCH(type) case Type::type: vkDestroy##type(device, (Vk##type)e->Handle, nullptr); break
-                VK_SWITCH(RenderPass);
-                VK_SWITCH(Buffer);
-                VK_SWITCH(BufferView);
-                VK_SWITCH(Image);
-                VK_SWITCH(ImageView);
-                VK_SWITCH(Pipeline);
-                VK_SWITCH(PipelineLayout);
-                VK_SWITCH(Framebuffer);
-                VK_SWITCH(DescriptorSetLayout);
-                VK_SWITCH(Sampler);
-                VK_SWITCH(Semaphore);
-                VK_SWITCH(ShaderModule);
-                VK_SWITCH(Event);
-                VK_SWITCH(QueryPool);
-#undef VK_SWITCH
+#define SWITCH_CASE(type) case Type::type: vkDestroy##type(_device->Device, (Vk##type)e->Handle, nullptr); break
+                SWITCH_CASE(RenderPass);
+                SWITCH_CASE(Buffer);
+                SWITCH_CASE(BufferView);
+                SWITCH_CASE(Image);
+                SWITCH_CASE(ImageView);
+                SWITCH_CASE(Pipeline);
+                SWITCH_CASE(PipelineLayout);
+                SWITCH_CASE(Framebuffer);
+                SWITCH_CASE(DescriptorSetLayout);
+                SWITCH_CASE(Sampler);
+                SWITCH_CASE(Semaphore);
+                SWITCH_CASE(ShaderModule);
+                SWITCH_CASE(Event);
+                SWITCH_CASE(QueryPool);
+#undef SWITCH_CASE
                 default:
+#if !BUILD_RELEASE
                 CRASH;
+#endif
                     break;
                 }
             }
@@ -1068,23 +1066,10 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
     , _renderPasses(512)
     , _framebuffers(512)
     , _layouts(4096)
-    , MainContext(nullptr)
     , Adapter(adapter)
-    , Device(VK_NULL_HANDLE)
     , DeferredDeletionQueue(this)
     , StagingManager(this)
     , HelperResources(this)
-    , GraphicsQueue(nullptr)
-    , ComputeQueue(nullptr)
-    , TransferQueue(nullptr)
-    , PresentQueue(nullptr)
-    , Allocator(VK_NULL_HANDLE)
-    , PipelineCache(VK_NULL_HANDLE)
-#if VK_EXT_validation_cache
-    , ValidationCache(VK_NULL_HANDLE)
-#endif
-    , UniformBufferUploader(nullptr)
-    , DescriptorPoolsManager(nullptr)
 {
 }
 
@@ -1151,7 +1136,7 @@ GPUDevice* GPUDeviceVulkan::Create()
     }
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
     {
-        // Check for missing extensions 
+        // Extensions error
         uint32_t propertyCount;
         vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, nullptr);
         Array<VkExtensionProperties> properties;
@@ -1159,28 +1144,27 @@ GPUDevice* GPUDeviceVulkan::Create()
         vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, properties.Get());
         for (const char* extension : InstanceExtensions)
         {
-            bool extensionFound = false;
+            bool found = false;
             for (uint32_t propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
             {
                 if (!StringUtils::Compare(properties[propertyIndex].extensionName, extension))
                 {
-                    extensionFound = true;
+                    found = true;
                     break;
                 }
             }
-            if (!extensionFound)
+            if (!found)
             {
                 LOG(Warning, "Missing required Vulkan extension: {0}", String(extension));
             }
         }
-
-        // Missing extensions
         auto error = String::Format(TEXT("Vulkan driver doesn't contain specified extensions:\n{0}\nPlease make sure your layers path is set appropriately."));
         Platform::Error(*error);
         return nullptr;
     }
     if (result != VK_SUCCESS)
     {
+        // Driver error
         LOG(Warning, "Vulkan create instance failed with error code: {0}", RenderToolsVulkan::GetVkErrorString(result));
         Platform::Fatal(TEXT("Vulkan failed to create instance\n\nDo you have a compatible Vulkan driver installed?"));
         return nullptr;
@@ -1560,7 +1544,7 @@ bool GPUDeviceVulkan::Init()
     _state = DeviceState::Created;
     const auto gpu = Adapter->Gpu;
 
-    // Query queues properties
+    // Get queues properties
     uint32 queueCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueCount, nullptr);
     ASSERT(queueCount >= 1);
@@ -1570,23 +1554,21 @@ bool GPUDeviceVulkan::Init()
     // Query device features
     vkGetPhysicalDeviceFeatures(Adapter->Gpu, &PhysicalDeviceFeatures);
 
-    // Setup extension and layer info
-    VkDeviceCreateInfo deviceInfo;
-    RenderToolsVulkan::ZeroStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-
+    // Get extensions and layers
     Array<const char*> deviceExtensions;
     Array<const char*> validationLayers;
     GetDeviceExtensionsAndLayers(gpu, deviceExtensions, validationLayers);
-
     ParseOptionalDeviceExtensions(deviceExtensions);
 
+    // Setup device info
+    VkDeviceCreateInfo deviceInfo;
+    RenderToolsVulkan::ZeroStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
     deviceInfo.enabledExtensionCount = deviceExtensions.Count();
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.Get();
-
     deviceInfo.enabledLayerCount = validationLayers.Count();
     deviceInfo.ppEnabledLayerNames = deviceInfo.enabledLayerCount > 0 ? validationLayers.Get() : nullptr;
 
-    // Setup Queue info
+    // Setup queues info
     Array<VkDeviceQueueCreateInfo> queueFamilyInfos;
     int32 graphicsQueueFamilyIndex = -1;
     int32 computeQueueFamilyIndex = -1;
@@ -1655,7 +1637,6 @@ bool GPUDeviceVulkan::Init()
         numPriorities += curProps.queueCount;
         LOG(Info, "- queue family {0}: {1} queues{2}", familyIndex, curProps.queueCount, queueTypeInfo);
     }
-
     Array<float> queuePriorities;
     queuePriorities.AddDefault(numPriorities);
     float* currentPriority = queuePriorities.Get();
@@ -1663,14 +1644,12 @@ bool GPUDeviceVulkan::Init()
     {
         VkDeviceQueueCreateInfo& queue = queueFamilyInfos[index];
         queue.pQueuePriorities = currentPriority;
-
         const VkQueueFamilyProperties& properties = QueueFamilyProps[queue.queueFamilyIndex];
         for (int32 queueIndex = 0; queueIndex < (int32)properties.queueCount; queueIndex++)
         {
             *currentPriority++ = 1.0f;
         }
     }
-
     deviceInfo.queueCreateInfoCount = queueFamilyInfos.Count();
     deviceInfo.pQueueCreateInfos = queueFamilyInfos.Get();
 
@@ -2129,7 +2108,6 @@ bool FenceManagerVulkan::CheckFenceState(FenceVulkan* fence)
 
 void FenceManagerVulkan::DestroyFence(FenceVulkan* fence)
 {
-    // Does not need to go in the deferred deletion queue
     vkDestroyFence(_device->Device, fence->GetHandle(), nullptr);
     fence->_handle = VK_NULL_HANDLE;
     Delete(fence);

@@ -56,7 +56,6 @@ int32 DateTime::GetDay() const
 
 DayOfWeek DateTime::GetDayOfWeek() const
 {
-    // January 1, 0001 was a Monday
     return static_cast<DayOfWeek>((Ticks / Constants::TicksPerDay) % 7);
 }
 
@@ -64,8 +63,8 @@ int32 DateTime::GetDayOfYear() const
 {
     int32 year, month, day;
     GetDate(year, month, day);
-    for (int32 currentMonth = 1; currentMonth < month; currentMonth++)
-        day += DaysInMonth(year, currentMonth);
+    for (int32 i = 1; i < month; i++)
+        day += DaysInMonth(year, i);
     return day;
 }
 
@@ -131,13 +130,7 @@ DateTime DateTime::NowUTC()
 
 bool DateTime::Validate(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
-    return (year >= 1) && (year <= 9999) &&
-            (month >= 1) && (month <= 12) &&
-            (day >= 1) && (day <= DaysInMonth(year, month)) &&
-            (hour >= 0) && (hour <= 23) &&
-            (minute >= 0) && (minute <= 59) &&
-            (second >= 0) && (second <= 59) &&
-            (millisecond >= 0) && (millisecond <= 999);
+    return year >= 1 && year <= 999999 && month >= 1 && month <= 12 && day >= 1 && day <= DaysInMonth(year, month) && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59 && millisecond >= 0 && millisecond <= 999;
 }
 
 String DateTime::ToString() const

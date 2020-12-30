@@ -146,7 +146,6 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
         {
             // Transition entire resource at once
             const VkImageLayout srcLayout = state.GetSubresourceState(0);
-
             VkImageSubresourceRange range;
             range.aspectMask = handle->Info.subresourceRange.aspectMask;
             range.baseMipLevel = 0;
@@ -157,7 +156,7 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
         }
         else
         {
-            // Slow path. Want to transition the entire resource (with multiple subresources). But they aren't in the same state.
+            // Slow path to transition each subresource
             for (int32 i = 0; i < state.GetSubresourcesCount(); i++)
             {
                 const VkImageLayout srcLayout = state.GetSubresourceState(i);
@@ -174,8 +173,6 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
                     state.SetSubresourceState(i, dstLayout);
                 }
             }
-
-            // The entire resource should now be in the after state on this command list
             ASSERT(state.CheckResourceState(dstLayout));
         }
 
@@ -538,7 +535,7 @@ void GPUContextVulkan::UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineStat
         remainingHasDescriptorsPerStageMask >>= 1;
     }
 
-    // Allocate sets based on what changed
+    // Allocate sets if need to
     //if (needsWrite) // TODO: write on change only?
     {
         if (!pipelineState->AllocateDescriptorSets())
@@ -578,7 +575,7 @@ void GPUContextVulkan::UpdateDescriptorSets(ComputePipelineStateVulkan* pipeline
     // Update descriptors
     UpdateDescriptorSets(*pipelineState->DescriptorInfo, pipelineState->DSWriter, needsWrite);
 
-    // Allocate sets based on what changed
+    // Allocate sets if need to
     //if (needsWrite) // TODO: write on change only?f
     {
         if (!pipelineState->AllocateDescriptorSets())

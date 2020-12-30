@@ -37,7 +37,7 @@ float3 GlobalEmissive;
 float HistoryWeight;
 
 float3 GridSize;
-uint HistoryMissSuperSampleCount;
+uint MissedHistorySamplesCount;
 
 int3 GridSizeInt;
 float PhaseG;
@@ -205,7 +205,7 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	{
 		historyAlpha = 0;
 	}
-	uint samplesCount = historyAlpha < 0.001f ? HistoryMissSuperSampleCount : 1;
+	uint samplesCount = historyAlpha < 0.001f ? MissedHistorySamplesCount : 1;
 #else
 	uint samplesCount = 1;
 #endif
@@ -261,7 +261,6 @@ void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispa
 {
 	uint3 gridCoordinate = DispatchThreadId;
 
-	// Center of the voxel
 	float voxelOffset = 0.5f;
 	float3 positionWS = GetCellPositionWS(gridCoordinate, voxelOffset);
 
@@ -272,11 +271,10 @@ void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispa
 
 	// Calculate the global fog density that matches the exponential height fog density
 	float globalDensity = fogDensity * exp2(-fogHeightFalloff * (positionWS.y - fogHeight));
-	float matchFactor = 0.24f;
-	float extinction = max(globalDensity * GlobalExtinctionScale * matchFactor, 0);
+	float extinction = max(0.0f, globalDensity * GlobalExtinctionScale * 0.24f);
 
 	float3 scattering = GlobalAlbedo * extinction;
-	float absorption = max(extinction - Luminance(scattering), 0.0f);
+	float absorption = max(0.0f, extinction - Luminance(scattering));
 
 	if (all((int3)gridCoordinate < GridSizeInt))
 	{
@@ -306,7 +304,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 {
 	uint3 gridCoordinate = DispatchThreadId;
 	float3 lightScattering = 0;
-	uint numSuperSamples = 1;
+	uint samplesCount = 1;
 	
 #if USE_TEMPORAL_REPROJECTION
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
@@ -318,13 +316,11 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 	{
 		historyAlpha = 0;
 	}
-	
-	// Supersample if the history was outside the camera frustum
-	// The compute shader is dispatched with extra threads, make sure those don't supersample
-	numSuperSamples = historyAlpha < 0.001f && all(gridCoordinate < GridSizeInt) ? HistoryMissSuperSampleCount : 1;
+
+	samplesCount = historyAlpha < 0.001f && all(gridCoordinate < GridSizeInt) ? MissedHistorySamplesCount : 1;
 #endif
 
-	for (uint sampleIndex = 0; sampleIndex < numSuperSamples; sampleIndex++)
+	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
 		float3 cellOffset = FrameJitterOffsets[sampleIndex].xyz;
 		//float3 cellOffset = 0.5f;
@@ -357,8 +353,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			lightScattering += skyLighting * SkyLight.VolumetricScatteringIntensity;
 		}
 	}
-
-	lightScattering /= (float)numSuperSamples;
+	lightScattering /= (float)samplesCount;
 
 	// Apply scattering from the point and spot lights
 	lightScattering += LocalShadowedLightScattering[gridCoordinate].rgb;

@@ -46,13 +46,13 @@ public:
     {
         ASSERT(_subresourceState.IsEmpty() && subresourceCount > 0);
 
-        // Allocate space for per-subresource tracking structures
-        if (usePerSubresourceTracking && subresourceCount > 1)
-            _subresourceState.Resize(subresourceCount, false);
-
         // Initialize state
         _allSubresourcesSame = true;
         _resourceState = initialState;
+
+        // Allocate space for per-subresource state tracking
+        if (usePerSubresourceTracking && subresourceCount > 1)
+            _subresourceState.Resize(subresourceCount, false);
 #if BUILD_DEBUG
         _subresourceState.SetAll(InvalidState);
 #endif
@@ -124,7 +124,7 @@ public:
 
     void SetSubresourceState(int32 subresourceIndex, StateType state)
     {
-        // If setting all subresources, or the resource only has a single subresource, set the per-resource state
+        // Check if use single state for the whole resource
         if (subresourceIndex == -1 || _subresourceState.Count() <= 1)
         {
             SetResourceState(state);
@@ -133,16 +133,14 @@ public:
         {
             ASSERT(subresourceIndex < static_cast<int32>(_subresourceState.Count()));
 
-            // If state was previously tracked on a per-resource level, then transition to per-subresource tracking
+            // Transition for all sub-resources
             if (_allSubresourcesSame)
             {
                 for (int32 i = 0; i < _subresourceState.Count(); i++)
                 {
                     _subresourceState[i] = _resourceState;
                 }
-
                 _allSubresourcesSame = 0;
-
 #if BUILD_DEBUG
                 _resourceState = InvalidState;
 #endif

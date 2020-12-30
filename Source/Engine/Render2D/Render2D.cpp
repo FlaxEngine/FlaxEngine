@@ -1292,7 +1292,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 4 * (6 + 3);
 
-    // The has to match HLSL code
+    // This must be the same as in HLSL code
     const float filterScale = 1.0f;
     const float thicknessHalf = (2.82842712f + thickness) * 0.5f + filterScale;
 
@@ -1544,10 +1544,8 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
     Vector2 p1t, p2t;
 
 #if RENDER2D_USE_LINE_AA
-    // Half of the width of the filter size to use for anti-aliasing. Increasing this value will increase the fuzziness of line edges.
-    const float filterScale = 1.0f; // Must match HLSL code
-
-    // The amount we increase each side of the line to generate enough pixels
+    // This must be the same as in HLSL code
+    const float filterScale = 1.0f;
     const float thicknessHalf = (2.82842712f + thickness) * 0.5f + filterScale;
 
     drawCall.Type = DrawCallType::LineAA;

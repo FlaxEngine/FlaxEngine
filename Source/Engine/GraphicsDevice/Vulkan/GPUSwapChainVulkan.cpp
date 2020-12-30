@@ -187,10 +187,10 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 
     const auto& gpu = _device->Adapter->Gpu;
 
-    // Find pixel format for presentable images
+    // Pick a format for backbuffer
     PixelFormat resultFormat = GPU_BACK_BUFFER_PIXEL_FORMAT;
-    VkSurfaceFormatKHR curFormat;
-    Platform::MemoryClear(&curFormat, sizeof(curFormat));
+    VkSurfaceFormatKHR result;
+    Platform::MemoryClear(&result, sizeof(result));
     {
         uint32 surfaceFormatsCount;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
@@ -210,7 +210,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 {
                     if (surfaceFormats[i].format == requested)
                     {
-                        curFormat = surfaceFormats[i];
+                        result = surfaceFormats[i];
                         found = true;
                         break;
                     }
@@ -240,8 +240,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                     if (surfaceFormats[i].format == RenderToolsVulkan::ToVulkanFormat(static_cast<PixelFormat>(pixelFormat)))
                     {
                         resultFormat = static_cast<PixelFormat>(pixelFormat);
-                        curFormat = surfaceFormats[i];
-                        LOG(Info, "No swapchain format requested, picking up Vulkan format {0}", (uint32)curFormat.format);
+                        result = surfaceFormats[i];
+                        LOG(Info, "No swapchain format requested, picking up Vulkan format {0}", (uint32)result.format);
                         break;
                     }
                 }
@@ -264,7 +264,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 if (surfaceFormats[i].format == format)
                 {
                     supported = true;
-                    curFormat = surfaceFormats[i];
+                    result = surfaceFormats[i];
                     break;
                 }
             }
@@ -290,13 +290,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
             LOG(Error, "Unable to find a pixel format for the swapchain; swapchain returned {0} Vulkan formats {1}", surfaceFormats.Count(), *msg);
         }
     }
-    curFormat.format = RenderToolsVulkan::ToVulkanFormat(resultFormat);
+    result.format = RenderToolsVulkan::ToVulkanFormat(resultFormat);
     _format = resultFormat;
 
     // Prepare present queue
     _device->SetupPresentQueue(_surface);
 
-    // Fetch present mode
+    // Calculate the swap chain present mode
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
     {
         uint32 presentModesCount = 0;
@@ -358,8 +358,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
     swapChainInfo.minImageCount = VULKAN_BACK_BUFFERS_COUNT;
-    swapChainInfo.imageFormat = curFormat.format;
-    swapChainInfo.imageColorSpace = curFormat.colorSpace;
+    swapChainInfo.imageFormat = result.format;
+    swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
     swapChainInfo.imageExtent.height = height;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;

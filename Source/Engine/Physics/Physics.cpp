@@ -177,8 +177,7 @@ bool PhysicsService::Init()
     // only in non-production builds.
 
 #if PHYSX_MEMORY_STATS
-	// Want names of PhysX allocations
-	GPhysXFoundation->setReportAllocationNames(true);
+	_foundation->setReportAllocationNames(true);
 #endif
 
     // Config

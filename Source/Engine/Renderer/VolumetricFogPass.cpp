@@ -152,7 +152,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 64;
         _cache.FogJitter = false;
         _cache.TemporalReprojection = false;
-        _cache.HistoryMissSupersampleCount = 1;
+        _cache.MissedHistorySamplesCount = 1;
         break;
     }
     case Quality::Medium:
@@ -161,7 +161,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 64;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 4;
+        _cache.MissedHistorySamplesCount = 4;
         break;
     }
     case Quality::High:
@@ -170,7 +170,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 128;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 4;
+        _cache.MissedHistorySamplesCount = 4;
         break;
     }
     case Quality::Ultra:
@@ -179,7 +179,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 256;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 8;
+        _cache.MissedHistorySamplesCount = 8;
         break;
     }
     }
@@ -208,7 +208,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.InverseSquaredLightDistanceBiasScale = _cache.InverseSquaredLightDistanceBiasScale;
     _cache.Data.PhaseG = options.ScatteringDistribution;
     _cache.Data.VolumetricFogMaxDistance = options.Distance;
-    _cache.Data.HistoryMissSuperSampleCount = Math::Clamp(_cache.HistoryMissSupersampleCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
+    _cache.Data.MissedHistorySamplesCount = Math::Clamp(_cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
     Matrix::Transpose(view.PrevViewProjection, _cache.Data.PrevWorldToClip);
     _cache.Data.DirectionalLightShadow.NumCascades = 0;
     _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
@@ -221,7 +221,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     }
     if (_cache.FogJitter && _cache.TemporalReprojection)
     {
-        for (int32 i = 0; i < _cache.HistoryMissSupersampleCount; i++)
+        for (int32 i = 0; i < _cache.MissedHistorySamplesCount; i++)
         {
             const uint64 frameNumber = renderContext.Task->LastUsedFrame - i;
             _cache.Data.FrameJitterOffsets[i] = Vector4(

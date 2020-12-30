@@ -297,7 +297,7 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
         }
     }
 
-    // All cmd buffers are being executed still
+    // Always begin fresh command buffer for rendering
     _activeCmdBuffer = _pool.Create();
     _activeCmdBuffer->Begin();
 

@@ -33,7 +33,7 @@ TimeSpan TimeSpan::FromSeconds(double seconds)
     return TimeSpan(static_cast<int64>(seconds * Constants::TicksPerSecond));
 }
 
-void TimeSpan::Assign(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds)
+void TimeSpan::Set(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds)
 {
     const int64 totalMs = 1000 * (60 * 60 * 24 * (int64)days + 60 * 60 * (int64)hours + 60 * (int64)minutes + (int64)seconds) + (int64)milliseconds;
     ASSERT_LOW_LAYER((totalMs >= MinValue().GetTotalMilliseconds()) && (totalMs <= MaxValue().GetTotalMilliseconds()));

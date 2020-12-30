@@ -300,46 +300,35 @@ float IESLoader::ComputeFilterPos(float value, const Array<float>& sortedValues)
     {
         return 0.0f;
     }
-
     if (value > sortedValues[endPos])
     {
         return static_cast<float>(endPos);
     }
 
-    // Binary search
     while (startPos < endPos)
     {
         const uint32 testPos = (startPos + endPos + 1) / 2;
-
         const float testValue = sortedValues[testPos];
 
         if (value >= testValue)
         {
-            // Prevent endless loop
             ASSERT(startPos != testPos);
-
             startPos = testPos;
         }
         else
         {
-            // Prevent endless loop
             ASSERT(endPos != testPos - 1);
-
             endPos = testPos - 1;
         }
     }
 
     const float leftValue = sortedValues[startPos];
-
     float fraction = 0.0f;
-
     if (startPos + 1 < static_cast<uint32>(sortedValues.Count()))
     {
-        // If not at right border
         const float rightValue = sortedValues[startPos + 1];
         const float deltaValue = rightValue - leftValue;
-
-        if (deltaValue > 0.0001f)
+        if (deltaValue > 0.00005f)
         {
             fraction = (value - leftValue) / deltaValue;
         }

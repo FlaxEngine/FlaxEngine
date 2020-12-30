@@ -417,13 +417,13 @@ void WindowsWindow::GetScreenInfo(int32& x, int32& y, int32& width, int32& heigh
 {
     ASSERT(HasHWND());
 
-    // Grab current monitor data for sizing
+    // Pick the current monitor data for sizing
     const HMONITOR monitor = MonitorFromWindow(_handle, MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitorInfo;
     monitorInfo.cbSize = sizeof(MONITORINFO);
     GetMonitorInfoW(monitor, &monitorInfo);
 
-    // Return result
+    // Calculate result
     x = monitorInfo.rcMonitor.left;
     y = monitorInfo.rcMonitor.top;
     width = monitorInfo.rcMonitor.right - x;

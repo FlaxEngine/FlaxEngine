@@ -98,8 +98,6 @@ Texture2D Input3    : register(t3);
 Texture2D LensDirt  : register(t4);
 Texture2D LensStar  : register(t5);
 Texture2D LensColor : register(t6);
-
-// LUT for color grading
 #if USE_VOLUME_LUT
 Texture3D ColorGradingLUT : register(t7);
 #else

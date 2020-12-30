@@ -149,12 +149,12 @@ static int FindLayerIndex(const Array<LayerExtension>& list, const char* layerNa
             return i;
         }
     }
-    return INVALID_INDEX;
+    return -1;
 }
 
 static bool ContainsLayer(const Array<LayerExtension>& list, const char* layerName)
 {
-    return FindLayerIndex(list, layerName) != INVALID_INDEX;
+    return FindLayerIndex(list, layerName) != -1;
 }
 
 static bool FindLayerExtension(const Array<LayerExtension>& list, const char* extensionName, const char*& foundLayer)
@@ -400,7 +400,6 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
 void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers)
 {
     Array<LayerExtension> deviceLayerExtensions;
-    // 0 is reserved for regular device
     deviceLayerExtensions.AddDefault(1);
     {
         uint32 count = 0;
@@ -409,10 +408,10 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         properties.AddZeroed(count);
         VALIDATE_VULKAN_RESULT(vkEnumerateDeviceLayerProperties(gpu, &count, properties.Get()));
         ASSERT(count == properties.Count());
-        for (const VkLayerProperties& Property : properties)
+        for (const VkLayerProperties& property : properties)
         {
             deviceLayerExtensions.AddDefault(1);
-            deviceLayerExtensions.Last().Layer = Property;
+            deviceLayerExtensions.Last().Layer = property;
         }
     }
 
@@ -530,7 +529,6 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         return false;
     };
 
-    // Now go through the actual requested lists
     Array<const char*> platformExtensions;
     VulkanPlatform::GetDeviceExtensions(platformExtensions);
     for (const char* extension : platformExtensions)

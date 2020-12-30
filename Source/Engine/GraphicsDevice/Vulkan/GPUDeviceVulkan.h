@@ -554,17 +554,17 @@ public:
     /// <summary>
     /// The main Vulkan commands context.
     /// </summary>
-    GPUContextVulkan* MainContext;
+    GPUContextVulkan* MainContext = nullptr;
 
     /// <summary>
     /// The Vulkan adapter.
     /// </summary>
-    GPUAdapterVulkan* Adapter;
+    GPUAdapterVulkan* Adapter = nullptr;
 
     /// <summary>
     /// The Vulkan device.
     /// </summary>
-    VkDevice Device;
+    VkDevice Device = VK_NULL_HANDLE;
 
     /// <summary>
     /// The Vulkan device queues family properties.
@@ -594,51 +594,51 @@ public:
     /// <summary>
     /// The graphics queue.
     /// </summary>
-    QueueVulkan* GraphicsQueue;
+    QueueVulkan* GraphicsQueue = nullptr;
 
     /// <summary>
     /// The compute queue.
     /// </summary>
-    QueueVulkan* ComputeQueue;
+    QueueVulkan* ComputeQueue = nullptr;
 
     /// <summary>
     /// The transfer queue.
     /// </summary>
-    QueueVulkan* TransferQueue;
+    QueueVulkan* TransferQueue = nullptr;
 
     /// <summary>
     /// The present queue.
     /// </summary>
-    QueueVulkan* PresentQueue;
+    QueueVulkan* PresentQueue = nullptr;
 
     /// <summary>
     /// The Vulkan memory allocator.
     /// </summary>
-    VmaAllocator Allocator;
+    VmaAllocator Allocator = VK_NULL_HANDLE;
 
     /// <summary>
     /// The pipeline cache.
     /// </summary>
-    VkPipelineCache PipelineCache;
+    VkPipelineCache PipelineCache = VK_NULL_HANDLE;
 
 #if VK_EXT_validation_cache
 
     /// <summary>
     /// The optional validation cache.
     /// </summary>
-    VkValidationCacheEXT ValidationCache;
+    VkValidationCacheEXT ValidationCache = VK_NULL_HANDLE;
 
 #endif
 
     /// <summary>
     /// The uniform buffers uploader.
     /// </summary>
-    UniformBufferUploaderVulkan* UniformBufferUploader;
+    UniformBufferUploaderVulkan* UniformBufferUploader = nullptr;
 
     /// <summary>
     /// The descriptor pools manager.
     /// </summary>
-    DescriptorPoolsManagerVulkan* DescriptorPoolsManager;
+    DescriptorPoolsManagerVulkan* DescriptorPoolsManager = nullptr;
 
     /// <summary>
     /// The physical device limits.

@@ -115,11 +115,9 @@ namespace FlaxEditor.Viewport.Previews
                 var color = Color;
                 if (!EnabledInHierarchy)
                     color *= 0.4f;
+                var sampleValueScale = height / info.NumChannels;
 
-                // Compute the scaled y-value used to render the channel data
-                float sampleYScale = height / info.NumChannels;
-
-                // Compute amount of samples that are contained in the view
+                // Calculate the amount of samples that are contained in the view
                 float unitsPerSecond = UnitsPerSecond * ViewScale;
                 float clipDefaultWidth = length * unitsPerSecond;
                 float clipsInView = width / clipDefaultWidth;
@@ -173,7 +171,7 @@ namespace FlaxEditor.Viewport.Previews
                             if (samplesInPixel > 0)
                             {
                                 float sampleValueAvg = samplesSum / samplesInPixel;
-                                float sampleValueAvgScaled = sampleValueAvg * sampleYScale;
+                                float sampleValueAvgScaled = sampleValueAvg * sampleValueScale;
                                 if (sampleValueAvgScaled > 0.1f)
                                 {
                                     Render2D.DrawLine(new Vector2(pixelX, yCenter - sampleValueAvgScaled), new Vector2(pixelX, yCenter + sampleValueAvgScaled), color);

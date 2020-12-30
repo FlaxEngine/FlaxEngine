@@ -126,12 +126,11 @@ void FontTextureAtlas::CopyDataIntoSlot(const Slot* slot, const Array<byte>& dat
         }
     }
 
-    // Copy each row of the texture
+    // Actual data copy
     for (uint32 row = padding; row < slot->Height - padding; row++)
     {
         rowData.SrcRow = row - padding;
         rowData.DstRow = row;
-
         copyRow(rowData);
     }
 

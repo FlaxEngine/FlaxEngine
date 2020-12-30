@@ -230,16 +230,15 @@ private:
     GPUDeviceVulkan* _device;
     VkDescriptorPool _handle;
 
-    uint32 DescriptorSetsMax;
-    uint32 AllocatedDescriptorSetsCount;
-    uint32 AllocatedDescriptorSetsCountMax;
+    uint32 _descriptorSetsMax;
+    uint32 _allocatedDescriptorSetsCount;
+    uint32 _allocatedDescriptorSetsCountMax;
 
-    const DescriptorSetLayoutVulkan& Layout;
+    const DescriptorSetLayoutVulkan& _layout;
 
 public:
 
     DescriptorPoolVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutVulkan& layout);
-
     ~DescriptorPoolVulkan();
 
 public:
@@ -251,25 +250,24 @@ public:
 
     inline bool IsEmpty() const
     {
-        return AllocatedDescriptorSetsCount == 0;
+        return _allocatedDescriptorSetsCount == 0;
     }
 
     inline bool CanAllocate(const DescriptorSetLayoutVulkan& layout) const
     {
-        return DescriptorSetsMax > AllocatedDescriptorSetsCount + layout.GetLayouts().Count();
+        return _descriptorSetsMax > _allocatedDescriptorSetsCount + layout.GetLayouts().Count();
     }
 
     inline uint32 GetAllocatedDescriptorSetsCount() const
     {
-        return AllocatedDescriptorSetsCount;
+        return _allocatedDescriptorSetsCount;
     }
 
-    void TrackAddUsage(const DescriptorSetLayoutVulkan& layout);
+public:
 
+    void Track(const DescriptorSetLayoutVulkan& layout);
     void TrackRemoveUsage(const DescriptorSetLayoutVulkan& layout);
-
     void Reset();
-
     bool AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& descriptorSetAllocateInfo, VkDescriptorSet* result);
 };
 
@@ -416,14 +414,14 @@ struct DescriptorSetWriteContainerVulkan
     Array<VkDescriptorImageInfo> DescriptorImageInfo;
     Array<VkDescriptorBufferInfo> DescriptorBufferInfo;
     Array<VkWriteDescriptorSet> DescriptorWrites;
-    Array<uint8> BindingToDynamicOffsetMap;
+    Array<byte> BindingToDynamicOffset;
 
     void Release()
     {
         DescriptorImageInfo.Resize(0);
         DescriptorBufferInfo.Resize(0);
         DescriptorWrites.Resize(0);
-        BindingToDynamicOffsetMap.Resize(0);
+        BindingToDynamicOffset.Resize(0);
     }
 };
 
@@ -431,24 +429,14 @@ class DescriptorSetWriterVulkan
 {
 public:
 
-    VkWriteDescriptorSet* WriteDescriptors;
-    uint8* BindingToDynamicOffsetMap;
-    uint32* DynamicOffsets;
-    uint32 WritesCount;
+    VkWriteDescriptorSet* WriteDescriptors = nullptr;
+    byte* BindingToDynamicOffset = nullptr;
+    uint32* DynamicOffsets = nullptr;
+    uint32 WritesCount = 0;
 
 public:
 
-    DescriptorSetWriterVulkan()
-        : WriteDescriptors(nullptr)
-        , BindingToDynamicOffsetMap(nullptr)
-        , DynamicOffsets(nullptr)
-        , WritesCount(0)
-    {
-    }
-
-public:
-
-    uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, uint8* bindingToDynamicOffsetMap);
+    uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, byte* bindingToDynamicOffset);
 
     bool WriteUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
     {
@@ -471,7 +459,7 @@ public:
         bool edited = DescriptorSet::CopyAndReturnNotEqual(bufferInfo->buffer, buffer);
         edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->offset, offset);
         edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->range, range);
-        const uint8 dynamicOffsetIndex = BindingToDynamicOffsetMap[descriptorIndex];
+        const byte dynamicOffsetIndex = BindingToDynamicOffset[descriptorIndex];
         DynamicOffsets[dynamicOffsetIndex] = dynamicOffset;
         return edited;
     }

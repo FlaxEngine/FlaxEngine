@@ -23,9 +23,8 @@
 #define DX11_FORCE_USE_DX10 0
 #define DX11_FORCE_USE_DX10_1 0
 
-static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* outFeatureLevel)
+static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* featureLevel)
 {
-    // Temporary data
     ID3D11Device* device = nullptr;
     ID3D11DeviceContext* context = nullptr;
     uint32 deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
@@ -33,26 +32,22 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
     deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    D3D_FEATURE_LEVEL requestedFeatureLevels[] =
+    // Pick the first level
+    D3D_FEATURE_LEVEL featureLevels[] =
     {
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0
     };
-
-    int32 firstAllowedFeatureLevel = 0;
-    int32 numAllowedFeatureLevels = ARRAY_COUNT(requestedFeatureLevels);
-    while (firstAllowedFeatureLevel < numAllowedFeatureLevels)
+    int32 levelIndex = 0;
+    while (levelIndex < ARRAY_COUNT(featureLevels))
     {
-        if (requestedFeatureLevels[firstAllowedFeatureLevel] == maxFeatureLevel)
-        {
+        if (featureLevels[levelIndex] == maxFeatureLevel)
             break;
-        }
-        firstAllowedFeatureLevel++;
+        levelIndex++;
     }
-    numAllowedFeatureLevels -= firstAllowedFeatureLevel;
-    if (numAllowedFeatureLevels == 0)
+    if (levelIndex >= ARRAY_COUNT(featureLevels))
     {
         return false;
     }
@@ -63,18 +58,16 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
         D3D_DRIVER_TYPE_UNKNOWN,
         NULL,
         deviceFlags,
-        &requestedFeatureLevels[firstAllowedFeatureLevel],
-        numAllowedFeatureLevels,
+        &featureLevels[levelIndex],
+        ARRAY_COUNT(featureLevels) - levelIndex,
         D3D11_SDK_VERSION,
         &device,
-        outFeatureLevel,
+        featureLevel,
         &context
     )))
     {
-        // Release created stuff
         device->Release();
         context->Release();
-
         return true;
     }
 

@@ -119,7 +119,7 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
 
 			if (value != 0.0f)
 			{
-				// Using Gather: xyzw in counter clockwise order starting with the sample to the lower left of the queried location
+				// Gather returns xyzw which is counter clockwise order starting with the sample to the lower left of the queried location
 				#if CAN_USE_GATHER
 				
 					v1[(col + FS_2) / 2] = shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
