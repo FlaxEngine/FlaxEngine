@@ -161,7 +161,7 @@ namespace FlaxEditor.Modules
             var undoRedo = Editor.Undo;
             var gizmo = Editor.MainTransformGizmo;
             var state = Editor.StateMachine.CurrentState;
-            var canEditScene = state.CanEditScene;
+            var canEditScene = state.CanEditScene && Level.IsAnySceneLoaded;
             var canUseUndoRedo = state.CanUseUndoRedo;
             var canEnterPlayMode = state.CanEnterPlayMode && Level.IsAnySceneLoaded;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
@@ -179,7 +179,7 @@ namespace FlaxEditor.Modules
             _toolStripRotate.Checked = gizmoMode == TransformGizmoBase.Mode.Rotate;
             _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
-            _toolStripBuildScenes.Enabled = canEditScene && !isPlayMode;
+            _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
