@@ -138,9 +138,9 @@ public:
         float l;
         do
         {
-            result.X = GetFraction() * 2.f - 1.f;
-            result.Y = GetFraction() * 2.f - 1.f;
-            result.Z = GetFraction() * 2.f - 1.f;
+            result.X = GetFraction() * 2.0f - 1.0f;
+            result.Y = GetFraction() * 2.0f - 1.0f;
+            result.Z = GetFraction() * 2.0f - 1.0f;
             l = result.LengthSquared();
         } while (l > 1.0f || l < ZeroTolerance);
         return Vector3::Normalize(result);

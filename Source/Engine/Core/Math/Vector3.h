@@ -866,9 +866,9 @@ public:
     /// <summary>
     /// Finds the best arbitrary axis vectors to represent U and V axes of a plane, by using this vector as the normal of the plane.
     /// </summary>
-    /// <param name="Axis1">The reference to first axis.</param>
-    /// <param name="Axis2">The reference to second axis.</param>
-    void FindBestAxisVectors(Vector3& Axis1, Vector3& Axis2) const;
+    /// <param name="firstAxis">The reference to first axis.</param>
+    /// <param name="secondAxis">The reference to second axis.</param>
+    void FindBestAxisVectors(Vector3& firstAxis, Vector3& secondAxis) const;
 
     static Vector3 Round(const Vector3& v)
     {

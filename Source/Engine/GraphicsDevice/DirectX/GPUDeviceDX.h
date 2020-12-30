@@ -267,43 +267,33 @@ protected:
     // [GPUDevice]
     bool Init() override
     {
-        // Cache adapter description
         const DXGI_ADAPTER_DESC& adapterDesc = _adapter->Description;
         const uint64 dedicatedVideoMemory = static_cast<uint64>(adapterDesc.DedicatedVideoMemory);
         const uint64 dedicatedSystemMemory = static_cast<uint64>(adapterDesc.DedicatedSystemMemory);
         const uint64 sharedSystemMemory = static_cast<uint64>(adapterDesc.SharedSystemMemory);
 
-        // Total amount of system memory clamped to 8 GB
-        const uint64 totalPhysicalMemory = Math::Min(Platform::GetMemoryStats().TotalPhysicalMemory, 8Ull * 1024Ull * 1024Ull * 1024Ull);
-
-        // Consider 50% of the shared memory but max 25% of total system memory
-        const uint64 consideredSharedSystemMemory = Math::Min(sharedSystemMemory / 2Ull, totalPhysicalMemory / 4Ull);
-
         // Calculate total GPU memory
+        const uint64 totalPhysicalMemory = Math::Min(Platform::GetMemoryStats().TotalPhysicalMemory, 16Ull * 1024Ull * 1024Ull * 1024Ull);
+        const uint64 totalSystemMemory = Math::Min(sharedSystemMemory / 2Ull, totalPhysicalMemory / 4Ull);
         TotalGraphicsMemory = 0;
         if (_adapter->IsIntel())
         {
-            // Use total memory for integrated cards
-            TotalGraphicsMemory = dedicatedVideoMemory + dedicatedSystemMemory + consideredSharedSystemMemory;
+            TotalGraphicsMemory = dedicatedVideoMemory + dedicatedSystemMemory + totalSystemMemory;
         }
         else if (dedicatedVideoMemory >= 200 * 1024 * 1024)
         {
-            // Use dedicated video memory, if it's more than 200 MB
             TotalGraphicsMemory = dedicatedVideoMemory;
         }
         else if (dedicatedSystemMemory >= 200 * 1024 * 1024)
         {
-            // Use dedicated system memory, if it's more than 200 MB
             TotalGraphicsMemory = dedicatedSystemMemory;
         }
         else if (sharedSystemMemory >= 400 * 1024 * 1024)
         {
-            // Use some shared system memory, if it's more than 400 MB
-            TotalGraphicsMemory = consideredSharedSystemMemory;
+            TotalGraphicsMemory = totalSystemMemory;
         }
         else
         {
-            // Otherwise consider 25% of total system memory for graphics
             TotalGraphicsMemory = totalPhysicalMemory / 4Ull;
         }
 

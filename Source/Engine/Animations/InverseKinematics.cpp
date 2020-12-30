@@ -17,7 +17,7 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
     Vector3 jointPos = jointNode.Translation;
     Vector3 desiredDelta = target - rootNode.Translation;
     float desiredLength = desiredDelta.Length();
-    float maxLimbLength = lowerLimbLength + upperLimbLength;
+    float limbLengthLimit = lowerLimbLength + upperLimbLength;
 
     Vector3 desiredDir;
     if (desiredLength < ZeroTolerance)
@@ -56,17 +56,17 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
 
     if (allowStretching)
     {
-        const float startStretchRatio = 1.0f;
-        const float scaleRange = maxStretchScale - startStretchRatio;
-        if (scaleRange > ZeroTolerance && maxLimbLength > ZeroTolerance)
+        const float initialStretchRatio = 1.0f;
+        const float range = maxStretchScale - initialStretchRatio;
+        if (range > ZeroTolerance && limbLengthLimit > ZeroTolerance)
         {
-            const float reachRatio = desiredLength / maxLimbLength;
-            const float scalingFactor = (maxStretchScale - 1.0f) * Math::Saturate((reachRatio - startStretchRatio) / scaleRange);
+            const float reachRatio = desiredLength / limbLengthLimit;
+            const float scalingFactor = (maxStretchScale - 1.0f) * Math::Saturate((reachRatio - initialStretchRatio) / range);
             if (scalingFactor > ZeroTolerance)
             {
                 lowerLimbLength *= 1.0f + scalingFactor;
                 upperLimbLength *= 1.0f + scalingFactor;
-                maxLimbLength *= 1.0f + scalingFactor;
+                limbLengthLimit *= 1.0f + scalingFactor;
             }
         }
     }
@@ -74,9 +74,9 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
     Vector3 resultEndPos = target;
     Vector3 resultJointPos = jointPos;
 
-    if (desiredLength >= maxLimbLength)
+    if (desiredLength >= limbLengthLimit)
     {
-        resultEndPos = rootNode.Translation + maxLimbLength * desiredDir;
+        resultEndPos = rootNode.Translation + limbLengthLimit * desiredDir;
         resultJointPos = rootNode.Translation + upperLimbLength * desiredDir;
     }
     else

@@ -355,22 +355,21 @@ namespace Flax.Build
         /// <returns>Thew relative path from the given directory.</returns>
         public static string MakePathRelativeTo(string path, string directory)
         {
-            // Find how much of the path is common between the two paths. This length does not include a trailing directory separator character
-            int commonDirectoryLength = -1;
+            int sharedDirectoryLength = -1;
             for (int i = 0;; i++)
             {
                 if (i == path.Length)
                 {
-                    // Check if two paths are the same
+                    // Paths are the same
                     if (i == directory.Length)
                     {
                         return string.Empty;
                     }
 
-                    // Check if we're finishing on a complete directory name
+                    // Finished on a complete directory
                     if (directory[i] == Path.DirectorySeparatorChar)
                     {
-                        commonDirectoryLength = i;
+                        sharedDirectoryLength = i;
                     }
 
                     break;
@@ -378,16 +377,15 @@ namespace Flax.Build
 
                 if (i == directory.Length)
                 {
-                    // Check whether the end of the directory name coincides with a boundary for the current name
+                    // End of the directory name starts with a boundary for the current name
                     if (path[i] == Path.DirectorySeparatorChar)
                     {
-                        commonDirectoryLength = i;
+                        sharedDirectoryLength = i;
                     }
 
                     break;
                 }
 
-                // Check the two paths match, and bail if they don't. Increase the common directory length if we've reached a separator
                 if (string.Compare(path, i, directory, i, 1, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     break;
@@ -395,19 +393,19 @@ namespace Flax.Build
 
                 if (path[i] == Path.DirectorySeparatorChar)
                 {
-                    commonDirectoryLength = i;
+                    sharedDirectoryLength = i;
                 }
             }
 
-            // If there's no relative path, just return the absolute path
-            if (commonDirectoryLength == -1)
+            // No shared path found
+            if (sharedDirectoryLength == -1)
             {
                 return path;
             }
 
-            // Append all the '..' separators to get back to the common directory, then the rest of the string to reach the target item
+            // Add all the '..' separators to get back to the shared directory,
             StringBuilder result = new StringBuilder();
-            for (int i = commonDirectoryLength + 1; i < directory.Length; i++)
+            for (int i = sharedDirectoryLength + 1; i < directory.Length; i++)
             {
                 // Move up a directory
                 result.Append("..");
@@ -420,9 +418,9 @@ namespace Flax.Build
                 }
             }
 
-            if (commonDirectoryLength + 1 < path.Length)
+            if (sharedDirectoryLength + 1 < path.Length)
             {
-                result.Append(path, commonDirectoryLength + 1, path.Length - commonDirectoryLength - 1);
+                result.Append(path, sharedDirectoryLength + 1, path.Length - sharedDirectoryLength - 1);
             }
 
             return result.ToString();

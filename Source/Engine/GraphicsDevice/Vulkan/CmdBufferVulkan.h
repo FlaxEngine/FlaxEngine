@@ -34,7 +34,7 @@ public:
 private:
 
     GPUDeviceVulkan* _device;
-    VkCommandBuffer _commandBufferHandle;
+    VkCommandBuffer _commandBuffer;
     State _state;
 
     Array<VkPipelineStageFlags> _waitFlags;
@@ -44,8 +44,6 @@ private:
     void MarkSemaphoresAsSubmitted()
     {
         _waitFlags.Clear();
-
-        // Move to pending delete list
         _submittedWaitSemaphores = _waitSemaphores;
         _waitSemaphores.Clear();
     }
@@ -55,11 +53,11 @@ private:
     int32 _eventsBegin = 0;
 #endif
 
-    // Last value passed after the fence got signaled
-    volatile uint64 _fenceSignaledCounter;
-
-    // Last value when we submitted the cmd buffer; useful to track down if something waiting for the fence has actually been submitted
+    // The latest value when command buffer was submitted.
     volatile uint64 _submittedFenceCounter;
+
+    // The latest value passed after the fence was signaled.
+    volatile uint64 _fenceSignaledCounter;
 
     CmdBufferPoolVulkan* _commandBufferPool;
 
@@ -73,17 +71,17 @@ public:
 
 public:
 
-    CmdBufferPoolVulkan* GetOwner()
+    CmdBufferPoolVulkan* GetOwner() const
     {
         return _commandBufferPool;
     }
 
-    State GetState()
+    State GetState() const
     {
         return _state;
     }
 
-    FenceVulkan* GetFence()
+    FenceVulkan* GetFence() const
     {
         return _fence;
     }
@@ -115,7 +113,7 @@ public:
 
     inline VkCommandBuffer GetHandle() const
     {
-        return _commandBufferHandle;
+        return _commandBuffer;
     }
 
     inline volatile uint64 GetFenceSignaledCounter() const
@@ -155,30 +153,28 @@ public:
 
 class CmdBufferPoolVulkan
 {
+    friend class CmdBufferManagerVulkan;
 private:
 
-    GPUDeviceVulkan* Device;
-    VkCommandPool Handle;
+    GPUDeviceVulkan* _device;
+    VkCommandPool _handle;
+    Array<CmdBufferVulkan*> _cmdBuffers;
 
     CmdBufferVulkan* Create();
 
-    Array<CmdBufferVulkan*> CmdBuffers;
-
     void Create(uint32 queueFamilyIndex);
-    friend class CmdBufferManagerVulkan;
 
 public:
 
     CmdBufferPoolVulkan(GPUDeviceVulkan* device);
-
     ~CmdBufferPoolVulkan();
 
 public:
 
     inline VkCommandPool GetHandle() const
     {
-        ASSERT(Handle != VK_NULL_HANDLE);
-        return Handle;
+        ASSERT(_handle != VK_NULL_HANDLE);
+        return _handle;
     }
 
     void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr);
@@ -188,11 +184,11 @@ class CmdBufferManagerVulkan
 {
 private:
 
-    GPUDeviceVulkan* Device;
-    CmdBufferPoolVulkan Pool;
-    QueueVulkan* Queue;
-    CmdBufferVulkan* ActiveCmdBuffer;
-    Array<GPUTimerQueryVulkan*> QueriesInProgress;
+    GPUDeviceVulkan* _device;
+    CmdBufferPoolVulkan _pool;
+    QueueVulkan* _queue;
+    CmdBufferVulkan* _activeCmdBuffer;
+    Array<GPUTimerQueryVulkan*> _queriesInProgress;
 
 public:
 
@@ -200,45 +196,45 @@ public:
 
 public:
 
-    inline VkCommandPool GetHandle() const
+    FORCE_INLINE VkCommandPool GetHandle() const
     {
-        return Pool.GetHandle();
+        return _pool.GetHandle();
     }
 
-    inline CmdBufferVulkan* GetActiveCmdBuffer() const
+    FORCE_INLINE CmdBufferVulkan* GetActiveCmdBuffer() const
     {
-        return ActiveCmdBuffer;
+        return _activeCmdBuffer;
     }
 
-    inline bool HasPendingActiveCmdBuffer() const
+    FORCE_INLINE bool HasPendingActiveCmdBuffer() const
     {
-        return ActiveCmdBuffer != nullptr;
+        return _activeCmdBuffer != nullptr;
     }
 
-    inline bool HasQueriesInProgress() const
+    FORCE_INLINE bool HasQueriesInProgress() const
     {
-        return QueriesInProgress.Count() != 0;
+        return _queriesInProgress.Count() != 0;
     }
+
+    CmdBufferVulkan* GetCmdBuffer()
+    {
+        if (!_activeCmdBuffer)
+            PrepareForNewActiveCommandBuffer();
+        return _activeCmdBuffer;
+    }
+
+public:
 
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
 
     void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);
 
-    // Update the fences of all cmd buffers except SkipCmdBuffer
     void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr)
     {
-        Pool.RefreshFenceStatus(skipCmdBuffer);
+        _pool.RefreshFenceStatus(skipCmdBuffer);
     }
 
     void PrepareForNewActiveCommandBuffer();
-
-    inline CmdBufferVulkan* GetCmdBuffer()
-    {
-        if (!ActiveCmdBuffer)
-            PrepareForNewActiveCommandBuffer();
-
-        return ActiveCmdBuffer;
-    }
 
     void OnQueryBegin(GPUTimerQueryVulkan* query);
     void OnQueryEnd(GPUTimerQueryVulkan* query);

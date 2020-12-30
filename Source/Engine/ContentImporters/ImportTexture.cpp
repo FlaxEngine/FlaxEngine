@@ -528,14 +528,14 @@ CreateAssetResult ImportTexture::ImportIES(class CreateAssetContext& context)
 
     // Load IES profile data
     IESLoader loader;
-    if (loader.Load(fileData))
+    if (loader.Load(fileData.Get()))
     {
         return CreateAssetResult::Error;
     }
 
     // Extract texture data
     Array<byte> rawData;
-    const float multiplier = loader.ExtractInR16F(rawData);
+    const float multiplier = loader.ExtractInR16(rawData);
 
     // Fill texture header
     TextureHeader textureHeader;

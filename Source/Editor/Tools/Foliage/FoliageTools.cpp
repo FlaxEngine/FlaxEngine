@@ -36,17 +36,13 @@ struct GeometryTriangle
 
     void GetRandomPoint(Vector3& result) const
     {
-        // Sample parallelogram
         float x = Random::Rand();
         float y = Random::Rand();
-
-        // Flip if we're outside the triangle
         if (x + y > 1.0f)
         {
             x = 1.0f - x;
             y = 1.0f - y;
         }
-
         result = Vertex + x * Vector1 + y * Vector2;
     }
 };
@@ -234,15 +230,13 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
                     continue;
                 }
 
-                // This is the total set of instances disregarding parameters like slope, height or layer
-                const float desiredInstanceCountFloat = triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f);
+                // Calculate amount of foliage instances to place
+                const float targetInstanceCountEst = triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f);
+                const int32 targetInstanceCount = targetInstanceCountEst > 1.0f ? Math::RoundToInt(targetInstanceCountEst) : Random::Rand() < targetInstanceCountEst ? 1 : 0;
 
-                // Allow a single instance with a random chance, if the brush is smaller than the density
-                const int32 desiredInstanceCount = desiredInstanceCountFloat > 1.0f ? Math::RoundToInt(desiredInstanceCountFloat) : Random::Rand() < desiredInstanceCountFloat ? 1 : 0;
-
-                // Try to new instances
+                // Try to add new instances
                 FoliagePlacement placement;
-                for (int32 j = 0; j < desiredInstanceCount; j++)
+                for (int32 j = 0; j < targetInstanceCount; j++)
                 {
                     triangle.GetRandomPoint(placement.Location);
 

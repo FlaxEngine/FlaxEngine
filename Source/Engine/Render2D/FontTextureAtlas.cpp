@@ -20,7 +20,7 @@ FontTextureAtlas::FontTextureAtlas(const SpawnParams& params, const AssetInfo* i
 
 uint32 FontTextureAtlas::GetPaddingAmount() const
 {
-    return (_paddingStyle == NoPadding ? 0 : 1);
+    return _paddingStyle == NoPadding ? 0 : 1;
 }
 
 void FontTextureAtlas::Setup(PixelFormat format, PaddingStyle paddingStyle)
@@ -97,107 +97,95 @@ bool FontTextureAtlas::Invalidate(uint32 x, uint32 y, uint32 width, uint32 heigh
 
 void FontTextureAtlas::CopyDataIntoSlot(const Slot* slot, const Array<byte>& data)
 {
-    // Copy pixel data to the texture
     uint8* start = &_data[slot->Y * _width * _bytesPerPixel + slot->X * _bytesPerPixel];
-
-    // Account for same padding on each sides
     const uint32 padding = GetPaddingAmount();
     const uint32 allPadding = padding * 2;
+    const uint32 srcWidth = slot->Width - allPadding;
+    const uint32 srcHeight = slot->Height - allPadding;
 
-    // The width of the source texture without padding (actual width)
-    const uint32 sourceWidth = slot->Width - allPadding;
-    const uint32 sourceHeight = slot->Height - allPadding;
+    RowData rowData;
+    rowData.DstData = start;
+    rowData.SrcData = data.Get();
+    rowData.DstTextureWidth = _width;
+    rowData.SrcTextureWidth = srcWidth;
+    rowData.RowWidth = slot->Width;
 
-    CopyRowData copyRowData;
-    copyRowData.DestData = start;
-    copyRowData.SrcData = data.Get();
-    copyRowData.DestTextureWidth = _width;
-    copyRowData.SrcTextureWidth = sourceWidth;
-    copyRowData.RowWidth = slot->Width;
-
-    // Apply the padding for bilinear filtering
-    // Not used if no padding (assumes sampling outside boundaries of the sub texture is not possible)
+    // Start with padding
     if (padding > 0)
     {
-        // Copy first color row into padding. 
-        copyRowData.SrcRow = 0;
-        copyRowData.DestRow = 0;
+        rowData.SrcRow = 0;
+        rowData.DstRow = 0;
 
         if (_paddingStyle == DilateBorder)
         {
-            copyRow(copyRowData);
+            copyRow(rowData);
         }
         else
         {
-            zeroRow(copyRowData);
+            zeroRow(rowData);
         }
     }
 
     // Copy each row of the texture
     for (uint32 row = padding; row < slot->Height - padding; row++)
     {
-        copyRowData.SrcRow = row - padding;
-        copyRowData.DestRow = row;
+        rowData.SrcRow = row - padding;
+        rowData.DstRow = row;
 
-        copyRow(copyRowData);
+        copyRow(rowData);
     }
 
+    // Finish with padding
     if (padding > 0)
     {
-        // Copy last color row into padding row for bilinear filtering
-        copyRowData.SrcRow = sourceHeight - 1;
-        copyRowData.DestRow = slot->Height - padding;
-
+        rowData.SrcRow = srcHeight - 1;
+        rowData.DstRow = slot->Height - padding;
         if (_paddingStyle == DilateBorder)
-        {
-            copyRow(copyRowData);
-        }
+            copyRow(rowData);
         else
-        {
-            zeroRow(copyRowData);
-        }
+            zeroRow(rowData);
     }
 }
 
-void FontTextureAtlas::copyRow(const CopyRowData& copyRowData) const
+void FontTextureAtlas::copyRow(const RowData& copyRowData) const
 {
     const byte* data = copyRowData.SrcData;
-    byte* start = copyRowData.DestData;
-    const uint32 sourceWidth = copyRowData.SrcTextureWidth;
-    const uint32 destWidth = copyRowData.DestTextureWidth;
+    byte* start = copyRowData.DstData;
+    const uint32 srdWidth = copyRowData.SrcTextureWidth;
+    const uint32 dstWidth = copyRowData.DstTextureWidth;
     const uint32 srcRow = copyRowData.SrcRow;
-    const uint32 destRow = copyRowData.DestRow;
+    const uint32 dstRow = copyRowData.DstRow;
     const uint32 padding = GetPaddingAmount();
 
-    const byte* sourceDataAddr = &data[(srcRow * sourceWidth) * _bytesPerPixel];
-    byte* destDataAddr = &start[(destRow * destWidth + padding) * _bytesPerPixel];
-    Platform::MemoryCopy(destDataAddr, sourceDataAddr, sourceWidth * _bytesPerPixel);
+    const byte* srcData = &data[srcRow * srdWidth * _bytesPerPixel];
+    byte* dstData = &start[(dstRow * dstWidth + padding) * _bytesPerPixel];
+    Platform::MemoryCopy(dstData, srcData, srdWidth * _bytesPerPixel);
 
     if (padding > 0)
     {
-        byte* destPaddingPixelLeft = &start[(destRow * destWidth) * _bytesPerPixel];
-        byte* destPaddingPixelRight = destPaddingPixelLeft + ((copyRowData.RowWidth - 1) * _bytesPerPixel);
+        byte* dstPaddingPixelLeft = &start[dstRow * dstWidth * _bytesPerPixel];
+        byte* dstPaddingPixelRight = dstPaddingPixelLeft + (copyRowData.RowWidth - 1) * _bytesPerPixel;
         if (_paddingStyle == DilateBorder)
         {
-            const byte* firstPixel = sourceDataAddr;
-            const byte* lastPixel = sourceDataAddr + ((sourceWidth - 1) * _bytesPerPixel);
-            Platform::MemoryCopy(destPaddingPixelLeft, firstPixel, _bytesPerPixel);
-            Platform::MemoryCopy(destPaddingPixelRight, lastPixel, _bytesPerPixel);
+            const byte* firstPixel = srcData;
+            const byte* lastPixel = srcData + (srdWidth - 1) * _bytesPerPixel;
+            Platform::MemoryCopy(dstPaddingPixelLeft, firstPixel, _bytesPerPixel);
+            Platform::MemoryCopy(dstPaddingPixelRight, lastPixel, _bytesPerPixel);
         }
         else
         {
-            Platform::MemoryClear(destPaddingPixelLeft, _bytesPerPixel);
-            Platform::MemoryClear(destPaddingPixelRight, _bytesPerPixel);
+            Platform::MemoryClear(dstPaddingPixelLeft, _bytesPerPixel);
+            Platform::MemoryClear(dstPaddingPixelRight, _bytesPerPixel);
         }
     }
 }
 
-void FontTextureAtlas::zeroRow(const CopyRowData& copyRowData) const
+void FontTextureAtlas::zeroRow(const RowData& copyRowData) const
 {
-    const uint32 destWidth = copyRowData.DestTextureWidth;
-    const uint32 destRow = copyRowData.DestRow;
-    byte* destData = &copyRowData.DestData[destRow * destWidth * _bytesPerPixel];
-    Platform::MemoryClear(destData, copyRowData.RowWidth * _bytesPerPixel);
+    const uint32 dstWidth = copyRowData.DstTextureWidth;
+    const uint32 dstRow = copyRowData.DstRow;
+    byte* dstData = &copyRowData.DstData[dstRow * dstWidth * _bytesPerPixel];
+    Platform::MemoryClear(dstData, copyRowData.RowWidth * _bytesPerPixel);
 }
 
 void FontTextureAtlas::unload(bool isReloading)

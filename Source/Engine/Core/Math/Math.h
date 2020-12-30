@@ -18,10 +18,10 @@
 #define ZeroTolerance 1e-6f
 
 // Converts radians to degrees.
-#define RadiansToDegrees (180.f / PI)
+#define RadiansToDegrees (180.0f / PI)
 
 // Converts degrees to radians.
-#define DegreesToRadians (PI / 180.f)
+#define DegreesToRadians (PI / 180.0f)
 
 namespace Math
 {
@@ -31,97 +31,14 @@ namespace Math
     /// <param name="angle">The input angle (in radians).</param>
     /// <param name="sine">The output sine value.</param>
     /// <param name="cosine">The output cosine value.</param>
-    static void SinCos(float angle, float& sine, float& cosine)
-    {
-#if 1
-        // Map value to y in [-pi,pi], x = 2*pi*quotient + remainder
-        float quotient = PI_INV * 0.5f * angle;
-        if (angle >= 0.0f)
-        {
-            quotient = (float)(int)(quotient + 0.5f);
-        }
-        else
-        {
-            quotient = (float)(int)(quotient - 0.5f);
-        }
-        float y = angle - 2.0f * PI * quotient;
-
-        // Map y to [-pi/2,pi/2] with sin(y) = sin(value)
-        float sign;
-        if (y > PI_OVER_2)
-        {
-            y = PI - y;
-            sign = -1.0f;
-        }
-        else if (y < -PI_OVER_2)
-        {
-            y = -PI - y;
-            sign = -1.0f;
-        }
-        else
-        {
-            sign = +1.0f;
-        }
-
-        const float y2 = y * y;
-
-        // 11-degree minimax approximation
-        sine = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
-
-        // 10-degree minimax approximation
-        const float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
-        cosine = sign * p;
-#else
-		sine = sin(angle);
-		cosine = cos(angle);
-#endif
-    }
+    FLAXENGINE_API void SinCos(float angle, float& sine, float& cosine);
 
     /// <summary>
     /// Computes the base 2 logarithm for an integer value that is greater than 0. The result is rounded down to the nearest integer.
     /// </summary>
     /// <param name="value">The value to compute the log of.</param>
     /// <returns>The Log2 of value. 0 if value is 0.</returns>
-    static uint32 FloorLog2(uint32 value)
-    {
-        // Reference implementation
-        // uint32 bit = 32;
-        // for (; bit > 0;)
-        // {
-        // 	bit--;
-        // 	if (value & (1 << bit))
-        // 		break;
-        // }
-        // return bit;
-
-        // Optimized version http://codinggorilla.domemtech.com/?p=81 or http://en.wikipedia.org/wiki/Binary_logarithm but modified to return 0 for a input value of 0
-        uint32 pos = 0;
-        if (value >= 1 << 16)
-        {
-            value >>= 16;
-            pos += 16;
-        }
-        if (value >= 1 << 8)
-        {
-            value >>= 8;
-            pos += 8;
-        }
-        if (value >= 1 << 4)
-        {
-            value >>= 4;
-            pos += 4;
-        }
-        if (value >= 1 << 2)
-        {
-            value >>= 2;
-            pos += 2;
-        }
-        if (value >= 1 << 1)
-        {
-            pos += 1;
-        }
-        return value == 0 ? 0 : pos;
-    }
+    FLAXENGINE_API uint32 FloorLog2(uint32 value);
 
     static FORCE_INLINE float Trunc(float value)
     {
@@ -712,68 +629,38 @@ namespace Math
 
     static float ClampAxis(float angle)
     {
-        // returns angle in the range (-360,360)
         angle = Mod(angle, 360.f);
-
-        if (angle < 0.f)
-        {
-            // shift to [0,360) range
-            angle += 360.f;
-        }
-
+        if (angle < 0.0f)
+            angle += 360.0f;
         return angle;
     }
 
     static float NormalizeAxis(float angle)
     {
-        // returns angle in the range [0,360)
         angle = ClampAxis(angle);
-
         if (angle > 180.f)
-        {
-            // shift to (-180,180]
             angle -= 360.f;
-        }
-
         return angle;
     }
 
     // Find the smallest angle between two headings (in radians).
     static float FindDeltaAngle(float a1, float a2)
     {
-        // Find the difference
-        float Delta = a2 - a1;
-
-        // If change is larger than PI
-        if (Delta > PI)
-        {
-            // Flip to negative equivalent
-            Delta = Delta - PI * 2.0f;
-        }
-        else if (Delta < -PI)
-        {
-            // Otherwise, if change is smaller than -PI
-            // Flip to positive equivalent
-            Delta = Delta + PI * 2.0f;
-        }
-
-        // Return delta in [-PI,PI] range
-        return Delta;
+        float delta = a2 - a1;
+        if (delta > PI)
+            delta = delta - PI * 2.0f;
+        else if (delta < -PI)
+            delta = delta + PI * 2.0f;
+        return delta;
     }
 
     // Given a heading which may be outside the +/- PI range, 'unwind' it back into that range
     static float UnwindRadians(float a)
     {
         while (a > PI)
-        {
             a -= (float)PI * 2.0f;
-        }
-
         while (a < -PI)
-        {
             a += (float)PI * 2.0f;
-        }
-
         return a;
     }
 
@@ -781,15 +668,9 @@ namespace Math
     static float UnwindDegrees(float a)
     {
         while (a > 180.f)
-        {
             a -= 360.f;
-        }
-
         while (a < -180.f)
-        {
             a += 360.f;
-        }
-
         return a;
     }
 
@@ -818,13 +699,9 @@ namespace Math
     static float SmoothStep(float a, float b, float x)
     {
         if (x < a)
-        {
             return 0.0f;
-        }
         if (x >= b)
-        {
             return 1.0f;
-        }
         const float fraction = (x - a) / (b - a);
         return fraction * fraction * (3.0f - 2.0f * fraction);
     }
@@ -852,8 +729,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpEaseIn(const T& a, const T& b, float alpha, float exponent)
     {
-        float const modifiedAlpha = Pow(alpha, exponent);
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = Pow(alpha, exponent);
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -862,8 +739,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpEaseOut(const T& a, const T& b, float alpha, float exponent)
     {
-        float const modifiedAlpha = 1.f - Pow(1.f - alpha, exponent);
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = 1.f - Pow(1.f - alpha, exponent);
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -881,8 +758,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpSinIn(const T& a, const T& b, float alpha)
     {
-        float const modifiedAlpha = -1.f * Cos(alpha * PI_HALF) + 1.f;
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = -1.f * Cos(alpha * PI_HALF) + 1.f;
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -891,8 +768,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpSinOut(const T& a, const T& b, float alpha)
     {
-        float const modifiedAlpha = Sin(alpha * PI_HALF);
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = Sin(alpha * PI_HALF);
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -910,8 +787,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpExpoIn(const T& a, const T& b, float alpha)
     {
-        float const modifiedAlpha = alpha == 0.f ? 0.f : Pow(2.f, 10.f * (alpha - 1.f));
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = alpha == 0.f ? 0.f : Pow(2.f, 10.f * (alpha - 1.f));
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -920,8 +797,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpExpoOut(const T& a, const T& b, float alpha)
     {
-        float const modifiedAlpha = alpha == 1.f ? 1.f : -Pow(2.f, -10.f * alpha) + 1.f;
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = alpha == 1.f ? 1.f : -Pow(2.f, -10.f * alpha) + 1.f;
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -939,8 +816,8 @@ namespace Math
     template<class T>
     static FORCE_INLINE T InterpCircularIn(const T& a, const T& b, float alpha)
     {
-        float const modifiedAlpha = -1.f * (Sqrt(1.f - alpha * alpha) - 1.f);
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = -1.f * (Sqrt(1.f - alpha * alpha) - 1.f);
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>
@@ -950,8 +827,8 @@ namespace Math
     static FORCE_INLINE T InterpCircularOut(const T& a, const T& b, float alpha)
     {
         alpha -= 1.f;
-        float const modifiedAlpha = Sqrt(1.f - alpha * alpha);
-        return Lerp<T>(a, b, modifiedAlpha);
+        const float blend = Sqrt(1.f - alpha * alpha);
+        return Lerp<T>(a, b, blend);
     }
 
     /// <summary>

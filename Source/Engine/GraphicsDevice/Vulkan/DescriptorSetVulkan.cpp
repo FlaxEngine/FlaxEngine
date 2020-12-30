@@ -82,61 +82,24 @@ void DescriptorSetLayoutVulkan::Compile()
 {
     ASSERT(_handles.IsEmpty());
 
-    // Check if we obey limits
+    // Validate device limits for the engine
     const VkPhysicalDeviceLimits& limits = _device->PhysicalDeviceLimits;
-
-    // Check for maxDescriptorSetSamplers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER]
-        < limits.maxDescriptorSetSamplers);
-
-    // Check for maxDescriptorSetUniformBuffers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetUniformBuffers);
-
-    // Check for maxDescriptorSetUniformBuffersDynamic
-    if (!_device->Adapter->IsAMD())
-    {
-        ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC]
-            < limits.maxDescriptorSetUniformBuffersDynamic);
-    }
-
-    // Check for maxDescriptorSetStorageBuffers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetStorageBuffers);
-
-    // Check for maxDescriptorSetStorageBuffersDynamic
-    if (_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] > limits.maxDescriptorSetUniformBuffersDynamic)
-    {
-        // TODO: Downgrade to non-dynamic?
-    }
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetStorageBuffersDynamic);
-
-    // Check for maxDescriptorSetSampledImages
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER]
-        < limits.maxDescriptorSetSampledImages);
-
-    // Check for maxDescriptorSetStorageImages
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER]
-        < limits.maxDescriptorSetStorageImages);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER] + _layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] < limits.maxDescriptorSetSamplers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER]+ _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] < limits.maxDescriptorSetUniformBuffers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] < limits.maxDescriptorSetUniformBuffersDynamic);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER] + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] < limits.maxDescriptorSetStorageBuffers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] < limits.maxDescriptorSetStorageBuffersDynamic);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] + _layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE] + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] < limits.maxDescriptorSetSampledImages);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE] + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER]< limits.maxDescriptorSetStorageImages);
 
     _handles.Resize(_setLayouts.Count());
-
     for (int32 i = 0; i < _setLayouts.Count(); i++)
     {
         auto& layout = _setLayouts[i];
-
         VkDescriptorSetLayoutCreateInfo layoutInfo;
         RenderToolsVulkan::ZeroStruct(layoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
         layoutInfo.bindingCount = layout.LayoutBindings.Count();
         layoutInfo.pBindings = layout.LayoutBindings.Get();
-
         VALIDATE_VULKAN_RESULT(vkCreateDescriptorSetLayout(_device->Device, &layoutInfo, nullptr, &_handles[i]));
     }
 
@@ -162,11 +125,6 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device, const Descri
 
     // The maximum amount of descriptor sets layout allocations to hold
     const uint32 MaxSetsAllocations = 256;
-
-    // Descriptor sets number required to allocate the max number of descriptor sets layout.
-    // When we're hashing pools with types usage ID the descriptor pool can be used for different layouts so the initial layout does not make much sense.
-    // In the latter case we'll be probably over-allocating the descriptor types but given the relatively small number of max allocations this should not have
-    // a serious impact.
     DescriptorSetsMax = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? 1 : Layout.GetLayouts().Count());
     for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
     {

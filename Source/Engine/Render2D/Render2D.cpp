@@ -769,26 +769,22 @@ void Render2D::PopClip()
     OnClipScissors();
 }
 
-void ComputeEffectiveKernelSize(float strength, int32& outKernelSize, int32& outDownSampleAmount)
+void CalculateKernelSize(float strength, int32& kernelSize, int32& downSample)
 {
-    // Auto-compute radius based on the strength
-    outKernelSize = Math::RoundToInt(strength * 3.f);
+    kernelSize = Math::RoundToInt(strength * 3.0f);
 
-    // Down sample if needed
-    if (DownsampleForBlur && outKernelSize > 9)
+    if (DownsampleForBlur && kernelSize > 9)
     {
-        outDownSampleAmount = outKernelSize >= 64 ? 4 : 2;
-        outKernelSize /= outDownSampleAmount;
+        downSample = kernelSize >= 64 ? 4 : 2;
+        kernelSize /= downSample;
     }
 
-    // Kernel sizes must be odd
-    if (outKernelSize % 2 == 0)
+    if (kernelSize % 2 == 0)
     {
-        outKernelSize++;
+        kernelSize++;
     }
 
-    // Clamp kernel to valid bounds
-    outKernelSize = Math::Clamp(outKernelSize, 3, 255);
+    kernelSize = Math::Clamp(kernelSize, 3, 255);
 }
 
 static float GetWeight(float dist, float strength)
@@ -940,16 +936,13 @@ void DrawBatch(int32 startIndex, int32 count)
         int32 renderTargetWidth = Math::Min(Math::RoundToInt(d.AsBlur.Width), limits.MaximumTexture2DSize);
         int32 renderTargetHeight = Math::Min(Math::RoundToInt(d.AsBlur.Height), limits.MaximumTexture2DSize);
 
-        int32 kernelSize = 0;
-        int32 downSampleAmount = 0;
-        ComputeEffectiveKernelSize(blurStrength, kernelSize, downSampleAmount);
-        const bool needDownscale = downSampleAmount > 0;
-
-        if (needDownscale)
+        int32 kernelSize = 0, downSample = 0;
+        CalculateKernelSize(blurStrength, kernelSize, downSample);
+        if (downSample > 0)
         {
-            renderTargetWidth = Math::DivideAndRoundUp(renderTargetWidth, downSampleAmount);
-            renderTargetHeight = Math::DivideAndRoundUp(renderTargetHeight, downSampleAmount);
-            blurStrength /= downSampleAmount;
+            renderTargetWidth = Math::DivideAndRoundUp(renderTargetWidth, downSample);
+            renderTargetHeight = Math::DivideAndRoundUp(renderTargetHeight, downSample);
+            blurStrength /= downSample;
         }
 
         // Skip if no chance to render anything
@@ -1304,10 +1297,8 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 4 * (6 + 3);
 
-    // Half of the width of the filter size to use for anti-aliasing. Increasing this value will increase the fuzziness of line edges.
-    const float filterScale = 1.0f; // Must match HLSL code
-
-    // The amount we increase each side of the line to generate enough pixels
+    // The has to match HLSL code
+    const float filterScale = 1.0f;
     const float thicknessHalf = (2.82842712f + thickness) * 0.5f + filterScale;
 
     for (int32 i = 1; i < 5; i++)

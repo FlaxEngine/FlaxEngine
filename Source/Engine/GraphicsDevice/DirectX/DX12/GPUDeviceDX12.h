@@ -172,12 +172,8 @@ public:
     {
         if (sampleCount <= 8)
         {
-            // 0 has better quality (a more even distribution)
-            // Higher quality levels might be useful for non box filtered AA or when using weighted samples.
             return 0;
         }
-
-        // Not supported.
         return 0xffffffff;
     }
 
@@ -187,7 +183,7 @@ public:
 #endif
 
 private:
-    
+
 #if PLATFORM_XBOX_SCARLETT
     void updateFrameEvents();
 #endif

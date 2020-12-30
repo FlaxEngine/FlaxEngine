@@ -23,8 +23,8 @@ API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API DateTime
 {
 private:
 
-    static const int32 DaysPerMonth[];
-    static const int32 DaysToMonth[];
+    static const int32 CachedDaysPerMonth[];
+    static const int32 CachedDaysToMonth[];
 
 public:
 

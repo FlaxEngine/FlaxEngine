@@ -155,7 +155,7 @@ namespace Flax.Deploy
         }
 
         /// <summary>
-        /// Function to query the registry under HKCU/HKLM Win32/Wow64 software registry keys for a certain install directory.
+        /// Queries the registry entries for a certain install directory of the MsBuild.
         /// </summary>
         /// <returns>True if found MsBuild tool, otherwise false.</returns>
         private static bool TryReadInstallPath(string keyRelativePath, string keyName, string msBuildRelativePath, out string outMsBuildPath)

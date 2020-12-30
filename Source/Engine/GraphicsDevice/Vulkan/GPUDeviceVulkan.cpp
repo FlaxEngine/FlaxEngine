@@ -72,18 +72,6 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
                 return VK_FALSE;
             }
         }
-        if (!StringUtils::Compare(layerPrefix, "DS"))
-        {
-            if (msgCode == 6)
-            {
-                auto* Found = StringUtils::Find(msg, " array layer ");
-                if (Found && Found[13] >= '1' && Found[13] <= '9')
-                {
-                    // Potential bug in the validation layers for slice > 1 on 3d textures
-                    return VK_FALSE;
-                }
-            }
-        }
     }
     else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
     {
@@ -1634,7 +1622,7 @@ bool GPUDeviceVulkan::Init()
 
         if ((curProps.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT)
         {
-            // Prefer a non-gfx transfer queue
+            // Favor a non-gfx transfer queue
             if (transferQueueFamilyIndex == -1 && (curProps.queueFlags & VK_QUEUE_GRAPHICS_BIT) != VK_QUEUE_GRAPHICS_BIT && (curProps.queueFlags & VK_QUEUE_COMPUTE_BIT) != VK_QUEUE_COMPUTE_BIT)
             {
                 transferQueueFamilyIndex = familyIndex;
@@ -2084,10 +2072,10 @@ bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanosecon
     if (result == VK_SUCCESS)
     {
         fence->_signaled = true;
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 void FenceManagerVulkan::ResetFence(FenceVulkan* fence)

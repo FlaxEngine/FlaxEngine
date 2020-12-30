@@ -70,23 +70,21 @@ Color Color::FromHex(const String& hexString, bool& isValid)
     return FromBytes(r, g, b, a);
 }
 
-Color Color::FromHSV(const Vector3& hsv)
+Color Color::FromHSV(float hue, float saturation, float value, float alpha)
 {
-    const float Hue = hsv.X;
-    const float Saturation = hsv.Y;
-    const float Value = hsv.Z;
+    const float hDiv60 = hue / 60.0f;
+    const float hDiv60Floor = Math::Floor(hDiv60);
+    const float hDiv60Fraction = hDiv60 - hDiv60Floor;
 
-    const float HDiv60 = Hue / 60.0f;
-    const float HDiv60_Floor = floorf(HDiv60);
-    const float HDiv60_Fraction = HDiv60 - HDiv60_Floor;
-
-    const float RGBValues[4] = {
-        Value,
-        Value * (1.0f - Saturation),
-        Value * (1.0f - HDiv60_Fraction * Saturation),
-        Value * (1.0f - (1.0f - HDiv60_Fraction) * Saturation),
+    const float rgbValues[4] =
+    {
+        value,
+        value * (1.0f - saturation),
+        value * (1.0f - hDiv60Fraction * saturation),
+        value * (1.0f - (1.0f - hDiv60Fraction) * saturation),
     };
-    const uint32 RGBSwizzle[6][3] = {
+    const int32 rgbSwizzle[6][3]
+    {
         { 0, 3, 1 },
         { 2, 0, 1 },
         { 1, 0, 3 },
@@ -94,12 +92,17 @@ Color Color::FromHSV(const Vector3& hsv)
         { 3, 1, 0 },
         { 0, 1, 2 },
     };
-    const uint32 SwizzleIndex = (uint32)HDiv60_Floor % 6;
+    const int32 swizzleIndex = (int32)hDiv60Floor % 6;
 
-    return Color(RGBValues[RGBSwizzle[SwizzleIndex][0]],
-                 RGBValues[RGBSwizzle[SwizzleIndex][1]],
-                 RGBValues[RGBSwizzle[SwizzleIndex][2]],
-                 1.0f);
+    return Color(rgbValues[rgbSwizzle[swizzleIndex][0]],
+                 rgbValues[rgbSwizzle[swizzleIndex][1]],
+                 rgbValues[rgbSwizzle[swizzleIndex][2]],
+                 alpha);
+}
+
+Color Color::FromHSV(const Vector3& hsv, float alpha)
+{
+    return FromHSV(hsv.X, hsv.Y, hsv.Z, alpha);
 }
 
 Color Color::Random()

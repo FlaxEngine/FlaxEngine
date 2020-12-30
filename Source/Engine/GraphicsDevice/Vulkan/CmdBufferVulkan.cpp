@@ -23,8 +23,8 @@ void CmdBufferVulkan::Begin()
     VkCommandBufferBeginInfo beginInfo;
     RenderToolsVulkan::ZeroStruct(beginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VALIDATE_VULKAN_RESULT(vkBeginCommandBuffer(_commandBufferHandle, &beginInfo));
-    
+    VALIDATE_VULKAN_RESULT(vkBeginCommandBuffer(_commandBuffer, &beginInfo));
+
     // Acquire a descriptor pool set on
     if (_descriptorPoolSetContainer == nullptr)
     {
@@ -68,14 +68,14 @@ void CmdBufferVulkan::BeginRenderPass(RenderPassVulkan* renderPass, FramebufferV
     info.clearValueCount = clearValueCount;
     info.pClearValues = clearValues;
 
-    vkCmdBeginRenderPass(_commandBufferHandle, &info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     _state = State::IsInsideRenderPass;
 }
 
 void CmdBufferVulkan::EndRenderPass()
 {
     ASSERT(IsInsideRenderPass());
-    vkCmdEndRenderPass(_commandBufferHandle);
+    vkCmdEndRenderPass(_commandBuffer);
     _state = State::IsInsideBegin;
 }
 
@@ -132,7 +132,7 @@ void CmdBufferVulkan::RefreshFenceStatus()
 
             _submittedWaitSemaphores.Clear();
 
-            vkResetCommandBuffer(_commandBufferHandle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+            vkResetCommandBuffer(_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
             _fence->GetOwner()->ResetFence(_fence);
             _fenceSignaledCounter++;
 
@@ -151,7 +151,7 @@ void CmdBufferVulkan::RefreshFenceStatus()
 
 CmdBufferVulkan::CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* pool)
     : _device(device)
-    , _commandBufferHandle(VK_NULL_HANDLE)
+    , _commandBuffer(VK_NULL_HANDLE)
     , _state(State::ReadyForBegin)
     , _fence(nullptr)
     , _fenceSignaledCounter(0)
@@ -164,7 +164,7 @@ CmdBufferVulkan::CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* p
     createCmdBufInfo.commandBufferCount = 1;
     createCmdBufInfo.commandPool = _commandBufferPool->GetHandle();
 
-    VALIDATE_VULKAN_RESULT(vkAllocateCommandBuffers(_device->Device, &createCmdBufInfo, &_commandBufferHandle));
+    VALIDATE_VULKAN_RESULT(vkAllocateCommandBuffers(_device->Device, &createCmdBufInfo, &_commandBuffer));
     _fence = _device->FenceManager.AllocateFence();
 }
 
@@ -183,13 +183,13 @@ CmdBufferVulkan::~CmdBufferVulkan()
         fenceManager.ReleaseFence(_fence);
     }
 
-    vkFreeCommandBuffers(_device->Device, _commandBufferPool->GetHandle(), 1, &_commandBufferHandle);
+    vkFreeCommandBuffers(_device->Device, _commandBufferPool->GetHandle(), 1, &_commandBuffer);
 }
 
 CmdBufferVulkan* CmdBufferPoolVulkan::Create()
 {
-    const auto cmdBuffer = New<CmdBufferVulkan>(Device, this);
-    CmdBuffers.Add(cmdBuffer);
+    const auto cmdBuffer = New<CmdBufferVulkan>(_device, this);
+    _cmdBuffers.Add(cmdBuffer);
     return cmdBuffer;
 }
 
@@ -200,30 +200,30 @@ void CmdBufferPoolVulkan::Create(uint32 queueFamilyIndex)
     poolInfo.queueFamilyIndex = queueFamilyIndex;
     // TODO: use VK_COMMAND_POOL_CREATE_TRANSIENT_BIT?
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    VALIDATE_VULKAN_RESULT(vkCreateCommandPool(Device->Device, &poolInfo, nullptr, &Handle));
+    VALIDATE_VULKAN_RESULT(vkCreateCommandPool(_device->Device, &poolInfo, nullptr, &_handle));
 }
 
 CmdBufferPoolVulkan::CmdBufferPoolVulkan(GPUDeviceVulkan* device)
-    : Device(device)
-    , Handle(VK_NULL_HANDLE)
+    : _device(device)
+    , _handle(VK_NULL_HANDLE)
 {
 }
 
 CmdBufferPoolVulkan::~CmdBufferPoolVulkan()
 {
-    for (int32 i = 0; i < CmdBuffers.Count(); i++)
+    for (int32 i = 0; i < _cmdBuffers.Count(); i++)
     {
-        Delete(CmdBuffers[i]);
+        Delete(_cmdBuffers[i]);
     }
 
-    vkDestroyCommandPool(Device->Device, Handle, nullptr);
+    vkDestroyCommandPool(_device->Device, _handle, nullptr);
 }
 
 void CmdBufferPoolVulkan::RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer)
 {
-    for (int32 i = 0; i < CmdBuffers.Count(); i++)
+    for (int32 i = 0; i < _cmdBuffers.Count(); i++)
     {
-        auto cmdBuffer = CmdBuffers[i];
+        auto cmdBuffer = _cmdBuffers[i];
         if (cmdBuffer != skipCmdBuffer)
         {
             cmdBuffer->RefreshFenceStatus();
@@ -232,63 +232,63 @@ void CmdBufferPoolVulkan::RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer)
 }
 
 CmdBufferManagerVulkan::CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUContextVulkan* context)
-    : Device(device)
-    , Pool(device)
-    , Queue(context->GetQueue())
-    , ActiveCmdBuffer(nullptr)
+    : _device(device)
+    , _pool(device)
+    , _queue(context->GetQueue())
+    , _activeCmdBuffer(nullptr)
 {
-    Pool.Create(Queue->GetFamilyIndex());
+    _pool.Create(_queue->GetFamilyIndex());
 }
 
 void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore)
 {
-    ASSERT(ActiveCmdBuffer);
-    if (!ActiveCmdBuffer->IsSubmitted() && ActiveCmdBuffer->HasBegun())
+    ASSERT(_activeCmdBuffer);
+    if (!_activeCmdBuffer->IsSubmitted() && _activeCmdBuffer->HasBegun())
     {
-        if (ActiveCmdBuffer->IsInsideRenderPass())
+        if (_activeCmdBuffer->IsInsideRenderPass())
         {
-            ActiveCmdBuffer->EndRenderPass();
+            _activeCmdBuffer->EndRenderPass();
         }
 
         // Pause all active queries
-        for (int32 i = 0; i < QueriesInProgress.Count(); i++)
+        for (int32 i = 0; i < _queriesInProgress.Count(); i++)
         {
-            QueriesInProgress[i]->Interrupt(ActiveCmdBuffer);
+            _queriesInProgress[i]->Interrupt(_activeCmdBuffer);
         }
 
-        ActiveCmdBuffer->End();
+        _activeCmdBuffer->End();
 
         if (signalSemaphore)
         {
-            Queue->Submit(ActiveCmdBuffer, signalSemaphore->GetHandle());
+            _queue->Submit(_activeCmdBuffer, signalSemaphore->GetHandle());
         }
         else
         {
-            Queue->Submit(ActiveCmdBuffer);
+            _queue->Submit(_activeCmdBuffer);
         }
     }
 
-    ActiveCmdBuffer = nullptr;
+    _activeCmdBuffer = nullptr;
 }
 
 void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait)
 {
     ASSERT(cmdBuffer->IsSubmitted());
-    bool success = Device->FenceManager.WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
-    ASSERT(success);
+    const bool failed = _device->FenceManager.WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
+    ASSERT(!failed);
     cmdBuffer->RefreshFenceStatus();
 }
 
 void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
 {
-    for (int32 i = 0; i < Pool.CmdBuffers.Count(); i++)
+    for (int32 i = 0; i < _pool._cmdBuffers.Count(); i++)
     {
-        auto cmdBuffer = Pool.CmdBuffers[i];
+        auto cmdBuffer = _pool._cmdBuffers[i];
         cmdBuffer->RefreshFenceStatus();
         if (cmdBuffer->GetState() == CmdBufferVulkan::State::ReadyForBegin)
         {
-            ActiveCmdBuffer = cmdBuffer;
-            ActiveCmdBuffer->Begin();
+            _activeCmdBuffer = cmdBuffer;
+            _activeCmdBuffer->Begin();
             return;
         }
         else
@@ -298,24 +298,24 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
     }
 
     // All cmd buffers are being executed still
-    ActiveCmdBuffer = Pool.Create();
-    ActiveCmdBuffer->Begin();
+    _activeCmdBuffer = _pool.Create();
+    _activeCmdBuffer->Begin();
 
     // Resume any paused queries with the new command buffer
-    for (int32 i = 0; i < QueriesInProgress.Count(); i++)
+    for (int32 i = 0; i < _queriesInProgress.Count(); i++)
     {
-        QueriesInProgress[i]->Resume(ActiveCmdBuffer);
+        _queriesInProgress[i]->Resume(_activeCmdBuffer);
     }
 }
 
 void CmdBufferManagerVulkan::OnQueryBegin(GPUTimerQueryVulkan* query)
 {
-    QueriesInProgress.Add(query);
+    _queriesInProgress.Add(query);
 }
 
 void CmdBufferManagerVulkan::OnQueryEnd(GPUTimerQueryVulkan* query)
 {
-    QueriesInProgress.Remove(query);
+    _queriesInProgress.Remove(query);
 }
 
 #endif

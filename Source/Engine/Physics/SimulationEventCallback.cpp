@@ -142,10 +142,9 @@ void SimulationEventCallback::onSleep(PxActor** actors, PxU32 count)
 
 void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs)
 {
-    // Check actors are not destroyed
+    // Skip sending events to removed actors
     if (pairHeader.flags & (PxContactPairHeaderFlag::eREMOVED_ACTOR_0 | PxContactPairHeaderFlag::eREMOVED_ACTOR_1))
     {
-        LOG(Warning, "SimulationEventCallback::onContact(): Actors have been deleted!");
         return;
     }
 

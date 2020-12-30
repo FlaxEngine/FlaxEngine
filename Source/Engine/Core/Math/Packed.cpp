@@ -63,6 +63,8 @@ Vector3 Float1010102::ToVector3() const
 
 FloatR11G11B10::FloatR11G11B10(float x, float y, float z)
 {
+    // Reference: https://github.com/microsoft/DirectXMath
+
     uint32 iValue[4];
     iValue[0] = *(uint32*)&x;
     iValue[1] = *(uint32*)&y;
@@ -197,6 +199,8 @@ FloatR11G11B10::operator Vector3() const
 
 Vector3 FloatR11G11B10::ToVector3() const
 {
+    // Reference: https://github.com/microsoft/DirectXMath
+
     uint32 result[4];
     uint32 mantissa;
     uint32 exponent;

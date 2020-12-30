@@ -195,7 +195,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     {
         context->SetRenderTarget(lut->ViewVolume());
 
-        // Render a quad per slice affected by the given bounds
+        // Render one fullscreen-triangle per slice intersecting the bounds
         const int32 numInstances = lutDesc.Depth;
         context->DrawFullscreenTriangle(numInstances);
     }

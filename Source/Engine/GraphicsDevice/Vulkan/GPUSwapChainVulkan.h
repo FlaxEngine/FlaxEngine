@@ -93,20 +93,19 @@ public:
 
 public:
 
-    // Has to be negative as we use this also on other callbacks as the acquired image index
     enum class Status
     {
-        Healthy = 0,
-        OutOfDate = -1,
-        SurfaceLost = -2,
+        Ok = 0,
+        Outdated = -1,
+        LostSurface = -2,
     };
 
     Status Present(QueueVulkan* presentQueue, SemaphoreVulkan* backBufferRenderingDoneSemaphore);
 
     static int32 DoAcquireImageIndex(GPUSwapChainVulkan* viewport, void* customData);
     static int32 DoPresent(GPUSwapChainVulkan* viewport, void* customData);
-    int32 DoCheckedSwapChainJob(Function<int32(GPUSwapChainVulkan*, void*)> job, void* customData = nullptr, bool skipOnOutOfDate = false);
-    int32 AcquireImageIndex(SemaphoreVulkan** outSemaphore);
+    int32 TryPresent(Function<int32(GPUSwapChainVulkan*, void*)> job, void* customData = nullptr, bool skipOnOutOfDate = false);
+    int32 AcquireNextImage(SemaphoreVulkan** outSemaphore);
 
 private:
 

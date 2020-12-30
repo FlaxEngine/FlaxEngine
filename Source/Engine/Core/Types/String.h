@@ -417,27 +417,23 @@ public:
 
     int32 Replace(const T* searchText, const T* replacementText, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
     {
-        int32 replacementCount = 0;
-
-        if (HasChars()
-            && searchText != nullptr && *searchText != 0
-            && replacementText != nullptr && (searchCase == StringSearchCase::IgnoreCase || StringUtils::Compare(searchText, replacementText) != 0))
+        int32 replacedCount = 0;
+        if (HasChars() && searchText && *searchText && replacementText && (searchCase == StringSearchCase::IgnoreCase || StringUtils::Compare(searchText, replacementText) != 0))
         {
-            const int32 numCharsToReplace = StringUtils::Length(searchText);
-            const int32 numCharsToInsert = StringUtils::Length(replacementText);
-
-            if (numCharsToInsert == numCharsToReplace)
+            const int32 searchTextLength = StringUtils::Length(searchText);
+            const int32 replacementTextLength = StringUtils::Length(replacementText);
+            if (searchTextLength == replacementTextLength)
             {
                 T* pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(_data, searchText) : StringUtils::Find(_data, searchText));
                 while (pos != nullptr)
                 {
-                    replacementCount++;
+                    replacedCount++;
 
-                    for (int32 i = 0; i < numCharsToInsert; i++)
+                    for (int32 i = 0; i < replacementTextLength; i++)
                         pos[i] = replacementText[i];
 
-                    if (pos + numCharsToReplace - **this < Length())
-                        pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(pos + numCharsToReplace, searchText) : StringUtils::Find(pos + numCharsToReplace, searchText));
+                    if (pos + searchTextLength - **this < Length())
+                        pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(pos + searchTextLength, searchText) : StringUtils::Find(pos + searchTextLength, searchText));
                     else
                         break;
                 }
@@ -448,14 +444,14 @@ public:
                 T* searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
                 while (searchPosition != nullptr)
                 {
-                    replacementCount++;
-                    readPosition = searchPosition + numCharsToReplace;
+                    replacedCount++;
+                    readPosition = searchPosition + searchTextLength;
                     searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
                 }
 
                 const auto oldLength = _length;
                 const auto oldData = _data;
-                _length += replacementCount * (numCharsToInsert - numCharsToReplace);
+                _length += replacedCount * (replacementTextLength - searchTextLength);
                 _data = (T*)Platform::Allocate((_length + 1) * sizeof(T), 16);
 
                 T* writePosition = _data;
@@ -467,10 +463,10 @@ public:
                     Platform::MemoryCopy(writePosition, readPosition, writeOffset * sizeof(T));
                     writePosition += writeOffset;
 
-                    Platform::MemoryCopy(writePosition, replacementText, numCharsToInsert * sizeof(T));
-                    writePosition += numCharsToInsert;
+                    Platform::MemoryCopy(writePosition, replacementText, replacementTextLength * sizeof(T));
+                    writePosition += replacementTextLength;
 
-                    readPosition = searchPosition + numCharsToReplace;
+                    readPosition = searchPosition + searchTextLength;
                     searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
                 }
 
@@ -482,7 +478,7 @@ public:
             }
         }
 
-        return replacementCount;
+        return replacedCount;
     }
 
     /// <summary>

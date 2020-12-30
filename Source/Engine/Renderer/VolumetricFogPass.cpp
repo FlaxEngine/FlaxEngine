@@ -323,7 +323,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 
     // Ensure to have valid buffers created
     if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
-        InitCircleRasterizeBuffers();
+        InitCircleBuffer();
 
     // Call rendering to the volume
     const int32 psIndex = (_cache.TemporalReprojection ? 1 : 0) + 2;
@@ -378,7 +378,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 
         // Ensure to have valid buffers created
         if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
-            InitCircleRasterizeBuffers();
+            InitCircleBuffer();
 
         // Call rendering to the volume
         const int32 psIndex = (cache.TemporalReprojection ? 1 : 0) + (withShadow ? 2 : 0);
@@ -644,19 +644,16 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     context->FlushState();
 }
 
-void VolumetricFogPass::InitCircleRasterizeBuffers()
+void VolumetricFogPass::InitCircleBuffer()
 {
     const int32 vertices = 8;
     const int32 triangles = vertices - 2;
     const int32 rings = vertices;
     const float radiansPerRingSegment = PI / (float)rings;
-
     Vector2 vbData[vertices];
     uint16 ibData[triangles * 3];
 
-    // Boost the effective radius so that the edges of the circle approximation lie on the circle, instead of the vertices
     const float radiusScale = 1.0f / Math::Cos(radiansPerRingSegment);
-
     for (int32 vertexIndex = 0; vertexIndex < vertices; vertexIndex++)
     {
         const float angle = vertexIndex / static_cast<float>(vertices - 1) * 2 * PI;

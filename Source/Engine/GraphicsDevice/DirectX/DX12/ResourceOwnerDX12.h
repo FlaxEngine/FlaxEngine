@@ -33,14 +33,11 @@ public:
     /// Returns true if resource state transition is needed in order to use resource in given state.
     /// </summary>
     /// <param name="currentState">The current resource state.</param>
-    /// <param name="targeState">the destination resource state.</param>
+    /// <param name="targetState">the destination resource state.</param>
     /// <returns>True if need to perform a transition, otherwise false.</returns>
-    static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targeState)
+    static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targetState)
     {
-        // If 'targeState' is a subset of 'before', then there's no need for a transition
-        // Note: COMMON is an oddball state that doesn't follow the RESOURE_STATE pattern of 
-        // having exactly one bit set so we need to special case these
-        return currentState != targeState && ((currentState | targeState) != currentState || targeState == D3D12_RESOURCE_STATE_COMMON);
+        return currentState != targetState && ((currentState | targetState) != currentState || targetState == D3D12_RESOURCE_STATE_COMMON);
     }
 };
 

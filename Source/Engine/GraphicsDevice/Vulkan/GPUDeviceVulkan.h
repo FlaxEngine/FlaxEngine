@@ -134,20 +134,20 @@ public:
         return CheckFenceState(fence);
     }
 
-    // Returns false if it timed out
+    // Returns true if waiting timed out or failed, false otherwise.
     bool WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds);
 
     void ResetFence(FenceVulkan* fence);
 
-    // Sets it to nullptr
+    // Sets the fence handle to null
     void ReleaseFence(FenceVulkan*& fence);
 
-    // Sets it to nullptr
+    // Sets the fence handle to null
     void WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds);
 
 private:
 
-    // Returns true if signaled
+    // Returns true if fence was signaled, otherwise false.
     bool CheckFenceState(FenceVulkan* fence);
 
     void DestroyFence(FenceVulkan* fence);
@@ -209,14 +209,14 @@ public:
     template<typename T>
     inline void EnqueueResource(Type type, T handle)
     {
-        static_assert(sizeof(T) <= sizeof(uint64), "Vulkan resource handle type size too large.");
+        static_assert(sizeof(T) <= sizeof(uint64), "Invalid handle size.");
         EnqueueGenericResource(type, (uint64)handle, VK_NULL_HANDLE);
     }
 
     template<typename T>
     inline void EnqueueResource(Type type, T handle, VmaAllocation allocation)
     {
-        static_assert(sizeof(T) <= sizeof(uint64), "Vulkan resource handle type size too large.");
+        static_assert(sizeof(T) <= sizeof(uint64), "Invalid handle size.");
         EnqueueGenericResource(type, (uint64)handle, allocation);
     }
 

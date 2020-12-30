@@ -47,7 +47,6 @@ public:
         ASSERT(_subresourceState.IsEmpty() && subresourceCount > 0);
 
         // Allocate space for per-subresource tracking structures
-        // Note: for resources with single subresource we don't use this table
         if (usePerSubresourceTracking && subresourceCount > 1)
             _subresourceState.Resize(subresourceCount, false);
 
@@ -87,9 +86,8 @@ public:
             return state == _resourceState;
         }
 
-        // All subresources must be individually checked
-        const uint32 numSubresourceStates = _subresourceState.Count();
-        for (uint32 i = 0; i < numSubresourceStates; i++)
+        // Check all subresources
+        for (int32 i = 0; i < _subresourceState.Count(); i++)
         {
             if (_subresourceState[i] != state)
             {
@@ -116,10 +114,8 @@ public:
         _allSubresourcesSame = 1;
         _resourceState = state;
 
-        // State is now tracked per-resource, so _subresourceState should not be read
 #if BUILD_DEBUG
-        const uint32 numSubresourceStates = _subresourceState.Count();
-        for (uint32 i = 0; i < numSubresourceStates; i++)
+        for (int32 i = 0; i < _subresourceState.Count(); i++)
         {
             _subresourceState[i] = InvalidState;
         }
@@ -140,15 +136,13 @@ public:
             // If state was previously tracked on a per-resource level, then transition to per-subresource tracking
             if (_allSubresourcesSame)
             {
-                const int32 numSubresourceStates = _subresourceState.Count();
-                for (int32 i = 0; i < numSubresourceStates; i++)
+                for (int32 i = 0; i < _subresourceState.Count(); i++)
                 {
                     _subresourceState[i] = _resourceState;
                 }
 
                 _allSubresourcesSame = 0;
 
-                // State is now tracked per-subresource, so _resourceState should not be read
 #if BUILD_DEBUG
                 _resourceState = InvalidState;
 #endif

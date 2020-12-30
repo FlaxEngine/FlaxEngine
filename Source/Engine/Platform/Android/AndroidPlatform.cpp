@@ -746,15 +746,15 @@ uint64 AndroidPlatform::GetTimeCycles()
 
 void AndroidPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
 {
-    // Query for calendar time
+    // Get the calendar time
     struct timeval time;
     gettimeofday(&time, nullptr);
 
-    // Convert to local time
+    // Convert calendar time to local time
     struct tm localTime;
     localtime_r(&time.tv_sec, &localTime);
 
-    // Extract time
+    // Extract time from Unix date
     year = localTime.tm_year + 1900;
     month = localTime.tm_mon + 1;
     dayOfWeek = localTime.tm_wday;

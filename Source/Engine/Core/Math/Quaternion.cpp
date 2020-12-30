@@ -360,8 +360,8 @@ void Quaternion::FindBetween(const Vector3& from, const Vector3& to, Quaternion&
     if (w < 1.e-6f * normFromNormTo)
     {
         result = Math::Abs(from.X) > Math::Abs(from.Z)
-                     ? Quaternion(-from.Y, from.X, 0.f, 0.f)
-                     : Quaternion(0.f, -from.Z, from.Y, 0.f);
+                     ? Quaternion(-from.Y, from.X, 0.0f, 0.0f)
+                     : Quaternion(0.0f, -from.Z, from.Y, 0.0f);
     }
     else
     {

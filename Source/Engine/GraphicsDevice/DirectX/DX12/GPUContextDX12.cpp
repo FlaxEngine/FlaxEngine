@@ -144,23 +144,17 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
     auto& state = resource->State;
     if (subresourceIndex == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES && !state.AreAllSubresourcesSame())
     {
-        // Slow path. Want to transition the entire resource (with multiple subresources). But they aren't in the same state.
-
+        // Slow path because we have to transition the entire resource with multiple subresources that aren't in the same state
         const uint32 subresourceCount = resource->GetSubresourcesCount();
         for (uint32 i = 0; i < subresourceCount; i++)
         {
             const D3D12_RESOURCE_STATES before = state.GetSubresourceState(i);
-
-            // We're not using IsTransitionNeeded() because we do want to transition even if 'after' is a subset of 'before'
-            // This is so that we can ensure all subresources are in the same state, simplifying future barriers
             if (before != after)
             {
                 AddTransitionBarrier(resource, before, after, i);
                 state.SetSubresourceState(i, after);
             }
         }
-
-        // The entire resource should now be in the after state on this command list
         ASSERT(state.CheckResourceState(after));
         state.SetResourceState(after);
     }

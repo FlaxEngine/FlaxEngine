@@ -311,39 +311,32 @@ void Vector3::Unproject(const Vector3& vector, float x, float y, float width, fl
 
 void Vector3::CreateOrthonormalBasis(Vector3& xAxis, Vector3& yAxis, Vector3& zAxis)
 {
-    // Project the X and Y axes onto the plane perpendicular to the Z axis.
     xAxis -= (xAxis | zAxis) / (zAxis | zAxis) * zAxis;
     yAxis -= (yAxis | zAxis) / (zAxis | zAxis) * zAxis;
 
-    // If the X axis was parallel to the Z axis, choose a vector which is orthogonal to the Y and Z axes.
     if (xAxis.LengthSquared() < ZeroTolerance)
-    {
         xAxis = yAxis ^ zAxis;
-    }
-
-    // If the Y axis was parallel to the Z axis, choose a vector which is orthogonal to the X and Z axes.
     if (yAxis.LengthSquared() < ZeroTolerance)
-    {
         yAxis = xAxis ^ zAxis;
-    }
 
-    // Normalize the basis vectors.
     xAxis.Normalize();
     yAxis.Normalize();
     zAxis.Normalize();
 }
 
-void Vector3::FindBestAxisVectors(Vector3& Axis1, Vector3& Axis2) const
+void Vector3::FindBestAxisVectors(Vector3& firstAxis, Vector3& secondAxis) const
 {
     const float absX = Math::Abs(X);
     const float absY = Math::Abs(Y);
     const float absZ = Math::Abs(Z);
+
     if (absZ > absX && absZ > absY)
-        Axis1 = Vector3(1, 0, 0);
+        firstAxis = Vector3(1, 0, 0);
     else
-        Axis1 = Vector3(0, 0, 1);
-    Axis1 = (Axis1 - *this * (Axis1 | *this)).GetNormalized();
-    Axis2 = Axis1 ^ *this;
+        firstAxis = Vector3(0, 0, 1);
+
+    firstAxis = (firstAxis - *this * (firstAxis | *this)).GetNormalized();
+    secondAxis = firstAxis ^ *this;
 }
 
 float Vector3::TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3& v2)

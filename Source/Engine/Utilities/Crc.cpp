@@ -4,10 +4,10 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/Platform.h"
 
-// CRC 32 polynomial
+// Use CRC 32 polynomial
 enum { Crc32Poly = 0x04c11db7 };
 
-uint32 Crc::CRCTablesSB8[8][256] =
+uint32 Crc::CachedCRCTablesSB8[8][256] =
 {
     {
         0x00000000,
@@ -2088,16 +2088,16 @@ void Crc::Init()
             CRC = (CRC & 1) ? (CRC >> 1) ^ rCrc32Poly : (CRC >> 1);
         }
 
-        ASSERT(CRCTablesSB8[0][i] == CRC);
+        ASSERT(CachedCRCTablesSB8[0][i] == CRC);
     }
 
     for (uint32 i = 0; i != 256; ++i)
     {
-        uint32 CRC = CRCTablesSB8[0][i];
+        uint32 CRC = CachedCRCTablesSB8[0][i];
         for (uint32 j = 1; j != 8; ++j)
         {
-            CRC = CRCTablesSB8[0][CRC & 0xFF] ^ (CRC >> 8);
-            ASSERT(CRCTablesSB8[j][i] == CRC);
+            CRC = CachedCRCTablesSB8[0][CRC & 0xFF] ^ (CRC >> 8);
+            ASSERT(CachedCRCTablesSB8[j][i] == CRC);
         }
     }
 #endif
@@ -2121,7 +2121,7 @@ uint32 Crc::MemCrc32(const void* data, int32 length, uint32 crc)
 
         for (; initBytes; --initBytes)
         {
-            crc = (crc >> 8) ^ CRCTablesSB8[0][(crc & 0xFF) ^ *ptr++];
+            crc = (crc >> 8) ^ CachedCRCTablesSB8[0][(crc & 0xFF) ^ *ptr++];
         }
 
         auto ptr4 = (const uint32*)ptr;
@@ -2130,14 +2130,14 @@ uint32 Crc::MemCrc32(const void* data, int32 length, uint32 crc)
             uint32 v1 = *ptr4++ ^ crc;
             uint32 v2 = *ptr4++;
             crc =
-                    CRCTablesSB8[7][v1 & 0xFF] ^
-                    CRCTablesSB8[6][(v1 >> 8) & 0xFF] ^
-                    CRCTablesSB8[5][(v1 >> 16) & 0xFF] ^
-                    CRCTablesSB8[4][v1 >> 24] ^
-                    CRCTablesSB8[3][v2 & 0xFF] ^
-                    CRCTablesSB8[2][(v2 >> 8) & 0xFF] ^
-                    CRCTablesSB8[1][(v2 >> 16) & 0xFF] ^
-                    CRCTablesSB8[0][v2 >> 24];
+                    CachedCRCTablesSB8[7][v1 & 0xFF] ^
+                    CachedCRCTablesSB8[6][(v1 >> 8) & 0xFF] ^
+                    CachedCRCTablesSB8[5][(v1 >> 16) & 0xFF] ^
+                    CachedCRCTablesSB8[4][v1 >> 24] ^
+                    CachedCRCTablesSB8[3][v2 & 0xFF] ^
+                    CachedCRCTablesSB8[2][(v2 >> 8) & 0xFF] ^
+                    CachedCRCTablesSB8[1][(v2 >> 16) & 0xFF] ^
+                    CachedCRCTablesSB8[0][v2 >> 24];
         }
         ptr = (const uint8*)ptr4;
 
@@ -2146,7 +2146,7 @@ uint32 Crc::MemCrc32(const void* data, int32 length, uint32 crc)
 
     for (; length; --length)
     {
-        crc = (crc >> 8) ^ CRCTablesSB8[0][(crc & 0xFF) ^ *ptr++];
+        crc = (crc >> 8) ^ CachedCRCTablesSB8[0][(crc & 0xFF) ^ *ptr++];
     }
 
     return ~crc;

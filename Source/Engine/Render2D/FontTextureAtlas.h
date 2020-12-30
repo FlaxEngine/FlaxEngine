@@ -15,28 +15,15 @@ API_CLASS(NoSpawn) class FLAXENGINE_API FontTextureAtlas : public Texture
 DECLARE_BINARY_ASSET_HEADER(FontTextureAtlas, TexturesSerializedVersion);
 private:
 
-    struct CopyRowData
+    struct RowData
     {
-        // Source data to copy
         const byte* SrcData;
-
-        // Place to copy data to
-        uint8* DestData;
-
-        // The row number to copy
+        uint8* DstData;
         uint32 SrcRow;
-
-        // The row number to copy to
-        uint32 DestRow;
-
-        // The width of a source row
+        uint32 DstRow;
         uint32 RowWidth;
-
-        // The width of the source texture
         uint32 SrcTextureWidth;
-
-        // The width of the dest texture
-        uint32 DestTextureWidth;
+        uint32 DstTextureWidth;
     };
 
 public:
@@ -226,8 +213,8 @@ private:
 
     Slot* invalidate(Slot* parent, uint32 x, uint32 y, uint32 width, uint32 height);
     void markAsDirty();
-    void copyRow(const CopyRowData& copyRowData) const;
-    void zeroRow(const CopyRowData& copyRowData) const;
+    void copyRow(const RowData& copyRowData) const;
+    void zeroRow(const RowData& copyRowData) const;
 
 protected:
 

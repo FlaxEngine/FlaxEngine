@@ -47,20 +47,20 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceXlibPresentationSupportKHR(
 extern PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
 extern PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
 
-void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& outExtensions)
+void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& outExextensionstensions)
 {
 	// Include X11 surface extension
-	outExtensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
-	outExtensions.Add(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
+	extensions.Add(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 }
 
-void LinuxVulkanPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
+void LinuxVulkanPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface)
 {
 	VkXlibSurfaceCreateInfoKHR surfaceCreateInfo;
 	RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR);
 	surfaceCreateInfo.dpy = (X11::Display*)LinuxPlatform::GetXDisplay();
 	surfaceCreateInfo.window = (X11::Window)windowHandle;
-	VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, outSurface));
+	VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
 }
 
 #endif

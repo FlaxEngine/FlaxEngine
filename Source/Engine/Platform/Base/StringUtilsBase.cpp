@@ -18,77 +18,49 @@ const char VolumeSeparatorChar = ':';
 
 const Char* StringUtils::FindIgnoreCase(const Char* str, const Char* toFind)
 {
-    // Validate input
     if (toFind == nullptr || str == nullptr)
     {
         return nullptr;
     }
 
-    // Get upper-case first letter of the find string (to reduce the number of full strnicmps)
-    Char findInitial = ToUpper(*toFind);
-
-    // Get length of find string, and increment past first letter
-    int32 length = Length(toFind++) - 1;
-
-    // Get the first letter of the search string, and increment past it
-    Char strChar = *str++;
-
-    // While we aren't at end of string
-    while (strChar)
+    const Char findInitial = ToUpper(*toFind);
+    const int32 length = Length(toFind++) - 1;
+    Char c = *str++;
+    while (c)
     {
-        // Make sure it's upper-case
-        strChar = ToUpper(strChar);
-
-        // If it matches the first letter of the find string, do a case-insensitive string compare for the length of the find string
-        if (strChar == findInitial && !CompareIgnoreCase(str, toFind, length))
+        c = ToUpper(c);
+        if (c == findInitial && !CompareIgnoreCase(str, toFind, length))
         {
-            // If we found the string, then return a pointer to the beginning of it in the search string
             return str - 1;
         }
 
-        // Go to next letter
-        strChar = *str++;
+        c = *str++;
     }
 
-    // Nothing found
     return nullptr;
 }
 
 const char* StringUtils::FindIgnoreCase(const char* str, const char* toFind)
 {
-    // Validate input
     if (toFind == nullptr || str == nullptr)
     {
         return nullptr;
     }
 
-    // Get upper-case first letter of the find string (to reduce the number of full strnicmps)
-    char findInitial = (char)ToUpper(*toFind);
-
-    // Get length of find string, and increment past first letter
-    int32 length = Length(toFind++) - 1;
-
-    // Get the first letter of the search string, and increment past it
-    char strChar = *str++;
-
-    // While we aren't at end of string
-    while (strChar)
+    const char findInitial = (char)ToUpper(*toFind);
+    const int32 length = Length(toFind++) - 1;
+    char c = *str++;
+    while (c)
     {
-        // Make sure it's upper-case
-        strChar = (char)ToUpper(strChar);
-
-        // If it matches the first letter of the find string, do a case-insensitive string compare for the length of the find string
-        if (strChar == findInitial && !CompareIgnoreCase(str, toFind, length))
+        c = (char)ToUpper(c);
+        if (c == findInitial && !CompareIgnoreCase(str, toFind, length))
         {
-            // If we found the string, then return a pointer to the beginning of it in the search string
             return str - 1;
         }
 
-        // Go to next letter
-        strChar = *str++;
+        c = *str++;
     }
 
-    // Nothing found
     return nullptr;
 }
 

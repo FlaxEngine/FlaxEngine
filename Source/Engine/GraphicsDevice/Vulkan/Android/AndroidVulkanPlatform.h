@@ -13,9 +13,9 @@ class AndroidVulkanPlatform : public VulkanPlatformBase
 {
 public:
 
-	static void GetInstanceExtensions(Array<const char*>& outExtensions);
-	static void GetDeviceExtensions(Array<const char*>& outExtensions);
-	static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface);
+	static void GetInstanceExtensions(Array<const char*>& extensions);
+	static void GetDeviceExtensions(Array<const char*>& extensions);
+	static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface);
 };
 
 typedef AndroidVulkanPlatform VulkanPlatform;

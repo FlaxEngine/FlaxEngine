@@ -1329,13 +1329,13 @@ bool LinuxPlatform::Init()
         Platform::MemoryClear(cpuInfos, sizeof(cpuInfos));
         int maxCoreId = 0;
         int maxPackageId = 0;
-        int numCpusAvailable = 0;
+        int cpuCountAvailable = 0;
 
         for (int32 cpuIdx = 0; cpuIdx < CPU_SETSIZE; cpuIdx++)
         {
             if (CPU_ISSET(cpuIdx, &availableCpusMask))
             {
-                numCpusAvailable++;
+                cpuCountAvailable++;
 
                 sprintf(fileNameBuffer, "/sys/devices/system/cpu/cpu%d/topology/core_id", cpuIdx);
                 if (FILE* coreIdFile = fopen(fileNameBuffer, "r"))
@@ -1363,31 +1363,28 @@ bool LinuxPlatform::Init()
             }
         }
 
-        int numCores = maxCoreId + 1;
-        int numPackages = maxPackageId + 1;
-        int numPairs = numPackages * numCores;
+        int coresCount = maxCoreId + 1;
+        int packagesCount = maxPackageId + 1;
+        int pairsCount = packagesCount * coresCount;
 
-        // AArch64 topology seems to be incompatible with the above assumptions, particularly, core_id can be all 0 while the cores themselves are obviously independent. 
-        // Check if num CPUs available to us is more than 2 per core (i.e. more than reasonable when hyperthreading is involved), and if so, don't trust the topology.
-        if (numCores * 2 < numCpusAvailable)
+        if (coresCount * 2 < cpuCountAvailable)
         {
-            // Consider all CPUs to be separate
-            numberOfCores = numCpusAvailable;
+            numberOfCores = cpuCountAvailable;
         }
         else
         {
-            byte* pairs = (byte*)Allocator::Allocate(numPairs);
-            Platform::MemoryClear(pairs, numPairs * sizeof(unsigned char));
+            byte* pairs = (byte*)Allocator::Allocate(pairsCount);
+            Platform::MemoryClear(pairs, pairsCount * sizeof(unsigned char));
 
             for (int32 cpuIdx = 0; cpuIdx < CPU_SETSIZE; cpuIdx++)
             {
                 if (CPU_ISSET(cpuIdx, &availableCpusMask))
                 {
-                    pairs[cpuInfos[cpuIdx].Package * numCores + cpuInfos[cpuIdx].Core] = 1;
+                    pairs[cpuInfos[cpuIdx].Package * coresCount + cpuInfos[cpuIdx].Core] = 1;
                 }
             }
 
-            for (int32 i = 0; i < numPairs; i++)
+            for (int32 i = 0; i < pairsCount; i++)
             {
                 numberOfCores += pairs[i];
             }
@@ -1395,7 +1392,7 @@ bool LinuxPlatform::Init()
             Allocator::Free(pairs);
         }
 
-        UnixCpu.ProcessorPackageCount = numPackages;
+        UnixCpu.ProcessorPackageCount = packagesCount;
         UnixCpu.ProcessorCoreCount = Math::Max(numberOfCores, 1);
         UnixCpu.LogicalProcessorCount = CPU_COUNT(&availableCpusMask);
     }

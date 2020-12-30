@@ -49,8 +49,6 @@ private:
     uint64 _offset;
     uint32 _minAlignment;
     byte* _mapped;
-
-    // Fence for wrapping around
     CmdBufferVulkan* _fenceCmdBuffer;
     uint64 _fenceCounter;
 

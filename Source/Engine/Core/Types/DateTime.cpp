@@ -6,8 +6,8 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Math/Math.h"
 
-const int32 DateTime::DaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-const int32 DateTime::DaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+const int32 DateTime::CachedDaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+const int32 DateTime::CachedDaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
@@ -17,7 +17,7 @@ DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute,
         totalDays++;
     year--;
     month--;
-    totalDays += year * 365 + year / 4 - year / 100 + year / 400 + DaysToMonth[month] + day - 1;
+    totalDays += year * 365 + year / 4 - year / 100 + year / 400 + CachedDaysToMonth[month] + day - 1;
     Ticks = totalDays * Constants::TicksPerDay
             + hour * Constants::TicksPerHour
             + minute * Constants::TicksPerMinute
@@ -27,7 +27,7 @@ DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute,
 
 void DateTime::GetDate(int32& year, int32& month, int32& day) const
 {
-    // Based on FORTRAN code in:
+    // Based on:
     // Fliegel, H. F. and van Flandern, T. C.,
     // Communications of the ACM, Vol. 11, No. 10 (October 1968).
 
@@ -98,7 +98,7 @@ int32 DateTime::DaysInMonth(int32 year, int32 month)
     ASSERT_LOW_LAYER((month >= 1) && (month <= 12));
     if (month == 2 && IsLeapYear(year))
         return 29;
-    return DaysPerMonth[month];
+    return CachedDaysPerMonth[month];
 }
 
 int32 DateTime::DaysInYear(int32 year)

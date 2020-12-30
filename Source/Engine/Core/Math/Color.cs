@@ -516,7 +516,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates RGB color from Hue[0-360], Saturation[0-1] and Value[0-1] paked to XYZ vector.
+        /// Creates RGB color from Hue[0-360], Saturation[0-1] and Value[0-1] packed to XYZ vector.
         /// </summary>
         /// <param name="hsv">The HSV color.</param>
         /// <param name="alpha">The alpha value. Default is 1.</param>

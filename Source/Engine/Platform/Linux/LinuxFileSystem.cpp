@@ -229,7 +229,7 @@ uint64 LinuxFileSystem::GetFileSize(const StringView& path)
     const StringAsANSI<> pathANSI(*path, path.Length());
     if (stat(pathANSI.Get(), &fileInfo) != -1)
     {
-        // make sure to return -1 for directories
+        // Check for directories
         if (S_ISDIR(fileInfo.st_mode))
         {
             fileInfo.st_size = -1;
