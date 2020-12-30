@@ -8,6 +8,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Progress.Handlers;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Utilities;
@@ -37,6 +38,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditRedo;
         private ContextMenuButton _menuEditCut;
         private ContextMenuButton _menuEditCopy;
+        private ContextMenuButton _menuEditPaste;
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
@@ -404,7 +406,7 @@ namespace FlaxEditor.Modules
             cm.AddSeparator();
             _menuEditCut = cm.AddButton("Cut", "Ctrl+X", Editor.SceneEditing.Cut);
             _menuEditCopy = cm.AddButton("Copy", "Ctrl+C", Editor.SceneEditing.Copy);
-            cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
+            _menuEditPaste = cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
             cm.AddSeparator();
             _menuEditDelete = cm.AddButton("Delete", "Del", Editor.SceneEditing.Delete);
             _menuEditDuplicate = cm.AddButton("Duplicate", "Ctrl+D", Editor.SceneEditing.Duplicate);
@@ -596,17 +598,18 @@ namespace FlaxEditor.Modules
             var undoRedo = Editor.Undo;
             var hasSthSelected = Editor.SceneEditing.HasSthSelected;
             var state = Editor.StateMachine.CurrentState;
-            var canEditScene = state.CanEditScene;
+            var canEditScene = Level.IsAnySceneLoaded && state.CanEditScene;
             var canUseUndoRedo = state.CanUseUndoRedo;
-            
+
             _menuEditUndo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanUndo;
             _menuEditUndo.Text = undoRedo.CanUndo ? string.Format("Undo \'{0}\'", undoRedo.FirstUndoName) : "No undo";
-            
+
             _menuEditRedo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanRedo;
             _menuEditRedo.Text = undoRedo.CanRedo ? string.Format("Redo \'{0}\'", undoRedo.FirstRedoName) : "No redo";
 
             _menuEditCut.Enabled = hasSthSelected;
             _menuEditCopy.Enabled = hasSthSelected;
+            _menuEditPaste.Enabled = canEditScene;
             _menuEditDelete.Enabled = hasSthSelected;
             _menuEditDuplicate.Enabled = hasSthSelected;
             _menuEditSelectAll.Enabled = Level.IsAnySceneLoaded;
@@ -640,9 +643,10 @@ namespace FlaxEditor.Modules
 
             var c = (ContextMenu)control;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
+            var canPlay = Level.IsAnySceneLoaded;
 
-            _menuGamePlay.Enabled = !isPlayMode;
-            _menuGamePause.Enabled = isPlayMode;
+            _menuGamePlay.Enabled = !isPlayMode && canPlay;
+            _menuGamePause.Enabled = isPlayMode && canPlay;
 
             c.PerformLayout();
         }
@@ -653,10 +657,11 @@ namespace FlaxEditor.Modules
                 return;
 
             var c = (ContextMenu)control;
-            bool canBakeLightmaps = Progress.Handlers.BakeLightmapsProgress.CanBake;
+            bool canBakeLightmaps = BakeLightmapsProgress.CanBake;
             bool canEdit = Level.IsAnySceneLoaded && Editor.StateMachine.IsEditMode;
             bool isBakingLightmaps = Editor.ProgressReporting.BakeLightmaps.IsActive;
             bool isBuildingScenes = Editor.StateMachine.BuildingScenesState.IsActive;
+
             _menuToolsBuildScenes.Enabled = canEdit || isBuildingScenes;
             _menuToolsBuildScenes.Text = isBuildingScenes ? "Cancel building scenes data" : "Build scenes data";
             _menuToolsBakeLightmaps.Enabled = (canEdit && canBakeLightmaps) || isBakingLightmaps;
