@@ -551,16 +551,11 @@ void Render2D::Begin(GPUContext* context, GPUTexture* output, GPUTexture* depthB
 void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView* depthBuffer, const Viewport& viewport)
 {
     Matrix view, projection, viewProjection;
-    float halfWidth = viewport.Width * 0.5f;
-    float halfHeight = viewport.Height * 0.5f;
-#if GRAPHICS_API_OPENGL
-	const float ZNear = -100.0f;
-	const float ZFar = 100.0f;
-#else
-    const float ZNear = 0.0f;
-    const float ZFar = 1.0f;
-#endif
-    Matrix::OrthoOffCenter(-halfWidth, halfWidth, halfHeight, -halfHeight, ZNear, ZFar, projection);
+    const float halfWidth = viewport.Width * 0.5f;
+    const float halfHeight = viewport.Height * 0.5f;
+    const float zNear = 0.0f;
+    const float zFar = 1.0f;
+    Matrix::OrthoOffCenter(-halfWidth, halfWidth, halfHeight, -halfHeight, zNear, zFar, projection);
     Matrix::Translation(-halfWidth, -halfHeight, 0, view);
     Matrix::Multiply(view, projection, viewProjection);
 

@@ -33,11 +33,7 @@
 #define GPU_ALLOW_PROFILE_EVENTS (!BUILD_RELEASE)
 
 // Enable/disable creating GPU resources on separate threads (otherwise only the main thread can be used)
-#if GRAPHICS_API_OPENGL
-#define GPU_ENABLE_ASYNC_RESOURCES_CREATION 0
-#else
 #define GPU_ENABLE_ASYNC_RESOURCES_CREATION 1
-#endif
 
 // Enable/disable force shaders recompilation
 #define GPU_FORCE_RECOMPILE_SHADERS 0
