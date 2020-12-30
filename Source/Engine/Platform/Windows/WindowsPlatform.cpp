@@ -1013,8 +1013,8 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
             outData.RemoveAllKeepOrder('\r');
             Array<Char> buffer;
             buffer.Resize(outData.Count() + 1);
-            uint32 length = 0;
-            StringUtils::ConvertUTF82UTF16(outData.Get(), buffer.Get(), outData.Count(), &length);
+            const uint32 length = outData.Count();
+            StringUtils::ConvertANSI2UTF16(outData.Get(), buffer.Get(), outData.Count());
             buffer[length] = '\0';
             Log::Logger::Write(LogType::Info, StringView(buffer.Get(), length));
         }
@@ -1024,8 +1024,8 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
             errData.RemoveAllKeepOrder('\r');
             Array<Char> buffer;
             buffer.Resize(errData.Count() + 1);
-            uint32 length = 0;
-            StringUtils::ConvertUTF82UTF16(errData.Get(), buffer.Get(), errData.Count(), &length);
+            const uint32 length = errData.Count();
+            StringUtils::ConvertANSI2UTF16(errData.Get(), buffer.Get(), errData.Count());
             buffer[length] = '\0';
             Log::Logger::Write(LogType::Error, StringView(buffer.Get(), length));
         }
