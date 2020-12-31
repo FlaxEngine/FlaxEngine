@@ -41,7 +41,6 @@ public class Graphics : EngineModule
         {
         case TargetPlatform.Windows:
             options.PrivateDependencies.Add("GraphicsDeviceNull");
-            //options.PrivateDependencies.Add("GraphicsDeviceOGL");
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
             if (VulkanSdk.Instance.IsValid)
                 options.PrivateDependencies.Add("GraphicsDeviceVulkan");
