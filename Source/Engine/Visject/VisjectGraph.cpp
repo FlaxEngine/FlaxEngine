@@ -179,6 +179,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             default: CRASH;
                 break;
             }
+            break;
         }
         case 12:
             switch (v1.Type.Type)
@@ -204,6 +205,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             default: CRASH;
                 break;
             }
+            break;
         }
         break;
     }
