@@ -347,8 +347,8 @@ inline uint32 GetHash(const StringView& key)
     return StringUtils::GetHashCode(key.Get(), key.Length());
 }
 
-bool operator==(const String& a, const StringView& b);
-bool operator!=(const String& a, const StringView& b);
+bool FLAXENGINE_API operator==(const String& a, const StringView& b);
+bool FLAXENGINE_API operator!=(const String& a, const StringView& b);
 
 namespace fmt
 {
@@ -525,8 +525,8 @@ inline uint32 GetHash(const StringAnsiView& key)
     return StringUtils::GetHashCode(key.Get(), key.Length());
 }
 
-bool operator==(const StringAnsi& a, const StringAnsiView& b);
-bool operator!=(const StringAnsi& a, const StringAnsiView& b);
+bool FLAXENGINE_API operator==(const StringAnsi& a, const StringAnsiView& b);
+bool FLAXENGINE_API operator!=(const StringAnsi& a, const StringAnsiView& b);
 
 namespace fmt
 {
