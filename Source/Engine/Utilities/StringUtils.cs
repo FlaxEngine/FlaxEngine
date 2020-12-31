@@ -14,6 +14,16 @@ namespace FlaxEngine
     public static class StringUtils
     {
         /// <summary>
+        /// Checks if given character is valid hexadecimal digit.
+        /// </summary>
+        /// <param name="c">The hex character.</param>
+        /// <returns>True if character is valid hexadecimal digit, otherwise false.</returns>
+        public static bool IsHexDigit(char c)
+        {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+        }
+
+        /// <summary>
         /// Parse hexadecimals digit to value.
         /// </summary>
         /// <param name="c">The hex character.</param>

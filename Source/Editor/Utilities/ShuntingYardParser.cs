@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using FlaxEngine;
 
 namespace FlaxEditor.Utilities
 {
@@ -172,24 +173,49 @@ namespace FlaxEditor.Utilities
             // Necessary to correctly parse negative numbers
             var previous = TokenType.WhiteSpace;
 
+            var token = new StringBuilder();
             for (int i = 0; i < text.Length; i++)
             {
-                var token = new StringBuilder();
                 var type = DetermineType(text[i]);
-
                 if (type == TokenType.WhiteSpace)
                     continue;
 
+                token.Clear();
                 token.Append(text[i]);
 
                 // Handle fractions and negative numbers (dot . is considered a figure)
                 if (type == TokenType.Number || text[i] == '-' && previous != TokenType.Number)
                 {
-                    // Continue till the end of the number
-                    while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                    // Parse the whole number till the end
+                    if (i + 1 < text.Length)
                     {
-                        i++;
-                        token.Append(text[i]);
+                        switch (text[i + 1])
+                        {
+                        case 'x':
+                        case 'X':
+                            // Hexadecimal value
+                            i++;
+                            token.Clear();
+                            if (i + 1 == text.Length || !StringUtils.IsHexDigit(text[i + 1]))
+                                throw new ParsingException("invalid hexadecimal number");
+                            while (i + 1 < text.Length && StringUtils.IsHexDigit(text[i + 1]))
+                            {
+                                i++;
+                                token.Append(text[i]);
+                            }
+                            var value = ulong.Parse(token.ToString(), NumberStyles.HexNumber);
+                            token.Clear();
+                            token.Append(value.ToString());
+                            break;
+                        default:
+                            // Decimal value
+                            while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                            {
+                                i++;
+                                token.Append(text[i]);
+                            }
+                            break;
+                        }
                     }
 
                     // Discard solo '-'
