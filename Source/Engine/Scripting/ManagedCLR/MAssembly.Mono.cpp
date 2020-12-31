@@ -159,10 +159,16 @@ MClass* MAssembly::GetClass(const StringAnsiView& fullname) const
         return nullptr;
     }
 
+    StringAnsiView key(fullname);
+
+    // Special case for reference
+    if (fullname[fullname.Length() - 1] == '&')
+        key = StringAnsiView(key.Get(), key.Length() - 1);
+
     // Find class by name
     const auto& classes = GetClasses();
     MClass* result = nullptr;
-    classes.TryGet(fullname, result);
+    classes.TryGet(key, result);
 #if 0
     if (!result)
     {
