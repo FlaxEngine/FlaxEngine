@@ -872,19 +872,31 @@ bool IsProcRunning(HANDLE handle)
     return WaitForSingleObject(handle, 0) == WAIT_TIMEOUT;
 }
 
-void ReadPipe(HANDLE pipe, Array<char>& data)
+void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType logType)
 {
+    // Check if any data is ready to read
     DWORD bytesAvailable = 0;
     if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &bytesAvailable, nullptr) && bytesAvailable > 0)
     {
-        const int32 idx = data.Count();
-        data.EnsureCapacity(idx + bytesAvailable);
-        char* ptr = data.Get() + idx;
-
+        // Read data
+        rawData.Clear();
+        rawData.Resize(bytesAvailable);
         DWORD bytesRead = 0;
-        if (ReadFile(pipe, ptr, bytesAvailable, &bytesRead, nullptr))
+        if (ReadFile(pipe, rawData.Get(), bytesAvailable, &bytesRead, nullptr) && bytesRead > 0)
         {
-            data.Resize(idx + bytesRead);
+            // Skip Windows-style lines
+            rawData.RemoveAllKeepOrder('\r');
+
+            // Remove last new line character
+            if (rawData.Last() == '\n')
+                rawData.RemoveLast();
+
+            // Log contents
+            logData.Clear();
+            logData.Resize(rawData.Count() + 1);
+            StringUtils::ConvertANSI2UTF16(rawData.Get(), logData.Get(), rawData.Count());
+            logData.Last() = '\0';
+            Log::Logger::Write(logType, StringView(logData.Get(), rawData.Count()));
         }
     }
 }
@@ -996,39 +1008,17 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
 
     if (stdOutRead != nullptr)
     {
-        Array<char> outData;
-        Array<char> errData;
+        // Keep reading std output and std error streams until process is running
+        Array<char> rawData;
+        Array<Char> logData;
         do
         {
-            ReadPipe(stdOutRead, outData);
-            ReadPipe(stdErrRead, errData);
-            Sleep(0);
+            ReadPipe(stdOutRead, rawData, logData, LogType::Info);
+            ReadPipe(stdErrRead, rawData, logData, LogType::Error);
+            Sleep(1);
         } while (IsProcRunning(procInfo.hProcess));
-
-        ReadPipe(stdOutRead, outData);
-        ReadPipe(stdErrRead, errData);
-
-        if (outData.HasItems())
-        {
-            outData.RemoveAllKeepOrder('\r');
-            Array<Char> buffer;
-            buffer.Resize(outData.Count() + 1);
-            const uint32 length = outData.Count();
-            StringUtils::ConvertANSI2UTF16(outData.Get(), buffer.Get(), outData.Count());
-            buffer[length] = '\0';
-            Log::Logger::Write(LogType::Info, StringView(buffer.Get(), length));
-        }
-
-        if (errData.HasItems())
-        {
-            errData.RemoveAllKeepOrder('\r');
-            Array<Char> buffer;
-            buffer.Resize(errData.Count() + 1);
-            const uint32 length = errData.Count();
-            StringUtils::ConvertANSI2UTF16(errData.Get(), buffer.Get(), errData.Count());
-            buffer[length] = '\0';
-            Log::Logger::Write(LogType::Error, StringView(buffer.Get(), length));
-        }
+        ReadPipe(stdOutRead, rawData, logData, LogType::Info);
+        ReadPipe(stdErrRead, rawData, logData, LogType::Error);
     }
     else
     {
