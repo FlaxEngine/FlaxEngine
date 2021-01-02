@@ -315,7 +315,7 @@ BatteryInfo Win32Platform::GetBatteryInfo()
     BatteryInfo info;
     SYSTEM_POWER_STATUS status;
     GetSystemPowerStatus(&status);
-    info.ACLineStatus = status.ACLineStatus;
+    info.ACLineStatus = (ACLineStatus)status.ACLineStatus;
     info.BatteryLifePercent = status.BatteryLifePercent;
     info.BatteryLifeTime = status.BatteryLifeTime;
     return info;
