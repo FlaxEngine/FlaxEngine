@@ -5,6 +5,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/CPUInfo.h"
+#include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Math/Math.h"
@@ -15,6 +16,7 @@
 #include <WinSock2.h>
 #include <IPHlpApi.h>
 #include <oleauto.h>
+#include <WinBase.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace
@@ -306,6 +308,17 @@ bool Win32Platform::Is64BitPlatform()
 	IsWow64Process(GetCurrentProcess(), &result);
 	return result == TRUE;
 #endif
+}
+
+BatteryInfo Win32Platform::GetBatteryInfo()
+{
+    BatteryInfo info;
+    SYSTEM_POWER_STATUS status;
+    GetSystemPowerStatus(&status);
+    info.ACLineStatus = status.ACLineStatus;
+    info.BatteryLifePercent = status.BatteryLifePercent;
+    info.BatteryLifeTime = status.BatteryLifeTime;
+    return info;
 }
 
 CPUInfo Win32Platform::GetCPUInfo()
