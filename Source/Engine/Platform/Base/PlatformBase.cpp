@@ -19,6 +19,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Platform/BatteryInfo.h"
 #include <iostream>
 
 // Check types sizes
@@ -379,6 +380,11 @@ void PlatformBase::CheckFailed(const char* message, const char* file, int line)
 
 void PlatformBase::SetHighDpiAwarenessEnabled(bool enable)
 {
+}
+
+BatteryInfo PlatformBase::GetBatteryInfo()
+{
+    return BatteryInfo();
 }
 
 int32 PlatformBase::GetDpi()
