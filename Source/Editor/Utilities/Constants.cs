@@ -7,12 +7,12 @@ namespace FlaxEditor.Utilities
     /// </summary>
     internal class Constants
     {
-        public static readonly string DiscordUrl = "https://flaxengine.com/discord";
-        public static readonly string DocsUrl = "https://docs.flaxengine.com/";
-        public static readonly string BugTrackerUrl = "https://github.com/FlaxEngine/FlaxEngine/issues";
-        public static readonly string WebsiteUrl = "https://flaxengine.com";
-        public static readonly string FacebookUrl = "https://facebook.com/FlaxEngine";
-        public static readonly string YoutubeUrl = "https://youtube.com/c/FlaxEngine";
-        public static readonly string TwitterUrl = "https://twitter.com/FlaxEngine";
+        public const string DiscordUrl = "https://flaxengine.com/discord";
+        public const string DocsUrl = "https://docs.flaxengine.com/";
+        public const string BugTrackerUrl = "https://github.com/FlaxEngine/FlaxEngine/issues";
+        public const string WebsiteUrl = "https://flaxengine.com";
+        public const string FacebookUrl = "https://facebook.com/FlaxEngine";
+        public const string YoutubeUrl = "https://youtube.com/c/FlaxEngine";
+        public const string TwitterUrl = "https://twitter.com/FlaxEngine";
     }
 }
