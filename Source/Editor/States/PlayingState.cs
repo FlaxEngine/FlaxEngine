@@ -135,6 +135,8 @@ namespace FlaxEditor.States
             SceneDuplicated?.Invoke();
             RestoreSelection();
 
+            PluginManager.InitializeGamePlugins();
+            
             Editor.OnPlayBegin();
         }
 
@@ -175,6 +177,8 @@ namespace FlaxEditor.States
             IsPaused = true;
             RestoreSelection();
 
+            PluginManager.DeinitializeGamePlugins();
+            
             Editor.OnPlayEnd();
         }
     }

@@ -77,6 +77,28 @@ namespace FlaxEngine
             //return !pluginDesc.DisabledByDefault;
         }
 
+        /// <summary>
+        /// Initialize all <see cref="GamePlugin"/>
+        /// </summary>
+        public static void InitializeGamePlugins()
+        {
+            foreach (var gamePlugin in _gamePlugins)
+            {
+                InvokeInitialize(gamePlugin);
+            }
+        }
+        
+        /// <summary>
+        /// Deinitialize all <see cref="GamePlugin"/>
+        /// </summary>
+        public static void DeinitializeGamePlugins()
+        {
+            foreach (var gamePlugin in _gamePlugins)
+            {
+                InvokeDeinitialize(gamePlugin);
+            }
+        }
+        
         private static void InvokeInitialize(Plugin plugin)
         {
             try
@@ -173,14 +195,20 @@ namespace FlaxEngine
                 return;
             }
 
-            // Init
-            InvokeInitialize(plugin);
-
-            // Register
-            if (isEditor)
-                _editorPlugins.Add(plugin);
-            else
+            if (!isEditor)
+            {
                 _gamePlugins.Add((GamePlugin)plugin);
+#if !FLAX_EDITOR
+                InvokeInitialize(plugin);
+#endif
+            }
+#if FLAX_EDITOR
+            else
+            {
+                _editorPlugins.Add(plugin);
+                InvokeInitialize(plugin);
+            }
+#endif
         }
 
         internal static void Internal_Dispose(Assembly assembly)
