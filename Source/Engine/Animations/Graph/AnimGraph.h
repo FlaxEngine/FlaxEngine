@@ -733,7 +733,7 @@ private:
 
     typedef void (*InitBucketHandler)(AnimGraphInstanceData::Bucket&);
 
-    bool _isFunction;
+    bool _isFunction, _isRegisteredForScriptingEvents;
     int32 _bucketsCounter;
     Array<InitBucketHandler> _bucketInitializerList;
     Array<Node*> _customNodes;
@@ -751,8 +751,11 @@ public:
         , _isFunction(isFunction)
         , _bucketInitializerList(64)
         , _owner(owner)
+        , _isRegisteredForScriptingEvents(false)
     {
     }
+
+    ~AnimGraph();
 
 public:
 

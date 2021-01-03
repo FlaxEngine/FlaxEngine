@@ -119,8 +119,9 @@ bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
 
     // Register for scripts reloading events (only if using any custom nodes)
     // Handle load event always because anim graph asset may be loaded before game scripts
-    if (_customNodes.HasItems())
+    if (_customNodes.HasItems() && !_isRegisteredForScriptingEvents)
     {
+        _isRegisteredForScriptingEvents = true;
 #if USE_EDITOR
         Scripting::ScriptsReloading.Bind<AnimGraph, &AnimGraph::OnScriptsReloading>(this);
         Scripting::ScriptsReloaded.Bind<AnimGraph, &AnimGraph::OnScriptsReloaded>(this);
@@ -129,6 +130,19 @@ bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
     }
 
     return false;
+}
+
+AnimGraph::~AnimGraph()
+{
+    // Unregister for scripts reloading events (only if using any custom nodes)
+    if (_isRegisteredForScriptingEvents)
+    {
+#if USE_EDITOR
+        Scripting::ScriptsReloading.Unbind<AnimGraph, &AnimGraph::OnScriptsReloading>(this);
+        Scripting::ScriptsReloaded.Unbind<AnimGraph, &AnimGraph::OnScriptsReloaded>(this);
+#endif
+        Scripting::ScriptsLoaded.Unbind<AnimGraph, &AnimGraph::OnScriptsLoaded>(this);
+    }
 }
 
 bool AnimGraph::onParamCreated(Parameter* p)
