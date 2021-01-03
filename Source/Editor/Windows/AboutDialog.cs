@@ -90,6 +90,9 @@ namespace FlaxEditor.Windows
                 "Tomasz Juszczak",
                 "Damian Korczowski",
                 "Michał Winiarski",
+                "Stefan Brandmair",
+                "Lukáš Jech",
+                "Jean-Baptiste Perrier"
             });
             authors.Sort();
             var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 50)
