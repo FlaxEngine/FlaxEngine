@@ -1,5 +1,5 @@
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
