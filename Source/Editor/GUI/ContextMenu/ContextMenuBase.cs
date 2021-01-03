@@ -224,8 +224,12 @@ namespace FlaxEditor.GUI.ContextMenu
             }
 
             // Return focus
-            _previouslyFocused?.RootWindow?.Focus();
-            _previouslyFocused?.Focus();
+            if (_previouslyFocused != null)
+            {
+                _previouslyFocused.RootWindow?.Focus();
+                _previouslyFocused.Focus();
+                _previouslyFocused = null;
+            }
 
             // Hide
             Visible = false;
