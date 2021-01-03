@@ -27,6 +27,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         protected override void Arrange()
         {
+            base.Arrange();
+
             // Arrange buttons
             float x = DefaultButtonsMargin;
             for (int i = 0; i < _children.Count; i++)
@@ -50,10 +52,11 @@ namespace FlaxEditor.GUI
                 return;
 
             var lastToolstripButton = toolstrip.LastButton;
+            var parentSize = Parent.Size;
             Bounds = new Rectangle
             (
              new Vector2(lastToolstripButton.Right + 8.0f, 0),
-             new Vector2(Parent.Width - X - 8.0f, 32)
+             new Vector2(parentSize.X - X - 8.0f, toolstrip.Height)
             );
         }
     }

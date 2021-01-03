@@ -90,7 +90,6 @@ namespace FlaxEditor.Windows.Profiler
 
             var toolstrip = new ToolStrip
             {
-                Offsets = new Margin(0, 0, 0, 32),
                 Parent = this,
             };
             _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play32);

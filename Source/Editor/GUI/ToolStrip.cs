@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
-using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -21,7 +20,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The default margin horizontally.
         /// </summary>
-        public const int DefaultMarginH = 4;
+        public const int DefaultMarginH = 2;
 
         /// <summary>
         /// Event fired when button gets clicked.
@@ -64,18 +63,19 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets the height for the items.
         /// </summary>
-        public float ItemsHeight => Height + itemScale * DefaultMarginV;
-        private float itemScale;
-        
+        public float ItemsHeight => Height - 2 * DefaultMarginV;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
         /// </summary>
-        public ToolStrip()
+        /// <param name="height">The toolstrip height.</param>
+        /// <param name="y">The toolstrip Y position.</param>
+        public ToolStrip(float height = 32.0f, float y = 0)
         {
-            itemScale = Style.Current.IconSizeExtra;
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
             BackgroundColor = Style.Current.LightBackground;
+            Offsets = new Margin(0, 0, y, height * Editor.Instance.Options.Options.Interface.IconsScale);
         }
 
         /// <summary>

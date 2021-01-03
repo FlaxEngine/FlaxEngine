@@ -282,9 +282,8 @@ namespace FlaxEditor.Windows
             OnEditorOptionsChanged(Editor.Options.Options);
 
             // Toolstrip
-            var toolstrip = new ToolStrip
+            var toolstrip = new ToolStrip(22.0f)
             {
-                Offsets = new Margin(0, 0, 0, 22),
                 Parent = this,
             };
             toolstrip.AddButton("Clear", Clear).LinkTooltip("Clears all log entries");

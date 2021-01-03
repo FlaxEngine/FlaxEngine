@@ -72,10 +72,9 @@ namespace FlaxEditor.Windows
             editor.ContentDatabase.ItemRemoved += ContentDatabaseOnItemRemoved;
 
             // Toolstrip
-            _toolStrip = new ToolStrip
+            _toolStrip = new ToolStrip(34.0f)
             {
                 Parent = this,
-                Bounds = new Rectangle(0, 0, Width, 34),
             };
             _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import32, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
             _toolStrip.AddSeparator();

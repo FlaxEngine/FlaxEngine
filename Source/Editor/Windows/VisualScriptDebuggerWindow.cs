@@ -399,7 +399,6 @@ namespace FlaxEditor.Windows
 
             var toolstrip = new ToolStrip
             {
-                Offsets = new Margin(0, 0, 0, 32),
                 Parent = this
             };
             toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
@@ -416,7 +415,7 @@ namespace FlaxEditor.Windows
             var tabs = new Tabs
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, 32, 0),
+                Offsets = new Margin(0, 0, toolstrip.Bottom, 0),
                 TabsSize = new Vector2(80, 20),
                 TabsTextHorizontalAlignment = TextAlignment.Center,
                 UseScroll = true,

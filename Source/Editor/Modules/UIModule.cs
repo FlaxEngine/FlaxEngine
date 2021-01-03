@@ -493,10 +493,9 @@ namespace FlaxEditor.Modules
 
         private void InitToolstrip(RootControl mainWindow)
         {
-            ToolStrip = new ToolStrip
+            ToolStrip = new ToolStrip(34.0f, MainMenu.Bottom)
             {
                 Parent = mainWindow,
-                Bounds = new Rectangle(0, MainMenu.Bottom, mainWindow.Width, 34),
             };
 
             _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save32, Editor.SaveAll).LinkTooltip("Save all (Ctrl+S)");
