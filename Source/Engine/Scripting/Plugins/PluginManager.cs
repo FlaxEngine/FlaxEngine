@@ -82,25 +82,28 @@ namespace FlaxEngine
         /// </summary>
         public static void InitializeGamePlugins()
         {
-            foreach (var gamePlugin in _gamePlugins)
+            for (var i = 0; i < _gamePlugins.Count; i++)
             {
-                InvokeInitialize(gamePlugin);
+                InvokeInitialize(_gamePlugins[i]);
             }
         }
-        
+
         /// <summary>
         /// Deinitialize all <see cref="GamePlugin"/>
         /// </summary>
         public static void DeinitializeGamePlugins()
         {
-            foreach (var gamePlugin in _gamePlugins)
+            for (var i = _gamePlugins.Count - 1; i >= 0; i--)
             {
-                InvokeDeinitialize(gamePlugin);
+                InvokeDeinitialize(_gamePlugins[i]);
             }
         }
-        
+
         private static void InvokeInitialize(Plugin plugin)
         {
+            if (plugin._initialized)
+                return;
+
             try
             {
                 Debug.Write(LogType.Info, "Loading plugin " + plugin);
@@ -108,6 +111,7 @@ namespace FlaxEngine
                 PluginLoading?.Invoke(plugin);
 
                 plugin.Initialize();
+                plugin._initialized = true;
 
                 PluginLoaded?.Invoke(plugin);
             }
@@ -120,6 +124,9 @@ namespace FlaxEngine
 
         private static void InvokeDeinitialize(Plugin plugin)
         {
+            if (!plugin._initialized)
+                return;
+
             try
             {
                 Debug.Write(LogType.Info, "Unloading plugin " + plugin);
@@ -127,6 +134,7 @@ namespace FlaxEngine
                 PluginUnloading?.Invoke(plugin);
 
                 plugin.Deinitialize();
+                plugin._initialized = false;
 
                 PluginUnloaded?.Invoke(plugin);
             }

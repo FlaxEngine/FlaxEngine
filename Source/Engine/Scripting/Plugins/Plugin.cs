@@ -12,6 +12,8 @@ namespace FlaxEngine
     /// </remarks>
     public abstract class Plugin
     {
+        internal bool _initialized;
+
         /// <summary>
         /// Gets the description.
         /// </summary>
