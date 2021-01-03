@@ -45,6 +45,7 @@ namespace FlaxEditor.GUI.ContextMenu
         private bool _isSubMenu;
         private ContextMenuBase _childCM;
         private Window _window;
+        private Control _previouslyFocused;
 
         /// <summary>
         /// Returns true if context menu is opened
@@ -185,6 +186,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 return;
             _window.Show();
             PerformLayout();
+            _previouslyFocused = parentWin.FocusedControl;
             Focus();
             OnShow();
         }
@@ -220,6 +222,10 @@ namespace FlaxEditor.GUI.ContextMenu
                 _parentCM._childCM = null;
                 _parentCM = null;
             }
+
+            // Return focus
+            _previouslyFocused?.RootWindow?.Focus();
+            _previouslyFocused?.Focus();
 
             // Hide
             Visible = false;
