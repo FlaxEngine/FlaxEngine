@@ -10,17 +10,25 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Engine/Time.h"
 
 PACK_STRUCT(struct Data {
     GBufferData GBuffer;
     Matrix CurrentVP;
     Matrix PreviousVP;
     Vector4 TemporalAAJitter;
+
+    float VelocityScale;
+    float Dummy0;
+    int32 MaxBlurSamples;
+    uint32 VariableTileLoopCount;
+
+    Vector2 Input0SizeInv;
+    Vector2 Input2SizeInv;
     });
 
 MotionBlurPass::MotionBlurPass()
     : _motionVectorsFormat(PixelFormat::Unknown)
-    , _velocityFormat(PixelFormat::Unknown)
 {
 }
 
@@ -31,8 +39,13 @@ String MotionBlurPass::ToString() const
 
 bool MotionBlurPass::Init()
 {
-    // Create pipeline state
+    // Create pipeline states
     _psCameraMotionVectors = GPUDevice::Instance->CreatePipelineState();
+    _psMotionVectorsDebug = GPUDevice::Instance->CreatePipelineState();
+    _psTileMax = GPUDevice::Instance->CreatePipelineState();
+    _psTileMaxVariable = GPUDevice::Instance->CreatePipelineState();
+    _psNeighborMax = GPUDevice::Instance->CreatePipelineState();
+    _psMotionBlur = GPUDevice::Instance->CreatePipelineState();
 
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/MotionBlur"));
@@ -48,16 +61,12 @@ bool MotionBlurPass::Init()
     {
         if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
             format = PixelFormat::R32G32_Float;
+        else if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+            format = PixelFormat::R16G16B16A16_Float;
         else
             format = PixelFormat::R32G32B32A32_Float;
     }
     _motionVectorsFormat = format;
-    format = PixelFormat::R10G10B10A2_UNorm;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->FeaturesPerFormat[(int32)format].Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
-    {
-        format = PixelFormat::R32G32B32A32_Float;
-    }
-    _velocityFormat = format;
 
     return false;
 }
@@ -86,6 +95,36 @@ bool MotionBlurPass::setupResources()
         if (_psCameraMotionVectors->Init(psDesc))
             return true;
     }
+    if (!_psMotionVectorsDebug->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_MotionVectorsDebug");
+        if (_psMotionVectorsDebug->Init(psDesc))
+            return true;
+    }
+    if (!_psTileMax->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_TileMax");
+        if (_psTileMax->Init(psDesc))
+            return true;
+    }
+    if (!_psTileMaxVariable->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_TileMaxVariable");
+        if (_psTileMaxVariable->Init(psDesc))
+            return true;
+    }
+    if (!_psNeighborMax->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_NeighborMax");
+        if (_psNeighborMax->Init(psDesc))
+            return true;
+    }
+    if (!_psMotionBlur->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_MotionBlur");
+        if (_psMotionBlur->Init(psDesc))
+            return true;
+    }
 
     return false;
 }
@@ -97,6 +136,11 @@ void MotionBlurPass::Dispose()
 
     // Delete pipeline state
     SAFE_DELETE_GPU_RESOURCE(_psCameraMotionVectors);
+    SAFE_DELETE_GPU_RESOURCE(_psMotionVectorsDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psTileMax);
+    SAFE_DELETE_GPU_RESOURCE(_psTileMaxVariable);
+    SAFE_DELETE_GPU_RESOURCE(_psNeighborMax);
+    SAFE_DELETE_GPU_RESOURCE(_psMotionBlur);
 
     // Release asset
     _shader.Unlink();
@@ -198,13 +242,18 @@ void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* f
 {
     auto context = GPUDevice::Instance->GetMainContext();
     const auto motionVectors = renderContext.Buffers->MotionVectors;
-    //if (!motionVectors->IsAllocated() || setupResources())
+    if (!motionVectors->IsAllocated() || setupResources())
     {
         context->Draw(frame);
         return;
     }
 
-    // ..
+    PROFILE_GPU_CPU("Motion Vectors Debug");
+    context->BindSR(0, frame);
+    context->BindSR(1, renderContext.Buffers->MotionVectors->View());
+    context->SetState(_psMotionVectorsDebug);
+    context->DrawFullscreenTriangle();
+    context->ResetSR();
 }
 
 void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTexture*& output)
@@ -218,8 +267,6 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     const int32 screenHeight = renderContext.Buffers->GetHeight();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
-
-    // Ensure to have valid data
     if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
         !_hasValidResources ||
         isCameraCut ||
@@ -232,5 +279,103 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
         return;
     }
 
-    // ..
+    // Need to have valid motion vectors created and rendered before
+    ASSERT(motionVectors->IsAllocated());
+
+    PROFILE_GPU_CPU("Motion Blur");
+
+    // Setup shader inputs
+    const int32 maxBlurSize = (int32)((float)motionVectorsHeight * 0.05f);
+    const int32 tileSize = Math::AlignUp(maxBlurSize, 8);
+    const float timeScale = renderContext.Task->View.IsOfflinePass ? 1.0f : 1.0f / Time::Draw.UnscaledDeltaTime.GetTotalSeconds() / 60.0f; // 60fps as a reference
+    Data data;
+    GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+    data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
+    data.VelocityScale = settings.Scale * 0.5f * timeScale; // 2x samples in loop
+    data.MaxBlurSamples = Math::Clamp(settings.SampleCount / 2, 1, 64); // 2x samples in loop
+    data.VariableTileLoopCount = tileSize / 8;
+    data.Input0SizeInv = Vector2(1.0f / (float)motionVectorsWidth, 1.0f / (float)motionVectorsWidth);
+    const auto cb = _shader->GetShader()->GetCB(0);
+    context->UpdateCB(cb, &data);
+    context->BindCB(0, cb);
+
+    // Downscale motion vectors texture down to 1/2 (with max velocity calculation 2x2 kernel)
+    auto rtDesc = GPUTextureDescription::New2D(motionVectorsWidth / 2, motionVectorsHeight / 2, _motionVectorsFormat);
+    const auto vMaxBuffer2 = RenderTargetPool::Get(rtDesc);
+    context->SetRenderTarget(vMaxBuffer2->View());
+    context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
+    context->BindSR(0, motionVectors->View());
+    context->SetState(_psTileMax);
+    context->DrawFullscreenTriangle();
+
+    // Downscale motion vectors texture down to 1/4 (with max velocity calculation 2x2 kernel)
+    rtDesc.Width /= 2;
+    rtDesc.Height /= 2;
+    const auto vMaxBuffer4 = RenderTargetPool::Get(rtDesc);
+    context->ResetRenderTarget();
+    context->SetRenderTarget(vMaxBuffer4->View());
+    context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
+    context->BindSR(0, vMaxBuffer2->View());
+    data.Input0SizeInv = Vector2(1.0f / (float)vMaxBuffer2->Width(), 1.0f / (float)vMaxBuffer2->Height());
+    context->UpdateCB(cb, &data);
+    context->SetState(_psTileMax);
+    context->DrawFullscreenTriangle();
+    RenderTargetPool::Release(vMaxBuffer2);
+
+    // Downscale motion vectors texture down to 1/8 (with max velocity calculation 2x2 kernel)
+    rtDesc.Width /= 2;
+    rtDesc.Height /= 2;
+    const auto vMaxBuffer8 = RenderTargetPool::Get(rtDesc);
+    context->ResetRenderTarget();
+    context->SetRenderTarget(vMaxBuffer8->View());
+    context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
+    context->BindSR(0, vMaxBuffer4->View());
+    data.Input0SizeInv = Vector2(1.0f / (float)vMaxBuffer4->Width(), 1.0f / (float)vMaxBuffer4->Height());
+    context->UpdateCB(cb, &data);
+    context->SetState(_psTileMax);
+    context->DrawFullscreenTriangle();
+    RenderTargetPool::Release(vMaxBuffer4);
+
+    // Downscale motion vectors texture down to tileSize/tileSize (with max velocity calculation NxN kernel)
+    rtDesc.Width = motionVectorsWidth / tileSize;
+    rtDesc.Height = motionVectorsHeight / tileSize;
+    auto vMaxBuffer = RenderTargetPool::Get(rtDesc);
+    context->ResetRenderTarget();
+    context->SetRenderTarget(vMaxBuffer->View());
+    context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
+    context->BindSR(0, vMaxBuffer8->View());
+    data.Input0SizeInv = Vector2(1.0f / (float)vMaxBuffer8->Width(), 1.0f / (float)vMaxBuffer8->Height());
+    context->UpdateCB(cb, &data);
+    context->SetState(_psTileMaxVariable);
+    context->DrawFullscreenTriangle();
+    RenderTargetPool::Release(vMaxBuffer8);
+
+    // Extract maximum velocities for the tiles based on their neighbors
+    context->ResetRenderTarget();
+    auto vMaxNeighborBuffer = RenderTargetPool::Get(rtDesc);
+    context->SetRenderTarget(vMaxNeighborBuffer->View());
+    context->BindSR(0, vMaxBuffer->View());
+    context->SetState(_psNeighborMax);
+    context->DrawFullscreenTriangle();
+    RenderTargetPool::Release(vMaxBuffer);
+
+    // Render motion blur
+    context->ResetRenderTarget();
+    context->SetRenderTarget(*output);
+    context->SetViewportAndScissors((float)screenWidth, (float)screenHeight);
+    context->BindSR(0, input->View());
+    context->BindSR(1, motionVectors->View());
+    context->BindSR(2, vMaxNeighborBuffer->View());
+    context->BindSR(3, renderContext.Buffers->DepthBuffer->View());
+    data.Input0SizeInv = Vector2(1.0f / (float)input->Width(), 1.0f / (float)input->Height());
+    data.Input2SizeInv = Vector2(1.0f / (float)renderContext.Buffers->DepthBuffer->Width(), 1.0f / (float)renderContext.Buffers->DepthBuffer->Height());
+    context->UpdateCB(cb, &data);
+    context->SetState(_psMotionBlur);
+    context->DrawFullscreenTriangle();
+
+    // Cleanup
+    RenderTargetPool::Release(vMaxNeighborBuffer);
+    context->ResetSR();
+    context->ResetRenderTarget();
+    Swap(output, input);
 }

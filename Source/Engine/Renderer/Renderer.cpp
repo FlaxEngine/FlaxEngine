@@ -485,8 +485,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
-        context->Clear(frameBuffer->View(), Color::Black);
-        //MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
+        MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         return;
     }
 
