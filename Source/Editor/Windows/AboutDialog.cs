@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows
         public AboutDialog()
         : base("About Flax")
         {
-            _dialogSize = Size = new Vector2(400, 260);
+            _dialogSize = Size = new Vector2(400, 320);
 
             Control header = CreateHeader();
             Control authorsLabel = CreateAuthorsLabels(header);
@@ -52,7 +52,7 @@ namespace FlaxEditor.Windows
                 VerticalAlignment = TextAlignment.Near,
                 Parent = this
             };
-            var copyVersionButton = new Button(Width - 104, 4, 100, 20)
+            var copyVersionButton = new Button(Width - 104, 6, 100, 20)
             {
                 Text = "Copy version info",
                 TooltipText = "Copies the current engine version information to system clipboard.",
@@ -92,10 +92,10 @@ namespace FlaxEditor.Windows
                 "Michał Winiarski",
                 "Stefan Brandmair",
                 "Lukáš Jech",
-                "Jean-Baptiste Perrier"
+                "Jean-Baptiste Perrier",
             });
             authors.Sort();
-            var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 50)
+            var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)
             {
                 Text = "People who made it:\n" + string.Join(", ", authors),
                 HorizontalAlignment = TextAlignment.Near,
