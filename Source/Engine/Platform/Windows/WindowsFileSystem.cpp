@@ -231,7 +231,9 @@ bool WindowsFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringVie
         while (*ptr)
         {
             filenames.Add(directory / ptr);
-            ptr += (lstrlenW(ptr) + 1);
+            ptr += lstrlenW(ptr);
+            if (multiSelect)
+                ptr++;
         }
 
         result = false;
