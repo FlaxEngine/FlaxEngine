@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Audio.h"
 #include "AudioBackend.h"
@@ -127,7 +127,7 @@ void Audio::OnAddListener(AudioListener* listener)
 
     if (Listeners.Count() >= AUDIO_MAX_LISTENERS)
     {
-        LOG(Error, "Unsupported amount of the audio listneres!");
+        LOG(Error, "Unsupported amount of the audio listeners!");
         return;
     }
 

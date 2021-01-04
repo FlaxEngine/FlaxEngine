@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -134,20 +134,20 @@ public:
         return CheckFenceState(fence);
     }
 
-    // Returns false if it timed out
+    // Returns true if waiting timed out or failed, false otherwise.
     bool WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds);
 
     void ResetFence(FenceVulkan* fence);
 
-    // Sets it to nullptr
+    // Sets the fence handle to null
     void ReleaseFence(FenceVulkan*& fence);
 
-    // Sets it to nullptr
+    // Sets the fence handle to null
     void WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds);
 
 private:
 
-    // Returns true if signaled
+    // Returns true if fence was signaled, otherwise false.
     bool CheckFenceState(FenceVulkan* fence);
 
     void DestroyFence(FenceVulkan* fence);
@@ -209,14 +209,14 @@ public:
     template<typename T>
     inline void EnqueueResource(Type type, T handle)
     {
-        static_assert(sizeof(T) <= sizeof(uint64), "Vulkan resource handle type size too large.");
+        static_assert(sizeof(T) <= sizeof(uint64), "Invalid handle size.");
         EnqueueGenericResource(type, (uint64)handle, VK_NULL_HANDLE);
     }
 
     template<typename T>
     inline void EnqueueResource(Type type, T handle, VmaAllocation allocation)
     {
-        static_assert(sizeof(T) <= sizeof(uint64), "Vulkan resource handle type size too large.");
+        static_assert(sizeof(T) <= sizeof(uint64), "Invalid handle size.");
         EnqueueGenericResource(type, (uint64)handle, allocation);
     }
 
@@ -554,17 +554,17 @@ public:
     /// <summary>
     /// The main Vulkan commands context.
     /// </summary>
-    GPUContextVulkan* MainContext;
+    GPUContextVulkan* MainContext = nullptr;
 
     /// <summary>
     /// The Vulkan adapter.
     /// </summary>
-    GPUAdapterVulkan* Adapter;
+    GPUAdapterVulkan* Adapter = nullptr;
 
     /// <summary>
     /// The Vulkan device.
     /// </summary>
-    VkDevice Device;
+    VkDevice Device = VK_NULL_HANDLE;
 
     /// <summary>
     /// The Vulkan device queues family properties.
@@ -594,51 +594,51 @@ public:
     /// <summary>
     /// The graphics queue.
     /// </summary>
-    QueueVulkan* GraphicsQueue;
+    QueueVulkan* GraphicsQueue = nullptr;
 
     /// <summary>
     /// The compute queue.
     /// </summary>
-    QueueVulkan* ComputeQueue;
+    QueueVulkan* ComputeQueue = nullptr;
 
     /// <summary>
     /// The transfer queue.
     /// </summary>
-    QueueVulkan* TransferQueue;
+    QueueVulkan* TransferQueue = nullptr;
 
     /// <summary>
     /// The present queue.
     /// </summary>
-    QueueVulkan* PresentQueue;
+    QueueVulkan* PresentQueue = nullptr;
 
     /// <summary>
     /// The Vulkan memory allocator.
     /// </summary>
-    VmaAllocator Allocator;
+    VmaAllocator Allocator = VK_NULL_HANDLE;
 
     /// <summary>
     /// The pipeline cache.
     /// </summary>
-    VkPipelineCache PipelineCache;
+    VkPipelineCache PipelineCache = VK_NULL_HANDLE;
 
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
 
     /// <summary>
     /// The optional validation cache.
     /// </summary>
-    VkValidationCacheEXT ValidationCache;
+    VkValidationCacheEXT ValidationCache = VK_NULL_HANDLE;
 
 #endif
 
     /// <summary>
     /// The uniform buffers uploader.
     /// </summary>
-    UniformBufferUploaderVulkan* UniformBufferUploader;
+    UniformBufferUploaderVulkan* UniformBufferUploader = nullptr;
 
     /// <summary>
     /// The descriptor pools manager.
     /// </summary>
-    DescriptorPoolsManagerVulkan* DescriptorPoolsManager;
+    DescriptorPoolsManagerVulkan* DescriptorPoolsManager = nullptr;
 
     /// <summary>
     /// The physical device limits.
@@ -706,7 +706,7 @@ public:
     /// <returns>The output format.</returns>
     PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling);
 
-#if VULKAN_SUPPORTS_VALIDATION_CACHE
+#if VK_EXT_validation_cache
 
     /// <summary>
     /// Loads the validation cache.

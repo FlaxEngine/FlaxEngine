@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -308,11 +308,12 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
+            float tabSize = 48 * Editor.Options.Options.Interface.IconsScale;
             TabsControl = new Tabs
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(48, 48),
+                TabsSize = new Vector2(tabSize, tabSize),
                 Parent = this
             };
 

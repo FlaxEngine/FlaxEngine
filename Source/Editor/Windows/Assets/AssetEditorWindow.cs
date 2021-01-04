@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -51,7 +51,6 @@ namespace FlaxEditor.Windows.Assets
 
             _toolstrip = new ToolStrip
             {
-                Offsets = new Margin(0, 0, 0, 32),
                 Parent = this
             };
             _toolstrip.AddButton(editor.Icons.Find32, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window");

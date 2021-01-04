@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -77,8 +77,33 @@ namespace FlaxEngine
             //return !pluginDesc.DisabledByDefault;
         }
 
+        /// <summary>
+        /// Initialize all <see cref="GamePlugin"/>
+        /// </summary>
+        public static void InitializeGamePlugins()
+        {
+            for (var i = 0; i < _gamePlugins.Count; i++)
+            {
+                InvokeInitialize(_gamePlugins[i]);
+            }
+        }
+
+        /// <summary>
+        /// Deinitialize all <see cref="GamePlugin"/>
+        /// </summary>
+        public static void DeinitializeGamePlugins()
+        {
+            for (var i = _gamePlugins.Count - 1; i >= 0; i--)
+            {
+                InvokeDeinitialize(_gamePlugins[i]);
+            }
+        }
+
         private static void InvokeInitialize(Plugin plugin)
         {
+            if (plugin._initialized)
+                return;
+
             try
             {
                 Debug.Write(LogType.Info, "Loading plugin " + plugin);
@@ -86,6 +111,7 @@ namespace FlaxEngine
                 PluginLoading?.Invoke(plugin);
 
                 plugin.Initialize();
+                plugin._initialized = true;
 
                 PluginLoaded?.Invoke(plugin);
             }
@@ -98,6 +124,9 @@ namespace FlaxEngine
 
         private static void InvokeDeinitialize(Plugin plugin)
         {
+            if (!plugin._initialized)
+                return;
+
             try
             {
                 Debug.Write(LogType.Info, "Unloading plugin " + plugin);
@@ -105,6 +134,7 @@ namespace FlaxEngine
                 PluginUnloading?.Invoke(plugin);
 
                 plugin.Deinitialize();
+                plugin._initialized = false;
 
                 PluginUnloaded?.Invoke(plugin);
             }
@@ -173,14 +203,20 @@ namespace FlaxEngine
                 return;
             }
 
-            // Init
-            InvokeInitialize(plugin);
-
-            // Register
-            if (isEditor)
-                _editorPlugins.Add(plugin);
-            else
+            if (!isEditor)
+            {
                 _gamePlugins.Add((GamePlugin)plugin);
+#if !FLAX_EDITOR
+                InvokeInitialize(plugin);
+#endif
+            }
+#if FLAX_EDITOR
+            else
+            {
+                _editorPlugins.Add(plugin);
+                InvokeInitialize(plugin);
+            }
+#endif
         }
 
         internal static void Internal_Dispose(Assembly assembly)

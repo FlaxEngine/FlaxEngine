@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "StringView.h"
 #include "String.h"
@@ -45,12 +45,12 @@ StringAnsi StringView::ToStringAnsi() const
 
 bool operator==(const String& a, const StringView& b)
 {
-    return StringUtils::Compare(a.GetText(), b.GetText()) == 0;
+    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) == 0;
 }
 
 bool operator!=(const String& a, const StringView& b)
 {
-    return StringUtils::Compare(a.GetText(), b.GetText()) != 0;
+    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) != 0;
 }
 
 StringAnsiView StringAnsiView::Empty;
@@ -95,10 +95,10 @@ StringAnsi StringAnsiView::ToStringAnsi() const
 
 bool operator==(const StringAnsi& a, const StringAnsiView& b)
 {
-    return StringUtils::Compare(a.GetText(), b.GetText()) == 0;
+    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) == 0;
 }
 
 bool operator!=(const StringAnsi& a, const StringAnsiView& b)
 {
-    return StringUtils::Compare(a.GetText(), b.GetText()) != 0;
+    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) != 0;
 }

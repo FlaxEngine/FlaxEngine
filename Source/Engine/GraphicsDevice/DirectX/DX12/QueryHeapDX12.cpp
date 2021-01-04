@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -86,7 +86,7 @@ void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
 {
     ASSERT(_currentBatch.Open);
 
-    // Discard empty batches
+    // Skip empty batches
     if (_currentBatch.Count == 0)
     {
         return;

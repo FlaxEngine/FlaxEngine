@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "VolumetricFogPass.h"
 #include "ShadowsPass.h"
@@ -152,7 +152,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 64;
         _cache.FogJitter = false;
         _cache.TemporalReprojection = false;
-        _cache.HistoryMissSupersampleCount = 1;
+        _cache.MissedHistorySamplesCount = 1;
         break;
     }
     case Quality::Medium:
@@ -161,7 +161,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 64;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 4;
+        _cache.MissedHistorySamplesCount = 4;
         break;
     }
     case Quality::High:
@@ -170,7 +170,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 128;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 4;
+        _cache.MissedHistorySamplesCount = 4;
         break;
     }
     case Quality::Ultra:
@@ -179,7 +179,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridSizeZ = 256;
         _cache.FogJitter = true;
         _cache.TemporalReprojection = true;
-        _cache.HistoryMissSupersampleCount = 8;
+        _cache.MissedHistorySamplesCount = 8;
         break;
     }
     }
@@ -208,7 +208,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.InverseSquaredLightDistanceBiasScale = _cache.InverseSquaredLightDistanceBiasScale;
     _cache.Data.PhaseG = options.ScatteringDistribution;
     _cache.Data.VolumetricFogMaxDistance = options.Distance;
-    _cache.Data.HistoryMissSuperSampleCount = Math::Clamp(_cache.HistoryMissSupersampleCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
+    _cache.Data.MissedHistorySamplesCount = Math::Clamp(_cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
     Matrix::Transpose(view.PrevViewProjection, _cache.Data.PrevWorldToClip);
     _cache.Data.DirectionalLightShadow.NumCascades = 0;
     _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
@@ -221,7 +221,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     }
     if (_cache.FogJitter && _cache.TemporalReprojection)
     {
-        for (int32 i = 0; i < _cache.HistoryMissSupersampleCount; i++)
+        for (int32 i = 0; i < _cache.MissedHistorySamplesCount; i++)
         {
             const uint64 frameNumber = renderContext.Task->LastUsedFrame - i;
             _cache.Data.FrameJitterOffsets[i] = Vector4(
@@ -323,7 +323,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 
     // Ensure to have valid buffers created
     if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
-        InitCircleRasterizeBuffers();
+        InitCircleBuffer();
 
     // Call rendering to the volume
     const int32 psIndex = (_cache.TemporalReprojection ? 1 : 0) + 2;
@@ -378,7 +378,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 
         // Ensure to have valid buffers created
         if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
-            InitCircleRasterizeBuffers();
+            InitCircleBuffer();
 
         // Call rendering to the volume
         const int32 psIndex = (cache.TemporalReprojection ? 1 : 0) + (withShadow ? 2 : 0);
@@ -644,19 +644,16 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     context->FlushState();
 }
 
-void VolumetricFogPass::InitCircleRasterizeBuffers()
+void VolumetricFogPass::InitCircleBuffer()
 {
     const int32 vertices = 8;
     const int32 triangles = vertices - 2;
     const int32 rings = vertices;
     const float radiansPerRingSegment = PI / (float)rings;
-
     Vector2 vbData[vertices];
     uint16 ibData[triangles * 3];
 
-    // Boost the effective radius so that the edges of the circle approximation lie on the circle, instead of the vertices
     const float radiusScale = 1.0f / Math::Cos(radiansPerRingSegment);
-
     for (int32 vertexIndex = 0; vertexIndex < vertices; vertexIndex++)
     {
         const float angle = vertexIndex / static_cast<float>(vertices - 1) * 2 * PI;

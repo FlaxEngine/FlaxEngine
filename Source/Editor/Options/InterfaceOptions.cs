@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEngine;
@@ -71,6 +71,13 @@ namespace FlaxEditor.Options
         [DefaultValue(TimestampsFormats.None)]
         [EditorDisplay("Interface"), EditorOrder(210), Tooltip("The timestamps prefix mode for debug log messages.")]
         public TimestampsFormats DebugLogTimestampsFormat { get; set; } = TimestampsFormats.None;
+        
+        /// <summary>
+        /// Gets or sets the editor icons scale. Editor restart required.
+        /// </summary>
+        [DefaultValue(1.0f), Limit(0.1f, 4.0f, 0.01f)]
+        [EditorDisplay("Interface"), EditorOrder(250), Tooltip("Editor icons scale. Editor restart required.")]
+        public float IconsScale { get; set; } = 1.0f;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
@@ -131,7 +138,7 @@ namespace FlaxEditor.Options
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(200), Tooltip("Determines whether auto-focus game window on play mode start.")]
+        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(400), Tooltip("Determines whether auto-focus game window on play mode start.")]
         public bool FocusGameWinOnPlay { get; set; } = true;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);

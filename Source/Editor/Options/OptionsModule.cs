@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -196,9 +196,9 @@ namespace FlaxEditor.Options
 
             // If a non-default style was chosen, switch to that style
             string styleName = themeOptions.SelectedStyle;
-            if (styleName != "Default" && themeOptions.Styles.ContainsKey(styleName))
+            if (styleName != "Default" && themeOptions.Styles.TryGetValue(styleName, out var style) && style != null)
             {
-                Style.Current = themeOptions.Styles[themeOptions.SelectedStyle];
+                Style.Current = style;
             }
             else
             {

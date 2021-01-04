@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -1277,7 +1277,7 @@ void LinuxPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, i
 
 void LinuxPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
 {
-    // Query for calendar time
+    // Get the calendar time
     struct timeval time;
     gettimeofday(&time, nullptr);
 
@@ -1315,34 +1315,33 @@ bool LinuxPlatform::Init()
     }
 
     // Set info about the CPU
-    cpu_set_t availableCpusMask;
-    CPU_ZERO(&availableCpusMask);
-    if (sched_getaffinity(0, sizeof(availableCpusMask), &availableCpusMask) == 0)
+    cpu_set_t cpus;
+    CPU_ZERO(&cpus);
+    if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0)
     {
         int32 numberOfCores = 0;
         struct CpuInfo
         {
-            int Core;
-            int Package;
-        } cpuInfos[CPU_SETSIZE];
-
-        Platform::MemoryClear(cpuInfos, sizeof(cpuInfos));
-        int maxCoreId = 0;
-        int maxPackageId = 0;
-        int numCpusAvailable = 0;
+            int32 Core;
+            int32 Package;
+        } cpusInfo[CPU_SETSIZE];
+        Platform::MemoryClear(cpusInfo, sizeof(cpusInfo));
+        int32 maxCoreId = 0;
+        int32 maxPackageId = 0;
+        int32 cpuCountAvailable = 0;
 
         for (int32 cpuIdx = 0; cpuIdx < CPU_SETSIZE; cpuIdx++)
         {
-            if (CPU_ISSET(cpuIdx, &availableCpusMask))
+            if (CPU_ISSET(cpuIdx, &cpus))
             {
-                numCpusAvailable++;
+                cpuCountAvailable++;
 
                 sprintf(fileNameBuffer, "/sys/devices/system/cpu/cpu%d/topology/core_id", cpuIdx);
                 if (FILE* coreIdFile = fopen(fileNameBuffer, "r"))
                 {
-                    if (fscanf(coreIdFile, "%d", &cpuInfos[cpuIdx].Core) != 1)
+                    if (fscanf(coreIdFile, "%d", &cpusInfo[cpuIdx].Core) != 1)
                     {
-                        cpuInfos[cpuIdx].Core = 0;
+                        cpusInfo[cpuIdx].Core = 0;
                     }
                     fclose(coreIdFile);
                 }
@@ -1350,44 +1349,40 @@ bool LinuxPlatform::Init()
                 sprintf(fileNameBuffer, "/sys/devices/system/cpu/cpu%d/topology/physical_package_id", cpuIdx);
                 if (FILE* packageIdFile = fopen(fileNameBuffer, "r"))
                 {
-                    // physical_package_id can be -1 on embedded devices - treat all CPUs as separate in that case.
-                    if (fscanf(packageIdFile, "%d", &cpuInfos[cpuIdx].Package) != 1 || cpuInfos[cpuIdx].Package < 0)
+                    if (fscanf(packageIdFile, "%d", &cpusInfo[cpuIdx].Package) != 1 || cpusInfo[cpuIdx].Package < 0)
                     {
-                        cpuInfos[cpuIdx].Package = cpuInfos[cpuIdx].Core;
+                        cpusInfo[cpuIdx].Package = cpusInfo[cpuIdx].Core;
                     }
                     fclose(packageIdFile);
                 }
 
-                maxCoreId = Math::Max(maxCoreId, cpuInfos[cpuIdx].Core);
-                maxPackageId = Math::Max(maxPackageId, cpuInfos[cpuIdx].Package);
+                maxCoreId = Math::Max(maxCoreId, cpusInfo[cpuIdx].Core);
+                maxPackageId = Math::Max(maxPackageId, cpusInfo[cpuIdx].Package);
             }
         }
 
-        int numCores = maxCoreId + 1;
-        int numPackages = maxPackageId + 1;
-        int numPairs = numPackages * numCores;
+        int32 coresCount = maxCoreId + 1;
+        int32 packagesCount = maxPackageId + 1;
+        int32 pairsCount = packagesCount * coresCount;
 
-        // AArch64 topology seems to be incompatible with the above assumptions, particularly, core_id can be all 0 while the cores themselves are obviously independent. 
-        // Check if num CPUs available to us is more than 2 per core (i.e. more than reasonable when hyperthreading is involved), and if so, don't trust the topology.
-        if (numCores * 2 < numCpusAvailable)
+        if (coresCount * 2 < cpuCountAvailable)
         {
-            // Consider all CPUs to be separate
-            numberOfCores = numCpusAvailable;
+            numberOfCores = cpuCountAvailable;
         }
         else
         {
-            byte* pairs = (byte*)Allocator::Allocate(numPairs);
-            Platform::MemoryClear(pairs, numPairs * sizeof(unsigned char));
+            byte* pairs = (byte*)Allocator::Allocate(pairsCount);
+            Platform::MemoryClear(pairs, pairsCount * sizeof(unsigned char));
 
             for (int32 cpuIdx = 0; cpuIdx < CPU_SETSIZE; cpuIdx++)
             {
-                if (CPU_ISSET(cpuIdx, &availableCpusMask))
+                if (CPU_ISSET(cpuIdx, &cpus))
                 {
-                    pairs[cpuInfos[cpuIdx].Package * numCores + cpuInfos[cpuIdx].Core] = 1;
+                    pairs[cpusInfo[cpuIdx].Package * coresCount + cpusInfo[cpuIdx].Core] = 1;
                 }
             }
 
-            for (int32 i = 0; i < numPairs; i++)
+            for (int32 i = 0; i < pairsCount; i++)
             {
                 numberOfCores += pairs[i];
             }
@@ -1395,9 +1390,9 @@ bool LinuxPlatform::Init()
             Allocator::Free(pairs);
         }
 
-        UnixCpu.ProcessorPackageCount = numPackages;
+        UnixCpu.ProcessorPackageCount = packagesCount;
         UnixCpu.ProcessorCoreCount = Math::Max(numberOfCores, 1);
-        UnixCpu.LogicalProcessorCount = CPU_COUNT(&availableCpusMask);
+        UnixCpu.LogicalProcessorCount = CPU_COUNT(&cpus);
     }
     else
     {

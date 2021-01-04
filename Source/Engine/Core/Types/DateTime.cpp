@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "DateTime.h"
 #include "TimeSpan.h"
@@ -6,8 +6,8 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Math/Math.h"
 
-const int32 DateTime::DaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-const int32 DateTime::DaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+const int32 DateTime::CachedDaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+const int32 DateTime::CachedDaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
@@ -17,7 +17,7 @@ DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute,
         totalDays++;
     year--;
     month--;
-    totalDays += year * 365 + year / 4 - year / 100 + year / 400 + DaysToMonth[month] + day - 1;
+    totalDays += year * 365 + year / 4 - year / 100 + year / 400 + CachedDaysToMonth[month] + day - 1;
     Ticks = totalDays * Constants::TicksPerDay
             + hour * Constants::TicksPerHour
             + minute * Constants::TicksPerMinute
@@ -27,7 +27,7 @@ DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute,
 
 void DateTime::GetDate(int32& year, int32& month, int32& day) const
 {
-    // Based on FORTRAN code in:
+    // Based on:
     // Fliegel, H. F. and van Flandern, T. C.,
     // Communications of the ACM, Vol. 11, No. 10 (October 1968).
 
@@ -56,7 +56,6 @@ int32 DateTime::GetDay() const
 
 DayOfWeek DateTime::GetDayOfWeek() const
 {
-    // January 1, 0001 was a Monday
     return static_cast<DayOfWeek>((Ticks / Constants::TicksPerDay) % 7);
 }
 
@@ -64,8 +63,8 @@ int32 DateTime::GetDayOfYear() const
 {
     int32 year, month, day;
     GetDate(year, month, day);
-    for (int32 currentMonth = 1; currentMonth < month; currentMonth++)
-        day += DaysInMonth(year, currentMonth);
+    for (int32 i = 1; i < month; i++)
+        day += DaysInMonth(year, i);
     return day;
 }
 
@@ -98,7 +97,7 @@ int32 DateTime::DaysInMonth(int32 year, int32 month)
     ASSERT_LOW_LAYER((month >= 1) && (month <= 12));
     if (month == 2 && IsLeapYear(year))
         return 29;
-    return DaysPerMonth[month];
+    return CachedDaysPerMonth[month];
 }
 
 int32 DateTime::DaysInYear(int32 year)
@@ -131,13 +130,7 @@ DateTime DateTime::NowUTC()
 
 bool DateTime::Validate(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
-    return (year >= 1) && (year <= 9999) &&
-            (month >= 1) && (month <= 12) &&
-            (day >= 1) && (day <= DaysInMonth(year, month)) &&
-            (hour >= 0) && (hour <= 23) &&
-            (minute >= 0) && (minute <= 59) &&
-            (second >= 0) && (second <= 59) &&
-            (millisecond >= 0) && (millisecond <= 999);
+    return year >= 1 && year <= 999999 && month >= 1 && month <= 12 && day >= 1 && day <= DaysInMonth(year, month) && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59 && millisecond >= 0 && millisecond <= 999;
 }
 
 String DateTime::ToString() const

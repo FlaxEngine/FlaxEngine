@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_SHADER_COMPILER
 
@@ -28,9 +28,6 @@
 #endif
 #if COMPILE_WITH_DX_SHADER_COMPILER
 #include "DirectX/ShaderCompilerDX.h"
-#endif
-#if COMPILE_WITH_OGL_SHADER_COMPILER
-#include "OpenGL/ShaderCompilerOGL.h"
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER
 #include "Vulkan/ShaderCompilerVulkan.h"
@@ -157,13 +154,6 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
 #if COMPILE_WITH_DX_SHADER_COMPILER
     case ShaderProfile::DirectX_SM6:
         result = New<ShaderCompilerDX>(profile);
-        break;
-#endif
-#if COMPILE_WITH_OGL_SHADER_COMPILER
-		// OpenGL and OpenGL ES
-		case ShaderProfile::GLSL_410:
-		case ShaderProfile::GLSL_440:
-        result = New<ShaderCompilerOGL>(profile);
         break;
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER

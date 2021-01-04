@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -144,10 +144,8 @@ bool GPUTextureDX12::OnInit()
     {
         resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         initialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-
         if (!useSRV)
         {
-            // Only deny shader resources if it's a depth resource that will never be used as SRV
             resourceDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         }
     }

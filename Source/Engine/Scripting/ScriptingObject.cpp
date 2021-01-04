@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ScriptingObject.h"
 #include "Scripting.h"
@@ -137,7 +137,7 @@ MonoObject* ScriptingObject::CreateManagedInternal()
     MClass* monoClass = GetClass();
     if (monoClass == nullptr)
     {
-        LOG(Warning, "Missing managed class for objecct '{0}'.", ToString());
+        LOG(Warning, "Missing managed class for object with id {0}", GetID());
         return nullptr;
     }
 
@@ -249,7 +249,7 @@ void ScriptingObject::OnDeleteObject()
 
 String ScriptingObject::ToString() const
 {
-    return GetClass()->ToString();
+    return _type ? _type.GetType().ManagedClass->ToString() : String::Empty;
 }
 
 ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)

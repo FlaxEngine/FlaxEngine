@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -323,7 +323,7 @@ namespace FlaxEngine.GUI
                 if (parentWin == null)
                     throw new InvalidOperationException("Missing parent window.");
                 var clientPos = PointToWindow(Vector2.Zero);
-                return parentWin.ClientToScreen(clientPos);
+                return parentWin.PointToScreen(clientPos);
             }
         }
 
@@ -1113,12 +1113,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="location">Input location of the point to convert</param>
         /// <returns>Converted point location in screen coordinates</returns>
-        public virtual Vector2 ClientToScreen(Vector2 location)
+        public virtual Vector2 PointToScreen(Vector2 location)
         {
             location = PointToParent(ref location);
             if (_parent != null)
             {
-                location = _parent.ClientToScreen(location);
+                location = _parent.PointToScreen(location);
             }
             return location;
         }
@@ -1128,11 +1128,11 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="location">Input location of the point to convert</param>
         /// <returns>Converted point location in local control's space</returns>
-        public virtual Vector2 ScreenToClient(Vector2 location)
+        public virtual Vector2 PointFromScreen(Vector2 location)
         {
             if (_parent != null)
             {
-                location = _parent.ScreenToClient(location);
+                location = _parent.PointFromScreen(location);
             }
             return PointFromParent(ref location);
         }

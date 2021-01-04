@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
 #include "Storage/ContentStorageManager.h"
@@ -118,16 +118,16 @@ void BinaryAsset::GetImportMetadata(String& path, String& username) const
     }
 
     // Parse metadata and try to get import info
-    rapidjson_flax::Document doc;
-    doc.Parse((const char*)Metadata.Get(), Metadata.Length());
-    if (doc.HasParseError() == false)
+    rapidjson_flax::Document document;
+    document.Parse((const char*)Metadata.Get(), Metadata.Length());
+    if (document.HasParseError() == false)
     {
-        path = JsonTools::GetString(doc, "ImportPath");
-        username = JsonTools::GetString(doc, "ImportUsername");
+        path = JsonTools::GetString(document, "ImportPath");
+        username = JsonTools::GetString(document, "ImportUsername");
     }
     else
     {
-        Log::JsonParseException(doc.GetParseError(), GetPath());
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), GetPath());
     }
 }
 

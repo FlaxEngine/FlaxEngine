@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -12,6 +12,8 @@ namespace FlaxEngine
     /// </remarks>
     public abstract class Plugin
     {
+        internal bool _initialized;
+
         /// <summary>
         /// Gets the description.
         /// </summary>

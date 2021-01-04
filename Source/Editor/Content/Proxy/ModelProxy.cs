@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content.Thumbnails;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -38,6 +39,19 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override Type AssetType => typeof(Model);
+
+        /// <inheritdoc />
+        public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
+        {
+            base.OnContentWindowContextMenu(menu, item);
+
+            menu.AddButton("Generate collision data", () =>
+            {
+                var model = FlaxEngine.Content.LoadAsync<Model>(((ModelAssetItem)item).ID);
+                var cdProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
+                cdProxy.CreateCollisionDataFromModel(model);
+            });
+        }
 
         /// <inheritdoc />
         public override void OnThumbnailDrawPrepare(ThumbnailRequest request)

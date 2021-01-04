@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
 #include "Engine/Core/Log.h"
@@ -177,8 +177,7 @@ bool PhysicsService::Init()
     // only in non-production builds.
 
 #if PHYSX_MEMORY_STATS
-	// Want names of PhysX allocations
-	GPhysXFoundation->setReportAllocationNames(true);
+	_foundation->setReportAllocationNames(true);
 #endif
 
     // Config

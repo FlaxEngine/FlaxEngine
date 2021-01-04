@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ColorGradingPass.h"
 #include "Engine/Content/Content.h"
@@ -195,7 +195,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     {
         context->SetRenderTarget(lut->ViewVolume());
 
-        // Render a quad per slice affected by the given bounds
+        // Render one fullscreen-triangle per slice intersecting the bounds
         const int32 numInstances = lutDesc.Depth;
         context->DrawFullscreenTriangle(numInstances);
     }

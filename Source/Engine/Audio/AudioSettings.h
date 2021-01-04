@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@ public:
     bool DisableAudio = false;
 
     /// <summary>
-    /// The doppler doppler effect factor. Scale for source and listener velocities. Default is 1.
+    /// The doppler effect factor. Scale for source and listener velocities. Default is 1.
     /// </summary>
     float DopplerFactor = 1.0f;
 

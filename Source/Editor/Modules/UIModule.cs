@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -8,6 +8,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Progress.Handlers;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Utilities;
@@ -37,6 +38,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditRedo;
         private ContextMenuButton _menuEditCut;
         private ContextMenuButton _menuEditCopy;
+        private ContextMenuButton _menuEditPaste;
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
@@ -161,7 +163,8 @@ namespace FlaxEditor.Modules
             var undoRedo = Editor.Undo;
             var gizmo = Editor.MainTransformGizmo;
             var state = Editor.StateMachine.CurrentState;
-            var canEditScene = state.CanEditScene;
+            var canEditScene = state.CanEditScene && Level.IsAnySceneLoaded;
+            var canUseUndoRedo = state.CanUseUndoRedo;
             var canEnterPlayMode = state.CanEnterPlayMode && Level.IsAnySceneLoaded;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
             var isDuringBreakpointHang = Editor.Simulation.IsDuringBreakpointHang;
@@ -170,15 +173,15 @@ namespace FlaxEditor.Modules
             //
             _toolStripSaveAll.Enabled = !isDuringBreakpointHang;
             //
-            _toolStripUndo.Enabled = canEditScene && undoRedo.CanUndo;
-            _toolStripRedo.Enabled = canEditScene && undoRedo.CanRedo;
+            _toolStripUndo.Enabled = canEditScene && undoRedo.CanUndo && canUseUndoRedo;
+            _toolStripRedo.Enabled = canEditScene && undoRedo.CanRedo && canUseUndoRedo;
             //
             var gizmoMode = gizmo.ActiveMode;
             _toolStripTranslate.Checked = gizmoMode == TransformGizmoBase.Mode.Translate;
             _toolStripRotate.Checked = gizmoMode == TransformGizmoBase.Mode.Rotate;
             _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
-            _toolStripBuildScenes.Enabled = canEditScene && !isPlayMode;
+            _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
@@ -358,13 +361,13 @@ namespace FlaxEditor.Modules
             // Place dialog nearby the target control
             if (targetControl != null)
             {
-                var targetControlDesktopCenter = targetControl.ClientToScreen(targetControl.Size * 0.5f);
+                var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
                 var pos = targetControlDesktopCenter + new Vector2(10.0f, -dialog.Height * 0.5f);
                 var dialogEnd = pos + dialog.Size;
                 var desktopEnd = desktopSize.BottomRight - new Vector2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.ClientToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
                 var desktopBounds = Platform.VirtualDesktopBounds;
                 pos = Vector2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
                 dialog.RootWindow.Window.Position = pos;
@@ -403,7 +406,7 @@ namespace FlaxEditor.Modules
             cm.AddSeparator();
             _menuEditCut = cm.AddButton("Cut", "Ctrl+X", Editor.SceneEditing.Cut);
             _menuEditCopy = cm.AddButton("Copy", "Ctrl+C", Editor.SceneEditing.Copy);
-            cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
+            _menuEditPaste = cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
             cm.AddSeparator();
             _menuEditDelete = cm.AddButton("Delete", "Del", Editor.SceneEditing.Delete);
             _menuEditDuplicate = cm.AddButton("Duplicate", "Ctrl+D", Editor.SceneEditing.Duplicate);
@@ -490,10 +493,9 @@ namespace FlaxEditor.Modules
 
         private void InitToolstrip(RootControl mainWindow)
         {
-            ToolStrip = new ToolStrip
+            ToolStrip = new ToolStrip(34.0f, MainMenu.Bottom)
             {
                 Parent = mainWindow,
-                Bounds = new Rectangle(0, MainMenu.Bottom, mainWindow.Width, 34),
             };
 
             _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save32, Editor.SaveAll).LinkTooltip("Save all (Ctrl+S)");
@@ -594,17 +596,19 @@ namespace FlaxEditor.Modules
 
             var undoRedo = Editor.Undo;
             var hasSthSelected = Editor.SceneEditing.HasSthSelected;
+            var state = Editor.StateMachine.CurrentState;
+            var canEditScene = Level.IsAnySceneLoaded && state.CanEditScene;
+            var canUseUndoRedo = state.CanUseUndoRedo;
 
-            bool canUndo = undoRedo.CanUndo;
-            _menuEditUndo.Enabled = canUndo;
-            _menuEditUndo.Text = canUndo ? string.Format("Undo \'{0}\'", undoRedo.FirstUndoName) : "No undo";
+            _menuEditUndo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanUndo;
+            _menuEditUndo.Text = undoRedo.CanUndo ? string.Format("Undo \'{0}\'", undoRedo.FirstUndoName) : "No undo";
 
-            bool canRedo = undoRedo.CanRedo;
-            _menuEditRedo.Enabled = canRedo;
-            _menuEditRedo.Text = canRedo ? string.Format("Redo \'{0}\'", undoRedo.FirstRedoName) : "No redo";
+            _menuEditRedo.Enabled = canEditScene && canUseUndoRedo && undoRedo.CanRedo;
+            _menuEditRedo.Text = undoRedo.CanRedo ? string.Format("Redo \'{0}\'", undoRedo.FirstRedoName) : "No redo";
 
             _menuEditCut.Enabled = hasSthSelected;
             _menuEditCopy.Enabled = hasSthSelected;
+            _menuEditPaste.Enabled = canEditScene;
             _menuEditDelete.Enabled = hasSthSelected;
             _menuEditDuplicate.Enabled = hasSthSelected;
             _menuEditSelectAll.Enabled = Level.IsAnySceneLoaded;
@@ -638,9 +642,10 @@ namespace FlaxEditor.Modules
 
             var c = (ContextMenu)control;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
+            var canPlay = Level.IsAnySceneLoaded;
 
-            _menuGamePlay.Enabled = !isPlayMode;
-            _menuGamePause.Enabled = isPlayMode;
+            _menuGamePlay.Enabled = !isPlayMode && canPlay;
+            _menuGamePause.Enabled = isPlayMode && canPlay;
 
             c.PerformLayout();
         }
@@ -651,10 +656,11 @@ namespace FlaxEditor.Modules
                 return;
 
             var c = (ContextMenu)control;
-            bool canBakeLightmaps = Progress.Handlers.BakeLightmapsProgress.CanBake;
+            bool canBakeLightmaps = BakeLightmapsProgress.CanBake;
             bool canEdit = Level.IsAnySceneLoaded && Editor.StateMachine.IsEditMode;
             bool isBakingLightmaps = Editor.ProgressReporting.BakeLightmaps.IsActive;
             bool isBuildingScenes = Editor.StateMachine.BuildingScenesState.IsActive;
+
             _menuToolsBuildScenes.Enabled = canEdit || isBuildingScenes;
             _menuToolsBuildScenes.Text = isBuildingScenes ? "Cancel building scenes data" : "Build scenes data";
             _menuToolsBakeLightmaps.Enabled = (canEdit && canBakeLightmaps) || isBakingLightmaps;

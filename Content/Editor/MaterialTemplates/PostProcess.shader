@@ -134,8 +134,7 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Programmatically set the line number after all the material inputs which have a variable number of line endings
-// This allows shader error line numbers after this point to be the same regardless of which material is being compiled
+// Fix line for errors/warnings for shader code from template
 #line 1000
 
 // Pixel Shader function for PostFx materials rendering

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI;
@@ -90,7 +90,6 @@ namespace FlaxEditor.Windows.Profiler
 
             var toolstrip = new ToolStrip
             {
-                Offsets = new Margin(0, 0, 0, 32),
                 Parent = this,
             };
             _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play32);

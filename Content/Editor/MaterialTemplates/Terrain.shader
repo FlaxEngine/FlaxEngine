@@ -234,8 +234,7 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Programmatically set the line number after all the material inputs which have a variable number of line endings
-// This allows shader error line numbers after this point to be the same regardless of which material is being compiled
+// Fix line for errors/warnings for shader code from template
 #line 1000
 
 // Calculates LOD value (with fractional part for blending)
@@ -595,7 +594,6 @@ TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : S
 #define COPY(thing) output.thing = input[0].thing
 	INTERPOLATE(Position);
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PN
-	// Precompute squares and squares * 3 
 	float UU = U * U;
 	float VV = V * V;
 	float WW = W * W;

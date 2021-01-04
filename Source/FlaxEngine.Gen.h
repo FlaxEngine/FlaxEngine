@@ -11,7 +11,7 @@
 #define FLAXENGINE_VERSION_MINOR 0
 #define FLAXENGINE_VERSION_BUILD 6214
 #define FLAXENGINE_COMPANY "Flax"
-#define FLAXENGINE_COPYRIGHT "Copyright (c) 2012-2020 Wojciech Figat. All rights reserved."
+#define FLAXENGINE_COPYRIGHT "Copyright (c) 2012-2021 Wojciech Figat. All rights reserved."
 
 class NativeBinaryModule;
 extern "C" FLAXENGINE_API NativeBinaryModule* GetBinaryModuleFlaxEngine();

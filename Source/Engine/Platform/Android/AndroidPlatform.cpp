@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_ANDROID
 
@@ -746,15 +746,15 @@ uint64 AndroidPlatform::GetTimeCycles()
 
 void AndroidPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
 {
-    // Query for calendar time
+    // Get the calendar time
     struct timeval time;
     gettimeofday(&time, nullptr);
 
-    // Convert to local time
+    // Convert calendar time to local time
     struct tm localTime;
     localtime_r(&time.tv_sec, &localTime);
 
-    // Extract time
+    // Extract time from Unix date
     year = localTime.tm_year + 1900;
     month = localTime.tm_mon + 1;
     dayOfWeek = localTime.tm_wday;
@@ -767,7 +767,7 @@ void AndroidPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek,
 
 void AndroidPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
 {
-    // Query for calendar time
+    // Get the calendar time
     struct timeval time;
     gettimeofday(&time, nullptr);
 
@@ -803,11 +803,11 @@ bool AndroidPlatform::Init()
     }
 
     // Set info about the CPU
-    cpu_set_t availableCpusMask;
-    CPU_ZERO(&availableCpusMask);
-    if (sched_getaffinity(0, sizeof(availableCpusMask), &availableCpusMask) == 0)
+    cpu_set_t cpus;
+    CPU_ZERO(&cpus);
+    if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0)
     {
-        AndroidCpu.ProcessorCoreCount = AndroidCpu.LogicalProcessorCount = CPU_COUNT(&availableCpusMask);
+        AndroidCpu.ProcessorCoreCount = AndroidCpu.LogicalProcessorCount = CPU_COUNT(&cpus);
     }
     else
     {

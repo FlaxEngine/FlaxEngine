@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -99,6 +99,8 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <ErrorReport>prompt</ErrorReport>");
                 csProjectFileContent.AppendLine("    <WarningLevel>4</WarningLevel>");
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
+                if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
+                    csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
                 csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.Name));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");

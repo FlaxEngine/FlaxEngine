@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -14,6 +14,7 @@ public class stb : HeaderOnlyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
+        LicenseFilePath = "LICENSE.txt";
     }
 
     /// <inheritdoc />

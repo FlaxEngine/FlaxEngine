@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "SceneAnimation.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
@@ -289,7 +289,7 @@ Asset::LoadResult SceneAnimation::load()
                     trackRuntime->DataType = CurvePropertyTrack::DataTypes::Color32;
                 if (trackRuntime->DataType == CurvePropertyTrack::DataTypes::Unknown)
                 {
-                    LOG(Warning, "Unknwon curve animation property type {2} for the track {1}, type {0}.", (int32)track.Type, track.Name, String(trackRuntime->PropertyTypeName));
+                    LOG(Warning, "Unknown curve animation property type {2} for the track {1}, type {0}.", (int32)track.Type, track.Name, String(trackRuntime->PropertyTypeName));
                     track.Disabled = true;
                 }
                 needsParent = true;

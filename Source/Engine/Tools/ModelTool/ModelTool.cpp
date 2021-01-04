@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL
 
@@ -21,7 +21,7 @@ void RemoveNamespace(String& name)
 {
     const int32 namespaceStart = name.Find(':');
     if (namespaceStart != -1)
-        name = name.Substring(namespaceStart + 2);
+        name = name.Substring(namespaceStart + 1);
 }
 
 bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options options, String& errorMsg)

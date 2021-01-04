@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -105,13 +105,13 @@ namespace FlaxEditor.Surface.Elements
     {
         public bool CanUse(InputBox box, ref ScriptType type)
         {
-            return type.Type == typeof(int) || type.Type == typeof(uint);
+            return type.Type == typeof(int);
         }
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = IntegerValue.Get(box.ParentNode, box.Archetype);
-            var control = new IntValueBox(value, bounds.X, bounds.Y, 40, box.CurrentType.Type == typeof(uint) ? 0 : int.MinValue, int.MaxValue, 0.01f)
+            var control = new IntValueBox(value, bounds.X, bounds.Y, 40, int.MinValue, int.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
                 Parent = box.Parent,
@@ -142,6 +142,50 @@ namespace FlaxEditor.Surface.Elements
         {
             var box = (InputBox)control.Tag;
             IntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
+        }
+    }
+
+    class UnsignedIntegerDefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(uint);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype);
+            var control = new UIntValueBox(value, bounds.X, bounds.Y, 40, uint.MinValue, uint.MaxValue, 0.01f)
+            {
+                Height = bounds.Height,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            control.BoxValueChanged += OnValueBoxChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is UIntValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is UIntValueBox intValue)
+            {
+                intValue.Value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype);
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private void OnValueBoxChanged(ValueBox<uint> control)
+        {
+            var box = (InputBox)control.Tag;
+            UnsignedIntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
         }
     }
 
@@ -817,6 +861,7 @@ namespace FlaxEditor.Surface.Elements
         {
             new BooleanDefaultValueEditor(),
             new IntegerDefaultValueEditor(),
+            new UnsignedIntegerDefaultValueEditor(),
             new FloatingDefaultValueEditor(),
             new StringDefaultValueEditor(),
             new Vector2DefaultValueEditor(),

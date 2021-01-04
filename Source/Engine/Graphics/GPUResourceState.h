@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,14 +46,13 @@ public:
     {
         ASSERT(_subresourceState.IsEmpty() && subresourceCount > 0);
 
-        // Allocate space for per-subresource tracking structures
-        // Note: for resources with single subresource we don't use this table
-        if (usePerSubresourceTracking && subresourceCount > 1)
-            _subresourceState.Resize(subresourceCount, false);
-
         // Initialize state
         _allSubresourcesSame = true;
         _resourceState = initialState;
+
+        // Allocate space for per-subresource state tracking
+        if (usePerSubresourceTracking && subresourceCount > 1)
+            _subresourceState.Resize(subresourceCount, false);
 #if BUILD_DEBUG
         _subresourceState.SetAll(InvalidState);
 #endif
@@ -87,9 +86,8 @@ public:
             return state == _resourceState;
         }
 
-        // All subresources must be individually checked
-        const uint32 numSubresourceStates = _subresourceState.Count();
-        for (uint32 i = 0; i < numSubresourceStates; i++)
+        // Check all subresources
+        for (int32 i = 0; i < _subresourceState.Count(); i++)
         {
             if (_subresourceState[i] != state)
             {
@@ -116,10 +114,8 @@ public:
         _allSubresourcesSame = 1;
         _resourceState = state;
 
-        // State is now tracked per-resource, so _subresourceState should not be read
 #if BUILD_DEBUG
-        const uint32 numSubresourceStates = _subresourceState.Count();
-        for (uint32 i = 0; i < numSubresourceStates; i++)
+        for (int32 i = 0; i < _subresourceState.Count(); i++)
         {
             _subresourceState[i] = InvalidState;
         }
@@ -128,7 +124,7 @@ public:
 
     void SetSubresourceState(int32 subresourceIndex, StateType state)
     {
-        // If setting all subresources, or the resource only has a single subresource, set the per-resource state
+        // Check if use single state for the whole resource
         if (subresourceIndex == -1 || _subresourceState.Count() <= 1)
         {
             SetResourceState(state);
@@ -137,18 +133,14 @@ public:
         {
             ASSERT(subresourceIndex < static_cast<int32>(_subresourceState.Count()));
 
-            // If state was previously tracked on a per-resource level, then transition to per-subresource tracking
+            // Transition for all sub-resources
             if (_allSubresourcesSame)
             {
-                const int32 numSubresourceStates = _subresourceState.Count();
-                for (int32 i = 0; i < numSubresourceStates; i++)
+                for (int32 i = 0; i < _subresourceState.Count(); i++)
                 {
                     _subresourceState[i] = _resourceState;
                 }
-
                 _allSubresourcesSame = 0;
-
-                // State is now tracked per-subresource, so _resourceState should not be read
 #if BUILD_DEBUG
                 _resourceState = InvalidState;
 #endif

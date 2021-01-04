@@ -1,5 +1,5 @@
 //#define USE_AUTODESK_FBX_SDK
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEditor.GUI.Dialogs;
@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows
         public AboutDialog()
         : base("About Flax")
         {
-            _dialogSize = Size = new Vector2(400, 260);
+            _dialogSize = Size = new Vector2(400, 320);
 
             Control header = CreateHeader();
             Control authorsLabel = CreateAuthorsLabels(header);
@@ -47,12 +47,12 @@ namespace FlaxEditor.Windows
             };
             new Label(nameLabel.Left, nameLabel.Bottom + 4, nameLabel.Width, 50)
             {
-                Text = string.Format("Version: {0}\nCopyright (c) 2012-2020 Wojciech Figat.\nAll rights reserved.", Globals.EngineVersion),
+                Text = string.Format("Version: {0}\nCopyright (c) 2012-2021 Wojciech Figat.\nAll rights reserved.", Globals.EngineVersion),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
                 Parent = this
             };
-            var copyVersionButton = new Button(Width - 104, 4, 100, 20)
+            var copyVersionButton = new Button(Width - 104, 6, 100, 20)
             {
                 Text = "Copy version info",
                 TooltipText = "Copies the current engine version information to system clipboard.",
@@ -90,9 +90,12 @@ namespace FlaxEditor.Windows
                 "Tomasz Juszczak",
                 "Damian Korczowski",
                 "Michał Winiarski",
+                "Stefan Brandmair",
+                "Lukáš Jech",
+                "Jean-Baptiste Perrier",
             });
             authors.Sort();
-            var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 50)
+            var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)
             {
                 Text = "People who made it:\n" + string.Join(", ", authors),
                 HorizontalAlignment = TextAlignment.Near,

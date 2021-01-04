@@ -286,7 +286,7 @@ namespace Flax.Build.Bindings
                     return parameters;
 
                 // Check for param meta
-                if (token.Value == "API_PARAM")
+                if (token.Value == ApiTokens.Param)
                 {
                     // Read parameters from the tag
                     var tagParams = ParseTagParameters(ref context);

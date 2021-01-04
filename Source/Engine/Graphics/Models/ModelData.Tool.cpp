@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL
 
@@ -94,7 +94,7 @@ bool MeshData::GenerateLightmapUVs()
     // Generate UVs
     std::vector<DirectX::UVAtlasVertex> vb;
     std::vector<uint8_t> ib;
-    float outStretch = 0.f;
+    float outStretch = 0.0f;
     size_t outCharts = 0;
     std::vector<uint32_t> facePartitioning;
     std::vector<uint32_t> vertexRemapArray;

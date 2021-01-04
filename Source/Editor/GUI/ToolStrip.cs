@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -68,11 +68,14 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
         /// </summary>
-        public ToolStrip()
+        /// <param name="height">The toolstrip height.</param>
+        /// <param name="y">The toolstrip Y position.</param>
+        public ToolStrip(float height = 32.0f, float y = 0)
         {
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
             BackgroundColor = Style.Current.LightBackground;
+            Offsets = new Margin(0, 0, y, height * Editor.Instance.Options.Options.Interface.IconsScale);
         }
 
         /// <summary>
