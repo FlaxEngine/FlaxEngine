@@ -22,6 +22,7 @@ namespace Flax.Build.Bindings
         public virtual bool IsClass => false;
         public virtual bool IsStruct => false;
         public virtual bool IsEnum => false;
+        public virtual bool IsInterface => false;
         public virtual bool IsValueType => false;
         public virtual bool IsScriptingObject => false;
         public virtual bool IsPod => false;

@@ -254,6 +254,16 @@ namespace Flax.Build.Bindings
                                 var injectCppCodeInfo = ParseInjectCppCode(ref context);
                                 fileInfo.AddChild(injectCppCodeInfo);
                             }
+                            else if (string.Equals(token.Value, ApiTokens.Interface, StringComparison.Ordinal))
+                            {
+                                if (!(context.ScopeInfo is FileInfo))
+                                    throw new NotImplementedException("TODO: add support for nested interfaces in scripting API");
+
+                                var interfaceInfo = ParseInterface(ref context);
+                                scopeType = interfaceInfo;
+                                context.ScopeInfo.AddChild(scopeType);
+                                context.CurrentAccessLevel = AccessLevel.Public;
+                            }
                             else if (string.Equals(token.Value, ApiTokens.AutoSerialization, StringComparison.Ordinal))
                             {
                                 if (context.ScopeInfo is ClassInfo classInfo)

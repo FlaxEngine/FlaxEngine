@@ -13,6 +13,7 @@ namespace Flax.Build.Bindings
         {
             public static readonly string Enum = "API_ENUM";
             public static readonly string Class = "API_CLASS";
+            public static readonly string Interface = "API_INTERFACE";
             public static readonly string Struct = "API_STRUCT";
             public static readonly string Function = "API_FUNCTION";
             public static readonly string Property = "API_PROPERTY";
@@ -27,6 +28,7 @@ namespace Flax.Build.Bindings
                 Enum,
                 Class,
                 Struct,
+                Interface,
             };
         }
 

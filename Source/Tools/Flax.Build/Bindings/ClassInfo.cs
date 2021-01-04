@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native class information for bindings generator.
     /// </summary>
-    public class ClassInfo : ApiTypeInfo
+    public class ClassInfo : ClassStructInfo
     {
         private static readonly HashSet<string> InBuildScriptingObjectTypes = new HashSet<string>
         {
@@ -22,9 +22,6 @@ namespace Flax.Build.Bindings
             "Actor",
         };
 
-        public AccessLevel Access;
-        public TypeInfo BaseType;
-        public AccessLevel BaseTypeInheritance;
         public bool IsBaseTypeHidden;
         public bool IsStatic;
         public bool IsSealed;
@@ -52,7 +49,7 @@ namespace Flax.Build.Bindings
             base.Init(buildData);
 
             // Internal base types are usually hidden from bindings (used in core-only internally)
-            IsBaseTypeHidden = BaseTypeInheritance == AccessLevel.Private || BaseType.Type == "ISerializable";
+            IsBaseTypeHidden = BaseTypeInheritance == AccessLevel.Private || BaseType == null;
 
             // Cache if it it Scripting Object type
             if (InBuildScriptingObjectTypes.Contains(Name))

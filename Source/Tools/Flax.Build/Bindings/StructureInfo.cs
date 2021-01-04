@@ -8,10 +8,8 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native structure information for bindings generator.
     /// </summary>
-    public class StructureInfo : ApiTypeInfo
+    public class StructureInfo : ClassStructInfo
     {
-        public AccessLevel Access;
-        public TypeInfo BaseType;
         public List<FieldInfo> Fields;
         public List<FunctionInfo> Functions;
         public bool IsAutoSerialization;
@@ -27,7 +25,7 @@ namespace Flax.Build.Bindings
         {
             base.Init(buildData);
 
-            if (ForceNoPod)
+            if (ForceNoPod || (InterfaceNames != null && InterfaceNames.Count != 0))
             {
                 _isPod = false;
                 return;

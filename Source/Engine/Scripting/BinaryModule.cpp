@@ -62,6 +62,7 @@ ScriptingType::ScriptingType()
     , Fullname(nullptr, 0)
     , Type(ScriptingTypes::Script)
     , BaseTypePtr(nullptr)
+    , Interfaces(nullptr)
 {
     Script.Spawn = nullptr;
     Script.VTable = nullptr;
@@ -72,7 +73,7 @@ ScriptingType::ScriptingType()
     Script.DefaultInstance = nullptr;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, SpawnHandler spawn, const ScriptingTypeHandle& baseType, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, SpawnHandler spawn, const ScriptingTypeHandle& baseType, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable, const InterfaceImplementation* interfaces)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(initRuntime)
@@ -80,6 +81,7 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     , Type(ScriptingTypes::Script)
     , BaseTypeHandle(baseType)
     , BaseTypePtr(nullptr)
+    , Interfaces(interfaces)
     , Size(size)
 {
     Script.Spawn = spawn;
@@ -91,13 +93,14 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     Script.DefaultInstance = nullptr;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, SpawnHandler spawn, ScriptingTypeInitializer* baseType, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, SpawnHandler spawn, ScriptingTypeInitializer* baseType, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable, const InterfaceImplementation* interfaces)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(initRuntime)
     , Fullname(fullname)
     , Type(ScriptingTypes::Script)
     , BaseTypePtr(baseType)
+    , Interfaces(interfaces)
     , Size(size)
 {
     Script.Spawn = spawn;
@@ -109,26 +112,28 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     Script.DefaultInstance = nullptr;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, ScriptingTypeInitializer* baseType)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, ScriptingTypeInitializer* baseType, const InterfaceImplementation* interfaces)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(initRuntime)
     , Fullname(fullname)
     , Type(ScriptingTypes::Class)
     , BaseTypePtr(baseType)
+    , Interfaces(interfaces)
     , Size(size)
 {
     Class.Ctor = ctor;
     Class.Dtor = dtor;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, Copy copy, Box box, Unbox unbox, GetField getField, SetField setField, ScriptingTypeInitializer* baseType)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, Copy copy, Box box, Unbox unbox, GetField getField, SetField setField, ScriptingTypeInitializer* baseType, const InterfaceImplementation* interfaces)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(initRuntime)
     , Fullname(fullname)
     , Type(ScriptingTypes::Structure)
     , BaseTypePtr(baseType)
+    , Interfaces(interfaces)
     , Size(size)
 {
     Struct.Ctor = ctor;
@@ -140,6 +145,18 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     Struct.SetField = setField;
 }
 
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, InitRuntimeHandler initRuntime, ScriptingTypeInitializer* baseType, const InterfaceImplementation* interfaces)
+    : ManagedClass(nullptr)
+    , Module(module)
+    , InitRuntime(initRuntime)
+    , Fullname(fullname)
+    , Type(ScriptingTypes::Interface)
+    , BaseTypePtr(baseType)
+    , Interfaces(interfaces)
+    , Size(0)
+{
+}
+
 ScriptingType::ScriptingType(const ScriptingType& other)
     : ManagedClass(other.ManagedClass)
     , Module(other.Module)
@@ -148,6 +165,7 @@ ScriptingType::ScriptingType(const ScriptingType& other)
     , Type(other.Type)
     , BaseTypeHandle(other.BaseTypeHandle)
     , BaseTypePtr(other.BaseTypePtr)
+    , Interfaces(other.Interfaces)
     , Size(other.Size)
 {
     switch (other.Type)
@@ -176,6 +194,8 @@ ScriptingType::ScriptingType(const ScriptingType& other)
         break;
     case ScriptingTypes::Enum:
         break;
+    case ScriptingTypes::Interface:
+        break;
     default: ;
     }
 }
@@ -188,6 +208,7 @@ ScriptingType::ScriptingType(ScriptingType&& other)
     , Type(other.Type)
     , BaseTypeHandle(other.BaseTypeHandle)
     , BaseTypePtr(other.BaseTypePtr)
+    , Interfaces(other.Interfaces)
     , Size(other.Size)
 {
     switch (other.Type)
@@ -220,6 +241,8 @@ ScriptingType::ScriptingType(ScriptingType&& other)
         break;
     case ScriptingTypes::Enum:
         break;
+    case ScriptingTypes::Interface:
+        break;
     default: ;
     }
 }
@@ -239,6 +262,8 @@ ScriptingType::~ScriptingType()
     case ScriptingTypes::Structure:
         break;
     case ScriptingTypes::Enum:
+        break;
+    case ScriptingTypes::Interface:
         break;
     default: ;
     }
@@ -269,16 +294,40 @@ ScriptingObject* ScriptingType::GetDefaultInstance() const
     return Script.DefaultInstance;
 }
 
+const ScriptingType::InterfaceImplementation* ScriptingType::GetInterface(const ScriptingTypeInitializer* interfaceType) const
+{
+    const InterfaceImplementation* interfaces = Interfaces;
+    if (interfaces)
+    {
+        while (interfaces->InterfaceType)
+        {
+            if (interfaces->InterfaceType == interfaceType)
+                return interfaces;
+            interfaces++;
+        }
+    }
+    if (BaseTypeHandle)
+    {
+        return BaseTypeHandle.GetType().GetInterface(interfaceType);
+    }
+    if (BaseTypePtr)
+    {
+        return BaseTypePtr->GetType().GetInterface(interfaceType);
+    }
+    return nullptr;
+}
+
 String ScriptingType::ToString() const
 {
     return String(Fullname.Get(), Fullname.Length());
 }
 
-ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SpawnHandler spawn, ScriptingTypeInitializer* baseType, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable)
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SpawnHandler spawn, ScriptingTypeInitializer* baseType, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
+    // Script
     module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, spawn, baseType, setupScriptVTable, setupScriptObjectVTable);
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, spawn, baseType, setupScriptVTable, setupScriptObjectVTable, interfaces);
     const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
     if (module->TypeNameToTypeIndex.ContainsKey(typeName))
@@ -289,11 +338,12 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     module->TypeNameToTypeIndex[typeName] = TypeIndex;
 }
 
-ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType)
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
+    // Class
     module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, baseType);
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, baseType, interfaces);
     const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
     if (module->TypeNameToTypeIndex.ContainsKey(typeName))
@@ -304,11 +354,28 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     module->TypeNameToTypeIndex[typeName] = TypeIndex;
 }
 
-ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType)
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
+    // Structure
     module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType);
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType, interfaces);
+    const MString typeName(fullname.Get(), fullname.Length());
+#if BUILD_DEBUG
+    if (module->TypeNameToTypeIndex.ContainsKey(typeName))
+    {
+        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
+    }
+#endif
+    module->TypeNameToTypeIndex[typeName] = TypeIndex;
+}
+
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, ScriptingType::InitRuntimeHandler initRuntime, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
+    : ScriptingTypeHandle(module, module->Types.Count())
+{
+    // Interface
+    module->Types.AddUninitialized();
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, initRuntime, baseType, interfaces);
     const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
     if (module->TypeNameToTypeIndex.ContainsKey(typeName))

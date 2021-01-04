@@ -947,9 +947,7 @@ namespace Flax.Build.Bindings
             var classInfo = typeInfo as ClassInfo;
             var structureInfo = typeInfo as StructureInfo;
             var baseType = classInfo?.BaseType ?? structureInfo?.BaseType;
-            if (baseType != null && baseType.Type == "ISerializable")
-                baseType = null;
-            else if (classInfo != null && classInfo.IsBaseTypeHidden)
+            if (classInfo != null && classInfo.IsBaseTypeHidden)
                 baseType = null;
             CppAutoSerializeFields.Clear();
             CppAutoSerializeProperties.Clear();
@@ -1036,6 +1034,25 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append('}').AppendLine();
+        }
+
+        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ClassStructInfo typeInfo, string typeNameNative)
+        {
+            var interfacesPtr = "nullptr";
+            var interfaces = typeInfo.Interfaces;
+            if (interfaces != null)
+            {
+                interfacesPtr = typeNameNative + "_Interfaces";
+                contents.Append("static const ScriptingType::InterfaceImplementation ").Append(interfacesPtr).AppendLine("[] = {");
+                for (int i = 0; i < interfaces.Count; i++)
+                {
+                    var interfaceInfo = interfaces[i];
+                    contents.Append("    { &").Append(interfaceInfo.NativeName).Append("::TypeInitializer, (int16)VTABLE_OFFSET(").Append(typeInfo.NativeName).Append(", ").Append(interfaceInfo.NativeName).AppendLine(") },");
+                }
+                contents.AppendLine("    { nullptr, 0 },");
+                contents.AppendLine("};");
+            }
+            return interfacesPtr;
         }
 
         private static void GenerateCppClass(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ClassInfo classInfo)
@@ -1311,6 +1328,9 @@ namespace Flax.Build.Bindings
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
+            // Interfaces
+            var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
+
             // Type initializer
             contents.Append($"ScriptingTypeInitializer {classTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{classTypeNameManaged}\", {classTypeNameManaged.Length}), ");
@@ -1330,8 +1350,9 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor");
+                contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor, nullptr");
             }
+            contents.Append(", ").Append(interfacesTable);
             contents.Append(");");
             contents.AppendLine();
 
@@ -1526,6 +1547,42 @@ namespace Flax.Build.Bindings
             }
         }
 
+        private static void GenerateCppInterface(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, InterfaceInfo interfaceInfo)
+        {
+            var interfaceTypeNameNative = interfaceInfo.FullNameNative;
+            var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
+            var interfaceTypeNameManagedInternalCall = interfaceTypeNameManaged.Replace('+', '/');
+            var interfaceTypeNameInternal = interfaceInfo.NativeName;
+            if (interfaceInfo.Parent != null && !(interfaceInfo.Parent is FileInfo))
+                interfaceTypeNameInternal = interfaceInfo.Parent.FullNameNative + '_' + interfaceTypeNameInternal;
+
+            contents.AppendLine();
+            contents.AppendFormat("class {0}Internal", interfaceTypeNameInternal).AppendLine();
+            contents.Append('{').AppendLine();
+            contents.AppendLine("public:");
+
+            // Runtime initialization (internal methods binding)
+            contents.AppendLine("    static void InitRuntime()");
+            contents.AppendLine("    {");
+            contents.AppendLine("    }").AppendLine();
+
+            contents.Append('}').Append(';').AppendLine();
+            contents.AppendLine();
+
+            // Type initializer
+            contents.Append($"ScriptingTypeInitializer {interfaceTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
+            contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), ");
+            contents.Append($"&{interfaceTypeNameInternal}Internal::InitRuntime");
+            contents.Append(");");
+            contents.AppendLine();
+
+            // Nested types
+            foreach (var apiTypeInfo in interfaceInfo.Children)
+            {
+                GenerateCppType(buildData, contents, moduleInfo, apiTypeInfo);
+            }
+        }
+
         private static bool GenerateCppType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, object type)
         {
             if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
@@ -1537,6 +1594,8 @@ namespace Flax.Build.Bindings
                     GenerateCppClass(buildData, contents, moduleInfo, classInfo);
                 else if (type is StructureInfo structureInfo)
                     GenerateCppStruct(buildData, contents, moduleInfo, structureInfo);
+                else if (type is InterfaceInfo interfaceInfo)
+                    GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
                 else if (type is InjectCppCodeInfo injectCppCodeInfo)
                     contents.AppendLine(injectCppCodeInfo.Code);
                 else
