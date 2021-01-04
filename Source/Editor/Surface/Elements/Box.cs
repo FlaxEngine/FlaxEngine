@@ -565,7 +565,18 @@ namespace FlaxEditor.Surface.Elements
             {
                 _isMouseDown = false;
                 if (Surface.CanEdit)
-                    Surface.ConnectingStart(this);
+                {
+                    if (!IsOutput && HasSingleConnection)
+                    {
+                        var inputBox = Connections[0];
+                        BreakConnection(inputBox);
+                        Surface.ConnectingStart(inputBox);
+                    }
+                    else
+                    {
+                        Surface.ConnectingStart(this);
+                    }
+                }
             }
             base.OnMouseLeave();
         }
