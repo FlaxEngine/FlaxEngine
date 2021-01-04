@@ -4,7 +4,7 @@
 #define __LIGHTING__
 
 #if !defined(USE_GBUFFER_CUSTOM_DATA)
-#error "Canot calculate lighting without custom data in GBuffer. Define USE_GBUFFER_CUSTOM_DATA."
+#error "Cannot calculate lighting without custom data in GBuffer. Define USE_GBUFFER_CUSTOM_DATA."
 #endif
 
 #include "./Flax/LightingCommon.hlsl"
