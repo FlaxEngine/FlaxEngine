@@ -78,13 +78,15 @@ protected:
 API_CLASS(NoSpawn) class JsonAsset : public JsonAssetBase
 {
 DECLARE_ASSET_HEADER(JsonAsset);
+private:
+    ScriptingType::Dtor _dtor;
 
 public:
 
     /// <summary>
     /// The deserialized unmanaged object instance (e.g. PhysicalMaterial).
     /// </summary>
-    ISerializable* Instance;
+    void* Instance;
 
 protected:
 
