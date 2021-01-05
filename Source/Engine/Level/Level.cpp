@@ -713,7 +713,7 @@ bool LevelImpl::unloadScene(Scene* scene)
     CallSceneEvent(SceneEventType::OnSceneUnloaded, nullptr, sceneId);
 
     // Force flush deleted objects so we actually delete unloaded scene objects (prevent from reloading their managed objects, etc.)
-    ObjectsRemovalService::Flush();
+    ObjectsRemovalService::ForceFlush();
 
     return false;
 }

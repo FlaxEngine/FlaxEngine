@@ -174,6 +174,24 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
     }
 }
 
+void ObjectsRemovalService::ForceFlush()
+{
+    // Collect new objects
+    ObjectsRemovalService::Flush();
+
+    // Delete all reaming objects
+    {
+        ScopeLock lock(PoolLocker);
+        for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
+        {
+            auto obj = i->Key;
+            Pool.Remove(i);
+            obj->OnDeleteObject();
+        }
+        Pool.Clear();
+    }
+}
+
 void ObjectsRemovalServiceService::LateUpdate()
 {
     PROFILE_CPU();
@@ -190,20 +208,6 @@ void ObjectsRemovalServiceService::LateUpdate()
 
 void ObjectsRemovalServiceService::Dispose()
 {
-    // Collect new objects
-    ObjectsRemovalService::Flush();
-
-    // Delete all reaming objects
-    {
-        ScopeLock lock(PoolLocker);
-        for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
-        {
-            auto obj = i->Key;
-            Pool.Remove(i);
-            obj->OnDeleteObject();
-        }
-        Pool.Clear();
-    }
-
+    ObjectsRemovalService::ForceFlush();
     IsReady = false;
 }

@@ -52,12 +52,9 @@ public:
     /// <param name="dt">The delta time (in seconds).</param>
     /// <param name="gameDelta">The game update delta time (in seconds).</param>
     static void Flush(float dt, float gameDelta);
-
+    
     /// <summary>
-    /// Forces the flush the all objects from the pool.
+    /// Forces flush all the objects from the pool.
     /// </summary>
-    FORCE_INLINE static void ForceFlush()
-    {
-        Flush(1000, 1000);
-    }
+    static void ForceFlush();
 };
