@@ -323,6 +323,8 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     auto sourceLength = sourceChunk->Size();
     Encryption::DecryptBytes((byte*)source, sourceLength);
     source[sourceLength - 1] = 0;
+    while (sourceLength > 2 && source[sourceLength - 1] == 0)
+        sourceLength--;
 
     // Init shader cache output stream
     // TODO: reuse MemoryWriteStream per cooking process to reduce dynamic memory allocations
