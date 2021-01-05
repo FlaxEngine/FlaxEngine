@@ -60,7 +60,7 @@ public:
 
 ShadersCompilationService ShadersCompilationServiceInstance;
 
-bool ShadersCompilation::Compile(const ShaderCompilationOptions& options)
+bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 {
     PROFILE_CPU_NAMED("Shader.Compile");
 
@@ -85,6 +85,10 @@ bool ShadersCompilation::Compile(const ShaderCompilationOptions& options)
         LOG(Warning, "Missing source code.");
         return true;
     }
+
+    // Adjust input source length if it ends with null
+    while (options.SourceLength > 2 && options.Source[options.SourceLength - 1] == 0)
+        options.SourceLength--;
 
     const DateTime startTime = DateTime::NowUTC();
     const FeatureLevel featureLevel = RenderTools::GetFeatureLevel(options.Profile);
