@@ -518,7 +518,7 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
 	UNROLL
 	for(int i = 0; i < FilterSizeCube; i++)
 	{
-		float2 samplePos = shadowMapUVs + sideVector * PCFDiscSamples[i].x + upVector * PCFDiscSamples[i].y;
+		float2 samplePos = shadowMapUVs + sideVector.xy * PCFDiscSamples[i].x + upVector.xy * PCFDiscSamples[i].y;
 		result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
 	}
 	result *= (1.0f / FilterSizeCube);
