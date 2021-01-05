@@ -548,6 +548,8 @@ void EngineImpl::InitPaths()
     Globals::EngineContentFolder = Globals::StartupFolder / TEXT("Content");
 #if PLATFORM_WINDOWS
     Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
+#elif PLATFORM_LINUX
+    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Linux/Mono");
 #else
     #error "Please specify the Mono data location for Editor on this platform."
 #endif

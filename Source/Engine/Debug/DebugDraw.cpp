@@ -591,6 +591,19 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
 #undef DRAW
 }
 
+namespace
+{
+    bool DrawActorsTreeWalk(Actor* actor)
+    {
+        if (actor->IsActiveInHierarchy())
+        {
+            actor->OnDebugDraw();
+            return true;
+        }
+        return false;
+    }
+}
+
 void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount)
 {
     if (selectedActors)
@@ -603,15 +616,8 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount)
         }
     }
 
-    Function<bool(Actor*)> function = [](Actor* actor)-> bool
-    {
-        if (actor->IsActiveInHierarchy())
-        {
-            actor->OnDebugDraw();
-            return true;
-        }
-        return false;
-    };
+    Function<bool(Actor*)> function;
+    function.Bind(&DrawActorsTreeWalk);
     SceneQuery::TreeExecute(function);
 }
 

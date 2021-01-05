@@ -14,6 +14,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Texture.h"
+#include "Engine/Utilities/StringConverter.h"
 #include <fstream>
 
 #define MSDOS_SIGNATURE 0x5A4D
@@ -390,7 +391,8 @@ bool EditorUtilities::UpdateExeIcon(const String& path, const TextureData& icon)
     //    - icon/cursor/etc data
 
     std::fstream stream;
-    stream.open(path.Get(), std::ios::in | std::ios::out | std::ios::binary);
+    StringAsANSI<> pathAnsi(path.Get());
+    stream.open(pathAnsi.Get(), std::ios::in | std::ios::out | std::ios::binary);
     if (!stream.is_open())
     {
         LOG(Warning, "Cannot open file");

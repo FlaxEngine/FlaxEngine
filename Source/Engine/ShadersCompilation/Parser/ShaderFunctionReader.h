@@ -337,8 +337,8 @@ namespace ShaderProcessing
 
         ShaderFunctionReader()
         {
-            _childReaders.Add(_permutationReader = New<PermutationReader>(this));
-            _childReaders.Add(New<FlagReader>(this));
+            ShaderMetaReaderType::_childReaders.Add(_permutationReader = New<PermutationReader>(this));
+            ShaderMetaReaderType::_childReaders.Add(New<FlagReader>(this));
         }
 
         ~ShaderFunctionReader()
@@ -353,10 +353,11 @@ namespace ShaderProcessing
             Token token;
 
             // Clear current meta
-            _current.Name.Clear();
-            _current.Permutations.Clear();
-            _current.Flags = ShaderFlags::Default;
-            _current.MinFeatureLevel = FeatureLevel::ES2;
+            auto& current = ShaderMetaReaderType::_current;
+            current.Name.Clear();
+            current.Permutations.Clear();
+            current.Flags = ShaderFlags::Default;
+            current.MinFeatureLevel = FeatureLevel::ES2;
             _permutationReader->Clear();
 
             // Here we read '(x, y)\n' where 'x' is a shader function 'visible' flag, and 'y' is mini feature level
@@ -369,7 +370,7 @@ namespace ShaderProcessing
             else if (token == "false" || token == "0")
             {
                 // Hidden shader
-                _current.Flags = ShaderFlags::Hidden;
+                current.Flags = ShaderFlags::Hidden;
             }
             else
             {
@@ -396,7 +397,7 @@ namespace ShaderProcessing
             {
                 if (token == levels[i].Token)
                 {
-                    _current.MinFeatureLevel = levels[i].Level;
+                    current.MinFeatureLevel = levels[i].Level;
                     missing = false;
                     break;
                 }
@@ -413,25 +414,27 @@ namespace ShaderProcessing
 
         void OnParseAfter(IShaderParser* parser, Reader& text) override
         {
+            auto& current = ShaderMetaReaderType::_current;
+        
             // Validate amount of permutations
-            if (_current.Permutations.Count() > SHADER_PERMUTATIONS_MAX_COUNT)
+            if (current.Permutations.Count() > SHADER_PERMUTATIONS_MAX_COUNT)
             {
-                parser->OnError(String::Format(TEXT("Function \'{0}\' uses too many permutations. Maximum allowed amount is {1}."), String(_current.Name), SHADER_PERMUTATIONS_MAX_COUNT));
+                parser->OnError(String::Format(TEXT("Function \'{0}\' uses too many permutations. Maximum allowed amount is {1}."), String(current.Name), SHADER_PERMUTATIONS_MAX_COUNT));
                 return;
             }
 
             // Check if shader has no permutations
-            if (_current.Permutations.IsEmpty())
+            if (current.Permutations.IsEmpty())
             {
                 // Just add blank permutation (rest of the code will work without any hacks for empty permutations list)
-                _current.Permutations.Add(ShaderPermutation());
+                current.Permutations.Add(ShaderPermutation());
             }
 
             // Check if use this shader program
-            if ((_current.Flags & ShaderFlags::Hidden) == false && _current.MinFeatureLevel <= parser->GetFeatureLevel())
+            if ((current.Flags & ShaderFlags::Hidden) == false && current.MinFeatureLevel <= parser->GetFeatureLevel())
             {
                 // Cache read function
-                _cache.Add(_current);
+                ShaderMetaReaderType::_cache.Add(current);
             }
         }
     };
@@ -440,7 +443,7 @@ namespace ShaderProcessing
 #define DECLARE_SHADER_META_READER_HEADER(tokenName, shaderMetaMemberCollection) public: \
 	bool CheckStartToken(const Token& token) override \
 	{ return token == tokenName; } \
-	void FlushCache(IShaderParser* parser, ShaderMeta* result) \
+	void FlushCache(IShaderParser* parser, ShaderMeta* result) override \
 	{ result->shaderMetaMemberCollection.Add(_cache); }
 
 #endif

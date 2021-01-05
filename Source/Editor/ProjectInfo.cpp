@@ -18,14 +18,14 @@ void ShowProjectLoadError(const Char* errorMsg, const String& projectRootFolder)
     Platform::Error(String::Format(TEXT("Failed to load project. {0}\nPath: '{1}'"), errorMsg, projectRootFolder));
 }
 
-Vector3 GetVector3FromXml(const xml_node& parent, const Char* name, const Vector3& defaultValue)
+Vector3 GetVector3FromXml(const xml_node& parent, const PUGIXML_CHAR* name, const Vector3& defaultValue)
 {
     const auto node = parent.child(name);
     if (!node.empty())
     {
-        const auto x = node.child_value(TEXT("X"));
-        const auto y = node.child_value(TEXT("Y"));
-        const auto z = node.child_value(TEXT("Z"));
+        const auto x = node.child_value(PUGIXML_TEXT("X"));
+        const auto y = node.child_value(PUGIXML_TEXT("Y"));
+        const auto z = node.child_value(PUGIXML_TEXT("Z"));
         if (x && y && z)
         {
             Vector3 v;
@@ -39,7 +39,7 @@ Vector3 GetVector3FromXml(const xml_node& parent, const Char* name, const Vector
     return defaultValue;
 }
 
-int32 GetIntFromXml(const xml_node& parent, const Char* name, const int32 defaultValue)
+int32 GetIntFromXml(const xml_node& parent, const PUGIXML_CHAR* name, const int32 defaultValue)
 {
     const auto node = parent.child_value(name);
     if (node)
@@ -242,7 +242,7 @@ bool ProjectInfo::LoadOldProject(const String& projectPath)
 {
     // Open Xml file
     xml_document doc;
-    const xml_parse_result result = doc.load_file(*projectPath);
+    const xml_parse_result result = doc.load_file((const PUGIXML_CHAR*)*projectPath);
     if (result.status)
     {
         ShowProjectLoadError(TEXT("Xml file parsing error."), projectPath);
@@ -250,7 +250,7 @@ bool ProjectInfo::LoadOldProject(const String& projectPath)
     }
 
     // Get root node
-    const xml_node root = doc.child(TEXT("Project"));
+    const xml_node root = doc.child(PUGIXML_TEXT("Project"));
     if (!root)
     {
         ShowProjectLoadError(TEXT("Missing Project root node in xml file."), projectPath);
@@ -258,18 +258,18 @@ bool ProjectInfo::LoadOldProject(const String& projectPath)
     }
 
     // Load data
-    Name = root.child_value(TEXT("Name"));
+    Name = (const Char*)root.child_value(PUGIXML_TEXT("Name"));
     ProjectPath = projectPath;
     ProjectFolderPath = StringUtils::GetDirectoryName(projectPath);
     DefaultScene = Guid::Empty;
-    const auto defaultScene = root.child_value(TEXT("DefaultSceneId"));
+    const auto defaultScene = root.child_value(PUGIXML_TEXT("DefaultSceneId"));
     if (defaultScene)
     {
-        Guid::Parse(defaultScene, DefaultScene);
+        Guid::Parse((const Char*)defaultScene, DefaultScene);
     }
-    DefaultSceneSpawn.Position = GetVector3FromXml(root, TEXT("DefaultSceneSpawnPos"), Vector3::Zero);
-    DefaultSceneSpawn.Direction = Quaternion::Euler(GetVector3FromXml(root, TEXT("DefaultSceneSpawnDir"), Vector3::Zero)) * Vector3::Forward;
-    MinEngineVersion = ::Version(0, 0, GetIntFromXml(root, TEXT("MinVersionSupported"), 0));
+    DefaultSceneSpawn.Position = GetVector3FromXml(root, PUGIXML_TEXT("DefaultSceneSpawnPos"), Vector3::Zero);
+    DefaultSceneSpawn.Direction = Quaternion::Euler(GetVector3FromXml(root, PUGIXML_TEXT("DefaultSceneSpawnDir"), Vector3::Zero)) * Vector3::Forward;
+    MinEngineVersion = ::Version(0, 0, GetIntFromXml(root, PUGIXML_TEXT("MinVersionSupported"), 0));
 
     // Always reference engine project
     auto& flaxReference = References.AddOne();

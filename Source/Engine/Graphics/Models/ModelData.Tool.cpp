@@ -20,6 +20,8 @@
 #endif
 #include <stack>
 
+#if PLATFORM_WINDOWS
+
 // Import UVAtlas library
 // Source: https://github.com/Microsoft/UVAtlas
 #include <ThirdParty/UVAtlas/UVAtlas.h>
@@ -55,6 +57,8 @@ HRESULT __cdecl UVAtlasCallback(float fPercentDone)
     return S_OK;
 }
 
+#endif
+
 template<typename T>
 void RemapArrayHelper(Array<T>& target, const std::vector<uint32_t>& remap)
 {
@@ -71,6 +75,7 @@ void RemapArrayHelper(Array<T>& target, const std::vector<uint32_t>& remap)
 
 bool MeshData::GenerateLightmapUVs()
 {
+#if PLATFORM_WINDOWS
     // Prepare
     HRESULT hr;
     int32 verticesCount = Positions.Count();
@@ -137,6 +142,9 @@ bool MeshData::GenerateLightmapUVs()
     uint32* ibP = (uint32*)ib.data();
     for (int32 i = 0; i < Indices.Count(); i++)
         Indices[i] = *ibP++;
+#else
+    LOG(Error, "Model lightmap UVs generation is not supported on this platform.");
+#endif
 
     return false;
 }
