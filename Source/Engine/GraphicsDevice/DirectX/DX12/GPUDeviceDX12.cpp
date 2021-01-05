@@ -45,7 +45,7 @@ GPUDevice* GPUDeviceDX12::Create()
     selectedAdapter.Description.VendorId = GPU_VENDOR_ID_AMD;
 #else
 #if !USE_EDITOR && PLATFORM_WINDOWS
-	auto winSettings = WindowsPlatformSettings::Instance();
+	auto winSettings = WindowsPlatformSettings::Get();
 	if (!winSettings->SupportDX12)
 	{
 		// Skip if there is no support

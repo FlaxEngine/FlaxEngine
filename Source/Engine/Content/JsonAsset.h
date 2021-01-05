@@ -74,7 +74,6 @@ protected:
 /// <summary>
 /// Generic type of Json-format asset. It provides the managed representation of this resource data so it can be accessed via C# API.
 /// </summary>
-/// <seealso cref="JsonAssetBase" />
 API_CLASS(NoSpawn) class JsonAsset : public JsonAssetBase
 {
 DECLARE_ASSET_HEADER(JsonAsset);
@@ -82,6 +81,11 @@ private:
     ScriptingType::Dtor _dtor;
 
 public:
+
+    /// <summary>
+    /// The scripting type of the deserialized unmanaged object instance (e.g. PhysicalMaterial).
+    /// </summary>
+    ScriptingTypeHandle InstanceType;
 
     /// <summary>
     /// The deserialized unmanaged object instance (e.g. PhysicalMaterial).

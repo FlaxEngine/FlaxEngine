@@ -98,6 +98,12 @@ Delegate<StringView> Input::ActionTriggered;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
+void InputSettings::Apply()
+{
+    Input::ActionMappings = ActionMappings;
+    Input::AxisMappings = AxisMappings;
+}
+
 int32 Input::GetGamepadsCount()
 {
     return Gamepads.Count();

@@ -11,6 +11,10 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+
+IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 
 bool UWPPlatformTools::UseAOT() const
 {
@@ -37,7 +41,8 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     bool isXboxOne = data.Platform == BuildPlatform::XboxOne;
     const auto platformDataPath = Globals::StartupFolder / TEXT("Source/Platforms");
     const auto uwpDataPath = platformDataPath / (isXboxOne ? TEXT("XboxOne") : TEXT("UWP")) / TEXT("Binaries");
-    const auto platformSettings = UWPPlatformSettings::Instance();
+    const auto gameSettings = GameSettings::Get();
+    const auto platformSettings = UWPPlatformSettings::Get();
     Array<byte> fileTemplate;
 
     // Copy binaries
@@ -66,7 +71,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         }
     }
 
-    const auto projectName = GameSettings::ProductName;
+    const auto projectName = gameSettings->ProductName;
     auto defaultNamespace = projectName;
     ScriptsBuilder::FilterNamespaceText(defaultNamespace);
     const StringAnsi projectGuid = "{3A9A2246-71DD-4567-9ABF-3E040310E30E}";
@@ -102,7 +107,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         // Generate new temp cert if missing
         if (!FileSystem::FileExists(dstCertificatePath))
         {
-            if (EditorUtilities::GenerateCertificate(GameSettings::CompanyName, dstCertificatePath))
+            if (EditorUtilities::GenerateCertificate(gameSettings->CompanyName, dstCertificatePath))
             {
                 LOG(Warning, "Failed to create certificate.");
             }
@@ -159,8 +164,8 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             auto now = DateTime::Now();
             file->WriteTextFormatted(
                 (char*)fileTemplate.Get()
-                , GameSettings::ProductName.ToStringAnsi()
-                , GameSettings::CompanyName.ToStringAnsi()
+                , gameSettings->ProductName.ToStringAnsi()
+                , gameSettings->CompanyName.ToStringAnsi()
                 , now.GetYear()
             );
             hasError = file->HasError();
@@ -382,7 +387,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             file->WriteTextFormatted(
                 (char*)fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Display Name
-                , GameSettings::CompanyName.ToStringAnsi() // {1} Company Name
+                , gameSettings->CompanyName.ToStringAnsi() // {1} Company Name
                 , productId.ToStringAnsi() // {2} Product ID
                 , defaultNamespace.ToStringAnsi() // {3} Default Namespace
             );

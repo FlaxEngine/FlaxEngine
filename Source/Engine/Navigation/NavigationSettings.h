@@ -9,7 +9,7 @@
 /// <summary>
 /// The navigation system settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API NavigationSettings : public SettingsBase<NavigationSettings>
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API NavigationSettings : public SettingsBase
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NavigationSettings);
 public:
@@ -94,24 +94,12 @@ public:
 
 public:
 
-    // [SettingsBase]
-    void RestoreDefault() final override
-    {
-        CellHeight = 10.0f;
-        CellSize = 30.0f;
-        TileSize = 64;
-        MinRegionArea = 0;
-        MergeRegionArea = 20;
-        MaxEdgeLen = 1200.0f;
-        MaxEdgeError = 1.3f;
-        DetailSamplingDist = 600.0f;
-        MaxDetailSamplingError = 1.0f;
-        WalkableRadius = 34.0f;
-        WalkableHeight = 144.0f;
-        WalkableMaxClimb = 35.0f;
-        WalkableMaxSlopeAngle = 60.0f;
-    }
+    /// <summary>
+    /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
+    /// </summary>
+    static NavigationSettings* Get();
 
+    // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         DESERIALIZE(CellHeight);

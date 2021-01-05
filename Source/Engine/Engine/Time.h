@@ -15,6 +15,7 @@ API_CLASS(Static) class FLAXENGINE_API Time
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Time);
     friend class Engine;
     friend class TimeService;
+    friend class PhysicsSettings;
 public:
 
     /// <summary>
@@ -100,6 +101,7 @@ public:
 private:
 
     static bool _gamePaused;
+    static float _physicsMaxDeltaTime;
 
 public:
 

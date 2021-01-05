@@ -1,8 +1,12 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Navigation.h"
+#include "NavigationSettings.h"
 #include "NavMeshRuntime.h"
 #include "NavMeshBuilder.h"
+#include "Engine/Core/Config/GameSettings.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/EngineService.h"
@@ -54,6 +58,8 @@ void* rcAllocDefault(size_t size, rcAllocHint)
 {
     return Allocator::Allocate(size);
 }
+
+IMPLEMENT_SETTINGS_GETTER(NavigationSettings, Navigation);
 
 bool NavigationService::Init()
 {

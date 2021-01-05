@@ -3,17 +3,19 @@
 #include "Time.h"
 #include "EngineService.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Core/Config/TimeSettings.h"
 #include "Engine/Platform/Platform.h"
-#include "Engine/Physics/PhysicsSettings.h"
+#include "Engine/Core/Config/TimeSettings.h"
+#include "Engine/Serialization/Serialization.h"
 
 namespace
 {
     bool FixedDeltaTimeEnable;
     float FixedDeltaTimeValue;
+    float MaxUpdateDeltaTime = 0.1f;
 }
 
 bool Time::_gamePaused = false;
+float Time::_physicsMaxDeltaTime = 0.1f;
 DateTime Time::StartupTime;
 float Time::UpdateFPS = 30.0f;
 float Time::PhysicsFPS = 60.0f;
@@ -42,6 +44,24 @@ public:
 };
 
 TimeService TimeServiceInstance;
+
+void TimeSettings::Apply()
+{
+    Time::UpdateFPS = UpdateFPS;
+    Time::PhysicsFPS = PhysicsFPS;
+    Time::DrawFPS = DrawFPS;
+    Time::TimeScale = TimeScale;
+    ::MaxUpdateDeltaTime = MaxUpdateDeltaTime;
+}
+
+void TimeSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(UpdateFPS);
+    DESERIALIZE(PhysicsFPS);
+    DESERIALIZE(DrawFPS);
+    DESERIALIZE(TimeScale);
+    DESERIALIZE(MaxUpdateDeltaTime);
+}
 
 void Time::TickData::OnBeforeRun(float targetFps, double currentTime)
 {
@@ -219,7 +239,7 @@ void Time::OnBeforeRun()
 
 bool Time::OnBeginUpdate()
 {
-    if (Update.OnTickBegin(UpdateFPS, TimeSettings::Instance()->MaxUpdateDeltaTime))
+    if (Update.OnTickBegin(UpdateFPS, MaxUpdateDeltaTime))
     {
         Current = &Update;
         return true;
@@ -229,7 +249,7 @@ bool Time::OnBeginUpdate()
 
 bool Time::OnBeginPhysics()
 {
-    if (Physics.OnTickBegin(PhysicsFPS, PhysicsSettings::Instance()->MaxDeltaTime))
+    if (Physics.OnTickBegin(PhysicsFPS, _physicsMaxDeltaTime))
     {
         Current = &Physics;
         return true;

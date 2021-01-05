@@ -12,6 +12,9 @@ namespace Flax.Build.Bindings
         public bool NoArray;
         public FunctionInfo Getter;
         public FunctionInfo Setter;
+        public string DefaultValue;
+
+        public bool HasDefaultValue => !string.IsNullOrEmpty(DefaultValue);
 
         public override string ToString()
         {
@@ -19,6 +22,8 @@ namespace Flax.Build.Bindings
             if (IsStatic)
                 result += "static ";
             result += Type + " " + Name;
+            if (HasDefaultValue)
+                result += " = " + DefaultValue;
             return result;
         }
     }

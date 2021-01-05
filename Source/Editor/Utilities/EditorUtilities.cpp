@@ -507,7 +507,11 @@ bool EditorUtilities::GetApplicationImage(const Guid& imageId, TextureData& imag
     AssetReference<Texture> icon = Content::LoadAsync<Texture>(imageId);
     if (icon == nullptr)
     {
-        icon = Content::LoadAsync<Texture>(GameSettings::Icon);
+        const auto gameSettings = GameSettings::Get();
+        if (gameSettings)
+        {
+            icon = Content::LoadAsync<Texture>(gameSettings->Icon);
+        }
     }
     if (icon == nullptr)
     {

@@ -232,7 +232,7 @@ void Collider::UpdateLayerBits()
     filterData.word0 = GetLayerMask();
 
     // Own layer mask
-    filterData.word1 = PhysicsSettings::Instance()->LayerMasks[GetLayer()];
+    filterData.word1 = Physics::LayerMasks[GetLayer()];
 
     _shape->setSimulationFilterData(filterData);
     _shape->setQueryFilterData(filterData);

@@ -9,6 +9,10 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+
+IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 
 const Char* LinuxPlatformTools::GetDisplayName() const
 {
@@ -32,7 +36,7 @@ ArchitectureType LinuxPlatformTools::GetArchitecture() const
 
 bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 {
-    const auto platformSettings = LinuxPlatformSettings::Instance();
+    const auto platformSettings = LinuxPlatformSettings::Get();
     const auto outputPath = data.OutputPath;
 
     // Copy binaries

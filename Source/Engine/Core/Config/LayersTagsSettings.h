@@ -7,8 +7,9 @@
 /// <summary>
 /// Layers and objects tags settings.
 /// </summary>
-class LayersAndTagsSettings : public SettingsBase<LayersAndTagsSettings>
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LayersAndTagsSettings : public SettingsBase
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(LayersAndTagsSettings);
 public:
 
     /// <summary>
@@ -24,43 +25,11 @@ public:
 public:
 
     /// <summary>
-    /// Gets or adds the tag (returns the tag index).
+    /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
-    /// <param name="tag">The tag.</param>
-    /// <returns>The tag index.</returns>
-    int32 GetOrAddTag(const String& tag)
-    {
-        int32 index = Tags.Find(tag);
-        if (index == INVALID_INDEX)
-        {
-            index = Tags.Count();
-            Tags.Add(tag);
-        }
-        return index;
-    }
-
-    /// <summary>
-    /// Gets the amount of non empty layer names (from the beginning, trims the last ones).
-    /// </summary>
-    /// <returns>The layers count.</returns>
-    int32 GetNonEmptyLayerNamesCount() const
-    {
-        int32 result = 31;
-        while (result >= 0 && Layers[result].IsEmpty())
-            result--;
-        return result + 1;
-    }
-
-public:
+    static LayersAndTagsSettings* Get();
 
     // [SettingsBase]
-    void RestoreDefault() override
-    {
-        Tags.Clear();
-        for (int32 i = 0; i < 32; i++)
-            Layers[i].Clear();
-    }
-    
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         const auto tags = stream.FindMember("Tags");

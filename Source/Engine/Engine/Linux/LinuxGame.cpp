@@ -16,7 +16,7 @@ void LinuxGame::InitMainWindowSettings(CreateWindowSettings& settings)
 {
     // TODO: restore window size and fullscreen mode from the cached local settings saved after previous session
 
-    const auto platformSettings = LinuxPlatformSettings::Instance();
+    const auto platformSettings = LinuxPlatformSettings::Get();
     auto windowMode = platformSettings->WindowMode;
 
     // Use command line switches
@@ -54,7 +54,7 @@ void LinuxGame::InitMainWindowSettings(CreateWindowSettings& settings)
 
 bool LinuxGame::Init()
 {
-    const auto platformSettings = LinuxPlatformSettings::Instance();
+    const auto platformSettings = LinuxPlatformSettings::Get();
 
     // Create mutex if need to
     if (platformSettings->ForceSingleInstance)

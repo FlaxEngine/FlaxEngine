@@ -1038,8 +1038,7 @@ namespace Flax.Build.Bindings
             var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
             if (token.Type == TokenType.Equal)
             {
-                //context.Tokenizer.SkipUntil(TokenType.SemiColon, out var defaultValue);
-                context.Tokenizer.SkipUntil(TokenType.SemiColon);
+                context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue);
             }
             else if (token.Type == TokenType.LeftBracket)
             {

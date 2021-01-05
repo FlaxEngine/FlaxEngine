@@ -66,6 +66,14 @@ namespace Flax.Build.Bindings
                     return null;
             }
 
+            // Special case for Engine TEXT macro
+            if (value.Contains("TEXT(\""))
+                return value.Replace("TEXT(\"", "(\"");
+
+            // Special case for value constructors
+            if (value.Contains('(') && value.Contains(')'))
+                return "new " + value;
+
             // Convert from C++ to C#
             switch (value)
             {
@@ -611,6 +619,12 @@ namespace Flax.Build.Bindings
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
                 if (!useUnmanaged)
                 {
+                    if (fieldInfo.DefaultValue != null)
+                    {
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
+                        if (!string.IsNullOrEmpty(defaultValue))
+                            contents.Append(" = ").Append(defaultValue);
+                    }
                     contents.AppendLine(";");
                     continue;
                 }

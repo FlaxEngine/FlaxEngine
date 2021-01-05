@@ -461,13 +461,13 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
 
 float GetTileSize()
 {
-    auto& settings = *NavigationSettings::Instance();
+    auto& settings = *NavigationSettings::Get();
     return settings.CellSize * settings.TileSize;
 }
 
 void InitConfig(rcConfig& config)
 {
-    auto& settings = *NavigationSettings::Instance();
+    auto& settings = *NavigationSettings::Get();
 
     config.cs = settings.CellSize;
     config.ch = settings.CellHeight;

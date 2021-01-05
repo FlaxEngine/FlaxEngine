@@ -1076,7 +1076,7 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
 GPUDevice* GPUDeviceVulkan::Create()
 {
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
-	auto settings = PlatformSettings::Instance();
+	auto settings = PlatformSettings::Get();
 	if (!settings->SupportVulkan)
 	{
 		// Skip if there is no support

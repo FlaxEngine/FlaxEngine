@@ -214,6 +214,7 @@ Asset::LoadResult JsonAsset::loadAsset()
             if (!instance)
                 return LoadResult::Failed;
             Instance = instance;
+            InstanceType = typeHandle;
             _dtor = type.Class.Dtor;
             type.Class.Ctor(instance);
 
@@ -238,6 +239,7 @@ void JsonAsset::unload(bool isReloading)
 
     if (Instance)
     {
+        InstanceType = ScriptingTypeHandle();
         _dtor(Instance);
         Allocator::Free(Instance);
         Instance = nullptr;

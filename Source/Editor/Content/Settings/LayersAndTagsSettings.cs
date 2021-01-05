@@ -6,10 +6,7 @@ using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
 {
-    /// <summary>
-    /// The layers and objects tags settings. Allows to edit asset via editor.
-    /// </summary>
-    public sealed class LayersAndTagsSettings : SettingsBase
+    partial class LayersAndTagsSettings
     {
         /// <summary>
         /// The tag names.

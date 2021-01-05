@@ -87,6 +87,8 @@ namespace Flax.Build.Bindings
             if (headerFiles.Count == 0)
                 return moduleInfo;
 
+            // TODO: use aynsc tasks or thread pool to load and parse multiple header files at once using multi-threading
+
             // Find and load files with API tags
             string[] headerFilesContents = null;
             //using (new ProfileEventScope("LoadHeaderFiles"))
@@ -94,9 +96,8 @@ namespace Flax.Build.Bindings
                 var anyApi = false;
                 for (int i = 0; i < headerFiles.Count; i++)
                 {
-                    // Skip scripting types definitions file
-                    if (headerFiles[i].Replace('\\', '/').EndsWith("Engine/Core/Config.h", StringComparison.Ordinal) ||
-                        headerFiles[i].EndsWith("EditorContextAPI.h", StringComparison.Ordinal))
+                    // Skip scripting tags definitions file
+                    if (headerFiles[i].Replace('\\', '/').EndsWith("Engine/Core/Config.h", StringComparison.Ordinal))
                         continue;
 
                     // Check if file contains any valid API tag
@@ -320,24 +321,36 @@ namespace Flax.Build.Bindings
                                 token = tokenizer.NextToken(true);
                                 while (token.Type != TokenType.Newline)
                                 {
-                                    condition += token.Value;
+                                    var tokenValue = token.Value.Trim();
+                                    if (tokenValue.Length == 0)
+                                    {
+                                        token = tokenizer.NextToken(true);
+                                        continue;
+                                    }
+
+                                    // Very simple defines processing
+                                    tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines.Keys);
+                                    tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PublicDefinitions);
+                                    tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PrivateDefinitions);
+                                    tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.CompileEnv.PreprocessorDefinitions);
+                                    tokenValue = tokenValue.Replace("false", "0");
+                                    tokenValue = tokenValue.Replace("true", "1");
+                                    tokenValue = tokenValue.Replace("||", "|");
+                                    if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|")
+                                        tokenValue = "0";
+
+                                    condition += tokenValue;
                                     token = tokenizer.NextToken(true);
                                 }
 
-                                // Replace contents with defines
-                                condition = condition.Trim();
-                                condition = ReplacePreProcessorDefines(condition, context.PreprocessorDefines.Keys);
-                                condition = ReplacePreProcessorDefines(condition, moduleOptions.PublicDefinitions);
-                                condition = ReplacePreProcessorDefines(condition, moduleOptions.PrivateDefinitions);
-                                condition = ReplacePreProcessorDefines(condition, moduleOptions.CompileEnv.PreprocessorDefinitions);
-                                condition = condition.Replace("false", "0");
-                                condition = condition.Replace("true", "1");
+                                // Filter condition
+                                condition = condition.Replace("1|1", "1");
+                                condition = condition.Replace("1|0", "1");
+                                condition = condition.Replace("0|1", "1");
 
-                                // Check condition
-                                // TODO: support expressions in preprocessor defines in API headers?
+                                // Skip chunk of code of condition fails
                                 if (condition != "1")
                                 {
-                                    // Skip chunk of code
                                     ParsePreprocessorIf(fileInfo, tokenizer, ref token);
                                 }
 
@@ -404,7 +417,7 @@ namespace Flax.Build.Bindings
         {
             foreach (var define in defines)
             {
-                if (text.Contains(define))
+                if (string.Equals(text, define, StringComparison.Ordinal))
                     text = text.Replace(define, "1");
             }
             return text;

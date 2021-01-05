@@ -119,7 +119,10 @@ bool GameBase::Init()
     }
 
     // Preload first scene asset data
-    GameBaseImpl::FirstScene = GameSettings::FirstScene;
+    const auto gameSettings = GameSettings::Get();
+    if (!gameSettings)
+        return true;
+    GameBaseImpl::FirstScene = gameSettings->FirstScene;
 
     return false;
 }
@@ -261,8 +264,8 @@ void GameBaseImpl::OnSplashScreenEnd()
 
     // Load the first scene
     LOG(Info, "Loading the first scene");
+    const auto sceneId = FirstScene ? FirstScene.GetID() : Guid::Empty;
     FirstScene.Unlink();
-    const auto sceneId = GameSettings::FirstScene;
     if (Level::LoadSceneAsync(sceneId))
     {
         LOG(Fatal, "Cannot load the first scene.");

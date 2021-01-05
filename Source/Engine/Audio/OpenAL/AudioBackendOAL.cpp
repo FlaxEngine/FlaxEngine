@@ -878,7 +878,7 @@ bool AudioBackendOAL::Base_Init()
 
     // Init
     ALC::AL_EXT_float32 = ALC::IsExtensionSupported("AL_EXT_float32");
-    SetDopplerFactor(AudioSettings::Instance()->DopplerFactor);
+    SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     ALC::RebuildContexts(true);
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 

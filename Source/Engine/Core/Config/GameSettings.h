@@ -2,60 +2,96 @@
 
 #pragma once
 
+#include "Settings.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Dictionary.h"
 
 /// <summary>
-/// Main engine configuration service. Loads and applies game configuration.
+/// The main game engine configuration service. Loads and applies game configuration.
 /// </summary>
-class GameSettings
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GameSettings : public SettingsBase
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(GameSettings);
 public:
 
     /// <summary>
     /// The product full name.
     /// </summary>
-    static String ProductName;
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
+    String ProductName;
 
     /// <summary>
     /// The company full name.
     /// </summary>
-    static String CompanyName;
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
+    String CompanyName;
 
     /// <summary>
     /// The copyright note used for content signing (eg. source code header).
     /// </summary>
-    static String CopyrightNotice;
+    API_FIELD(Attributes="EditorOrder(15), EditorDisplay(\"General\")")
+    String CopyrightNotice;
 
     /// <summary>
     /// The default application icon.
     /// </summary>
-    static Guid Icon;
+    Guid Icon = Guid::Empty;
 
     /// <summary>
     /// Reference to the first scene to load on a game startup.
     /// </summary>
-    static Guid FirstScene;
+    Guid FirstScene = Guid::Empty;
 
     /// <summary>
     /// True if skip showing splash screen image on the game startup.
     /// </summary>
-    static bool NoSplashScreen;
+    bool NoSplashScreen = false;
 
     /// <summary>
     /// Reference to the splash screen image to show on a game startup.
     /// </summary>
-    static Guid SplashScreen;
+    Guid SplashScreen = Guid::Empty;
 
     /// <summary>
     /// The custom settings to use with a game. Can be specified by the user to define game-specific options and be used by the external plugins (used as key-value pair).
     /// </summary>
-    static Dictionary<String, Guid> CustomSettings;
+    Dictionary<String, Guid> CustomSettings;
+
+public:
+
+    // Settings containers
+    Guid Time;
+    Guid Audio;
+    Guid LayersAndTags;
+    Guid Physics;
+    Guid Input;
+    Guid Graphics;
+    Guid Navigation;
+    Guid GameCooking;
+
+    // Per-platform settings containers
+    Guid WindowsPlatform;
+    Guid UWPPlatform;
+    Guid LinuxPlatform;
+    Guid PS4Platform;
+    Guid XboxScarlettPlatform;
+    Guid AndroidPlatform;
+
+public:
+
+    /// <summary>
+    /// Gets the instance of the game settings asset (null if missing). Object returned by this method is always loaded with valid data to use.
+    /// </summary>
+    static GameSettings* Get();
 
     /// <summary>
     /// Loads the game settings (including other settings such as Physics, Input, etc.).
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
     static bool Load();
+
+    // [SettingsBase]
+    void Apply() override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

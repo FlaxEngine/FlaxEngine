@@ -420,6 +420,31 @@ public:
     /// <param name="output">Output array with only parents</param>
     static void ConstructParentActorsTreeList(const Array<Actor*>& input, Array<Actor*>& output);
 
+public:
+
+    /// <summary>
+    /// The tags names.
+    /// </summary>
+    static Array<String> Tags;
+
+    /// <summary>
+    /// The layers names.
+    /// </summary>
+    static String Layers[32];
+    
+    /// <summary>
+    /// Gets or adds the tag (returns the tag index).
+    /// </summary>
+    /// <param name="tag">The tag.</param>
+    /// <returns>The tag index.</returns>
+    static int32 GetOrAddTag(const StringView& tag);
+
+    /// <summary>
+    /// Gets the amount of non empty layer names (from the beginning, trims the last ones).
+    /// </summary>
+    /// <returns>The layers count.</returns>
+    static int32 GetNonEmptyLayerNamesCount();
+
 private:
 
     // Actor API

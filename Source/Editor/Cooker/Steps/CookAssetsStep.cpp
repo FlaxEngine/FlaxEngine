@@ -160,8 +160,9 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 
     // Invalidate shaders and assets with shaders if need to rebuild them
     bool invalidateShaders = false;
-    const bool shadersNoOptimize = BuildSettings::Instance()->ShadersNoOptimize;
-    const bool shadersGenerateDebugData = BuildSettings::Instance()->ShadersGenerateDebugData;
+    const auto buildSettings = BuildSettings::Get();
+    const bool shadersNoOptimize = buildSettings->ShadersNoOptimize;
+    const bool shadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
     if (shadersNoOptimize != Settings.Global.ShadersNoOptimize)
     {
         LOG(Info, "ShadersNoOptimize option has been modified.");
@@ -175,7 +176,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 #if PLATFORM_TOOLS_WINDOWS
     if (data.Platform == BuildPlatform::Windows32 || data.Platform == BuildPlatform::Windows64)
     {
-        const auto settings = WindowsPlatformSettings::Instance();
+        const auto settings = WindowsPlatformSettings::Get();
         const bool modified =
                 Settings.Windows.SupportDX11 != settings->SupportDX11 ||
                 Settings.Windows.SupportDX10 != settings->SupportDX10 ||
@@ -190,7 +191,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 #if PLATFORM_TOOLS_UWP
     if (data.Platform == BuildPlatform::UWPx86 || data.Platform == BuildPlatform::UWPx64)
     {
-        const auto settings = UWPPlatformSettings::Instance();
+        const auto settings = UWPPlatformSettings::Get();
         const bool modified =
                 Settings.UWP.SupportDX11 != settings->SupportDX11 ||
                 Settings.UWP.SupportDX10 != settings->SupportDX10;
@@ -204,7 +205,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 #if PLATFORM_TOOLS_LINUX
     if (data.Platform == BuildPlatform::LinuxX64)
     {
-        const auto settings = LinuxPlatformSettings::Instance();
+        const auto settings = LinuxPlatformSettings::Get();
         const bool modified =
                 Settings.Linux.SupportVulkan != settings->SupportVulkan;
         if (modified)
@@ -369,7 +370,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     case BuildPlatform::Windows64:
     {
         const char* platformDefineName = "PLATFORM_WINDOWS";
-        const auto settings = WindowsPlatformSettings::Instance();
+        const auto settings = WindowsPlatformSettings::Get();
         if (settings->SupportDX12)
         {
             COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
@@ -393,7 +394,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     case BuildPlatform::UWPx64:
     {
         const char* platformDefineName = "PLATFORM_UWP";
-        const auto settings = UWPPlatformSettings::Instance();
+        const auto settings = UWPPlatformSettings::Get();
         if (settings->SupportDX11)
         {
             COMPILE_PROFILE(DirectX_SM5, SHADER_FILE_CHUNK_INTERNAL_D3D_SM5_CACHE);
@@ -415,7 +416,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     case BuildPlatform::LinuxX64:
     {
         const char* platformDefineName = "PLATFORM_LINUX";
-        const auto settings = LinuxPlatformSettings::Instance();
+        const auto settings = LinuxPlatformSettings::Get();
         if (settings->SupportVulkan)
         {
             COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
@@ -881,7 +882,8 @@ bool CookAssetsStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Loading build cache"), 0);
 
     // Prepare
-    const auto buildSettings = BuildSettings::Instance();
+    const auto gameSettings = GameSettings::Get();
+    const auto buildSettings = BuildSettings::Get();
     const int32 contentKey = buildSettings->ContentKey == 0 ? rand() : buildSettings->ContentKey;
     AssetsRegistry.Clear();
     AssetPathsMapping.Clear();
@@ -892,22 +894,21 @@ bool CookAssetsStep::Perform(CookingData& data)
 
     // Update build settings
     {
-        const auto settings = WindowsPlatformSettings::Instance();
+        const auto settings = WindowsPlatformSettings::Get();
         cache.Settings.Windows.SupportDX11 = settings->SupportDX11;
         cache.Settings.Windows.SupportDX10 = settings->SupportDX10;
         cache.Settings.Windows.SupportVulkan = settings->SupportVulkan;
     }
     {
-        const auto settings = UWPPlatformSettings::Instance();
+        const auto settings = UWPPlatformSettings::Get();
         cache.Settings.UWP.SupportDX11 = settings->SupportDX11;
         cache.Settings.UWP.SupportDX10 = settings->SupportDX10;
     }
     {
-        const auto settings = LinuxPlatformSettings::Instance();
+        const auto settings = LinuxPlatformSettings::Get();
         cache.Settings.Linux.SupportVulkan = settings->SupportVulkan;
     }
     {
-        const auto buildSettings = BuildSettings::Instance();
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
     }
@@ -1004,7 +1005,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     // Create build game header
     {
         GameHeaderFlags gameFlags = GameHeaderFlags::None;
-        if (!GameSettings::NoSplashScreen)
+        if (!gameSettings->NoSplashScreen)
             gameFlags |= GameHeaderFlags::ShowSplashScreen;
 
         // Open file
@@ -1022,17 +1023,17 @@ bool CookAssetsStep::Perform(CookingData& data)
         Array<byte> bytes;
         bytes.Resize(808 + sizeof(Guid));
         Platform::MemoryClear(bytes.Get(), bytes.Count());
-        int32 length = sizeof(Char) * GameSettings::ProductName.Length();
-        Platform::MemoryCopy(bytes.Get() + 0, GameSettings::ProductName.Get(), length);
+        int32 length = sizeof(Char) * gameSettings->ProductName.Length();
+        Platform::MemoryCopy(bytes.Get() + 0, gameSettings->ProductName.Get(), length);
         bytes[length] = 0;
         bytes[length + 1] = 0;
-        length = sizeof(Char) * GameSettings::CompanyName.Length();
-        Platform::MemoryCopy(bytes.Get() + 400, GameSettings::CompanyName.Get(), length);
+        length = sizeof(Char) * gameSettings->CompanyName.Length();
+        Platform::MemoryCopy(bytes.Get() + 400, gameSettings->CompanyName.Get(), length);
         bytes[length + 400] = 0;
         bytes[length + 401] = 0;
         *(int32*)(bytes.Get() + 800) = (int32)gameFlags;
         *(int32*)(bytes.Get() + 804) = contentKey;
-        *(Guid*)(bytes.Get() + 808) = GameSettings::SplashScreen;
+        *(Guid*)(bytes.Get() + 808) = gameSettings->SplashScreen;
         Encryption::EncryptBytes(bytes.Get(), bytes.Count());
         stream->WriteArray(bytes);
 

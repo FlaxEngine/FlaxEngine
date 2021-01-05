@@ -1310,7 +1310,7 @@ namespace Flax.Build.Bindings
 
             contents.AppendLine("    }").AppendLine();
 
-            if (!useScripting)
+            if (!useScripting && !classInfo.IsAbstract)
             {
                 // Constructor
                 contents.AppendLine("    static void Ctor(void* ptr)");
@@ -1350,7 +1350,14 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor, nullptr");
+                if (classInfo.IsAbstract)
+                    contents.Append("nullptr, nullptr, ");
+                else
+                    contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor, ");
+                if (classInfo.BaseType != null)
+                    contents.Append($"&{classInfo.BaseType}::TypeInitializer");
+                else
+                    contents.Append("nullptr");
             }
             contents.Append(", ").Append(interfacesTable);
             contents.Append(");");
