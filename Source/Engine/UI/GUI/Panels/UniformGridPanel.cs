@@ -14,7 +14,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the padding given to each slot.
         /// </summary>
-        [EditorOrder(0), Tooltip("The padding margin appied to each item slot.")]
+        [EditorOrder(0), Tooltip("The padding margin applied to each item slot.")]
         public Margin SlotPadding
         {
             get => _slotPadding;

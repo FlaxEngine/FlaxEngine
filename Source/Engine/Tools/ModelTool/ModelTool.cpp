@@ -1131,7 +1131,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
                     dstLod.Meshes.RemoveAt(i--);
             }
 
-            LOG(Info, "Generated LOD{0}: triangles: {1} ({2}% of base LOD), verteces: {3} ({4}% of base LOD)",
+            LOG(Info, "Generated LOD{0}: triangles: {1} ({2}% of base LOD), verticies: {3} ({4}% of base LOD)",
                 lodIndex,
                 lodTriangleCount, (int32)(lodTriangleCount * 100 / baseLodTriangleCount),
                 lodVertexCount, (int32)(lodVertexCount * 100 / baseLodVertexCount));

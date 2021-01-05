@@ -124,7 +124,7 @@ public:
     virtual void SetMousePosition(const Vector2& newPosition) = 0;
 
     /// <summary>
-    /// Called when mouse cursor gets moved by the application. Invalidates the previous cached mouse position to prevent mouse jitter when locking the cursor programatically.
+    /// Called when mouse cursor gets moved by the application. Invalidates the previous cached mouse position to prevent mouse jitter when locking the cursor programmatically.
     /// </summary>
     /// <param name="newPosition">The new mouse position.</param>
     void OnMouseMoved(const Vector2& newPosition)

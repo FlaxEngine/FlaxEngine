@@ -489,7 +489,7 @@ void Terrain::RemovePatch(const Int2& patchCoord)
     const auto patch = GetPatch(patchCoord);
     if (patch == nullptr)
     {
-        LOG(Warning, "Cannot remvoe patch at {0}x{1}. It does not exist.", patchCoord.X, patchCoord.Y);
+        LOG(Warning, "Cannot remove patch at {0}x{1}. It does not exist.", patchCoord.X, patchCoord.Y);
         return;
     }
 

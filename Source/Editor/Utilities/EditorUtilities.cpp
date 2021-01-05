@@ -247,7 +247,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
         iconTexSize = Math::RoundUpToPowerOf2(width);
     }
 
-    // Try to pick a proper mip (requrie the same size)
+    // Try to pick a proper mip (require the same size)
     const TextureMipData* srcPixels = nullptr;
     int32 mipLevels = icon->GetMipLevels();
     for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)

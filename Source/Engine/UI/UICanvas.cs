@@ -186,14 +186,14 @@ namespace FlaxEngine
         public CanvasRootControl GUI => _guiRoot;
 
         /// <summary>
-        /// Delegate schema for the callback used to perform custom canvas intersection test. Can be used to implement a canvas tha has a holes or non-rectangular shape.
+        /// Delegate schema for the callback used to perform custom canvas intersection test. Can be used to implement a canvas that has a holes or non-rectangular shape.
         /// </summary>
         /// <param name="location">The location of the point to test in coordinates of the canvas root control (see <see cref="GUI"/>).</param>
         /// <returns>True if canvas was hit, otherwise false.</returns>
         public delegate bool TestCanvasIntersectionDelegate(ref Vector2 location);
 
         /// <summary>
-        /// The callback used to perform custom canvas intersection test. Can be used to implement a canvas tha has a holes or non-rectangular shape.
+        /// The callback used to perform custom canvas intersection test. Can be used to implement a canvas that has a holes or non-rectangular shape.
         /// </summary>
         [HideInEditor]
         public TestCanvasIntersectionDelegate TestCanvasIntersection;

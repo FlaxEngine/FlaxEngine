@@ -1211,7 +1211,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Action fred when parent control gets changed.
+        /// Action fired when parent control gets changed.
         /// </summary>
         protected virtual void OnParentChangedInternal()
         {
@@ -1252,9 +1252,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Helper utility function to sets the update callback to the root. Does nothing if value has not been modified. Handles if control ahs no root or parent.
+        /// Helper utility function to sets the update callback to the root. Does nothing if value has not been modified. Handles if control has no root or parent.
         /// </summary>
-        /// <param name="onUpdate">The cached update callback delegate (field in teh custom control implementation).</param>
+        /// <param name="onUpdate">The cached update callback delegate (field in the custom control implementation).</param>
         /// <param name="value">The value to assign.</param>
         protected void SetUpdate(ref UpdateDelegate onUpdate, UpdateDelegate value)
         {
@@ -1268,7 +1268,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Action fred when parent control gets resized (also when control gets non-null parent).
+        /// Action fired when parent control gets resized (also when control gets non-null parent).
         /// </summary>
         public virtual void OnParentResized()
         {

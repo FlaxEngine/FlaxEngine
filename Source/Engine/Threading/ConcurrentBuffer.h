@@ -382,7 +382,7 @@ public:
     /// Searches for the specified object and returns the zero-based index of the first occurrence within the entire collection.
     /// </summary>
     /// <param name="item">The item.</param>
-    /// <returns>The zero-based index of the first occurrence of itm within the entire collection, if found; otherwise, INVALID_INDEX.</returns>
+    /// <returns>The zero-based index of the first occurrence of item within the entire collection, if found; otherwise, INVALID_INDEX.</returns>
     int32 IndexOf(const T& item) const
     {
         for (int32 i = 0; i < _count; i++)

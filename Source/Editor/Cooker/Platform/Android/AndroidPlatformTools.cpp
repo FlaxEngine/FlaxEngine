@@ -141,7 +141,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
             const auto c = packageName[i];
             if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
             {
-                LOG(Error, "Android Package Name \'{0}\' contains invalid chaarcter. Only letters, numbers, dots and underscore characters are allowed.", packageName);
+                LOG(Error, "Android Package Name \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
                 return true;
             }
         }

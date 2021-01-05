@@ -469,7 +469,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Checks if given point in thi container control space intersects with the child control content.
+        /// Checks if given point in this container control space intersects with the child control content.
         /// Also calculates result location in child control space which can be used to feed control with event at that point.
         /// </summary>
         /// <param name="child">The child control to check.</param>

@@ -221,7 +221,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
-        /// Filters teh given value using the the <see cref="UseMode"/>.
+        /// Filters the given value using the <see cref="UseMode"/>.
         /// </summary>
         /// <param name="mode">The mode.</param>
         /// <param name="value">The value to process.</param>

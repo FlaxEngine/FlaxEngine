@@ -60,7 +60,7 @@ private:
         float ShadowMultiplier; // [0.0, 5.0] Effect strength linear multiplier
         float ShadowPower; // [0.5, 5.0] Effect strength pow modifier
         float HorizonAngleThreshold; // [0.0, 0.2] Limits self-shadowing (makes the sampling area less of a hemisphere, more of a spherical cone, to avoid self-shadowing and various artifacts due to low tessellation and depth buffer imprecision, etc.)
-        float FadeOutFrom; // [0.0,  ~ ] Distance to start start fading out the effect.
+        float FadeOutFrom; // [0.0,  ~ ] Distance to start fading out the effect.
         float FadeOutTo; // [0.0,  ~ ] Distance at which the effect is faded out.
         int QualityLevel; // [  0,    ] Effect quality; 0 - low, 1 - medium, 2 - high, 3 - very high; each quality level is roughly 2x more costly than the previous, except the q3 which is variable but, in general, above q2.
         int BlurPassCount; // [  0,   6] Number of edge-sensitive smart blur passes to apply. Quality 0 is an exception with only one 'dumb' blur pass used.

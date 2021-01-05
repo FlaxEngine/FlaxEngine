@@ -49,7 +49,7 @@ public:
 	{
 		if (dwRejectType == SERVERCALL_RETRYLATER)
 		{
-			// Retry immediatey
+			// Retry immediately
 			return 99;
 		}
 
