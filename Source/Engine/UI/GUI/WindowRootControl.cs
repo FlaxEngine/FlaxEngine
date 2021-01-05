@@ -262,14 +262,14 @@ namespace FlaxEngine.GUI
                 return false;
 
             // Change focused control
-            Control prevous = _focusedControl;
+            Control previous = _focusedControl;
             _focusedControl = c;
 
             // Fire events
-            if (prevous != null)
+            if (previous != null)
             {
-                prevous.OnLostFocus();
-                Assert.IsFalse(prevous.IsFocused);
+                previous.OnLostFocus();
+                Assert.IsFalse(previous.IsFocused);
             }
             if (_focusedControl != null)
             {

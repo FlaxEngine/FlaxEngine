@@ -316,7 +316,7 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
     }
     if (src.Format == dstFormat)
     {
-        LOG(Warning, "Soure data and destination format are the same. Cannot perform conversion.");
+        LOG(Warning, "Source data and destination format are the same. Cannot perform conversion.");
         return true;
     }
     if (src.Depth != 1)
@@ -343,7 +343,7 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
     }
     if (src.Width == dstWidth && src.Height == dstHeight)
     {
-        LOG(Warning, "Soure data and destination dimensions are the same. Cannot perform resizing.");
+        LOG(Warning, "Source data and destination dimensions are the same. Cannot perform resizing.");
         return true;
     }
     if (src.Depth != 1)

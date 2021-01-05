@@ -355,7 +355,7 @@ bool ProcessMesh(AssimpImporterData& data, const aiMesh* aMesh, MeshData& mesh, 
         mesh.BlendIndices.SetAll(Int4::Zero);
         mesh.BlendWeights.SetAll(Vector4::Zero);
 
-        // Build skinning clusters and fill controls points data stutcture
+        // Build skinning clusters and fill controls points data structure
         for (unsigned boneId = 0; boneId < aMesh->mNumBones; boneId++)
         {
             const auto aBone = aMesh->mBones[boneId];
