@@ -47,7 +47,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceXlibPresentationSupportKHR(
 extern PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
 extern PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
 
-void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& outExextensionstensions)
+void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions)
 {
 	// Include X11 surface extension
 	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
