@@ -52,7 +52,7 @@ public:
     }
 };
 
-#if PLATFORM_LINUX
+#if PLATFORM_ANDROID
 typedef AndroidPlatformSettings PlatformSettings;
 #endif
 
