@@ -136,9 +136,6 @@ namespace FlaxEditor.Tools.Terrain
 
         private void OnCreateNewTerrainClicked()
         {
-            if (!Level.IsAnySceneLoaded)
-                return;
-
             Editor.UI.CreateTerrain();
         }
 
