@@ -41,13 +41,6 @@ private:
     Array<SemaphoreVulkan*> _waitSemaphores;
     Array<SemaphoreVulkan*> _submittedWaitSemaphores;
 
-    void MarkSemaphoresAsSubmitted()
-    {
-        _waitFlags.Clear();
-        _submittedWaitSemaphores = _waitSemaphores;
-        _waitSemaphores.Clear();
-    }
-
     FenceVulkan* _fence;
 #if GPU_ALLOW_PROFILE_EVENTS
     int32 _eventsBegin = 0;

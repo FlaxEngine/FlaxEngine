@@ -50,8 +50,11 @@ void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 numSignalSemaphores,
 
     VALIDATE_VULKAN_RESULT(vkQueueSubmit(_queue, 1, &submitInfo, fence->GetHandle()));
 
+    // Mark semaphores as submitted
     cmdBuffer->_state = CmdBufferVulkan::State::Submitted;
-    cmdBuffer->MarkSemaphoresAsSubmitted();
+    cmdBuffer->_waitFlags.Clear();
+    cmdBuffer->_submittedWaitSemaphores = cmdBuffer->_waitSemaphores;
+    cmdBuffer->_waitSemaphores.Clear();
     cmdBuffer->_submittedFenceCounter = cmdBuffer->_fenceSignaledCounter;
 
 #if 0
