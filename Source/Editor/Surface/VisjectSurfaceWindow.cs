@@ -332,7 +332,10 @@ namespace FlaxEditor.Surface
     /// <seealso cref="FlaxEditor.CustomEditors.CustomEditor" />
     public class ParametersEditor : CustomEditor
     {
-        private static readonly Attribute[] DefaultAttributes = { new LimitAttribute(float.MinValue, float.MaxValue, 0.1f) };
+        private static readonly Attribute[] DefaultAttributes =
+        {
+            //new LimitAttribute(float.MinValue, float.MaxValue, 0.1f),
+        };
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
