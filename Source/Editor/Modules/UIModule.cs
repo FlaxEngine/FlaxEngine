@@ -577,7 +577,7 @@ namespace FlaxEditor.Modules
 
         private void OpenProjectDirectory()
         {
-            FileSystem.ShowFileExplorer(Editor.Instance.GameProject.ProjectFolderPath);
+            FileSystem.ShowFileExplorer(Editor.GameProject.ProjectFolderPath);
         }
 
         private void OnMenuFileShowHide(Control control)
