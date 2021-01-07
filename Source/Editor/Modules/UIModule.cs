@@ -394,6 +394,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Recompile scripts", ScriptsBuilder.Compile);
             cm.AddSeparator();
             cm.AddButton("Open project...", OpenProject);
+            cm.AddButton("Open project directory", OpenProjectDirectory);
             cm.AddSeparator();
             cm.AddButton("Exit", "Alt+F4", () => Editor.Windows.MainWindow.Close(ClosingReason.User));
 
@@ -572,6 +573,11 @@ namespace FlaxEditor.Modules
             {
                 Editor.OpenProject(files[0]);
             }
+        }
+
+        private void OpenProjectDirectory()
+        {
+            FileSystem.ShowFileExplorer(Editor.Instance.GameProject.ProjectFolderPath);
         }
 
         private void OnMenuFileShowHide(Control control)
