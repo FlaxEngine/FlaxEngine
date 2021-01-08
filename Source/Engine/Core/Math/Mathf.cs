@@ -37,6 +37,11 @@ namespace FlaxEngine
         public const float PiOverFour = (float)(Math.PI / 4);
 
         /// <summary>
+        /// A value specifying the golden mean
+        /// </summary>
+        public const float GoldenRatio = 1.61803f;
+
+        /// <summary>
         /// Returns the absolute value of f.
         /// </summary>
         /// <param name="f"></param>
