@@ -39,7 +39,7 @@ namespace FlaxEngine
         /// <summary>
         /// A value specifying the golden mean
         /// </summary>
-        public const float GoldenRatio = 1.61803f;
+        public const float GoldenRatio = 1.6180339887f;
 
         /// <summary>
         /// Returns the absolute value of f.
