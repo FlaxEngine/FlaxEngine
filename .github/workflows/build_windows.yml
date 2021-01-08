@@ -8,7 +8,10 @@ jobs:
     name: Editor (Windows, Development x64)
     runs-on: "windows-latest"
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        lfs: true
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
@@ -18,7 +21,10 @@ jobs:
     name: Game (Windows, Release x64)
     runs-on: "windows-latest"
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        lfs: true
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame
