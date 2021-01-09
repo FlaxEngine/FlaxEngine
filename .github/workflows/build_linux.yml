@@ -1,0 +1,19 @@
+name: Build Linux
+on: [push, pull_request]
+
+jobs:
+
+  # Game
+  game-linux:
+    name: Game (Linux, Release x64)
+    runs-on: "ubuntu-20.04"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\Development\Scripts\Linux\CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Release -buildtargets=FlaxGame
