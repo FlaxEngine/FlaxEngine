@@ -464,15 +464,7 @@ namespace FlaxEditor.Surface
                 {
                     // Check if any control is under the mouse
                     _cmStartPos = location;
-                    if (controlUnderMouse != null)
-                    {
-                        if (!HasNodesSelection)
-                            Select(controlUnderMouse);
-
-                        // Show secondary context menu
-                        ShowSecondaryCM(_cmStartPos, controlUnderMouse);
-                    }
-                    else
+                    if (controlUnderMouse == null)
                     {
                         // Show primary context menu
                         ShowPrimaryMenu(_cmStartPos);
