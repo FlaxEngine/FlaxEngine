@@ -11,7 +11,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the blur strength. Defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.
         /// </summary>
-        [EditorOrder(0), Limit(0, 100, 0.1f), Tooltip("Blur strength defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.")]
+        [EditorOrder(0), Limit(0, 100, 0.0f), Tooltip("Blur strength defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.")]
         public float BlurStrength { get; set; }
 
         /// <summary>
