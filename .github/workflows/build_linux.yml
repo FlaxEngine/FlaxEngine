@@ -16,4 +16,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        .\Development\Scripts\Linux\CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Release -buildtargets=FlaxGame
