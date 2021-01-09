@@ -10,8 +10,9 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
-      with:
-        lfs: true
+      run: |
+        git lfs version
+        git lfs pull
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
@@ -23,8 +24,9 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
-      with:
-        lfs: true
+      run: |
+        git lfs version
+        git lfs pull
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame
