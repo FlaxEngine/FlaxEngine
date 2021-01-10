@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +36,6 @@ namespace FlaxEditor.Windows
 
             var toolstrip = new ToolStrip
             {
-                Offsets = new Margin(0, 0, 0, 32),
                 Parent = this
             };
             _saveButton = (ToolStripButton)toolstrip.AddButton(editor.Icons.Save32, SaveData).LinkTooltip("Save");

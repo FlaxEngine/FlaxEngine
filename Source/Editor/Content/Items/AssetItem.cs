@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -58,7 +58,7 @@ namespace FlaxEditor.Content
 
             public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
             {
-                return Item.OnMouseDoubleClick(Item.ScreenToClient(ClientToScreen(location)), button);
+                return Item.OnMouseDoubleClick(Item.PointFromScreen(PointToScreen(location)), button);
             }
         }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -79,7 +79,7 @@ namespace Flax.Build.Platforms
         {
             switch (platform)
             {
-            case TargetPlatform.Linux: return true;
+            case TargetPlatform.Linux: return HasRequiredSDKsInstalled;
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
             default: return false;
             }

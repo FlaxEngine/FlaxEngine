@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading.Tasks;
@@ -115,11 +115,9 @@ namespace FlaxEditor.Viewport.Previews
                 var color = Color;
                 if (!EnabledInHierarchy)
                     color *= 0.4f;
+                var sampleValueScale = height / info.NumChannels;
 
-                // Compute the scaled y-value used to render the channel data
-                float sampleYScale = height / info.NumChannels;
-
-                // Compute amount of samples that are contained in the view
+                // Calculate the amount of samples that are contained in the view
                 float unitsPerSecond = UnitsPerSecond * ViewScale;
                 float clipDefaultWidth = length * unitsPerSecond;
                 float clipsInView = width / clipDefaultWidth;
@@ -152,20 +150,16 @@ namespace FlaxEditor.Viewport.Previews
                     var clipX = clipWidth * clipIndex;
                     var clipRight = Mathf.Min(width, clipX + clipWidth);
 
-                    // Render each channel separately so outer loop is the sound wave channel index
+                    // Render every audio channel separately
                     for (uint channelIndex = 0; channelIndex < info.NumChannels; channelIndex++)
                     {
                         uint currentSample = channelIndex;
                         float yCenter = Y + ((2 * channelIndex) + 1) * height / (2.0f * info.NumChannels);
-
-                        // Loop through each pixel (in x direction)
                         for (float pixelX = clipX; pixelX < clipRight; pixelX++)
                         {
-                            // Reset the sample sum and num samples in pixel for each pixel
                             float samplesSum = 0;
                             int samplesInPixel = 0;
 
-                            // Loop through all pixels in this x-frame and sum all audio data
                             uint samplesEnd = Math.Min(currentSample + samplesPerIndex, info.NumSamples);
                             for (uint sampleIndex = currentSample; sampleIndex < samplesEnd; sampleIndex += samplesPerIndexDiff)
                             {
@@ -173,16 +167,14 @@ namespace FlaxEditor.Viewport.Previews
                                 samplesInPixel++;
                             }
                             currentSample = samplesEnd;
+
                             if (samplesInPixel > 0)
                             {
-                                float averageSampleValue = samplesSum / samplesInPixel;
-                                float averageSampleValueScaled = averageSampleValue * sampleYScale;
-
-                                // Don't try to draw anything if the audio data was too quiet
-                                if (averageSampleValueScaled > 0.1f)
+                                float sampleValueAvg = samplesSum / samplesInPixel;
+                                float sampleValueAvgScaled = sampleValueAvg * sampleValueScale;
+                                if (sampleValueAvgScaled > 0.1f)
                                 {
-                                    // Draw vertical line mirrored around x-axis for channel equal to average sample value height
-                                    Render2D.DrawLine(new Vector2(pixelX, yCenter - averageSampleValueScaled), new Vector2(pixelX, yCenter + averageSampleValueScaled), color);
+                                    Render2D.DrawLine(new Vector2(pixelX, yCenter - sampleValueAvgScaled), new Vector2(pixelX, yCenter + sampleValueAvgScaled), color);
                                 }
                             }
                         }

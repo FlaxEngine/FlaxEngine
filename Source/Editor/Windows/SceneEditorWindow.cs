@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEngine.GUI;
 
@@ -38,7 +38,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.SelectAll, Editor.SceneEditing.SelectAllScenes);
             InputActions.Add(options => options.Delete, Editor.SceneEditing.Delete);
             InputActions.Add(options => options.Search, () => Editor.Windows.SceneWin.Search());
-            InputActions.Add(options => options.Play, Editor.Simulation.RequestStartPlay);
+            InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }

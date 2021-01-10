@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -1016,7 +1016,7 @@ public:
         document.Parse(json.Get(), json.Length());
         if (document.HasParseError())
         {
-            Log::JsonParseException(document.GetParseError());
+            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
             DebugLog::ThrowException("Failed to parse Json.");
         }
 

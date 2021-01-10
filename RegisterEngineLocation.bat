@@ -14,12 +14,12 @@ if not exist "%appdata%\Flax\Versions.txt" (
 )
 set EngineLocation=%cd%
 find /c "%EngineLocation%" "%appdata%\Flax\Versions.txt"
-if %errorlevel% equ 1 goto notfound
+if %errorlevel% equ 1 goto NotFound
 echo Already registered.
 goto Done
 
 rem Register the location (append to the end)
-:notfound
+:NotFound
 echo Location '%EngineLocation%' is not registered. Adding it to the list of engine versions.
 echo %EngineLocation%>>"%appdata%\Flax\Versions.txt"
 goto Done
@@ -31,6 +31,5 @@ echo Done!
 exit /B 0
 
 :Exit
-rem Restore original directory before exit.
 popd
 exit /B 1

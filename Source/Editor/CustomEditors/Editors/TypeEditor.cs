@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -405,7 +405,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 if (_element.CustomControl.Type == new ScriptType(typeof(object)))
                 {
-                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? new ScriptType(typeof(object)) : TypeUtils.GetObjectType(Values[0]);
                 }
             }
         }

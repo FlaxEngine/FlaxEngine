@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Level.h"
 #include "ActorsCache.h"
@@ -786,7 +786,7 @@ bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scen
     document.Parse(sceneData.Get<char>(), sceneData.Length());
     if (document.HasParseError())
     {
-        Log::JsonParseException(document.GetParseError());
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
         return true;
     }
 

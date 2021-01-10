@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
@@ -206,9 +206,12 @@ namespace FlaxEditor.Windows
             Editor.StateMachine.PlayingState.SceneRestored += PlayingStateOnSceneRestored;
 
             // Link editor options
-            var options = Editor.Options;
-            options.OptionsChanged += OnOptionsChanged;
-            OnOptionsChanged(options.Options);
+            Editor.Options.OptionsChanged += OnOptionsChanged;
+            OnOptionsChanged(Editor.Options.Options);
+
+            InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
+            InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
+            InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }
 
         private void OnOptionsChanged(EditorOptions options)
@@ -369,10 +372,6 @@ namespace FlaxEditor.Windows
         {
             switch (key)
             {
-            case KeyboardKeys.Pause:
-                Editor.Simulation.RequestResumeOrPause();
-                UnlockMouseInPlay();
-                return true;
             case KeyboardKeys.F12:
                 Screenshot.Capture(string.Empty);
                 return true;

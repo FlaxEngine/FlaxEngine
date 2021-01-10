@@ -114,8 +114,7 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Programmatically set the line number after all the material inputs which have a variable number of line endings
-// This allows shader error line numbers after this point to be the same regardless of which material is being compiled
+// Fix line for errors/warnings for shader code from template
 #line 1000
 
 // Input macro specified by the material: DECAL_BLEND_MODE
@@ -160,12 +159,9 @@ void PS_Decal(
 	float3 positionWS = positionHS.xyz / positionHS.w;
 	float3 positionOS = mul(float4(positionWS, 1), InvWorld).xyz;
 
-	// Clip content outside the decal
 	clip(0.5 - abs(positionOS.xyz));
-
-	// By default, map textures using the vectors perpendicular to the projection direction
 	float2 decalUVs = positionOS.xz + 0.5f;
-	
+
 	// Setup material input
 	MaterialInput materialInput = (MaterialInput)0;
 	materialInput.WorldPosition = positionWS;

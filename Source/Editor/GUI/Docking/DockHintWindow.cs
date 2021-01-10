@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -20,6 +20,7 @@ namespace FlaxEditor.GUI.Docking
         private Vector2 _mouse;
         private DockState _toSet;
         private DockPanel _toDock;
+        private bool _lateDragOffsetUpdate;
 
         private Rectangle _rLeft, _rRight, _rBottom, _rUpper, _rCenter;
 
@@ -37,9 +38,14 @@ namespace FlaxEditor.GUI.Docking
             window.Focus();
 
             // Calculate dragging offset and move window to the destination position
-            Vector2 mouse = FlaxEngine.Input.MouseScreenPosition;
-            Vector2 baseWinPos = window.Position;
-            _dragOffset = mouse - baseWinPos;
+            var mouseScreenPosition = FlaxEngine.Input.MouseScreenPosition;
+
+            // If the _toMove window was not focused when initializing this window, the result vector only contains zeros
+            // and to prevent a failure, we need to perform an update for the drag offset at later time which will be done in the OnMouseMove event handler.
+            if (mouseScreenPosition != Vector2.Zero)
+                CalculateDragOffset(mouseScreenPosition);
+            else
+                _lateDragOffsetUpdate = true;
 
             // Get initial size
             _defaultWindowSize = window.Size;
@@ -217,14 +223,19 @@ namespace FlaxEditor.GUI.Docking
             return result;
         }
 
+        private void CalculateDragOffset(Vector2 mouseScreenPosition)
+        {
+            Vector2 baseWinPos = this._toMove.Window.Window.Position;
+            _dragOffset = mouseScreenPosition - baseWinPos;
+        }
+
         private void UpdateRects()
         {
             // Cache mouse position
             _mouse = FlaxEngine.Input.MouseScreenPosition;
 
             // Check intersection with any dock panel
-            var dpiScale = Platform.DpiScale;
-            var uiMouse = _mouse / dpiScale;
+            var uiMouse = _mouse;
             _toDock = _toMove.MasterPanel.HitTest(ref uiMouse, _toMove);
 
             // Check dock state to use
@@ -327,6 +338,16 @@ namespace FlaxEditor.GUI.Docking
 
         private void OnMouseMove(ref Vector2 mousePos)
         {
+            // Recalculate the drag offset because the current mouse screen position was invalid when we initialized the window
+            if (_lateDragOffsetUpdate)
+            {
+                // Calculate dragging offset and move window to the destination position
+                CalculateDragOffset(mousePos);
+
+                // Reset state
+                _lateDragOffsetUpdate = false;
+            }
+
             UpdateRects();
         }
 

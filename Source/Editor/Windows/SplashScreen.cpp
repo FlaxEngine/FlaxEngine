@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
@@ -124,20 +124,6 @@ void SplashScreen::Show()
     if (IsVisible() || CommandLine::Options.Headless)
         return;
 
-#if GRAPHICS_API_OPENGL && PLATFORM_WINDOWS
-
-    // Notes:
-    // We cannot show splash screen on OpenGL because it sucks.
-    // Actually it's because the first window we show (it should be the main editor window)
-    // the OpenGL backend will use its context to submit all graphics commands.
-    // also other contexts (child windows, tooltip windows, etc.)
-    // will share the main context command line.
-	// TODO: we could show the splash screen after the main window is created!
-
-	LOG(Warning, "The current platform does not support showing splash screen.");
-
-#else
-
     LOG(Info, "Showing splash screen");
 
     // Create window
@@ -203,7 +189,6 @@ void SplashScreen::Show()
     }
 
     _window->Show();
-#endif
 }
 
 void SplashScreen::Close()

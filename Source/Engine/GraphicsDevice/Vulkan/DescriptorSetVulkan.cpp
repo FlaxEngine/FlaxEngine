@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -32,7 +32,6 @@ void DescriptorSetLayoutInfoVulkan::CacheTypesUsageID()
 
 void DescriptorSetLayoutInfoVulkan::AddDescriptor(int32 descriptorSetIndex, const VkDescriptorSetLayoutBinding& descriptor)
 {
-    // Increment type usage
     _layoutTypes[descriptor.descriptorType]++;
 
     if (descriptorSetIndex >= _setLayouts.Count())
@@ -43,7 +42,6 @@ void DescriptorSetLayoutInfoVulkan::AddDescriptor(int32 descriptorSetIndex, cons
     SetLayout& descSetLayout = _setLayouts[descriptorSetIndex];
     descSetLayout.LayoutBindings.Add(descriptor);
 
-    // TODO: manual hash update method?
     _hash = Crc::MemCrc32(&descriptor, sizeof(descriptor), _hash);
 }
 
@@ -82,61 +80,24 @@ void DescriptorSetLayoutVulkan::Compile()
 {
     ASSERT(_handles.IsEmpty());
 
-    // Check if we obey limits
+    // Validate device limits for the engine
     const VkPhysicalDeviceLimits& limits = _device->PhysicalDeviceLimits;
-
-    // Check for maxDescriptorSetSamplers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER]
-        < limits.maxDescriptorSetSamplers);
-
-    // Check for maxDescriptorSetUniformBuffers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetUniformBuffers);
-
-    // Check for maxDescriptorSetUniformBuffersDynamic
-    if (!_device->Adapter->IsAMD())
-    {
-        ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC]
-            < limits.maxDescriptorSetUniformBuffersDynamic);
-    }
-
-    // Check for maxDescriptorSetStorageBuffers
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetStorageBuffers);
-
-    // Check for maxDescriptorSetStorageBuffersDynamic
-    if (_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] > limits.maxDescriptorSetUniformBuffersDynamic)
-    {
-        // TODO: Downgrade to non-dynamic?
-    }
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC]
-        < limits.maxDescriptorSetStorageBuffersDynamic);
-
-    // Check for maxDescriptorSetSampledImages
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER]
-        < limits.maxDescriptorSetSampledImages);
-
-    // Check for maxDescriptorSetStorageImages
-    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE]
-        + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER]
-        < limits.maxDescriptorSetStorageImages);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER] + _layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] < limits.maxDescriptorSetSamplers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER]+ _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] < limits.maxDescriptorSetUniformBuffers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] < limits.maxDescriptorSetUniformBuffersDynamic);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER] + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] < limits.maxDescriptorSetStorageBuffers);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] < limits.maxDescriptorSetStorageBuffersDynamic);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] + _layoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE] + _layoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] < limits.maxDescriptorSetSampledImages);
+    ASSERT(_layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE] + _layoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER]< limits.maxDescriptorSetStorageImages);
 
     _handles.Resize(_setLayouts.Count());
-
     for (int32 i = 0; i < _setLayouts.Count(); i++)
     {
         auto& layout = _setLayouts[i];
-
         VkDescriptorSetLayoutCreateInfo layoutInfo;
         RenderToolsVulkan::ZeroStruct(layoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
         layoutInfo.bindingCount = layout.LayoutBindings.Count();
         layoutInfo.pBindings = layout.LayoutBindings.Get();
-
         VALIDATE_VULKAN_RESULT(vkCreateDescriptorSetLayout(_device->Device, &layoutInfo, nullptr, &_handles[i]));
     }
 
@@ -153,25 +114,20 @@ void DescriptorSetLayoutVulkan::Compile()
 DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutVulkan& layout)
     : _device(device)
     , _handle(VK_NULL_HANDLE)
-    , DescriptorSetsMax(0)
-    , AllocatedDescriptorSetsCount(0)
-    , AllocatedDescriptorSetsCountMax(0)
-    , Layout(layout)
+    , _descriptorSetsMax(0)
+    , _allocatedDescriptorSetsCount(0)
+    , _allocatedDescriptorSetsCountMax(0)
+    , _layout(layout)
 {
     Array<VkDescriptorPoolSize, FixedAllocation<VULKAN_DESCRIPTOR_TYPE_END + 1>> types;
 
     // The maximum amount of descriptor sets layout allocations to hold
     const uint32 MaxSetsAllocations = 256;
-
-    // Descriptor sets number required to allocate the max number of descriptor sets layout.
-    // When we're hashing pools with types usage ID the descriptor pool can be used for different layouts so the initial layout does not make much sense.
-    // In the latter case we'll be probably over-allocating the descriptor types but given the relatively small number of max allocations this should not have
-    // a serious impact.
-    DescriptorSetsMax = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? 1 : Layout.GetLayouts().Count());
+    _descriptorSetsMax = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? 1 : _layout.GetLayouts().Count());
     for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
     {
         const VkDescriptorType descriptorType = (VkDescriptorType)typeIndex;
-        const uint32 typesUsed = Layout.GetTypesUsed(descriptorType);
+        const uint32 typesUsed = _layout.GetTypesUsed(descriptorType);
         if (typesUsed > 0)
         {
             VkDescriptorPoolSize& type = types.AddOne();
@@ -186,7 +142,7 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device, const Descri
     createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     createInfo.poolSizeCount = types.Count();
     createInfo.pPoolSizes = types.Get();
-    createInfo.maxSets = DescriptorSetsMax;
+    createInfo.maxSets = _descriptorSetsMax;
     VALIDATE_VULKAN_RESULT(vkCreateDescriptorPool(_device->Device, &createInfo, nullptr, &_handle));
 }
 
@@ -198,16 +154,16 @@ DescriptorPoolVulkan::~DescriptorPoolVulkan()
     }
 }
 
-void DescriptorPoolVulkan::TrackAddUsage(const DescriptorSetLayoutVulkan& layout)
+void DescriptorPoolVulkan::Track(const DescriptorSetLayoutVulkan& layout)
 {
-    // Check and increment our current type usage
+#if !BUILD_RELEASE
     for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
     {
-        ASSERT(Layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
+        ASSERT(_layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
     }
-
-    AllocatedDescriptorSetsCount += layout.GetLayouts().Count();
-    AllocatedDescriptorSetsCountMax = Math::Max(AllocatedDescriptorSetsCount, AllocatedDescriptorSetsCountMax);
+#endif
+    _allocatedDescriptorSetsCount += layout.GetLayouts().Count();
+    _allocatedDescriptorSetsCountMax = Math::Max(_allocatedDescriptorSetsCount, _allocatedDescriptorSetsCountMax);
 }
 
 void DescriptorPoolVulkan::TrackRemoveUsage(const DescriptorSetLayoutVulkan& layout)
@@ -215,10 +171,10 @@ void DescriptorPoolVulkan::TrackRemoveUsage(const DescriptorSetLayoutVulkan& lay
     // Check and increment our current type usage
     for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
     {
-        ASSERT(Layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
+        ASSERT(_layout.GetTypesUsed((VkDescriptorType)typeIndex) == layout.GetTypesUsed((VkDescriptorType)typeIndex));
     }
 
-    AllocatedDescriptorSetsCount -= layout.GetLayouts().Count();
+    _allocatedDescriptorSetsCount -= layout.GetLayouts().Count();
 }
 
 void DescriptorPoolVulkan::Reset()
@@ -227,7 +183,7 @@ void DescriptorPoolVulkan::Reset()
     {
         VALIDATE_VULKAN_RESULT(vkResetDescriptorPool(_device->Device, _handle, 0));
     }
-    AllocatedDescriptorSetsCount = 0;
+    _allocatedDescriptorSetsCount = 0;
 }
 
 bool DescriptorPoolVulkan::AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& descriptorSetAllocateInfo, VkDescriptorSet* result)
@@ -377,8 +333,6 @@ void DescriptorPoolsManagerVulkan::ReleasePoolSet(DescriptorPoolSetContainerVulk
 void DescriptorPoolsManagerVulkan::GC()
 {
     ScopeLock lock(_locker);
-
-    // Pool sets are forward allocated - iterate from the back to increase the chance of finding an unused one
     for (int32 i = _poolSets.Count() - 1; i >= 0; i--)
     {
         const auto poolSet = _poolSets[i];
@@ -416,12 +370,12 @@ PipelineLayoutVulkan::~PipelineLayoutVulkan()
     }
 }
 
-uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, uint8* bindingToDynamicOffsetMap)
+uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, uint8* bindingToDynamicOffset)
 {
+    ASSERT(info.DescriptorTypesCount <= 64);
     WriteDescriptors = writeDescriptors;
     WritesCount = info.DescriptorTypesCount;
-    ASSERT(info.DescriptorTypesCount <= 64 && TEXT("Out of bits for Dirty Mask! More than 64 resources in one descriptor set!"));
-    BindingToDynamicOffsetMap = bindingToDynamicOffsetMap;
+    BindingToDynamicOffset = bindingToDynamicOffset;
 
     uint32 dynamicOffsetIndex = 0;
     for (uint32 i = 0; i < info.DescriptorTypesCount; i++)
@@ -434,8 +388,8 @@ uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescrip
         switch (writeDescriptors->descriptorType)
         {
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-            BindingToDynamicOffsetMap[i] = dynamicOffsetIndex;
-            ++dynamicOffsetIndex;
+            BindingToDynamicOffset[i] = dynamicOffsetIndex;
+            dynamicOffsetIndex++;
             writeDescriptors->pBufferInfo = bufferInfo++;
             break;
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:

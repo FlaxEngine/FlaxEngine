@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -344,7 +344,13 @@ namespace FlaxEditor.Modules
             return null;
         }
 
-        private static void RenameAsset(ContentItem el, ref string newPath)
+        /// <summary>
+        /// Renames a content item
+        /// </summary>
+        /// <param name="el">Content item</param>
+        /// <param name="newPath">New path</param>
+        /// <returns>True if failed, otherwise false</returns>
+        private static bool RenameAsset(ContentItem el, ref string newPath)
         {
             string oldPath = el.Path;
 
@@ -357,7 +363,7 @@ namespace FlaxEditor.Modules
                 {
                     // Error
                     Editor.LogError(string.Format("Cannot rename asset \'{0}\' to \'{1}\'", oldPath, newPath));
-                    return;
+                    return true;
                 }
             }
             else
@@ -372,12 +378,13 @@ namespace FlaxEditor.Modules
                     // Error
                     Editor.LogWarning(ex);
                     Editor.LogError(string.Format("Cannot rename asset \'{0}\' to \'{1}\'", oldPath, newPath));
-                    return;
+                    return true;
                 }
             }
 
             // Change path
             el.UpdatePath(newPath);
+            return false;
         }
 
         private static void UpdateAssetNewNameTree(ContentItem el)
@@ -464,12 +471,6 @@ namespace FlaxEditor.Modules
                 MessageBox.Show("Cannot move folder. Target location already exists.");
                 return;
             }
-            if (!item.IsFolder && File.Exists(newPath))
-            {
-                // Error
-                MessageBox.Show("Cannot move file. Target location already exists.");
-                return;
-            }
 
             // Find target parent
             var newDirPath = Path.GetDirectoryName(newPath);
@@ -526,7 +527,11 @@ namespace FlaxEditor.Modules
                 }
                 else
                 {
-                    RenameAsset(item, ref newPath);
+                    if (RenameAsset(item, ref newPath))
+                    {
+                        MessageBox.Show("Cannot rename item.");
+                        return;
+                    }
                 }
 
                 if (item.ParentFolder != null)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WINDOWS
 
@@ -295,7 +295,7 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
 float NormalizeXInputAxis(const int16 axisVal)
 {
     // Normalize [-32768..32767] -> [-1..1]
-    const float norm = axisVal <= 0 ? 32768.f : 32767.f;
+    const float norm = axisVal <= 0 ? 32768.0f : 32767.0f;
     return float(axisVal) / norm;
 }
 

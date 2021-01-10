@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -71,9 +71,9 @@ namespace FlaxEngine.Utilities
             return Base + noise * NoiseAmount;
         }
 
-        private float Fade(float T)
+        private float Fade(float t)
         {
-            return T * T * T * (T * (T * 6 - 15) + 10);
+            return t * t * t * (t * (t * 6 - 15) + 10);
         }
 
         private float Grad(int hash, float x, float y)

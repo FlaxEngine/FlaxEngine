@@ -337,8 +337,7 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Programmatically set the line number after all the material inputs which have a variable number of line endings
-// This allows shader error line numbers after this point to be the same regardless of which material is being compiled
+// Fix line for errors/warnings for shader code from template
 #line 1000
 
 // Calculates the transform matrix from mesh tangent space to local space
@@ -474,7 +473,7 @@ float3x4 GetBoneMatrix(int index)
 }
 
 // Calculates the transposed transform matrix for the given vertex (uses blending)
-float3x4 CalcBoneMatrix(ModelInput_Skinned input)
+float3x4 GetBoneMatrix(ModelInput_Skinned input)
 {
 	float3x4 boneMatrix = input.BlendWeights.x * GetBoneMatrix(input.BlendIndices.x);
 	boneMatrix += input.BlendWeights.y * GetBoneMatrix(input.BlendIndices.y);
@@ -521,7 +520,7 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 
 	// Perform skinning
 	SkinningData data;
-	data.BlendMatrix = CalcBoneMatrix(input);
+	data.BlendMatrix = GetBoneMatrix(input);
 	float3 position = SkinPosition(input, data);
 	half3x3 tangentToLocal = SkinTangents(input, data);
 
@@ -755,7 +754,6 @@ TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : S
 #define COPY(thing) output.thing = input[0].thing
 	INTERPOLATE(Position);
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PN
-	// Precompute squares and squares * 3 
 	float UU = U * U;
 	float VV = V * V;
 	float WW = W * W;
@@ -977,8 +975,8 @@ float4 PS_Distortion(PixelInput input) : SV_Target0
 
 	// Scale up for better precision in low/subtle refractions at the expense of artefacts at higher refraction
 	distortion *= 4.0f;
-
-	// Store positive and negative offsets separately
+	
+	// Use separate storage for positive and negative offsets
 	float2 addOffset = max(distortion, 0);
 	float2 subOffset = abs(min(distortion, 0));
 	return float4(addOffset.x, addOffset.y, subOffset.x, subOffset.y);

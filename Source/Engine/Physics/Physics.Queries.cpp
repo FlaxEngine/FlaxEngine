@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
 #include "Utilities.h"
@@ -78,7 +78,7 @@ protected:
     {
         if (this->hasBlock)
         {
-            // Copy blocking hit to hits
+            // Blocking hits go to hits
             processTouches(&this->block, 1);
         }
     }

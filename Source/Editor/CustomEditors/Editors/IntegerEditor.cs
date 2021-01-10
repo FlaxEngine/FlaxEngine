@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
@@ -109,8 +109,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Use int value editor with limit
                     var element = layout.SignedIntegerValue();
                     element.LongValue.SetLimits((LimitAttribute)limit);
-                    element.LongValue.MinValue = Mathf.Max(element.LongValue.MinValue, min);
-                    element.LongValue.MaxValue = Mathf.Min(element.LongValue.MaxValue, max);
+                    element.LongValue.SetLimits(Mathf.Max(element.LongValue.MinValue, min), Mathf.Min(element.LongValue.MaxValue, max));
                     element.LongValue.ValueChanged += OnValueChanged;
                     element.LongValue.SlidingEnd += ClearToken;
                     _element = element;
@@ -121,8 +120,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use int value editor
                 var element = layout.SignedIntegerValue();
-                element.LongValue.MinValue = Mathf.Max(element.LongValue.MinValue, min);
-                element.LongValue.MaxValue = Mathf.Min(element.LongValue.MaxValue, max);
+                element.LongValue.SetLimits(Mathf.Max(element.LongValue.MinValue, min), Mathf.Min(element.LongValue.MaxValue, max));
                 element.LongValue.ValueChanged += OnValueChanged;
                 element.LongValue.SlidingEnd += ClearToken;
                 _element = element;
@@ -278,8 +276,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Use int value editor with limit
                     var element = layout.UnsignedIntegerValue();
                     element.ULongValue.SetLimits((LimitAttribute)limit);
-                    element.ULongValue.MinValue = Mathf.Max(element.ULongValue.MinValue, min);
-                    element.ULongValue.MaxValue = Mathf.Min(element.ULongValue.MaxValue, max);
+                    element.ULongValue.SetLimits(Mathf.Max(element.ULongValue.MinValue, min), Mathf.Min(element.ULongValue.MaxValue, max));
                     element.ULongValue.ValueChanged += OnValueChanged;
                     element.ULongValue.SlidingEnd += ClearToken;
                     _element = element;
@@ -290,8 +287,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use int value editor
                 var element = layout.UnsignedIntegerValue();
-                element.ULongValue.MinValue = Mathf.Max(element.ULongValue.MinValue, min);
-                element.ULongValue.MaxValue = Mathf.Min(element.ULongValue.MaxValue, max);
+                element.ULongValue.SetLimits(Mathf.Max(element.ULongValue.MinValue, min), Mathf.Min(element.ULongValue.MaxValue, max));
                 element.ULongValue.ValueChanged += OnValueChanged;
                 element.ULongValue.SlidingEnd += ClearToken;
                 _element = element;

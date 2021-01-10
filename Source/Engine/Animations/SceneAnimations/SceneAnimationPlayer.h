@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -129,7 +129,7 @@ public:
 public:
 
     /// <summary>
-    /// Gets the value that determinates whether the scene animation is playing.
+    /// Gets the value that determines whether the scene animation is playing.
     /// </summary>
     API_PROPERTY() FORCE_INLINE bool IsPlaying() const
     {
@@ -137,7 +137,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the value that determinates whether the scene animation is paused.
+    /// Gets the value that determines whether the scene animation is paused.
     /// </summary>
     API_PROPERTY() FORCE_INLINE bool IsPaused() const
     {
@@ -145,7 +145,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the value that determinates whether the scene animation is stopped.
+    /// Gets the value that determines whether the scene animation is stopped.
     /// </summary>
     API_PROPERTY() FORCE_INLINE bool IsStopped() const
     {

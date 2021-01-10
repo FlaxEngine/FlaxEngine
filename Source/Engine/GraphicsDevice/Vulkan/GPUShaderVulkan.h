@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -49,8 +49,6 @@ private:
     uint64 _offset;
     uint32 _minAlignment;
     byte* _mapped;
-
-    // Fence for wrapping around
     CmdBufferVulkan* _fenceCmdBuffer;
     uint64 _fenceCounter;
 

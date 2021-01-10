@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using Flax.Build;
@@ -41,7 +41,6 @@ public class Graphics : EngineModule
         {
         case TargetPlatform.Windows:
             options.PrivateDependencies.Add("GraphicsDeviceNull");
-            //options.PrivateDependencies.Add("GraphicsDeviceOGL");
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
             if (VulkanSdk.Instance.IsValid)
                 options.PrivateDependencies.Add("GraphicsDeviceVulkan");

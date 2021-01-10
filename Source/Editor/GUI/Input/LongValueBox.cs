@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -90,6 +90,18 @@ namespace FlaxEditor.GUI.Input
             _min = limits.Min == int.MinValue ? long.MinValue : (long)limits.Min;
             _max = Math.Max(_min, limits.Max == int.MaxValue ? long.MaxValue : (long)limits.Max);
             _slideSpeed = limits.SliderSpeed;
+            Value = Value;
+        }
+
+        /// <summary>
+        /// Sets the limits at once.
+        /// </summary>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The minimum value.</param>
+        public void SetLimits(long min, long max)
+        {
+            _min = Math.Min(min, max);
+            _max = Math.Max(min, max);
             Value = Value;
         }
 

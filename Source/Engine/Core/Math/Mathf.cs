@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -319,6 +319,16 @@ namespace FlaxEngine
         /// <summary>
         /// Returns the largest of two or more values.
         /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        public static uint Max(uint a, uint b)
+        {
+            return a <= b ? b : a;
+        }
+
+        /// <summary>
+        /// Returns the largest of two or more values.
+        /// </summary>
         /// <param name="values"></param>
         public static int Max(params int[] values)
         {
@@ -397,6 +407,16 @@ namespace FlaxEngine
         /// <param name="a"></param>
         /// <param name="b"></param>
         public static int Min(int a, int b)
+        {
+            return a >= b ? b : a;
+        }
+
+        /// <summary>
+        /// Returns the smallest of two or more values.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        public static uint Min(uint a, uint b)
         {
             return a >= b ? b : a;
         }
@@ -1169,6 +1189,18 @@ namespace FlaxEngine
         /// <param name="max">The max.</param>
         /// <returns>The result of clamping a value between min and max</returns>
         public static int Clamp(int value, int min, int max)
+        {
+            return value < min ? min : value > max ? max : value;
+        }
+
+        /// <summary>
+        /// Clamps the specified value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="min">The min.</param>
+        /// <param name="max">The max.</param>
+        /// <returns>The result of clamping a value between min and max</returns>
+        public static uint Clamp(uint value, uint min, uint max)
         {
             return value < min ? min : value > max ? max : value;
         }

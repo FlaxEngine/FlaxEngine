@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_DX_SHADER_COMPILER
 
@@ -11,10 +11,6 @@
 #include "Engine/Platform/Windows/ComPtr.h"
 #include <d3d12shader.h>
 #include <ThirdParty/DirectXShaderCompiler/dxcapi.h>
-
-#ifndef DXIL_FOURCC
-#define DXIL_FOURCC(ch0, ch1, ch2, ch3) ((uint32)(uint8)(ch0) | (uint32)(uint8)(ch1) << 8 | (uint32)(uint8)(ch2) << 16 | (uint32)(uint8)(ch3) << 24)
-#endif
 
 /// <summary>
 /// Helper class to include source for DX shaders compiler.
@@ -76,7 +72,7 @@ public:
 ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile)
     : ShaderCompiler(profile)
 {
-    IDxcCompiler2* compiler = nullptr;
+    IDxcCompiler3* compiler = nullptr;
     IDxcLibrary* library = nullptr;
     IDxcContainerReflection* containerReflection = nullptr;
     if (FAILED(DxcCreateInstance(CLSID_DxcCompiler, __uuidof(compiler), reinterpret_cast<void**>(&compiler))) ||
@@ -216,7 +212,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
 
     // Prepare
     auto options = _context->Options;
-    auto compiler = (IDxcCompiler2*)_compiler;
+    auto compiler = (IDxcCompiler3*)_compiler;
     auto library = (IDxcLibrary*)_library;
     auto containerReflection = (IDxcContainerReflection*)_containerReflection;
     auto type = meta.GetStage();
@@ -248,18 +244,27 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
     ComPtr<IDxcBlobEncoding> textBlob;
     if (FAILED(library->CreateBlobWithEncodingFromPinned((LPBYTE)options->Source, options->SourceLength, CP_UTF8, &textBlob)))
         return true;
+    DxcBuffer textBuffer;
+    textBuffer.Ptr = textBlob->GetBufferPointer();
+    textBuffer.Size = textBlob->GetBufferSize();
+    textBuffer.Encoding = DXC_CP_ACP;
     const StringAsUTF16<> entryPoint(meta.Name.Get(), meta.Name.Length());
     Array<String> definesStrings;
-    Array<DxcDefine> defines;
-    Array<Char*, FixedAllocation<16>> args;
+    Array<const Char*, FixedAllocation<12>> args;
     if (_context->Options->NoOptimize)
-        args.Add(TEXT("-Od"));
+        args.Add(DXC_ARG_SKIP_OPTIMIZATIONS);
     else
-        args.Add(TEXT("-O3"));
+        args.Add(DXC_ARG_OPTIMIZATION_LEVEL3);
     if (_context->Options->TreatWarningsAsErrors)
-        args.Add(TEXT("-WX"));
+        args.Add(DXC_ARG_WARNINGS_ARE_ERRORS);
     if (_context->Options->GenerateDebugData)
-        args.Add(TEXT("-Zi"));
+        args.Add(DXC_ARG_DEBUG);
+    args.Add(TEXT("-T"));
+    args.Add(targetProfile);
+    args.Add(TEXT("-E"));
+    args.Add(entryPoint.Get());
+    args.Add(options->TargetName.Get());
+    Array<const Char*, InlinedAllocation<250>> argsFull;
 
     // Compile all shader function permutations
     for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
@@ -278,33 +283,37 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
 
         // Convert defines from char* to Char*
         const int32 macrosCount = _macros.Count() - 1;
-        definesStrings.Resize(macrosCount * 2);
-        defines.Resize(macrosCount);
+        definesStrings.Resize(macrosCount);
         for (int32 i = 0; i < macrosCount; i++)
         {
             auto& macro = _macros[i];
-            auto& define = defines[i];
-            auto& defineName = definesStrings[i * 2];
-            auto& defineValue = definesStrings[i * 2 + 1];
-            defineName = macro.Name;
-            defineValue = macro.Definition;
-            define.Name = defineName.GetText();
-            define.Value = defineValue.Get();
+            auto& define = definesStrings[i];
+            define = macro.Name;
+            if (macro.Definition && *macro.Definition)
+            {
+                define += TEXT("=");
+                define += macro.Definition;
+            }
+        }
+
+        // Build full list of arguments
+        argsFull.Clear();
+        for (auto& e : args)
+            argsFull.Add(e);
+        for (auto& d : definesStrings)
+        {
+            argsFull.Add(TEXT("-D"));
+            argsFull.Add(*d);
         }
 
         // Compile
-        ComPtr<IDxcOperationResult> results;
+        ComPtr<IDxcResult> results;
         HRESULT result = compiler->Compile(
-            textBlob.Get(),
-            options->TargetName.Get(),
-            entryPoint.Get(),
-            targetProfile,
-            (LPCWSTR*)args.Get(),
-            args.Count(),
-            defines.Get(),
-            defines.Count(),
+            &textBuffer,
+            (LPCWSTR*)argsFull.Get(),
+            argsFull.Count(),
             &include,
-            &results);
+            IID_PPV_ARGS(&results));
         if (SUCCEEDED(result) && results)
             results->GetStatus(&result);
         if (FAILED(result))
@@ -338,11 +347,19 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         // Generate debug information
         {
             // Disassemble compiled shader
-            ComPtr<IDxcBlobEncoding> disassembly;
-            if (FAILED(compiler->Disassemble(shaderBuffer, &disassembly)))
+            ComPtr<IDxcResult> disassembly;
+            DxcBuffer shaderDxcBuffer;
+            shaderDxcBuffer.Ptr = shaderBuffer->GetBufferPointer();
+            shaderDxcBuffer.Size = shaderBuffer->GetBufferSize();
+            shaderDxcBuffer.Encoding = DXC_CP_ACP;
+            if (FAILED(compiler->Disassemble(&shaderDxcBuffer, IID_PPV_ARGS(&disassembly))))
+                return true;
+            ComPtr<IDxcBlob> disassemblyBlob;
+            ComPtr<IDxcBlobUtf16> disassemblyPath;
+            if (FAILED(disassembly->GetOutput(DXC_OUT_DISASSEMBLY, IID_PPV_ARGS(disassemblyBlob.GetAddressOf()), disassemblyPath.GetAddressOf())))
                 return true;
             ComPtr<IDxcBlobEncoding> disassemblyUtf8;
-            if (FAILED(library->GetBlobAsUtf8(disassembly, &disassemblyUtf8)))
+            if (FAILED(library->GetBlobAsUtf8(disassemblyBlob, &disassemblyUtf8)))
                 return true;
 
             // Extract debug info
@@ -356,7 +373,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             LOG(Error, "IDxcContainerReflection::Load failed.");
             return true;
         }
-        const uint32 dxilPartKind = DXIL_FOURCC('D', 'X', 'I', 'L');
+        const uint32 dxilPartKind = DXC_PART_DXIL;
         uint32 dxilPartIndex = ~0u;
         if (FAILED(containerReflection->FindFirstPartKind(dxilPartKind, &dxilPartIndex)))
         {

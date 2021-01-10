@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,8 +18,8 @@ class Win32VulkanPlatform : public VulkanPlatformBase
 {
 public:
 
-    static void GetInstanceExtensions(Array<const char*>& outExtensions);
-    static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface);
+    static void GetInstanceExtensions(Array<const char*>& extensions);
+    static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface);
 };
 
 typedef Win32VulkanPlatform VulkanPlatform;

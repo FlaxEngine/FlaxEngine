@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -408,11 +408,6 @@ namespace FlaxEditor
                 for (int i = 0; i < _modules.Count; i++)
                 {
                     _modules[i].OnUpdate();
-                }
-
-                if (Input.GetKeyDown(KeyboardKeys.F6))
-                {
-                    Simulation.RequestResumeOrPause();
                 }
             }
             catch (Exception ex)
@@ -1203,7 +1198,7 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.ScreenToClient(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.Window.ScreenToClient(pos)));
                 }
                 else
                 {

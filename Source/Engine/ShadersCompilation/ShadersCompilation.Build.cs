@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -48,7 +48,6 @@ public class ShadersCompilation : EngineModule
             options.PrivateDependencies.Add("ShaderCompilerD3D");
             if (WindowsPlatformBase.GetSDKs().Any(x => x.Key != WindowsPlatformSDK.v8_1))
                 options.PrivateDependencies.Add("ShaderCompilerDX");
-            //options.PrivateDependencies.Add("ShaderCompilerOGL");
             options.PrivateDependencies.Add("ShaderCompilerVulkan");
             break;
         case TargetPlatform.Linux:

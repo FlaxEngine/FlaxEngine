@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -34,7 +34,7 @@ namespace FlaxEditor.CustomEditors.Editors
     public class AssetRefEditor : CustomEditor
     {
         private CustomElement<AssetPicker> _element;
-        private ScriptType _type;
+        private ScriptType _valueType;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -44,7 +44,8 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (!HasDifferentTypes)
             {
-                _type = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+                _valueType = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+                var assetType = _valueType;
 
                 float height = 48;
                 var attributes = Values.GetAttributes();
@@ -58,14 +59,14 @@ namespace FlaxEditor.CustomEditors.Editors
                     {
                         var customType = TypeUtils.GetType(assetReference.TypeName);
                         if (customType != ScriptType.Null)
-                            _type = customType;
+                            assetType = customType;
                         else
                             Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for asset picker filter.", assetReference.TypeName));
                     }
                 }
 
                 _element = layout.Custom<AssetPicker>();
-                _element.CustomControl.AssetType = _type;
+                _element.CustomControl.AssetType = assetType;
                 _element.CustomControl.Height = height;
                 _element.CustomControl.SelectedItemChanged += OnSelectedItemChanged;
             }
@@ -73,11 +74,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnSelectedItemChanged()
         {
-            if (typeof(AssetItem).IsAssignableFrom(_type.Type))
+            if (typeof(AssetItem).IsAssignableFrom(_valueType.Type))
                 SetValue(_element.CustomControl.SelectedItem);
-            else if (_type.Type == typeof(Guid))
+            else if (_valueType.Type == typeof(Guid))
                 SetValue(_element.CustomControl.SelectedID);
-            else if (_type.Type == typeof(SceneReference))
+            else if (_valueType.Type == typeof(SceneReference))
                 SetValue(new SceneReference(_element.CustomControl.SelectedID));
             else
                 SetValue(_element.CustomControl.SelectedAsset);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -11,16 +11,16 @@ namespace Flax.Build.Bindings
     {
         private static class ApiTokens
         {
-            public static readonly string Enum = "API_ENUM";
-            public static readonly string Class = "API_CLASS";
-            public static readonly string Struct = "API_STRUCT";
-            public static readonly string Function = "API_FUNCTION";
-            public static readonly string Property = "API_PROPERTY";
-            public static readonly string Field = "API_FIELD";
-            public static readonly string Event = "API_EVENT";
-            public static readonly string Param = "API_PARAM";
-            public static readonly string InjectCppCode = "API_INJECT_CPP_CODE";
-            public static readonly string AutoSerialization = "API_AUTO_SERIALIZATION";
+            public const string Enum = "API_ENUM";
+            public const string Class = "API_CLASS";
+            public const string Struct = "API_STRUCT";
+            public const string Function = "API_FUNCTION";
+            public const string Property = "API_PROPERTY";
+            public const string Field = "API_FIELD";
+            public const string Event = "API_EVENT";
+            public const string Param = "API_PARAM";
+            public const string InjectCppCode = "API_INJECT_CPP_CODE";
+            public const string AutoSerialization = "API_AUTO_SERIALIZATION";
 
             public static readonly string[] SearchTags =
             {

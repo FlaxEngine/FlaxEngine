@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_SHADER_COMPILER
 
@@ -28,9 +28,6 @@
 #endif
 #if COMPILE_WITH_DX_SHADER_COMPILER
 #include "DirectX/ShaderCompilerDX.h"
-#endif
-#if COMPILE_WITH_OGL_SHADER_COMPILER
-#include "OpenGL/ShaderCompilerOGL.h"
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER
 #include "Vulkan/ShaderCompilerVulkan.h"
@@ -63,7 +60,7 @@ public:
 
 ShadersCompilationService ShadersCompilationServiceInstance;
 
-bool ShadersCompilation::Compile(const ShaderCompilationOptions& options)
+bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 {
     PROFILE_CPU_NAMED("Shader.Compile");
 
@@ -88,6 +85,10 @@ bool ShadersCompilation::Compile(const ShaderCompilationOptions& options)
         LOG(Warning, "Missing source code.");
         return true;
     }
+
+    // Adjust input source length if it ends with null
+    while (options.SourceLength > 2 && options.Source[options.SourceLength - 1] == 0)
+        options.SourceLength--;
 
     const DateTime startTime = DateTime::NowUTC();
     const FeatureLevel featureLevel = RenderTools::GetFeatureLevel(options.Profile);
@@ -157,13 +158,6 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
 #if COMPILE_WITH_DX_SHADER_COMPILER
     case ShaderProfile::DirectX_SM6:
         result = New<ShaderCompilerDX>(profile);
-        break;
-#endif
-#if COMPILE_WITH_OGL_SHADER_COMPILER
-		// OpenGL and OpenGL ES
-		case ShaderProfile::GLSL_410:
-		case ShaderProfile::GLSL_440:
-        result = New<ShaderCompilerOGL>(profile);
         break;
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER

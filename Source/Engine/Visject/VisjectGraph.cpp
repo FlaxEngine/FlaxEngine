@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "VisjectGraph.h"
 #include "GraphUtilities.h"
@@ -179,6 +179,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             default: CRASH;
                 break;
             }
+            break;
         }
         case 12:
             switch (v1.Type.Type)
@@ -204,6 +205,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             default: CRASH;
                 break;
             }
+            break;
         }
         break;
     }

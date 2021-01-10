@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "GameCooker.h"
 #include "FlaxEngine.Gen.h"
@@ -309,7 +309,7 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     PlatformTools* tools = GetTools(platform);
     if (tools == nullptr)
     {
-        LOG(Error, "Build platform {0} is not suppoerd.", ::ToString(platform));
+        LOG(Error, "Build platform {0} is not supported.", ::ToString(platform));
         return;
     }
 

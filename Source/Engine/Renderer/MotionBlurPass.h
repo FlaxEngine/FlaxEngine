@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,9 +12,13 @@ class MotionBlurPass : public RendererPass<MotionBlurPass>
 private:
 
     PixelFormat _motionVectorsFormat;
-    PixelFormat _velocityFormat;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psCameraMotionVectors = nullptr;
+    GPUPipelineState* _psMotionVectorsDebug = nullptr;
+    GPUPipelineState* _psTileMax = nullptr;
+    GPUPipelineState* _psTileMaxVariable = nullptr;
+    GPUPipelineState* _psNeighborMax = nullptr;
+    GPUPipelineState* _psMotionBlur = nullptr;
 
 public:
 
@@ -52,6 +56,11 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psCameraMotionVectors->ReleaseGPU();
+        _psMotionVectorsDebug->ReleaseGPU();
+        _psTileMax->ReleaseGPU();
+        _psTileMaxVariable->ReleaseGPU();
+        _psNeighborMax->ReleaseGPU();
+        _psMotionBlur->ReleaseGPU();
         invalidateResources();
     }
 #endif

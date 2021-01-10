@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -92,7 +92,7 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
 {
     if (_acquiredImageIndex == -1)
     {
-        if (DoCheckedSwapChainJob(DoAcquireImageIndex) < 0)
+        if (TryPresent(DoAcquireImageIndex) < 0)
         {
             LOG(Fatal, "Swapchain acquire image index failed!");
         }
@@ -187,10 +187,10 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 
     const auto& gpu = _device->Adapter->Gpu;
 
-    // Find pixel format for presentable images
+    // Pick a format for backbuffer
     PixelFormat resultFormat = GPU_BACK_BUFFER_PIXEL_FORMAT;
-    VkSurfaceFormatKHR curFormat;
-    Platform::MemoryClear(&curFormat, sizeof(curFormat));
+    VkSurfaceFormatKHR result;
+    Platform::MemoryClear(&result, sizeof(result));
     {
         uint32 surfaceFormatsCount;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
@@ -210,7 +210,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 {
                     if (surfaceFormats[i].format == requested)
                     {
-                        curFormat = surfaceFormats[i];
+                        result = surfaceFormats[i];
                         found = true;
                         break;
                     }
@@ -240,8 +240,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                     if (surfaceFormats[i].format == RenderToolsVulkan::ToVulkanFormat(static_cast<PixelFormat>(pixelFormat)))
                     {
                         resultFormat = static_cast<PixelFormat>(pixelFormat);
-                        curFormat = surfaceFormats[i];
-                        LOG(Info, "No swapchain format requested, picking up Vulkan format {0}", (uint32)curFormat.format);
+                        result = surfaceFormats[i];
+                        LOG(Info, "No swapchain format requested, picking up Vulkan format {0}", (uint32)result.format);
                         break;
                     }
                 }
@@ -264,7 +264,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 if (surfaceFormats[i].format == format)
                 {
                     supported = true;
-                    curFormat = surfaceFormats[i];
+                    result = surfaceFormats[i];
                     break;
                 }
             }
@@ -290,13 +290,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
             LOG(Error, "Unable to find a pixel format for the swapchain; swapchain returned {0} Vulkan formats {1}", surfaceFormats.Count(), *msg);
         }
     }
-    curFormat.format = RenderToolsVulkan::ToVulkanFormat(resultFormat);
+    result.format = RenderToolsVulkan::ToVulkanFormat(resultFormat);
     _format = resultFormat;
 
     // Prepare present queue
     _device->SetupPresentQueue(_surface);
 
-    // Fetch present mode
+    // Calculate the swap chain present mode
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
     {
         uint32 presentModesCount = 0;
@@ -358,8 +358,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
     swapChainInfo.minImageCount = VULKAN_BACK_BUFFERS_COUNT;
-    swapChainInfo.imageFormat = curFormat.format;
-    swapChainInfo.imageColorSpace = curFormat.colorSpace;
+    swapChainInfo.imageFormat = result.format;
+    swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
     swapChainInfo.imageExtent.height = height;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -415,8 +415,7 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
 {
     if (_currentImageIndex == -1)
     {
-        // Skip present silently if image has not been acquired
-        return Status::Healthy;
+        return Status::Ok;
     }
 
     VkPresentInfoKHR presentInfo;
@@ -436,23 +435,23 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
 
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        return Status::OutOfDate;
+        return Status::Outdated;
     }
     if (presentResult == VK_ERROR_SURFACE_LOST_KHR)
     {
-        return Status::SurfaceLost;
+        return Status::LostSurface;
     }
     if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR)
     {
         VALIDATE_VULKAN_RESULT(presentResult);
     }
 
-    return Status::Healthy;
+    return Status::Ok;
 }
 
 int32 GPUSwapChainVulkan::DoAcquireImageIndex(GPUSwapChainVulkan* viewport, void* customData)
 {
-    return viewport->_acquiredImageIndex = viewport->AcquireImageIndex(&viewport->_acquiredSemaphore);
+    return viewport->_acquiredImageIndex = viewport->AcquireNextImage(&viewport->_acquiredSemaphore);
 }
 
 int32 GPUSwapChainVulkan::DoPresent(GPUSwapChainVulkan* viewport, void* customData)
@@ -460,20 +459,20 @@ int32 GPUSwapChainVulkan::DoPresent(GPUSwapChainVulkan* viewport, void* customDa
     return (int32)viewport->Present((QueueVulkan*)customData, viewport->_backBuffers[viewport->_acquiredImageIndex].RenderingDoneSemaphore);
 }
 
-int32 GPUSwapChainVulkan::DoCheckedSwapChainJob(Function<int32(GPUSwapChainVulkan*, void*)> job, void* customData, bool skipOnOutOfDate)
+int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)> job, void* customData, bool skipOnOutOfDate)
 {
     int32 attemptsPending = 4;
     int32 status = job(this, customData);
 
     while (status < 0 && attemptsPending > 0)
     {
-        if (status == (int32)Status::OutOfDate)
+        if (status == (int32)Status::Outdated)
         {
             //LOG(Warning, "Swapchain is out of date");
             if (skipOnOutOfDate)
                 return status;
         }
-        else if (status == (int32)Status::SurfaceLost)
+        else if (status == (int32)Status::LostSurface)
         {
             LOG(Warning, "Swapchain surface lost");
         }
@@ -487,7 +486,7 @@ int32 GPUSwapChainVulkan::DoCheckedSwapChainJob(Function<int32(GPUSwapChainVulka
         ReleaseGPU();
         CreateSwapChain(_width, _height);
 
-        // Swapchain creation pushes some commands - flush the command buffers now to begin with a fresh state
+        // Flush commands
         _device->GetMainContext()->Flush();
         _device->WaitForGPU();
 
@@ -499,7 +498,7 @@ int32 GPUSwapChainVulkan::DoCheckedSwapChainJob(Function<int32(GPUSwapChainVulka
     return status;
 }
 
-int32 GPUSwapChainVulkan::AcquireImageIndex(SemaphoreVulkan** outSemaphore)
+int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan** outSemaphore)
 {
     ASSERT(_swapChain && _backBuffers.HasItems());
 
@@ -519,13 +518,13 @@ int32 GPUSwapChainVulkan::AcquireImageIndex(SemaphoreVulkan** outSemaphore)
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         _semaphoreIndex = prevSemaphoreIndex;
-        return (int32)Status::OutOfDate;
+        return (int32)Status::Outdated;
     }
 
     if (result == VK_ERROR_SURFACE_LOST_KHR)
     {
         _semaphoreIndex = prevSemaphoreIndex;
-        return (int32)Status::SurfaceLost;
+        return (int32)Status::LostSurface;
     }
 
     *outSemaphore = semaphore;
@@ -562,8 +561,8 @@ void GPUSwapChainVulkan::Present(bool vsync)
     context->GetCmdBufferManager()->SubmitActiveCmdBuffer(_backBuffers[_acquiredImageIndex].RenderingDoneSemaphore);
 
     // Present the back buffer to the viewport window
-    const auto result = DoCheckedSwapChainJob(DoPresent, _device->PresentQueue, true);
-    if (result == (int32)Status::OutOfDate)
+    const auto result = TryPresent(DoPresent, _device->PresentQueue, true);
+    if (result == (int32)Status::Outdated)
     {
         // Failed to present, window can be minimized or doesn't want to swap the buffers so just ignore the present
         if (_window->IsMinimized())

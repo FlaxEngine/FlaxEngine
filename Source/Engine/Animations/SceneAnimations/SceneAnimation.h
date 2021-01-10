@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -102,7 +102,7 @@ public:
         void* Data;
 
         /// <summary>
-        /// The track dependant data (from the shared runtime allocation).
+        /// The track dependent data (from the shared runtime allocation).
         /// </summary>
         void* RuntimeData;
 

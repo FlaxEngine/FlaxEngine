@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -125,7 +125,7 @@ namespace FlaxEditor.GUI.Docking
                 var control = _tabsProxy != null ? (Control)_tabsProxy : this;
                 var dpiScale = Platform.DpiScale;
                 var clientPos = control.PointToWindow(Vector2.Zero);
-                return new Rectangle(parentWin.ClientToScreen(clientPos * dpiScale), control.Size * dpiScale);
+                return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * dpiScale);
             }
         }
 
@@ -310,7 +310,7 @@ namespace FlaxEditor.GUI.Docking
             var parentWin = Root;
             if (parentWin == null)
                 return null;
-            Vector2 clientPos = parentWin.ScreenToClient(position);
+            Vector2 clientPos = parentWin.PointFromScreen(position);
             Vector2 localPos = PointFromWindow(clientPos);
 
             // Early out

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WIN32
 
@@ -41,11 +41,8 @@ bool Win32FileSystem::CreateDirectory(const StringView& path)
     }
     else
     {
-        // Specified directory name already exists as a file or directory
-        const bool isDirectoryOrJunction =
-                ((fileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) ||
-                ((fileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0);
-        if (!isDirectoryOrJunction)
+        // Special case if directory name already exists as a file or directory
+        if (!((fileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || (fileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0))
         {
             return true;
         }
@@ -74,7 +71,7 @@ bool Win32FileSystem::DeleteDirectory(const String& path, bool deleteContents)
         do
         {
             // Check if it isn't a special case
-            if (((StringUtils::Compare(info.cFileName, TEXT(".")) == 0) || (StringUtils::Compare(info.cFileName, TEXT("..")) == 0)))
+            if (StringUtils::Compare(info.cFileName, TEXT(".")) == 0 || StringUtils::Compare(info.cFileName, TEXT("..")) == 0)
                 continue;
 
             // Check if its a directory of a file
@@ -110,19 +107,17 @@ bool Win32FileSystem::DeleteDirectory(const String& path, bool deleteContents)
 
     // Check if still exists
     const int32 result = GetFileAttributesW(*path);
-    return (result != 0xFFFFFFFF && (result & FILE_ATTRIBUTE_DIRECTORY));
+    return result != 0xFFFFFFFF && result & FILE_ATTRIBUTE_DIRECTORY;
 }
 
 bool Win32FileSystem::DirectoryExists(const StringView& path)
 {
-    // Check if exists
     const int32 result = GetFileAttributesW(*path);
-    return (result != 0xFFFFFFFF && (result & FILE_ATTRIBUTE_DIRECTORY));
+    return result != 0xFFFFFFFF && result & FILE_ATTRIBUTE_DIRECTORY;
 }
 
 bool Win32FileSystem::DirectoryGetFiles(Array<String>& results, const String& path, const Char* searchPattern, DirectorySearchOption option)
 {
-    // Check if use only top directory
     if (option == DirectorySearchOption::TopDirectoryOnly)
         return getFilesFromDirectoryTop(results, path, searchPattern);
     return getFilesFromDirectoryAll(results, path, searchPattern);
@@ -143,7 +138,7 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
     do
     {
         // Check if it isn't a special case
-        if (((StringUtils::Compare(info.cFileName, TEXT(".")) == 0) || (StringUtils::Compare(info.cFileName, TEXT("..")) == 0)))
+        if (StringUtils::Compare(info.cFileName, TEXT(".")) == 0 || StringUtils::Compare(info.cFileName, TEXT("..")) == 0)
             continue;
 
         // Check if its a directory of a file
@@ -161,7 +156,7 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
 bool Win32FileSystem::FileExists(const StringView& path)
 {
     const uint32 result = GetFileAttributesW(*path);
-    return (result != 0xFFFFFFFF && !(result & FILE_ATTRIBUTE_DIRECTORY));
+    return result != 0xFFFFFFFF && !(result & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 bool Win32FileSystem::DeleteFile(const StringView& path)
@@ -182,13 +177,12 @@ uint64 Win32FileSystem::GetFileSize(const StringView& path)
             return li.QuadPart;
         }
     }
-
     return 0;
 }
 
 bool Win32FileSystem::IsReadOnly(const StringView& path)
 {
-    uint32 result = GetFileAttributesW(*path);
+    const uint32 result = GetFileAttributesW(*path);
     if (result != 0xFFFFFFFF)
     {
         return !!(result & FILE_ATTRIBUTE_READONLY);
@@ -203,24 +197,16 @@ bool Win32FileSystem::SetReadOnly(const StringView& path, bool isReadOnly)
 
 bool Win32FileSystem::MoveFile(const StringView& dst, const StringView& src, bool overwrite)
 {
-    DWORD flags = overwrite ? MOVEFILE_REPLACE_EXISTING : 0;
+    const DWORD flags = MOVEFILE_COPY_ALLOWED | (overwrite ? MOVEFILE_REPLACE_EXISTING : 0);
 
-    // Allow to copy files, needed in cases when Temp folder is 
-    // located on different volume (eg.: Temp is on C:\ and Project in on D:\)
-    flags |= MOVEFILE_COPY_ALLOWED;
-
-    // If paths are almost the same but some characters have different case we need to use proxy file
+    // If paths are almost the same but some characters have different case we need to use a proxy file
     if (StringUtils::CompareIgnoreCase(*dst, *src) == 0)
     {
-        // Get temporary file path
         String tmp;
         GetTempFilePath(tmp);
-
-        // Move file
-        return MoveFileExW(*src, *tmp, MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, *dst, flags) == 0;
+        return MoveFileExW(*src, *tmp, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, *dst, flags) == 0;
     }
 
-    // Move file
     return MoveFileExW(*src, *dst, flags) == 0;
 }
 
@@ -278,7 +264,7 @@ bool Win32FileSystem::getFilesFromDirectoryTop(Array<String>& results, const Str
     do
     {
         // Check if it isn't a special case
-        if (((StringUtils::Compare(info.cFileName, TEXT(".")) == 0) || (StringUtils::Compare(info.cFileName, TEXT("..")) == 0)))
+        if (StringUtils::Compare(info.cFileName, TEXT(".")) == 0 || StringUtils::Compare(info.cFileName, TEXT("..")) == 0)
             continue;
 
         // Check if its a directory or a file
@@ -315,7 +301,7 @@ bool Win32FileSystem::getFilesFromDirectoryAll(Array<String>& results, const Str
     do
     {
         // Check if it isn't a special case
-        if ((StringUtils::Compare(info.cFileName, TEXT(".")) == 0) || (StringUtils::Compare(info.cFileName, TEXT("..")) == 0))
+        if (StringUtils::Compare(info.cFileName, TEXT(".")) == 0 || StringUtils::Compare(info.cFileName, TEXT("..")) == 0)
             continue;
 
         // Check if its a directory or a file

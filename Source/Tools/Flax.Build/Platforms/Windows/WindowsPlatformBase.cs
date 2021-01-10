@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 // ReSharper disable InconsistentNaming
 
@@ -314,6 +314,10 @@ namespace Flax.Build.Platforms
                 return _sdks;
             _sdks = new Dictionary<WindowsPlatformSDK, string>();
 
+            // Skip if running on non-Windows system
+            if (BuildTargetPlatform != TargetPlatform.Windows)
+                return _sdks;
+
             // Check Windows 8.1 SDK
             if (TryReadInstallDirRegistryKey32("Microsoft\\Microsoft SDKs\\Windows\\v8.1", "InstallationFolder", out var sdk81))
             {
@@ -406,14 +410,13 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v142:
             {
                 /*
-                // Use the x86-on-x64 compiler
                 string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x86", "cl.exe");
                 if (File.Exists(crossCompilerPath))
                 {
                     return Path.GetDirectoryName(crossCompilerPath);
                 }
                 */
-                // Otherwise the native 32-bit compiler if present
+
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX86", "x86", "cl.exe");
                 if (File.Exists(nativeCompilerPath))
                 {
@@ -442,14 +445,12 @@ namespace Flax.Build.Platforms
             {
             case WindowsPlatformToolset.v140:
             {
-                // Use the native 64-bit compiler if present
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
                 if (File.Exists(nativeCompilerPath))
                 {
                     return Path.GetDirectoryName(nativeCompilerPath);
                 }
 
-                // Otherwise use the x64-on-x86 compiler
                 string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "x86_amd64", "cl.exe");
                 if (File.Exists(crossCompilerPath))
                 {
@@ -462,14 +463,12 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
             {
-                // Use the native 64-bit compiler if present
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x64", "cl.exe");
                 if (File.Exists(nativeCompilerPath))
                 {
                     return Path.GetDirectoryName(nativeCompilerPath);
                 }
 
-                // Otherwise try the x64-on-x86 compiler
                 string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX86", "x64", "cl.exe");
                 if (File.Exists(crossCompilerPath))
                 {
@@ -488,6 +487,7 @@ namespace Flax.Build.Platforms
         {
         }
 
+        /// <inheritdoc />
         void IProjectCustomizer.GetProjectArchitectureName(Project project, Platform platform, TargetArchitecture architecture, ref string name)
         {
             if (architecture == TargetArchitecture.x86)

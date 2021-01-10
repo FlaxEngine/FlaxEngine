@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Debug/DebugLog.h"
@@ -178,12 +178,12 @@ bool AnimGraph::InitCustomNode(Node* node)
     MMethod* evaluate = type->GetMethod("Evaluate", 1);
     if (load == nullptr)
     {
-        LOG(Warning, "Invalid custom node type {0}. Missng Load method.", typeName);
+        LOG(Warning, "Invalid custom node type {0}. Missing Load method.", typeName);
         return false;
     }
     if (evaluate == nullptr)
     {
-        LOG(Warning, "Invalid custom node type {0}. Missng Evaluate method.", typeName);
+        LOG(Warning, "Invalid custom node type {0}. Missing Evaluate method.", typeName);
         return false;
     }
 

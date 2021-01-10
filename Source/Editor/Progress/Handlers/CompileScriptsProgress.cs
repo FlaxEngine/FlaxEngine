@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEditor.Utilities;
@@ -36,7 +36,7 @@ namespace FlaxEditor.Progress.Handlers
             _selectionCache.Cache();
 
             // Clear references to the user scripts (we gonna reload an assembly)
-            Editor.Instance.Scene.ClearRefsToSceneObjects();
+            Editor.Instance.Scene.ClearRefsToSceneObjects(true);
         }
 
         private void OnScriptsReload()

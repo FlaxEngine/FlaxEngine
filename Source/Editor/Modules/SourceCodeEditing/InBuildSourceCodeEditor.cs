@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -54,6 +54,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             case CodeEditorTypes.VSCode:
                 Name = "Visual Studio Code";
                 break;
+            case CodeEditorTypes.VSCodeInsiders:
+                Name = "Visual Studio Code - Insiders";
+                break;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
@@ -68,6 +71,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 switch (Type)
                 {
+                case CodeEditorTypes.VSCodeInsiders:
                 case CodeEditorTypes.VSCode: return "-vscode";
                 default: return null;
                 }

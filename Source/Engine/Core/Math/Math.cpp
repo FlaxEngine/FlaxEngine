@@ -1,26 +1,57 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Math.h"
 #include "Vector3.h"
 
+void Math::SinCos(float angle, float& sine, float& cosine)
+{
+    sine = sin(angle);
+    cosine = cos(angle);
+}
+
+uint32 Math::FloorLog2(uint32 value)
+{
+    // References:
+    // http://codinggorilla.domemtech.com/?p=81
+    // http://en.wikipedia.org/wiki/Binary_logarithm
+
+    uint32 pos = 0;
+    if (value >= 1 << 16)
+    {
+        value >>= 16;
+        pos += 16;
+    }
+    if (value >= 1 << 8)
+    {
+        value >>= 8;
+        pos += 8;
+    }
+    if (value >= 1 << 4)
+    {
+        value >>= 4;
+        pos += 4;
+    }
+    if (value >= 1 << 2)
+    {
+        value >>= 2;
+        pos += 2;
+    }
+    if (value >= 1 << 1)
+    {
+        pos += 1;
+    }
+    return value == 0 ? 0 : pos;
+}
+
 Vector3 Math::RotateAboutAxis(const Vector3& normalizedRotationAxis, float angle, const Vector3& positionOnAxis, const Vector3& position)
 {
-    // Project position onto the rotation axis and find the closest point on the axis to Position
     const Vector3 closestPointOnAxis = positionOnAxis + normalizedRotationAxis * Vector3::Dot(normalizedRotationAxis, position - positionOnAxis);
-
-    // Construct orthogonal axes in the plane of the rotation
     const Vector3 axisU = position - closestPointOnAxis;
     const Vector3 axisV = Vector3::Cross(normalizedRotationAxis, axisU);
     float cosAngle, sinAngle;
     Math::SinCos(angle, sinAngle, cosAngle);
-
-    // Rotate using the orthogonal axes
     const Vector3 rotation = axisU * cosAngle + axisV * sinAngle;
-
-    // Reconstruct the rotated world space position
     const Vector3 rotatedPosition = closestPointOnAxis + rotation;
-
-    // Convert from position to a position offset
     return rotatedPosition - position;
 }
 

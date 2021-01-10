@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -30,7 +30,7 @@ private:
         float HistoryWeight;
 
         Vector3 GridSize;
-        uint32 HistoryMissSuperSampleCount;
+        uint32 MissedHistorySamplesCount;
 
         int32 GridSizeIntX;
         int32 GridSizeIntY;
@@ -105,9 +105,9 @@ private:
         float HistoryWeight;
 
         /// <summary>
-        /// Number of lighting samples to compute for voxels whose history value is not available. This reduces noise when panning or on camera cuts, but introduces a variable cost to volumetric fog computation. Valid range [1, 8].
+        /// The amount of lighting samples to compute for voxels whose history value is not available. This reduces noise when panning or on camera cuts, but introduces a variable cost to volumetric fog computation. Valid range [1, 8].
         /// </summary>
-        int32 HistoryMissSupersampleCount;
+        int32 MissedHistorySamplesCount;
 
         /// <summary>
         /// Scales the amount added to the inverse squared falloff denominator. This effectively removes the spike from inverse squared falloff that causes extreme aliasing.
@@ -167,7 +167,7 @@ private:
 
     bool Init(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options);
     GPUTextureView* GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options) const;
-    void InitCircleRasterizeBuffers();
+    void InitCircleBuffer();
     template<typename T>
     void RenderRadialLight(RenderContext& renderContext, GPUContext* context, T& light, LightShadowData& shadow);
     template<typename T>

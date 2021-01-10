@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
 #include "Storage/ContentStorageManager.h"
@@ -128,7 +128,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     Document.Parse(data.Get<char>(), data.Length());
     if (Document.HasParseError())
     {
-        Log::JsonParseException(Document.GetParseError());
+        Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
         return LoadResult::CannotLoadData;
     }
 
