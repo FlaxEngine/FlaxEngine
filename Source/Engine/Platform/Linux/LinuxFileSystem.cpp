@@ -108,7 +108,7 @@ bool DeleteUnixPathTree(const char* path)
 
         // Determinate a full path of an entry
         char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
@@ -211,7 +211,7 @@ bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& 
 
         // Determinate a full path of an entry
         char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
@@ -373,7 +373,6 @@ out_error:
 bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char* path, const char* searchPattern)
 {
     size_t pathLength;
-    DIR* dir;
     struct stat statPath, statEntry;
     struct dirent* entry;
 
@@ -388,7 +387,8 @@ bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const cha
     }
 
     // If not possible to read the directory for this user
-    if ((dir = opendir(path)) == NULL)
+    DIR* dir = opendir(path);
+    if (dir == NULL)
     {
         // Cannot open directory
         return true;
@@ -406,7 +406,7 @@ bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const cha
 
         // Determinate a full path of an entry
         char fullPath[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(fullPath));
         strcpy(fullPath, path);
         strcat(fullPath, "/");
         strcat(fullPath, entry->d_name);
@@ -424,7 +424,7 @@ bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const cha
             {
                 // All files
             }
-            else if (searchPattern[0] == '*' && searchPatternLength < fullPathLength && StringUtils::Compare(fullPath + fullPathLength - searchPatternLength, searchPattern + 1) == 0)
+            else if (searchPattern[0] == '*' && searchPatternLength < fullPathLength && StringUtils::Compare(fullPath + fullPathLength - searchPatternLength + 1, searchPattern + 1, searchPatternLength - 1) == 0)
             {
                 // Path ending
             }
@@ -483,7 +483,7 @@ bool LinuxFileSystem::getFilesFromDirectoryAll(Array<String>& results, const cha
 
         // Determinate a full path of an entry
         char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);

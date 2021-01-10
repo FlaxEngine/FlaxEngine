@@ -44,7 +44,6 @@ namespace
     bool DeleteUnixPathTree(const char* path)
     {
         size_t pathLength;
-        DIR* dir;
         struct stat statPath, statEntry;
         struct dirent* entry;
 
@@ -59,7 +58,8 @@ namespace
         }
 
         // If not possible to read the directory for this user
-        if ((dir = opendir(path)) == nullptr)
+        DIR* dir = dir = opendir(path);
+        if (dir == nullptr)
         {
             // Cannot open directory
             return true;
@@ -77,7 +77,7 @@ namespace
 
             // Determinate a full path of an entry
             char full_path[256];
-            ASSERT(pathLength + strlen(entry->d_name) <= 255);
+            ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
             strcpy(full_path, path);
             strcat(full_path, "/");
             strcat(full_path, entry->d_name);
@@ -168,7 +168,6 @@ bool AndroidFileSystem::DirectoryGetFiles(Array<String>& results, const String& 
 bool AndroidFileSystem::GetChildDirectories(Array<String>& results, const String& directory)
 {
     size_t pathLength;
-    DIR* dir;
     struct stat statPath, statEntry;
     struct dirent* entry;
     const StringAsANSI<> pathANSI(*directory, directory.Length());
@@ -185,7 +184,8 @@ bool AndroidFileSystem::GetChildDirectories(Array<String>& results, const String
     }
 
     // If not possible to read the directory for this user
-    if ((dir = opendir(path)) == nullptr)
+    DIR* dir = opendir(path);
+    if (dir == nullptr)
     {
         // Cannot open directory
         return true;
@@ -203,7 +203,7 @@ bool AndroidFileSystem::GetChildDirectories(Array<String>& results, const String
 
         // Determinate a full path of an entry
         char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
@@ -381,7 +381,6 @@ out_error:
 bool AndroidFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char* path, const char* searchPattern)
 {
     size_t pathLength;
-    DIR* dir;
     struct stat statPath, statEntry;
     struct dirent* entry;
 
@@ -396,7 +395,8 @@ bool AndroidFileSystem::getFilesFromDirectoryTop(Array<String>& results, const c
     }
 
     // If not possible to read the directory for this user
-    if ((dir = opendir(path)) == nullptr)
+    DIR* dir = opendir(path);
+    if (dir == nullptr)
     {
         // Cannot open directory
         return true;
@@ -432,7 +432,7 @@ bool AndroidFileSystem::getFilesFromDirectoryTop(Array<String>& results, const c
             {
                 // All files
             }
-            else if (searchPattern[0] == '*' && searchPatternLength < fullPathLength && StringUtils::Compare(fullPath + fullPathLength - searchPatternLength, searchPattern + 1) == 0)
+            else if (searchPattern[0] == '*' && searchPatternLength < fullPathLength && StringUtils::Compare(fullPath + fullPathLength - searchPatternLength + 1, searchPattern + 1) == 0)
             {
                 // Path ending
             }
@@ -458,7 +458,6 @@ bool AndroidFileSystem::getFilesFromDirectoryAll(Array<String>& results, const c
     getFilesFromDirectoryTop(results, path, searchPattern);
 
     size_t pathLength;
-    DIR* dir;
     struct stat statPath, statEntry;
     struct dirent* entry;
 
@@ -473,7 +472,8 @@ bool AndroidFileSystem::getFilesFromDirectoryAll(Array<String>& results, const c
     }
 
     // If not possible to read the directory for this user
-    if ((dir = opendir(path)) == nullptr)
+    DIR* dir = opendir(path);
+    if (dir == nullptr)
     {
         // Cannot open directory
         return true;
@@ -491,7 +491,7 @@ bool AndroidFileSystem::getFilesFromDirectoryAll(Array<String>& results, const c
 
         // Determinate a full path of an entry
         char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) <= 255);
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
