@@ -20,6 +20,33 @@
 
 const DateTime UnixEpoch(1970, 1, 1);
 
+bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
+{
+    const StringAsANSI<> titleAnsi(*title, title.Length());
+    char cmd[2048];
+    // TODO: multiSelect support
+    // TODO: filter support
+    sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+    FILE* f = popen(cmd, "r");
+    char buf[2048];
+    fgets(buf, ARRAY_COUNT(buf), f); 
+    int result = pclose(f);
+    if (result != 0)
+    {
+        return true;
+    }
+    const char* c = buf;
+    while (*c)
+    {
+        const char* start = c;
+        while (*c != '\n')
+            c++;
+        filenames.Add(String(start, (int32)(c - start)));
+        c++;
+    }
+    return false;
+}
+
 bool LinuxFileSystem::CreateDirectory(const StringView& path)
 {
     const StringAsANSI<> pathAnsi(*path, path.Length());
