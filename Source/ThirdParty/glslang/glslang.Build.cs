@@ -36,6 +36,13 @@ public class glslang : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV.lib"));
             break;
         case TargetPlatform.Linux:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libGenericCodeGen.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libglslang.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libHLSL.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libMachineIndependent.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libOSDependent.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libOGLCompiler.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libSPIRV.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

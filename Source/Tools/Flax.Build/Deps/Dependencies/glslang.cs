@@ -21,7 +21,12 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Windows:
                     return new[]
                     {
-                        TargetPlatform.Windows,
+                        TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -36,20 +41,8 @@ namespace Flax.Deps.Dependencies
             var buildDir = root;
             var solutionPath = Path.Combine(buildDir, "glslang.sln");
             var configuration = "Release";
-            var cmakeArgs = string.Format("-DCMAKE_INSTALL_PREFIX=\"{0}\" -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF", installDir);
+            var cmakeArgs = string.Format("-DCMAKE_INSTALL_PREFIX=\"{0}\" -DCMAKE_BUILD_TYPE={1} -DENABLE_RTTI=ON -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF", installDir, configuration);
             var libsRoot = Path.Combine(installDir, "lib");
-            var outputFiles = new[]
-            {
-                Path.Combine(libsRoot, "GenericCodeGen.lib"),
-                Path.Combine(libsRoot, "MachineIndependent.lib"),
-                Path.Combine(libsRoot, "HLSL.lib"),
-                Path.Combine(libsRoot, "OSDependent.lib"),
-                Path.Combine(libsRoot, "OGLCompiler.lib"),
-                Path.Combine(libsRoot, "SPIRV-Tools-opt.lib"),
-                Path.Combine(libsRoot, "SPIRV-Tools.lib"),
-                Path.Combine(libsRoot, "SPIRV.lib"),
-                Path.Combine(libsRoot, "glslang.lib"),
-            };
 
             // Get the source
             CloneGitRepoFast(root, "https://github.com/FlaxEngine/glslang.git");
@@ -63,6 +56,19 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 {
+                    var outputFiles = new[]
+                    {
+                        Path.Combine(libsRoot, "GenericCodeGen.lib"),
+                        Path.Combine(libsRoot, "MachineIndependent.lib"),
+                        Path.Combine(libsRoot, "HLSL.lib"),
+                        Path.Combine(libsRoot, "OSDependent.lib"),
+                        Path.Combine(libsRoot, "OGLCompiler.lib"),
+                        Path.Combine(libsRoot, "SPIRV-Tools-opt.lib"),
+                        Path.Combine(libsRoot, "SPIRV-Tools.lib"),
+                        Path.Combine(libsRoot, "SPIRV.lib"),
+                        Path.Combine(libsRoot, "glslang.lib"),
+                    };
+
                     // Build for Win64
                     File.Delete(Path.Combine(buildDir, "CMakeCache.txt"));
                     RunCmake(buildDir, TargetPlatform.Windows, TargetArchitecture.x64, cmakeArgs);
@@ -72,6 +78,34 @@ namespace Flax.Deps.Dependencies
                     foreach (var file in outputFiles)
                     {
                         Utilities.FileCopy(file, Path.Combine(depsFolder, Path.GetFileName(file)));
+                    }
+                    break;
+                }
+                case TargetPlatform.Linux:
+                {
+                    var outputFiles = new[]
+                    {
+                        Path.Combine(libsRoot, "libGenericCodeGen.a"),
+                        Path.Combine(libsRoot, "libMachineIndependent.a"),
+                        Path.Combine(libsRoot, "libHLSL.a"),
+                        Path.Combine(libsRoot, "libOSDependent.a"),
+                        Path.Combine(libsRoot, "libOGLCompiler.a"),
+                        Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
+                        Path.Combine(libsRoot, "libSPIRV-Tools.a"),
+                        Path.Combine(libsRoot, "libSPIRV.a"),
+                        Path.Combine(libsRoot, "libglslang.a"),
+                    };
+
+                    // Build for Linux
+                    RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, cmakeArgs);
+                    Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    foreach (var file in outputFiles)
+                    {
+                        var dst = Path.Combine(depsFolder, Path.GetFileName(file));
+                        Utilities.FileCopy(file, dst);
+                        //Utilities.Run("strip", string.Format("-s \"{0}\"", dst), null, null, Utilities.RunOptions.None);
                     }
                     break;
                 }
