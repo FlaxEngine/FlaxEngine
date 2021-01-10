@@ -22,6 +22,9 @@ private:
 public:
 
     VertexColorsMaterialShader();
+    virtual ~VertexColorsMaterialShader()
+    {
+    }
 
 private:
 

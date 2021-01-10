@@ -24,12 +24,20 @@ public class glslang : DepsModule
         base.Setup(options);
 
         var depsRoot = options.DepsFolder;
-        options.OutputFiles.Add(Path.Combine(depsRoot, "GenericCodeGen.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "glslang.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "HLSL.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "MachineIndependent.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "OSDependent.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "OGLCompiler.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV.lib"));
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Windows:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "GenericCodeGen.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "glslang.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "HLSL.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "MachineIndependent.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "OSDependent.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "OGLCompiler.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV.lib"));
+            break;
+        case TargetPlatform.Linux:
+            break;
+        default: throw new InvalidPlatformException(options.Platform.Target);
+        }
     }
 }

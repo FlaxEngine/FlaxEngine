@@ -24,6 +24,9 @@ private:
 public:
 
     LightmapUVsDensityMaterialShader();
+    virtual ~LightmapUVsDensityMaterialShader()
+    {
+    }
 
 private:
 

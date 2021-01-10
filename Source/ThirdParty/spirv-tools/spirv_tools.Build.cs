@@ -25,7 +25,15 @@ public class spirv_tools : DepsModule
         base.Setup(options);
 
         var depsRoot = options.DepsFolder;
-        options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools.lib"));
-        options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools-opt.lib"));
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Windows:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools.lib"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools-opt.lib"));
+            break;
+        case TargetPlatform.Linux:
+            break;
+        default: throw new InvalidPlatformException(options.Platform.Target);
+        }
     }
 }

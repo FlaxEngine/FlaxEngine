@@ -536,6 +536,7 @@ namespace Flax.Build.Bindings
                     if (apiType.IsStruct && !apiType.IsPod)
                     {
                         // Use wrapper structure that represents the memory layout of the managed data
+                        needLocalVariable = true;
                         if (!CppUsedNonPodTypes.Contains(apiType))
                             CppUsedNonPodTypes.Add(apiType);
                         type = apiType.Name + "Managed";
