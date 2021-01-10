@@ -42,7 +42,7 @@ Follow the instructions below to compile and run the engine from source.
 * Install Visual Studio Code
 * Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
 * Install Git with LFS
-* Install requried packages: `sudo apt-get install nuget autoconf libtool libogg-dev automake build-essential gettext cmake python curl libtool-bin libx11-dev libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
+* Install requried packages: `sudo apt-get install nuget autoconf libtool libogg-dev automake build-essential gettext cmake python curl libtool-bin libx11-dev libpulse-dev libasound2-dev libjack-dev portaudio19-dev libcurl4-gnutls-dev`
 * Install compiler `sudo apt-get install clang-7 lldb-7 lld-7`
 * Clone repo (with LFS)
 * Run `sudo bash GenerateProjectFiles.sh`
