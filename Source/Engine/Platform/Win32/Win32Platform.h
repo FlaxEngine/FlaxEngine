@@ -43,6 +43,7 @@ public:
         _aligned_free(ptr);
     }
     static bool Is64BitPlatform();
+    static BatteryInfo GetBatteryInfo();
     static CPUInfo GetCPUInfo();
     static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();
