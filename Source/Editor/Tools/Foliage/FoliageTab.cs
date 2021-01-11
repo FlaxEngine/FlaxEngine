@@ -100,7 +100,7 @@ namespace FlaxEditor.Tools.Foliage
         public FoliageTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
-            Level.SceneLoaded += this.OnSceneLoaded;
+            Level.SceneLoaded += OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
@@ -152,7 +152,7 @@ namespace FlaxEditor.Tools.Foliage
         {
             _createNewFoliage.Enabled = true;
 
-            Level.SceneUnloaded += this.OnSceneUnloaded;
+            Level.SceneUnloaded += OnSceneUnloaded;
             Level.SceneLoaded -= OnSceneLoaded;
         }
 
@@ -161,7 +161,7 @@ namespace FlaxEditor.Tools.Foliage
             _createNewFoliage.Enabled = false;
 
             Level.SceneLoaded += OnSceneLoaded;
-            Level.SceneUnloaded -= this.OnSceneUnloaded;
+            Level.SceneUnloaded -= OnSceneUnloaded;
         }
 
         private void OnSelected(Tab tab)
@@ -266,6 +266,17 @@ namespace FlaxEditor.Tools.Foliage
         internal void OnSelectedFoliageTypesChanged()
         {
             SelectedFoliageTypesChanged?.Invoke();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_createNewFoliage.Enabled)
+                Level.SceneUnloaded -= OnSceneUnloaded;
+            else
+                Level.SceneLoaded -= OnSceneLoaded;
+
+            base.OnDestroy();
         }
     }
 }

@@ -58,7 +58,7 @@ namespace FlaxEditor.Tools.Terrain
         public CarveTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
-            Level.SceneLoaded += this.OnSceneLoaded;
+            Level.SceneLoaded += OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
@@ -105,12 +105,12 @@ namespace FlaxEditor.Tools.Terrain
             };
             _createTerrainButton.Clicked += OnCreateNewTerrainClicked;
         }
-        
+
         private void OnSceneLoaded(Scene arg1, Guid arg2)
         {
             _createTerrainButton.Enabled = true;
 
-            Level.SceneUnloaded += this.OnSceneUnloaded;
+            Level.SceneUnloaded += OnSceneUnloaded;
             Level.SceneLoaded -= OnSceneLoaded;
         }
 
@@ -119,7 +119,7 @@ namespace FlaxEditor.Tools.Terrain
             _createTerrainButton.Enabled = false;
 
             Level.SceneLoaded += OnSceneLoaded;
-            Level.SceneUnloaded -= this.OnSceneUnloaded;
+            Level.SceneUnloaded -= OnSceneUnloaded;
         }
 
         private void OnSelected(Tab tab)
@@ -201,6 +201,17 @@ namespace FlaxEditor.Tools.Terrain
                 break;
             default: throw new IndexOutOfRangeException("Invalid carve tab mode.");
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_createTerrainButton.Enabled)
+                Level.SceneUnloaded -= OnSceneUnloaded;
+            else
+                Level.SceneLoaded -= OnSceneLoaded;
+
+            base.OnDestroy();
         }
     }
 }
