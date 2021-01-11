@@ -791,7 +791,7 @@ void MeshData::ImproveCacheLocality()
     Allocator::Free(piCandidates);
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Cache relevant optimzie for {0} vertices and {1} indices. Average output ACMR is {2}. Time: {3}s", vertexCount, indexCount, (float)iCacheMisses / indexCount / 3, Utilities::RoundTo2DecimalPlaces(endTime - startTime));
+    LOG(Info, "Cache relevant optimize for {0} vertices and {1} indices. Average output ACMR is {2}. Time: {3}s", vertexCount, indexCount, (float)iCacheMisses / indexCount / 3, Utilities::RoundTo2DecimalPlaces(endTime - startTime));
 }
 
 float MeshData::CalculateTrianglesArea() const

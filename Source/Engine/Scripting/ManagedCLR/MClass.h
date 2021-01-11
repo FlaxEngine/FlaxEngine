@@ -193,7 +193,7 @@ public:
     /// <summary>
     /// Returns an object referencing a method with the specified name and number of parameters.
     /// </summary>
-    /// <remarks>If the the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
+    /// <remarks>If the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
     /// <param name="name">The method name.</param>
     /// <param name="numParams">The method parameters count.</param>
     /// <returns>The method or null if failed to get it.</returns>

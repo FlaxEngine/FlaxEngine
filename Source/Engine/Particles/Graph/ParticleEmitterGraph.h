@@ -103,7 +103,7 @@ protected:
 public:
 
     /// <summary>
-    /// The Particle Emitter Graph data version number. Used to sync the Particle Emitter Graph data with the instances state. Handles graph reloads to enure data is valid.
+    /// The Particle Emitter Graph data version number. Used to sync the Particle Emitter Graph data with the instances state. Handles graph reloads to ensure data is valid.
     /// </summary>
     uint32 Version = 0;
 

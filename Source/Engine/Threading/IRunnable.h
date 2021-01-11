@@ -41,7 +41,7 @@ public:
     }
 
     // Called when thread ends work (via Kill or normally)
-    // @param wasKilled True if thead has been killed
+    // @param wasKilled True if thread has been killed
     virtual void AfterWork(bool wasKilled)
     {
     }

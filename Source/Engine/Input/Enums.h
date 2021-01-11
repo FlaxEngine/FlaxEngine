@@ -8,7 +8,7 @@
 #define MAX_GAMEPADS 8
 
 /// <summary>
-/// Hardware mouse cursor behaviour.
+/// Hardware mouse cursor behavior.
 /// </summary>
 API_ENUM() enum class CursorLockMode
 {

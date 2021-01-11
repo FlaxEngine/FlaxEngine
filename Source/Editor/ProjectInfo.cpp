@@ -204,7 +204,7 @@ bool ProjectInfo::LoadProject(const String& projectPath)
             reference.Project = Load(referencePath);
             if (reference.Project == nullptr)
             {
-                LOG(Error, "Faield to load referenced project ({0}, from {1})", reference.Name, referencePath);
+                LOG(Error, "Failed to load referenced project ({0}, from {1})", reference.Name, referencePath);
                 return true;
             }
         }
@@ -277,7 +277,7 @@ bool ProjectInfo::LoadOldProject(const String& projectPath)
     flaxReference.Project = Load(Globals::StartupFolder / TEXT("Flax.flaxproj"));
     if (!flaxReference.Project)
     {
-        ShowProjectLoadError(TEXT("Failed to load Flax Engien project."), projectPath);
+        ShowProjectLoadError(TEXT("Failed to load Flax Engine project."), projectPath);
         return true;
     }
 

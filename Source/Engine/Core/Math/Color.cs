@@ -280,7 +280,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="hexString">The hexadecimal string.</param>
         /// <param name="value">Output value.</param>
-        /// <returns>True if value has benn parsed, otherwise false.</returns>
+        /// <returns>True if value has been parsed, otherwise false.</returns>
         public static bool TryParseHex(string hexString, out Color value)
         {
             value = Black;

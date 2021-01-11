@@ -195,7 +195,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
         auto prefab = Content::Load<Prefab>(obj->GetPrefabID());
         if (prefab)
         {
-            // Request the prefab to be deserialized to the default instance (used for comparision to generate a diff)
+            // Request the prefab to be deserialized to the default instance (used for comparison to generate a diff)
             prefab->GetDefaultInstance();
 
             // Get prefab object instance from the prefab

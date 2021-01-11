@@ -107,7 +107,7 @@ namespace FlaxEditor.Surface
         /// Validates the parameter drag operation.
         /// </summary>
         /// <param name="parameterName">Name of the parameter.</param>
-        /// <returns>Tre if can drag that parameter, otherwise false.</returns>
+        /// <returns>True if can drag that parameter, otherwise false.</returns>
         protected virtual bool ValidateDragParameter(string parameterName)
         {
             return GetParameter(parameterName) != null;
