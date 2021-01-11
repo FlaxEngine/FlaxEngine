@@ -115,7 +115,7 @@ int32 ParticleSystemInstance::GetParticlesCount() const
         const auto desc = GPUBufferDescription::Buffer(Emitters.Count() * sizeof(uint32), GPUBufferFlags::None, PixelFormat::Unknown, nullptr, sizeof(uint32), GPUResourceUsage::StagingReadback);
         if (GPUParticlesCountReadback->Init(desc))
         {
-            LOG(Error, "Failed to create GPU particles coun readback buffer.");
+            LOG(Error, "Failed to create GPU particles count readback buffer.");
         }
     }
 

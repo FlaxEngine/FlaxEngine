@@ -104,7 +104,7 @@ namespace FlaxEditor.Gizmo
         public Axis ActiveAxis => _activeAxis;
 
         /// <summary>
-        /// Gets or sts the current gizmo mode.
+        /// Gets or sets the current gizmo mode.
         /// </summary>
         public Mode ActiveMode
         {

@@ -22,7 +22,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
     Array<RawModelVertex> surfaceCacheVB(32);
 
     // Cache submeshes by material to lay them down
-    // key- brush index, value- direcotry for surafecs (key: surface index, value: list with start vertex per triangle)
+    // key- brush index, value- direcotry for surfaces (key: surface index, value: list with start vertex per triangle)
     Dictionary<int32, Dictionary<int32, Array<int32>>> polygonsPerBrush(64);
 
     // Build index buffer
@@ -115,8 +115,8 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                 tangent.Normalize();
 
                 // Gram-Schmidt orthogonalize
-                Vector3 newTangentUnormalized = tangent - normal * Vector3::Dot(normal, tangent);
-                const float length = newTangentUnormalized.Length();
+                Vector3 newTangentUnnormalized = tangent - normal * Vector3::Dot(normal, tangent);
+                const float length = newTangentUnnormalized.Length();
 
                 // Workaround to handle degenerated case
                 if (Math::IsZero(length))
@@ -129,7 +129,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                 }
                 else
                 {
-                    tangent = newTangentUnormalized / length;
+                    tangent = newTangentUnnormalized / length;
                     bitangent.Normalize();
                 }
 
@@ -217,12 +217,12 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                         auto& vertex = cacheVB[triangleStartVertex + k];
 
                         Vector3 projected = Vector3::Project(vertex.Position, 0, 0, 1000, 1000, 0, 1, vp);
-                        Vector2 projectecXY = Vector2(projected);
+                        Vector2 projectedXY = Vector2(projected);
 
-                        min = Vector2::Min(projectecXY, min);
-                        max = Vector2::Max(projectecXY, max);
+                        min = Vector2::Min(projectedXY, min);
+                        max = Vector2::Max(projectedXY, max);
 
-                        pointsCache.Add(projectecXY);
+                        pointsCache.Add(projectedXY);
                     }
                 }
 
