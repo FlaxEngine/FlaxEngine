@@ -100,27 +100,13 @@ namespace FlaxEditor.Surface
         public event Window.MouseWheelDelegate CustomMouseWheel;
 
         /// <summary>
-        /// Gets the node under the mouse location.
-        /// </summary>
-        /// <returns>The node or null if no intersection.</returns>
-        public SurfaceNode GetNodeUnderMouse()
-        {
-            var pos = _rootControl.PointFromParent(ref _mousePos);
-            if (_rootControl.GetChildAt(pos) is SurfaceNode node)
-                return node;
-            return null;
-        }
-
-        /// <summary>
         /// Gets the control under the mouse location.
         /// </summary>
         /// <returns>The control or null if no intersection.</returns>
         public SurfaceControl GetControlUnderMouse()
         {
             var pos = _rootControl.PointFromParent(ref _mousePos);
-            if (_rootControl.GetChildAtRecursive(pos) is SurfaceControl control)
-                return control;
-            return null;
+            return _rootControl.GetChildAt(pos) as SurfaceControl;
         }
 
         private void UpdateSelectionRectangle()
