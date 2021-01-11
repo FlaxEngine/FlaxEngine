@@ -636,7 +636,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Draws the children. Can be overriden to provide some customizations. Draw is performed with applied clipping mask for the client area.
+        /// Draws the children. Can be overridden to provide some customizations. Draw is performed with applied clipping mask for the client area.
         /// </summary>
         protected virtual void DrawChildren()
         {

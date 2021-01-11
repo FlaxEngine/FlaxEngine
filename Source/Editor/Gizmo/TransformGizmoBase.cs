@@ -151,7 +151,7 @@ namespace FlaxEditor.Gizmo
             // Set positions of the gizmo
             UpdateGizmoPosition();
 
-            // Scale Gizmo to fit on-screen
+            // Scale gizmo to fit on-screen
             Vector3 vLength = Owner.ViewPosition - Position;
             float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
             _screenScale = vLength.Length / GizmoScaleFactor * gizmoSize;
@@ -318,7 +318,7 @@ namespace FlaxEditor.Gizmo
             }
             else if (_activeMode == Mode.Scale)
             {
-                // Apply Scale
+                // Apply scale
                 _scaleDelta = delta;
             }
         }

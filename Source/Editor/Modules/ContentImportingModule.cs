@@ -410,7 +410,7 @@ namespace FlaxEditor.Modules
                         {
                             if (request.Settings != null && entry.TryOverrideSettings(request.Settings))
                             {
-                                // Use overriden settings
+                                // Use overridden settings
                             }
                             else if (!request.SkipSettingsDialog)
                             {
