@@ -18,6 +18,7 @@ namespace FlaxEditor.Tools.Terrain
     {
         private readonly Tabs _modes;
         private readonly ContainerControl _noTerrainPanel;
+        private readonly Button _createTerrainButton;
 
         /// <summary>
         /// The editor instance.
@@ -57,6 +58,7 @@ namespace FlaxEditor.Tools.Terrain
         public CarveTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            Level.SceneLoaded += this.OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
@@ -93,14 +95,31 @@ namespace FlaxEditor.Tools.Terrain
                 Offsets = Margin.Zero,
                 Parent = _noTerrainPanel
             };
-            var noTerrainButton = new Button
+            _createTerrainButton = new Button
             {
                 Text = "Create new terrain",
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = new Margin(-60, 120, -12, 24),
-                Parent = _noTerrainPanel
+                Parent = _noTerrainPanel,
+                Enabled = false
             };
-            noTerrainButton.Clicked += OnCreateNewTerrainClicked;
+            _createTerrainButton.Clicked += OnCreateNewTerrainClicked;
+        }
+        
+        private void OnSceneLoaded(Scene arg1, Guid arg2)
+        {
+            _createTerrainButton.Enabled = true;
+
+            Level.SceneUnloaded += this.OnSceneUnloaded;
+            Level.SceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneUnloaded(Scene arg1, Guid arg2)
+        {
+            _createTerrainButton.Enabled = false;
+
+            Level.SceneLoaded += OnSceneLoaded;
+            Level.SceneUnloaded -= this.OnSceneUnloaded;
         }
 
         private void OnSelected(Tab tab)
