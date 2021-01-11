@@ -186,7 +186,7 @@ namespace FlaxEditor.GUI.Dialogs
                 // Clean up
                 _window = null;
 
-                // Check if any thead is blocked during ShowDialog, then wait for it
+                // Check if any thread is blocked during ShowDialog, then wait for it
                 bool wait = true;
                 while (wait)
                 {

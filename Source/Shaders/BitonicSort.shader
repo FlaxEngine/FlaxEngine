@@ -32,7 +32,7 @@ uint InsertOneBit(uint value, uint oneBitMask)
 
 // Determines if two sort keys should be swapped in the list. KeySign is
 // either 1 or -1. Multiplication with the KeySign will either invert the sign
-// (effectively a negation) or leave the value alone. When the the KeySign is
+// (effectively a negation) or leave the value alone. When the KeySign is
 // 1, we are sorting descending, so when A < B, they should swap. For an
 // ascending sort, -A < -B should swap.
 bool ShouldSwap(Item a, Item b)

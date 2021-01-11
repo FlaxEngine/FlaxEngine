@@ -118,7 +118,7 @@ float GPUTimerQueryDX11::GetResult()
             if (!SingleShotLog)
             {
                 SingleShotLog = true;
-                LOG(Warning, "Unrealiable GPU timer query detected.");
+                LOG(Warning, "Unreliable GPU timer query detected.");
             }
 #endif
         }

@@ -24,7 +24,7 @@ namespace FlaxEditor.Viewport.Cameras
         public bool IsAnimatingMove => _moveStartTime > Mathf.Epsilon;
 
         /// <summary>
-        /// The target point location. It's used to orbit around it whe user clicks Alt+LMB.
+        /// The target point location. It's used to orbit around it when user clicks Alt+LMB.
         /// </summary>
         public Vector3 TargetPoint = new Vector3(-200);
 

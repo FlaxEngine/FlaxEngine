@@ -509,7 +509,7 @@ bool FindCyclicReferences(Actor* actor, const Guid& prefabRootId)
 
 bool Prefab::ApplyAll(Actor* targetActor)
 {
-    // TODO: use more cached dictionaries and other collections containers to prevent memory allocations during apply (optimize fo apply 10 times per second the same prefab on many changes in editor)
+    // TODO: use more cached dictionaries and other collections containers to prevent memory allocations during apply (optimize for apply 10 times per second the same prefab on many changes in editor)
 
     PROFILE_CPU();
     const auto startTime = DateTime::NowUTC();

@@ -71,7 +71,7 @@ namespace FlaxEditor.Surface
                     // Check if has cached groups
                     if (_cache.Count != 0)
                     {
-                        // Check if context menu doesn;t have the recent cached groups
+                        // Check if context menu doesn't have the recent cached groups
                         if (!contextMenu.Groups.Any(g => g.Archetype.Tag is int asInt && asInt == _version))
                         {
                             var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();

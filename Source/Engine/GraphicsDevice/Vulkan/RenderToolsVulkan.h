@@ -232,10 +232,10 @@ public:
     }
 
     /// <summary>
-    /// Converts Flax comparision function to the Vulkan comparision operation.
+    /// Converts Flax comparison function to the Vulkan comparison operation.
     /// </summary>
-    /// <param name="value">The Flax comparision function.</param>
-    /// <returns>The Vulkan comparision operation.</returns>
+    /// <param name="value">The Flax comparison function.</param>
+    /// <returns>The Vulkan comparison operation.</returns>
     static FORCE_INLINE VkCompareOp ToVulkanCompareOp(const ComparisonFunc value)
     {
         return ComparisonFuncToVkCompareOp[(int32)value];

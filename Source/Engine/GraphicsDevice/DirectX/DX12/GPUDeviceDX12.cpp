@@ -391,7 +391,7 @@ bool GPUDeviceDX12::Init()
     {
         // Descriptor tables
         D3D12_DESCRIPTOR_RANGE r[2];
-        // TODO: separate ranges for pixel/vertex visiblity and one shared for all?
+        // TODO: separate ranges for pixel/vertex visibility and one shared for all?
         {
             D3D12_DESCRIPTOR_RANGE& range = r[0];
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;

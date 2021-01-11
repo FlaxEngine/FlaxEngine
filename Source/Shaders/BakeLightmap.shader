@@ -328,7 +328,7 @@ void CS_BlurEmpty(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThre
 	const int2 location = int2(GroupID.x, GroupID.y);
 	const uint texelAdress = (location.y * AtlasSize + location.x) * NUM_SH_TARGETS;
 
-	// TODO: use more therads to sample lightmap and final therad make it blur
+	// TODO: use more threads to sample lightmap and final therad make it blur
 
 	// Simple box filter (using only valid samples)
 	const int blurRadius = 2;

@@ -39,7 +39,7 @@ Task* GPUSwapChain::DownloadDataAsync(TextureData& result)
 {
     if (_downloadTask)
     {
-        LOG(Warning, "Can download window backuffer data ony once at the time.");
+        LOG(Warning, "Can download window backuffer data only once at the time.");
         return nullptr;
     }
 

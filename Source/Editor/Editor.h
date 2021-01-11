@@ -43,7 +43,7 @@ public:
 public:
 
     /// <summary>
-    /// The flag used to determine if a project was used with the older engine version last time it was opened. Some cached data should be regenerated to prevent version difference issues. The version number comparision is based on major and minor part of the version. Build number is ignored.
+    /// The flag used to determine if a project was used with the older engine version last time it was opened. Some cached data should be regenerated to prevent version difference issues. The version number comparison is based on major and minor part of the version. Build number is ignored.
     /// </summary>
     static bool IsOldProjectOpened;
 

@@ -27,7 +27,7 @@ namespace FlaxEngine
         /// <remarks>
         /// Current order is resolved runtime, and can change if custom editor class has changed.
         /// </remarks>
-        /// <param name="order">The order order.</param>
+        /// <param name="order">The order.</param>
         public EditorOrderAttribute(int order)
         {
             Order = order;

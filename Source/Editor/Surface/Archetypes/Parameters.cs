@@ -32,7 +32,7 @@ namespace FlaxEditor.Surface.Archetypes
             public Dictionary<Type, NodeElementArchetype[]> Prototypes = DefaultPrototypes;
 
             /// <summary>
-            /// The default prototypes for thr node elements to use for the given parameter type.
+            /// The default prototypes for the node elements to use for the given parameter type.
             /// </summary>
             public static readonly Dictionary<Type, NodeElementArchetype[]> DefaultPrototypes = new Dictionary<Type, NodeElementArchetype[]>
             {
