@@ -5,43 +5,45 @@
 #include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
-/// Power supply status.
-/// </summary>
-API_ENUM() enum class ACLineStatus : byte
-{
-    /// <summary>
-    /// Power supply is not connected.
-    /// </summary>
-    Offline = 0,
-    /// <summary>
-    /// Power supply is connected.
-    /// </summary>
-    Online = 1,
-    /// <summary>
-    /// Unknown status.
-    /// </summary>
-    Unknown = 255
-};
-
-/// <summary>
-/// Contains information about power supply (Battery).
+/// Contains information about power supply (battery).
 /// </summary>
 API_STRUCT() struct BatteryInfo
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(BatteryInfo);
 
-    /// <summary>
-    /// Power supply status.
-    /// </summary>
-    API_FIELD() ACLineStatus ACLineStatus;
+	/// <summary>
+	/// Power supply status.
+	/// </summary>
+	API_ENUM() enum class States
+	{
+	    /// <summary>
+	    /// Unknown status.
+	    /// </summary>
+	    Unknown,
+		
+	    /// <summary>
+	    /// Power supply is connected and battery is charging.
+	    /// </summary>
+	    BatteryCharging,
+
+	    /// <summary>
+	    /// Device is running on a battery.
+	    /// </summary>
+	    BatteryDischarging,
+		
+	    /// <summary>
+	    /// Device is connected to the stable power supply (AC).
+	    /// </summary>
+	    Connected,
+	};
 
     /// <summary>
-    /// Battery percentage left.
+    /// Power supply state.
     /// </summary>
-    API_FIELD() byte BatteryLifePercent;
+    API_FIELD() BatteryInfo::States State = BatteryInfo::States::Unknown;
 
     /// <summary>
-    /// Remaining battery life time in second.
+    /// Battery percentage left (normalized to 0-1 range).
     /// </summary>
-    API_FIELD() uint32 BatteryLifeTime;
+    API_FIELD() float BatteryLifePercent = 1.0f;
 };

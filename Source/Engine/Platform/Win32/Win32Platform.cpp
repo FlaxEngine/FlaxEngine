@@ -315,9 +315,13 @@ BatteryInfo Win32Platform::GetBatteryInfo()
     BatteryInfo info;
     SYSTEM_POWER_STATUS status;
     GetSystemPowerStatus(&status);
-    info.ACLineStatus = (ACLineStatus)status.ACLineStatus;
-    info.BatteryLifePercent = status.BatteryLifePercent;
-    info.BatteryLifeTime = status.BatteryLifeTime;
+    info.BatteryLifePercent = (float)status.BatteryLifePercent / 255.0f;
+    if (status.BatteryFlag & 8)
+        info.State = BatteryInfo::States::BatteryCharging;
+    else if (status.BatteryFlag & 1 || status.BatteryFlag & 2 || status.BatteryFlag & 4)
+        info.State = BatteryInfo::States::BatteryDischarging;
+    else if (status.ACLineStatus == 1 || status.BatteryFlag & 128)
+        info.State = BatteryInfo::States::Connected;
     return info;
 }
 
