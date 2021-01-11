@@ -971,7 +971,7 @@ namespace FlaxEditor.Modules
         }
 
         #region Window Events
-        
+
         private void OnEditorStateChanged()
         {
             for (int i = 0; i < Windows.Count; i++)
