@@ -461,6 +461,24 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Skips all tokens until the tokenizer steps into token of given type (and it is also skipped, so, NextToken will give the next token).
+        /// </summary>
+        /// <param name="tokenType">The expected token type.</param>
+        /// <param name="context">The output contents of the skipped tokens.</param>
+        /// <param name="includeWhitespaces">When false, all white-space tokens will be ignored.</param>
+        public void SkipUntil(TokenType tokenType, out string context, bool includeWhitespaces)
+        {
+            context = string.Empty;
+            while (NextToken(true).Type != tokenType)
+            {
+                var token = CurrentToken;
+                if (!includeWhitespaces && (token.Type == TokenType.Newline || token.Type == TokenType.Whitespace))
+                    continue;
+                context += token.Value;
+            }
+        }
+
+        /// <summary>
         /// Disposes the <see cref="Tokenizer"/>.
         /// </summary>
         public void Dispose()
