@@ -13,7 +13,7 @@ typedef Half Float16;
 /// <summary>
 /// Packed vector, layout: R:10 bytes, G:10 bytes, B:10 bytes, A:2 bytes, all values are stored as floats in range [0;1].
 /// </summary>
-struct Float1010102
+struct FLAXENGINE_API Float1010102
 {
     union
     {
@@ -64,7 +64,7 @@ public:
 };
 
 // The 3D vector is packed into 32 bits with 11/11/10 bits per floating-point component.
-struct FloatR11G11B10
+struct FLAXENGINE_API FloatR11G11B10
 {
     union
     {
@@ -118,7 +118,7 @@ public:
     Vector3 ToVector3() const;
 };
 
-struct RG16UNorm
+struct FLAXENGINE_API RG16UNorm
 {
     uint16 X, Y;
 
@@ -131,7 +131,7 @@ struct RG16UNorm
     Vector2 ToVector2() const;
 };
 
-struct RGBA16UNorm
+struct FLAXENGINE_API RGBA16UNorm
 {
     uint16 X, Y, Z, W;
 

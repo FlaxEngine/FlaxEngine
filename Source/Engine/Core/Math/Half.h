@@ -11,7 +11,7 @@ typedef uint16 Half;
 
 #define USE_SSE_HALF_CONVERSION 0
 
-class Float16Compressor
+class FLAXENGINE_API Float16Compressor
 {
     union Bits
     {
@@ -108,7 +108,7 @@ inline Half ConvertFloatToHalf(const float value)
 /// <summary>
 /// Defines a two component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half2
+struct FLAXENGINE_API Half2
 {
 public:
 
@@ -167,7 +167,7 @@ public:
 /// <summary>
 /// Defines a three component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half3
+struct FLAXENGINE_API Half3
 {
 public:
 
@@ -216,7 +216,7 @@ public:
 /// <summary>
 /// Defines a four component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half4
+struct FLAXENGINE_API Half4
 {
 public:
 
@@ -270,16 +270,12 @@ public:
     }
 
     explicit Half4(const Vector4& v);
-
     explicit Half4(const Color& c);
-
     explicit Half4(const Rectangle& rect);
 
 public:
 
     Vector2 ToVector2() const;
-
     Vector3 ToVector3() const;
-
     Vector4 ToVector4() const;
 };

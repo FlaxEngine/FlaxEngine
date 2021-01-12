@@ -11,10 +11,9 @@ struct Matrix;
 /// <summary>
 /// Describes transformation in a 3D space.
 /// </summary>
-API_STRUCT() struct Transform
+API_STRUCT() struct FLAXENGINE_API Transform
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(Transform);
-public:
 
     /// <summary>
     /// The translation vector of the transform.

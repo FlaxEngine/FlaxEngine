@@ -13,7 +13,7 @@ struct Vector4;
 /// <summary>
 /// Two-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct Int2
+API_STRUCT(InBuild) struct FLAXENGINE_API Int2
 {
 public:
 
@@ -273,7 +273,7 @@ public:
 /// <summary>
 /// Three-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct Int3
+API_STRUCT(InBuild) struct FLAXENGINE_API Int3
 {
 public:
 
@@ -382,7 +382,7 @@ public:
 /// <summary>
 /// Four-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct Int4
+API_STRUCT(InBuild) struct FLAXENGINE_API Int4
 {
 public:
 

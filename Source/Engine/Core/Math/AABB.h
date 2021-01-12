@@ -8,7 +8,7 @@
 /// <summary>
 /// Integer axis aligned bounding box
 /// </summary>
-struct AABB
+struct FLAXENGINE_API AABB
 {
 public:
 
