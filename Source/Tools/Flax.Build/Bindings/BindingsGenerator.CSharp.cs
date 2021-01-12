@@ -394,14 +394,36 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged)
+        private static bool IsDefaultValueSupported(string value)
+        {
+            // TEXT macro (eg. TEXT("text"))
+            // TODO: support string for default value attribute
+            if (value.Contains("TEXT(\""))
+                return false;
+
+            // Value constructors (eg. Vector2(1, 2))
+            // TODO: support value constructores for default value attribute
+            if (value.Contains('(') && value.Contains(')'))
+                return false;
+
+            // Constants (eg. Vector2::Zero)
+            // TODO: support constants for default value attribute
+            if (value.Contains("::"))
+                return false;
+
+            return true;
+        }
+
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null)
         {
             var writeTooltip = true;
+            var writeDefaultValue = true;
             if (!string.IsNullOrEmpty(attributes))
             {
                 // Write attributes
                 contents.Append(indent).Append('[').Append(attributes).Append(']').AppendLine();
                 writeTooltip = !attributes.Contains("Tooltip(") && !attributes.Contains("HideInEditor");
+                writeDefaultValue = !attributes.Contains("DefaultValue(");
             }
 
             if (useUnmanaged)
@@ -425,16 +447,22 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).Append("[Tooltip(\"").Append(tooltip).Append("\")]").AppendLine();
                 }
             }
+            if (!string.IsNullOrEmpty(defaultValue) && writeDefaultValue && IsDefaultValueSupported(defaultValue))
+            {
+                // Write default value attribute
+                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo);
+                contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
+            }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue);
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, MemberInfo memberInfo, bool useUnmanaged)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue);
         }
 
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
@@ -506,7 +534,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, eventInfo, useUnmanaged);
+                GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
                 contents.Append(indent);
                 if (eventInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -605,7 +633,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, fieldInfo, useUnmanaged);
+                GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -672,7 +700,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, propertyInfo, useUnmanaged);
+                GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);
                 contents.Append(indent);
                 if (propertyInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -725,7 +753,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.AppendLine();
                     GenerateCSharpComment(contents, indent, functionInfo.Comment);
-                    GenerateCSharpAttributes(buildData, contents, indent, functionInfo, true);
+                    GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo, true);
                     contents.Append(indent);
                     if (functionInfo.Access == AccessLevel.Public)
                         contents.Append("public ");
@@ -837,7 +865,7 @@ namespace Flax.Build.Bindings
                 foreach (var comment in fieldInfo.Comment)
                     contents.Append(indent).Append(comment).AppendLine();
 
-                GenerateCSharpAttributes(buildData, contents, indent, fieldInfo, fieldInfo.IsStatic);
+                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -861,7 +889,7 @@ namespace Flax.Build.Bindings
                         contents.AppendLine();
                         foreach (var comment in fieldInfo.Comment)
                             contents.Append(indent).Append(comment).AppendLine();
-                        GenerateCSharpAttributes(buildData, contents, indent, fieldInfo, fieldInfo.IsStatic);
+                        GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                         contents.Append(indent);
                         if (fieldInfo.Access == AccessLevel.Public)
                             contents.Append("public ");
@@ -967,7 +995,7 @@ namespace Flax.Build.Bindings
                 foreach (var comment in entryInfo.Comment)
                     contents.Append(indent).Append(comment).AppendLine();
 
-                GenerateCSharpAttributes(buildData, contents, indent, entryInfo.Attributes, entryInfo.Comment, true, false);
+                GenerateCSharpAttributes(buildData, contents, indent, enumInfo, entryInfo.Attributes, entryInfo.Comment, true, false);
                 contents.Append(indent).Append(entryInfo.Name);
                 if (!string.IsNullOrEmpty(entryInfo.Value))
                     contents.Append(" = ").Append(entryInfo.Value);
