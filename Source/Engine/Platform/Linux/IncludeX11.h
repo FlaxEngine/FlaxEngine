@@ -2,6 +2,9 @@
 
 #pragma once
 
+// Hide warning from old headers
+#define register
+
 namespace X11
 {
 #include <X11/Xlib.h>

@@ -93,6 +93,18 @@ namespace FlaxEditor.GUI.Input
             Value = Value;
         }
 
+        /// <summary>
+        /// Sets the limits at once.
+        /// </summary>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The minimum value.</param>
+        public void SetLimits(long min, long max)
+        {
+            _min = Math.Min(min, max);
+            _max = Math.Max(min, max);
+            Value = Value;
+        }
+
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {

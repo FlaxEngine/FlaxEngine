@@ -88,9 +88,21 @@ namespace FlaxEditor.GUI.Input
         /// <param name="limits">The limits.</param>
         public void SetLimits(LimitAttribute limits)
         {
-            _min = limits.Min == int.MinValue ? ulong.MinValue : (ulong)limits.Min;
-            _max = Math.Max(_min, limits.Max == int.MaxValue ? ulong.MaxValue : (ulong)limits.Max);
+            _min = limits.Min < 0.0f ? 0 : (ulong)limits.Min;
+            _max = Math.Max(_min, limits.Max == float.MaxValue ? ulong.MaxValue : (ulong)limits.Max);
             _slideSpeed = limits.SliderSpeed;
+            Value = Value;
+        }
+
+        /// <summary>
+        /// Sets the limits at once.
+        /// </summary>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The minimum value.</param>
+        public void SetLimits(ulong min, ulong max)
+        {
+            _min = Math.Min(min, max);
+            _max = Math.Max(min, max);
             Value = Value;
         }
 

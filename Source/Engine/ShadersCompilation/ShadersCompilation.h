@@ -20,7 +20,7 @@ public:
     /// </summary>
     /// <param name="options">Compilation options</param>
     /// <returns>True if failed, otherwise false</returns>
-    static bool Compile(const ShaderCompilationOptions& options);
+    static bool Compile(ShaderCompilationOptions& options);
 
     /// <summary>
     /// Registers shader asset for the automated reloads on source includes changes.

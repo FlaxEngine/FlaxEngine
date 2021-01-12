@@ -1,0 +1,34 @@
+name: Build Windows
+on: [push, pull_request]
+
+jobs:
+
+  # Editor
+  editor-windows:
+    name: Editor (Windows, Development x64)
+    runs-on: "windows-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
+
+  # Game
+  game-windows:
+    name: Game (Windows, Release x64)
+    runs-on: "windows-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame

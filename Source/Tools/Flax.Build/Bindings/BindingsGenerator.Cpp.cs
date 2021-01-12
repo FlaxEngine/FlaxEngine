@@ -11,6 +11,7 @@ namespace Flax.Build.Bindings
 {
     partial class BindingsGenerator
     {
+        private static readonly bool[] CppParamsThatNeedLocalVariable = new bool[64];
         private static readonly bool[] CppParamsThatNeedConvertion = new bool[64];
         private static readonly string[] CppParamsThatNeedConvertionWrappers = new string[64];
         private static readonly string[] CppParamsWrappersCache = new string[64];
@@ -391,8 +392,10 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo)
+        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo, out bool needLocalVariable)
         {
+            needLocalVariable = false;
+
             // Register any API types usage
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             CppReferencesFiles.Add(apiType?.File);
@@ -410,7 +413,7 @@ namespace Flax.Build.Bindings
             {
                 typeInfo.IsArray = false;
                 var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { typeInfo, }, };
-                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, functionInfo);
+                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, functionInfo, out needLocalVariable);
                 typeInfo.IsArray = true;
                 return result + ".Get()";
             }
@@ -515,6 +518,7 @@ namespace Flax.Build.Bindings
                 // BytesContainer
                 if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
                 {
+                    needLocalVariable = true;
                     type = "MonoArray*";
                     return "MUtils::LinkArray({0})";
                 }
@@ -616,7 +620,7 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 CppParamsThatNeedConvertion[i] = false;
-                CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo);
+                CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
@@ -662,7 +666,7 @@ namespace Flax.Build.Bindings
                     contents.Append(", ");
                 separator = true;
 
-                GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo);
+                GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out _);
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut)
                     contents.Append('*');
@@ -749,6 +753,15 @@ namespace Flax.Build.Bindings
                         callParams += parameterInfo.Name;
                         callParams += "Temp";
                     }
+                }
+                // Special case for parameter that cannot be passed directly to the function from the wrapper method input parameter (eg. MonoArray* converted into BytesContainer uses as BytesContainer&)
+                else if (CppParamsThatNeedLocalVariable[i])
+                {
+                    contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
+                    if (parameterInfo.Type.IsPtr)
+                        callParams += "&";
+                    callParams += parameterInfo.Name;
+                    callParams += "Temp";
                 }
                 else
                 {
@@ -1888,7 +1901,7 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, structureInfo, out _, null);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, structureInfo, out _, null, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
                             if (fieldInfo.Type.IsArray)

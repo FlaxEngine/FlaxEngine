@@ -314,6 +314,10 @@ namespace Flax.Build.Platforms
                 return _sdks;
             _sdks = new Dictionary<WindowsPlatformSDK, string>();
 
+            // Skip if running on non-Windows system
+            if (BuildTargetPlatform != TargetPlatform.Windows)
+                return _sdks;
+
             // Check Windows 8.1 SDK
             if (TryReadInstallDirRegistryKey32("Microsoft\\Microsoft SDKs\\Windows\\v8.1", "InstallationFolder", out var sdk81))
             {
