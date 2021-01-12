@@ -489,11 +489,11 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Half),
         [](const void* ptr)
         {
-            return Color(ConvertHalfToFloat(*(Half*)ptr), 0, 0, 1);
+            return Color(Float16Compressor::Decompress(*(Half*)ptr), 0, 0, 1);
         },
         [](const void* ptr, const Color& color)
         {
-            *(Half*)ptr = ConvertFloatToHalf(color.R);
+            *(Half*)ptr = Float16Compressor::Compress(color.R);
         },
     },
     {

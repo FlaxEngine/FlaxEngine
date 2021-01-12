@@ -18,81 +18,81 @@ Half4 Half4::Zero(0, 0, 0, 0);
 
 Half2::Half2(const Vector2& v)
 {
-    X = ConvertFloatToHalf(v.X);
-    Y = ConvertFloatToHalf(v.Y);
+    X = Float16Compressor::Compress(v.X);
+    Y = Float16Compressor::Compress(v.Y);
 }
 
 Vector2 Half2::ToVector2() const
 {
     return Vector2(
-        ConvertHalfToFloat(X),
-        ConvertHalfToFloat(Y)
+        Float16Compressor::Decompress(X),
+        Float16Compressor::Decompress(Y)
     );
 }
 
 Half3::Half3(const Vector3& v)
 {
-    X = ConvertFloatToHalf(v.X);
-    Y = ConvertFloatToHalf(v.Y);
-    Z = ConvertFloatToHalf(v.Z);
+    X = Float16Compressor::Compress(v.X);
+    Y = Float16Compressor::Compress(v.Y);
+    Z = Float16Compressor::Compress(v.Z);
 }
 
 Vector3 Half3::ToVector3() const
 {
     return Vector3(
-        ConvertHalfToFloat(X),
-        ConvertHalfToFloat(Y),
-        ConvertHalfToFloat(Z)
+        Float16Compressor::Decompress(X),
+        Float16Compressor::Decompress(Y),
+        Float16Compressor::Decompress(Z)
     );
 }
 
 Half4::Half4(const Vector4& v)
 {
-    X = ConvertFloatToHalf(v.X);
-    Y = ConvertFloatToHalf(v.Y);
-    Z = ConvertFloatToHalf(v.Z);
-    W = ConvertFloatToHalf(v.W);
+    X = Float16Compressor::Compress(v.X);
+    Y = Float16Compressor::Compress(v.Y);
+    Z = Float16Compressor::Compress(v.Z);
+    W = Float16Compressor::Compress(v.W);
 }
 
 Half4::Half4(const Color& c)
 {
-    X = ConvertFloatToHalf(c.R);
-    Y = ConvertFloatToHalf(c.G);
-    Z = ConvertFloatToHalf(c.B);
-    W = ConvertFloatToHalf(c.A);
+    X = Float16Compressor::Compress(c.R);
+    Y = Float16Compressor::Compress(c.G);
+    Z = Float16Compressor::Compress(c.B);
+    W = Float16Compressor::Compress(c.A);
 }
 
 Half4::Half4(const Rectangle& rect)
 {
-    X = ConvertFloatToHalf(rect.Location.X);
-    Y = ConvertFloatToHalf(rect.Location.Y);
-    Z = ConvertFloatToHalf(rect.Size.X);
-    W = ConvertFloatToHalf(rect.Size.Y);
+    X = Float16Compressor::Compress(rect.Location.X);
+    Y = Float16Compressor::Compress(rect.Location.Y);
+    Z = Float16Compressor::Compress(rect.Size.X);
+    W = Float16Compressor::Compress(rect.Size.Y);
 }
 
 Vector2 Half4::ToVector2() const
 {
     return Vector2(
-        ConvertHalfToFloat(X),
-        ConvertHalfToFloat(Y)
+        Float16Compressor::Decompress(X),
+        Float16Compressor::Decompress(Y)
     );
 }
 
 Vector3 Half4::ToVector3() const
 {
     return Vector3(
-        ConvertHalfToFloat(X),
-        ConvertHalfToFloat(Y),
-        ConvertHalfToFloat(Z)
+        Float16Compressor::Decompress(X),
+        Float16Compressor::Decompress(Y),
+        Float16Compressor::Decompress(Z)
     );
 }
 
 Vector4 Half4::ToVector4() const
 {
     return Vector4(
-        ConvertHalfToFloat(X),
-        ConvertHalfToFloat(Y),
-        ConvertHalfToFloat(Z),
-        ConvertHalfToFloat(W)
+        Float16Compressor::Decompress(X),
+        Float16Compressor::Decompress(Y),
+        Float16Compressor::Decompress(Z),
+        Float16Compressor::Decompress(W)
     );
 }
