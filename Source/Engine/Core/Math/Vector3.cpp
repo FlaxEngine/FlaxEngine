@@ -6,7 +6,7 @@
 #include "Color.h"
 #include "Quaternion.h"
 #include "Matrix.h"
-#include "VectorInt.h"
+#include "Int3.h"
 #include "../Types/String.h"
 
 static_assert(sizeof(Vector3) == 12, "Invalid Vector3 type size.");

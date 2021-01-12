@@ -5,7 +5,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"

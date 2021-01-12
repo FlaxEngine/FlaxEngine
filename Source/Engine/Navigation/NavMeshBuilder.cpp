@@ -4,7 +4,6 @@
 
 #include "NavMeshBuilder.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
@@ -15,6 +14,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Int3.h"
 #include "NavigationScene.h"
 #include "NavigationSettings.h"
 #include "NavMeshBoundsVolume.h"
