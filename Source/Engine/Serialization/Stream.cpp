@@ -4,8 +4,9 @@
 #include "WriteStream.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Content/Asset.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Content/Asset.h"
+#include "Engine/Debug/DebugLog.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 
@@ -330,8 +331,19 @@ void ReadStream::ReadVariant(Variant* data)
     {
         int32 length;
         ReadInt32(&length);
-        ASSERT(data->AsBlob.Length == length);
-        ReadBytes(data->AsBlob.Data, length);
+        if (data->AsBlob.Length == length)
+        {
+            ReadBytes(data->AsBlob.Data, length);
+        }
+        else
+        {
+            LOG(Error, "Invalid Variant {2} data length {0}. Expected {1} bytes from stream.", data->AsBlob.Length, length, data->Type.ToString());
+
+            // Skip those bytes
+            void* ptr = Allocator::Allocate(length);
+            ReadBytes(ptr, length);
+            Allocator::Free(ptr);
+        }
         break;
     }
     case VariantType::Blob:
