@@ -59,11 +59,19 @@ namespace FlaxEditor.Scripting
             if (type.Type == typeof(MaterialSceneTextures))
                 return MaterialSceneTextures.BaseColor;
             if (type.IsValueType)
-                return type.CreateInstance();
+            {
+                var value = type.CreateInstance();
+                Utilities.Utils.InitDefaultValues(value);
+                return value;
+            }
             if (new ScriptType(typeof(object)).IsAssignableFrom(type))
                 return null;
             if (type.CanCreateInstance)
-                return type.CreateInstance();
+            {
+                var value = type.CreateInstance();
+                Utilities.Utils.InitDefaultValues(value);
+                return value;
+            }
             throw new NotSupportedException("Cannot create default value for type " + type);
         }
 

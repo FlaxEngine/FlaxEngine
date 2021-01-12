@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -1731,6 +1732,45 @@ namespace FlaxEditor.Utilities
 
             distance = 0;
             return false;
+        }
+
+        /// <summary>
+        /// Initializes the object fields and properties with their default values based on <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public static void InitDefaultValues(object obj)
+        {
+            var scriptType = TypeUtils.GetObjectType(obj);
+            if (!scriptType)
+                return;
+            var isStructure = scriptType.IsStructure;
+
+            var fields = scriptType.GetFields(BindingFlags.Default | BindingFlags.Instance | BindingFlags.Public);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                var field = fields[i];
+                var attr = field.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
+                if (attr != null)
+                {
+                    field.SetValue(obj, attr.Value);
+                }
+                else if (isStructure)
+                {
+                    // C# doesn't support default values for structure members so initialize them
+                    field.SetValue(obj, TypeUtils.GetDefaultValue(field.ValueType));
+                }
+            }
+
+            var properties = scriptType.GetProperties(BindingFlags.Default | BindingFlags.Instance | BindingFlags.Public);
+            for (var i = 0; i < properties.Length; i++)
+            {
+                var property = properties[i];
+                var attr = property.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
+                if (attr != null)
+                {
+                    property.SetValue(obj, attr.Value);
+                }
+            }
         }
     }
 }
