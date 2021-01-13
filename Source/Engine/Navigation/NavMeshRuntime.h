@@ -5,27 +5,41 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "NavMeshData.h"
+#include "NavigationTypes.h"
 
-class NavigationScene;
 class dtNavMesh;
 class dtNavMeshQuery;
+class NavMesh;
 
-class NavMeshTile
+/// <summary>
+/// The navigation mesh tile data.
+/// </summary>
+class FLAXENGINE_API NavMeshTile
 {
 public:
 
     int32 X;
     int32 Y;
     int32 Layer;
-    NavigationScene* Scene;
+    NavMesh* NavMesh;
     BytesContainer Data;
 };
 
-class NavMeshRuntime
+/// <summary>
+/// The navigation mesh runtime object that builds the navmesh from all loaded scenes.
+/// </summary>
+class FLAXENGINE_API NavMeshRuntime
 {
 public:
 
-    static NavMeshRuntime* Get();
+    // Gets the navigation mesh runtime for a given navmesh name. Return null if missing.
+    static NavMeshRuntime* Get(const StringView& navMeshName);
+
+    // Gets the navigation mesh runtime for a given agent properties trying to pick the best matching navmesh.
+    static NavMeshRuntime* Get(const NavAgentProperties& agentProperties);
+
+    // Gets the navigation mesh runtime for a given navmesh properties.
+    static NavMeshRuntime* Get(const NavMeshProperties& navMeshProperties, bool createIfMissing = false);
 
 private:
 
@@ -36,7 +50,7 @@ private:
 
 public:
 
-    NavMeshRuntime();
+    NavMeshRuntime(const NavMeshProperties& properties);
     ~NavMeshRuntime();
 
 public:
@@ -45,6 +59,11 @@ public:
     /// The object locker.
     /// </summary>
     CriticalSection Locker;
+
+    /// <summary>
+    /// The navigation mesh properties.
+    /// </summary>
+    NavMeshProperties Properties;
 
     /// <summary>
     /// Gets the size of the tile (in world-units). Returns zero if not initialized yet.
@@ -69,6 +88,43 @@ public:
 public:
 
     /// <summary>
+    /// Finds the distance from the specified start position to the nearest polygon wall.
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
+    /// <param name="maxDistance">The maximum distance to search for wall (search radius).</param>
+    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    bool FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hitInfo, float maxDistance = MAX_float) const;
+
+    /// <summary>
+    /// Finds the path between the two positions presented as a list of waypoints stored in the corners array.
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <param name="resultPath">The result path.</param>
+    /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
+    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const;
+
+    /// <summary>
+    /// Projects the point to nav mesh surface (finds the nearest polygon).
+    /// </summary>
+    /// <param name="point">The source point.</param>
+    /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
+    /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
+    bool ProjectPoint(const Vector3& point, Vector3& result) const;
+
+    /// <summary>
+    /// Casts a 'walkability' ray along the surface of the navigation mesh from the start position toward the end position.
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
+    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    bool RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo) const;
+
+public:
+
+    /// <summary>
     /// Sets the size of the tile (if not assigned). Disposes the mesh if added tiles have different size.
     /// </summary>
     /// <param name="tileSize">The size of the tile.</param>
@@ -83,21 +139,21 @@ public:
     /// <summary>
     /// Adds the tiles from the given scene to the runtime navmesh.
     /// </summary>
-    /// <param name="scene">The navigation scene.</param>
-    void AddTiles(NavigationScene* scene);
+    /// <param name="navMesh">The navigation mesh.</param>
+    void AddTiles(NavMesh* navMesh);
 
     /// <summary>
     /// Adds the tile from the given scene to the runtime navmesh.
     /// </summary>
-    /// <param name="scene">The navigation scene.</param>
+    /// <param name="navMesh">The navigation mesh.</param>
     /// <param name="tileData">The tile data.</param>
-    void AddTile(NavigationScene* scene, NavMeshTileData& tileData);
+    void AddTile(NavMesh* navMesh, NavMeshTileData& tileData);
 
     /// <summary>
     /// Removes all the tiles from the navmesh that has been added from the given navigation scene.
     /// </summary>
-    /// <param name="scene">The scene.</param>
-    void RemoveTiles(NavigationScene* scene);
+    /// <param name="navMesh">The navigation mesh.</param>
+    void RemoveTiles(NavMesh* navMesh);
 
     /// <summary>
     /// Removes the tile from the navmesh.
@@ -114,6 +170,10 @@ public:
     /// <param name="userData">The user data passed to the callback method.</param>
     void RemoveTiles(bool (*prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData);
 
+#if COMPILE_WITH_DEBUG_DRAW
+    void DebugDraw();
+#endif
+
     /// <summary>
     /// Releases the navmesh.
     /// </summary>
@@ -121,5 +181,5 @@ public:
 
 private:
 
-    void AddTileInternal(NavigationScene* scene, NavMeshTileData& tileData);
+    void AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData);
 };

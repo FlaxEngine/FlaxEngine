@@ -6,8 +6,6 @@
 
 class Scene;
 
-#define NAV_MESH_PATH_MAX_SIZE 200
-
 /// <summary>
 /// The navigation service used for path finding and agents navigation system.
 /// </summary>
@@ -88,7 +86,7 @@ public:
 
 #endif
 
-#if USE_EDITOR
+#if COMPILE_WITH_DEBUG_DRAW
 
     /// <summary>
     /// Draws the navigation for all the scenes (uses DebugDraw interface).

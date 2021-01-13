@@ -2,7 +2,6 @@
 
 #include "NavMeshBoundsVolume.h"
 #include "Engine/Level/Scene/Scene.h"
-#include "NavigationScene.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
@@ -16,15 +15,15 @@ NavMeshBoundsVolume::NavMeshBoundsVolume(const SpawnParams& params)
 
 void NavMeshBoundsVolume::OnEnable()
 {
-    GetScene()->Navigation->Volumes.Add(this);
-
     // Base
     Actor::OnEnable();
+
+    GetScene()->NavigationVolumes.Add(this);
 }
 
 void NavMeshBoundsVolume::OnDisable()
 {
-    GetScene()->Navigation->Volumes.Remove(this);
+    GetScene()->NavigationVolumes.Remove(this);
 
     // Base
     Actor::OnDisable();

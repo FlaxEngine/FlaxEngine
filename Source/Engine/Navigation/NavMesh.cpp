@@ -1,60 +1,32 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "NavigationScene.h"
-#include "Navigation.h"
+#include "NavMesh.h"
 #include "NavMeshRuntime.h"
-#include "NavMeshBoundsVolume.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Scene/Scene.h"
-#include "Engine/Content/Assets/RawDataAsset.h"
-#include "Engine/Core/Log.h"
-#if USE_EDITOR
-#include "Editor/Editor.h"
-#endif
+#include "Engine/Serialization/Serialization.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#endif
 #endif
 
-NavigationScene::NavigationScene(::Scene* scene)
-    : Scene(scene)
+NavMesh::NavMesh(const SpawnParams& params)
+    : Actor(params)
     , IsDataDirty(false)
 {
-    DataAsset.Loaded.Bind<NavigationScene, &NavigationScene::OnDataAssetLoaded>(this);
+    DataAsset.Loaded.Bind<NavMesh, &NavMesh::OnDataAssetLoaded>(this);
 }
 
-BoundingBox NavigationScene::GetNavigationBounds()
-{
-    if (Volumes.IsEmpty())
-        return BoundingBox::Empty;
-
-    PROFILE_CPU_NAMED("GetNavigationBounds");
-
-    auto box = Volumes[0]->GetBox();
-    for (int32 i = 1; i < Volumes.Count(); i++)
-        BoundingBox::Merge(box, Volumes[i]->GetBox(), box);
-    return box;
-}
-
-NavMeshBoundsVolume* NavigationScene::FindNavigationBoundsOverlap(const BoundingBox& bounds)
-{
-    NavMeshBoundsVolume* result = nullptr;
-
-    for (int32 i = 0; i < Volumes.Count(); i++)
-    {
-        if (Volumes[i]->GetBox().Intersects(bounds))
-        {
-            result = Volumes[i];
-            break;
-        }
-    }
-
-    return result;
-}
-
-void NavigationScene::SaveNavMesh()
+void NavMesh::SaveNavMesh()
 {
 #if COMPILE_WITH_ASSETS_IMPORTER
+
+    // Skip if scene is missing
+    const auto scene = GetScene();
+    if (!scene)
+        return;
 
 #if USE_EDITOR
     // Skip if game is running in editor (eg. game scripts update dynamic navmesh)
@@ -77,7 +49,7 @@ void NavigationScene::SaveNavMesh()
     Guid assetId = DataAsset.GetID();
     if (!assetId.IsValid())
         assetId = Guid::New();
-    const String assetPath = Scene->GetDataFolderPath() / TEXT("NavMesh") + ASSET_FILES_EXTENSION_WITH_DOT;
+    const String assetPath = scene->GetDataFolderPath() / TEXT("NavMesh") + Properties.Name + ASSET_FILES_EXTENSION_WITH_DOT;
 
     // Generate navmesh tiles data
     const int32 streamInitialCapacity = Math::RoundUpToPowerOf2((Data.Tiles.Count() + 1) * 1024);
@@ -99,32 +71,46 @@ void NavigationScene::SaveNavMesh()
 #endif
 }
 
-void NavigationScene::OnEnable()
+void NavMesh::ClearData()
 {
-    auto navMesh = NavMeshRuntime::Get();
-    CHECK(navMesh);
+    if (Data.Tiles.HasItems())
+    {
+        IsDataDirty = true;
+        Data.TileSize = 0.0f;
+        Data.Tiles.Resize(0);
+    }
+}
+
+NavMeshRuntime* NavMesh::GetRuntime(bool createIfMissing) const
+{
+    return NavMeshRuntime::Get(Properties, createIfMissing);
+}
+
+void NavMesh::AddTiles()
+{
+    auto navMesh = NavMeshRuntime::Get(Properties, true);
     navMesh->AddTiles(this);
 }
 
-void NavigationScene::OnDisable()
+void NavMesh::RemoveTiles()
 {
-    auto navMesh = NavMeshRuntime::Get();
+    auto navMesh = NavMeshRuntime::Get(Properties, false);
     if (navMesh)
         navMesh->RemoveTiles(this);
 }
 
-void NavigationScene::OnDataAssetLoaded()
+void NavMesh::OnDataAssetLoaded()
 {
     // Skip if already has data (prevent reloading navmesh on saving)
     if (Data.Tiles.HasItems())
         return;
 
-    const bool isEnabled = Scene->IsDuringPlay() && Scene->IsActiveInHierarchy();
+    const bool isEnabled = IsDuringPlay() && IsActiveInHierarchy();
 
     // Remove added tiles
     if (isEnabled)
     {
-        OnDisable();
+        RemoveTiles();
     }
 
     // Load navmesh tiles
@@ -136,6 +122,49 @@ void NavigationScene::OnDataAssetLoaded()
     // Add loaded tiles
     if (isEnabled)
     {
-        OnEnable();
+        AddTiles();
     }
+}
+
+void NavMesh::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    // Base
+    Actor::Serialize(stream, otherObj);
+
+#if USE_EDITOR
+    // Save navmesh tiles to asset (if modified)
+    if (IsDataDirty)
+        SaveNavMesh();
+#endif
+
+    SERIALIZE_GET_OTHER_OBJ(NavMesh);
+    SERIALIZE(DataAsset);
+    SERIALIZE(Properties);
+}
+
+void NavMesh::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    // Base
+    Actor::Deserialize(stream, modifier);
+
+    DESERIALIZE(DataAsset);
+    DESERIALIZE(Properties);
+}
+
+void NavMesh::OnEnable()
+{
+    // Base
+    Actor::OnEnable();
+
+    GetScene()->NavigationMeshes.Add(this);
+    AddTiles();
+}
+
+void NavMesh::OnDisable()
+{
+    RemoveTiles();
+    GetScene()->NavigationMeshes.Remove(this);
+
+    // Base
+    Actor::OnDisable();
 }
