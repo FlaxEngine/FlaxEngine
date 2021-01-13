@@ -635,7 +635,7 @@ void BuildTileAsync(NavMesh* navMesh, int32 x, int32 y, rcConfig& config, const 
     task->Start();
 }
 
-void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBounds)
+void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBounds, bool rebuild)
 {
     const float tileSize = GetTileSize();
     NavMeshRuntime* runtime = navMesh->GetRuntime();
@@ -655,12 +655,15 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
         PROFILE_CPU_NAMED("Prepare");
 
         // Prepare scene data and navmesh
-        if (Math::NotNearEqual(navMesh->Data.TileSize, tileSize))
+        rebuild |= Math::NotNearEqual(navMesh->Data.TileSize, tileSize);
+        if (rebuild)
         {
+            // Remove all tiles from navmesh runtime
             runtime->RemoveTiles(navMesh);
             runtime->SetTileSize(tileSize);
             runtime->EnsureCapacity(tilesX * tilesY);
 
+            // Remove all tiles from navmesh data
             navMesh->Data.TileSize = tileSize;
             navMesh->Data.Tiles.Clear();
             navMesh->Data.Tiles.EnsureCapacity(tilesX * tilesX);
@@ -668,7 +671,7 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
         }
         else
         {
-            // Prepare navmesh
+            // Ensure to have enough memory for tiles
             runtime->SetTileSize(tileSize);
             runtime->EnsureCapacity(tilesX * tilesY);
         }
@@ -700,7 +703,7 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
     }
 }
 
-void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds)
+void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild)
 {
     auto settings = NavigationSettings::Get();
 
@@ -738,7 +741,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds)
     // Build all navmeshes on the scene
     for (NavMesh* navMesh : scene->NavigationMeshes)
     {
-        BuildDirtyBounds(scene, navMesh, dirtyBounds);
+        BuildDirtyBounds(scene, navMesh, dirtyBounds, rebuild);
     }
 
     // Remove unused navmeshes
@@ -772,7 +775,7 @@ void BuildWholeScene(Scene* scene)
     // Compute total navigation area bounds
     const BoundingBox worldBounds = scene->GetNavigationBounds();
 
-    BuildDirtyBounds(scene, worldBounds);
+    BuildDirtyBounds(scene, worldBounds, true);
 }
 
 void ClearNavigation(Scene* scene)
@@ -814,7 +817,7 @@ void NavMeshBuilder::Update()
             }
             else
             {
-                BuildDirtyBounds(scene, req.DirtyBounds);
+                BuildDirtyBounds(scene, req.DirtyBounds, false);
             }
         }
     }
