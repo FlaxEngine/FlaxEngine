@@ -57,6 +57,11 @@ namespace Flax.Build.NativeCpp
         public bool Optimization = false;
 
         /// <summary>
+        /// Enables the whole program optimization.
+        /// </summary>
+        public bool WholeProgramOptimization = false;
+
+        /// <summary>
         /// Enables functions level linking support.
         /// </summary>
         public bool FunctionLevelLinking = false;
@@ -131,6 +136,7 @@ namespace Flax.Build.NativeCpp
                 RuntimeTypeInfo = RuntimeTypeInfo,
                 Inlining = Inlining,
                 Optimization = Optimization,
+                WholeProgramOptimization = WholeProgramOptimization,
                 FunctionLevelLinking = FunctionLevelLinking,
                 DebugInformation = DebugInformation,
                 UseDebugCRT = UseDebugCRT,

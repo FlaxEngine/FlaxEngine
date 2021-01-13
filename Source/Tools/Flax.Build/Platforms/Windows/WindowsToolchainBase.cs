@@ -467,8 +467,11 @@ namespace Flax.Build.Platforms
                     // Frame-Pointer Omission
                     commonArgs.Add("/Oy");
 
-                    // Whole Program Optimization
-                    commonArgs.Add("/GL");
+                    if (compileEnvironment.WholeProgramOptimization)
+                    {
+                        // Whole Program Optimization
+                        commonArgs.Add("/GL");
+                    }
                 }
                 else
                 {
