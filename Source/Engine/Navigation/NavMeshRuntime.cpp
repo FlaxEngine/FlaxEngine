@@ -223,7 +223,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
         newCapacity = 32;
     }
 
-    LOG(Info, "Resizing navmesh from {0} to {1} tiles capacity", capacity, newCapacity);
+    LOG(Info, "Resizing navmesh {2} from {0} to {1} tiles capacity", capacity, newCapacity, Properties.Name);
 
     // Ensure to have size assigned
     ASSERT(_tileSize != 0);
@@ -238,7 +238,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     _navMesh = dtAllocNavMesh();
     if (dtStatusFailed(_navMeshQuery->init(_navMesh, MAX_NODES)))
     {
-        LOG(Fatal, "Failed to initialize nav mesh.");
+        LOG(Error, "Failed to initialize navmesh {0}.", Properties.Name);
     }
 
     // Prepare parameters
@@ -255,7 +255,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     // Initialize nav mesh
     if (dtStatusFailed(_navMesh->init(&params)))
     {
-        LOG(Fatal, "Navmesh init failed.");
+        LOG(Error, "Navmesh {0} init failed.", Properties.Name);
         return;
     }
 
@@ -276,7 +276,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
 #endif
         if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
         {
-            LOG(Warning, "Could not add tile to navmesh.");
+            LOG(Warning, "Could not add tile to navmesh {0}.", Properties.Name);
         }
     }
 }
@@ -298,7 +298,7 @@ void NavMeshRuntime::AddTiles(NavMesh* navMesh)
     {
         if (Math::NotNearEqual(data.TileSize, _tileSize))
         {
-            LOG(Warning, "Cannot add navigation scene tiles to the navmesh. Navmesh tile size: {0}, input tiles size: {1}", _tileSize, data.TileSize);
+            LOG(Warning, "Cannot add navigation scene tiles to the navmesh {2}. Navmesh tile size: {0}, input tiles size: {1}", _tileSize, data.TileSize, Properties.Name);
             return;
         }
     }
@@ -331,7 +331,7 @@ void NavMeshRuntime::AddTile(NavMesh* navMesh, NavMeshTileData& tileData)
     {
         if (Math::NotNearEqual(data.TileSize, _tileSize))
         {
-            LOG(Warning, "Cannot add navigation scene tile to the navmesh. Navmesh tile size: {0}, input tile size: {1}", _tileSize, data.TileSize);
+            LOG(Warning, "Cannot add navigation scene tile to the navmesh {2}. Navmesh tile size: {0}, input tile size: {1}", _tileSize, data.TileSize, Properties.Name);
             return;
         }
     }
@@ -375,7 +375,7 @@ void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
 
     if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
     {
-        LOG(Warning, "Failed to remove tile from navmesh.");
+        LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
     }
 
     for (int32 i = 0; i < _tiles.Count(); i++)
@@ -408,13 +408,13 @@ void NavMeshRuntime::RemoveTiles(bool (* prediction)(const NavMeshRuntime* navMe
             const auto tileRef = _navMesh->getTileRefAt(tile.X, tile.Y, tile.Layer);
             if (tileRef == 0)
             {
-                LOG(Warning, "Missing navmesh tile at {0}x{1}, layer: {2}", tile.X, tile.Y, tile.Layer);
+                LOG(Warning, "Missing navmesh {3} tile at {0}x{1}, layer: {2}", tile.X, tile.Y, tile.Layer, Properties.Name);
             }
             else
             {
                 if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
                 {
-                    LOG(Warning, "Failed to remove tile from navmesh.");
+                    LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
                 }
             }
 
@@ -579,6 +579,6 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
 #endif
     if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
     {
-        LOG(Warning, "Could not add tile to navmesh.");
+        LOG(Warning, "Could not add tile to navmesh {0}.", Properties.Name);
     }
 }
