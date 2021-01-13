@@ -8,7 +8,12 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Threading/Threading.h"
+#if USE_EDITOR
+#include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
+#endif
+#include "NavMesh.h"
+
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
@@ -263,6 +268,27 @@ void Navigation::DrawNavMesh()
 {
     for (auto navMesh : NavMeshes)
     {
+#if USE_EDITOR
+        // Skip drawing if any of the navmeshes on scene has disabled ShowDebugDraw option
+        bool skip = false;
+        for (auto scene : Level::Scenes)
+        {
+            for (auto e : scene->NavigationMeshes)
+            {
+                if (e->Properties == navMesh->Properties)
+                {
+                    if (!e->ShowDebugDraw)
+                    {
+                        skip = true;
+                    }
+                    break;
+                }
+            }
+        }
+        if (skip)
+            continue;
+#endif
+
         navMesh->DebugDraw();
     }
 }
