@@ -724,7 +724,7 @@ namespace Flax.Build.Platforms
                     args.Add("/PDBALTPATH:%_PDB%");
 
                     // Optimize
-                    if (linkEnvironment.Optimization)
+                    if (linkEnvironment.Optimization && !linkEnvironment.UseIncrementalLinking)
                     {
                         // Generate an EXE checksum
                         args.Add("/RELEASE");
