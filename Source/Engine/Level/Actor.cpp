@@ -597,6 +597,11 @@ void Actor::SetDirection(const Vector3& value)
     SetOrientation(orientation);
 }
 
+void Actor::ResetLocalTransform()
+{
+    SetLocalTransform(Transform::Identity);
+}
+
 void Actor::SetLocalTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
@@ -1256,6 +1261,11 @@ Script* Actor::GetScriptByPrefabObjectId(const Guid& prefabObjectId) const
         }
     }
     return result;
+}
+
+bool Actor::IsPrefabRoot() const
+{
+    return _isPrefabRoot != 0;
 }
 
 Actor* Actor::FindActor(const StringView& name) const

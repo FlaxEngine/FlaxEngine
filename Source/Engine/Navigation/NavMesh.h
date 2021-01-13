@@ -39,14 +39,14 @@ public:
     /// <summary>
     /// If checked, the navmesh will be drawn in debug view when showing navigation data.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(-10), EditorDisplay(\"Nav Mesh\")") bool ShowDebugDraw = true;
+    API_FIELD(Attributes="EditorOrder(1), EditorDisplay(\"Nav Mesh\")") bool ShowDebugDraw = true;
 
 #endif
 
     /// <summary>
     /// The navigation mesh properties.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Nav Mesh\")") NavMeshProperties Properties;
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Nav Mesh\")") NavMeshProperties Properties;
 
 public:
 
