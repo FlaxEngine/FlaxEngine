@@ -258,8 +258,8 @@ namespace FlaxEngine.Utilities
         /// Generates a random <see cref="byte"/> value between min and max.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="min">The lower boundary.</param>
-        /// <param name="max">The upper boundary.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
         /// <returns>A <see cref="byte"/> between min and max.</returns>
         public static byte NextByte(this Random random, byte min = 0, byte max = 2)
         {
@@ -270,8 +270,8 @@ namespace FlaxEngine.Utilities
         /// Generates a random <see cref="float"/>  value between min and max.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="min">The min value.</param>
-        /// <param name="max">The max value.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
         /// <returns>A random <see cref="float"/> between min and max.</returns>
         public static float NextFloat(this Random random, float min = 0.0f, float max = 2.0f)
         {
