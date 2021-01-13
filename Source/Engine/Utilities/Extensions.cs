@@ -286,6 +286,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Quaternion"/>.</returns>
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
+
             return Quaternion.Euler(
                 NextFloat(random, -180, 180),
                 NextFloat(random, -180, 180),
@@ -360,23 +361,12 @@ namespace FlaxEngine.Utilities
         /// Gets a random <see cref="double"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="maxValue">The maximum value</param>
+        /// <param name="min">The minimum value</param>
+        /// <param name="max">The maximum value</param>
         /// <returns>A random <see cref="double"/></returns>
-        public static double NextDouble(this Random random, double maxValue = 2.0d)
+        public static double NextDouble(this Random random, double min = 0.0d, double max = 2.0d)
         {
-            return random.NextDouble() * maxValue;
-        }
-
-        /// <summary>
-        /// Gets a random <see cref="double"/>.
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="minValue">The minimum value</param>
-        /// <param name="maxValue">The maximum value</param>
-        /// <returns>A random <see cref="double"/></returns>
-        public static double NextDouble(this Random random, double minValue = 0.0d, double maxValue = 2.0d)
-        {
-            return random.NextDouble() * (maxValue - minValue) + minValue;
+            return random.NextDouble() * (max - min) + min;
         }
 
         /// <summary>
