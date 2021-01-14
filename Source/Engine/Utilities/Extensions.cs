@@ -243,16 +243,9 @@ namespace FlaxEngine.Utilities
         /// Generates a random <see cref="bool"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <returns>A <see cref="bool"/> thats either true or false.</returns>
-        public static bool NextBool(this Random random) => random.Next(2) == 1;
-
-        /// <summary>
-        /// Generates a random <see cref="bool"/> with a weight value to adjust preference.
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <param name="weight">Normalized value that determines the chance to return true.</param>
         /// <returns>A <see cref="bool"/> thats either true or false.</returns>
-        public static bool NextBool(this Random random, float weight = 0.5f) => weight >= NextFloat(random);
+        public static bool NextBool(this Random random, float weight = 0.5f) => random.NextDouble() < weight;
 
         /// <summary>
         /// Generates a random <see cref="byte"/> value between min and max.
@@ -260,22 +253,33 @@ namespace FlaxEngine.Utilities
         /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
-        /// <returns>A <see cref="byte"/> between min and max.</returns>
-        public static byte NextByte(this Random random, byte min = 0, byte max = 2)
+        /// <returns>A random <see cref="byte"/> between min and max.</returns>
+        public static byte NextByte(this Random random, byte min = 0, byte max = byte.MaxValue)
         {
             return (byte)random.Next(min, max);
         }
 
         /// <summary>
-        /// Generates a random <see cref="float"/>  value between min and max.
+        /// Generates a random <see cref="float"/> value between min and max.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>A random <see cref="float"/> between min and max.</returns>
-        public static float NextFloat(this Random random, float min = 0.0f, float max = 2.0f)
+        public static float NextFloat(this Random random, float min = 0.0f, float max = 1.0f)
         {
             return (float)random.NextDouble() * (max - min) + min;
+        }
+
+        /// <summary>
+        /// Generates a random <see cref="float"/>  value between 0 and max.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>A random <see cref="float"/> between min and max.</returns>
+        public static float NextFloat(this Random random, float max)
+        {
+            return (float)random.NextDouble() * max;
         }
 
         /// <summary>
@@ -286,7 +290,6 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Quaternion"/>.</returns>
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
-
             return Quaternion.Euler(
                 NextFloat(random, -180, 180),
                 NextFloat(random, -180, 180),
@@ -301,6 +304,7 @@ namespace FlaxEngine.Utilities
         public static Vector3 NextVector3(this Random random)
         {
             Vector3 output;
+            float l;
 
             do
             {
@@ -309,42 +313,40 @@ namespace FlaxEngine.Utilities
                 output.Y = NextFloat(random) * 2.0f - 1.0f;
                 output.Z = NextFloat(random) * 2.0f - 1.0f;
 
-            } while (output.LengthSquared > 1 || output.LengthSquared < 1e-6f);
+                l = output.LengthSquared;
 
-            output *= (1.0f / (float)Math.Sqrt(output.LengthSquared));
+            } while (l > 1 || l < Mathf.Epsilon);
+
+            output.Normalize();
 
             return output;
         }
 
         /// <summary>
-        /// Generates a uniformly distributed random unit length vector point on a unit sphere in 2D.
+        /// Generates a random <see cref="Vector2"/> point in a circle of a given radius.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="radius">Radius of circle. Default 1.0f./>.</param>
         /// <returns>A random <see cref="Vector2"/>.</returns>
-        public static Vector2 NextVector2(this Random random)
+        public static Vector2 NextVector2(this Random random, float radius = 1.0f)
         {
-            Vector2 output;
+            var randomRadius = (float)random.NextDouble() * radius;
 
-            do
+            return new Vector2
             {
-                output.X = NextFloat(random) * 2.0f - 1.0f;
-                output.Y = NextFloat(random) * 2.0f - 1.0f;
-
-            } while (output.LengthSquared > 1 || output.LengthSquared < 1e-6f);
-
-            output *= (1.0f / (float)Math.Sqrt(output.LengthSquared));
-
-            return output;
+                X = (float)Math.Cos(random.NextDouble()) * randomRadius,
+                Y = (float)Math.Sin(random.NextDouble()) * randomRadius,
+            };
         }
 
         /// <summary>
         /// Generates a random <see cref="Color"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="trueRandom">Should the color be generated from a single random Hue value or separate values for each channel.</param>
+        /// <param name="trueRandom">Should the color be generated from a single random hue value or separate values for each channel.</param>
         /// <param name="randomAlpha">Randomize the alpha value.</param>
         /// <returns>A nice random <see cref="Color"/>.</returns>
-        public static Color NextColor(this Random random, bool trueRandom, bool randomAlpha)
+        public static Color NextColor(this Random random, bool trueRandom = false, bool randomAlpha = false)
         {
             float alpha = randomAlpha ? NextFloat(random) : 1f;
 
@@ -352,9 +354,9 @@ namespace FlaxEngine.Utilities
                 return Color.FromHSV(NextFloat(random, 0f, 360f), 1f, 1f, alpha);
 
             return new Color(
-                NextFloat(random, 0f, 255f),
-                NextFloat(random, 0f, 255f),
-                NextFloat(random, 0f, 255f), alpha);
+                NextFloat(random),
+                NextFloat(random),
+                NextFloat(random), alpha);
         }
 
         /// <summary>
@@ -364,9 +366,20 @@ namespace FlaxEngine.Utilities
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>A random <see cref="double"/>.</returns>
-        public static double NextDouble(this Random random, double min = 0.0d, double max = 2.0d)
+        public static double NextDouble(this Random random, double min = 0.0d, double max = 1.0d)
         {
             return random.NextDouble() * (max - min) + min;
+        }
+
+        /// <summary>
+        /// Gets a random <see cref="double"/>.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>A random <see cref="double"/>.</returns>
+        public static double NextDouble(this Random random, double max = 1.0d)
+        {
+            return random.NextDouble() * max;
         }
 
         /// <summary>
@@ -378,44 +391,7 @@ namespace FlaxEngine.Utilities
         {
             var numArray = new byte[8];
             random.NextBytes(numArray);
-            return (long)(BitConverter.ToUInt64(numArray, 0) & 9223372036854775807L);
-        }
-
-        /// <summary>
-        /// Generates a random normalized 2D direction <see cref="Vector2"/>.
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <returns>A random normalized 2D direction <see cref="Vector2"/>.</returns>
-        public static Vector2 NextDirection2D(this Random random)
-        {
-            return Vector2.Normalize(new Vector2((float)random.NextDouble(), (float)random.NextDouble()));
-        }
-
-        /// <summary>
-        /// Generates a random normalized 3D direction <see cref="Vector3"/>.
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <returns>A random normalized 3D direction <see cref="Vector3"/>.</returns>
-        public static Vector3 NextDirection3D(this Random random)
-        {
-            return Vector3.Normalize(new Vector3((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble()));
-        }
-
-        /// <summary>
-        /// Generates a random <see cref="Vector2"/> point in a circle of a given radius.
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="radius">Radius of circle. Default 1.0f.</param>
-        /// <returns>A random <see cref="Vector2"/> point in a circle of a given radius.</returns>
-        public static Vector2 PointInACircle(this Random random, float radius = 1.0f)
-        {
-            var randomRadius = (float)random.NextDouble() * radius;
-
-            return new Vector2
-            {
-                X = (float)Math.Cos(random.NextDouble()) * randomRadius,
-                Y = (float)Math.Sin(random.NextDouble()) * randomRadius,
-            };
+            return (long)(BitConverter.ToUInt64(numArray, 0) & long.MaxValue);
         }
     }
 }
