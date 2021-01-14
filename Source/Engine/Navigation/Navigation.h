@@ -33,6 +33,14 @@ public:
     API_FUNCTION() static bool FindPath(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) Array<Vector3, HeapAllocation>& resultPath);
 
     /// <summary>
+    /// Tests the path between the two positions (non-partial).
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <returns>True if found valid path between given two points, otherwise false if failed.</returns>
+    API_FUNCTION() static bool TestPath(const Vector3& startPosition, const Vector3& endPosition);
+
+    /// <summary>
     /// Projects the point to nav mesh surface (finds the nearest polygon).
     /// </summary>
     /// <param name="point">The source point.</param>

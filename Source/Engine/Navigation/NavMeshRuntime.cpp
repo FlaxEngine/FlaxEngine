@@ -141,6 +141,52 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
     return true;
 }
 
+bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPosition) const
+{
+    ScopeLock lock(Locker);
+
+    const auto query = GetNavMeshQuery();
+    if (!query)
+    {
+        return false;
+    }
+
+    dtQueryFilter filter;
+    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+
+    Vector3 startPositionNavMesh, endPositionNavMesh;
+    Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
+    Vector3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
+
+    dtPolyRef startPoly = 0;
+    query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
+    if (!startPoly)
+    {
+        return false;
+    }
+    dtPolyRef endPoly = 0;
+    query->findNearestPoly(&endPositionNavMesh.X, &extent.X, &filter, &endPoly, nullptr);
+    if (!endPoly)
+    {
+        return false;
+    }
+
+    dtPolyRef path[NAV_MESH_PATH_MAX_SIZE];
+    int32 pathSize;
+    const auto findPathStatus = query->findPath(startPoly, endPoly, &startPositionNavMesh.X, &endPositionNavMesh.X, &filter, path, &pathSize, NAV_MESH_PATH_MAX_SIZE);
+    if (dtStatusFailed(findPathStatus))
+    {
+        return false;
+    }
+
+    if (dtStatusDetail(findPathStatus, DT_PARTIAL_RESULT))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
 {
     ScopeLock lock(Locker);

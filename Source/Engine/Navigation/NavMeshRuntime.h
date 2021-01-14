@@ -106,6 +106,14 @@ public:
     bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const;
 
     /// <summary>
+    /// Tests the path between the two positions (non-partial).
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <returns>True if found valid path between given two points, otherwise false if failed.</returns>
+    bool TestPath(const Vector3& startPosition, const Vector3& endPosition) const;
+
+    /// <summary>
     /// Projects the point to nav mesh surface (finds the nearest polygon).
     /// </summary>
     /// <param name="point">The source point.</param>

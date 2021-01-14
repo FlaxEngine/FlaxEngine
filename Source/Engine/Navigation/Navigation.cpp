@@ -224,6 +224,13 @@ bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPositi
     return NavMeshes.First()->FindPath(startPosition, endPosition, resultPath);
 }
 
+bool Navigation::TestPath(const Vector3& startPosition, const Vector3& endPosition)
+{
+    if (NavMeshes.IsEmpty())
+        return false;
+    return NavMeshes.First()->TestPath(startPosition, endPosition);
+}
+
 bool Navigation::ProjectPoint(const Vector3& point, Vector3& result)
 {
     if (NavMeshes.IsEmpty())
