@@ -11,6 +11,8 @@
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
+#include "Engine/Physics/Colliders/SphereCollider.h"
+#include "Engine/Physics/Colliders/CapsuleCollider.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Terrain/TerrainPatch.h"
@@ -119,6 +121,77 @@ struct NavigationSceneRasterization
         }
     }
 
+    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const OrientedBoundingBox& box)
+    {
+        vb.Resize(8);
+        box.GetCorners(vb.Get());
+        ib.Add(BoxTrianglesIndicesCache, 36);
+    }
+
+    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const BoundingBox& box)
+    {
+        vb.Resize(8);
+        box.GetCorners(vb.Get());
+        ib.Add(BoxTrianglesIndicesCache, 36);
+    }
+
+    static void TriangulateSphere(Array<Vector3>& vb, Array<int32>& ib, const BoundingSphere& sphere)
+    {
+        const int32 sphereResolution = 12;
+        const int32 verticalSegments = sphereResolution;
+        const int32 horizontalSegments = sphereResolution * 2;
+
+        // Generate vertices for unit sphere
+        Vector3 vertices[(verticalSegments + 1) * (horizontalSegments + 1)];
+        int32 vertexCount = 0;
+        for (int32 j = 0; j <= horizontalSegments; j++)
+            vertices[vertexCount++] = Vector3(0, -1, 0);
+        for (int32 i = 1; i < verticalSegments; i++)
+        {
+            const float latitude = (float)i * PI / verticalSegments - PI / 2.0f;
+            const float dy = Math::Sin(latitude);
+            const float dxz = Math::Cos(latitude);
+            auto& firstHorizontalVertex = vertices[vertexCount++];
+            firstHorizontalVertex = Vector3(0, dy, dxz);
+            for (int32 j = 1; j < horizontalSegments; j++)
+            {
+                const float longitude = (float)j * 2.0f * PI / horizontalSegments;
+                const float dx = Math::Sin(longitude) * dxz;
+                const float dz = Math::Cos(longitude) * dxz;
+                vertices[vertexCount++] = Vector3(dx, dy, dz);
+            }
+            vertices[vertexCount++] = firstHorizontalVertex;
+        }
+        for (int32 j = 0; j <= horizontalSegments; j++)
+            vertices[vertexCount++] = Vector3(0, 1, 0);
+
+        // Transform vertices into world space vertex buffer
+        vb.Resize(vertexCount);
+        for (int32 i = 0; i < vertexCount; i++)
+            vb[i] = sphere.Center + vertices[i] * sphere.Radius;
+
+        // Generate index buffer
+        const int32 stride = horizontalSegments + 1;
+        int32 indexCount = 0;
+        ib.Resize(verticalSegments * (horizontalSegments + 1) * 6);
+        for (int32 i = 0; i < verticalSegments; i++)
+        {
+            const int32 nextI = i + 1;
+            for (int32 j = 0; j <= horizontalSegments; j++)
+            {
+                const int32 nextJ = (j + 1) % stride;
+
+                ib[indexCount++] = i * stride + j;
+                ib[indexCount++] = nextI * stride + j;
+                ib[indexCount++] = i * stride + nextJ;
+
+                ib[indexCount++] = i * stride + nextJ;
+                ib[indexCount++] = nextI * stride + j;
+                ib[indexCount++] = nextI * stride + nextJ;
+            }
+        }
+    }
+
     static bool Walk(Actor* actor, NavigationSceneRasterization& e)
     {
         // Early out if object is not intersecting with the tile bounds or is not using navigation
@@ -141,9 +214,25 @@ struct NavigationSceneRasterization
             PROFILE_CPU_NAMED("BoxCollider");
 
             const OrientedBoundingBox box = boxCollider->GetOrientedBox();
-            vb.Resize(8);
-            box.GetCorners(vb.Get());
-            ib.Add(BoxTrianglesIndicesCache, 36);
+            TriangulateBox(vb, ib, box);
+
+            e.RasterizeTriangles();
+        }
+        else if (const auto* sphereCollider = dynamic_cast<SphereCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("SphereCollider");
+
+            const BoundingSphere sphere = sphereCollider->GetSphere();
+            TriangulateSphere(vb, ib, sphere);
+
+            e.RasterizeTriangles();
+        }
+        else if (const auto* capsuleCollider = dynamic_cast<CapsuleCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("CapsuleCollider");
+
+            const BoundingBox box = capsuleCollider->GetBox();
+            TriangulateBox(vb, ib, box);
 
             e.RasterizeTriangles();
         }
