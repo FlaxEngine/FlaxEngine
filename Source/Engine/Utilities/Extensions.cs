@@ -304,7 +304,7 @@ namespace FlaxEngine.Utilities
 
             do
             {
-                // Create random float with a mean of 0 and deviation of ±1;
+                // Create random float with a mean of 0 and deviation of ±1
                 output.X = NextFloat(random) * 2.0f - 1.0f;
                 output.Y = NextFloat(random) * 2.0f - 1.0f;
                 output.Z = NextFloat(random) * 2.0f - 1.0f;
@@ -361,9 +361,9 @@ namespace FlaxEngine.Utilities
         /// Gets a random <see cref="double"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="min">The minimum value</param>
-        /// <param name="max">The maximum value</param>
-        /// <returns>A random <see cref="double"/></returns>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>A random <see cref="double"/>.</returns>
         public static double NextDouble(this Random random, double min = 0.0d, double max = 2.0d)
         {
             return random.NextDouble() * (max - min) + min;
@@ -373,7 +373,7 @@ namespace FlaxEngine.Utilities
         /// Gets a random <see cref="long"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <returns>A random <see cref="long"/></returns>
+        /// <returns>A random <see cref="long"/>.</returns>
         internal static long NextLong(this Random random)
         {
             var numArray = new byte[8];
