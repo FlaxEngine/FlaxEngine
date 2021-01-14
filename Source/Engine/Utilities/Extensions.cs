@@ -256,7 +256,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="byte"/> between min and max.</returns>
         public static byte NextByte(this Random random, byte min = 0, byte max = byte.MaxValue)
         {
-            return (byte)random.Next(min, max);
+            return (byte)random.Next(min, max+1);
         }
 
         /// <summary>
@@ -343,20 +343,25 @@ namespace FlaxEngine.Utilities
         /// Generates a random <see cref="Color"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="trueRandom">Should the color be generated from a single random hue value or separate values for each channel.</param>
         /// <param name="randomAlpha">Randomize the alpha value.</param>
         /// <returns>A nice random <see cref="Color"/>.</returns>
-        public static Color NextColor(this Random random, bool trueRandom = false, bool randomAlpha = false)
+        public static Color NextColor(this Random random, bool randomAlpha = false)
         {
-            float alpha = randomAlpha ? NextFloat(random) : 1f;
-
-            if (!trueRandom)
-                return Color.FromHSV(NextFloat(random, 0f, 360f), 1f, 1f, alpha);
-
             return new Color(
                 NextFloat(random),
                 NextFloat(random),
-                NextFloat(random), alpha);
+                NextFloat(random), randomAlpha ? NextFloat(random) : 1f);
+        }
+
+        /// <summary>
+        /// Generates a random <see cref="ColorHSV"/> using a single random value for hue.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="randomAlpha">Randomize the alpha value.</param>
+        /// <returns>A nice random <see cref="ColorHSV"/>.</returns>
+        public static ColorHSV NextColorHSV(this Random random, bool randomAlpha = false)
+        {
+            return new ColorHSV(NextFloat(random, 0f, 360f), 1f, 1f, randomAlpha ? NextFloat(random) : 1f);
         }
 
         /// <summary>
