@@ -628,7 +628,7 @@ class NavMeshTileBuildTask : public ThreadPoolTask
 public:
 
     Scene* Scene;
-    NavMesh* NavMesh;
+    ScriptingObjectReference<NavMesh> NavMesh;
     NavMeshRuntime* Runtime;
     BoundingBox TileBoundsNavMesh;
     Matrix WorldToNavMesh;
@@ -644,6 +644,11 @@ public:
     {
         PROFILE_CPU_NAMED("BuildNavMeshTile");
 
+        const auto navMesh = NavMesh.Get();
+        if (!navMesh)
+        {
+            return false;
+        }
         if (GenerateTile(NavMesh, Runtime, X, Y, TileBoundsNavMesh, WorldToNavMesh, TileSize, Config))
         {
             LOG(Warning, "Failed to generate navmesh tile at {0}x{1}.", X, Y);
