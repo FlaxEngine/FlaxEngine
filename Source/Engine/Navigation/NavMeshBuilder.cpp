@@ -281,9 +281,6 @@ struct NavigationSceneRasterization
             e.OffMeshLinks->Add(link);
         }
 
-        // TODO: nav mesh for capsule collider
-        // TODO: nav mesh for sphere collider
-
         return true;
     }
 };
