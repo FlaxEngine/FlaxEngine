@@ -256,7 +256,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="byte"/> between min and max.</returns>
         public static byte NextByte(this Random random, byte min = 0, byte max = byte.MaxValue)
         {
-            return (byte)random.Next(min, max+1);
+            return (byte)random.Next(min, max == byte.MaxValue ? byte.MaxValue + 1 : max);
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
-        /// Generates a random <see cref="ColorHSV"/> using a single random value for hue.
+        /// Generates a random <see cref="ColorHSV"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <param name="randomAlpha">Randomize the alpha value.</param>
