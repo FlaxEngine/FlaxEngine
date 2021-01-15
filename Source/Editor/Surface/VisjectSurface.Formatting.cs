@@ -152,6 +152,7 @@ namespace FlaxEditor.Surface
         /// <returns>The number of the maximum layer</returns>
         private int SetLayers(Dictionary<SurfaceNode, NodeFormattingData> nodeData, List<SurfaceNode> endNodes)
         {
+            // Longest path layering
             int maxLayer = 0;
             var stack = new Stack<SurfaceNode>(endNodes);
 
@@ -193,8 +194,9 @@ namespace FlaxEditor.Surface
         /// <returns>The number of the maximum offset</returns>
         private int SetOffsets(Dictionary<SurfaceNode, NodeFormattingData> nodeData, List<SurfaceNode> endNodes, int maxLayer)
         {
-            // This piece of code should be explained a bit better, since it does some fairly fancy stuff
             int maxOffset = 0;
+
+            // Keeps track of the largest offset (Y axis) for every layer
             int[] offsets = new int[maxLayer + 1];
 
             var visitedNodes = new HashSet<SurfaceNode>();
@@ -203,14 +205,18 @@ namespace FlaxEditor.Surface
             {
                 if (!nodeData.TryGetValue(node, out var data)) return;
 
+                // If we realize that the current node would collide with an already existing node in this layer
                 if (data.Layer >= 0 && offsets[data.Layer] > data.Offset)
                 {
+                    // Move the entire sub-tree down
                     straightParentData.SubtreeOffset = Math.Max(straightParentData.SubtreeOffset, offsets[data.Layer] - data.Offset);
                 }
 
+                // Keeps track of the offset of the last direct child we visited
                 int childOffset = data.Offset;
                 bool straightChild = true;
 
+                // Run the algorithm for every child
                 for (int i = 0; i < node.Elements.Count; i++)
                 {
                     if (node.Elements[i] is InputBox box && box.HasAnyConnection)
@@ -229,6 +235,7 @@ namespace FlaxEditor.Surface
 
                 if (data.Layer >= 0)
                 {
+                    // When coming out of the recursion, apply the extra subtree offsets
                     data.Offset += straightParentData.SubtreeOffset;
                     if (data.Offset > maxOffset)
                     {
