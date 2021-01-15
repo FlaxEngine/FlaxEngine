@@ -321,13 +321,13 @@ bool GetNavMeshTileBounds(Scene* scene, NavMesh* navMesh, int32 x, int32 y, floa
         {
             if (foundAnyVolume)
             {
-                rangeY.X = Math::Min(rangeY.X, volumeBounds.Minimum.Y);
-                rangeY.Y = Math::Max(rangeY.Y, volumeBounds.Maximum.Y);
+                rangeY.X = Math::Min(rangeY.X, volumeBoundsNavMesh.Minimum.Y);
+                rangeY.Y = Math::Max(rangeY.Y, volumeBoundsNavMesh.Maximum.Y);
             }
             else
             {
-                rangeY.X = volumeBounds.Minimum.Y;
-                rangeY.Y = volumeBounds.Maximum.Y;
+                rangeY.X = volumeBoundsNavMesh.Minimum.Y;
+                rangeY.Y = volumeBoundsNavMesh.Maximum.Y;
             }
             foundAnyVolume = true;
         }
@@ -775,8 +775,8 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
     BoundingBox dirtyBoundsNavMesh;
     BoundingBox::Transform(dirtyBounds, worldToNavMesh, dirtyBoundsNavMesh);
     BoundingBox dirtyBoundsAligned;
-    dirtyBoundsAligned.Minimum = Vector3::Floor(dirtyBounds.Minimum / tileSize) * tileSize;
-    dirtyBoundsAligned.Maximum = Vector3::Ceil(dirtyBounds.Maximum / tileSize) * tileSize;
+    dirtyBoundsAligned.Minimum = Vector3::Floor(dirtyBoundsNavMesh.Minimum / tileSize) * tileSize;
+    dirtyBoundsAligned.Maximum = Vector3::Ceil(dirtyBoundsNavMesh.Maximum / tileSize) * tileSize;
 
     // Calculate tiles range for the given navigation dirty bounds (aligned to tiles size)
     const Int3 tilesMin(dirtyBoundsAligned.Minimum / tileSize);
