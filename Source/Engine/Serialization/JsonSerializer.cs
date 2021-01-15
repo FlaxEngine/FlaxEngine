@@ -120,6 +120,7 @@ namespace FlaxEngine.Json
         }
     }
     */
+
     /// <summary>
     /// Objects serialization tool (json format).
     /// </summary>

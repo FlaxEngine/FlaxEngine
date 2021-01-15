@@ -92,6 +92,30 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
 };
 
 /// <summary>
+/// The navigation system agents selection mask (from navigation system settings). Uses 1 bit per agent type (up to 32 agents).
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API NavAgentMask
+{
+DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
+
+    /// <summary>
+    /// The agents selection mask.
+    /// </summary>
+    API_FIELD() uint32 Mask = MAX_uint32;
+
+    bool IsAgentSupported(int32 agentIndex) const;
+    bool IsAgentSupported(const NavAgentProperties& agentProperties) const;
+    bool IsNavMeshSupported(const NavMeshProperties& navMeshProperties) const;
+
+    bool operator==(const NavAgentMask& other) const;
+
+    bool operator!=(const NavAgentMask& other) const
+    {
+        return !operator==(other);
+    }
+};
+
+/// <summary>
 /// The result information for navigation mesh queries.
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavMeshHit

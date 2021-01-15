@@ -72,3 +72,15 @@ namespace FlaxEditor.Content.Settings
         }
     }
 }
+
+namespace FlaxEngine
+{
+    partial struct NavAgentProperties
+    {
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"Radius: {Radius}, Height: {Height}, StepHeight: {StepHeight}, MaxSlopeAngle: {MaxSlopeAngle}";
+        }
+    }
+}

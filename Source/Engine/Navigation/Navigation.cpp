@@ -97,6 +97,42 @@ bool NavAgentProperties::operator==(const NavAgentProperties& other) const
     return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle);
 }
 
+bool NavAgentMask::IsAgentSupported(int32 agentIndex) const
+{
+    return (Mask & (1 << agentIndex)) != 0;
+}
+
+bool NavAgentMask::IsAgentSupported(const NavAgentProperties& agentProperties) const
+{
+    auto settings = NavigationSettings::Get();
+    for (int32 agentIndex = 0; agentIndex < settings->NavMeshes.Count(); agentIndex++)
+    {
+        if (settings->NavMeshes[agentIndex].Agent == agentProperties)
+        {
+            return (Mask & (1 << agentIndex)) != 0;
+        }
+    }
+    return false;
+}
+
+bool NavAgentMask::IsNavMeshSupported(const NavMeshProperties& navMeshProperties) const
+{
+    auto settings = NavigationSettings::Get();
+    for (int32 agentIndex = 0; agentIndex < settings->NavMeshes.Count(); agentIndex++)
+    {
+        if (settings->NavMeshes[agentIndex] == navMeshProperties)
+        {
+            return (Mask & (1 << agentIndex)) != 0;
+        }
+    }
+    return false;
+}
+
+bool NavAgentMask::operator==(const NavAgentMask& other) const
+{
+    return Mask == other.Mask;
+}
+
 bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 {
     return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent;
