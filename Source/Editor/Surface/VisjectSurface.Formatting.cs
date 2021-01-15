@@ -103,6 +103,8 @@ namespace FlaxEditor.Surface
             // Set the vertical offsets
             int maxOffset = SetOffsets(nodeData, endNodes, maxLayer);
 
+            // Layout the nodes
+
             // Get the largest nodes in the Y and X direction
             float[] widths = new float[maxLayer + 1];
             float[] heights = new float[maxOffset + 1];
@@ -121,17 +123,31 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            // Layout the nodes
-            Vector2 minSize = new Vector2(180, 180);
+            Vector2 minDistanceBetweenNodes = new Vector2(20, 20);
 
+            // Figure out the node positions (aligned to a grid)
+            float[] nodeXPositions = new float[widths.Length];
+            for (int i = 1; i < widths.Length; i++)
+            {
+                // Go from right to left (backwards) through the nodes
+                nodeXPositions[i] = nodeXPositions[i - 1] + minDistanceBetweenNodes.X + widths[i];
+            }
+
+            float[] nodeYPositions = new float[heights.Length];
+            for (int i = 1; i < heights.Length; i++)
+            {
+                // Go from top to bottom through the nodes
+                nodeYPositions[i] = nodeYPositions[i - 1] + heights[i - 1] + minDistanceBetweenNodes.Y;
+            }
+
+            // Set the node positions
             var undoActions = new List<MoveNodesAction>();
             var topRightPosition = endNodes[0].Location;
             for (int i = 0; i < nodes.Count; i++)
             {
                 if (nodeData.TryGetValue(nodes[i], out var data))
                 {
-                    Vector2 size = Vector2.Max(minSize, new Vector2(widths[data.Layer], heights[data.Offset]));
-                    Vector2 newLocation = (new Vector2(-data.Layer, data.Offset) * size) + topRightPosition;
+                    Vector2 newLocation = new Vector2(-nodeXPositions[data.Layer], nodeYPositions[data.Offset]) + topRightPosition;
                     Vector2 locationDelta = newLocation - nodes[i].Location;
                     nodes[i].Location = newLocation;
 
