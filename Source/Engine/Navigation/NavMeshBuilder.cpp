@@ -296,7 +296,7 @@ void RasterizeGeometry(const BoundingBox& tileBoundsNavMesh, const Matrix& world
 
 // Builds navmesh tile bounds and check if there are any valid navmesh volumes at that tile location
 // Returns true if tile is intersecting with any navmesh bounds volume actor - which means tile is in use
-bool GetNavMeshTileBounds(Scene* scene, int32 x, int32 y, float tileSize, BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh)
+bool GetNavMeshTileBounds(Scene* scene, NavMesh* navMesh, int32 x, int32 y, float tileSize, BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh)
 {
     // Build initial tile bounds (with infinite extent)
     tileBoundsNavMesh.Minimum.X = (float)x * tileSize;
@@ -312,6 +312,8 @@ bool GetNavMeshTileBounds(Scene* scene, int32 x, int32 y, float tileSize, Boundi
     for (int32 i = 0; i < scene->NavigationVolumes.Count(); i++)
     {
         const auto volume = scene->NavigationVolumes[i];
+        if (!volume->AgentsMask.IsNavMeshSupported(navMesh->Properties))
+            continue;
         const auto& volumeBounds = volume->GetBox();
         BoundingBox volumeBoundsNavMesh;
         BoundingBox::Transform(volumeBounds, worldToNavMesh, volumeBoundsNavMesh);
@@ -821,7 +823,7 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
             for (int32 x = tilesMin.X; x < tilesMax.X; x++)
             {
                 BoundingBox tileBoundsNavMesh;
-                if (GetNavMeshTileBounds(scene, x, y, tileSize, tileBoundsNavMesh, worldToNavMesh))
+                if (GetNavMeshTileBounds(scene, navMesh, x, y, tileSize, tileBoundsNavMesh, worldToNavMesh))
                 {
                     BuildTileAsync(navMesh, x, y, config, tileBoundsNavMesh, worldToNavMesh, tileSize);
                 }
