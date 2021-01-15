@@ -7,6 +7,7 @@
 #include "NavigationSettings.h"
 #include "NavMeshBoundsVolume.h"
 #include "NavLink.h"
+#include "NavModifierVolume.h"
 #include "NavMeshRuntime.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/VectorInt.h"
@@ -55,8 +56,14 @@ struct OffMeshLink
     int32 Id;
 };
 
+struct Modifier
+{
+    BoundingBox Bounds;
+};
+
 struct NavigationSceneRasterization
 {
+    NavMesh* NavMesh;
     BoundingBox TileBoundsNavMesh;
     Matrix WorldToNavMesh;
     rcContext* Context;
@@ -66,18 +73,21 @@ struct NavigationSceneRasterization
     Array<Vector3> VertexBuffer;
     Array<int32> IndexBuffer;
     Array<OffMeshLink>* OffMeshLinks;
+    Array<Modifier>* Modifiers;
     const bool IsWorldToNavMeshIdentity;
 
-    NavigationSceneRasterization(const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks)
+    NavigationSceneRasterization(::NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
         : TileBoundsNavMesh(tileBoundsNavMesh)
         , WorldToNavMesh(worldToNavMesh)
         , IsWorldToNavMeshIdentity(worldToNavMesh.IsIdentity())
     {
+        NavMesh = navMesh;
         Context = context;
         Config = config;
         Heightfield = heightfield;
         WalkableThreshold = Math::Cos(config->walkableSlopeAngle * DegreesToRadians);
         OffMeshLinks = offMeshLinks;
+        Modifiers = modifiers;
     }
 
     void RasterizeTriangles()
@@ -280,16 +290,30 @@ struct NavigationSceneRasterization
 
             e.OffMeshLinks->Add(link);
         }
+        else if (const auto* navModifierVolume = dynamic_cast<NavModifierVolume*>(actor))
+        {
+            if (navModifierVolume->AgentsMask.IsNavMeshSupported(e.NavMesh->Properties))
+            {
+                PROFILE_CPU_NAMED("NavModifierVolume");
+
+                Modifier modifier;
+                OrientedBoundingBox bounds = navModifierVolume->GetOrientedBox();
+                bounds.Transform(e.WorldToNavMesh);
+                bounds.GetBoundingBox(modifier.Bounds);
+
+                e.Modifiers->Add(modifier);
+            }
+        }
 
         return true;
     }
 };
 
-void RasterizeGeometry(const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks)
+void RasterizeGeometry(NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
 {
     PROFILE_CPU_NAMED("RasterizeGeometry");
 
-    NavigationSceneRasterization rasterization(tileBoundsNavMesh, worldToNavMesh, context, config, heightfield, offMeshLinks);
+    NavigationSceneRasterization rasterization(navMesh, tileBoundsNavMesh, worldToNavMesh, context, config, heightfield, offMeshLinks, modifiers);
     Function<bool(Actor*, NavigationSceneRasterization&)> treeWalkFunction(NavigationSceneRasterization::Walk);
     SceneQuery::TreeExecute<NavigationSceneRasterization&>(treeWalkFunction, rasterization);
 }
@@ -389,7 +413,8 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     }
 
     Array<OffMeshLink> offMeshLinks;
-    RasterizeGeometry(tileBoundsNavMesh, worldToNavMesh, &context, &config, heightfield, &offMeshLinks);
+    Array<Modifier> modifiers;
+    RasterizeGeometry(navMesh, tileBoundsNavMesh, worldToNavMesh, &context, &config, heightfield, &offMeshLinks, &modifiers);
 
     rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *heightfield);
     rcFilterLedgeSpans(&context, config.walkableHeight, config.walkableClimb, *heightfield);
@@ -413,6 +438,12 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     {
         LOG(Warning, "Could not generate navmesh: Could not erode.");
         return true;
+    }
+
+    // Mark areas
+    for (auto& modifier : modifiers)
+    {
+        rcMarkBoxArea(&context, &modifier.Bounds.Minimum.X, &modifier.Bounds.Maximum.X, RC_NULL_AREA, *compactHeightfield);
     }
 
     if (!rcBuildDistanceField(&context, *compactHeightfield))
@@ -468,7 +499,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
 
     for (int i = 0; i < polyMesh->npolys; i++)
     {
-        polyMesh->flags[i] = polyMesh->areas[i] == RC_WALKABLE_AREA ? 1 : 0;
+        polyMesh->flags[i] = polyMesh->areas[i] != RC_NULL_AREA ? 1 : 0;
     }
 
     if (polyMesh->nverts == 0)

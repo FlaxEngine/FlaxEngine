@@ -6,15 +6,15 @@
 #include "NavigationTypes.h"
 
 /// <summary>
-/// A special type of volume that defines the area of the scene in which navigation meshes are generated.
+/// A special type of volume that defines the area of the scene in which navigation is restricted (eg. higher traversal cost or dynamic obstacle block).
 /// </summary>
-API_CLASS() class FLAXENGINE_API NavMeshBoundsVolume : public BoxVolume
+API_CLASS() class FLAXENGINE_API NavModifierVolume : public BoxVolume
 {
-DECLARE_SCENE_OBJECT(NavMeshBoundsVolume);
+DECLARE_SCENE_OBJECT(NavModifierVolume);
 public:
 
     /// <summary>
-    /// The agent types used by this navmesh bounds volume (from navigation settings). Can be used to generate navmesh for a certain set of agents.
+    /// The agent types used by this navmesh modifier volume (from navigation settings). Can be used to adjust navmesh for a certain set of agents.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Box Volume\"), EditorOrder(10)")
     NavAgentMask AgentsMask;
@@ -28,8 +28,6 @@ public:
 protected:
 
     // [BoxVolume]
-    void OnEnable() override;
-    void OnDisable() override;
 #if USE_EDITOR
     void OnBoundsChanged(const BoundingBox& prevBounds) override;
     Color GetWiresColor() override;
