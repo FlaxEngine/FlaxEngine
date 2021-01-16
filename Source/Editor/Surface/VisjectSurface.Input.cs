@@ -686,31 +686,38 @@ namespace FlaxEditor.Surface
 
         private Vector2 FindEmptySpace(Box box)
         {
-            int boxIndex = 0;
+            Vector2 distanceBetweenNodes = new Vector2(20, 20);
 
             var node = box.ParentNode;
+
+            // Same height as node
+            float yLocation = node.Top;
+
             for (int i = 0; i < node.Elements.Count; i++)
             {
-                // Box on the same side above the current box
                 if (node.Elements[i] is Box nodeBox && nodeBox.IsOutput == box.IsOutput && nodeBox.Y < box.Y)
                 {
-                    boxIndex++;
+                    // Below connected node
+                    yLocation = Mathf.Max(yLocation, nodeBox.ParentNode.Bottom + distanceBetweenNodes.Y);
                 }
             }
+
             // TODO: Dodge the other nodes
 
-            Vector2 distanceBetweenNodes = new Vector2(40, 20);
-            const float NodeHeight = 120;
+            float xLocation = node.Location.X;
+            if (box.IsOutput)
+            {
+                xLocation += node.Width + distanceBetweenNodes.X;
+            }
+            else
+            {
+                xLocation += -120 - distanceBetweenNodes.X;
+            }
 
-            float direction = box.IsOutput ? 1 : -1;
-
-            Vector2 newNodeLocation = node.Location +
-                                      new Vector2(
-                                                  (node.Width + distanceBetweenNodes.X) * direction,
-                                                  boxIndex * (NodeHeight + distanceBetweenNodes.Y)
-                                                 );
-
-            return newNodeLocation;
+            return new Vector2(
+                xLocation,
+                yLocation
+            );
         }
     }
 }
