@@ -24,7 +24,9 @@ namespace FlaxEditor.Surface
 
         private class InputBracket
         {
+            private readonly float DefaultWidth = 120f;
             private readonly Margin _padding = new Margin(10f);
+
             public Box Box { get; }
             public Vector2 EndBracketPosition { get; }
             public List<SurfaceNode> Nodes { get; } = new List<SurfaceNode>();
@@ -33,7 +35,7 @@ namespace FlaxEditor.Surface
             public InputBracket(Box box, Vector2 nodePosition)
             {
                 Box = box;
-                EndBracketPosition = nodePosition;
+                EndBracketPosition = nodePosition + new Vector2(DefaultWidth, 0);
                 Update();
             }
 
@@ -47,11 +49,10 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    area = new Rectangle(EndBracketPosition, new Vector2(120f, 80f));
+                    area = new Rectangle(EndBracketPosition, new Vector2(DefaultWidth, 80f));
                 }
                 _padding.ExpandRectangle(ref area);
-                Vector2 endPoint = area.Location + new Vector2(area.Width, area.Height / 2f);
-                Vector2 offset = EndBracketPosition - endPoint;
+                Vector2 offset = EndBracketPosition - area.UpperRight;
                 area.Location += offset;
                 Area = area;
                 if (!offset.IsZero)
