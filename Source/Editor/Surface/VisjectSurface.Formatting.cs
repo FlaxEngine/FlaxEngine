@@ -123,7 +123,7 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            Vector2 minDistanceBetweenNodes = new Vector2(20, 20);
+            Vector2 minDistanceBetweenNodes = new Vector2(30, 30);
 
             // Figure out the node positions (aligned to a grid)
             float[] nodeXPositions = new float[widths.Length];

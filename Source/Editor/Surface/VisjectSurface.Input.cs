@@ -687,7 +687,7 @@ namespace FlaxEditor.Surface
 
         private Vector2 FindEmptySpace(Box box)
         {
-            Vector2 distanceBetweenNodes = new Vector2(20, 20);
+            Vector2 distanceBetweenNodes = new Vector2(30, 30);
 
             var node = box.ParentNode;
 
