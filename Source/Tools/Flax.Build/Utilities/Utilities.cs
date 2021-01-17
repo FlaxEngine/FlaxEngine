@@ -15,6 +15,25 @@ namespace Flax.Build
     public static class Utilities
     {
         /// <summary>
+        /// Gets the hash code for the string (the same for all platforms). Matches Engine algorithm for string hashing.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns>The file size text.</returns>
+        internal static uint GetHashCode(string str)
+        {
+            uint hash = 5381;
+            if (str != null)
+            {
+                for (int i = 0; i < str.Length; i++)
+                {
+                    char c = str[i];
+                    hash = ((hash << 5) + hash) + (uint)c;
+                }
+            }
+            return hash;
+        }
+
+        /// <summary>
         /// Gets the size of the file as a readable string.
         /// </summary>
         /// <param name="path">The path.</param>

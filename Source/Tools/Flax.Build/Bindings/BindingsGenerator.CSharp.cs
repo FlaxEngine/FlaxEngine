@@ -1047,10 +1047,10 @@ namespace Flax.Build.Bindings
 
         internal struct GuidInterop
         {
-            public int A;
-            public int B;
-            public int C;
-            public int D;
+            public uint A;
+            public uint B;
+            public uint C;
+            public uint D;
         }
 
         private static unsafe void GenerateCSharp(BuildData buildData, IGrouping<string, Module> binaryModule)
@@ -1061,10 +1061,10 @@ namespace Flax.Build.Bindings
 
             // Generate binary module ID
             GuidInterop idInterop;
-            idInterop.A = binaryModuleName.GetHashCode();
-            idInterop.B = project.Name.GetHashCode();
-            idInterop.C = project.Company.GetHashCode();
-            idInterop.D = project.Copyright.GetHashCode();
+            idInterop.A = Utilities.GetHashCode(binaryModuleName);
+            idInterop.B = Utilities.GetHashCode(project.Name);
+            idInterop.C = Utilities.GetHashCode(project.Company);
+            idInterop.D = Utilities.GetHashCode(project.Copyright);
             var id = *(Guid*)&idInterop;
 
             // Generate C# binary module information
