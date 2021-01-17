@@ -712,7 +712,9 @@ namespace FlaxEditor.Modules
             settings.Size = new Vector2(1300 * dpiScale, 900 * dpiScale);
             settings.StartPosition = WindowStartPosition.CenterScreen;
 
+#if PLATFORM_WINDOWS
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
+#endif
             {
                 settings.HasBorder = false;
                 settings.HasSizingFrame = false;

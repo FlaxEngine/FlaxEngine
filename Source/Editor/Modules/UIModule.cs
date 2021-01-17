@@ -296,7 +296,9 @@ namespace FlaxEditor.Modules
             InitDockPanel(mainWindow);
 
             // Add dummy control for drawing the main window borders if using a custom style
+#if PLATFORM_WINDOWS
             if (!Editor.Options.Options.Interface.UseNativeWindowSystem)
+#endif
             {
                 mainWindow.AddChild(new CustomWindowBorderControl
                 {

@@ -44,12 +44,16 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(10), Tooltip("Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.")]
         public float InterfaceScale { get; set; } = 1.0f;
 
+#if PLATFORM_WINDOWS
+
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
         public bool UseNativeWindowSystem { get; set; } = false;
+
+#endif
 
         /// <summary>
         /// Gets or sets a value indicating whether show selected camera preview in the editor window.

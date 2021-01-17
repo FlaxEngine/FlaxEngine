@@ -61,7 +61,9 @@ namespace FlaxEditor.GUI
         public MainMenu(RootControl mainWindow)
         : base(0, 0, 0, 20)
         {
+#if PLATFORM_WINDOWS
             _useCustomWindowSystem = !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
+#endif
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
 
