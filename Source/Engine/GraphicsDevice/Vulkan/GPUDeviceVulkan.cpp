@@ -1888,9 +1888,11 @@ void GPUDeviceVulkan::Dispose()
     SAFE_DELETE_GPU_RESOURCE(UniformBufferUploader);
     Delete(DescriptorPoolsManager);
     SAFE_DELETE(MainContext);
+    if (TransferQueue != GraphicsQueue && ComputeQueue != TransferQueue)
+        SAFE_DELETE(TransferQueue);
+    if (ComputeQueue != GraphicsQueue)
+        SAFE_DELETE(ComputeQueue);
     SAFE_DELETE(GraphicsQueue);
-    SAFE_DELETE(ComputeQueue);
-    SAFE_DELETE(TransferQueue);
     PresentQueue = nullptr;
     FenceManager.Dispose();
     DeferredDeletionQueue.ReleaseResources(true);
