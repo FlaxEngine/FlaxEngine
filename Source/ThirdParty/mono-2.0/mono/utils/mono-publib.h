@@ -11,9 +11,11 @@
  * directives where needed.
  */
 
-// Override Mono API linkage with FlaxEngine API
+// Override Mono API linkage with FlaxEngine API (for builds with static-linking)
 #include "FlaxEngine.Gen.h"
+#if !USE_MONO_DYNAMIC_LIB
 #define MONO_API_NO_EXTERN_C FLAXENGINE_API
+#endif
 
 #ifdef  __cplusplus
 #define MONO_BEGIN_DECLS  extern "C" {
