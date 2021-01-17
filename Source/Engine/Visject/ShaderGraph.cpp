@@ -387,7 +387,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
         Value v2 = tryGetValue(node->GetBox(1), Value::Zero).Cast(v1.Type);
         Value epsilon = tryGetValue(node->GetBox(2), 2, Value::Zero);
-        value = writeLocal(ValueType::Bool, String::Format(TEXT("(distance({0},{1}) < {2})"), v1.Value, v2.Value, epsilon.Value), node);
+        value = writeLocal(ValueType::Bool, String::Format(TEXT("distance({0},{1}) < {2}"), v1.Value, v2.Value, epsilon.Value), node);
         break;
     }
         // Degrees
