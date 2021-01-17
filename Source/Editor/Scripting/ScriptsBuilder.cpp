@@ -113,9 +113,9 @@ Action ScriptsBuilder::OnCompilationFailed;
 void ScriptsBuilderImpl::sourceDirEvent(const String& path, FileSystemAction action)
 {
     // Discard non-source files or generated files
-    if (!path.EndsWith(TEXT(".cs")) &&
+    if ((!path.EndsWith(TEXT(".cs")) &&
         !path.EndsWith(TEXT(".cpp")) &&
-        !path.EndsWith(TEXT(".h")) ||
+        !path.EndsWith(TEXT(".h"))) ||
         path.EndsWith(TEXT(".Gen.cs")))
         return;
 
@@ -344,8 +344,8 @@ void ScriptsBuilder::GetBinariesConfiguration(StringView& target, StringView& pl
 
 void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& platform, const Char*& architecture, const Char*& configuration)
 {
-    // Special case when opening engine project
     if (Editor::Project->ProjectFolderPath == Globals::StartupFolder)
+    // Special case when opening engine project
     {
         target = platform = architecture = configuration = nullptr;
         return;
@@ -354,12 +354,18 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
 
 #if PLATFORM_WINDOWS
     platform = TEXT("Windows");
+#elif PLATFORM_LINUX
+    platform = TEXT("Linux");
+#else
+#error "Unknown platform"
 #endif
 
 #if PLATFORM_ARCH_X64
     architecture = TEXT("x64");
 #elif PLATFORM_ARCH_X86
     architecture = TEXT("x86");
+#else
+#error "Unknown architecture"
 #endif
 
 #if BUILD_DEBUG
@@ -368,6 +374,8 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
     configuration = TEXT("Development");
 #elif BUILD_RELEASE
     configuration = TEXT("Release");
+#else
+#error "Unknown configuration"
 #endif
 }
 

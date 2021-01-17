@@ -361,7 +361,6 @@ bool MCore::LoadEngine()
         }
 
 #if MONO_DEBUG_ENABLE
-
         StringAnsi debuggerIp = "127.0.0.1";
         uint16 debuggerPort = 41000 + Platform::GetCurrentProcessId() % 1000;
         if (CommandLine::Options.DebuggerAddress.HasValue())
@@ -426,6 +425,10 @@ bool MCore::LoadEngine()
     // Hint to use default system assemblies location
     const MString assembliesPath = (Globals::MonoPath / TEXT("/lib/mono/2.1")).ToStringAnsi();
     mono_set_assemblies_path(*assembliesPath);
+#elif PLATFORM_LINUX
+    // Adjust GC threads suspending mode on Linux
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+#endif
 #endif
     mono_config_parse(nullptr);
 
@@ -459,7 +462,6 @@ bool MCore::LoadEngine()
 	configDir += "\\Mono";
 #endif
     mono_domain_set_config(monoRootDomain, configDir.Get(), configFilename.Get());
-
     mono_thread_set_main(mono_thread_current());
 
     // Register for threads ending to cleanup after managed runtime usage
@@ -556,7 +558,7 @@ void MCore::GC::WaitForPendingFinalizers()
     }
 }
 
-#if PLATFORM_WIN32
+#if PLATFORM_WIN32 && !USE_MONO_DYNAMIC_LIB
 
 // Export Mono functions
 #pragma comment(linker, "/export:mono_add_internal_call")
