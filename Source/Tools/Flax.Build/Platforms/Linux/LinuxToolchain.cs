@@ -52,6 +52,8 @@ namespace Flax.Build.Platforms
         {
             base.SetupLinkFilesArgs(graph, options, args, outputFilePath);
 
+            args.Add("-Wl,-rpath,\"\\$ORIGIN\"");
+
             // Speed up build
             //args.Add("-Wl,--as-needed");
             args.Add("-Wl,--hash-style=gnu");

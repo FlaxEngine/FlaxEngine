@@ -198,7 +198,8 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override void LogInfo()
         {
-            Log.Info("Toolset root: " + ToolsetRoot);
+            if (!string.IsNullOrEmpty(ToolsetRoot))
+                Log.Info("Toolset root: " + ToolsetRoot);
             Log.Info("Clang version: " + ClangVersion);
         }
 
@@ -449,7 +450,6 @@ namespace Flax.Build.Platforms
             var args = new List<string>();
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
-                //args.Add(string.Format("-rpath-link=\"{0}\"", Path.GetDirectoryName(outputFilePath).Replace('\\', '/')));
 
                 if (!options.LinkEnv.DebugInformation)
                 {
