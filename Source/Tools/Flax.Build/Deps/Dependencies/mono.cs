@@ -536,24 +536,30 @@ namespace Flax.Deps.Dependencies
                         { "CC", "clang-7" },
                         { "CXX", "clang++-7" }
                     };
-                    var binaries = new[]
+                    var monoOptions = new[]
                     {
-                        "lib/libmono-2.0.a",
+                        "--with-xen-opt=no",
+                        "--without-ikvm-native",
+                        //"--disable-executables",
+                        "--disable-boehm",
+                        "--disable-mcs-build",
+                        //"--enable-static",
                     };
                     var buildDir = Path.Combine(root, "build-linux");
 
                     SetupDirectory(buildDir, true);
                     var archName = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} --disable-boehm --disable-mcs-build --enable-static", archName, buildDir), null, root, Utilities.RunOptions.Default, envVars);
+                    Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root, Utilities.RunOptions.Default, envVars);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None, envVars);
                     Utilities.Run("make", "install", null, root, Utilities.RunOptions.None, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var binary in binaries)
-                    {
-                        var src = Path.Combine(buildDir, binary);
-                        var dst = Path.Combine(depsFolder, Path.GetFileName(binary));
-                        Utilities.FileCopy(src, dst);
-                    }
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", "libmonosgen-2.0.so.1.0.0"), Path.Combine(depsFolder, "libmonosgen-2.0.so.1.0.0"));
+                    var gameLibOutput = Path.Combine(options.PlatformsFolder, "Linux", "Binaries", "Mono", "lib");
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", "libMonoPosixHelper.so"), Path.Combine(gameLibOutput, "libMonoPosixHelper.so"));
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", "libmono-native.so"), Path.Combine(gameLibOutput, "libmono-native.so"));
+                    var editorLibOutput = Path.Combine(options.PlatformsFolder, "Editor", "Linux", "Mono", "lib");
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", "libMonoPosixHelper.so"), Path.Combine(editorLibOutput, "libMonoPosixHelper.so"));
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", "libmono-native.so"), Path.Combine(editorLibOutput, "libmono-native.so"));
                     break;
                 }
                 case TargetPlatform.PS4:

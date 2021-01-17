@@ -68,7 +68,11 @@ public class mono : DepsModule
             break;
         }
         case TargetPlatform.Linux:
-            options.OutputFiles.Add(Path.Combine(depsRoot, "libmono-2.0.a"));
+            options.PrivateDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1"));
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1.0.0"));
+            options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             break;
         case TargetPlatform.PS4:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmono.a"));
