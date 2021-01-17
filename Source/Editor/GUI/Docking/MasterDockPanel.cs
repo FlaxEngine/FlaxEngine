@@ -64,7 +64,7 @@ namespace FlaxEditor.GUI.Docking
             for (int i = 0; i < childPanels.Length; i++)
                 childPanels[i].Dispose();
 
-            // Delete reaming controls (except tabs proxy)
+            // Delete remaining controls (except tabs proxy)
             if (TabsProxy != null)
                 TabsProxy.Parent = null;
             DisposeChildren();

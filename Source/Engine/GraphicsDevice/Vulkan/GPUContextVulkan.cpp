@@ -1155,7 +1155,7 @@ void GPUContextVulkan::FlushState()
 
 void GPUContextVulkan::Flush()
 {
-    // Flush reaming and buffered commands
+    // Flush remaining and buffered commands
     FlushState();
     _currentState = nullptr;
 
