@@ -381,6 +381,15 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, TEXT("atan2"));
         break;
     }
+        // Near Equal
+    case 42:
+    {
+        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), Value::Zero).Cast(v1.Type);
+        Value epsilon = tryGetValue(node->GetBox(2), 2, Value::Zero);
+        value = writeLocal(ValueType::Bool, String::Format(TEXT("(distance({0},{1}) < {2})"), v1.Value, v2.Value, epsilon.Value), node);
+        break;
+    }
         // Degrees
     case 43:
     {
@@ -911,7 +920,7 @@ void ShaderGenerator::ProcessGroupComparisons(Box* box, Node* node, Value& value
         const Value condition = tryGetValue(node->GetBox(0), Value::False).AsBool();
         const Value onTrue = tryGetValue(node->GetBox(2), 1, Value::Zero);
         const Value onFalse = tryGetValue(node->GetBox(1), 0, Value::Zero).Cast(onTrue.Type);
-        value = writeLocal(onTrue.Type, String::Format(TEXT("({0}) ? ({1}) : ({2})"), condition.Value, onTrue.Value, onFalse.Value), node);
+        value = writeLocal(onTrue.Type, String::Format(TEXT("{0} ? {1} : {2}"), condition.Value, onTrue.Value, onFalse.Value), node);
         break;
     }
     }
