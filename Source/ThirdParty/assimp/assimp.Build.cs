@@ -32,6 +32,9 @@ public class assimp : DepsModule
             options.DelayLoadLibraries.Add("assimp-vc140-md.dll");
             break;
         case TargetPlatform.Linux:
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libassimp.so"));
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libassimp.so.4"));
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libassimp.so.4.1.0"));
             options.Libraries.Add(Path.Combine(depsRoot, "libassimp.so"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
