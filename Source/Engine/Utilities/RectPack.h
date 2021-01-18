@@ -25,7 +25,7 @@ struct RectPack
     SizeType Width;
     SizeType Height;
 
-    // The reaming space amount inside this slot (updated on every insertion, initial it equal to width*height).
+    // The remaining space amount inside this slot (updated on every insertion, initial it equal to width*height).
     SizeType SpaceLeft;
 
     // True, if slot has been allocated, otherwise it's free.

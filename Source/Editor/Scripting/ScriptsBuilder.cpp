@@ -567,7 +567,7 @@ bool ScriptsBuilderService::Init()
         LOG(Warning, "Missing EditorTarget property in opened project, using deducted target name {0}", Editor::Project->EditorTarget);
     }
 
-    // Remove any reaming files from previous Editor run hot-reloads
+    // Remove any remaining files from previous Editor run hot-reloads
     const Char *target, *platform, *architecture, *configuration;
     ScriptsBuilder::GetBinariesConfiguration(target, platform, architecture, configuration);
     if (target)

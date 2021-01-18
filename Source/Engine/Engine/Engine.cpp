@@ -463,7 +463,7 @@ void Engine::OnExit()
 
     LOG_FLUSH();
 
-    // Kill all reaming threads
+    // Kill all remaining threads
     ThreadRegistry::KillEmAll();
 
     // Cleanup

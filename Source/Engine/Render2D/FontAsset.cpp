@@ -55,7 +55,7 @@ void FontAsset::unload(bool isReloading)
     // Ensure to cleanup child font objects
     if (_fonts.HasItems())
     {
-        LOG(Warning, "Font asset {0} is unloading but has {1} reaming font objects created", ToString(), _fonts.Count());
+        LOG(Warning, "Font asset {0} is unloading but has {1} remaining font objects created", ToString(), _fonts.Count());
         for (auto font : _fonts)
         {
             font->_asset = nullptr;

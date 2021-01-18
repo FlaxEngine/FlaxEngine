@@ -8,7 +8,7 @@
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include "Engine/Platform/Windows/ComPtr.h"
 
-// Helper define to dispose the COM object with reaming references counter checking
+// Helper define to dispose the COM object with remaining references counter checking
 #define DX_SAFE_RELEASE_CHECK(x, refs) if(x) { auto res = (x)->Release(); (x) = nullptr; CHECK(res == refs); }
 
 #endif
