@@ -132,8 +132,10 @@ void BoxVolume::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
+    const auto prevBounds = _box;
     OrientedBoundingBox::CreateCentered(Vector3::Zero, _size, _bounds);
     _bounds.Transform(_transform.GetWorld());
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
+    OnBoundsChanged(prevBounds);
 }
