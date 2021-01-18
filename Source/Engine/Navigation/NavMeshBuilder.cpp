@@ -590,18 +590,31 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
 
         ScopeLock lock(runtime->Locker);
 
-        // Add tile data
         navMesh->IsDataDirty = true;
-        auto& tile = navMesh->Data.Tiles.AddOne();
-        tile.PosX = x;
-        tile.PosY = y;
-        tile.Layer = layer;
+        NavMeshTileData* tile = nullptr;
+        for (int32 i = 0; i < navMesh->Data.Tiles.Count(); i++)
+        {
+            auto& e = navMesh->Data.Tiles[i];
+            if (e.PosX == x && e.PosY == y && e.Layer == layer)
+            {
+                tile = &e;
+                break;
+            }
+        }
+        if (!tile)
+        {
+            // Add new tile
+            tile = &navMesh->Data.Tiles.AddOne();
+            tile->PosX = x;
+            tile->PosY = y;
+            tile->Layer = layer;
+        }
 
-        // Copy data
-        tile.Data.Copy(navData, navDataSize);
+        // Copy data to the tile
+        tile->Data.Copy(navData, navDataSize);
 
         // Add tile to navmesh
-        runtime->AddTile(navMesh, tile);
+        runtime->AddTile(navMesh, *tile);
     }
 
     dtFree(navData);
