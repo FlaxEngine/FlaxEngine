@@ -116,7 +116,7 @@ namespace FlaxEditor.CustomEditors.Editors
             // Try get CollectionAttribute for collection editor meta
             var attributes = Values.GetAttributes();
             Type overrideEditorType = null;
-            float spacing = 0.0f;
+            float spacing = 10.0f;
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
