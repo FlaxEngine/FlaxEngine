@@ -133,6 +133,11 @@ bool NavAgentMask::operator==(const NavAgentMask& other) const
     return Mask == other.Mask;
 }
 
+bool NavAreaProperties::operator==(const NavAreaProperties& other) const
+{
+    return Name == other.Name && Id == other.Id && Math::NearEqual(Cost, other.Cost);
+}
+
 bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 {
     return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent;

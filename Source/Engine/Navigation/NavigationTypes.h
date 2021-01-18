@@ -137,3 +137,43 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
     /// </summary>
     API_FIELD() Vector3 Normal;
 };
+
+/// <summary>
+/// The navigation area properties container for navmesh building and navigation runtime.
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API NavAreaProperties : ISerializable
+{
+API_AUTO_SERIALIZATION();
+DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
+
+    /// <summary>
+    /// The area type name. Identifies different types of the areas.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0)")
+    String Name;
+
+    /// <summary>
+    /// The area type color (for debugging). Alpha channel is used to blend with navmesh color (alpha 0 to use navmesh color only).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10)")
+    Color Color = Color::Red;
+
+    /// <summary>
+    /// The area id. It must be unique for the project. Valid range 0-63. Value 0 is reserved for Null areas (empty, non-navigable areas).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(20), Limit(0, 63)")
+    byte Id = 1;
+
+    /// <summary>
+    /// The cost scale for the area traversal for agents. The higher the cost, the less likely agent wil choose the path that goes over it. For instance, areas that are harder to move like sand should have higher cost for proper path finding.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(30), Limit(0, 100000, 0.1f)")
+    float Cost = 1;
+
+    bool operator==(const NavAreaProperties& other) const;
+
+    bool operator!=(const NavAreaProperties& other) const
+    {
+        return !operator==(other);
+    }
+};
