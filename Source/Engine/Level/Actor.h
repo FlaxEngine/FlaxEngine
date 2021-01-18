@@ -368,6 +368,14 @@ public:
     API_PROPERTY() virtual void SetStaticFlags(StaticFlags value);
 
     /// <summary>
+    /// Returns true if object has given flag(s) set.
+    /// </summary>
+    FORCE_INLINE bool HasStaticFlag(StaticFlags flag) const
+    {
+        return (_staticFlags & flag) == (int)flag;
+    }
+
+    /// <summary>
     /// Adds the actor static flags.
     /// </summary>
     /// <param name="flags">The flags to add.</param>
