@@ -41,8 +41,8 @@ public:
 protected:
 
     // [BoxVolume]
-#if USE_EDITOR
     void OnBoundsChanged(const BoundingBox& prevBounds) override;
+#if USE_EDITOR
     Color GetWiresColor() override;
 #endif
 };
