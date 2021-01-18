@@ -110,6 +110,9 @@ const Char* SplashScreenQuotes[] =
     TEXT("You have my bow.\nAnd my axe!"),
     TEXT("To the bridge of Khazad-dum."),
     TEXT("One ring to rule them all.\nOne ring to find them."),
+    TEXT("Ladies and gentelman, we got him"),
+    TEXT("Cyberpunk of game engines"),
+    TEXT("That's what she said"),
 };
 
 SplashScreen::~SplashScreen()
