@@ -339,7 +339,7 @@ public:
     /// <summary>
     /// Returns true if object is fully static on the scene, otherwise false.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsStatic() const
+    FORCE_INLINE bool IsStatic() const
     {
         return _staticFlags == StaticFlags::FullyStatic;
     }
@@ -347,7 +347,7 @@ public:
     /// <summary>
     /// Returns true if object has static transform.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsTransformStatic() const
+    FORCE_INLINE bool IsTransformStatic() const
     {
         return (_staticFlags & StaticFlags::Transform) != 0;
     }
@@ -379,7 +379,7 @@ public:
     /// Adds the actor static flags.
     /// </summary>
     /// <param name="flags">The flags to add.</param>
-    API_FUNCTION() FORCE_INLINE void AddStaticFlags(StaticFlags flags)
+    FORCE_INLINE void AddStaticFlags(StaticFlags flags)
     {
         SetStaticFlags(_staticFlags | flags);
     }
@@ -388,7 +388,7 @@ public:
     /// Removes the actor static flags.
     /// </summary>
     /// <param name="flags">The flags to remove.</param>
-    API_FUNCTION() FORCE_INLINE void RemoveStaticFlags(StaticFlags flags)
+    FORCE_INLINE void RemoveStaticFlags(StaticFlags flags)
     {
         SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flags));
     }
@@ -398,7 +398,7 @@ public:
     /// </summary>
     /// <param name="flag">The flag to change.</param>
     /// <param name="value">The target value of the flag.</param>
-    API_FUNCTION() FORCE_INLINE void SetStaticFlag(StaticFlags flag, bool value)
+    FORCE_INLINE void SetStaticFlag(StaticFlags flag, bool value)
     {
         SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flag) | (value ? flag : StaticFlags::None));
     }
