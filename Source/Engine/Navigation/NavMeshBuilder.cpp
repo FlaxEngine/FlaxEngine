@@ -59,6 +59,7 @@ struct OffMeshLink
 struct Modifier
 {
     BoundingBox Bounds;
+    NavAreaProperties* NavArea;
 };
 
 struct NavigationSceneRasterization
@@ -300,6 +301,7 @@ struct NavigationSceneRasterization
                 OrientedBoundingBox bounds = navModifierVolume->GetOrientedBox();
                 bounds.Transform(e.WorldToNavMesh);
                 bounds.GetBoundingBox(modifier.Bounds);
+                modifier.NavArea = navModifierVolume->GetNavArea();
 
                 e.Modifiers->Add(modifier);
             }
@@ -443,7 +445,8 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     // Mark areas
     for (auto& modifier : modifiers)
     {
-        rcMarkBoxArea(&context, &modifier.Bounds.Minimum.X, &modifier.Bounds.Maximum.X, RC_NULL_AREA, *compactHeightfield);
+        const unsigned char areaId = modifier.NavArea ? modifier.NavArea->Id : RC_NULL_AREA;
+        rcMarkBoxArea(&context, &modifier.Bounds.Minimum.X, &modifier.Bounds.Maximum.X, areaId, *compactHeightfield);
     }
 
     if (!rcBuildDistanceField(&context, *compactHeightfield))
@@ -564,7 +567,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
             offMeshArea[i] = RC_WALKABLE_AREA;
             offMeshFlags[i] = 1;
 
-            // TODO: support navigation areas, navigation area type for off mesh links
+            // TODO: support navigation area type for off mesh links
         }
 
         params.offMeshConCount = linksCount;
@@ -883,6 +886,27 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
 void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild)
 {
     auto settings = NavigationSettings::Get();
+
+    // Validate nav areas ids to be unique and in valid range
+    for (int32 i = 0; i < settings->NavAreas.Count(); i++)
+    {
+        auto& a = settings->NavAreas[i];
+        if (a.Id > RC_WALKABLE_AREA)
+        {
+            LOG(Error, "Nav Area {0} uses invalid Id. Valid values are in range 0-63 only.", a.Name);
+            return;
+        }
+
+        for (int32 j = i + 1; j < settings->NavAreas.Count(); j++)
+        {
+            auto& b = settings->NavAreas[j];
+            if (a.Id == b.Id)
+            {
+                LOG(Error, "Nav Area {0} uses the same Id={1} as Nav Area {2}. Each area hast to have unique Id.", a.Name, a.Id, b.Name);
+                return;
+            }
+        }
+    }
 
     // Sync navmeshes
     for (auto& navMeshProperties : settings->NavMeshes)

@@ -41,6 +41,12 @@ public:
     // Gets the navigation mesh runtime for a given navmesh properties.
     static NavMeshRuntime* Get(const NavMeshProperties& navMeshProperties, bool createIfMissing = false);
 
+    // The lookup table that maps areaId of the navmesh to the current properties (applied by the NavigationSettings). Cached to improve runtime performance.
+    static float NavAreasCosts[64];
+#if COMPILE_WITH_DEBUG_DRAW
+    static Color NavAreasColors[64];
+#endif
+
 private:
 
     dtNavMesh* _navMesh;

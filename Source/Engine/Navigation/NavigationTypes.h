@@ -156,18 +156,18 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
     /// The area type color (for debugging). Alpha channel is used to blend with navmesh color (alpha 0 to use navmesh color only).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10)")
-    Color Color = Color::Red;
+    Color Color = Color::Transparent;
 
     /// <summary>
     /// The area id. It must be unique for the project. Valid range 0-63. Value 0 is reserved for Null areas (empty, non-navigable areas).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 63)")
-    byte Id = 1;
+    byte Id;
 
     /// <summary>
     /// The cost scale for the area traversal for agents. The higher the cost, the less likely agent wil choose the path that goes over it. For instance, areas that are harder to move like sand should have higher cost for proper path finding.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(0, 100000, 0.1f)")
+    API_FIELD(Attributes="EditorOrder(30), Limit(0, float.MaxValue, 0.1f)")
     float Cost = 1;
 
     bool operator==(const NavAreaProperties& other) const;

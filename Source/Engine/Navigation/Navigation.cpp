@@ -92,6 +92,12 @@ NavMeshRuntime* NavMeshRuntime::Get(const NavMeshProperties& navMeshProperties, 
     return result;
 }
 
+static_assert(ARRAY_COUNT(NavMeshRuntime::NavAreasCosts) == DT_MAX_AREAS, "Invalid nav areas amount limit.");
+float NavMeshRuntime::NavAreasCosts[64];
+#if COMPILE_WITH_DEBUG_DRAW
+Color NavMeshRuntime::NavAreasColors[64];
+#endif
+
 bool NavAgentProperties::operator==(const NavAgentProperties& other) const
 {
     return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle);
@@ -176,12 +182,41 @@ void* rcAllocDefault(size_t size, rcAllocHint)
 
 NavigationSettings::NavigationSettings()
 {
+    // Init navmeshes
     NavMeshes.Resize(1);
     auto& navMesh = NavMeshes[0];
     navMesh.Name = TEXT("Default");
+
+    // Init nav areas
+    NavAreas.Resize(2);
+    auto& areaNull = NavAreas[0];
+    areaNull.Name = TEXT("Null");
+    areaNull.Color = Color::Transparent;
+    areaNull.Id = 0;
+    areaNull.Cost = MAX_float;
+    auto& areaWalkable = NavAreas[1];
+    areaWalkable.Name = TEXT("Walkable");
+    areaWalkable.Color = Color::Transparent;
+    areaWalkable.Id = 63;
+    areaWalkable.Cost = 1;
 }
 
 IMPLEMENT_SETTINGS_GETTER(NavigationSettings, Navigation);
+
+void NavigationSettings::Apply()
+{
+    // Cache areas properties
+    for (auto& area : NavAreas)
+    {
+        if (area.Id < DT_MAX_AREAS)
+        {
+            NavMeshRuntime::NavAreasCosts[area.Id] = area.Cost;
+#if USE_EDITOR
+            NavMeshRuntime::NavAreasColors[area.Id] = area.Color;
+#endif
+        }
+    }
+}
 
 void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
@@ -219,6 +254,7 @@ void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifi
         navMesh.Agent.StepHeight = WalkableMaxClimb;
         navMesh.Agent.MaxSlopeAngle = WalkableMaxSlopeAngle;
     }
+    DESERIALIZE(NavAreas);
 }
 
 bool NavigationService::Init()

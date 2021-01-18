@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "NavMeshRuntime.h"
+#include "NavigationSettings.h"
 #include "NavMesh.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Matrix.h"
@@ -17,6 +18,14 @@
 
 #define DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL 50.0f
 #define DEFAULT_NAV_QUERY_EXTENT_VERTICAL 250.0f
+
+namespace
+{
+    FORCE_INLINE void InitFilter(dtQueryFilter& filter)
+    {
+        Platform::MemoryCopy(filter.m_areaCost, NavMeshRuntime::NavAreasCosts, sizeof(NavMeshRuntime::NavAreasCosts));
+    }
+}
 
 NavMeshRuntime::NavMeshRuntime(const NavMeshProperties& properties)
     : Properties(properties)
@@ -48,6 +57,7 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
     }
 
     dtQueryFilter filter;
+    InitFilter(filter);
     Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
 
     Vector3 startPositionNavMesh;
@@ -85,6 +95,7 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
     }
 
     dtQueryFilter filter;
+    InitFilter(filter);
     Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
@@ -153,6 +164,7 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
     }
 
     dtQueryFilter filter;
+    InitFilter(filter);
     Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
@@ -199,6 +211,7 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
     }
 
     dtQueryFilter filter;
+    InitFilter(filter);
     Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
 
     Vector3 pointNavMesh;
@@ -229,6 +242,7 @@ bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPos
     }
 
     dtQueryFilter filter;
+    InitFilter(filter);
     Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
@@ -513,7 +527,8 @@ void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMes
 {
     const unsigned int ip = (unsigned int)(&poly - tile.polys);
     const dtPolyDetail& pd = tile.detailMeshes[ip];
-    const Color color = navMesh->Properties.Color;
+    const Color& areaColor = NavMeshRuntime::NavAreasColors[poly.getArea()];
+    const Color color = Color::Lerp(navMesh->Properties.Color, areaColor, areaColor.A);
     const float drawOffsetY = 10.0f + ((float)GetHash(color) / (float)MAX_uint32) * 10.0f; // Apply some offset to prevent Z-fighting for different navmeshes
     const Color fillColor = color * 0.5f;
     const Color edgesColor = Color::FromHSV(color.ToHSV() + Vector3(20.0f, 0, -0.1f), color.A);

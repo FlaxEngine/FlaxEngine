@@ -16,8 +16,21 @@ public:
     /// <summary>
     /// The agent types used by this navmesh modifier volume (from navigation settings). Can be used to adjust navmesh for a certain set of agents.
     /// </summary>
-    API_FIELD(Attributes="EditorDisplay(\"Box Volume\"), EditorOrder(10)")
+    API_FIELD(Attributes="EditorDisplay(\"Navigation\"), EditorOrder(10)")
     NavAgentMask AgentsMask;
+
+    /// <summary>
+    /// The name of the nav area to apply within the modifiers volume. Nav area properties are picked from the Navigation Settings asset.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Navigation\"), EditorOrder(20)")
+    String AreaName;
+
+public:
+
+    /// <summary>
+    /// Gets the properties of the nav area used by this volume. Null if missing or invalid area name.
+    /// </summary>
+    NavAreaProperties* GetNavArea() const;
 
 public:
 

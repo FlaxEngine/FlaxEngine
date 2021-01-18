@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "NavModifierVolume.h"
+#include "NavigationSettings.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
@@ -15,6 +16,17 @@ NavModifierVolume::NavModifierVolume(const SpawnParams& params)
     _size = 100.0f;
 }
 
+NavAreaProperties* NavModifierVolume::GetNavArea() const
+{
+    auto settings = NavigationSettings::Get();
+    for (auto& navArea : settings->NavAreas)
+    {
+        if (navArea.Name == AreaName)
+            return &navArea;
+    }
+    return nullptr;
+}
+
 void NavModifierVolume::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -23,6 +35,7 @@ void NavModifierVolume::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(NavModifierVolume);
 
     SERIALIZE_MEMBER(AgentsMask, AgentsMask.Mask);
+    SERIALIZE(AreaName);
 }
 
 void NavModifierVolume::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -31,6 +44,7 @@ void NavModifierVolume::Deserialize(DeserializeStream& stream, ISerializeModifie
     BoxVolume::Deserialize(stream, modifier);
 
     DESERIALIZE_MEMBER(AgentsMask, AgentsMask.Mask);
+    DESERIALIZE(AreaName);
 }
 
 #if USE_EDITOR

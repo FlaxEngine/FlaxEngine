@@ -9,7 +9,7 @@
 /// <summary>
 /// The navigation system settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API NavigationSettings : public SettingsBase
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API NavigationSettings : public SettingsBase
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NavigationSettings);
 public:
@@ -87,8 +87,14 @@ public:
     /// <summary>
     /// The configuration for navmeshes.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Agents\")")
+    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Agents\", EditorDisplayAttribute.InlineStyle)")
     Array<NavMeshProperties> NavMeshes;
+
+    /// <summary>
+    /// The configuration for nav areas.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Areas\", EditorDisplayAttribute.InlineStyle)")
+    Array<NavAreaProperties> NavAreas;
 
 public:
 
@@ -100,5 +106,6 @@ public:
     static NavigationSettings* Get();
 
     // [SettingsBase]
+    void Apply() override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };
