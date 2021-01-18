@@ -429,7 +429,6 @@ bool MCore::LoadEngine()
     // Adjust GC threads suspending mode on Linux
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
 #endif
-#endif
     mono_config_parse(nullptr);
 
 #if USE_MONO_PROFILER
