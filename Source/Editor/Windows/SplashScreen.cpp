@@ -113,6 +113,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("Ladies and gentelman, we got him"),
     TEXT("Cyberpunk of game engines"),
     TEXT("That's what she said"),
+    TEXT("Compiling Shaders (93,788)"),
+    TEXT("Hi There"),
 };
 
 SplashScreen::~SplashScreen()
