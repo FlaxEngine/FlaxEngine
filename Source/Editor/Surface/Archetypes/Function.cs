@@ -1387,12 +1387,22 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            /// <summary>
+            /// The cached signature. This might not be loaded if called from other not initialization (eg. node initialized before this function node). Then use GetSignature method.
+            /// </summary>
             internal Signature _signature;
 
             /// <inheritdoc />
             public VisualScriptFunctionNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
+            }
+
+            public void GetSignature(out Signature signature)
+            {
+                if (_signature.Node == null)
+                    LoadSignature();
+                signature = _signature;
             }
 
             private void SaveSignature()
@@ -1568,6 +1578,13 @@ namespace FlaxEditor.Surface.Archetypes
 
                     // Update node interface
                     UpdateUI();
+
+                    // Send event
+                    for (int i = 0; i < Surface.Nodes.Count; i++)
+                    {
+                        if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                            node.OnFunctionEdited(this);
+                    }
                 };
                 editor.Show(this, Vector2.Zero);
             }
@@ -1622,6 +1639,13 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnLoaded();
 
                 LoadSignature();
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionCreated(this);
+                }
             }
 
             /// <inheritdoc />
@@ -1639,6 +1663,26 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Start editing
                 OnEditSignature();
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionCreated(this);
+                }
+            }
+
+            /// <inheritdoc />
+            public override void OnDeleted()
+            {
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionDeleted(this);
+                }
+
+                base.OnDeleted();
             }
 
             /// <inheritdoc />
@@ -1647,6 +1691,13 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
 
                 LoadSignature();
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionEdited(this);
+                }
             }
 
             /// <inheritdoc />
@@ -1752,7 +1803,6 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private bool _isTypesChangedEventRegistered;
 
-            /// <inheritdoc />
             public SetFieldNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
