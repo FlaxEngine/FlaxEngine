@@ -228,7 +228,10 @@ namespace FlaxEngine
             }
         }
 
-        private UICanvas()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UICanvas"/> class.
+        /// </summary>
+        public UICanvas()
         {
             _guiRoot = new CanvasRootControl(this);
             _guiRoot.IsLayoutLocked = false;
