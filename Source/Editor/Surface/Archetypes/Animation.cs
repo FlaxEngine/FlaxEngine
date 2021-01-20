@@ -764,8 +764,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Length", typeof(float), 0),
                     NodeElementArchetype.Factory.Output(1, "Time", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(2, "Normalized Time", typeof(float), 2),
-                    NodeElementArchetype.Factory.Output(3, "Reaming Time", typeof(float), 3),
-                    NodeElementArchetype.Factory.Output(4, "Reaming Normalized Time", typeof(float), 4),
+                    NodeElementArchetype.Factory.Output(3, "Remaining Time", typeof(float), 3),
+                    NodeElementArchetype.Factory.Output(4, "Remaining Normalized Time", typeof(float), 4),
                 }
             },
             new NodeArchetype
