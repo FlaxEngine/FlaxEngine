@@ -285,7 +285,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     PROFILE_GPU_CPU("Motion Blur");
 
     // Setup shader inputs
-    const int32 maxBlurSize = (int32)((float)motionVectorsHeight * 0.05f);
+    const int32 maxBlurSize = Math::Max((int32)((float)motionVectorsHeight * 0.05f), 1);
     const int32 tileSize = Math::AlignUp(maxBlurSize, 8);
     const float timeScale = renderContext.Task->View.IsOfflinePass ? 1.0f : 1.0f / Time::Draw.UnscaledDeltaTime.GetTotalSeconds() / 60.0f; // 60fps as a reference
     Data data;
