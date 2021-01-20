@@ -41,6 +41,28 @@ void CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2
     }
 }
 
+Vector3 CollisionsHelper::ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1)
+{
+    const Vector3 p = point - p0;
+    Vector3 n = p1 - p0;
+    const float length = n.Length();
+    if (length < 1e-10)
+    {
+        return p0;
+    }
+    n /= length;
+    const float dot = Vector3::Dot(n, p);
+    if (dot <= 0.0)
+    {
+        return p0;
+    }
+    else if (dot >= length)
+    {
+        return p1;
+    }
+    return p0 + n * dot;
+}
+
 void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Vector3& result)
 {
     // Source: Real-Time Collision Detection by Christer Ericson

@@ -73,6 +73,15 @@ public:
     static void ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1, Vector2& result);
 
     /// <summary>
+    /// Determines the closest point between a point and a line.
+    /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <param name="p0">The line first point.</param>
+    /// <param name="p1">The line second point.</param>
+    /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
+    static Vector3 ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1);
+
+    /// <summary>
     /// Determines the closest point between a point and a triangle.
     /// </summary>
     /// <param name="point">The point to test.</param>
