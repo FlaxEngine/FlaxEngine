@@ -644,7 +644,10 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
     if (tileRef)
     {
         // Remove any existing tile at that location
-        _navMesh->removeTile(tileRef, nullptr, nullptr);
+        if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
+        {
+            LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
+        }
 
         // Reuse tile data container
         for (int32 i = 0; i < _tiles.Count(); i++)
@@ -657,12 +660,11 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
             }
         }
     }
-    else
+    if (!tile)
     {
         // Add tile
         tile = &_tiles.AddOne();
     }
-    ASSERT(tile);
 
     // Copy tile properties
     tile->NavMesh = navMesh;

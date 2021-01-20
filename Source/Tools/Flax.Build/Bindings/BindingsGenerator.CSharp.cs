@@ -402,7 +402,7 @@ namespace Flax.Build.Bindings
                 return false;
 
             // Value constructors (eg. Vector2(1, 2))
-            // TODO: support value constructores for default value attribute
+            // TODO: support value constructors for default value attribute
             if (value.Contains('(') && value.Contains(')'))
                 return false;
 
@@ -1096,7 +1096,7 @@ namespace Flax.Build.Bindings
             Utilities.WriteFileIfChanged(bindings.GeneratedCSharpFilePath, contents.ToString());
 
             // Ensure that generated file is included into build
-            if (useBindings && moduleBuildInfo != null && !moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
+            if (!moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
             {
                 moduleBuildInfo.SourceFiles.Add(bindings.GeneratedCSharpFilePath);
             }
