@@ -185,9 +185,9 @@ namespace FlaxEditor.Surface
             var rightWidth = 40.0f;
             var boxLabelFont = Style.Current.FontSmall;
             var titleLabelFont = Style.Current.FontLarge;
-            for (int i = 0; i < Elements.Count; i++)
+            for (int i = 0; i < Children.Count; i++)
             {
-                if (Elements[i] is InputBox inputBox)
+                if (Children[i] is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
@@ -195,15 +195,23 @@ namespace FlaxEditor.Surface
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
                     leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Elements[i] is OutputBox outputBox)
+                else if (Children[i] is OutputBox outputBox)
                 {
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Elements[i] is Control control)
+                else if (Children[i] is Control control)
                 {
-                    width = Mathf.Max(width, control.Width + 10);
-                    height = Mathf.Max(height, control.Height + 10);
+                    if (control.AnchorPreset == AnchorPresets.TopLeft)
+                    {
+                        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
+                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
+                    }
+                    else
+                    {
+                        width = Mathf.Max(width, control.Width + 4);
+                        height = Mathf.Max(height, control.Height + 4);
+                    }
                 }
             }
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
