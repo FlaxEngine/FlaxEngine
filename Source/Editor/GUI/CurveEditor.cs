@@ -16,6 +16,7 @@ namespace FlaxEditor.GUI
     /// <summary>
     /// The base class for <see cref="CurveBase{T}"/> editors. Allows to use generic curve editor without type information at compile-time.
     /// </summary>
+    [HideInEditor]
     public abstract class CurveEditorBase : ContainerControl
     {
         /// <summary>

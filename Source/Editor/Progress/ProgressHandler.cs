@@ -8,6 +8,7 @@ namespace FlaxEditor.Progress
     /// <summary>
     /// Base class for all editor handlers used to report actions progress to the user.
     /// </summary>
+    [HideInEditor]
     public abstract class ProgressHandler
     {
         /// <summary>
