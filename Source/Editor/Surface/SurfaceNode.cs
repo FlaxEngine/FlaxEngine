@@ -1010,7 +1010,7 @@ namespace FlaxEditor.Surface
             }
 
             // Secondary Context Menu
-            if (button == MouseButton.Right && false)
+            if (button == MouseButton.Right)
             {
                 if (!IsSelected)
                     Surface.Select(this);
