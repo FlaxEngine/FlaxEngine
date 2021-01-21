@@ -29,7 +29,6 @@ MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const MAssembl
     , _isDependency(false)
     , _isFileLocked(false)
     , _hasCachedClasses(false)
-    , _classes(options.DictionaryInitialSize)
     , _reloadCount(0)
     , _name(name)
     , _options(options)
@@ -342,6 +341,8 @@ void MAssembly::OnLoading()
     Loading(this);
 
     _isLoading = true;
+    if (_classes.Capacity() == 0)
+        _classes.EnsureCapacity(_options.DictionaryInitialSize);
 
     // Pick a domain
     if (_domain == nullptr)
