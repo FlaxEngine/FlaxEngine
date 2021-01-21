@@ -139,6 +139,11 @@ namespace FlaxEditor.Scripting
         public bool IsMethod => _managed is MethodInfo || (_custom?.IsMethod ?? false);
 
         /// <summary>
+        /// Gets a value indicating whether this member is an event.
+        /// </summary>
+        public bool IsEvent => _managed is EventInfo || (_custom?.IsEvent ?? false);
+
+        /// <summary>
         /// Gets a value indicating whether this member value can be gathered (via getter method or directly from the field).
         /// </summary>
         public bool HasGet
@@ -383,7 +388,7 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
-        /// Gets the method parameters metadata.
+        /// Gets the method parameters metadata (or event delegate signature parameters).
         /// </summary>
         public Parameter[] GetParameters()
         {
@@ -415,6 +420,11 @@ namespace FlaxEditor.Scripting
                     result[i] = p;
                 }
                 return result;
+            }
+            if (_managed is EventInfo eventInfo)
+            {
+                var invokeMethod = eventInfo.EventHandlerType.GetMethod("Invoke");
+                return new ScriptMemberInfo(invokeMethod).GetParameters();
             }
             return _custom.GetParameters();
         }
@@ -633,6 +643,11 @@ namespace FlaxEditor.Scripting
         /// A <see cref="ScriptType" /> that is null (invalid).
         /// </summary>
         public static readonly ScriptType Null;
+
+        /// <summary>
+        /// A <see cref="ScriptType" /> that is System.Void.
+        /// </summary>
+        public static readonly ScriptType Void = new ScriptType(typeof(void));
 
         /// <summary>
         /// Gets the type of the script as <see cref="System.Type"/>.
@@ -1464,6 +1479,11 @@ namespace FlaxEditor.Scripting
         bool IsMethod { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this member is an event.
+        /// </summary>
+        bool IsEvent { get; }
+
+        /// <summary>
         /// Gets a value indicating whether this member value can be gathered (via getter method or directly from the field).
         /// </summary>
         bool HasGet { get; }
@@ -1504,7 +1524,7 @@ namespace FlaxEditor.Scripting
         object[] GetAttributes(bool inherit);
 
         /// <summary>
-        /// Gets the method parameters metadata.
+        /// Gets the method parameters metadata (or event delegate signature parameters).
         /// </summary>
         ScriptMemberInfo.Parameter[] GetParameters();
 
