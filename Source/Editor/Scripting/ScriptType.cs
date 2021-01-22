@@ -53,6 +53,8 @@ namespace FlaxEditor.Scripting
                     return fieldInfo.IsPublic;
                 if (_managed is PropertyInfo propertyInfo)
                     return (propertyInfo.GetMethod == null || propertyInfo.GetMethod.IsPublic) && (propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsPublic);
+                if (_managed is EventInfo eventInfo)
+                    return eventInfo.GetAddMethod().IsPublic;
                 if (_custom != null)
                     return _custom.IsPublic;
                 return false;
@@ -72,6 +74,8 @@ namespace FlaxEditor.Scripting
                     return fieldInfo.IsStatic;
                 if (_managed is PropertyInfo propertyInfo)
                     return (propertyInfo.GetMethod == null || propertyInfo.GetMethod.IsStatic) && (propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic);
+                if (_managed is EventInfo eventInfo)
+                    return eventInfo.GetAddMethod().IsStatic;
                 if (_custom != null)
                     return _custom.IsStatic;
                 return false;
@@ -178,7 +182,7 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
-        /// Gets the method parameters count (valid for methods only).
+        /// Gets the method parameters count (valid for methods and events only).
         /// </summary>
         public int ParametersCount
         {
@@ -186,6 +190,8 @@ namespace FlaxEditor.Scripting
             {
                 if (_managed is MethodInfo methodInfo)
                     return methodInfo.GetParameters().Length;
+                if (_managed is EventInfo eventInfo)
+                    return eventInfo.EventHandlerType.GetMethod("Invoke").GetParameters().Length;
                 if (_custom != null)
                     return _custom.ParametersCount;
                 return 0;

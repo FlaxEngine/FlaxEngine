@@ -1091,19 +1091,19 @@ namespace Flax.Build.Bindings
             {
                 if (!useScripting)
                     continue;
-                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
+                var paramsCount = eventInfo.Type.GenericArgs.Count;
 
                 // C# event invoking wrapper (calls C# event from C++ delegate)
+                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
                 contents.Append("    ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
                 contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name);
-                for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                for (var i = 0; i < paramsCount; i++)
                 {
                     if (i != 0)
                         contents.Append(", ");
-                    contents.Append(eventInfo.Type.GenericArgs[i]);
-                    contents.Append(" arg" + i);
+                    contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
                 }
                 contents.Append(')').AppendLine();
                 contents.Append("    {").AppendLine();
@@ -1112,11 +1112,11 @@ namespace Flax.Build.Bindings
                 contents.AppendFormat("            mmethod = {1}::GetStaticClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, eventInfo.Type.GenericArgs.Count).AppendLine();
                 contents.Append("        CHECK(mmethod);").AppendLine();
                 contents.Append("        MonoObject* exception = nullptr;").AppendLine();
-                if (eventInfo.Type.GenericArgs.Count == 0)
+                if (paramsCount == 0)
                     contents.AppendLine("        void** params = nullptr;");
                 else
-                    contents.AppendLine($"        void* params[{eventInfo.Type.GenericArgs.Count}];");
-                for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                    contents.AppendLine($"        void* params[{paramsCount}];");
+                for (var i = 0; i < paramsCount; i++)
                 {
                     var paramType = eventInfo.Type.GenericArgs[i];
                     var paramName = "arg" + i;
@@ -1139,7 +1139,7 @@ namespace Flax.Build.Bindings
                 contents.Append("bool bind)").AppendLine();
                 contents.Append("    {").AppendLine();
                 contents.Append("        Function<void(");
-                for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                for (var i = 0; i < paramsCount; i++)
                 {
                     if (i != 0)
                         contents.Append(", ");
@@ -1152,6 +1152,56 @@ namespace Flax.Build.Bindings
                     contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
                 contents.Append("        if (bind)").AppendLine();
                 var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "obj->";
+                contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                contents.Append("        else").AppendLine();
+                contents.AppendFormat("            {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                contents.Append("    }").AppendLine().AppendLine();
+
+                // Generic scripting event invoking wrapper (calls scripting code from C++ delegate)
+                CppIncludeFiles.Add("Engine/Scripting/Events.h");
+                contents.Append("    ");
+                if (eventInfo.IsStatic)
+                    contents.Append("static ");
+                contents.AppendFormat("void {0}_Wrapper(", eventInfo.Name);
+                for (var i = 0; i < paramsCount; i++)
+                {
+                    if (i != 0)
+                        contents.Append(", ");
+                    contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
+                }
+                contents.Append(')').AppendLine();
+                contents.Append("    {").AppendLine();
+                if (paramsCount == 0)
+                    contents.AppendLine("        Variant* params = nullptr;");
+                else
+                    contents.AppendLine($"        Variant params[{eventInfo.Type.GenericArgs.Count}];");
+                for (var i = 0; i < paramsCount; i++)
+                {
+                    var paramType = eventInfo.Type.GenericArgs[i];
+                    var paramName = "arg" + i;
+                    var paramValue = GenerateCppWrapperNativeToVariant(buildData, paramType, classInfo, paramName);
+                    contents.Append($"        params[{i}] = {paramValue};").AppendLine();
+                }
+                contents.AppendLine($"        ScriptingEvents::Event({(eventInfo.IsStatic ? "nullptr" : "(ScriptingObject*)this")}, Span<Variant>(params, {paramsCount}), {classTypeNameNative}::TypeInitializer, StringView(TEXT(\"{eventInfo.Name}\"), {eventInfo.Name.Length}));");
+                contents.Append("    }").AppendLine().AppendLine();
+
+                // Scripting event wrapper binding method (binds/unbinds generic wrapper to C++ delegate)
+                contents.AppendFormat("    static void {0}_Bind(", eventInfo.Name);
+                contents.AppendFormat("{0}* obj, void* instance, bool bind)", classTypeNameNative).AppendLine();
+                contents.Append("    {").AppendLine();
+                contents.Append("        Function<void(");
+                for (var i = 0; i < paramsCount; i++)
+                {
+                    if (i != 0)
+                        contents.Append(", ");
+                    contents.Append(eventInfo.Type.GenericArgs[i]);
+                }
+                contents.Append(")> f;").AppendLine();
+                if (eventInfo.IsStatic)
+                    contents.AppendFormat("        f.Bind<{0}_Wrapper>();", eventInfo.Name).AppendLine();
+                else
+                    contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_Wrapper>(({1}Internal*)instance);", eventInfo.Name, classTypeNameInternal).AppendLine();
+                contents.Append("        if (bind)").AppendLine();
                 contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
                 contents.Append("        else").AppendLine();
                 contents.AppendFormat("            {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
@@ -1299,6 +1349,9 @@ namespace Flax.Build.Bindings
                 foreach (var eventInfo in classInfo.Events)
                 {
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{eventInfo.Name}_Bind\", &{eventInfo.Name}_ManagedBind);");
+
+                    // Register scripting event binder
+                    contents.AppendLine($"        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>({classTypeNameNative}::TypeInitializer, StringView(TEXT(\"{eventInfo.Name}\"), {eventInfo.Name.Length}))] = (void(*)(ScriptingObject*, void*, bool)){classTypeNameInternal}Internal::{eventInfo.Name}_Bind;");
                 }
                 foreach (var fieldInfo in classInfo.Fields)
                 {
