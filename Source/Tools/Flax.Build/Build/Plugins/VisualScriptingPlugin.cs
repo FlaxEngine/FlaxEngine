@@ -22,7 +22,7 @@ namespace Flax.Build.Plugins
 
         private void OnGenerateCppScriptWrapperFunction(Builder.BuildData buildData, ClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex, StringBuilder contents)
         {
-            // Generate C++ wrapper function to invoke Visual Script instead of overriden native function (with support for base method callback)
+            // Generate C++ wrapper function to invoke Visual Script instead of overridden native function (with support for base method callback)
 
             BindingsGenerator.CppIncludeFiles.Add("Engine/Content/Assets/VisualScript.h");
 

@@ -10,7 +10,7 @@ struct Matrix;
 struct Rectangle;
 
 // Describes the viewport dimensions.
-API_STRUCT(InBuild) struct Viewport
+API_STRUCT(InBuild) struct FLAXENGINE_API Viewport
 {
 public:
 

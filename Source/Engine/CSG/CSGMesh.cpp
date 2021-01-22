@@ -38,7 +38,7 @@ void CSG::Mesh::PerformOperation(Mesh* other)
         {
         case Mode::Additive:
         {
-            // Check if both meshes do not intesect
+            // Check if both meshes do not intersect
             if (AABB::IsOutside(_bounds, other->GetBounds())) // TODO: test every sub bounds not whole _bounds
             {
                 // Add vertices to the mesh without any additional calculations
@@ -57,7 +57,7 @@ void CSG::Mesh::PerformOperation(Mesh* other)
 
         case Mode::Subtractive:
         {
-            // Check if both meshes do not intesect
+            // Check if both meshes do not intersect
             if (AABB::IsOutside(_bounds, other->GetBounds())) // TODO: test every sub bounds not whole _bounds
             {
                 // Do nothing
@@ -141,7 +141,7 @@ void CSG::Mesh::intersect(const Mesh* other, PolygonOperation insideOp, PolygonO
     // insideOp - operation for polygons being inside the other brush
     // outsideOp - operation for polygons being outside the other brush
 
-    // Prevent from redudant action
+    // Prevent from redundant action
     if (insideOp == Keep && outsideOp == Keep)
         return;
 
@@ -180,7 +180,7 @@ void CSG::Mesh::intersectSubMesh(const Mesh* other, int32 subMeshIndex, PolygonO
     int32 startBrushSurface = brushMeta.StartSurfaceIndex;
     int32 endBrushSurface = startBrushSurface + brushMeta.SurfacesCount;
 
-    // Check every polygon (itereate fron end since we can ass new polygons and we don't want to process them)
+    // Check every polygon (iterate from end since we can ass new polygons and we don't want to process them)
     for (int32 i = _polygons.Count() - 1; i >= 0; i--)
     {
         auto& polygon = _polygons[i];

@@ -41,7 +41,7 @@ namespace FlaxEditor.Options
         private readonly Dictionary<string, CreateCustomSettingsDelegate> _customSettings = new Dictionary<string, CreateCustomSettingsDelegate>();
 
         /// <summary>
-        /// Gets the custom settings factories. Each entry defines the custom settings type identified by teh given key name. The value si a factory function that returns the default options fpr a given type.
+        /// Gets the custom settings factories. Each entry defines the custom settings type identified by the given key name. The value is a factory function that returns the default options for a given type.
         /// </summary>
         public IReadOnlyDictionary<string, CreateCustomSettingsDelegate> CustomSettings => _customSettings;
 

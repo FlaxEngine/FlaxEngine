@@ -288,7 +288,7 @@ namespace FlaxEditor.Windows.Assets
     public abstract class AssetEditorWindowBase<T> : AssetEditorWindow where T : Asset
     {
         /// <summary>
-        /// Flag set to true if window is is waiting for asset to be loaded (to send <see cref="OnAssetLoaded"/> or <see cref="OnAssetLoadFailed"/> events).
+        /// Flag set to true if window is waiting for asset to be loaded (to send <see cref="OnAssetLoaded"/> or <see cref="OnAssetLoadFailed"/> events).
         /// </summary>
         protected bool _isWaitingForLoaded;
 

@@ -993,7 +993,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
     }
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    // TODO: resave and force sync scenes durign game cooking so this step could be skipped in game
+    // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
     Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
@@ -1005,7 +1005,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
         if (obj && obj->GetParent() == nullptr)
         {
             sceneObjects->At(i) = nullptr;
-            LOG(Warning, "Scene object {0} {1} has missing parent objct after scene load. Removing it.", obj->GetID(), obj->ToString());
+            LOG(Warning, "Scene object {0} {1} has missing parent object after scene load. Removing it.", obj->GetID(), obj->ToString());
             obj->DeleteObject();
         }
     }

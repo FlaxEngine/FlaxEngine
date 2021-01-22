@@ -9,8 +9,9 @@
 #include "NavLink.h"
 #include "NavModifierVolume.h"
 #include "NavMeshRuntime.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int3.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
 #include "Engine/Physics/Colliders/SphereCollider.h"
 #include "Engine/Physics/Colliders/CapsuleCollider.h"
@@ -22,7 +23,6 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/SceneQuery.h"
-#include "Engine/Core/Log.h"
 #include <ThirdParty/recastnavigation/Recast.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshBuilder.h>
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>

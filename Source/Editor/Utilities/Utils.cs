@@ -743,6 +743,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return new ScriptType(typeof(object[]));
             case VariantType.Dictionary: return new ScriptType(typeof(Dictionary<object, object>));
             case VariantType.ManagedObject: return new ScriptType(typeof(object));
+            case VariantType.Blob: return new ScriptType(typeof(byte[]));
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }
@@ -806,6 +807,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return typeof(object[]);
             case VariantType.Dictionary: return typeof(Dictionary<object, object>);
             case VariantType.ManagedObject: return typeof(object);
+            case VariantType.Blob: return typeof(byte[]);
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }

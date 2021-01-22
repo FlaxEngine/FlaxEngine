@@ -52,7 +52,7 @@ bool ThreadPoolService::Init()
         // Create tread
         auto runnable = New<SimpleRunnable>(true);
         runnable->OnWork.Bind(ThreadPool::ThreadProc);
-        auto thread = Thread::Create(runnable, String::Format(TEXT("Therad Pool {0}"), i));
+        auto thread = Thread::Create(runnable, String::Format(TEXT("Thread Pool {0}"), i));
         if (thread == nullptr)
         {
             LOG(Error, "Failed to spawn {0} thread in the Thread Pool", i + 1);

@@ -146,8 +146,32 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
 }
 
+#define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
+    if (!AnimationGraph) \
+    { \
+        LOG(Warning, "Missing animation graph for animated model '{0}'", ToString()); \
+        return; \
+    } \
+    if (AnimationGraph->WaitForLoaded()) \
+    { \
+        LOG(Warning, "Failed to load animation graph for animated model '{0}'", ToString()); \
+        return; \
+    }
+#define CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(result) \
+    if (!AnimationGraph) \
+    { \
+        LOG(Warning, "Missing animation graph for animated model '{0}'", ToString()); \
+        return result; \
+    } \
+    if (AnimationGraph->WaitForLoaded()) \
+    { \
+        LOG(Warning, "Failed to load animation graph for animated model '{0}'", ToString()); \
+        return result; \
+    }
+
 AnimGraphParameter* AnimatedModel::GetParameter(const StringView& name)
 {
+    CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(nullptr);
     for (auto& param : GraphInstance.Parameters)
     {
         if (param.Name == name)
@@ -159,6 +183,7 @@ AnimGraphParameter* AnimatedModel::GetParameter(const StringView& name)
 
 Variant AnimatedModel::GetParameterValue(const StringView& name)
 {
+    CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)
     {
         if (param.Name == name)
@@ -170,6 +195,7 @@ Variant AnimatedModel::GetParameterValue(const StringView& name)
 
 void AnimatedModel::SetParameterValue(const StringView& name, const Variant& value)
 {
+    CHECK_ANIM_GRAPH_PARAM_ACCESS();
     for (auto& param : GraphInstance.Parameters)
     {
         if (param.Name == name)
@@ -183,6 +209,7 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
 
 Variant AnimatedModel::GetParameterValue(const Guid& id)
 {
+    CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)
     {
         if (param.Identifier == id)
@@ -194,6 +221,7 @@ Variant AnimatedModel::GetParameterValue(const Guid& id)
 
 void AnimatedModel::SetParameterValue(const Guid& id, const Variant& value)
 {
+    CHECK_ANIM_GRAPH_PARAM_ACCESS();
     for (auto& param : GraphInstance.Parameters)
     {
         if (param.Identifier == id)

@@ -4,8 +4,8 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "Color.h"
+#include "Int2.h"
 #include "../Types/String.h"
-#include "VectorInt.h"
 
 static_assert(sizeof(Vector2) == 8, "Invalid Vector2 type size.");
 

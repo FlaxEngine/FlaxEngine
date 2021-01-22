@@ -1363,23 +1363,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
     if (flags & GPUTextureFlags::UnorderedAccess)
         wantedFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 
-    // Check actual device for format support
-    const auto isSupported = [&](VkFormat vkFormat)
-    {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(Adapter->Gpu, vkFormat, &props);
-        const VkFormatFeatureFlags featureFlags = optimalTiling ? props.optimalTilingFeatures : props.linearTilingFeatures;
-        if ((featureFlags & wantedFeatureFlags) != wantedFeatureFlags)
-            return false;
-
-        //VkImageFormatProperties imageProps;
-        //vkGetPhysicalDeviceImageFormatProperties(Adapter->Gpu, vkFormat, , &imageProps);
-
-        return true;
-    };
-
-    VkFormat vkFormat = RenderToolsVulkan::ToVulkanFormat(format);
-    if (!isSupported(vkFormat))
+    if (!IsVkFormatSupported(RenderToolsVulkan::ToVulkanFormat(format), wantedFeatureFlags, optimalTiling))
     {
         // Special case for depth-stencil formats
         if (flags & GPUTextureFlags::DepthStencil)
@@ -1389,7 +1373,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
             // Spec guarantees at least one depth-only, and one depth-stencil format to be supported
             if (hasStencil)
             {
-                if (isSupported(VK_FORMAT_D32_SFLOAT_S8_UINT))
+                if (IsVkFormatSupported(VK_FORMAT_D32_SFLOAT_S8_UINT, wantedFeatureFlags, optimalTiling))
                     format = PixelFormat::D32_Float;
                 else
                     format = PixelFormat::D24_UNorm_S8_UInt;
@@ -1492,6 +1476,20 @@ bool GPUDeviceVulkan::SaveValidationCache()
 }
 
 #endif
+
+bool GPUDeviceVulkan::IsVkFormatSupported(VkFormat vkFormat, VkFormatFeatureFlags wantedFeatureFlags, bool optimalTiling) const
+{
+    VkFormatProperties props;
+    vkGetPhysicalDeviceFormatProperties(Adapter->Gpu, vkFormat, &props);
+    const VkFormatFeatureFlags featureFlags = optimalTiling ? props.optimalTilingFeatures : props.linearTilingFeatures;
+    if ((featureFlags & wantedFeatureFlags) != wantedFeatureFlags)
+        return false;
+
+    //VkImageFormatProperties imageProps;
+    //vkGetPhysicalDeviceImageFormatProperties(Adapter->Gpu, vkFormat, , &imageProps);
+
+    return true;
+}
 
 GPUContext* GPUDeviceVulkan::GetMainContext()
 {

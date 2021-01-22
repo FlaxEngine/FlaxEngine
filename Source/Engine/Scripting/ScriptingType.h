@@ -206,7 +206,7 @@ struct FLAXENGINE_API ScriptingType
             SetupScriptObjectVTableHandler SetupScriptObjectVTable;
 
             /// <summary>
-            /// The default instance of the scripting type. Used by serialization system for comparision to save only modified properties of the object.
+            /// The default instance of the scripting type. Used by serialization system for comparison to save only modified properties of the object.
             /// </summary>
             mutable ScriptingObject* DefaultInstance;
         } Script;
@@ -282,7 +282,7 @@ struct FLAXENGINE_API ScriptingType
     }
 
     /// <summary>
-    /// Gets the default instance of the scripting type. Used by serialization system for comparision to save only modified properties of the object.
+    /// Gets the default instance of the scripting type. Used by serialization system for comparison to save only modified properties of the object.
     /// </summary>
     ScriptingObject* GetDefaultInstance() const;
 

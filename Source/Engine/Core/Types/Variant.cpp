@@ -2612,7 +2612,8 @@ Variant Variant::Lerp(const Variant& a, const Variant& b, float alpha)
 
 void Variant::AllocStructure()
 {
-    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
+    const StringAnsiView typeName(Type.TypeName);
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
     if (typeHandle)
     {
         const ScriptingType& type = typeHandle.GetType();
@@ -2620,8 +2621,26 @@ void Variant::AllocStructure()
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         type.Struct.Ctor(AsBlob.Data);
     }
+    else if (typeName == "System.Byte")
+    {
+        // Hack for byte
+        AsBlob.Length = 1;
+        AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        *((byte*)AsBlob.Data) = 0;
+    }
+    else if (typeName == "System.Int16" || typeName == "System.UInt16")
+    {
+        // Hack for 16bit int
+        AsBlob.Length = 2;
+        AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        *((int16*)AsBlob.Data) = 0;
+    }
     else
     {
+        if (typeName.Length() != 0)
+        {
+            LOG(Warning, "Missing scripting type \'{0}\'", String(typeName.Get()));
+        }
         AsBlob.Data = nullptr;
         AsBlob.Length = 0;
     }
@@ -2636,6 +2655,10 @@ void Variant::CopyStructure(void* src)
         {
             auto& type = typeHandle.GetType();
             type.Struct.Copy(AsBlob.Data, src);
+        }
+        else
+        {
+            Platform::MemoryCopy(AsBlob.Data, src, AsBlob.Length);
         }
     }
 }

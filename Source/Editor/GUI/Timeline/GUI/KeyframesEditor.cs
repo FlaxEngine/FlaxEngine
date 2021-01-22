@@ -402,7 +402,7 @@ namespace FlaxEditor.GUI
             }
 
             /// <summary>
-            /// Converts the input point from editor editor contents control space into the keyframes time/value coordinates.
+            /// Converts the input point from editor contents control space into the keyframes time/value coordinates.
             /// </summary>
             /// <param name="point">The point.</param>
             /// <param name="keyframesContentAreaBounds">The keyframes contents area bounds.</param>

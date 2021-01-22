@@ -6,10 +6,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
@@ -247,7 +245,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
         iconTexSize = Math::RoundUpToPowerOf2(width);
     }
 
-    // Try to pick a proper mip (requrie the same size)
+    // Try to pick a proper mip (require the same size)
     const TextureMipData* srcPixels = nullptr;
     int32 mipLevels = icon->GetMipLevels();
     for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)

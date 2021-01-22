@@ -302,7 +302,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     const auto assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
     if (status != MONO_IMAGE_OK || assembly == nullptr)
     {
-        // Close image if error occured
+        // Close image if error occurred
         mono_image_close(assemblyImage);
 
         Log::CLRInnerException(TEXT("Mono assembly image is corrupted at ") + assemblyPath);

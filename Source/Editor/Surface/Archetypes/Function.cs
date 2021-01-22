@@ -1177,7 +1177,7 @@ namespace FlaxEditor.Surface.Archetypes
                 [EditorOrder(0), Tooltip("The name of the parameter."), ExpandGroups]
                 public string Name;
 
-                [EditorOrder(1), Tooltip("The type fo the parameter value.")]
+                [EditorOrder(1), Tooltip("The type for the parameter value.")]
                 [TypeReference(typeof(object), nameof(IsTypeValid))]
                 public ScriptType Type;
 
@@ -1564,7 +1564,7 @@ namespace FlaxEditor.Surface.Archetypes
                     // Check if return type has been changed
                     if (_signature.ReturnType != prevReturnType)
                     {
-                        // Update all return nodes used by this function to match teh new type
+                        // Update all return nodes used by this function to match the new type
                         var usedNodes = DepthFirstTraversal(false);
                         var hasAnyReturnNode = false;
                         foreach (var node in usedNodes)

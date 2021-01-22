@@ -1172,7 +1172,7 @@ void ParticleManagerService::Update()
             // Update bounds after first system update
             updateBounds = true;
         }
-        // TODO: if using fixed timestep quantize the dt and accumulate reaming part for the next update?
+        // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
         if (dt <= 1.0f / 240.0f)
             continue;
         dt *= effect->SimulationSpeed;

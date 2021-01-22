@@ -120,7 +120,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Draws the column.
         /// </summary>
-        /// <param name="rect">The the header area rectangle.</param>
+        /// <param name="rect">The header area rectangle.</param>
         /// <param name="columnIndex">The zero-based index of the column.</param>
         protected virtual void DrawColumn(ref Rectangle rect, int columnIndex)
         {

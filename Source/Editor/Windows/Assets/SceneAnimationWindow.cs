@@ -490,7 +490,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                     if (_player.IsStopped || _player.Time >= _options.EndTime)
                     {
-                        // End rendering but perform reaming copies of the staging textures so all data is captured (from GPU to CPU)
+                        // End rendering but perform remaining copies of the staging textures so all data is captured (from GPU to CPU)
                         _state = States.Staging;
                         break;
                     }

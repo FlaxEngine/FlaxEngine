@@ -7,7 +7,7 @@ using FlaxEngine;
 namespace FlaxEditor.Gizmo
 {
     /// <summary>
-    /// Represents collection of Gizmo tools where one is active and in use.
+    /// Represents collection of gizmo tools where one is active and in use.
     /// </summary>
     /// <seealso cref="GizmoBase" />
     [HideInEditor]

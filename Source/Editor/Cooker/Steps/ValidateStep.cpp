@@ -65,7 +65,7 @@ bool ValidateStep::Perform(CookingData& data)
         AssetInfo info;
         if (!Content::GetAssetInfo(gameSettings->FirstScene, info))
         {
-            data.Error(TEXT("Missing first scene."));
+            data.Error(TEXT("Missing first scene. Set it in the game settings."));
             return true;
         }
     }

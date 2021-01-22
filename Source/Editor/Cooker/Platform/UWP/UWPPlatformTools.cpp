@@ -28,7 +28,7 @@ bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
     const String assembliesPath = data.OutputPath;
     if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
     {
-        data.Error(TEXT("Failed to copy deloy custom assembly."));
+        data.Error(TEXT("Failed to copy deploy custom assembly."));
         return true;
     }
     FileSystem::DeleteFile(assembliesPath / TEXT("Newtonsoft.Json.pdb"));

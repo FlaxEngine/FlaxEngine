@@ -10,7 +10,6 @@
 API_STRUCT() struct FLAXENGINE_API Rectangle
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
-public:
 
     /// <summary>
     /// The empty rectangle.

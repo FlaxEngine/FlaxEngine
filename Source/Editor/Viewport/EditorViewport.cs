@@ -528,6 +528,18 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
+                // Cara Orientation
+                {
+                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Orientation").ContextMenu;
+                    for (int i = 0; i < EditorViewportCameraOrientationValues.Length; i++)
+                    {
+                        var co = EditorViewportCameraOrientationValues[i];
+                        var button = cameraView.AddButton(co.Name);
+                        button.Tag = co.Orientation;
+                    }
+                    cameraView.ButtonClicked += button => ViewOrientation = Quaternion.Euler((Vector3)button.Tag);
+                }
+
                 // Field of View
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
@@ -1192,6 +1204,28 @@ namespace FlaxEditor.Viewport
 
             base.OnDestroy();
         }
+
+        private struct CameraOrientation
+        {
+            public readonly string Name;
+            public readonly Vector3 Orientation;
+
+            public CameraOrientation(string name, Vector3 orientation)
+            {
+                Name = name;
+                Orientation = orientation;
+            }
+        }
+
+        private readonly CameraOrientation[] EditorViewportCameraOrientationValues =
+        {
+            new CameraOrientation("Front", new Vector3(0, 0, 0)),
+            new CameraOrientation("Back", new Vector3(0, 180, 0)),
+            new CameraOrientation("Left", new Vector3(0, 90, 0)),
+            new CameraOrientation("Right", new Vector3(0, -90, 0)),
+            new CameraOrientation("Top", new Vector3(-90, 0, 0)),
+            new CameraOrientation("Bottom", new Vector3(90, 0, 0))
+        };
 
         private readonly float[] EditorViewportCameraSpeedValues =
         {

@@ -225,7 +225,7 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Setups the target building environment (native C++). Allows to modify compiler and linker options. Options applied here are used by all modules included into this target (can be overriden per module).
+        /// Setups the target building environment (native C++). Allows to modify compiler and linker options. Options applied here are used by all modules included into this target (can be overridden per module).
         /// </summary>
         /// <param name="options">The build options.</param>
         public virtual void SetupTargetEnvironment(BuildOptions options)

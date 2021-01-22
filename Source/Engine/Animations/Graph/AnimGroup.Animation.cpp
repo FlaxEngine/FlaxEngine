@@ -1489,11 +1489,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         case 2:
             value = transitionsData.Position / transitionsData.Length;
             break;
-            // Reaming Time
+            // Remaining Time
         case 3:
             value = transitionsData.Length - transitionsData.Position;
             break;
-            // Reaming Normalized Time
+            // Remaining Normalized Time
         case 4:
             value = 1.0f - (transitionsData.Position / transitionsData.Length);
             break;

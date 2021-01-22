@@ -234,7 +234,7 @@ public:
 #endif
 
     /// <summary>
-    /// Gets the classes lookup cache. Performs ful initialization if not cached. The result cache contains all classes from the assembly.
+    /// Gets the classes lookup cache. Performs full initialization if not cached. The result cache contains all classes from the assembly.
     /// </summary>
     /// <returns>The cache.</returns>
     const ClassesDictionary& GetClasses() const;

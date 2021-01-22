@@ -77,7 +77,7 @@ void WindowsManagerService::Update()
 
 void WindowsManagerService::Dispose()
 {
-    // Close reaming windows
+    // Close remaining windows
     WindowsManager::WindowsLocker.Lock();
     auto windows = WindowsManager::Windows;
     for (auto& win : windows)

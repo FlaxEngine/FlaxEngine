@@ -175,7 +175,7 @@ public:
     }
 
     /// <summary>
-    /// Attaches collider to the the specified rigid body.
+    /// Attaches collider to the specified rigid body.
     /// </summary>
     /// <param name="rigidBody">The rigid body.</param>
     void Attach(RigidBody* rigidBody);

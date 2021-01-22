@@ -33,7 +33,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
         }
 
         /// <summary>
-        /// The tool strength (normalized to range 0-1). Defines the intensity of the paint operation to make it stronger or mre subtle.
+        /// The tool strength (normalized to range 0-1). Defines the intensity of the paint operation to make it stronger or more subtle.
         /// </summary>
         [EditorOrder(0), Limit(0, 10, 0.01f), Tooltip("The tool strength (normalized to range 0-1). Defines the intensity of the paint operation to make it stronger or more subtle.")]
         public float Strength = 1.0f;

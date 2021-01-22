@@ -108,7 +108,7 @@ public:
     /// <summary>
     /// Gets the mask of render passes supported by this material.
     /// </summary>
-    /// <returns>The drw passes supported by this material.</returns>
+    /// <returns>The draw passes supported by this material.</returns>
     virtual DrawPass GetDrawModes() const
     {
         return DrawPass::None;

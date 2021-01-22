@@ -720,6 +720,10 @@ public:
 
 #endif
 
+private:
+
+    bool IsVkFormatSupported(VkFormat vkFormat, VkFormatFeatureFlags wantedFeatureFlags, bool optimalTiling) const;
+
 public:
 
     // [GPUDevice]

@@ -5,7 +5,7 @@
 #include "Engine/Core/Common.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Serialization/Stream.h"
 #include "Engine/Graphics/Enums.h"
 #include "Types.h"

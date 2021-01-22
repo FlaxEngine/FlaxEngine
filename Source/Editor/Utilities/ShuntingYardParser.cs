@@ -126,7 +126,7 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="oper1">The first operator.</param>
         /// <param name="oper2">The second operator.</param>
-        /// <returns>The comparision result.</returns>
+        /// <returns>The comparison result.</returns>
         private static bool CompareOperators(string oper1, string oper2)
         {
             var op1 = Operators[oper1];

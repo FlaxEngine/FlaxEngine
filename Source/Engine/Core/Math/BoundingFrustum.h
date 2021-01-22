@@ -10,7 +10,7 @@
 /// <summary>
 /// Defines a frustum which can be used in frustum culling, zoom to Extents (zoom to fit) operations, (matrix, frustum, camera) interchange, and many kind of intersection testing.
 /// </summary>
-API_STRUCT(InBuild) struct BoundingFrustum
+API_STRUCT(InBuild) struct FLAXENGINE_API BoundingFrustum
 {
 private:
 

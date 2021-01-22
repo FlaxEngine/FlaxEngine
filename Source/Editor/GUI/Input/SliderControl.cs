@@ -168,6 +168,7 @@ namespace FlaxEditor.GUI.Input
             {
                 if (button == MouseButton.Left)
                 {
+                    Focus();
                     float mousePosition = location.X;
 
                     if (_thumbRect.Contains(ref location))
@@ -208,7 +209,6 @@ namespace FlaxEditor.GUI.Input
             {
                 if (button == MouseButton.Left && _isSliding)
                 {
-                    // End sliding
                     EndSliding();
                     return true;
                 }

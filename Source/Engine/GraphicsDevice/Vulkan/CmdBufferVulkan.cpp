@@ -44,7 +44,7 @@ void CmdBufferVulkan::End()
     ASSERT(IsOutsideRenderPass());
 
 #if GPU_ALLOW_PROFILE_EVENTS
-    // End reaming events
+    // End remaining events
     while (_eventsBegin--)
         vkCmdEndDebugUtilsLabelEXT(GetHandle());
 #endif

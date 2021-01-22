@@ -11,7 +11,7 @@ struct Viewport;
 /// <summary>
 /// Represents a three dimensional line based on a point in space and a direction.
 /// </summary>
-API_STRUCT() struct Ray
+API_STRUCT() struct FLAXENGINE_API Ray
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(Ray);
 public:

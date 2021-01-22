@@ -36,7 +36,7 @@ namespace Log
         /// </summary>
         /// <param name="additionalInfo">Additional information that help describe error</param>
         Exception(const String& additionalInfo)
-            : Exception(TEXT("An exception has occured."), additionalInfo)
+            : Exception(TEXT("An exception has occurred."), additionalInfo)
         {
         }
 

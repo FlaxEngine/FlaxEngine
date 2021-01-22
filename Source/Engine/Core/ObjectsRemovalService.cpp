@@ -193,7 +193,7 @@ void ObjectsRemovalServiceService::Dispose()
     // Collect new objects
     ObjectsRemovalService::Flush();
 
-    // Delete all reaming objects
+    // Delete all remaining objects
     {
         ScopeLock lock(PoolLocker);
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
