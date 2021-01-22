@@ -486,7 +486,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack X component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -500,7 +500,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack Y component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -514,7 +514,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack Z component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -528,7 +528,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack W component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -544,7 +544,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XY components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -558,7 +558,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -572,7 +572,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack YZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -588,7 +588,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XYZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(160, 30),
+                Size = new Vector2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),

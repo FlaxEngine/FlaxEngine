@@ -15,6 +15,7 @@ namespace FlaxEditor.Surface
     {
         private ContextMenuButton _cmCopyButton;
         private ContextMenuButton _cmDuplicateButton;
+        private ContextMenuButton _cmFormatNodesConnectionButton;
         private ContextMenuButton _cmRemoveNodeConnectionsButton;
         private ContextMenuButton _cmRemoveBoxConnectionsButton;
         private readonly Vector2 ContextMenuOffset = new Vector2(5);
@@ -216,6 +217,13 @@ namespace FlaxEditor.Surface
                     }
                 }).Enabled = Nodes.Any(x => x.Breakpoint.Set && x.Breakpoint.Enabled);
             }
+            menu.AddSeparator();
+
+            _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () =>
+            {
+                FormatGraph(SelectedNodes);
+            });
+            _cmFormatNodesConnectionButton.Enabled = HasNodesSelection;
 
             menu.AddSeparator();
             _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
