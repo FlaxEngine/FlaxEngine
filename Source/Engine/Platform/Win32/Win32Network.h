@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,7 +7,10 @@
 #include "Engine/Platform/Base/NetworkBase.h"
 
 class FLAXENGINE_API Win32Network : public NetworkBase
-{ 
+{
+    friend NetworkEndPoint;
+    friend NetworkSocket;
+
 public:
     // [NetworkBase]
     static bool Init();
@@ -22,8 +25,6 @@ public:
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint endPoint);
-    friend NetworkEndPoint;
-    friend NetworkSocket;
 };
 
 #endif
