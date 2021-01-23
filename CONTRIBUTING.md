@@ -18,15 +18,15 @@ Go check out our [Trello](https://trello.com/b/NQjLXRCP/flax-roadmap).
 
 ## **Want to contribute?**
   
-* When creating a PR for fixing an issue/bug make sure to describe as to what led to the fix as well as mentioning the
-  relevant issue where it was first mentioned if necessary, for small and obvious fixes this is not needed.
+* When creating a PR for fixing an issue/bug make sure to describe as to what led to the fix for better understanding, for small and obvious fixes this is not really needed. 
+  However make sure to mention the relevant issue where it was first reported if possible.
   
-* For feature PR's the first thing you should evaluate is the value of your contribution, as in, would what it bring to this engine? 
+* For feature PR's the first thing you should evaluate is the value of your contribution, as in, what would it bring to this engine? Is it really required?
   If its a small change you could preferably suggest it to us on our discord, else feel free to open up a PR for it.
   
 * Ensure when creating a PR that your contribution is well explained with a adequate description and title.
 
-* For large contributions, generally good code quality is expected, make sure your contribution works as intended and is appropriately commented where necessary.
+* Generally, good code quality is expected, make sure your contribution works as intended and is appropriately commented where necessary.
 
 
 Thank you for taking interest in contributing to Flax!
