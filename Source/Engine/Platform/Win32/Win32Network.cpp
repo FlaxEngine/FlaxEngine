@@ -203,6 +203,16 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     return false;
 }
 
+bool Win32Network::Listen(NetworkSocket& socket, int32 queueSize)
+{
+    if (listen(*(SOCKET*)socket.Data, (int32)queueSize) == SOCKET_ERROR)
+    {
+        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", GetLastErrorMessage().Get());
+        return true;
+    }
+    return false;
+}
+
 bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint)
 {
     if (serverSock.Protocol != NetworkProtocolType::Tcp)

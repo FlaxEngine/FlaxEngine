@@ -31,6 +31,11 @@ bool NetworkBase::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     return false;
 }
 
+bool NetworkBase::Listen(NetworkSocket& socket, int32 queueSize)
+{
+    return false;
+}
+
 bool NetworkBase::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint)
 {
     return false;
