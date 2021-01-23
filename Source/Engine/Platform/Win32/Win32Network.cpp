@@ -20,6 +20,16 @@ static WSAData _wsaData;
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
 
+static Char* GetLastErrorMessage()
+{
+    wchar_t *s = NULL;
+    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+                   NULL, WSAGetLastError(),
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPWSTR)&s, 0, NULL);
+    return s;
+}
+
 static int GetAddrSize(const sockaddr& addr)
 {
     return addr.sa_family == AF_INET6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
@@ -44,7 +54,7 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
     char service[20];
     if (getnameinfo(addr, size, name, sizeof name, service, sizeof service, 0) != 0)
     {
-        LOG(Error, "Unable to extract info from sockaddr ! Error : {0}", WSAGetLastError());
+        LOG(Error, "Unable to extract info from sockaddr ! Error : {0}", String(GetLastErrorMessage()).Get());
         return true;
     }
     void* paddr;
@@ -56,7 +66,7 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
     char ip[INET6_ADDRSTRLEN];
     if (inet_ntop(addr->sa_family, paddr, ip, INET6_ADDRSTRLEN) == nullptr)
     {
-        LOG(Error, "Unable to extract address from sockaddr ! Error : {0}", WSAGetLastError());
+        LOG(Error, "Unable to extract address from sockaddr ! Error : {0}", String(GetLastErrorMessage()).Get());
         return true;
     }
     endPoint.Address = String(ip);
@@ -109,34 +119,34 @@ bool Win32Network::CreateSocket(NetworkSocket& netsock, NetworkSocketCreateSetti
     
     if ((sock = socket(family, stype, proto)) == INVALID_SOCKET)
     {
-        LOG(Error, "Can't create native socket ! Error : {0}", WSAGetLastError());
+        LOG(Error, "Can't create native socket ! Error : {0}", String(GetLastErrorMessage()).Get());
         return true;
     }
     memcpy(netsock.Data, &sock, sizeof sock);
     DWORD dw = 0;
     if (family == AF_INET6 && setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&dw, sizeof dw) == SOCKET_ERROR)
     {
-        LOG(Warning, "System does not support dual stacking socket ! Error : {0}", WSAGetLastError());
+        LOG(Warning, "System does not support dual stacking socket ! Error : {0}", String(GetLastErrorMessage()).Get());
     }
     unsigned long value = 1;
     if (settings.ReuseAddress && setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof value) == SOCKET_ERROR)
     {
-        LOG(Warning, "Can't set socket option to SO_REUSEADDR ! Error : {0}", WSAGetLastError());
+        LOG(Warning, "Can't set socket option to SO_REUSEADDR ! Error : {0}", String(GetLastErrorMessage()).Get());
     }
 
     if (settings.Broadcast && settings.Protocol == NetworkProtocolType::Udp)
     {
         if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&value, sizeof value) == SOCKET_ERROR)
         {
-            LOG(Warning, "Can't set socket option to SO_BROADCAST ! Error : {0}", WSAGetLastError());
+            LOG(Warning, "Can't set socket option to SO_BROADCAST ! Error : {0}", String(GetLastErrorMessage()).Get());
         }
     }
     else if (settings.Broadcast)
-        LOG(Warning, "Can't set socket option to SO_BROADCAST ! The socket must use UDP protocol. Error : {0}", WSAGetLastError());    
+        LOG(Warning, "Can't set socket option to SO_BROADCAST ! The socket must use UDP protocol. Error : {0}", String(GetLastErrorMessage()).Get());    
     
     if (ioctlsocket(sock, FIONBIO, &value) == SOCKET_ERROR)
     {
-        LOG(Error, "Can't set socket to NON-BLOCKING type ! Error : {0}", WSAGetLastError());
+        LOG(Error, "Can't set socket to NON-BLOCKING type ! Error : {0}", String(GetLastErrorMessage()).Get());
         return true; // Support using blocking socket , need to test it
     }
     //DEBUG
@@ -183,7 +193,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     LOG(Info, "BIND : EndPoint family : {0}", addr->sa_family);
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to bind socket ! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), WSAGetLastError());
+        LOG(Error, "Unable to bind socket ! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), String(GetLastErrorMessage()).Get());
         return true;
     }
     //DEBUG
@@ -202,7 +212,7 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     sockaddr addr;
     if ((sock = accept(*(SOCKET*)serverSock.Data, &addr, nullptr)) == INVALID_SOCKET)
     {
-        LOG(Warning, "Unable to accept incoming connection ! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, WSAGetLastError());
+        LOG(Warning, "Unable to accept incoming connection ! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, String(GetLastErrorMessage()).Get());
         return true;
     }
     memcpy(newSock.Data, &sock, sizeof sock);
@@ -220,7 +230,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket, uint64* size)
     unsigned long value;
     if (ioctlsocket(*(SOCKET*)socket.Data, FIONREAD, &value) != 0)
     {
-        LOG(Error, "Unable to query socket for readability ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, WSAGetLastError());
+        LOG(Error, "Unable to query socket for readability ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, String(GetLastErrorMessage()).Get());
         return true;
     }
     *size = value;
@@ -239,7 +249,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = send(*(SOCKET*)socket.Data, (const char*)data, length, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data ! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, WSAGetLastError());
+            LOG(Error, "Unable to send data ! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, String(GetLastErrorMessage()).Get());
             return -1;
         }
     }
@@ -247,7 +257,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data ! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, WSAGetLastError());
+            LOG(Error, "Unable to send data ! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, String(GetLastErrorMessage()).Get());
             return -1;
         }
     }
@@ -270,7 +280,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     {
         if ((size = recv(*(SOCKET*)socket.Data, (char*) buffer, bufferSize, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, WSAGetLastError());
+            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, String(GetLastErrorMessage()).Get());
             return -1;
         }
     }
@@ -280,7 +290,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
         sockaddr_in6 addr;
         if ((size = recvfrom(*(SOCKET*)socket.Data, (char*) buffer, bufferSize, 0, (sockaddr*)&addr, &addrsize)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, WSAGetLastError());
+            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, String(GetLastErrorMessage()).Get());
             return -1;
         }
         if (CreateEndPointFromAddr((sockaddr*)&addr, *endPoint))
