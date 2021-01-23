@@ -57,7 +57,7 @@ class FLAXENGINE_API NetworkBase
     static bool IsReadable(NetworkSocket& socket, uint64* size);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
-    static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint);
+    static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint& endPoint);
 };
 

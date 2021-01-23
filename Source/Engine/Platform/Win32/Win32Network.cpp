@@ -291,7 +291,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
 }
 
 // if address is null, it's ADDR_ANY
-bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint)
+bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     int status;
     addrinfoW hints;
@@ -303,8 +303,7 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     hints.ai_family = ipv == NetworkIPVersion::IPv6 ? AF_INET6 : ipv == NetworkIPVersion::IPv4 ? AF_INET : AF_UNSPEC;
     hints.ai_flags |= AI_ADDRCONFIG;
     hints.ai_flags |= AI_V4MAPPED;
-    if (paddr == nullptr)
-    {
+    if (bindable)
         hints.ai_flags = AI_PASSIVE;
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )

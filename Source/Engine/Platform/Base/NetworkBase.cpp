@@ -51,7 +51,7 @@ int32 NetworkBase::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferS
     return 0;
 }
 
-bool NetworkBase::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint)
+bool NetworkBase::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     return false;
 }
