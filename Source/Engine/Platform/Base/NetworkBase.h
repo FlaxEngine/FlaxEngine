@@ -55,8 +55,8 @@ class FLAXENGINE_API NetworkBase
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket, uint64* size);
-    static uint32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
-    static uint32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
+    static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
+    static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint);
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint& endPoint);
 };

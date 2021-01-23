@@ -228,7 +228,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket, uint64* size)
     return false;
 }
 
-uint32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
+int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
 {
     if (socket.IPVersion != endPoint->IPVersion)
     {
@@ -264,7 +264,7 @@ uint32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length
 /*
  * TODO: handle size == 0 when there is a shutdown
  */
-uint32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
+int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
 {
     uint32 size;
     if (endPoint == nullptr) // TCP
