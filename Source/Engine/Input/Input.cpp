@@ -676,7 +676,7 @@ void InputService::Update()
     const auto lockMode = Screen::GetCursorLock();
     if (lockMode == CursorLockMode::Locked)
     {
-        Input::SetMousePosition(Screen::GetSize() * 0.5f);
+        Input::SetMousePosition(Screen::GetSize() * 0.5f * Platform::GetDpiScale());
     }
 
     // Send events for the active actions (send events only in play mode)
