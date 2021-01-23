@@ -45,6 +45,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class UWPWindow;
 typedef UWPWindow Window;
+class NetworkBase; // place holder
+typedef NetworkBase Network; // place holder
 
 #elif PLATFORM_LINUX
 
@@ -66,6 +68,8 @@ class LinuxThread;
 typedef LinuxThread Thread;
 class LinuxWindow;
 typedef LinuxWindow Window;
+class NetworkBase; // place holder
+typedef NetworkBase Network; // place holder
 
 #elif PLATFORM_PS4
 
@@ -87,6 +91,8 @@ class PS4Thread;
 typedef PS4Thread Thread;
 class PS4Window;
 typedef PS4Window Window;
+class NetworkBase; // place holder
+typedef NetworkBase Network; // place holder
 
 #elif PLATFORM_XBOX_SCARLETT
 
@@ -108,6 +114,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class XboxScarlettWindow;
 typedef XboxScarlettWindow Window;
+class NetworkBase; // place holder
+typedef NetworkBase Network; // place holder
 
 #elif PLATFORM_ANDROID
 
@@ -129,6 +137,8 @@ class AndroidThread;
 typedef AndroidThread Thread;
 class AndroidWindow;
 typedef AndroidWindow Window;
+class NetworkBase; // place holder
+typedef NetworkBase Network; // place holder
 
 #else
 
