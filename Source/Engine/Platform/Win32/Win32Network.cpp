@@ -67,9 +67,9 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
     return false;
 }
 
-static void PrintAddrFromInfo(addrinfo& info)
+static void PrintAddrFromInfo(addrinfoW& info)
 {
-    addrinfo* curr;
+    addrinfoW* curr;
     for (curr = &info; curr != nullptr; curr = curr->ai_next)
     {
         void* addr;
@@ -294,11 +294,8 @@ uint32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffe
 bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint)
 {
     int status;
-    addrinfo hints;
-    addrinfo *info;
-    //TODO: Refactor this crappy thing
-    char* paddr= address != nullptr ? address->ToStringAnsi().Get() : nullptr;
-    char* pport = port != nullptr ? port->ToStringAnsi().Get() : nullptr;
+    addrinfoW hints;
+    addrinfoW *info;
     //DEBUG
     LOG(Info, "Searching available adresses for {0} : {1}", address == nullptr ? String("nullptr").Get() : address->Get(),
         port == nullptr ? String("nullptr").Get() : port->Get());
@@ -309,21 +306,19 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     if (paddr == nullptr)
     {
         hints.ai_flags = AI_PASSIVE;
-        LOG(Info, "PASSIVE MODE");
-    }
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
     // can *paddr works  ?
     // paddr = nullptr don't work with this func
-    if ((status = getaddrinfo(paddr == nullptr ? nullptr : paddr, pport, &hints, &info)) != 0)
+    if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0}   Error : {1} !", address->Get(), gai_strerror(status)); //TODO: address can be NULL
+        LOG(Error, "Unable to query info for address : {0}   Error : {1} !", address != nullptr ? address->Get() : String("ANY").Get(), gai_strerror(status)); //TODO: address can be NULL
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address ! Address : {0}", address->Get());//TODO: address can be NULL
+        LOG(Error, "Unable to resolve address ! Address : {0}", address != nullptr ? address->Get() : String("ANY").Get());//TODO: address can be NULL
         return true;
     }
 
@@ -333,10 +328,10 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     // We are taking the first addr in the linked list
     if (CreateEndPointFromAddr(info->ai_addr, endPoint))
     {
-        freeaddrinfo(info);
+        FreeAddrInfoW(info);
         return true;
     }
-    freeaddrinfo(info);
+    FreeAddrInfoW(info);
 
     //DEBUG
     LOG(Info, "Address found : {0} : {1}", endPoint.Address, endPoint.Port);
