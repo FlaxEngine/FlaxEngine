@@ -15,7 +15,6 @@ static const IN6_ADDR v4MappedPrefix = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x
 static WSAData _wsaData;
 
 /*
- * TODO: Create func to retrieve WSA error string
  * Known issues :
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
