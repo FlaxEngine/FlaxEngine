@@ -277,7 +277,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     }
     else // UDP
     {
-        int32 addrsize;
+        int32 addrsize = sizeof sockaddr_in6;
         sockaddr_in6 addr;
         if ((size = recvfrom(*(SOCKET*)socket.Data, (char*) buffer, bufferSize, 0, (sockaddr*)&addr, &addrsize)) == SOCKET_ERROR)
         {
