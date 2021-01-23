@@ -41,26 +41,44 @@ void CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2
     }
 }
 
-Vector3 CollisionsHelper::ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1)
+Vector2 CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1)
+{
+    Vector2 result;
+    ClosestPointPointLine(point, p0, p1, result);
+    return result;
+}
+
+
+void CollisionsHelper::ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1, Vector3& result)
 {
     const Vector3 p = point - p0;
     Vector3 n = p1 - p0;
     const float length = n.Length();
     if (length < 1e-10)
     {
-        return p0;
+        result = p0;
+        return;
     }
     n /= length;
     const float dot = Vector3::Dot(n, p);
     if (dot <= 0.0)
     {
-        return p0;
+        result = p0;
+        return;
     }
     else if (dot >= length)
     {
-        return p1;
+        result = p1;
+        return;
     }
-    return p0 + n * dot;
+    result = p0 + n * dot;
+}
+
+Vector3 CollisionsHelper::ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1)
+{
+    Vector3 result;
+    ClosestPointPointLine(point, p0, p1, result);
+    return result;
 }
 
 void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Vector3& result)
@@ -123,6 +141,13 @@ void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vec
     result = vertex1 + ab * v2 + ac * w2; //= u*vertex1 + v*vertex2 + w*vertex3, u = va * denom = 1.0f - v - w
 }
 
+Vector3 CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3)
+{
+    Vector3 result;
+    ClosestPointPointTriangle(point, vertex1, vertex2, vertex3, result);
+    return result;
+}
+
 void CollisionsHelper::ClosestPointPlanePoint(const Plane& plane, const Vector3& point, Vector3& result)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
@@ -132,6 +157,13 @@ void CollisionsHelper::ClosestPointPlanePoint(const Plane& plane, const Vector3&
     const float t = dot - plane.D;
 
     result = point - t * plane.Normal;
+}
+
+Vector3 CollisionsHelper::ClosestPointPlanePoint(const Plane& plane, const Vector3& point)
+{
+    Vector3 result;
+    ClosestPointPlanePoint(plane, point, result);
+    return result;
 }
 
 void CollisionsHelper::ClosestPointBoxPoint(const BoundingBox& box, const Vector3& point, Vector3& result)
@@ -144,12 +176,26 @@ void CollisionsHelper::ClosestPointBoxPoint(const BoundingBox& box, const Vector
     Vector3::Min(temp, box.Maximum, result);
 }
 
+Vector3 CollisionsHelper::ClosestPointBoxPoint(const BoundingBox& box, const Vector3& point)
+{
+    Vector3 result;
+    ClosestPointBoxPoint(box, point, result);
+    return result;
+}
+
 void CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point, Vector2& result)
 {
     Vector2 temp, end;
     Vector2::Add(rect.Location, rect.Size, end);
     Vector2::Max(point, rect.Location, temp);
     Vector2::Min(temp, end, result);
+}
+
+Vector2 CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point)
+{
+    Vector2 result;
+    ClosestPointRectanglePoint(rect, point, result);
+    return result;
 }
 
 void CollisionsHelper::ClosestPointSpherePoint(const BoundingSphere& sphere, const Vector3& point, Vector3& result)
@@ -169,6 +215,13 @@ void CollisionsHelper::ClosestPointSpherePoint(const BoundingSphere& sphere, con
     result += sphere.Center;
 }
 
+Vector3 CollisionsHelper::ClosestPointSpherePoint(const BoundingSphere& sphere, const Vector3& point)
+{
+    Vector3 result;
+    ClosestPointSpherePoint(sphere, point, result);
+    return result;
+}
+
 void CollisionsHelper::ClosestPointSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2, Vector3& result)
 {
     // Source: Jorgy343
@@ -184,6 +237,13 @@ void CollisionsHelper::ClosestPointSphereSphere(const BoundingSphere& sphere1, c
 
     //Add the first sphere's center to the direction to get a point on the first sphere.
     result += sphere1.Center;
+}
+
+Vector3 CollisionsHelper::ClosestPointSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
+{
+    Vector3 result;
+    ClosestPointSphereSphere(sphere1, sphere2, result);
+    return result;
 }
 
 float CollisionsHelper::DistancePlanePoint(const Plane& plane, const Vector3& point)

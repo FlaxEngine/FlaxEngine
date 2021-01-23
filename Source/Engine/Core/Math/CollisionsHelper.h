@@ -78,7 +78,25 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="p0">The line first point.</param>
     /// <param name="p1">The line second point.</param>
+    /// <returns>The closest point between the two objects.</result>
+    static Vector2 ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1);
+
+    /// <summary>
+    /// Determines the closest point between a point and a line.
+    /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <param name="p0">The line first point.</param>
+    /// <param name="p1">The line second point.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
+    static void ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1, Vector3& result);
+
+    /// <summary>
+    /// Determines the closest point between a point and a line.
+    /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <param name="p0">The line first point.</param>
+    /// <param name="p1">The line second point.</param>
+    /// <returns>The closest point between the two objects.</result>
     static Vector3 ClosestPointPointLine(const Vector3& point, const Vector3& p0, const Vector3& p1);
 
     /// <summary>
@@ -92,12 +110,30 @@ public:
     static void ClosestPointPointTriangle(const Vector3& point, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Vector3& result);
 
     /// <summary>
+    /// Determines the closest point between a point and a triangle.
+    /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <param name="vertex1">The first vertex to test.</param>
+    /// <param name="vertex2">The second vertex to test.</param>
+    /// <param name="vertex3">The third vertex to test.</param>
+    /// <returns>The closest point between the two objects.</returns>
+    static Vector3 ClosestPointPointTriangle(const Vector3& point, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3);
+
+    /// <summary>
     /// Determines the closest point between a <see cref="Plane" /> and a point.
     /// </summary>
     /// <param name="plane">The plane to test.</param>
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointPlanePoint(const Plane& plane, const Vector3& point, Vector3& result);
+    
+    /// <summary>
+    /// Determines the closest point between a <see cref="Plane" /> and a point.
+    /// </summary>
+    /// <param name="plane">The plane to test.</param>
+    /// <param name="point">The point to test.</param>
+    /// <returns>The closest point between the two objects.</returns>
+    static Vector3 ClosestPointPlanePoint(const Plane& plane, const Vector3& point);
 
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingBox" /> and a point.
@@ -106,6 +142,14 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointBoxPoint(const BoundingBox& box, const Vector3& point, Vector3& result);
+    
+    /// <summary>
+    /// Determines the closest point between a <see cref="BoundingBox" /> and a point.
+    /// </summary>
+    /// <param name="box">The box to test.</param>
+    /// <param name="point">The point to test.</param>
+    /// <returns>The closest point between the two objects.</returns>
+    static Vector3 ClosestPointBoxPoint(const BoundingBox& box, const Vector3& point);
 
     /// <summary>
     /// Determines the closest point between a <see cref="Rectangle" /> and a point.
@@ -114,6 +158,14 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point, Vector2& result);
+    
+    /// <summary>
+    /// Determines the closest point between a <see cref="Rectangle" /> and a point.
+    /// </summary>
+    /// <param name="rect">The rectangle to test.</param>
+    /// <param name="point">The point to test.</param>
+    /// <returns>The closest point between the two objects.</returns>
+    static Vector2 ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point);
 
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingSphere" /> and a point.
@@ -122,6 +174,14 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Vector3.Zero" />.</param>
     static void ClosestPointSpherePoint(const BoundingSphere& sphere, const Vector3& point, Vector3& result);
+    
+    /// <summary>
+    /// Determines the closest point between a <see cref="BoundingSphere" /> and a point.
+    /// </summary>
+    /// <param name="sphere">The sphere to test.</param>
+    /// <param name="point">The point to test.</param>
+    /// <returns>The closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Vector3.Zero" />.</return>
+    static Vector3 ClosestPointSpherePoint(const BoundingSphere& sphere, const Vector3& point);
 
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingSphere" /> and a <see cref="BoundingSphere" />.
@@ -135,6 +195,19 @@ public:
     /// intersection.
     /// </remarks>
     static void ClosestPointSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2, Vector3& result);
+    
+    /// <summary>
+    /// Determines the closest point between a <see cref="BoundingSphere" /> and a <see cref="BoundingSphere" />.
+    /// </summary>
+    /// <param name="sphere1">The first sphere to test.</param>
+    /// <param name="sphere2">The second sphere to test.</param>
+    /// <returns>The closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Vector3.Zero" />.</returns>
+    /// <remarks>
+    /// If the two spheres are overlapping, but not directly on top of each other, the closest point
+    /// is the 'closest' point of intersection. This can also be considered is the deepest point of
+    /// intersection.
+    /// </remarks>
+    static Vector3 ClosestPointSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2);
 
     /// <summary>
     /// Determines the distance between a <see cref="Plane" /> and a point.
