@@ -17,7 +17,6 @@ static WSAData _wsaData;
 /*
  * TODO: Create func to retrieve WSA error string
  * Known issues :
- *  Sometimes getaddrinfo fails without reason, re-trying right after works
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
 
