@@ -1,0 +1,29 @@
+﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#if PLATFORM_WIN32
+
+#include "Engine/Platform/Base/NetworkBase.h"
+
+class FLAXENGINE_API Win32Network : public NetworkBase
+{ 
+public:
+    // [NetworkBase]
+    static bool Init();
+    static void Exit();
+    static bool CreateSocket(NetworkSocket& socket, NetworkSocketCreateSettings& settings);
+    static bool DestroySocket(NetworkSocket& socket);
+    static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
+    static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
+    static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
+    static bool IsReadable(NetworkSocket& socket, uint64* size);
+    static uint32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
+    static uint32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
+    static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint);
+    static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint endPoint);
+    friend NetworkEndPoint;
+    friend NetworkSocket;
+};
+
+#endif

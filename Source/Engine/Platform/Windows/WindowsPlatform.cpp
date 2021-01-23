@@ -624,6 +624,8 @@ void WindowsPlatform::Exit()
 
     // Unregister app class
     UnregisterClassW(ApplicationWindowClass, nullptr);
+
+    Win32Platform::Exit();
 }
 
 #if !BUILD_RELEASE

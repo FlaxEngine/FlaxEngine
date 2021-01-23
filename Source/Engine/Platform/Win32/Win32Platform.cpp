@@ -11,6 +11,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "IncludeWindowsHeaders.h"
 #include "Engine/Core/Collections/HashFunctions.h"
+#include "Engine/Platform/Network.h"
 
 #include <Psapi.h>
 #include <WinSock2.h>
@@ -212,7 +213,15 @@ bool Win32Platform::Init()
         DeviceId.D = (uint32)cpuInfo.ClockSpeed * cpuInfo.LogicalProcessorCount * cpuInfo.ProcessorCoreCount * cpuInfo.CacheLineSize;
     }
 
+    //TODO: log error if true
+    Win32Network::Init();
+    
     return false;
+}
+
+void Win32Platform::Exit()
+{
+    Network::Exit();
 }
 
 void Win32Platform::MemoryBarrier()
