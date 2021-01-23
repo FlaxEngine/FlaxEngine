@@ -22,6 +22,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class WindowsWindow;
 typedef WindowsWindow Window;
+class Win32Network;
+typedef Win32Network Network;
 
 #elif PLATFORM_UWP
 
