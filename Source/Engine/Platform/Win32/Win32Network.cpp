@@ -240,7 +240,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = send(*(SOCKET*)socket.Data, (const char*)data, length, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data ! Socket : {0} Data Length : {1}", *(SOCKET*)socket.Data, length);
+            LOG(Error, "Unable to send data ! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, WSAGetLastError());
             return -1;
         }
     }
@@ -248,7 +248,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data ! Socket : {0} Address : {1} Port : {2} Data Length : {3}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length);
+            LOG(Error, "Unable to send data ! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, WSAGetLastError());
             return -1;
         }
     }
@@ -271,7 +271,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     {
         if ((size = recv(*(SOCKET*)socket.Data, (char*) buffer, bufferSize, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1}", *(SOCKET*)socket.Data, bufferSize);
+            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, WSAGetLastError());
             return -1;
         }
     }
@@ -281,7 +281,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
         sockaddr_in6 addr;
         if ((size = recvfrom(*(SOCKET*)socket.Data, (char*) buffer, bufferSize, 0, (sockaddr*)&addr, &addrsize)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1}", *(SOCKET*)socket.Data, bufferSize);
+            LOG(Error, "Unable to read data ! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, WSAGetLastError());
             return -1;
         }
         if (CreateEndPointFromAddr((sockaddr*)&addr, *endPoint))
