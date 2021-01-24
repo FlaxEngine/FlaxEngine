@@ -104,7 +104,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
@@ -140,7 +140,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
