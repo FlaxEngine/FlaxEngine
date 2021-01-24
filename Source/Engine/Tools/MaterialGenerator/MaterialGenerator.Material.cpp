@@ -274,8 +274,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Compute depth difference
         auto depthDiff = writeLocal(VariantType::Float, String::Format(TEXT("{0} * ViewFar - {1}"), sceneDepth.Value, posVS.Value), node);
 
+        auto fadeDistance = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
+
         // Apply smoothing factor and clamp the result
-        value = writeLocal(VariantType::Float, String::Format(TEXT("saturate({0} / {1})"), depthDiff.Value, node->Values[0].AsFloat), node);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("saturate({0} / {1})"), depthDiff.Value, fadeDistance.Value), node);
         break;
     }
         // Material Function
