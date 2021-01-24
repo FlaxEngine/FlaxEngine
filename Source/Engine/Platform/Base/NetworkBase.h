@@ -53,7 +53,7 @@ class FLAXENGINE_API NetworkBase
     static bool DestroySocket(NetworkSocket& socket);
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
-    static bool Listen(NetworkSocket& socket, int32 queueSize);
+    static bool Listen(NetworkSocket& socket, uint16 queueSize);
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket, uint64* size);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);

@@ -31,7 +31,7 @@ bool NetworkBase::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     return false;
 }
 
-bool NetworkBase::Listen(NetworkSocket& socket, int32 queueSize)
+bool NetworkBase::Listen(NetworkSocket& socket, uint16 queueSize)
 {
     return false;
 }

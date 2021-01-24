@@ -203,7 +203,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     return false;
 }
 
-bool Win32Network::Listen(NetworkSocket& socket, int32 queueSize)
+bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
 {
     if (listen(*(SOCKET*)socket.Data, (int32)queueSize) == SOCKET_ERROR)
     {
