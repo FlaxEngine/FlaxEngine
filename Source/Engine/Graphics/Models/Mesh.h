@@ -216,7 +216,7 @@ public:
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, int32* ib)
     {
@@ -231,7 +231,7 @@ public:
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, uint16* ib)
     {
@@ -246,7 +246,7 @@ public:
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices);
