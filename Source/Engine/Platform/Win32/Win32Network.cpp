@@ -177,7 +177,7 @@ bool Win32Network::DestroySocket(NetworkSocket& socket)
 
 bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value)
 {
-    int32 v = value;
+    const int32 v = value;
     return SetSocketOption(socket, option, v);
 }
 
@@ -213,7 +213,7 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& o
 bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value)
 {
     int32 v;
-    bool status = GetSocketOption(socket, option, &v);
+    const bool status = GetSocketOption(socket, option, &v);
     *value = v;
     return status;
 }
