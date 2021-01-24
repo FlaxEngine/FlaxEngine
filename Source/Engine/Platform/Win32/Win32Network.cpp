@@ -332,13 +332,13 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     // paddr = nullptr don't work with this func
     if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address != nullptr ? address->Get() : String("ANY").Get(), gai_strerror(status)); //TODO: address can be NULL
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address != nullptr ? address->Get() : String("ANY").Get(), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address != nullptr ? address->Get() : String("ANY").Get());//TODO: address can be NULL
+        LOG(Error, "Unable to resolve address! Address : {0}", address != nullptr ? address->Get() : String("ANY").Get());
         return true;
     }
 
