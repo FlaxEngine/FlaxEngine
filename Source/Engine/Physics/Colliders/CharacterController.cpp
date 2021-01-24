@@ -177,7 +177,7 @@ void CharacterController::CreateActor()
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     desc.height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    desc.radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
+    desc.radius = Math::Max(Math::Abs(_radius) * scaling - desc.contactOffset, minSize);
 
     // Create controller
     _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
@@ -202,7 +202,7 @@ void CharacterController::UpdateSize() const
     {
         const float scaling = _cachedScale.GetAbsolute().MaxValue();
         const float minSize = 0.001f;
-        const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
+        const float radius = Math::Max(Math::Abs(_radius) * scaling - Math::Max(_contactOffset, ZeroTolerance), minSize);
         const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
 
         _controller->setRadius(radius);
