@@ -371,6 +371,22 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         if (value.Type.Type == VariantType::Enum)
             value.AsUint64 = value.AsUint64 | (uint64)tryGetValue(node->GetBox(1), Value::Zero);
         break;
+
+    case 48:
+    {
+        const float inVal  = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat;
+        const Vector2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsVector2();
+        const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
+
+        // Use clamp?
+        if (node->Values[3].AsBool) 
+        {
+            value = Math::Clamp(rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X), rangeB.X, rangeB.Y);
+            break;
+        }
+        value = rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X);
+        break;
+    }
     default:
         break;
     }
