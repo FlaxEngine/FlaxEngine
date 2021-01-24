@@ -126,7 +126,7 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointPlanePoint(const Plane& plane, const Vector3& point, Vector3& result);
-    
+
     /// <summary>
     /// Determines the closest point between a <see cref="Plane" /> and a point.
     /// </summary>
@@ -142,7 +142,7 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointBoxPoint(const BoundingBox& box, const Vector3& point, Vector3& result);
-    
+
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingBox" /> and a point.
     /// </summary>
@@ -158,7 +158,7 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
     static void ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point, Vector2& result);
-    
+
     /// <summary>
     /// Determines the closest point between a <see cref="Rectangle" /> and a point.
     /// </summary>
@@ -174,7 +174,7 @@ public:
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Vector3.Zero" />.</param>
     static void ClosestPointSpherePoint(const BoundingSphere& sphere, const Vector3& point, Vector3& result);
-    
+
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingSphere" /> and a point.
     /// </summary>
@@ -195,7 +195,7 @@ public:
     /// intersection.
     /// </remarks>
     static void ClosestPointSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2, Vector3& result);
-    
+
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingSphere" /> and a <see cref="BoundingSphere" />.
     /// </summary>
