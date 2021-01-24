@@ -267,6 +267,9 @@ namespace FlaxEditor.Surface
             case NodeElementType.Actor:
                 element = new ActorSelect(this, arch);
                 break;
+            case NodeElementType.UnsignedIntegerValue:
+                element = new UnsignedIntegerValue(this, arch);
+                break;
             //default: throw new NotImplementedException("Unknown node element type: " + arch.Type);
             }
             if (element != null)

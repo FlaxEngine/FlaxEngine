@@ -143,6 +143,8 @@ namespace FlaxEditor.GUI.Input
             try
             {
                 var value = ShuntingYard.Parse(Text);
+                if (value < 0)
+                    value = 0;
                 Value = (uint)value;
             }
             catch (Exception ex)
