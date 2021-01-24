@@ -348,6 +348,22 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Vector3, text, node);
         break;
     }
+        // Rotator
+    case 27:
+    {
+        auto UV = tryGetValue(node->GetBox(0), Value::Zero).AsVector2();
+        auto center = tryGetValue(node->GetBox(1), Value::Zero).AsVector2();
+        auto rotationAngle = tryGetValue(node->GetBox(2), Value::Zero).AsFloat();
+
+        const auto x1 = writeLocal(ValueType::Vector2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, UV.Value), node);
+        const auto RACosSin = writeLocal(ValueType::Vector2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
+
+        const auto DotB1 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), RACosSin.Value), node);
+        const auto DotB2 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.y, {0}.x)"), RACosSin.Value), node);
+
+        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, DotB1.Value, DotB2.Value, center.Value), node);
+        break;
+    }
     default:
         break;
     }
