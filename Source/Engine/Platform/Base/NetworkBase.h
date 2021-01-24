@@ -20,15 +20,6 @@ enum class FLAXENGINE_API NetworkIPVersion
     IPv6
 };
 
-struct FLAXENGINE_API NetworkSocketCreateSettings
-{
-    NetworkProtocolType Protocol = NetworkProtocolType::Udp;
-    NetworkIPVersion IPVersion = NetworkIPVersion::IPv4;
-    bool DualStacking = true;
-    bool ReuseAddress = true;
-    bool Broadcast = false;
-};
-
 struct FLAXENGINE_API NetworkSocket
 {
     NetworkProtocolType Protocol = NetworkProtocolType::Undefined;
@@ -44,13 +35,36 @@ struct FLAXENGINE_API NetworkEndPoint
     byte Data[28] = {}; // sizeof sockaddr_in6 , biggest sockaddr that we will use
 };
 
+enum FLAXENGINE_API NetworkSocketOption
+{
+    Debug,
+    ReuseAddr,
+    KeepAlive,
+    DontRoute,
+    Broadcast,
+    UseLoopback,
+    Linger,
+    OOBInline,
+    SendBuffer,
+    RecvBuffer,
+    SendTimeout,
+    RecvTimeout,
+    Error,
+    NoDelay,
+    IPv6Only
+};
+
 class FLAXENGINE_API NetworkBase
 {
     public:
     static bool Init();
     static void Exit();
-    static bool CreateSocket(NetworkSocket& socket, NetworkSocketCreateSettings& settings);
+    static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
     static bool DestroySocket(NetworkSocket& socket);
+    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value);
+    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32 value);
+    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value);
+    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32* value);
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool Listen(NetworkSocket& socket, uint16 queueSize);

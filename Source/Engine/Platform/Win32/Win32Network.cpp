@@ -7,6 +7,8 @@
 #include <ws2ipdef.h>
 #include <WS2tcpip.h>
 
+#define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) if (option == OPTENUM) { optlvl = OPTLEVEL; optnme = OPTNAME;}
+
 static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
 static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
 
@@ -110,13 +112,13 @@ void Win32Network::Exit()
     WSACleanup();
 }
 
-bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkSocketCreateSettings& settings)
+bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
 {
-    socket.Protocol = settings.Protocol;
-    socket.IPVersion = settings.IPVersion;
-    const uint8 family = settings.IPVersion == NetworkIPVersion::IPv6 ? AF_INET6 : AF_INET;
-    const uint8 stype = settings.Protocol == NetworkProtocolType::Tcp ? SOCK_STREAM : SOCK_DGRAM;
-    const uint8 proto = settings.Protocol == NetworkProtocolType::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
+    socket.Protocol = proto;
+    socket.IPVersion = ipv;
+    const uint8 family = socket.IPVersion == NetworkIPVersion::IPv6 ? AF_INET6 : AF_INET;
+    const uint8 stype = socket.Protocol == NetworkProtocolType::Tcp ? SOCK_STREAM : SOCK_DGRAM;
+    const uint8 proto = socket.Protocol == NetworkProtocolType::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
     SOCKET sock;
 
     if ((sock = ::socket(family, stype, proto)) == INVALID_SOCKET)
@@ -125,11 +127,13 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkSocketCreateSettin
         return true;
     }
     memcpy(socket.Data, &sock, sizeof sock);
+    /*
     DWORD dw = 0;
     if (family == AF_INET6 && setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&dw, sizeof dw) == SOCKET_ERROR)
     {
         LOG(Warning, "System does not support dual stacking socket! Error : {0}", GetLastErrorMessage().Get());
     }
+    
     unsigned long value = 1;
     if (settings.ReuseAddress && setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof value) == SOCKET_ERROR)
     {
@@ -145,7 +149,8 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkSocketCreateSettin
     }
     else if (settings.Broadcast)
         LOG(Warning, "Can't set socket option to SO_BROADCAST! The socket must use UDP protocol. Error : {0}", GetLastErrorMessage().Get());
-
+*/
+    unsigned long value = 1;
     if (ioctlsocket(sock, FIONBIO, &value) == SOCKET_ERROR)
     {
         LOG(Error, "Can't set socket to NON-BLOCKING type! Error : {0}", GetLastErrorMessage().Get());
@@ -170,6 +175,77 @@ bool Win32Network::DestroySocket(NetworkSocket& socket)
     return true;
 }
 
+bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value)
+{
+    int32 v = value;
+    return SetSocketOption(socket, option, v);
+}
+
+bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32 value)
+{
+    int32 optlvl = 0;
+    int32 optnme = 0;
+
+    SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
+    SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
+    SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
+    SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
+    SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
+    SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
+    SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
+    SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
+    SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
+    SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
+    SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
+    SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
+    SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
+    SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
+    SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
+    
+    if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)value, sizeof int32) == SOCKET_ERROR)
+    {
+        LOG(Warning, "Unable to set socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        return true;
+    }
+    return false;
+}
+
+bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value)
+{
+    int32 v;
+    bool status = GetSocketOption(socket, option, &v);
+    *value = v;
+    return status;
+}
+
+bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32* value)
+{
+    int32 optlvl = 0;
+    int32 optnme = 0;
+
+    SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
+    SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
+    SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
+    SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
+    SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
+    SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
+    SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
+    SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
+    SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
+    SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
+    SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
+    SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
+    SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
+    SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
+
+    int32 size;
+    if (getsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)value, &size) == SOCKET_ERROR)
+    {
+        LOG(Warning, "Unable to get socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        return true;
+    }
+    return false;
+}
 
 bool Win32Network::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
 {
