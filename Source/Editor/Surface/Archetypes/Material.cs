@@ -657,7 +657,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Result", typeof(Vector3), 2)
                 }
             },
-
         };
     }
 }

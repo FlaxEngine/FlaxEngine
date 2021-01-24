@@ -341,9 +341,9 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     case 26:
     {
-        const auto BaseNormal = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
-        const auto AdditionalNormal = tryGetValue(node->GetBox(1), Value::Zero).AsVector3();
-        const String text = String::Format(TEXT("float3((float2({0}.xy) + float2({1}.xy) * 2.0), sqrt(saturate(1.0 - dot((float2({0}.xy) + float2({1}.xy) * 2.0).xy, (float2({0}.xy) + float2({1}.xy) * 2.0).xy))))"), BaseNormal.Value, AdditionalNormal.Value);
+        const auto baseNormal = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
+        const auto additionalNormal = tryGetValue(node->GetBox(1), Value::Zero).AsVector3();
+        const String text = String::Format(TEXT("float3((float2({0}.xy) + float2({1}.xy) * 2.0), sqrt(saturate(1.0 - dot((float2({0}.xy) + float2({1}.xy) * 2.0).xy, (float2({0}.xy) + float2({1}.xy) * 2.0).xy))))"), baseNormal.Value, additionalNormal.Value);
         value = writeLocal(ValueType::Vector3, text, node);
         break;
     }
