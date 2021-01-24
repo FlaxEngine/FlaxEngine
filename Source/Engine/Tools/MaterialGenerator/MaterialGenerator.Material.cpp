@@ -339,6 +339,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 25:
         value = Value(VariantType::Vector3, TEXT("GetObjectSize(input)"));
         break;
+        // Blend Normals
     case 26:
     {
         const auto baseNormal = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
