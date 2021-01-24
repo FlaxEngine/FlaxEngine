@@ -55,7 +55,7 @@ void CharacterController::SetHeight(const float value)
 
 void CharacterController::SetSlopeLimit(float value)
 {
-    value = Math::Clamp(value, 0.0f, 90.0f);
+    value = Math::Clamp(value, 0.0f, 89.0f);
     if (Math::NearEqual(value, _slopeLimit))
         return;
 
