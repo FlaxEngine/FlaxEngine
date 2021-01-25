@@ -364,7 +364,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Vector2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, dotB1.Value, dotB2.Value, center.Value), node);
         break;
     }
-        // SphereMask
+        // Sphere Mask
     case 28:
     {
         Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
@@ -378,7 +378,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Apply hardness, use 0.991 as max since any value above will result in harsh aliasing
         auto x2 = writeLocal(ValueType::Float, String::Format(TEXT("saturate((1 - {0}) * (1 / (1 - clamp({1}, 0, 0.991f))))"), x1.Value, hardness.Value), node);
-  
+
         value = writeLocal(ValueType::Float, String::Format(TEXT("{0} ? (1 - {1}) : {1}"), invert.Value, x2.Value), node);
         break;
     }
