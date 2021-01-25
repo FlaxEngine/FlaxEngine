@@ -67,12 +67,18 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
     }
     void* paddr;
     if (addr->sa_family == AF_INET6)
+    {
         paddr = &((sockaddr_in6*)addr)->sin6_addr;
+        port = ntohs(((sockaddr_in6*)addr)->sin6_port);
+    }
     else if (addr->sa_family == AF_INET)
+    {
         paddr = &((sockaddr_in*)addr)->sin_addr;
+        port = ntohs(((sockaddr_in*)addr)->sin_port);
+    }
     else
     {
-        LOG(Error, "Unable to create endpoint, sockaddr must be INET or INET6!");
+        LOG(Error, "Unable to create endpoint, sockaddr must be INET or INET6! Family : {0}", addr->sa_family);
         return true;
     }
     
@@ -83,7 +89,9 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         return true;
     }
     endPoint.Address = String(ip);
-    endPoint.Port = String(service);
+    char strPort[6];
+    _itoa(port, strPort, 10);
+    endPoint.Port = String(strPort);
     endPoint.IPVersion = GetIPVersionFromAddr(*addr);
     memcpy(endPoint.Data, addr, size);
     return false;
