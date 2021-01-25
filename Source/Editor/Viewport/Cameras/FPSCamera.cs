@@ -188,7 +188,7 @@ namespace FlaxEditor.Viewport.Cameras
             if (input.IsPanning)
             {
                 var panningSpeed = 0.8f;
-                if (_invertPanning)
+                if (Viewport.InvertPanning)
                 {
                     position += up * (mouseDelta.Y * panningSpeed);
                     position += right * (mouseDelta.X * panningSpeed);
