@@ -7,7 +7,7 @@
 #include <ws2ipdef.h>
 #include <WS2tcpip.h>
 
-#define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) if (option == OPTENUM) { optlvl = OPTLEVEL; optnme = OPTNAME;}
+#define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) case OPTENUM: optlvl = OPTLEVEL; optnme = OPTNAME; break;
 
 static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
 static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
@@ -159,21 +159,24 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption op
     int32 optlvl = 0;
     int32 optnme = 0;
 
-    SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
-    SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
-    SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
-    SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
-    SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
-    SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
-    SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
-    SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
-    SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
-    SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
-    SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
-    SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
-    SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
-    SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
-    SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
+    switch (option)
+    {
+        SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
+        SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
+        SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
+        SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
+        SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
+        SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
+        SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
+        SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
+        SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
+        SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
+        SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
+        SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
+        SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
+        SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
+        SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
+    }
     
     if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, sizeof value) == SOCKET_ERROR)
     {
@@ -195,22 +198,24 @@ bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption op
 {
     int32 optlvl = 0;
     int32 optnme = 0;
-
-    SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
-    SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
-    SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
-    SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
-    SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
-    SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
-    SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
-    SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
-    SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
-    SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
-    SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
-    SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
-    SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
-    SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
-
+    
+    switch (option)
+    {
+        SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
+        SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
+        SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
+        SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
+        SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
+        SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
+        SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
+        SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
+        SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
+        SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
+        SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
+        SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
+        SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
+        SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
+    }
     int32 size;
     if (getsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)value, &size) == SOCKET_ERROR)
     {
