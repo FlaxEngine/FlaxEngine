@@ -405,9 +405,9 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         // Remap
     case 48:
     {
-        auto inVal  = tryGetValue(node->GetBox(0), node->Values[0]);
-        auto rangeA = tryGetValue(node->GetBox(1), node->Values[1]);
-        auto rangeB = tryGetValue(node->GetBox(2), node->Values[2]);
+        auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
+        auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
+        auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
 
         // Clamp value?
         if (node->Values[3].AsBool)
