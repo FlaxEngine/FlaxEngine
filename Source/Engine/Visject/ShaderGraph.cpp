@@ -402,6 +402,18 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("radians"));
         break;
     }
+        // Remap
+    case 48:
+    {
+        const auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
+        const auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
+        const auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
+        const auto clamp  = tryGetValue(node->GetBox(3), node->Values[3]).AsBool();
+
+        const auto mapFunc = String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value);
+        value = writeLocal(ValueType::Float, String::Format(TEXT("{2} ? clamp({0}, {1}.x, {1}.y) : {0}"), mapFunc, rangeB.Value, clamp.Value), node);
+        break;
+    }
     default:
         break;
     }

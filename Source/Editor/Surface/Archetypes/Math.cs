@@ -404,6 +404,29 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "A | B", null, 2),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 48,
+                Title = "Remap",
+                Description = "Remaps a value from one range to another, so for example having 25 in a range of 0 to 100 being remapped to 0 to 1 would return 0.25",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Vector2(175, 75),
+                DefaultValues = new object[]
+                {
+                    25.0f,
+                    new Vector2(0.0f, 100.0f),
+                    new Vector2(0.0f, 1.0f),
+                    false
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0, 0),
+                    NodeElementArchetype.Factory.Input(1, "In Range", true, typeof(Vector2), 1, 1),
+                    NodeElementArchetype.Factory.Input(2, "Out Range", true, typeof(Vector2), 2, 2),
+                    NodeElementArchetype.Factory.Input(3, "Clamp", true, typeof(bool), 3, 3),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 4),
+                }
+            },
         };
     }
 }
