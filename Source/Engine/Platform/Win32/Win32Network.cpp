@@ -288,15 +288,45 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     return false;
 }
 
-bool Win32Network::IsReadable(NetworkSocket& socket, uint64* size)
+bool Win32Network::IsReadable(NetworkSocket& socket)
 {
-    unsigned long value;
-    if (ioctlsocket(*(SOCKET*)socket.Data, FIONREAD, &value) != 0)
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(*(SOCKET*)socket.Data, &readfds);
+    timeval t;
+    t.tv_sec = 0;
+    t.tv_usec = 0;
+    if (select(0, &readfds, nullptr, nullptr, &t) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to query socket for readability! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
-        return true;
+        int error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Error, "Unable to check readability of socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        return false;
     }
-    *size = value;
+    if (FD_ISSET(*(SOCKET*)socket.Data, &readfds))
+        return true;
+    return false;
+}
+
+bool Win32Network::IsWriteable(NetworkSocket& socket)
+{
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(*(SOCKET*)socket.Data, &writefds);
+    timeval t;
+    t.tv_sec = 0;
+    t.tv_usec = 0;
+    if (select(0, nullptr, &writefds, nullptr, &t) == SOCKET_ERROR)
+    {
+        int error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Error, "Unable to check writeability of socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        return false;
+    }
+    if (FD_ISSET(*(SOCKET*)socket.Data, &writefds))
+        return true;
     return false;
 }
 

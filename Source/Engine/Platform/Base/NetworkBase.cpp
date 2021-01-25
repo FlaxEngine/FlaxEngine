@@ -61,9 +61,14 @@ bool NetworkBase::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Netw
     return false;
 }
 
-bool NetworkBase::IsReadable(NetworkSocket& socket, uint64* size)
+bool NetworkBase::IsReadable(NetworkSocket& socket)
 {
     return false;
+}
+
+bool NetworkBase::IsWriteable(NetworkSocket& socket)
+{
+    return true;
 }
 
 int32 NetworkBase::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
