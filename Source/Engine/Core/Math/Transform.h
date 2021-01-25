@@ -293,6 +293,14 @@ public:
     static void Lerp(const Transform& t1, const Transform& t2, float amount, Transform& result);
 };
 
+namespace Math
+{
+    FORCE_INLINE static bool NearEqual(const Transform& a, const Transform& b)
+    {
+        return Transform::NearEqual(a, b);
+    }
+}
+
 template<>
 struct TIsPODType<Transform>
 {

@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/Transform.h"
 
 namespace AnimationUtils
 {
@@ -41,6 +42,12 @@ namespace AnimationUtils
     }
 
     template<>
+    FORCE_INLINE Transform GetZero<Transform>()
+    {
+        return Transform::Identity;
+    }
+
+    template<>
     FORCE_INLINE Color GetZero<Color>()
     {
         return Color::Black;
@@ -64,6 +71,16 @@ namespace AnimationUtils
     {
         const float oneThird = 1.0f / 3.0f;
         Quaternion::Slerp(a, b, oneThird, result);
+    }
+
+    template<>
+    FORCE_INLINE void GetTangent<Transform>(const Transform& a, const Transform& b, float length, Transform& result)
+    {
+        const float oneThird = 1.0f / 3.0f;
+        const float oneThirdLength = length * oneThird;
+        result.Translation = a.Translation + b.Translation * oneThirdLength;
+        Quaternion::Slerp(a.Orientation, b.Orientation, oneThird, result.Orientation);
+        result.Scale = a.Scale + b.Scale * oneThirdLength;
     }
 
     template<class T>
@@ -202,5 +219,13 @@ namespace AnimationUtils
         Quaternion::Slerp(p01, p12, alpha, p012);
         Quaternion::Slerp(p12, p23, alpha, p123);
         Quaternion::Slerp(p012, p123, alpha, result);
+    }
+
+    template<>
+    void Bezier<Transform>(const Transform& p0, const Transform& p1, const Transform& p2, const Transform& p3, float alpha, Transform& result)
+    {
+        Bezier<Vector3>(p0.Translation, p1.Translation, p2.Translation, p3.Translation, alpha, result.Translation);
+        Bezier<Quaternion>(p0.Orientation, p1.Orientation, p2.Orientation, p3.Orientation, alpha, result.Orientation);
+        Bezier<Vector3>(p0.Scale, p1.Scale, p2.Scale, p3.Scale, alpha, result.Scale);
     }
 }

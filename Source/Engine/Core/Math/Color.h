@@ -506,6 +506,14 @@ inline Color operator*(float a, const Color& b)
     return b * a;
 }
 
+namespace Math
+{
+    FORCE_INLINE static bool NearEqual(const Color& a, const Color& b)
+    {
+        return Color::NearEqual(a, b);
+    }
+}
+
 template<>
 struct TIsPODType<Color>
 {

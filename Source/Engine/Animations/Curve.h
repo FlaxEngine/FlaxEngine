@@ -52,6 +52,11 @@ public:
     {
         result = a;
     }
+    
+    bool operator==(const StepCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
+    }
 } PACK_END();
 
 /// <summary>
@@ -96,6 +101,11 @@ public:
     {
         result.Time = a.Time + (b.Time - a.Time) * alpha;
         AnimationUtils::Interpolate(a.Value, b.Value, alpha, result.Value);
+    }
+
+    bool operator==(const LinearCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -163,6 +173,11 @@ public:
 
         result.TangentIn /= length;
         result.TangentOut = result.TangentIn;
+    }
+    
+    bool operator==(const HermiteCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -239,6 +254,11 @@ public:
 
         result.TangentIn = a.TangentOut;
         result.TangentOut = b.TangentIn;
+    }
+
+    bool operator==(const BezierCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -707,6 +727,30 @@ public:
         stream.ReadBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
 
         return false;
+    }
+
+public:
+
+    FORCE_INLINE KeyFrame& operator[](int32 index)
+    {
+        return _keyframes[index];
+    }
+
+    FORCE_INLINE const KeyFrame& operator[](int32 index) const
+    {
+        return _keyframes[index];
+    }
+
+    bool operator==(const Curve& other) const
+    {
+        if (_keyframes.Count() != other._keyframes.Count())
+            return false;
+        for (int32 i = 0; i < _keyframes.Count(); i++)
+        {
+            if (!(_keyframes[i] == other._keyframes[i]))
+                return false;
+        }
+        return true;
     }
 };
 
