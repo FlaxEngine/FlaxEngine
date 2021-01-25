@@ -21,22 +21,22 @@ bool NetworkBase::DestroySocket(NetworkSocket& socket)
     return false;
 }
 
-bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value)
+bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value)
 {
     return false;
 }
 
-bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32 value)
+bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value)
 {
     return false;
 }
 
-bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value)
+bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value)
 {
     return false;
 }
 
-bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32* value)
+bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value)
 {
     return false;
 }

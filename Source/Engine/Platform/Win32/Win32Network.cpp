@@ -118,38 +118,15 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto
     socket.IPVersion = ipv;
     const uint8 family = socket.IPVersion == NetworkIPVersion::IPv6 ? AF_INET6 : AF_INET;
     const uint8 stype = socket.Protocol == NetworkProtocolType::Tcp ? SOCK_STREAM : SOCK_DGRAM;
-    const uint8 proto = socket.Protocol == NetworkProtocolType::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
+    const uint8 prot = socket.Protocol == NetworkProtocolType::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
     SOCKET sock;
 
-    if ((sock = ::socket(family, stype, proto)) == INVALID_SOCKET)
+    if ((sock = ::socket(family, stype, prot)) == INVALID_SOCKET)
     {
         LOG(Error, "Can't create native socket! Error : {0}", GetLastErrorMessage().Get());
         return true;
     }
     memcpy(socket.Data, &sock, sizeof sock);
-    /*
-    DWORD dw = 0;
-    if (family == AF_INET6 && setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&dw, sizeof dw) == SOCKET_ERROR)
-    {
-        LOG(Warning, "System does not support dual stacking socket! Error : {0}", GetLastErrorMessage().Get());
-    }
-    
-    unsigned long value = 1;
-    if (settings.ReuseAddress && setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof value) == SOCKET_ERROR)
-    {
-        LOG(Warning, "Can't set socket option to SO_REUSEADDR! Error : {0}", GetLastErrorMessage().Get());
-    }
-
-    if (settings.Broadcast && settings.Protocol == NetworkProtocolType::Udp)
-    {
-        if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&value, sizeof value) == SOCKET_ERROR)
-        {
-            LOG(Warning, "Can't set socket option to SO_BROADCAST! Error : {0}", GetLastErrorMessage().Get());
-        }
-    }
-    else if (settings.Broadcast)
-        LOG(Warning, "Can't set socket option to SO_BROADCAST! The socket must use UDP protocol. Error : {0}", GetLastErrorMessage().Get());
-*/
     unsigned long value = 1;
     if (ioctlsocket(sock, FIONBIO, &value) == SOCKET_ERROR)
     {
@@ -175,13 +152,13 @@ bool Win32Network::DestroySocket(NetworkSocket& socket)
     return true;
 }
 
-bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value)
+bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value)
 {
     const int32 v = value;
     return SetSocketOption(socket, option, v);
 }
 
-bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32 value)
+bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value)
 {
     int32 optlvl = 0;
     int32 optnme = 0;
@@ -202,7 +179,7 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& o
     SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
     SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     
-    if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)value, sizeof int32) == SOCKET_ERROR)
+    if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, sizeof value) == SOCKET_ERROR)
     {
         LOG(Warning, "Unable to set socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
         return true;
@@ -210,15 +187,15 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption& o
     return false;
 }
 
-bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value)
+bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value)
 {
     int32 v;
     const bool status = GetSocketOption(socket, option, &v);
-    *value = v;
+    *value = v == 1 ? true : false;
     return status;
 }
 
-bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32* value)
+bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value)
 {
     int32 optlvl = 0;
     int32 optnme = 0;

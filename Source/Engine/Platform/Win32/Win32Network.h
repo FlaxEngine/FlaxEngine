@@ -17,10 +17,10 @@ public:
     static void Exit();
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
     static bool DestroySocket(NetworkSocket& socket);
-    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool value);
-    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32 value);
-    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, bool* value);
-    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption& option, int32* value);
+    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);
+    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value);
+    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value);
+    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value);
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
