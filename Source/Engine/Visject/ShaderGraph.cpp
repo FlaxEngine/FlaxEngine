@@ -405,17 +405,12 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         // Remap
     case 48:
     {
-        auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
-        auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
-        auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
+        const auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
+        const auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
+        const auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
 
-        // Clamp value?
-        if (node->Values[3].AsBool)
-        {
-            value = writeLocal(ValueType::Float, String::Format(TEXT("clamp({2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x), {2}.x, {2}.y)"), inVal.Value, rangeA.Value, rangeB.Value), node);
-            break;
-        }
-        value = writeLocal(ValueType::Float, String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value), node);
+        const auto mapFunc = String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value);
+        value = writeLocal(ValueType::Float, node->Values[3].AsBool ? String::Format(TEXT("clamp({0}, {1}.x, {1}.y)"), mapFunc, rangeB.Value) : mapFunc, node);
         break;
     }
     default:

@@ -378,13 +378,10 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         const Vector2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsVector2();
         const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
 
+        auto mapFunc = rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X);
+        
         // Clamp value?
-        if (node->Values[3].AsBool) 
-        {
-            value = Math::Clamp(rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X), rangeB.X, rangeB.Y);
-            break;
-        }
-        value = rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X);
+        value = node->Values[3].AsBool ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
         break;
     }
     default:
