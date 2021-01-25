@@ -232,7 +232,10 @@ bool Win32Network::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoin
     const uint16 size = GetAddrSizeFromEP(endPoint);
     if (connect(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get());
+        int error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), GetErrorMessage(error).Get());
         return true;
     }
     return false;
@@ -370,7 +373,10 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     {
         if ((size = recv(*(SOCKET*)socket.Data, (char*)buffer, bufferSize, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetLastErrorMessage().Get());
+            const int32 error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK)
+                return 0;
+            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetErrorMessage(error).Get());
             return -1;
         }
     }
