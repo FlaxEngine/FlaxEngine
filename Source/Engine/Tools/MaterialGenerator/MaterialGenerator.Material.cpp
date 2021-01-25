@@ -367,10 +367,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // SphereMask
     case 28:
     {
-
         Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
         Value b = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(a.Type);
-
         Value radius = tryGetValue(node->GetBox(2), node->Values[0]).AsFloat();
         Value hardness = tryGetValue(node->GetBox(3), node->Values[1]).AsFloat();
         Value invert = tryGetValue(node->GetBox(4), node->Values[2]).AsBool();
@@ -378,11 +376,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Get distance and apply radius
         auto x1 = writeLocal(ValueType::Float, String::Format(TEXT("distance({0},{1}) * (1 / {2})"), a.Value, b.Value, radius.Value), node);
 
-        // Apply hardness, use 0.991 since any value above will result in harsh aliasing
+        // Apply hardness, use 0.991 as max since any value above will result in harsh aliasing
         auto x2 = writeLocal(ValueType::Float, String::Format(TEXT("saturate((1 - {0}) * (1 / (1 - clamp({1}, 0, 0.991f))))"), x1.Value, hardness.Value), node);
-        
+  
         value = writeLocal(ValueType::Float, String::Format(TEXT("{0} ? (1 - {1}) : {1}"), invert.Value, x2.Value), node);
-
         break;
     }
     default:
