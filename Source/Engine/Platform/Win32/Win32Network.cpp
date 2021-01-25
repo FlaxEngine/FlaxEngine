@@ -21,16 +21,21 @@ static WSAData _wsaData;
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
 
-static String GetLastErrorMessage()
+static String GetErrorMessage(int error)
 {
     wchar_t* s = nullptr;
     FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        nullptr, WSAGetLastError(),
+        nullptr, error,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         reinterpret_cast<LPWSTR>(&s), 0, nullptr);
     String str(s);
     LocalFree(s);
     return str;
+}
+
+static String GetLastErrorMessage()
+{
+    return GetErrorMessage(WSAGetLastError());
 }
 
 static int GetAddrSize(const sockaddr& addr)
