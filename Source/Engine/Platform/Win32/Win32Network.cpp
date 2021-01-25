@@ -241,7 +241,6 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
 
     const uint16 size = endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
     const sockaddr* addr = (sockaddr*)endPoint.Data;
-    LOG(Info, "BIND : EndPoint family : {0}", addr->sa_family);
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
         LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), GetLastErrorMessage().Get());
