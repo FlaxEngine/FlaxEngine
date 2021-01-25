@@ -672,6 +672,35 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 28,
+                Title = "Sphere Mask",
+                Description = "Creates a sphere mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 100),
+                ConnectionsHints = ConnectionsHint.Vector,
+                IndependentBoxes = new[]
+                {
+                    0,
+                    1
+                },
+                DefaultValues = new object[]
+                {
+                    0.3f,
+                    0.5f,
+                    false
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "A", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "B", true, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Radius", true, typeof(float), 2, 0),
+                    NodeElementArchetype.Factory.Input(3, "Hardness", true, typeof(float), 3, 1),
+                    NodeElementArchetype.Factory.Input(4, "Invert", true, typeof(bool), 4, 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                }
+            },
         };
     }
 }
