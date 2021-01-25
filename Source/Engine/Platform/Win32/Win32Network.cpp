@@ -65,7 +65,12 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         paddr = &((sockaddr_in6*)addr)->sin6_addr;
     else if (addr->sa_family == AF_INET)
         paddr = &((sockaddr_in*)addr)->sin_addr;
-
+    else
+    {
+        LOG(Error, "Unable to create endpoint, sockaddr must be INET or INET6!");
+        return true;
+    }
+    
     char ip[INET6_ADDRSTRLEN];
     if (inet_ntop(addr->sa_family, paddr, ip, INET6_ADDRSTRLEN) == nullptr)
     {
