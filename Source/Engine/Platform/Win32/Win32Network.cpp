@@ -4,7 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include <WinSock2.h>
-#include <ws2ipdef.h>
+#include <WS2ipdef.h>
 #include <WS2tcpip.h>
 
 #define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) case OPTENUM: *level = OPTLEVEL; *name = OPTNAME; break;
