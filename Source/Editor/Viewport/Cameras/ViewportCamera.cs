@@ -12,6 +12,7 @@ namespace FlaxEditor.Viewport.Cameras
     public abstract class ViewportCamera : IViewportCamera
     {
         private EditorViewport _viewport;
+        protected bool _invertPanning;
 
         /// <summary>
         /// Gets the parent viewport.
@@ -26,6 +27,14 @@ namespace FlaxEditor.Viewport.Cameras
         /// Gets a value indicating whether the viewport camera uses movement speed.
         /// </summary>
         public virtual bool UseMovementSpeed => true;
+
+        /// <summary>
+        /// Sets if the panning direction is inverted.
+        /// </summary>
+        public bool InvertPanning
+        {
+            set => _invertPanning = value;
+        }
 
         /// <summary>
         /// Sets view orientation and position to match the arc ball camera style view for the given target object bounds.
