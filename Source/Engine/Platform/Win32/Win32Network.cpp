@@ -57,14 +57,8 @@ static NetworkIPVersion GetIPVersionFromAddr(const sockaddr& addr)
 // getnameinfo return a name ( like JimiPC ), not the ip!
 static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
 {
-    uint16 size = GetAddrSize(*addr);
-    char name[100];
-    char service[20];
-    if (getnameinfo(addr, size, name, sizeof name, service, sizeof service, 0) != 0)
-    {
-        LOG(Error, "Unable to extract info from sockaddr! Error : {0}", GetLastErrorMessage().Get());
-        return true;
-    }
+    uint32 size = GetAddrSize(*addr);
+    uint16 port;
     void* paddr;
     if (addr->sa_family == AF_INET6)
     {
