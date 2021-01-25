@@ -133,8 +133,6 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto
         LOG(Error, "Can't set socket to NON-BLOCKING type! Error : {0}", GetLastErrorMessage().Get());
         return true; // Support using blocking socket , need to test it
     }
-    //DEBUG
-    LOG(Info, "New socket created : {0}", sock); //TODO: DEBUG
     return false;
 }
 
@@ -144,8 +142,6 @@ bool Win32Network::DestroySocket(NetworkSocket& socket)
     if (sock != INVALID_SOCKET)
     {
         closesocket(sock);
-        //DEBUG
-        LOG(Info, "Deleting socket : {0}", sock); //TODO: DEBUG
         return false;
     }
     LOG(Warning, "Unable to delete socket INVALID_SOCKET! Socket : {0}", sock);
@@ -251,8 +247,6 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
         LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), GetLastErrorMessage().Get());
         return true;
     }
-    //DEBUG
-    LOG(Info, "Binding socket! Socket : {0} Address : {1} Port : {2}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get());
     return false;
 }
 
@@ -282,7 +276,6 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     }
     memcpy(newSock.Data, &sock, sizeof sock);
     memcpy(newEndPoint.Data, &addr, GetAddrSize(addr));
-
     newSock.Protocol = serverSock.Protocol;
     newSock.IPVersion = serverSock.IPVersion;
     if (CreateEndPointFromAddr(&addr, newEndPoint))
@@ -335,9 +328,6 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     return size;
 }
 
-/*
- * TODO: handle size == 0 when there is a shutdown
- */
 int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
 {
     uint32 size;
@@ -364,15 +354,11 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     return size;
 }
 
-// if address is null, it's ADDR_ANY
 bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     int status;
     addrinfoW hints;
     addrinfoW* info;
-    //DEBUG
-    LOG(Info, "Searching available adresses for {0} : {1}", address == nullptr ? String("nullptr").Get() : address->Get(),
-        port == nullptr ? String("nullptr").Get() : port->Get());
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ipv == NetworkIPVersion::IPv6 ? AF_INET6 : ipv == NetworkIPVersion::IPv4 ? AF_INET : AF_UNSPEC;
     hints.ai_flags |= AI_ADDRCONFIG;
@@ -381,8 +367,6 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
         hints.ai_flags = AI_PASSIVE;
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
-    // can *paddr works  ?
-    // paddr = nullptr don't work with this func
     if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
     {
         LOG(Error, "Unable to query info for address : {0} Error : {1}", address != nullptr ? address->Get() : String("ANY").Get(), gai_strerror(status));
@@ -395,10 +379,6 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
         return true;
     }
 
-    //DEBUG
-    PrintAddrFromInfo(*info);
-
-    // We are taking the first addr in the linked list
     if (CreateEndPointFromAddr(info->ai_addr, endPoint))
     {
         FreeAddrInfoW(info);
@@ -406,8 +386,6 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     }
     FreeAddrInfoW(info);
 
-    //DEBUG
-    LOG(Info, "Address found : {0} : {1}", endPoint.Address, endPoint.Port);
     return false;
 }
 
