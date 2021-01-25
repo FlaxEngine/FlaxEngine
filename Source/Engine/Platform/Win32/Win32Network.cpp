@@ -276,17 +276,18 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
         return true;
     }
     SOCKET sock;
-    sockaddr addr;
-    if ((sock = accept(*(SOCKET*)serverSock.Data, &addr, nullptr)) == INVALID_SOCKET)
+    sockaddr_in6 addr;
+    int32 size = sizeof sockaddr_in6;
+    if ((sock = accept(*(SOCKET*)serverSock.Data, (sockaddr*)&addr, &size)) == INVALID_SOCKET)
     {
         LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetLastErrorMessage().Get());
         return true;
     }
     memcpy(newSock.Data, &sock, sizeof sock);
-    memcpy(newEndPoint.Data, &addr, GetAddrSize(addr));
+    memcpy(newEndPoint.Data, &addr, size);
     newSock.Protocol = serverSock.Protocol;
     newSock.IPVersion = serverSock.IPVersion;
-    if (CreateEndPointFromAddr(&addr, newEndPoint))
+    if (CreateEndPointFromAddr((sockaddr*)&addr, newEndPoint))
         return true;
     return false;
 }
@@ -335,7 +336,7 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
 
 int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
 {
-    if (socket.IPVersion != endPoint->IPVersion)
+    if (endPoint != nullptr && socket.IPVersion != endPoint->IPVersion)
     {
         LOG(Error, "Unable to send data, Socket.IPVersion != EndPoint.IPVersion! Socket : {0}", *(SOCKET*)socket.Data);
         return 0;
