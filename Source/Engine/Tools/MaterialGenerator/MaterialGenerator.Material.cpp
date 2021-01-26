@@ -382,6 +382,16 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Float, String::Format(TEXT("{0} ? (1 - {1}) : {1}"), invert.Value, x2.Value), node);
         break;
     }
+        // Tiling & Offset
+    case 29:
+    {
+        auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsVector2();
+        auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsVector2();
+
+        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
+        break;
+    }
     default:
         break;
     }
