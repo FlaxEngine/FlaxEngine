@@ -331,6 +331,7 @@ bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, Netwo
     if (index >= SOCKGROUP_MAXCOUNT)
         return true;
     pollfd* pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
+    memset(&state, 0, sizeof state);
     if (pollptr->revents & POLLERR)
         state.Error = true;
     if (pollptr->revents & POLLHUP)
