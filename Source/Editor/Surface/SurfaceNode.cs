@@ -314,12 +314,16 @@ namespace FlaxEditor.Surface
         {
             if (type == ScriptType.Null)
                 type = new ScriptType(typeof(object));
+
+            // Try to reuse box
             var box = GetBox(id);
             if ((isOut && box is InputBox) || (!isOut && box is OutputBox))
             {
                 box.Dispose();
                 box = null;
             }
+            
+            // Create new if missing
             if (box == null)
             {
                 if (isOut)
@@ -330,10 +334,15 @@ namespace FlaxEditor.Surface
             }
             else
             {
+                // Sync properties for exiting box
                 box.Text = text;
                 box.CurrentType = type;
                 box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
             }
+
+            // Update box
+            box.OnConnectionsChanged();
+            
             return box;
         }
 
