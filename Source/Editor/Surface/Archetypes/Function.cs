@@ -867,8 +867,15 @@ namespace FlaxEditor.Surface.Archetypes
                                 for (int i = 0; i < signature.Params.Length; i++)
                                 {
                                     ref var param = ref signature.Params[i];
-                                    if (param.Type != memberParameters[i].Type || param.IsOut != memberParameters[i].IsOut)
+                                    ref var paramMember = ref memberParameters[i];
+                                    if (param.Type != paramMember.Type || param.IsOut != paramMember.IsOut)
                                     {
+                                        // Special case: param.Type is serialized as just a type while paramMember.Type might be a reference for output parameters (eg. `out Int32` vs `out Int32&`)
+                                        var paramMemberTypeName = paramMember.Type.TypeName;
+                                        if (param.IsOut && param.IsOut == paramMember.IsOut && paramMember.Type.IsReference && !param.Type.IsReference &&
+                                            paramMemberTypeName.Substring(0, paramMemberTypeName.Length - 1) == param.Type.TypeName)
+                                            continue;
+
                                         isInvalid = true;
                                         break;
                                     }
