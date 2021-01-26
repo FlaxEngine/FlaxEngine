@@ -75,17 +75,6 @@ class FLAXENGINE_API NetworkBase
 {
     public:
     /// <summary>
-    /// Initializes the network module.
-    /// </summary>
-    /// <returns>Return true on error. Otherwise false.</returns>
-    static bool Init();
-
-    /// <summary>
-    /// Deinitializes the network module.
-    /// </summary>
-    static void Exit();
-
-    /// <summary>
     /// Creates a new native socket.
     /// </summary>
     /// <param name="socket">The socket struct to fill in.</param>

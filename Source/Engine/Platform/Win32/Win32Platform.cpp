@@ -12,6 +12,7 @@
 #include "IncludeWindowsHeaders.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Platform/Network.h"
+#include "Engine/Core/Log.h"
 
 #include <Psapi.h>
 #include <WinSock2.h>
@@ -28,6 +29,8 @@ namespace
     double CyclesToSeconds;
 }
 
+static WSAData _wsaData;
+
 // Helper function to count set bits in the processor mask
 DWORD CountSetBits(ULONG_PTR bitMask)
 {
@@ -43,6 +46,18 @@ DWORD CountSetBits(ULONG_PTR bitMask)
     }
 
     return bitSetCount;
+}
+
+static String GetLastErrorMessage()
+{
+    wchar_t* s = nullptr;
+    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, WSAGetLastError(),
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        reinterpret_cast<LPWSTR>(&s), 0, nullptr);
+    String str(s);
+    LocalFree(s);
+    return str;
 }
 
 bool Win32Platform::Init()
@@ -213,15 +228,14 @@ bool Win32Platform::Init()
         DeviceId.D = (uint32)cpuInfo.ClockSpeed * cpuInfo.LogicalProcessorCount * cpuInfo.ProcessorCoreCount * cpuInfo.CacheLineSize;
     }
 
-    //TODO: log error if true
-    Win32Network::Init();
-    
+    if (WSAStartup(MAKEWORD(2, 0), &_wsaData) != 0)
+        LOG(Error, "Unable to initializes native network! Error : {0}", GetLastErrorMessage().Get());
     return false;
 }
 
 void Win32Platform::Exit()
 {
-    Network::Exit();
+    WSACleanup();
 }
 
 void Win32Platform::MemoryBarrier()

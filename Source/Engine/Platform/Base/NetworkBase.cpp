@@ -2,15 +2,6 @@
 
 #include "NetworkBase.h"
 
-bool NetworkBase::Init()
-{
-    return true;
-}
-
-void NetworkBase::Exit()
-{
-}
-
 bool NetworkBase::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
 {
     return true;

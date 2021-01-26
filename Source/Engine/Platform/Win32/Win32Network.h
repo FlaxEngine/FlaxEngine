@@ -13,8 +13,6 @@ class FLAXENGINE_API Win32Network : public NetworkBase
 
 public:
     // [NetworkBase]
-    static bool Init();
-    static void Exit();
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
     static bool DestroySocket(NetworkSocket& socket);
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);

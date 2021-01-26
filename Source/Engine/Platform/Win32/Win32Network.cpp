@@ -14,7 +14,6 @@ static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPo
 
 static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                                   0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00 } };
-static WSAData _wsaData;
 
 /*
  * Known issues :
@@ -134,18 +133,6 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
         SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
         SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     }
-}
-
-bool Win32Network::Init()
-{
-    if (WSAStartup(MAKEWORD(2, 0), &_wsaData) != 0)
-        return true;
-    return false;
-}
-
-void Win32Network::Exit()
-{
-    WSACleanup();
 }
 
 bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
