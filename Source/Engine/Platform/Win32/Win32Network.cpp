@@ -294,7 +294,6 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     return false;
 }
 
-static thread_local int32 error;
 bool Win32Network::IsReadable(NetworkSocket& socket)
 {
     pollfd entry;
@@ -302,7 +301,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket)
     entry.events = POLLRDNORM;
     if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        error = WSAGetLastError();
+        int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
         LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
@@ -320,7 +319,7 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
     entry.events = POLLWRNORM;
     if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        error = WSAGetLastError();
+        int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
         LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
@@ -331,21 +330,19 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
     return false;
 }
 
-static thread_local int32 pollret;
 int32 Win32Network::Poll(NetworkSocketGroup& group)
 {
-    pollret = WSAPoll((pollfd*)group.Data, group.Count, 0);
+    int32 pollret = WSAPoll((pollfd*)group.Data, group.Count, 0);
     if (pollret == SOCKET_ERROR)
         LOG(Error, "Unable to poll socket group! Error : {0}", GetLastErrorMessage().Get());
     return pollret;
 }
 
-static thread_local pollfd* pollptr;
 bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
 {
     if (index >= SOCKGROUP_MAXCOUNT)
         return true;
-    pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
+    pollfd* pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
     if (pollptr->revents & POLLERR)
         state.Error = true;
     if (pollptr->revents & POLLHUP)
@@ -359,11 +356,11 @@ bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, Netwo
     return false;
 }
 
-static thread_local pollfd pollinfo;
 int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
     if (group.Count >= SOCKGROUP_MAXCOUNT)
         return -1;
+    pollfd pollinfo;
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
     *(pollfd*)&group.Data[group.Count * SOCKGROUP_ITEMSIZE] = pollinfo;
