@@ -379,7 +379,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     if (endPoint != nullptr && socket.IPVersion != endPoint->IPVersion)
     {
         LOG(Error, "Unable to send data, Socket.IPVersion != EndPoint.IPVersion! Socket : {0}", *(SOCKET*)socket.Data);
-        return 0;
+        return -1;
     }
     uint32 size;
     if (endPoint == nullptr && socket.Protocol == NetworkProtocolType::Tcp)
