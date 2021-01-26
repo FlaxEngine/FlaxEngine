@@ -97,11 +97,13 @@ static void PrintAddrFromInfo(addrinfoW& info)
     for (curr = &info; curr != nullptr; curr = curr->ai_next)
     {
         void* addr;
-        if (curr->ai_family == AF_INET) {
+        if (curr->ai_family == AF_INET)
+        {
             sockaddr_in* ipv4 = (struct sockaddr_in*)curr->ai_addr;
             addr = &(ipv4->sin_addr);
         }
-        else {
+        else
+        {
             sockaddr_in6* ipv6 = (struct sockaddr_in6*)curr->ai_addr;
             addr = &(ipv6->sin6_addr);
         }
