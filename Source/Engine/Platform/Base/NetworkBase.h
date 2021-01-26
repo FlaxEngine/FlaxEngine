@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -74,17 +74,100 @@ struct FLAXENGINE_API NetworkSocketGroup
 class FLAXENGINE_API NetworkBase
 {
     public:
+    /// <summary>
+    /// Initialize the network module.
+    /// </summary>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool Init();
+
+    /// <summary>
+    /// Deinitialize the network module.
+    /// </summary>
     static void Exit();
+
+    /// <summary>
+    /// Create a new native socket.
+    /// </summary>
+    /// <param name="socket">The socket struct to fill in.</param>
+    /// <param name="proto">The protocol.</param>
+    /// <param name="ipv">The ip version.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
+
+    /// <summary>
+    /// Close native socket.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool DestroySocket(NetworkSocket& socket);
+
+    /// <summary>
+    /// Set the specified socket option.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="option">The option.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);
+
+    /// <summary>
+    /// Set the specified socket option.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="option">The option.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value);
+
+    /// <summary>
+    /// Get the specified socket option.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="option">The option.</param>
+    /// <param name="value">The returned value.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value);
+
+    /// <summary>
+    /// Get the specified socket option.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="option">The option.</param>
+    /// <param name="value">The returned value.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value);
+
+    /// <summary>
+    /// Connect a socket to the specified end point.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="endPoint">The end point.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
+
+    /// <summary>
+    /// Bind a socket to the specified end point.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="endPoint">The end point.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
+
+    /// <summary>
+    /// Listen for incoming connection.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="queueSize">Pending connection queue size.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
+
+    /// <summary>
+    /// Accept a pending connection.
+    /// </summary>
+    /// <param name="serverSock">The socket.</param>
+    /// <param name="newSock">The newly connected socket.</param>
+    /// <param name="newEndPoint">The end point of the new socket.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
     static bool IsWriteable(NetworkSocket& socket);
