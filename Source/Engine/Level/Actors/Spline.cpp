@@ -154,8 +154,6 @@ float Spline::GetSplineTimeClosestToPoint(const Vector3& point) const
     float bestTime = 0.0f;
     for (int32 i = 1; i < pointsCount; i++)
         FindTimeClosestToPoint(localPoint, Curve[i - 1], Curve[i], bestDistanceSquared, bestTime);
-    if (_loop)
-        FindTimeClosestToPoint(localPoint, Curve[pointsCount - 1], Curve[0], bestDistanceSquared, bestTime);
     return bestTime;
 }
 
@@ -228,8 +226,61 @@ void Spline::AddSplineLocalPoint(const Transform& point, bool updateSpline)
         UpdateSpline();
 }
 
+void Spline::SetTangentsLinear()
+{
+    const int32 count = Curve.GetKeyframes().Count();
+    if (count < 2)
+        return;
+
+    if (_loop)
+        Curve[count - 1].Value = Curve[0].Value;
+    for (int32 i = 0; i < count; i++)
+    {
+        auto& k = Curve[i];
+        k.TangentIn = k.TangentOut = Transform::Identity;
+    }
+
+    UpdateSpline();
+}
+
+void Spline::SetTangentsSmooth()
+{
+    const int32 count = Curve.GetKeyframes().Count();
+    if (count < 2)
+        return;
+
+    auto& keys = Curve.GetKeyframes();
+    const int32 last = count - 2;
+    if (_loop)
+        Curve[count - 1].Value = Curve[0].Value;
+    for (int32 i = 0; i <= last; i++)
+    {
+        auto& key = keys[i];
+        const auto& prevKey = keys[i == 0 ? (_loop ? last : 0) : i - 1];
+        const auto& nextKey = keys[i == last ? (_loop ? 0 : last) : i + 1];
+        const float prevTime = _loop && i == 0 ? key.Time : prevKey.Time;
+        const float nextTime = _loop && i == last ? key.Time : nextKey.Time;
+        const Vector3 slope = key.Value.Translation - prevKey.Value.Translation + nextKey.Value.Translation - key.Value.Translation;
+        const Vector3 tangent = slope / Math::Max(nextTime - prevTime, ZeroTolerance);
+        key.TangentIn.Translation = -tangent;
+        key.TangentOut.Translation = tangent;
+    }
+
+    UpdateSpline();
+}
+
 void Spline::UpdateSpline()
 {
+    // Always keep last point in the loop
+    const int32 count = Curve.GetKeyframes().Count();
+    if (_loop && count > 1)
+    {
+        auto& first = Curve[0];
+        auto& last = Curve[count - 1];
+        last.Value = first.Value;
+        last.TangentIn = first.TangentIn;
+        last.TangentOut = first.TangentOut;
+    }
 }
 
 void Spline::GetKeyframes(MonoArray* data)
@@ -256,9 +307,9 @@ namespace
         const auto& startKey = spline->Curve[start];
         const auto& endKey = spline->Curve[end];
         const Vector3 startPos = transform.LocalToWorld(startKey.Value.Translation);
-        const Vector3 startTangent = transform.LocalToWorld(startKey.TangentOut.Translation);
+        const Vector3& startTangent = startKey.TangentOut.Translation;
         const Vector3 endPos = transform.LocalToWorld(endKey.Value.Translation);
-        const Vector3 endTangent = transform.LocalToWorld(endKey.TangentIn.Translation);
+        const Vector3& endTangent = endKey.TangentIn.Translation;
         const float d = (endKey.Time - startKey.Time) / 3.0f;
         DEBUG_DRAW_BEZIER(startPos, startPos + startTangent * d, endPos + endTangent * d, endPos, color, 0.0f, depthTest);
     }
@@ -273,8 +324,6 @@ namespace
             if (i != 0)
                 DrawSegment(spline, i - 1, i, color, transform, depthTest);
         }
-        if (spline->GetIsLoop() && count > 1)
-            DrawSegment(spline, count - 1, 0, color, transform, depthTest);
     }
 }
 

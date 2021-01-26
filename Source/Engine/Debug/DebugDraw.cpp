@@ -650,16 +650,6 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
     }
 }
 
-static Vector3 GetPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-{
-    const float oneMinusT = 1.0f - t;
-    return
-            oneMinusT * oneMinusT * oneMinusT * p0 +
-            3.0f * oneMinusT * oneMinusT * t * p1 +
-            3.0f * oneMinusT * t * t * p2 +
-            t * t * t * p3;
-}
-
 void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& p3, const Vector3& p4, const Color& color, float duration, bool depthTest)
 {
     // Create draw call entry
@@ -676,13 +666,13 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     const Vector3 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
     const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
-    const float segmentCountInv = 1.0f / segmentCount;
+    const float segmentCountInv = 1.0f / (float)segmentCount;
     list->EnsureCapacity(list->Count() + segmentCount + 2);
 
     // Draw segmented curve
     for (int32 i = 0; i <= segmentCount; i++)
     {
-        const float t = i * segmentCountInv;
+        const float t = (float)i * segmentCountInv;
         AnimationUtils::Bezier(p1, p2, p3, p4, t, l.End);
         list->Add(l);
         l.Start = l.End;

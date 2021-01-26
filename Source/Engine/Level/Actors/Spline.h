@@ -25,7 +25,7 @@ public:
     BezierCurve<Transform> Curve;
 
     /// <summary>
-    /// Whether to use spline as closed loop.
+    /// Whether to use spline as closed loop. In that case, ensure to place start and end at the same location.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Spline\")")
     FORCE_INLINE bool GetIsLoop() const
@@ -34,7 +34,7 @@ public:
     }
 
     /// <summary>
-    /// Whether to use spline as closed loop.
+    /// Whether to use spline as closed loop. In that case, ensure to place start and end at the same location.
     /// </summary>
     API_PROPERTY() void SetIsLoop(bool value);
 
@@ -211,6 +211,16 @@ public:
     /// <param name="point">The transformation of the point to add to the curve (local-space).</param>
     /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
     API_FUNCTION() void AddSplineLocalPoint(const Transform& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Updates the curve tangent points to make curve linear.
+    /// </summary>
+    API_FUNCTION() void SetTangentsLinear();
+
+    /// <summary>
+    /// Updates the curve tangent points to make curve smooth.
+    /// </summary>
+    API_FUNCTION() void SetTangentsSmooth();
 
 public:
 
