@@ -292,13 +292,18 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     return false;
 }
 
+static thread_local int32 error;
 bool Win32Network::IsReadable(NetworkSocket& socket)
 {
     pollfd entry;
+    entry.fd = *(SOCKET*)socket.Data;
     entry.events = POLLRDNORM;
     if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
         return false;
     }
     if (entry.revents & POLLRDNORM)
@@ -309,10 +314,14 @@ bool Win32Network::IsReadable(NetworkSocket& socket)
 bool Win32Network::IsWriteable(NetworkSocket& socket)
 {
     pollfd entry;
+    entry.fd = *(SOCKET*)socket.Data;
     entry.events = POLLWRNORM;
     if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
         return false;
     }
     if (entry.revents & POLLWRNORM)
