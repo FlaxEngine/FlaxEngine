@@ -42,7 +42,7 @@ public:
     /// Sets the material to the entry slot. Can be used to override the material of the meshes using this slot.
     /// </summary>
     /// <param name="entryIndex">The material slot entry index.</param>
-    /// <param name="material">The material to set..</param>
+    /// <param name="material">The material to set.</param>
     API_FUNCTION() void SetMaterial(int32 entryIndex, MaterialBase* material);
 
     /// <summary>

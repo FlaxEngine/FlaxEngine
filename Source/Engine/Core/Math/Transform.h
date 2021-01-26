@@ -185,6 +185,13 @@ public:
     Vector3 LocalToWorld(const Vector3& point) const;
 
     /// <summary>
+    /// Performs transformation of the given vector in local space to the world space of this transform.
+    /// </summary>
+    /// <param name="vector">The local space vector.</param>
+    /// <returns>The world space vector.</returns>
+    Vector3 LocalToWorldVector(const Vector3& vector) const;
+
+    /// <summary>
     /// Performs transformation of the given point in local space to the world space of this transform.
     /// </summary>
     /// <param name="point">The local space point.</param>
@@ -219,6 +226,13 @@ public:
     /// <param name="point">The world space point.</param>
     /// <returns>The local space point.</returns>
     Vector3 WorldToLocal(const Vector3& point) const;
+
+    /// <summary>
+    /// Performs transformation of the given vector in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="vector">The world space vector.</param>
+    /// <returns>The local space vector.</returns>
+    Vector3 WorldToLocalVector(const Vector3& vector) const;
 
     /// <summary>
     /// Performs transformation of the given points in world space to the local space of this transform.
@@ -292,6 +306,14 @@ public:
     static Transform Lerp(const Transform& t1, const Transform& t2, float amount);
     static void Lerp(const Transform& t1, const Transform& t2, float amount, Transform& result);
 };
+
+namespace Math
+{
+    FORCE_INLINE static bool NearEqual(const Transform& a, const Transform& b)
+    {
+        return Transform::NearEqual(a, b);
+    }
+}
 
 template<>
 struct TIsPODType<Transform>

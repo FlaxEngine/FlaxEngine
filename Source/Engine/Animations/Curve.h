@@ -48,9 +48,19 @@ public:
         result = a.Value;
     }
 
+    FORCE_INLINE static void InterpolateFirstDerivative(const StepCurveKeyframe& a, const StepCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        result = AnimationUtils::GetZero<T>();
+    }
+
     FORCE_INLINE static void InterpolateKey(const StepCurveKeyframe& a, const StepCurveKeyframe& b, float alpha, float length, StepCurveKeyframe& result)
     {
         result = a;
+    }
+    
+    bool operator==(const StepCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -92,10 +102,20 @@ public:
         AnimationUtils::Interpolate(a.Value, b.Value, alpha, result);
     }
 
+    FORCE_INLINE static void InterpolateFirstDerivative(const LinearCurveKeyframe& a, const LinearCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        result = b.Value - a.Value;
+    }
+
     FORCE_INLINE static void InterpolateKey(const LinearCurveKeyframe& a, const LinearCurveKeyframe& b, float alpha, float length, LinearCurveKeyframe& result)
     {
         result.Time = a.Time + (b.Time - a.Time) * alpha;
         AnimationUtils::Interpolate(a.Value, b.Value, alpha, result.Value);
+    }
+
+    bool operator==(const LinearCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -147,22 +167,30 @@ public:
     {
         T leftTangent = a.Value + a.TangentOut * length;
         T rightTangent = b.Value + b.TangentIn * length;
+        AnimationUtils::CubicHermite( a.Value, b.Value, leftTangent, rightTangent, alpha, result);
+    }
 
-        AnimationUtils::CubicHermite(alpha, a.Value, b.Value, leftTangent, rightTangent, result);
+    static void InterpolateFirstDerivative(const HermiteCurveKeyframe& a, const HermiteCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        T leftTangent = a.Value + a.TangentOut * length;
+        T rightTangent = b.Value + b.TangentIn * length;
+        AnimationUtils::CubicHermiteFirstDerivative( a.Value, b.Value, leftTangent, rightTangent, alpha, result);
     }
 
     static void InterpolateKey(const HermiteCurveKeyframe& a, const HermiteCurveKeyframe& b, float alpha, float length, HermiteCurveKeyframe& result)
     {
         result.Time = a.Time + length * alpha;
-
         T leftTangent = a.Value + a.TangentOut * length;
         T rightTangent = b.Value + b.TangentIn * length;
-
-        AnimationUtils::CubicHermite(alpha, a.Value, b.Value, leftTangent, rightTangent, result.Value);
-        AnimationUtils::CubicHermiteD1(alpha, a.Value, b.Value, leftTangent, rightTangent, result.TangentIn);
-
+        AnimationUtils::CubicHermite(a.Value, b.Value, leftTangent, rightTangent, alpha, result.Value);
+        AnimationUtils::CubicHermiteFirstDerivative(a.Value, b.Value, leftTangent, rightTangent, alpha, result.TangentIn);
         result.TangentIn /= length;
         result.TangentOut = result.TangentIn;
+    }
+    
+    bool operator==(const HermiteCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -223,22 +251,31 @@ public:
         T leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
         AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
-
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
+    }
+
+    static void InterpolateFirstDerivative(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        T leftTangent, rightTangent;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        AnimationUtils::BezierFirstDerivative(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
     static void InterpolateKey(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, BezierCurveKeyframe& result)
     {
         result.Time = a.Time + length * alpha;
-
         T leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
         AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
-
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result.Value);
-
         result.TangentIn = a.TangentOut;
         result.TangentOut = b.TangentIn;
+    }
+
+    bool operator==(const BezierCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -344,6 +381,48 @@ public:
 
         // Evaluate the value at the curve
         KeyFrame::Interpolate(leftKey, rightKey, t, length, result);
+    }
+
+    /// <summary>
+    /// Evaluates the first derivative of the animation curve at the specified time (aka velocity).
+    /// </summary>
+    /// <param name="data">The keyframes data container.</param>
+    /// <param name="result">The calculated first derivative from the curve at provided time.</param>
+    /// <param name="time">The time to evaluate the curve at.</param>
+    /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
+    void EvaluateFirstDerivative(const KeyFrameData& data, T& result, float time, bool loop = true) const
+    {
+        const int32 count = data.Length();
+        if (count == 0)
+        {
+            result = _default;
+            return;
+        }
+
+        const float start = 0;
+        const float end = data[count - 1].Time;
+        AnimationUtils::WrapTime(time, start, end, loop);
+
+        int32 leftKeyIdx;
+        int32 rightKeyIdx;
+        FindKeys(data, time, leftKeyIdx, rightKeyIdx);
+
+        const KeyFrame& leftKey = data[leftKeyIdx];
+        const KeyFrame& rightKey = data[rightKeyIdx];
+
+        if (leftKeyIdx == rightKeyIdx)
+        {
+            result = leftKey.Value;
+            return;
+        }
+
+        const float length = rightKey.Time - leftKey.Time;
+
+        // Scale from arbitrary range to [0, 1]
+        float t = Math::NearEqual(length, 0.0f) ? 0.0f : (time - leftKey.Time) / length;
+
+        // Evaluate the derivative at the curve
+        KeyFrame::InterpolateFirstDerivative(leftKey, rightKey, t, length, result);
     }
 
     /// <summary>
@@ -567,6 +646,18 @@ public:
     }
 
     /// <summary>
+    /// Evaluates the first derivative of the animation curve at the specified time (aka velocity).
+    /// </summary>
+    /// <param name="result">The calculated first derivative from the curve at provided time.</param>
+    /// <param name="time">The time to evaluate the curve at.</param>
+    /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
+    void EvaluateFirstDerivative(T& result, float time, bool loop = true) const
+    {
+        typename Base::KeyFrameData data(_keyframes);
+        Base::EvaluateFirstDerivative(data, result, time, loop);
+    }
+
+    /// <summary>
     /// Evaluates the animation curve key at the specified time.
     /// </summary>
     /// <param name="result">The interpolated key from the curve at provided time.</param>
@@ -707,6 +798,30 @@ public:
         stream.ReadBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
 
         return false;
+    }
+
+public:
+
+    FORCE_INLINE KeyFrame& operator[](int32 index)
+    {
+        return _keyframes[index];
+    }
+
+    FORCE_INLINE const KeyFrame& operator[](int32 index) const
+    {
+        return _keyframes[index];
+    }
+
+    bool operator==(const Curve& other) const
+    {
+        if (_keyframes.Count() != other._keyframes.Count())
+            return false;
+        for (int32 i = 0; i < _keyframes.Count(); i++)
+        {
+            if (!(_keyframes[i] == other._keyframes[i]))
+                return false;
+        }
+        return true;
     }
 };
 

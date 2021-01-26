@@ -99,6 +99,7 @@ namespace FlaxEditor.Windows
                     new KeyValuePair<string, Type>("Nav Mesh Bounds Volume", typeof(NavMeshBoundsVolume)),
                     new KeyValuePair<string, Type>("Nav Link", typeof(NavLink)),
                     new KeyValuePair<string, Type>("Nav Modifier Volume", typeof(NavModifierVolume)),
+                    new KeyValuePair<string, Type>("Spline", typeof(Spline)),
                 }
             },
             new ActorsGroup
