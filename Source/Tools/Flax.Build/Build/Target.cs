@@ -256,6 +256,7 @@ namespace Flax.Build
                 options.CompileEnv.IntrinsicFunctions = false;
                 options.CompileEnv.BufferSecurityCheck = true;
                 options.CompileEnv.Inlining = false;
+                options.CompileEnv.WholeProgramOptimization = false;
 
                 options.LinkEnv.DebugInformation = true;
                 options.LinkEnv.LinkTimeCodeGeneration = false;
@@ -273,11 +274,11 @@ namespace Flax.Build
                 options.CompileEnv.IntrinsicFunctions = true;
                 options.CompileEnv.BufferSecurityCheck = true;
                 options.CompileEnv.Inlining = true;
-                //options.CompileEnv.WholeProgramOptimization = true;
+                options.CompileEnv.WholeProgramOptimization = false;
 
                 options.LinkEnv.DebugInformation = true;
-                options.LinkEnv.LinkTimeCodeGeneration = true;
-                options.LinkEnv.UseIncrementalLinking = false;
+                options.LinkEnv.LinkTimeCodeGeneration = false;
+                options.LinkEnv.UseIncrementalLinking = true;
                 options.LinkEnv.Optimization = true;
                 break;
             case TargetConfiguration.Release:
@@ -291,7 +292,7 @@ namespace Flax.Build
                 options.CompileEnv.IntrinsicFunctions = true;
                 options.CompileEnv.BufferSecurityCheck = false;
                 options.CompileEnv.Inlining = true;
-                //options.CompileEnv.WholeProgramOptimization = true;
+                options.CompileEnv.WholeProgramOptimization = true;
 
                 options.LinkEnv.DebugInformation = false;
                 options.LinkEnv.LinkTimeCodeGeneration = true;

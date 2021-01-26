@@ -467,8 +467,11 @@ namespace Flax.Build.Platforms
                     // Frame-Pointer Omission
                     commonArgs.Add("/Oy");
 
-                    // Whole Program Optimization
-                    commonArgs.Add("/GL");
+                    if (compileEnvironment.WholeProgramOptimization)
+                    {
+                        // Whole Program Optimization
+                        commonArgs.Add("/GL");
+                    }
                 }
                 else
                 {
@@ -721,7 +724,7 @@ namespace Flax.Build.Platforms
                     args.Add("/PDBALTPATH:%_PDB%");
 
                     // Optimize
-                    if (linkEnvironment.Optimization)
+                    if (linkEnvironment.Optimization && !linkEnvironment.UseIncrementalLinking)
                     {
                         // Generate an EXE checksum
                         args.Add("/RELEASE");
