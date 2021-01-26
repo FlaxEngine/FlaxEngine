@@ -701,6 +701,26 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 29,
+                Title = "UV Tiling & Offset",
+                Description = "Takes UVs and applies tiling and offset",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 60),
+                DefaultValues = new object[]
+                {
+                    new Vector2(1, 1),
+                    new Vector2(0, 0)
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Tiling", true, typeof(Vector2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Offset", true, typeof(Vector2), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
+                }
+            }
         };
     }
 }
