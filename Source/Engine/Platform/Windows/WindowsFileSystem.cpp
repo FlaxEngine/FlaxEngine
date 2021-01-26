@@ -297,11 +297,6 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
     // Randomly generated GUID used for storing the last location of this dialog
     const Guid folderGuid(0x53890ed9, 0xa55e47ba, 0xa970bdae, 0x72acedff);
 
-    // Allocate memory for the filenames
-    int32 maxPathSize = 2 * MAX_PATH;
-    Array<Char> pathBuffer;
-    pathBuffer.EnsureCapacity(maxPathSize);
-
     ComPtr<IFileOpenDialog> fd;
     if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fd))))
     {
@@ -327,15 +322,9 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
                 LPWSTR resultPath;
                 if (SUCCEEDED(si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &resultPath)))
                 {
-                    int32 resultPathLength = StringUtils::Length(resultPath);
-                    if (resultPathLength < pathBuffer.Capacity())
-                    {
-                        StringUtils::Copy(pathBuffer.Get(), resultPath, resultPathLength);
-                        CoTaskMemFree(resultPath);
-
-                        path = pathBuffer.Get();
-                        result = false;
-                    }
+                    path = resultPath;
+                    CoTaskMemFree(resultPath);
+                    result = false;
                 }
             }
         }
