@@ -114,8 +114,30 @@ float Spline::GetSplineDuration() const
 float Spline::GetSplineLength() const
 {
     float sum = 0.0f;
+    const int32 slices = 20;
+    const float step = 1.0f / (float)slices;
+    Vector3 prevPoint = Vector3::Zero;
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
-        sum += Vector3::DistanceSquared(Curve[i - 1].Value.Translation * _transform.Scale, Curve[i].Value.Translation * _transform.Scale);
+    {
+        const auto& a = Curve[i = 1];
+        const auto& b = Curve[i];
+
+        const float length = Math::Abs(b.Time - a.Time);
+        Vector3 leftTangent, rightTangent;
+        AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, length, leftTangent);
+        AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, length, rightTangent);
+
+        // TODO: implement sth more analytical than brute-force solution
+        for (int32 slice = 0; slice < slices; slice++)
+        {
+            const float t = (float)slice * step;
+            Vector3 pos;
+            AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
+            pos *= _transform.Scale;
+            sum += Vector3::DistanceSquared(pos, prevPoint);
+            prevPoint = pos;
+        }
+    }
     return Math::Sqrt(sum);
 }
 
