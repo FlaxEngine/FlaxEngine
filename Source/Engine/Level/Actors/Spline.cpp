@@ -77,6 +77,21 @@ Transform Spline::GetSplineLocalTransform(float time) const
     return t;
 }
 
+Vector3 Spline::GetSplineDirection(float time) const
+{
+    return _transform.LocalToWorldVector(GetSplineLocalDirection(time));
+}
+
+Vector3 Spline::GetSplineLocalDirection(float time) const
+{
+    if (Curve.GetKeyframes().Count() == 0)
+        return Vector3::Forward;
+    Transform t;
+    Curve.EvaluateFirstDerivative(t, time, _loop);
+    t.Translation.Normalize();
+    return t.Translation;
+}
+
 Vector3 Spline::GetSplinePoint(int32 index) const
 {
     CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero)

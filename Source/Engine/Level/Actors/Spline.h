@@ -97,6 +97,20 @@ public:
     API_FUNCTION() Transform GetSplineLocalTransform(float time) const;
 
     /// <summary>
+    /// Evaluates the spline curve direction (forward vector, aka position 1st derivative) at the given time in 3D (world-space).
+    /// </summary>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <returns>The calculated curve direction (world-space).</returns>
+    API_FUNCTION() Vector3 GetSplineDirection(float time) const;
+
+    /// <summary>
+    /// Evaluates the spline curve direction (forward vector, aka position 1st derivative) at the given time in 3D (local-space).
+    /// </summary>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <returns>The calculated curve direction (local-space).</returns>
+    API_FUNCTION() Vector3 GetSplineLocalDirection(float time) const;
+
+    /// <summary>
     /// Evaluates the spline curve at the given index (world-space).
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
