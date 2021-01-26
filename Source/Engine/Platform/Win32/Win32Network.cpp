@@ -294,42 +294,28 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
 
 bool Win32Network::IsReadable(NetworkSocket& socket)
 {
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(*(SOCKET*)socket.Data, &readfds);
-    timeval t;
-    t.tv_sec = 0;
-    t.tv_usec = 0;
-    if (select(0, &readfds, nullptr, nullptr, &t) == SOCKET_ERROR)
+    pollfd entry;
+    entry.events = POLLRDNORM;
+    if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        int error = WSAGetLastError();
-        if (error == WSAEWOULDBLOCK)
-            return false;
-        LOG(Error, "Unable to check readability of socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
         return false;
     }
-    if (FD_ISSET(*(SOCKET*)socket.Data, &readfds))
+    if (entry.revents & POLLRDNORM)
         return true;
     return false;
 }
 
 bool Win32Network::IsWriteable(NetworkSocket& socket)
 {
-    fd_set writefds;
-    FD_ZERO(&writefds);
-    FD_SET(*(SOCKET*)socket.Data, &writefds);
-    timeval t;
-    t.tv_sec = 0;
-    t.tv_usec = 0;
-    if (select(0, nullptr, &writefds, nullptr, &t) == SOCKET_ERROR)
+    pollfd entry;
+    entry.events = POLLWRNORM;
+    if (WSAPoll(&entry, 1, 0) == SOCKET_ERROR)
     {
-        int error = WSAGetLastError();
-        if (error == WSAEWOULDBLOCK)
-            return false;
-        LOG(Error, "Unable to check writeability of socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
         return false;
     }
-    if (FD_ISSET(*(SOCKET*)socket.Data, &writefds))
+    if (entry.revents & POLLWRNORM)
         return true;
     return false;
 }
