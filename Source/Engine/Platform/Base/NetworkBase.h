@@ -169,15 +169,87 @@ class FLAXENGINE_API NetworkBase
     /// <param name="newEndPoint">The end point of the new socket.</param>
     /// <returns>Return true on error. Otherwise false.</returns>
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
+
+    /// <summary>
+    /// Check for socket readability.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Return true when data is available. Otherwise false.</returns>
     static bool IsReadable(NetworkSocket& socket);
+
+    /// <summary>
+    /// Check for socket writeability.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Return true when data can be written. Otherwise false.</returns>
     static bool IsWriteable(NetworkSocket& socket);
+
+    /// <summary>
+    /// Update sockets states.
+    /// </summary>
+    /// <param name="group">The sockets group.</param>
+    /// <returns>Return -1 on error, The number of elements where states are nonzero, otherwise 0.</returns>
     static int32 Poll(NetworkSocketGroup& group);
+
+    /// <summary>
+    /// Retrieve socket state.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="index">The socket index in group.</param>
+    /// <param name="state">The returned state.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
+
+    /// <summary>
+    /// Add a socket to a group.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Return the socket index in group or -1 on error.</returns>
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
+
+    /// <summary>
+    /// Clear the socket group.
+    /// </summary>
+    /// <param name="group">The group.</param>
     static void ClearGroup(NetworkSocketGroup& group);
+
+    /// <summary>
+    /// Write data to the socket.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="data">The data to write.</param>
+    /// <param name="length">The length of data.</param>
+    /// <param name="endPoint">If protocol is UDP , the destination end point. Otherwise nullptr.</param>
+    /// <returns>Return -1 on error, otherwise bytes written.</returns>
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
+
+    /// <summary>
+    /// Read data on the socket.
+    /// </summary>
+    /// <param name="socket">The socket.</param>
+    /// <param name="buffer">The buffer.</param>
+    /// <param name="bufferSize">Size of the buffer.</param>
+    /// <param name="endPoint">If UDP, the end point from where data is coming. Otherwise nullptr.</param>
+    /// <returns>Return -1 on error, otherwise bytes read.</returns>
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
+
+    /// <summary>
+    /// Create an end point.
+    /// </summary>
+    /// <param name="address">The address (hostname, IPv4 or IPv6).</param>
+    /// <param name="port">The port.</param>
+    /// <param name="ipv">The ip version.</param>
+    /// <param name="endPoint">The created end point.</param>
+    /// <param name="bindable">True if the end point will be connected or binded.</param>
+    /// <returns>Return true on error. Otherwise false.</returns>
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
+
+    /// <summary>
+    /// Remap an ipv4 end point to an ipv6 one.
+    /// </summary>
+    /// <param name="endPoint">The ipv4 end point.</param>
+    /// <returns>The ipv6 end point.</returns>
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint& endPoint);
 };
 
