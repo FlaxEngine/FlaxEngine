@@ -710,8 +710,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Vector2(175, 60),
                 DefaultValues = new object[]
                 {
-                    new Vector2(1, 1),
-                    new Vector2(0, 0)
+                    Vector2.One,
+                    Vector2.Zero
                 },
                 Elements = new[]
                 {
