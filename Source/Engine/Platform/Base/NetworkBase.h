@@ -67,7 +67,7 @@ struct FLAXENGINE_API NetworkSocketState
 
 struct FLAXENGINE_API NetworkSocketGroup
 {
-    uint32 Count;
+    uint32 Count = 0;
     byte Data[SOCKGROUP_MAXCOUNT * 16] = {};
 };
 
