@@ -75,18 +75,18 @@ class FLAXENGINE_API NetworkBase
 {
     public:
     /// <summary>
-    /// Initialize the network module.
+    /// Initializes the network module.
     /// </summary>
     /// <returns>Return true on error. Otherwise false.</returns>
     static bool Init();
 
     /// <summary>
-    /// Deinitialize the network module.
+    /// Deinitializes the network module.
     /// </summary>
     static void Exit();
 
     /// <summary>
-    /// Create a new native socket.
+    /// Creates a new native socket.
     /// </summary>
     /// <param name="socket">The socket struct to fill in.</param>
     /// <param name="proto">The protocol.</param>
@@ -95,14 +95,14 @@ class FLAXENGINE_API NetworkBase
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
 
     /// <summary>
-    /// Close native socket.
+    /// Closes native socket.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <returns>Return true on error. Otherwise false.</returns>
     static bool DestroySocket(NetworkSocket& socket);
 
     /// <summary>
-    /// Set the specified socket option.
+    /// Sets the specified socket option.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
@@ -111,7 +111,7 @@ class FLAXENGINE_API NetworkBase
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);
 
     /// <summary>
-    /// Set the specified socket option.
+    /// Sets the specified socket option.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
@@ -120,7 +120,7 @@ class FLAXENGINE_API NetworkBase
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value);
 
     /// <summary>
-    /// Get the specified socket option.
+    /// Gets the specified socket option.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
@@ -129,7 +129,7 @@ class FLAXENGINE_API NetworkBase
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value);
 
     /// <summary>
-    /// Get the specified socket option.
+    /// Gets the specified socket option.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
@@ -138,7 +138,7 @@ class FLAXENGINE_API NetworkBase
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value);
 
     /// <summary>
-    /// Connect a socket to the specified end point.
+    /// Connects a socket to the specified end point.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="endPoint">The end point.</param>
@@ -146,7 +146,7 @@ class FLAXENGINE_API NetworkBase
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
 
     /// <summary>
-    /// Bind a socket to the specified end point.
+    /// Binds a socket to the specified end point.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="endPoint">The end point.</param>
@@ -154,7 +154,7 @@ class FLAXENGINE_API NetworkBase
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
 
     /// <summary>
-    /// Listen for incoming connection.
+    /// Listens for incoming connection.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="queueSize">Pending connection queue size.</param>
@@ -162,7 +162,7 @@ class FLAXENGINE_API NetworkBase
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
 
     /// <summary>
-    /// Accept a pending connection.
+    /// Accepts a pending connection.
     /// </summary>
     /// <param name="serverSock">The socket.</param>
     /// <param name="newSock">The newly connected socket.</param>
@@ -171,28 +171,28 @@ class FLAXENGINE_API NetworkBase
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
 
     /// <summary>
-    /// Check for socket readability.
+    /// Checks for socket readability.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <returns>Return true when data is available. Otherwise false.</returns>
     static bool IsReadable(NetworkSocket& socket);
 
     /// <summary>
-    /// Check for socket writeability.
+    /// Checks for socket writeability.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <returns>Return true when data can be written. Otherwise false.</returns>
     static bool IsWriteable(NetworkSocket& socket);
 
     /// <summary>
-    /// Update sockets states.
+    /// Updates sockets states.
     /// </summary>
     /// <param name="group">The sockets group.</param>
     /// <returns>Return -1 on error, The number of elements where states are nonzero, otherwise 0.</returns>
     static int32 Poll(NetworkSocketGroup& group);
 
     /// <summary>
-    /// Retrieve socket state.
+    /// Retrieves socket state.
     /// </summary>
     /// <param name="group">The group.</param>
     /// <param name="index">The socket index in group.</param>
@@ -201,7 +201,7 @@ class FLAXENGINE_API NetworkBase
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
 
     /// <summary>
-    /// Add a socket to a group.
+    /// Adds a socket to a group.
     /// </summary>
     /// <param name="group">The group.</param>
     /// <param name="socket">The socket.</param>
@@ -209,13 +209,13 @@ class FLAXENGINE_API NetworkBase
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
 
     /// <summary>
-    /// Clear the socket group.
+    /// Clears the socket group.
     /// </summary>
     /// <param name="group">The group.</param>
     static void ClearGroup(NetworkSocketGroup& group);
 
     /// <summary>
-    /// Write data to the socket.
+    /// Writes data to the socket.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="data">The data to write.</param>
@@ -225,7 +225,7 @@ class FLAXENGINE_API NetworkBase
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
 
     /// <summary>
-    /// Read data on the socket.
+    /// Reads data on the socket.
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="buffer">The buffer.</param>
@@ -235,7 +235,7 @@ class FLAXENGINE_API NetworkBase
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
 
     /// <summary>
-    /// Create an end point.
+    /// Creates an end point.
     /// </summary>
     /// <param name="address">The address (hostname, IPv4 or IPv6).</param>
     /// <param name="port">The port.</param>
@@ -246,7 +246,7 @@ class FLAXENGINE_API NetworkBase
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
 
     /// <summary>
-    /// Remap an ipv4 end point to an ipv6 one.
+    /// Remaps an ipv4 end point to an ipv6 one.
     /// </summary>
     /// <param name="endPoint">The ipv4 end point.</param>
     /// <returns>The ipv6 end point.</returns>
