@@ -4,7 +4,7 @@
 
 bool NetworkBase::Init()
 {
-    return false;
+    return true;
 }
 
 void NetworkBase::Exit()
@@ -13,57 +13,57 @@ void NetworkBase::Exit()
 
 bool NetworkBase::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::DestroySocket(NetworkSocket& socket)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::Listen(NetworkSocket& socket, uint16 queueSize)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::IsReadable(NetworkSocket& socket)
 {
-    return false;
+    return true;
 }
 
 bool NetworkBase::IsWriteable(NetworkSocket& socket)
@@ -73,17 +73,17 @@ bool NetworkBase::IsWriteable(NetworkSocket& socket)
 
 int32 NetworkBase::Poll(NetworkSocketGroup& group)
 {
-    return 0;
+    return -1;
 }
 
 bool NetworkBase::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
 {
-    return false;
+    return true;
 }
 
 int32 NetworkBase::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    return 0;
+    return -1;
 }
 
 void NetworkBase::ClearGroup(NetworkSocketGroup& group)
@@ -93,17 +93,17 @@ void NetworkBase::ClearGroup(NetworkSocketGroup& group)
 
 int32 NetworkBase::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
 {
-    return 0;
+    return -1;
 }
 
 int32 NetworkBase::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
 {
-    return 0;
+    return -1;
 }
 
 bool NetworkBase::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
-    return false;
+    return true;
 }
 
 NetworkEndPoint NetworkBase::RemapEndPointToIPv6(NetworkEndPoint& endPoint)
