@@ -52,8 +52,6 @@ static NetworkIPVersion GetIPVersionFromAddr(const sockaddr& addr)
     return addr.sa_family == AF_INET6 ? NetworkIPVersion::IPv6 : NetworkIPVersion::IPv4;;
 }
 
-//TODO: can be simplified by casting addr to the right struct and ntohl the port, so we can get rid of getnameinfo
-// getnameinfo return a name ( like JimiPC ), not the ip!
 static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
 {
     uint32 size = GetAddrSize(*addr);
