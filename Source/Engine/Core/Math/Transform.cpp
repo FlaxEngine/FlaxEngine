@@ -94,6 +94,13 @@ Vector3 Transform::LocalToWorld(const Vector3& point) const
     return result + Translation;
 }
 
+Vector3 Transform::LocalToWorldVector(const Vector3& vector) const
+{
+    Vector3 result = vector * Scale;
+    Vector3::Transform(result, Orientation, result);
+    return result;
+}
+
 void Transform::LocalToWorld(const Vector3& point, Vector3& result) const
 {
     Vector3 tmp = point * Scale;
@@ -167,6 +174,24 @@ Vector3 Transform::WorldToLocal(const Vector3& point) const
 
     Vector3 result = point - Translation;
     Vector3::Transform(result, invRotation, result);
+
+    return result * invScale;
+}
+
+Vector3 Transform::WorldToLocalVector(const Vector3& vector) const
+{
+    Vector3 invScale = Scale;
+    if (invScale.X != 0.0f)
+        invScale.X = 1.0f / invScale.X;
+    if (invScale.Y != 0.0f)
+        invScale.Y = 1.0f / invScale.Y;
+    if (invScale.Z != 0.0f)
+        invScale.Z = 1.0f / invScale.Z;
+
+    const Quaternion invRotation = Orientation.Conjugated();
+
+    Vector3 result;
+    Vector3::Transform(vector, invRotation, result);
 
     return result * invScale;
 }
