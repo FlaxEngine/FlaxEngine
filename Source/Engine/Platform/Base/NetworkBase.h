@@ -91,14 +91,14 @@ class FLAXENGINE_API NetworkBase
     /// <param name="socket">The socket struct to fill in.</param>
     /// <param name="proto">The protocol.</param>
     /// <param name="ipv">The ip version.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
 
     /// <summary>
     /// Closes native socket.
     /// </summary>
     /// <param name="socket">The socket.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool DestroySocket(NetworkSocket& socket);
 
     /// <summary>
@@ -107,7 +107,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
     /// <param name="value">The value.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);
 
     /// <summary>
@@ -116,7 +116,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
     /// <param name="value">The value.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value);
 
     /// <summary>
@@ -125,7 +125,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
     /// <param name="value">The returned value.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value);
 
     /// <summary>
@@ -134,7 +134,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="socket">The socket.</param>
     /// <param name="option">The option.</param>
     /// <param name="value">The returned value.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value);
 
     /// <summary>
@@ -142,7 +142,7 @@ class FLAXENGINE_API NetworkBase
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="endPoint">The end point.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
 
     /// <summary>
@@ -150,7 +150,7 @@ class FLAXENGINE_API NetworkBase
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="endPoint">The end point.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
 
     /// <summary>
@@ -158,7 +158,7 @@ class FLAXENGINE_API NetworkBase
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <param name="queueSize">Pending connection queue size.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
 
     /// <summary>
@@ -167,28 +167,28 @@ class FLAXENGINE_API NetworkBase
     /// <param name="serverSock">The socket.</param>
     /// <param name="newSock">The newly connected socket.</param>
     /// <param name="newEndPoint">The end point of the new socket.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
 
     /// <summary>
     /// Checks for socket readability.
     /// </summary>
     /// <param name="socket">The socket.</param>
-    /// <returns>Return true when data is available. Otherwise false.</returns>
+    /// <returns>Returns true when data is available. Otherwise false.</returns>
     static bool IsReadable(NetworkSocket& socket);
 
     /// <summary>
     /// Checks for socket writeability.
     /// </summary>
     /// <param name="socket">The socket.</param>
-    /// <returns>Return true when data can be written. Otherwise false.</returns>
+    /// <returns>Returns true when data can be written. Otherwise false.</returns>
     static bool IsWriteable(NetworkSocket& socket);
 
     /// <summary>
     /// Updates sockets states.
     /// </summary>
     /// <param name="group">The sockets group.</param>
-    /// <returns>Return -1 on error, The number of elements where states are nonzero, otherwise 0.</returns>
+    /// <returns>Returns -1 on error, The number of elements where states are nonzero, otherwise 0.</returns>
     static int32 Poll(NetworkSocketGroup& group);
 
     /// <summary>
@@ -197,7 +197,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="group">The group.</param>
     /// <param name="index">The socket index in group.</param>
     /// <param name="state">The returned state.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
 
     /// <summary>
@@ -205,7 +205,7 @@ class FLAXENGINE_API NetworkBase
     /// </summary>
     /// <param name="group">The group.</param>
     /// <param name="socket">The socket.</param>
-    /// <returns>Return the socket index in group or -1 on error.</returns>
+    /// <returns>Returns the socket index in group or -1 on error.</returns>
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
 
     /// <summary>
@@ -221,7 +221,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="data">The data to write.</param>
     /// <param name="length">The length of data.</param>
     /// <param name="endPoint">If protocol is UDP , the destination end point. Otherwise nullptr.</param>
-    /// <returns>Return -1 on error, otherwise bytes written.</returns>
+    /// <returns>Returns -1 on error, otherwise bytes written.</returns>
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
 
     /// <summary>
@@ -231,7 +231,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="buffer">The buffer.</param>
     /// <param name="bufferSize">Size of the buffer.</param>
     /// <param name="endPoint">If UDP, the end point from where data is coming. Otherwise nullptr.</param>
-    /// <returns>Return -1 on error, otherwise bytes read.</returns>
+    /// <returns>Returns -1 on error, otherwise bytes read.</returns>
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
 
     /// <summary>
@@ -242,7 +242,7 @@ class FLAXENGINE_API NetworkBase
     /// <param name="ipv">The ip version.</param>
     /// <param name="endPoint">The created end point.</param>
     /// <param name="bindable">True if the end point will be connected or binded.</param>
-    /// <returns>Return true on error. Otherwise false.</returns>
+    /// <returns>Returns true on error, otherwise false.</returns>
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
 
     /// <summary>
