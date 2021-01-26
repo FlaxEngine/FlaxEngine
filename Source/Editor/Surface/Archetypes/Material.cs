@@ -707,7 +707,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "UV Tiling & Offset",
                 Description = "Takes UVs and applies tiling and offset",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(150, 60),
+                Size = new Vector2(175, 60),
                 DefaultValues = new object[]
                 {
                     new Vector2(1, 1),
