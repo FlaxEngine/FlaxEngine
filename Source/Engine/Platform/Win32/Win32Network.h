@@ -27,6 +27,10 @@ public:
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
     static bool IsWriteable(NetworkSocket& socket);
+    static int32 Poll(NetworkSocketGroup& group);
+    static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
+    static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
+    static void ClearGroup(NetworkSocketGroup& group);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);

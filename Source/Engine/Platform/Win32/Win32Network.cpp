@@ -334,6 +334,51 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
     return false;
 }
 
+static thread_local int32 pollret;
+int32 Win32Network::Poll(NetworkSocketGroup& group)
+{
+    pollret = WSAPoll((pollfd*)group.Data, group.Count, 0);
+    if (pollret == SOCKET_ERROR)
+        LOG(Error, "Unable to poll socket group! Error : {0}", GetLastErrorMessage().Get());
+    return pollret;
+}
+
+static thread_local pollfd* pollptr;
+bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
+{
+    if (index >= SOCKGROUP_MAXCOUNT)
+        return true;
+    pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
+    if (pollptr->revents & POLLERR)
+        state.Error = true;
+    if (pollptr->revents & POLLHUP)
+        state.Disconnected = true;
+    if (pollptr->revents & POLLNVAL)
+        state.Invalid = true;
+    if (pollptr->revents & POLLRDNORM)
+        state.Readable = true;
+    if (pollptr->revents & POLLWRNORM)
+        state.Writeable = true;
+    return false;
+}
+
+static thread_local pollfd pollinfo;
+int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    if (group.Count >= SOCKGROUP_MAXCOUNT)
+        return -1;
+    pollinfo.fd = *(SOCKET*)socket.Data;
+    pollinfo.events = POLLRDNORM | POLLWRNORM;
+    *(pollfd*)&group.Data[group.Count * SOCKGROUP_ITEMSIZE] = pollinfo;
+    group.Count++;
+    return group.Count-1;
+}
+
+void Win32Network::ClearGroup(NetworkSocketGroup& group)
+{
+    group.Count = 0;
+}
+
 int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
 {
     if (endPoint != nullptr && socket.IPVersion != endPoint->IPVersion)
