@@ -71,6 +71,26 @@ bool NetworkBase::IsWriteable(NetworkSocket& socket)
     return true;
 }
 
+int32 NetworkBase::Poll(NetworkSocketGroup& group)
+{
+    return 0;
+}
+
+bool NetworkBase::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
+{
+    return false;
+}
+
+int32 NetworkBase::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    return 0;
+}
+
+void NetworkBase::ClearGroup(NetworkSocketGroup& group)
+{
+    group.Count = 0;
+}
+
 int32 NetworkBase::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
 {
     return 0;

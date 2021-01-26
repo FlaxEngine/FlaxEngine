@@ -5,6 +5,8 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
 API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
+#define SOCKGROUP_MAXCOUNT 64
+#define SOCKGROUP_ITEMSIZE 16
 
 enum class FLAXENGINE_API NetworkProtocolType
 {
@@ -54,6 +56,21 @@ enum FLAXENGINE_API NetworkSocketOption
     IPv6Only
 };
 
+struct FLAXENGINE_API NetworkSocketState
+{
+    bool Error = false;
+    bool Invalid = false;
+    bool Disconnected = false;
+    bool Readable = false;
+    bool Writeable = false;
+};
+
+struct FLAXENGINE_API NetworkSocketGroup
+{
+    uint32 Count;
+    byte Data[SOCKGROUP_MAXCOUNT * 16] = {};
+};
+
 class FLAXENGINE_API NetworkBase
 {
     public:
@@ -71,6 +88,10 @@ class FLAXENGINE_API NetworkBase
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
     static bool IsWriteable(NetworkSocket& socket);
+    static int32 Poll(NetworkSocketGroup& group);
+    static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
+    static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
+    static void ClearGroup(NetworkSocketGroup& group);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
     static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
