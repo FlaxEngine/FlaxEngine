@@ -267,7 +267,10 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
     int32 size = sizeof sockaddr_in6;
     if ((sock = accept(*(SOCKET*)serverSock.Data, (sockaddr*)&addr, &size)) == INVALID_SOCKET)
     {
-        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetLastErrorMessage().Get());
+        int32 error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetErrorMessage(error).Get());
         return true;
     }
     memcpy(newSock.Data, &sock, sizeof sock);
