@@ -165,6 +165,17 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
+        public override void PostSpawn()
+        {
+            base.PostSpawn();
+
+            // Setup for an initial spline
+            var spline = (Spline)Actor;
+            spline.AddSplineLocalPoint(Vector3.Zero, false);
+            spline.AddSplineLocalPoint(new Vector3(0, 0, 100.0f));
+        }
+
+        /// <inheritdoc />
         public override void OnDispose()
         {
             FlaxEngine.Scripting.Update -= OnUpdate;
