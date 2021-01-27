@@ -513,7 +513,7 @@ namespace FlaxEditor.Viewport
             if (hit != null)
             {
                 // For child actor nodes (mesh, link or sth) we need to select it's owning actor node first or any other child node (but not a child actor)
-                if (hit is ActorChildNode actorChildNode)
+                if (hit is ActorChildNode actorChildNode && !actorChildNode.CanBeSelectedDirectly)
                 {
                     var parentNode = actorChildNode.ParentNode;
                     bool canChildBeSelected = _window.Selection.Contains(parentNode);

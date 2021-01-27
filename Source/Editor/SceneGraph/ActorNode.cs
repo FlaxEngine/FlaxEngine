@@ -41,7 +41,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// The actor child nodes used to represent special parts of the actor (meshes, links, surfaces).
         /// </summary>
-        public readonly List<ActorChildNode> ActorChildNodes = new List<ActorChildNode>();
+        public List<ActorChildNode> ActorChildNodes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActorNode"/> class.
@@ -108,6 +108,8 @@ namespace FlaxEditor.SceneGraph
         /// <returns>The node</returns>
         public ActorChildNode AddChildNode(ActorChildNode node)
         {
+            if (ActorChildNodes == null)
+                ActorChildNodes = new List<ActorChildNode>();
             ActorChildNodes.Add(node);
             node.ParentNode = this;
             return node;
@@ -125,9 +127,12 @@ namespace FlaxEditor.SceneGraph
                 root.OnActorChildNodesDispose(this);
             }
 
-            for (int i = 0; i < ActorChildNodes.Count; i++)
-                ActorChildNodes[i].Dispose();
-            ActorChildNodes.Clear();
+            if (ActorChildNodes != null)
+            {
+                for (int i = 0; i < ActorChildNodes.Count; i++)
+                    ActorChildNodes[i].Dispose();
+                ActorChildNodes.Clear();
+            }
         }
 
         /// <summary>
@@ -275,8 +280,12 @@ namespace FlaxEditor.SceneGraph
         /// <inheritdoc />
         public override void Dispose()
         {
-            // Cleanup UI
             _treeNode.Dispose();
+            if (ActorChildNodes != null)
+            {
+                ActorChildNodes.Clear();
+                ActorChildNodes = null;
+            }
 
             base.Dispose();
         }

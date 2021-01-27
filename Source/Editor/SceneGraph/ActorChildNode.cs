@@ -20,6 +20,11 @@ namespace FlaxEditor.SceneGraph
         public readonly int Index;
 
         /// <summary>
+        /// Gets a value indicating whether this node can be selected directly without selecting parent actor node first.
+        /// </summary>
+        public virtual bool CanBeSelectedDirectly => false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ActorChildNode"/> class.
         /// </summary>
         /// <param name="id">The child id.</param>
@@ -66,6 +71,18 @@ namespace FlaxEditor.SceneGraph
 
         /// <inheritdoc />
         public override object UndoRecordObject => ParentNode.UndoRecordObject;
+
+        /// <inheritdoc />
+        public override void Dispose()
+        {
+            // Unlink from the parent
+            if (parentNode is ActorNode parentActorNode && parentActorNode.ActorChildNodes != null)
+            {
+                parentActorNode.ActorChildNodes.Remove(this);
+            }
+
+            base.Dispose();
+        }
     }
 
     /// <summary>
