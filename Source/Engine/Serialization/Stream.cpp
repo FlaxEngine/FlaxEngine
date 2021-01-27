@@ -228,6 +228,8 @@ void ReadStream::ReadVariantType(VariantType* data)
     if (typeNameLength == MAX_int32)
     {
         ReadInt32(&typeNameLength);
+        if (typeNameLength == 0)
+            return;
         data->TypeName = static_cast<char*>(Allocator::Allocate(typeNameLength + 1));
         char* ptr = data->TypeName;
         Read(ptr, typeNameLength);
