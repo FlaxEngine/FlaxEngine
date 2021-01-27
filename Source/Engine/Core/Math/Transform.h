@@ -164,6 +164,13 @@ public:
     Transform Add(const Transform& other) const;
 
     /// <summary>
+    /// Subtracts transformation from this transform.
+    /// </summary>
+    /// <param name="other">The other transformation.</param>
+    /// <returns>The different of two transformations.</returns>
+    Transform Subtract(const Transform& other) const;
+
+    /// <summary>
     /// Performs transformation of the given transform in local space to the world space of this transform.
     /// </summary>
     /// <param name="other">The local space transformation.</param>
@@ -252,6 +259,11 @@ public:
     FORCE_INLINE Transform operator+(const Transform& other) const
     {
         return Add(other);
+    }
+
+    FORCE_INLINE Transform operator-(const Transform& other) const
+    {
+        return Subtract(other);
     }
 
     FORCE_INLINE Transform operator+(const Vector3& other) const

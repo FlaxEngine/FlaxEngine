@@ -325,6 +325,14 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the conjugated quaternion.
+        /// </summary>
+        public Quaternion Conjugated()
+        {
+            return new Quaternion(-X, -Y, -Z, W);
+        }
+
+        /// <summary>
         /// Conjugates and renormalizes the quaternion.
         /// </summary>
         public void Invert()

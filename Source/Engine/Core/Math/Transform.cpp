@@ -43,37 +43,42 @@ void Transform::GetWorld(Matrix& result) const
 Transform Transform::Add(const Vector3& translation) const
 {
     Transform result;
-
     result.Orientation = Orientation;
     result.Scale = Scale;
     Vector3::Add(Translation, translation, result.Translation);
-
     return result;
 }
 
 Transform Transform::Add(const Transform& other) const
 {
     Transform result;
-
     Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
     Vector3::Multiply(Scale, other.Scale, result.Scale);
     Vector3::Add(Translation, other.Translation, result.Translation);
+    return result;
+}
 
+Transform Transform::Subtract(const Transform& other) const
+{
+    Transform result;
+    Vector3::Subtract(Translation, other.Translation, result.Translation);
+    const Quaternion invRotation = other.Orientation.Conjugated();
+    Quaternion::Multiply(Orientation, invRotation, result.Orientation);
+    result.Orientation.Normalize();
+    Vector3::Divide(Scale, other.Scale, result.Scale);
     return result;
 }
 
 Transform Transform::LocalToWorld(const Transform& other) const
 {
     Transform result;
-
     Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
     Vector3::Multiply(Scale, other.Scale, result.Scale);
     Vector3 tmp = other.Translation * Scale;
     Vector3::Transform(tmp, Orientation, tmp);
     Vector3::Add(tmp, Translation, result.Translation);
-
     return result;
 }
 

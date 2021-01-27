@@ -170,18 +170,47 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Adds two transforms.
+        /// </summary>
+        /// <param name="left">The first transform to add.</param>
+        /// <param name="right">The second transform to add.</param>
+        /// <returns>The sum of the two transforms.</returns>
+        public static Transform Add(Transform left, Transform right)
+        {
+            Transform result;
+            Quaternion.Multiply(ref left.Orientation, ref right.Orientation, out result.Orientation);
+            Vector3.Multiply(ref left.Scale, ref right.Scale, out result.Scale);
+            Vector3.Add(ref left.Translation, ref right.Translation, out result.Translation);
+            return result;
+        }
+
+        /// <summary>
+        /// Subtracts two transforms.
+        /// </summary>
+        /// <param name="left">The first transform to subtract from.</param>
+        /// <param name="right">The second transform to subtract.</param>
+        /// <returns>The difference of the two transforms.</returns>
+        public static Transform Subtract(Transform left, Transform right)
+        {
+            Transform result;
+            Vector3.Subtract(ref left.Translation, ref right.Translation, out result.Translation);
+            Quaternion invRotation = right.Orientation.Conjugated();
+            Quaternion.Multiply(ref left.Orientation, ref invRotation, out result.Orientation);
+            Vector3.Divide(ref left.Scale, ref right.Scale, out result.Scale);
+            return result;
+        }
+
+        /// <summary>
         /// Perform transformation of the given transform in local space
         /// </summary>
         /// <param name="other">Local space transform</param>
         /// <returns>World space transform</returns>
         public Transform LocalToWorld(Transform other)
         {
-            Transform result = new Transform(Vector3.Zero);
-
+            Transform result;
             Quaternion.Multiply(ref Orientation, ref other.Orientation, out result.Orientation);
             Vector3.Multiply(ref Scale, ref other.Scale, out result.Scale);
             result.Translation = LocalToWorld(other.Translation);
-
             return result;
         }
 
@@ -229,7 +258,6 @@ namespace FlaxEngine
         /// <returns>Local space transform</returns>
         public Transform WorldToLocal(Transform other)
         {
-            Transform result = new Transform(Vector3.Zero);
             Vector3 invScale = Scale;
             if (invScale.X != 0.0f)
                 invScale.X = 1.0f / invScale.X;
@@ -238,6 +266,7 @@ namespace FlaxEngine
             if (invScale.Z != 0.0f)
                 invScale.Z = 1.0f / invScale.Z;
 
+            Transform result;
             result.Orientation = Orientation;
             result.Orientation.Invert();
             Quaternion.Multiply(ref result.Orientation, ref other.Orientation, out result.Orientation);
@@ -402,6 +431,28 @@ namespace FlaxEngine
         public static bool operator !=(Transform left, Transform right)
         {
             return !left.Equals(ref right);
+        }
+
+        /// <summary>
+        /// Adds two transformations.
+        /// </summary>
+        /// <param name="left">The first transform to add.</param>
+        /// <param name="right">The second transform to add.</param>
+        /// <returns>The sum of the two transformations.</returns>
+        public static Transform operator +(Transform left, Transform right)
+        {
+            return Add(left, right);
+        }
+
+        /// <summary>
+        /// Subtracts two transformations.
+        /// </summary>
+        /// <param name="left">The first transform to subtract from.</param>
+        /// <param name="right">The second transform to subtract.</param>
+        /// <returns>The difference of the two transformations.</returns>
+        public static Transform operator -(Transform left, Transform right)
+        {
+            return Subtract(left, right);
         }
 
         /// <summary>
