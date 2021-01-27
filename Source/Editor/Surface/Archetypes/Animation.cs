@@ -882,8 +882,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 1, 160, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 1, "Node:"),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
-                    NodeElementArchetype.Factory.Output(1, "Transform", typeof(Transform), 1),
+                    NodeElementArchetype.Factory.Output(0, "Transform", typeof(Transform), 1),
                 }
             },
             new NodeArchetype
@@ -924,8 +923,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 1, 120, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 1, "Node:"),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
-                    NodeElementArchetype.Factory.Output(1, "Transform", typeof(Transform), 1),
+                    NodeElementArchetype.Factory.Output(0, "Transform", typeof(Transform), 1),
                 }
             },
             new NodeArchetype
