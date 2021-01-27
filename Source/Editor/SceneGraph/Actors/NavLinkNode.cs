@@ -37,13 +37,13 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 get
                 {
-                    var actor = (NavLink)_actor.Actor;
+                    var actor = (NavLink)_node.Actor;
                     Transform localTrans = new Transform(_isStart ? actor.Start : actor.End);
                     return actor.Transform.LocalToWorld(localTrans);
                 }
                 set
                 {
-                    var actor = (NavLink)_actor.Actor;
+                    var actor = (NavLink)_node.Actor;
                     Transform localTrans = actor.Transform.WorldToLocal(value);
                     if (_isStart)
                         actor.Start = localTrans.Translation;

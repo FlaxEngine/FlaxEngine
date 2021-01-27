@@ -94,20 +94,28 @@ namespace FlaxEditor.SceneGraph
     public abstract class ActorChildNode<T> : ActorChildNode where T : ActorNode
     {
         /// <summary>
-        /// The actor.
+        /// The actor node.
         /// </summary>
-        protected readonly T _actor;
+        protected T _node;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActorChildNode{T}"/> class.
         /// </summary>
-        /// <param name="actor">The parent actor.</param>
+        /// <param name="node">The parent actor node.</param>
         /// <param name="id">The child id.</param>
         /// <param name="index">The child index.</param>
-        protected ActorChildNode(T actor, Guid id, int index)
+        protected ActorChildNode(T node, Guid id, int index)
         : base(id, index)
         {
-            _actor = actor;
+            _node = node;
+        }
+
+        /// <inheritdoc />
+        public override void OnDispose()
+        {
+            _node = null;
+
+            base.OnDispose();
         }
     }
 }

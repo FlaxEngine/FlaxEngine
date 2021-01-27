@@ -14,8 +14,8 @@ namespace FlaxEditor.SceneGraph.Actors
     {
         private sealed class SplinePointNode : ActorChildNode<SplineNode>
         {
-            public SplinePointNode(SplineNode actor, Guid id, int index)
-            : base(actor, id, index)
+            public unsafe SplinePointNode(SplineNode node, Guid id, int index)
+            : base(node, id, index)
             {
             }
 
@@ -25,19 +25,19 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 get
                 {
-                    var actor = (Spline)_actor.Actor;
+                    var actor = (Spline)_node.Actor;
                     return actor.GetSplineTransform(Index);
                 }
                 set
                 {
-                    var actor = (Spline)_actor.Actor;
+                    var actor = (Spline)_node.Actor;
                     actor.SetSplineTransform(Index, value);
                 }
             }
 
             public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
             {
-                var actor = (Spline)_actor.Actor;
+                var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplinePoint(Index);
                 normal = -ray.Ray.Direction;
                 return new BoundingSphere(pos, 7.0f).Intersects(ref ray.Ray, out distance);
@@ -45,10 +45,13 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override void OnDebugDraw(ViewportDebugDrawData data)
             {
+                var actor = (Spline)_node.Actor;
+                var pos = actor.GetSplinePoint(Index);
+
+                // Draw spline path
                 ParentNode.OnDebugDraw(data);
 
-                var actor = (Spline)_actor.Actor;
-                var pos = actor.GetSplinePoint(Index);
+                // Draw selected point highlight
                 DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.Yellow, 0, false);
             }
         }
