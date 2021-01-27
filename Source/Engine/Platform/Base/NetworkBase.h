@@ -5,20 +5,27 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
 API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
+
 #define SOCKGROUP_MAXCOUNT 64
 #define SOCKGROUP_ITEMSIZE 16
 
 enum class FLAXENGINE_API NetworkProtocolType
 {
+    /// <summary>Not specified.</summary>
     Undefined,
+    /// <summary>User Datagram Protocol.</summary>
     Udp,
+    /// <summary>Transmission Control Protocol.</summary>
     Tcp
 };
 
 enum class FLAXENGINE_API NetworkIPVersion
 {
+    /// <summary>Not specified.</summary>
     Undefined,
+    /// <summary>Internet Protocol version 4.</summary>
     IPv4,
+    /// <summary>Internet Protocol version 6.</summary>
     IPv6
 };
 
@@ -26,7 +33,7 @@ struct FLAXENGINE_API NetworkSocket
 {
     NetworkProtocolType Protocol = NetworkProtocolType::Undefined;
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
-    byte Data[8] = {}; // sizeof SOCKET = unsigned __int64
+    byte Data[8] = {};
 };
 
 struct FLAXENGINE_API NetworkEndPoint
@@ -34,26 +41,41 @@ struct FLAXENGINE_API NetworkEndPoint
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
     String Address;
     String Port;
-    byte Data[28] = {}; // sizeof sockaddr_in6 , biggest sockaddr that we will use
+    byte Data[28] = {};
 };
 
-enum FLAXENGINE_API NetworkSocketOption
+enum class FLAXENGINE_API NetworkSocketOption
 {
+    /// <summary>Enables debugging info recording.</summary>
     Debug,
+    /// <summary>Allows local address reusing.</summary>
     ReuseAddr,
+    /// <summary>Keeps connections alive.</summary>
     KeepAlive,
+    /// <summary>Indicates that outgoing data should be sent on whatever interface the socket is bound to and not a routed on some other interface.</summary>
     DontRoute,
+    /// <summary>Allows for sending broadcast data.</summary>
     Broadcast,
+    /// <summary>Uses the local loopback address when sending data from this socket.</summary>
     UseLoopback,
+    /// <summary>Lingers on close if data present.</summary>
     Linger,
+    /// <summary>Allows out-of-bound data to be returned in-line with regular data.</summary>
     OOBInline,
+    /// <summary>Socket send data buffer size.</summary>
     SendBuffer,
+    /// <summary>Socket receive data buffer size.</summary>
     RecvBuffer,
+    /// <summary>The timeout in milliseconds for blocking send calls.</summary>
     SendTimeout,
+    /// <summary>The timeout in milliseconds for blocking receive calls.</summary>
     RecvTimeout,
+    /// <summary>The last socket error code.</summary>
     Error,
+    /// <summary>Enables the Nagle algorithm for TCP sockets.</summary>
     NoDelay,
-    IPv6Only
+    /// <summary>Enables IPv6 communication only for TCP socket.</summary>
+    IPv6Only,
 };
 
 struct FLAXENGINE_API NetworkSocketState
@@ -68,12 +90,12 @@ struct FLAXENGINE_API NetworkSocketState
 struct FLAXENGINE_API NetworkSocketGroup
 {
     uint32 Count = 0;
-    byte Data[SOCKGROUP_MAXCOUNT * 16] = {};
+    byte Data[SOCKGROUP_MAXCOUNT * SOCKGROUP_ITEMSIZE] = {};
 };
 
 class FLAXENGINE_API NetworkBase
 {
-    public:
+public:
     /// <summary>
     /// Creates a new native socket.
     /// </summary>
@@ -241,4 +263,3 @@ class FLAXENGINE_API NetworkBase
     /// <returns>The ipv6 end point.</returns>
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint& endPoint);
 };
-

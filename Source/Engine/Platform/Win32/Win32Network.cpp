@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Win32Network.h"
 #include "Engine/Core/Log.h"
@@ -12,8 +12,10 @@
 static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
 static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
 
+// @formatter:off
 static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                                   0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00 } };
+// @formatter:on
 
 /*
  * Known issues :
@@ -24,9 +26,9 @@ static String GetErrorMessage(int error)
 {
     wchar_t* s = nullptr;
     FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        nullptr, error,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        reinterpret_cast<LPWSTR>(&s), 0, nullptr);
+                   nullptr, error,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   reinterpret_cast<LPWSTR>(&s), 0, nullptr);
     String str(s);
     LocalFree(s);
     return str;
@@ -72,11 +74,11 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         LOG(Error, "Unable to create endpoint, sockaddr must be INET or INET6! Family : {0}", addr->sa_family);
         return true;
     }
-    
+
     char ip[INET6_ADDRSTRLEN];
     if (inet_ntop(addr->sa_family, paddr, ip, INET6_ADDRSTRLEN) == nullptr)
     {
-        LOG(Error, "Unable to extract address from sockaddr! Error : {0}", GetLastErrorMessage().Get());
+        LOG(Error, "Unable to extract address from sockaddr! Error : {0}", GetLastErrorMessage());
         return true;
     }
     endPoint.Address = String(ip);
@@ -107,7 +109,7 @@ static void PrintAddrFromInfo(addrinfoW& info)
 
         char str[INET6_ADDRSTRLEN];
         inet_ntop(curr->ai_family, addr, str, INET6_ADDRSTRLEN);
-        LOG(Info, "ADDR INFO family : {0} socktype : {1}, proto : {2} address : {3}", curr->ai_family, curr->ai_socktype, curr->ai_protocol, StringAnsi(str).ToString().Get());
+        LOG(Info, "ADDR INFO family : {0} socktype : {1}, proto : {2} address : {3}", curr->ai_family, curr->ai_socktype, curr->ai_protocol, StringAnsi(str).ToString());
     }
 }
 
@@ -115,21 +117,21 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
 {
     switch (option)
     {
-        SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
-        SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
-        SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
-        SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
-        SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
-        SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
-        SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
-        SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
-        SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
-        SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
-        SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
-        SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
-        SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
-        SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
-        SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
+    SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
+    SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
+    SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
+    SOCKOPT(NetworkSocketOption::DontRoute, SOL_SOCKET, SO_DONTROUTE)
+    SOCKOPT(NetworkSocketOption::Broadcast, SOL_SOCKET, SO_BROADCAST)
+    SOCKOPT(NetworkSocketOption::UseLoopback, SOL_SOCKET, SO_USELOOPBACK)
+    SOCKOPT(NetworkSocketOption::Linger, SOL_SOCKET, SO_LINGER)
+    SOCKOPT(NetworkSocketOption::OOBInline, SOL_SOCKET, SO_OOBINLINE)
+    SOCKOPT(NetworkSocketOption::SendBuffer, SOL_SOCKET, SO_SNDBUF)
+    SOCKOPT(NetworkSocketOption::RecvBuffer, SOL_SOCKET, SO_RCVBUF)
+    SOCKOPT(NetworkSocketOption::SendTimeout, SOL_SOCKET, SO_SNDTIMEO)
+    SOCKOPT(NetworkSocketOption::RecvTimeout, SOL_SOCKET, SO_RCVTIMEO)
+    SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
+    SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
+    SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     }
 }
 
@@ -144,14 +146,14 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto
 
     if ((sock = ::socket(family, stype, prot)) == INVALID_SOCKET)
     {
-        LOG(Error, "Can't create native socket! Error : {0}", GetLastErrorMessage().Get());
+        LOG(Error, "Can't create native socket! Error : {0}", GetLastErrorMessage());
         return true;
     }
     memcpy(socket.Data, &sock, sizeof sock);
     unsigned long value = 1;
     if (ioctlsocket(sock, FIONBIO, &value) == SOCKET_ERROR)
     {
-        LOG(Error, "Can't set socket to NON-BLOCKING type! Error : {0}", GetLastErrorMessage().Get());
+        LOG(Error, "Can't set socket to NON-BLOCKING type! Error : {0}", GetLastErrorMessage());
         return true; // Support using blocking socket , need to test it
     }
     return false;
@@ -181,10 +183,10 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption op
     int32 optnme = 0;
 
     TranslateSockOptToNative(option, &optlvl, &optnme);
-    
+
     if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, sizeof value) == SOCKET_ERROR)
     {
-        LOG(Warning, "Unable to set socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        LOG(Warning, "Unable to set socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -202,13 +204,13 @@ bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption op
 {
     int32 optlvl = 0;
     int32 optnme = 0;
-    
+
     TranslateSockOptToNative(option, &optlvl, &optnme);
-    
+
     int32 size;
     if (getsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)value, &size) == SOCKET_ERROR)
     {
-        LOG(Warning, "Unable to get socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage().Get());
+        LOG(Warning, "Unable to get socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -222,7 +224,7 @@ bool Win32Network::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoin
         int error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), GetErrorMessage(error).Get());
+        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetErrorMessage(error));
         return true;
     }
     return false;
@@ -239,7 +241,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     const uint16 size = endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address.Get(), endPoint.Port.Get(), GetLastErrorMessage().Get());
+        LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -249,7 +251,7 @@ bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
 {
     if (listen(*(SOCKET*)socket.Data, (int32)queueSize) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", GetLastErrorMessage().Get());
+        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", GetLastErrorMessage());
         return true;
     }
     return false;
@@ -270,7 +272,7 @@ bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, Net
         int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetErrorMessage(error).Get());
+        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetErrorMessage(error));
         return true;
     }
     memcpy(newSock.Data, &sock, sizeof sock);
@@ -292,7 +294,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket)
         int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error));
         return false;
     }
     if (entry.revents & POLLRDNORM)
@@ -310,7 +312,7 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
         int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error).Get());
+        LOG(Error, "Unable to poll socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error));
         return false;
     }
     if (entry.revents & POLLWRNORM)
@@ -322,7 +324,7 @@ int32 Win32Network::Poll(NetworkSocketGroup& group)
 {
     int32 pollret = WSAPoll((pollfd*)group.Data, group.Count, 0);
     if (pollret == SOCKET_ERROR)
-        LOG(Error, "Unable to poll socket group! Error : {0}", GetLastErrorMessage().Get());
+        LOG(Error, "Unable to poll socket group! Error : {0}", GetLastErrorMessage());
     return pollret;
 }
 
@@ -354,7 +356,7 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
     pollinfo.events = POLLRDNORM | POLLWRNORM;
     *(pollfd*)&group.Data[group.Count * SOCKGROUP_ITEMSIZE] = pollinfo;
     group.Count++;
-    return group.Count-1;
+    return group.Count - 1;
 }
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
@@ -374,7 +376,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = send(*(SOCKET*)socket.Data, (const char*)data, length, 0)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, GetLastErrorMessage().Get());
+            LOG(Error, "Unable to send data! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, GetLastErrorMessage());
             return -1;
         }
     }
@@ -382,13 +384,13 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, GetLastErrorMessage().Get());
+            LOG(Error, "Unable to send data! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, GetLastErrorMessage());
             return -1;
         }
     }
     else
     {
-        //TODO: better explanation
+        // TODO: better explanation
         LOG(Error, "Unable to send data! Socket : {0} Data Length : {1}", *(SOCKET*)socket.Data, length);
         return -1;
     }
@@ -405,7 +407,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
             const int32 error = WSAGetLastError();
             if (error == WSAEWOULDBLOCK)
                 return 0;
-            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetErrorMessage(error).Get());
+            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetErrorMessage(error));
             return -1;
         }
     }
@@ -415,7 +417,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
         sockaddr_in6 addr;
         if ((size = recvfrom(*(SOCKET*)socket.Data, (char*)buffer, bufferSize, 0, (sockaddr*)&addr, &addrsize)) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetLastErrorMessage().Get());
+            LOG(Error, "Unable to read data! Socket : {0} Buffer Size : {1} Error : {2}", *(SOCKET*)socket.Data, bufferSize, GetLastErrorMessage());
             return -1;
         }
         if (CreateEndPointFromAddr((sockaddr*)&addr, *endPoint))
@@ -439,13 +441,13 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
     if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address != nullptr ? address->Get() : String("ANY").Get(), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address ? address->Get() : String("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address != nullptr ? address->Get() : String("ANY").Get());
+        LOG(Error, "Unable to resolve address! Address : {0}", address ? address->Get() : String("ANY"));
         return true;
     }
 
