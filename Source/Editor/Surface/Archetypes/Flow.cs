@@ -168,18 +168,18 @@ namespace FlaxEditor.Surface.Archetypes
 
                 var outPinCount = (int)Values[0];
                 var outPinMin = 0;
-                var outPinMax = 100; // Should be enough or maybe too much?
+                var outPinMax = 101; // Should be enough or maybe too much?
 
                 var startIndex = (int)Values[2];
 
                 // Remove default, if null nothing will happen.
-                RemoveElement(GetBox(101));
+                RemoveElement(GetBox(102));
 
                 // Add all boxes
                 for (int i = 0; i < outPinCount; i++)
                     AddBox(true, i + 1, i, (startIndex + i).ToString(), new ScriptType(typeof(void)), true);
 
-                AddBox(true, 101, outPinCount, "Default", new ScriptType(typeof(void)), true);
+                AddBox(true, 102, outPinCount, "Default", new ScriptType(typeof(void)), true);
 
                 // Cull boxes
                 for (int i = outPinCount; i <= outPinMax; i++)
@@ -190,7 +190,7 @@ namespace FlaxEditor.Surface.Archetypes
                     RemoveElement(box);
                 }
 
-                _addButton.Enabled = outPinCount < outPinMax && Surface.CanEdit;
+                _addButton.Enabled = outPinCount < outPinMax-1 && Surface.CanEdit;
                 _removeButton.Enabled = outPinCount > outPinMin && Surface.CanEdit;
 
                 if (!(outPinCount <= 1))
@@ -408,9 +408,9 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
-                    // 101 is reserved for default, 1-100 are reserved for the output pins.
-                    NodeElementArchetype.Factory.Input(1, "Int", true, typeof(int), 102, 1),
-                    NodeElementArchetype.Factory.Input(2, "Start", true, typeof(int), 103, 2)
+                    // 102 is reserved for default, 1-101 are reserved for the output pins.
+                    NodeElementArchetype.Factory.Input(1, "Int", true, typeof(int), 103, 1),
+                    NodeElementArchetype.Factory.Input(2, "Start", true, typeof(int), 104, 2)
                 }
             },
         };
