@@ -199,6 +199,38 @@ public:
     API_FUNCTION() void ClearSpline();
 
     /// <summary>
+    /// Sets the spline curve at the given index (world-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The location of the point to set (world-space).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplinePoint(int32 index, const Vector3& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve at the given index (local-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The location of the point to set (local-space).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplineLocalPoint(int32 index, const Vector3& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve at the given index (world-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The location of the point to set (world-space).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplineTransform(int32 index, const Transform& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve at the given index (local-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The location of the point to set (local-space).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplineLocalTransform(int32 index, const Transform& point, bool updateSpline = true);
+
+    /// <summary>
     /// Adds the point to the spline curve (at the end).
     /// </summary>
     /// <param name="point">The location of the point to add to the curve (world-space).</param>
