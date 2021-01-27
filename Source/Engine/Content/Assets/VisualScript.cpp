@@ -1152,6 +1152,17 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Switch on Int
+    case 6:
+    {
+        break;
+        //TODO: Implement, currently difficulty is finding the correct output box.
+        // 1. Get Int value.
+        // 2. Find Box with corresponding Int Value (Binary search?)
+        // 2.1 If not found, execute default
+        // 3. Check if it has connection
+        // 4. Eat it
+    }
     }
 }
 

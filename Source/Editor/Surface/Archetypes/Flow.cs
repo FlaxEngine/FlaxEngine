@@ -99,6 +99,109 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private class SwitchIntNode : SurfaceNode
+        {
+            private Button _addButton;
+            private Button _removeButton;
+
+            public SwitchIntNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                // TODO: Is this even correctly implemented??
+                // Restore saved output boxes layout
+                var outPinCount = (int)Values[0];
+
+                for (int i = 0; i < outPinCount; i++)
+                    AddBox(true, i + 1, i, string.Empty, new ScriptType(typeof(void)), true);
+
+                AddBox(true, 101, outPinCount, "Default", new ScriptType(typeof(void)), true);
+            }
+
+            public override void OnSurfaceLoaded()
+            {
+                base.OnSurfaceLoaded();
+
+                _removeButton = new Button(0, 0, 20, 20)
+                {
+                    Text = "-",
+                    TooltipText = "Remove last sequence output",
+                    Parent = this
+                };
+                _removeButton.Clicked += () => SetValue(0, (int)Values[0] - 1);
+
+                _addButton = new Button(0, 0, 20, 20)
+                {
+                    Text = "+",
+                    TooltipText = "Add sequence output",
+                    Parent = this
+                };
+                _addButton.Clicked += () => SetValue(0, (int)Values[0] + 1);
+
+                UpdateUI();
+            }
+
+            public override void OnSurfaceCanEditChanged(bool canEdit)
+            {
+                base.OnSurfaceCanEditChanged(canEdit);
+
+                _addButton.Enabled = canEdit;
+                _removeButton.Enabled = canEdit;
+                UpdateUI();
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateUI();
+            }
+
+            private void UpdateUI()
+            {
+                // NOTE: The pin ID is bound between min and max, min is not 0 because its used for the input impulse
+
+                var outPinCount = (int)Values[0];
+                var outPinMin = 0;
+                var outPinMax = 100; // Should be enough or maybe too much?
+
+                var startIndex = (int)Values[2];
+
+                // Remove default, if null nothing will happen.
+                RemoveElement(GetBox(101));
+
+                // Add all boxes
+                for (int i = 0; i < outPinCount; i++)
+                    AddBox(true, i + 1, i, (startIndex + i).ToString(), new ScriptType(typeof(void)), true);
+
+                AddBox(true, 101, outPinCount, "Default", new ScriptType(typeof(void)), true);
+
+                // Cull boxes
+                for (int i = outPinCount; i <= outPinMax; i++)
+                {
+                    var box = GetBox(i + 1);
+
+                    if (box == null) break;
+                    RemoveElement(box);
+                }
+
+                _addButton.Enabled = outPinCount < outPinMax && Surface.CanEdit;
+                _removeButton.Enabled = outPinCount > outPinMin && Surface.CanEdit;
+
+                if (!(outPinCount <= 1))
+                {
+                    Resize(150, 60 + (outPinCount - 1) * 20);
+                }
+
+                _addButton.Location = new Vector2(Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX, Height - 20 - FlaxEditor.Surface.Constants.NodeMarginY - FlaxEditor.Surface.Constants.NodeFooterSize);
+                _removeButton.Location = new Vector2(_addButton.X - _removeButton.Width - 4, _addButton.Y);
+            }
+        }
 
         private class BranchOnEnumNode : SurfaceNode
         {
@@ -291,6 +394,23 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
                     NodeElementArchetype.Factory.Input(1, "Value", true, null, 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 6,
+                Title = "Switch on Int",
+                Create = (id, context, arch, groupArch) => new SwitchIntNode(id, context, arch, groupArch),
+                Description = "Executes the output that matches the input value, if not found, default is executed.",
+                Flags = NodeFlags.VisualScriptGraph,
+                Size = new Vector2(150, 80),
+                DefaultValues = new object[] { 2, 0, 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
+                    // 101 is reserved for default, 1-100 are reserved for the output pins.
+                    NodeElementArchetype.Factory.Input(1, "Int", true, typeof(int), 102, 1),
+                    NodeElementArchetype.Factory.Input(2, "Start", true, typeof(int), 103, 2)
                 }
             },
         };
