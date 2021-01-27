@@ -18,6 +18,8 @@ Go check out our [Trello](https://trello.com/b/NQjLXRCP/flax-roadmap).
 
 ## **Want to contribute?**
   
+* Fork the FlaxEngine, create a new branch and push your changes there. Then, create a pull request.
+  
 * When creating a PR for fixing an issue/bug make sure to describe as to what led to the fix for better understanding, for small and obvious fixes this is not really needed. 
   However make sure to mention the relevant issue where it was first reported if possible.
   

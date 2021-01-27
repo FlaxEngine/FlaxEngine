@@ -4,6 +4,10 @@ rem Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
 if not exist "Development\Scripts\Windows\GetMSBuildPath.bat" goto Error_InvalidLocation
 
+for %%I in (Source\Logo.png) do if %%~zI LSS 2000 (
+	goto Error_MissingLFS
+)
+
 call "Development\Scripts\Windows\GetMSBuildPath.bat"
 if errorlevel 1 goto Error_NoVisualStudioEnvironment
 
@@ -33,6 +37,9 @@ Binaries\Tools\Flax.Build.exe %*
 if errorlevel 1 goto Error_FlaxBuildFailed
 exit /B 0
 
+:Error_MissingLFS
+echo CallBuildTool ERROR: Repository was not cloned using Git LFS
+goto Exit
 :Error_InvalidLocation
 echo CallBuildTool ERROR: The script is in invalid directory.
 goto Exit
