@@ -5,6 +5,7 @@
 #include "WindowsFileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/Windows/ComPtr.h"
 #include "Engine/Core/Types/StringView.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
@@ -293,41 +294,39 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
 {
     bool result = true;
 
-    // Allocate memory for the filenames
-    int32 maxPathSize = 2 * MAX_PATH;
-    Array<Char> pathBuffer;
-    pathBuffer.Resize(maxPathSize);
-    pathBuffer[0] = 0;
+    // Randomly generated GUID used for storing the last location of this dialog
+    const Guid folderGuid(0x53890ed9, 0xa55e47ba, 0xa970bdae, 0x72acedff);
 
-    // Setup description
-    BROWSEINFOW bi;
-    ZeroMemory(&bi, sizeof(bi));
-    if (parentWindow)
-        bi.hwndOwner = static_cast<HWND>(parentWindow->GetNativePtr());
-    bi.lpszTitle = title.HasChars() ? title.Get() : nullptr;
-    bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
-    bi.lpfn = BrowseCallbackProc;
-    bi.lParam = (LPARAM)(initialDirectory.HasChars() ? initialDirectory.Get() : nullptr);
-
-    LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
-
-    if (pidl != nullptr)
+    ComPtr<IFileOpenDialog> fd;
+    if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fd))))
     {
-        // Get the name of the folder and put it in path
-        SHGetPathFromIDList(pidl, pathBuffer.Get());
+        DWORD options;
+        fd->GetOptions(&options);
+        fd->SetOptions(options | FOS_PICKFOLDERS | FOS_NOCHANGEDIR);
 
-        if (pathBuffer[0] != 0)
-        {
-            path = pathBuffer.Get();
-            result = false;
-        }
+        if (title.HasChars())
+            fd->SetTitle(title.Get());
 
-        // Free memory used
-        IMalloc* imalloc = 0;
-        if (SUCCEEDED(SHGetMalloc(&imalloc)))
+        // Associate the last selected folder with this GUID instead of overwriting the global one
+        fd->SetClientGuid(*reinterpret_cast<const GUID*>(&folderGuid));
+
+        ComPtr<IShellItem> defaultFolder;
+        if (SUCCEEDED(SHCreateItemFromParsingName(initialDirectory.Get(), NULL, IID_PPV_ARGS(&defaultFolder))))
+            fd->SetFolder(defaultFolder);
+
+        if (SUCCEEDED(fd->Show(parentWindow->GetHWND())))
         {
-            imalloc->Free(pidl);
-            imalloc->Release();
+            ComPtr<IShellItem> si;
+            if (SUCCEEDED(fd->GetResult(&si)))
+            {
+                LPWSTR resultPath;
+                if (SUCCEEDED(si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &resultPath)))
+                {
+                    path = resultPath;
+                    CoTaskMemFree(resultPath);
+                    result = false;
+                }
+            }
         }
     }
 

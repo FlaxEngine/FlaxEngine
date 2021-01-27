@@ -180,6 +180,7 @@ namespace FlaxEditor.Viewport
         private float _orthoSize = 1.0f;
         private bool _isOrtho = false;
         private float _wheelMovementChangeDeltaSum = 0;
+        private bool _invertPanning;
 
         /// <summary>
         /// Speed of the mouse.
@@ -404,6 +405,15 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets or sets if the panning direction is inverted.
+        /// </summary>
+        public bool InvertPanning
+        {
+            get => _invertPanning;
+            set => _invertPanning = value;
+        }
+
+        /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
         public InputActionsContainer InputActions = new InputActionsContainer();
@@ -434,6 +444,7 @@ namespace FlaxEditor.Viewport
                 _nearPlane = options.Viewport.DefaultNearPlane;
                 _farPlane = options.Viewport.DefaultFarPlane;
                 _fieldOfView = options.Viewport.DefaultFieldOfView;
+                _invertPanning = options.Viewport.DefaultInvertPanning;
 
                 Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
                 OnEditorOptionsChanged(options);
@@ -454,7 +465,7 @@ namespace FlaxEditor.Viewport
                     var button = camSpeedCM.AddButton(v.ToString());
                     button.Tag = v;
                 }
-                camSpeedCM.ButtonClicked += (button) => MovementSpeed = (float)button.Tag;
+                camSpeedCM.ButtonClicked += button => MovementSpeed = (float)button.Tag;
                 camSpeedCM.VisibleChanged += WidgetCamSpeedShowHide;
                 camSpeedButton.Parent = camSpeed;
                 camSpeed.Parent = this;
@@ -515,9 +526,9 @@ namespace FlaxEditor.Viewport
                 // Orthographic
                 {
                     var ortho = ViewWidgetButtonMenu.AddButton("Orthographic");
-                    var orthoValue = new CheckBox(75, 2, _isOrtho);
+                    var orthoValue = new CheckBox(90, 2, _isOrtho);
                     orthoValue.Parent = ortho;
-                    orthoValue.StateChanged += (checkBox) =>
+                    orthoValue.StateChanged += checkBox =>
                     {
                         if (checkBox.Checked != _isOrtho)
                         {
@@ -543,10 +554,10 @@ namespace FlaxEditor.Viewport
                 // Field of View
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
-                    var fovValue = new FloatValueBox(1, 75, 2, 50.0f, 35.0f, 160.0f, 0.1f);
+                    var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f);
                     fovValue.Parent = fov;
                     fovValue.ValueChanged += () => _fieldOfView = fovValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += (control) =>
+                    ViewWidgetButtonMenu.VisibleChanged += control =>
                     {
                         fov.Visible = !_isOrtho;
                         fovValue.Value = _fieldOfView;
@@ -556,10 +567,10 @@ namespace FlaxEditor.Viewport
                 // Ortho Scale
                 {
                     var orthoSize = ViewWidgetButtonMenu.AddButton("Ortho Scale");
-                    var orthoSizeValue = new FloatValueBox(_orthoSize, 75, 2, 50.0f, 0.001f, 100000.0f, 0.01f);
+                    var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f);
                     orthoSizeValue.Parent = orthoSize;
                     orthoSizeValue.ValueChanged += () => _orthoSize = orthoSizeValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += (control) =>
+                    ViewWidgetButtonMenu.VisibleChanged += control =>
                     {
                         orthoSize.Visible = _isOrtho;
                         orthoSizeValue.Value = _orthoSize;
@@ -569,7 +580,7 @@ namespace FlaxEditor.Viewport
                 // Near Plane
                 {
                     var nearPlane = ViewWidgetButtonMenu.AddButton("Near Plane");
-                    var nearPlaneValue = new FloatValueBox(2.0f, 75, 2, 50.0f, 0.001f, 1000.0f);
+                    var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f);
                     nearPlaneValue.Parent = nearPlane;
                     nearPlaneValue.ValueChanged += () => _nearPlane = nearPlaneValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => nearPlaneValue.Value = _nearPlane;
@@ -578,7 +589,7 @@ namespace FlaxEditor.Viewport
                 // Far Plane
                 {
                     var farPlane = ViewWidgetButtonMenu.AddButton("Far Plane");
-                    var farPlaneValue = new FloatValueBox(1000, 75, 2, 50.0f, 10.0f);
+                    var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f);
                     farPlaneValue.Parent = farPlane;
                     farPlaneValue.ValueChanged += () => _farPlane = farPlaneValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => farPlaneValue.Value = _farPlane;
@@ -587,7 +598,7 @@ namespace FlaxEditor.Viewport
                 // Brightness
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
-                    var brightnessValue = new FloatValueBox(1.0f, 75, 2, 50.0f, 0.001f, 10.0f, 0.001f);
+                    var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f);
                     brightnessValue.Parent = brightness;
                     brightnessValue.ValueChanged += () => Brightness = brightnessValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => brightnessValue.Value = Brightness;
@@ -596,10 +607,25 @@ namespace FlaxEditor.Viewport
                 // Resolution
                 {
                     var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
-                    var resolutionValue = new FloatValueBox(1.0f, 75, 2, 50.0f, 0.1f, 4.0f, 0.001f);
+                    var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f);
                     resolutionValue.Parent = resolution;
                     resolutionValue.ValueChanged += () => ResolutionScale = resolutionValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
+                }
+
+                // Invert Panning
+                {
+                    var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
+                    var invertValue = new CheckBox(90, 2, _invertPanning);
+                    invertValue.Parent = invert;
+                    invertValue.StateChanged += checkBox =>
+                    {
+                        if (checkBox.Checked != _invertPanning)
+                        {
+                            _invertPanning = checkBox.Checked;
+                        }
+                    };
+                    ViewWidgetButtonMenu.VisibleChanged += control => invertValue.Checked = _invertPanning;
                 }
             }
 

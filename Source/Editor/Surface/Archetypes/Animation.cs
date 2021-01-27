@@ -791,7 +791,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Transform Node (local space)",
                 Description = "Transforms the skeleton node",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Vector2(270, 130),
+                Size = new Vector2(280, 130),
                 DefaultValues = new object[]
                 {
                     string.Empty,
@@ -816,7 +816,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Transform Node (model space)",
                 Description = "Transforms the skeleton node",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Vector2(270, 130),
+                Size = new Vector2(280, 130),
                 DefaultValues = new object[]
                 {
                     string.Empty,
@@ -872,7 +872,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Node Transform (model space)",
                 Description = "Samples the skeleton node transformation (in model space)",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Vector2(250, 40),
+                Size = new Vector2(324, 40),
                 DefaultValues = new object[]
                 {
                     string.Empty,
@@ -880,9 +880,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
-                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 1, 120, 0),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 1, 160, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 1, "Node:"),
-                    NodeElementArchetype.Factory.Output(0, "Transform", typeof(Transform), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Output(1, "Transform", typeof(Transform), 1),
                 }
             },
             new NodeArchetype
@@ -903,7 +904,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
                     NodeElementArchetype.Factory.Input(1, "Target", true, typeof(Vector3), 2),
                     NodeElementArchetype.Factory.Input(2, "Weight", true, typeof(float), 3, 1),
-                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 3, 120, 0),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 3, 160, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 3, "Node:"),
                 }
             },
@@ -913,7 +914,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Node Transform (local space)",
                 Description = "Samples the skeleton node transformation (in local space)",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Vector2(250, 40),
+                Size = new Vector2(316, 40),
                 DefaultValues = new object[]
                 {
                     string.Empty,
@@ -923,7 +924,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(40, Surface.Constants.LayoutOffsetY * 1, 120, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 1, "Node:"),
-                    NodeElementArchetype.Factory.Output(0, "Transform", typeof(Transform), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Output(1, "Transform", typeof(Transform), 1),
                 }
             },
             new NodeArchetype

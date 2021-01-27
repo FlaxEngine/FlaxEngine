@@ -40,6 +40,12 @@ namespace FlaxEditor.Windows.Assets
             _presenter.Modified += MarkAsEdited;
         }
 
+        private void OnScriptsReloadBegin()
+        {
+            Close();
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+        }
+
         /// <inheritdoc />
         public override void Save()
         {
@@ -75,6 +81,10 @@ namespace FlaxEditor.Windows.Assets
             _object = Asset.CreateInstance();
             _presenter.Select(_object);
             ClearEditedFlag();
+
+            // Auto-close on scripting reload if json asset is from game scripts (it might be reloaded)
+            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()))
+                ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
 
             base.OnAssetLoaded();
         }

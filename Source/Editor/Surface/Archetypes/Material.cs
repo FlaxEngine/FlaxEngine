@@ -642,6 +642,85 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Vector3), 0),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 26,
+                Title = "Blend Normals",
+                Description = "Blend two normal maps to create a single normal map",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(170, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Base Normal", true, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Input(1, "Additional Normal", true, typeof(Vector3), 1),
+                    NodeElementArchetype.Factory.Output(0, "Result", typeof(Vector3), 2)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 27,
+                Title = "Rotator",
+                Description = "Rotates UV coordinates according to a scalar angle (0-1)",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 55),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Center", true, typeof(Vector2), 1),
+                    NodeElementArchetype.Factory.Input(2, "Rotation Angle", true, typeof(float), 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 28,
+                Title = "Sphere Mask",
+                Description = "Creates a sphere mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 100),
+                ConnectionsHints = ConnectionsHint.Vector,
+                IndependentBoxes = new[]
+                {
+                    0,
+                    1
+                },
+                DefaultValues = new object[]
+                {
+                    0.3f,
+                    0.5f,
+                    false
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "A", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "B", true, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Radius", true, typeof(float), 2, 0),
+                    NodeElementArchetype.Factory.Input(3, "Hardness", true, typeof(float), 3, 1),
+                    NodeElementArchetype.Factory.Input(4, "Invert", true, typeof(bool), 4, 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 29,
+                Title = "UV Tiling & Offset",
+                Description = "Takes UVs and applies tiling and offset",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(175, 60),
+                DefaultValues = new object[]
+                {
+                    Vector2.One,
+                    Vector2.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Tiling", true, typeof(Vector2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Offset", true, typeof(Vector2), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
+                }
+            }
         };
     }
 }

@@ -274,8 +274,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Compute depth difference
         auto depthDiff = writeLocal(VariantType::Float, String::Format(TEXT("{0} * ViewFar - {1}"), sceneDepth.Value, posVS.Value), node);
 
+        auto fadeDistance = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
+
         // Apply smoothing factor and clamp the result
-        value = writeLocal(VariantType::Float, String::Format(TEXT("saturate({0} / {1})"), depthDiff.Value, node->Values[0].AsFloat), node);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("saturate({0} / {1})"), depthDiff.Value, fadeDistance.Value), node);
         break;
     }
         // Material Function
@@ -337,6 +339,59 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 25:
         value = Value(VariantType::Vector3, TEXT("GetObjectSize(input)"));
         break;
+        // Blend Normals
+    case 26:
+    {
+        const auto baseNormal = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
+        const auto additionalNormal = tryGetValue(node->GetBox(1), Value::Zero).AsVector3();
+        const String text = String::Format(TEXT("float3((float2({0}.xy) + float2({1}.xy) * 2.0), sqrt(saturate(1.0 - dot((float2({0}.xy) + float2({1}.xy) * 2.0).xy, (float2({0}.xy) + float2({1}.xy) * 2.0).xy))))"), baseNormal.Value, additionalNormal.Value);
+        value = writeLocal(ValueType::Vector3, text, node);
+        break;
+    }
+        // Rotator
+    case 27:
+    {
+        auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        auto center = tryGetValue(node->GetBox(1), Value::Zero).AsVector2();
+        auto rotationAngle = tryGetValue(node->GetBox(2), Value::Zero).AsFloat();
+
+        const auto x1 = writeLocal(ValueType::Vector2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, uv.Value), node);
+        const auto raCosSin = writeLocal(ValueType::Vector2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
+
+        const auto dotB1 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), raCosSin.Value), node);
+        const auto dotB2 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.y, {0}.x)"), raCosSin.Value), node);
+
+        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, dotB1.Value, dotB2.Value, center.Value), node);
+        break;
+    }
+        // Sphere Mask
+    case 28:
+    {
+        Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value b = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(a.Type);
+        Value radius = tryGetValue(node->GetBox(2), node->Values[0]).AsFloat();
+        Value hardness = tryGetValue(node->GetBox(3), node->Values[1]).AsFloat();
+        Value invert = tryGetValue(node->GetBox(4), node->Values[2]).AsBool();
+
+        // Get distance and apply radius
+        auto x1 = writeLocal(ValueType::Float, String::Format(TEXT("distance({0},{1}) * (1 / {2})"), a.Value, b.Value, radius.Value), node);
+
+        // Apply hardness, use 0.991 as max since any value above will result in harsh aliasing
+        auto x2 = writeLocal(ValueType::Float, String::Format(TEXT("saturate((1 - {0}) * (1 / (1 - clamp({1}, 0, 0.991f))))"), x1.Value, hardness.Value), node);
+
+        value = writeLocal(ValueType::Float, String::Format(TEXT("{0} ? (1 - {1}) : {1}"), invert.Value, x2.Value), node);
+        break;
+    }
+        // Tiling & Offset
+    case 29:
+    {
+        auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsVector2();
+        auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsVector2();
+
+        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
+        break;
+    }
     default:
         break;
     }

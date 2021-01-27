@@ -16,7 +16,7 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// The combo box used to show enum values.
         /// </summary>
-        public EnumComboBox EnumComboBox;
+        public EnumComboBox ComboBox;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumElement"/> class.
@@ -26,10 +26,10 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <param name="formatMode">The formatting mode.</param>
         public EnumElement(Type type, EnumComboBox.BuildEntriesDelegate customBuildEntriesDelegate = null, EnumDisplayAttribute.FormatMode formatMode = EnumDisplayAttribute.FormatMode.Default)
         {
-            EnumComboBox = new EnumComboBox(type, customBuildEntriesDelegate, formatMode);
+            ComboBox = new EnumComboBox(type, customBuildEntriesDelegate, formatMode);
         }
 
         /// <inheritdoc />
-        public override Control Control => EnumComboBox;
+        public override Control Control => ComboBox;
     }
 }

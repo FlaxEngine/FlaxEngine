@@ -117,7 +117,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -163,7 +163,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -210,7 +210,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -257,7 +257,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>

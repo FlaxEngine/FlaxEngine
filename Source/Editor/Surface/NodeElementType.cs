@@ -94,5 +94,10 @@ namespace FlaxEditor.Surface
         /// The actor picker.
         /// </summary>
         Actor = 19,
+
+        /// <summary>
+        /// The unsigned integer value.
+        /// </summary>
+        UnsignedIntegerValue = 20,
     }
 }

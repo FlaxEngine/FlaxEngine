@@ -97,7 +97,7 @@ namespace FlaxEditor.Surface.Elements
                         var connections = Connections.ToArray();
                         for (int i = 0; i < connections.Length; i++)
                         {
-                            var targetBox = Connections[i];
+                            var targetBox = connections[i];
 
                             // Break connection
                             Connections.Remove(targetBox);
@@ -565,7 +565,28 @@ namespace FlaxEditor.Surface.Elements
             {
                 _isMouseDown = false;
                 if (Surface.CanEdit)
-                    Surface.ConnectingStart(this);
+                {
+                    if (!IsOutput && HasSingleConnection)
+                    {
+                        var connectedBox = Connections[0];
+                        if (Surface.Undo != null)
+                        {
+                            var action = new ConnectBoxesAction((InputBox)this, (OutputBox)connectedBox, false);
+                            BreakConnection(connectedBox);
+                            action.End();
+                            Surface.Undo.AddAction(action);
+                        }
+                        else
+                        {
+                            BreakConnection(connectedBox);
+                        }
+                        Surface.ConnectingStart(connectedBox);
+                    }
+                    else
+                    {
+                        Surface.ConnectingStart(this);
+                    }
+                }
             }
             base.OnMouseLeave();
         }

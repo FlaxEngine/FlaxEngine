@@ -240,6 +240,32 @@ namespace FlaxEditor.Surface
             }
 
             /// <summary>
+            /// Creates new Unsigned Integer value element description.
+            /// </summary>
+            /// <param name="x">The x location (in node area space).</param>
+            /// <param name="y">The y location (in node area space).</param>
+            /// <param name="valueIndex">The index of the node variable linked as the input. Useful to make a physical connection between input box and default value for it.</param>
+            /// <param name="component">The index of the component to edit. For vectors this can be set to modify only single component of it. Eg. for vec2 value component set to 1 will edit only Y component. Default value -1 will be used to edit whole value.</param>
+            /// <param name="valueMin">The minimum value range.</param>
+            /// <param name="valueMax">The maximum value range.</param>
+            /// <returns>The archetype.</returns>
+            public static NodeElementArchetype UnsignedInteger(float x, float y, int valueIndex = -1, int component = -1, uint valueMin = 0, uint valueMax = 1000000)
+            {
+                return new NodeElementArchetype
+                {
+                    Type = NodeElementType.UnsignedIntegerValue,
+                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Text = null,
+                    Single = false,
+                    ValueIndex = valueIndex,
+                    ValueMin = valueMin,
+                    ValueMax = valueMax,
+                    BoxID = -1,
+                    ConnectionsType = ScriptType.Null
+                };
+            }
+
+            /// <summary>
             /// Creates new Float value element description.
             /// </summary>
             /// <param name="x">The x location (in node area space).</param>
