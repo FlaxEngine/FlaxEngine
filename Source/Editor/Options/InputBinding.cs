@@ -161,6 +161,7 @@ namespace FlaxEditor.Options
         /// Processes this input binding to check if state matches.
         /// </summary>
         /// <param name="control">The input providing control.</param>
+        /// <param name="key">The input key.</param>
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Control control, KeyboardKeys key)
         {
