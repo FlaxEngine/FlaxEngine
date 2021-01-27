@@ -17,6 +17,11 @@ namespace FlaxEditor.SceneGraph.Actors
             public unsafe SplinePointNode(SplineNode node, Guid id, int index)
             : base(node, id, index)
             {
+                var g = (JsonSerializer.GuidInterop*)&id;
+                g->D++;
+                AddChild(new SplinePointTangentNode(node, id, index, true));
+                g->D++;
+                AddChild(new SplinePointTangentNode(node, id, index, false));
             }
 
             public override bool CanBeSelectedDirectly => true;
@@ -47,12 +52,81 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplinePoint(Index);
+                var tangentIn = actor.GetSplineTangent(Index, true).Translation;
+                var tangentOut = actor.GetSplineTangent(Index, false).Translation;
 
                 // Draw spline path
                 ParentNode.OnDebugDraw(data);
 
                 // Draw selected point highlight
                 DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.Yellow, 0, false);
+
+                // Draw tangent points
+                if (tangentIn != pos)
+                {
+                    DebugDraw.DrawLine(pos, tangentIn, Color.White.AlphaMultiplied(0.6f), 0, false);
+                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentIn, 4.0f), Color.White, 0, false);
+                }
+                if (tangentIn != pos)
+                {
+                    DebugDraw.DrawLine(pos, tangentOut, Color.White.AlphaMultiplied(0.6f), 0, false);
+                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentOut, 4.0f), Color.White, 0, false);
+                }
+            }
+        }
+
+        private sealed class SplinePointTangentNode : ActorChildNode
+        {
+            private SplineNode _node;
+            private int _index;
+            private bool _isIn;
+
+            public SplinePointTangentNode(SplineNode node, Guid id, int index, bool isIn)
+            : base(id, isIn ? 0 : 1)
+            {
+                _node = node;
+                _index = index;
+                _isIn = isIn;
+            }
+
+            public override Transform Transform
+            {
+                get
+                {
+                    var actor = (Spline)_node.Actor;
+                    return actor.GetSplineTangent(_index, _isIn);
+                }
+                set
+                {
+                    var actor = (Spline)_node.Actor;
+                    actor.SetSplineTangent(_index, value, _isIn);
+                }
+            }
+
+            public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+            {
+                var actor = (Spline)_node.Actor;
+                var pos = actor.GetSplineTangent(_index, _isIn).Translation;
+                normal = -ray.Ray.Direction;
+                return new BoundingSphere(pos, 7.0f).Intersects(ref ray.Ray, out distance);
+            }
+
+            public override void OnDebugDraw(ViewportDebugDrawData data)
+            {
+                // Draw spline and spline point
+                ParentNode.OnDebugDraw(data);
+
+                // Draw selected tangent highlight
+                var actor = (Spline)_node.Actor;
+                var pos = actor.GetSplineTangent(_index, _isIn).Translation;
+                DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.YellowGreen, 0, false);
+            }
+
+            public override void OnDispose()
+            {
+                _node = null;
+
+                base.OnDispose();
             }
         }
 
@@ -81,10 +155,10 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Add new points
                 var id = ID;
                 var g = (JsonSerializer.GuidInterop*)&id;
-                g->D += (uint)srcCount;
+                g->D += (uint)srcCount * 3;
                 while (srcCount < dstCount)
                 {
-                    g->D += 1;
+                    g->D += 3;
                     AddChildNode(new SplinePointNode(this, id, srcCount++));
                 }
             }
