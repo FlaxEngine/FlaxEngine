@@ -392,6 +392,22 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Vector2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
         break;
     }
+        // DDX
+    case 30:
+    {
+        auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+
+        value = writeLocal(inValue.Type, String::Format(TEXT("ddx({0})"), inValue.Value), node);
+        break;
+    }
+        // DDY
+    case 31:
+    {
+        auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+
+        value = writeLocal(inValue.Type, String::Format(TEXT("ddy({0})"), inValue.Value), node);
+        break;
+    }
     default:
         break;
     }
