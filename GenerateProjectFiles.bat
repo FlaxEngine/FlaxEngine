@@ -16,6 +16,7 @@ exit /B 0
 
 :BuildToolFailed
 echo Flax.Build tool failed.
+pause
 goto Exit
 
 :Exit
