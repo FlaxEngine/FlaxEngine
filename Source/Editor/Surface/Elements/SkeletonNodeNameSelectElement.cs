@@ -92,7 +92,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 sb.Clear();
                 var node = nodes[nodeIndex];
-                _nodeNameToIndex.Add(node.Name, nodeIndex);
+                _nodeNameToIndex[node.Name] = nodeIndex;
                 int parent = node.ParentIndex;
                 while (parent != -1)
                 {
