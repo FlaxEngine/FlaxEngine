@@ -40,12 +40,16 @@ namespace FlaxEditor.SceneGraph.Actors
                 var actor = (Spline)_actor.Actor;
                 var pos = actor.GetSplinePoint(Index);
                 normal = -ray.Ray.Direction;
-                return new BoundingSphere(pos, 5.0f).Intersects(ref ray.Ray, out distance);
+                return new BoundingSphere(pos, 7.0f).Intersects(ref ray.Ray, out distance);
             }
 
             public override void OnDebugDraw(ViewportDebugDrawData data)
             {
                 ParentNode.OnDebugDraw(data);
+
+                var actor = (Spline)_actor.Actor;
+                var pos = actor.GetSplinePoint(Index);
+                DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.Yellow, 0, false);
             }
         }
 
