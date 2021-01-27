@@ -34,7 +34,8 @@ Follow the instructions below to compile and run the engine from source.
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
-* Compile Flax project (hit F7 key)
+* Set Flax or FlaxEngine as startup project
+* Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
 ## Linux
