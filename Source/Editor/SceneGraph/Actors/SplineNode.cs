@@ -42,6 +42,11 @@ namespace FlaxEditor.SceneGraph.Actors
                 normal = -ray.Ray.Direction;
                 return new BoundingSphere(pos, 5.0f).Intersects(ref ray.Ray, out distance);
             }
+
+            public override void OnDebugDraw(ViewportDebugDrawData data)
+            {
+                ParentNode.OnDebugDraw(data);
+            }
         }
 
         /// <inheritdoc />
