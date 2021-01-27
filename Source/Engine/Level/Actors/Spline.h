@@ -139,6 +139,24 @@ public:
     API_FUNCTION() Transform GetSplineLocalTransform(int32 index) const;
 
     /// <summary>
+    /// Gets the spline curve point tangent at the given index (world-space).
+    /// </summary>
+    /// <remarks>Tangents are stored relative to the curve point but this methods converts them to be in world-space.</remarks>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="isIn">True if get arrive tangent, otherwise gets leave tangent (in or out).</param>
+    /// <returns>The transformation of the tangent to set (world-space).</returns>
+    API_FUNCTION() Transform GetSplineTangent(int32 index, bool isIn);
+
+    /// <summary>
+    /// Gets the spline curve point tangent at the given index (local-space).
+    /// </summary>
+    /// <remarks>Tangents are stored relative to the curve point but this methods converts them to be in local-space of the actor.</remarks>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="isIn">True if get arrive tangent, otherwise gets leave tangent (in or out).</param>
+    /// <returns>The transformation of the tangent to set (world-space).</returns>
+    API_FUNCTION() Transform GetSplineLocalTangent(int32 index, bool isIn);
+
+    /// <summary>
     /// Gets the amount of points in the spline.
     /// </summary>
     API_PROPERTY() int32 GetSplinePointsCount() const;
@@ -218,7 +236,7 @@ public:
     /// Sets the spline curve at the given index (world-space).
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
-    /// <param name="point">The location of the point to set (world-space).</param>
+    /// <param name="point">The transformation of the point to set (world-space).</param>
     /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
     API_FUNCTION() void SetSplineTransform(int32 index, const Transform& point, bool updateSpline = true);
 
@@ -226,9 +244,37 @@ public:
     /// Sets the spline curve at the given index (local-space).
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
-    /// <param name="point">The location of the point to set (local-space).</param>
+    /// <param name="point">The transformation of the point to set (local-space).</param>
     /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
     API_FUNCTION() void SetSplineLocalTransform(int32 index, const Transform& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve point tangent at the given index (world-space).
+    /// </summary>
+    /// <remarks>Tangents are stored relative to the curve point but this methods converts them to be in world-space.</remarks>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The transformation of the tangent to set (world-space).</param>
+    /// <param name="isIn">True if set arrive tangent, otherwise sets leave tangent (in or out).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplineTangent(int32 index, const Transform& point, bool isIn, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve point tangent at the given index (local-space).
+    /// </summary>
+    /// <remarks>Tangents are stored relative to the curve point but this methods converts them to be in local-space of the actor.</remarks>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="point">The transformation of the tangent to set (local-space).</param>
+    /// <param name="isIn">True if set arrive tangent, otherwise sets leave tangent (in or out).</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplineLocalTangent(int32 index, const Transform& point, bool isIn, bool updateSpline = true);
+
+    /// <summary>
+    /// Sets the spline curve point time at the given index (world-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="time">The time to set.</param>
+    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    API_FUNCTION() void SetSplinePointTime(int32 index, float time, bool updateSpline = true);
 
     /// <summary>
     /// Adds the point to the spline curve (at the end).

@@ -106,14 +106,27 @@ Vector3 Spline::GetSplineLocalPoint(int32 index) const
 
 Transform Spline::GetSplineTransform(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
     return _transform.LocalToWorld(Curve[index].Value);
 }
 
 Transform Spline::GetSplineLocalTransform(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
     return Curve[index].Value;
+}
+
+Transform Spline::GetSplineTangent(int32 index, bool isIn)
+{
+    return _transform.LocalToWorld(GetSplineLocalTangent(index, isIn));
+}
+
+Transform Spline::GetSplineLocalTangent(int32 index, bool isIn)
+{
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
+    const auto& k = Curve[index];
+    const auto& tangent = isIn ? k.TangentIn : k.TangentOut;
+    return tangent + k.Value;
 }
 
 int32 Spline::GetSplinePointsCount() const
@@ -259,6 +272,29 @@ void Spline::SetSplineLocalTransform(int32 index, const Transform& point, bool u
 {
     CHECK(index >= 0 && index < GetSplinePointsCount());
     Curve[index].Value = point;
+    if (updateSpline)
+        UpdateSpline();
+}
+
+void Spline::SetSplineTangent(int32 index, const Transform& point, bool isIn, bool updateSpline)
+{
+    SetSplineLocalTangent(index, _transform.WorldToLocal(point), isIn, updateSpline);
+}
+
+void Spline::SetSplineLocalTangent(int32 index, const Transform& point, bool isIn, bool updateSpline)
+{
+    CHECK(index >= 0 && index < GetSplinePointsCount());
+    auto& k = Curve[index];
+    auto& tangent = isIn ? k.TangentIn : k.TangentOut;
+    tangent = point - k.Value;
+    if (updateSpline)
+        UpdateSpline();
+}
+
+void Spline::SetSplinePointTime(int32 index, float time, bool updateSpline)
+{
+    CHECK(index >= 0 && index < GetSplinePointsCount());
+    Curve[index].Time = time;
     if (updateSpline)
         UpdateSpline();
 }
