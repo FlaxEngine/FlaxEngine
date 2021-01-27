@@ -593,6 +593,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
 
 void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount)
 {
+    PROFILE_CPU();
     if (selectedActors)
     {
         for (int32 i = 0; i < selectedActorsCount; i++)

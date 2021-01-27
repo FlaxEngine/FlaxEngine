@@ -371,27 +371,23 @@ void Spline::SetKeyframes(MonoArray* data)
 
 namespace
 {
-    void DrawSegment(Spline* spline, int32 start, int32 end, const Color& color, const Transform& transform, bool depthTest)
-    {
-        const auto& startKey = spline->Curve[start];
-        const auto& endKey = spline->Curve[end];
-        const Vector3 startPos = transform.LocalToWorld(startKey.Value.Translation);
-        const Vector3& startTangent = startKey.TangentOut.Translation;
-        const Vector3 endPos = transform.LocalToWorld(endKey.Value.Translation);
-        const Vector3& endTangent = endKey.TangentIn.Translation;
-        const float d = (endKey.Time - startKey.Time) / 3.0f;
-        DEBUG_DRAW_BEZIER(startPos, startPos + startTangent * d, endPos + endTangent * d, endPos, color, 0.0f, depthTest);
-    }
-
     void DrawSpline(Spline* spline, const Color& color, const Transform& transform, bool depthTest)
     {
         const int32 count = spline->Curve.GetKeyframes().Count();
-        for (int32 i = 0; i < count; i++)
+        if (count == 0)
+            return;
+        Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
+        Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, 5.0f), color, 0.0f, depthTest);
+        for (int32 i = 1; i < count; i++)
         {
-            Vector3 p = transform.LocalToWorld(spline->Curve[i].Value.Translation);
-            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(p, 5.0f), color, 0.0f, true);
-            if (i != 0)
-                DrawSegment(spline, i - 1, i, color, transform, depthTest);
+            Spline::Keyframe* next = prev + 1;
+            Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, 5.0f), color, 0.0f, depthTest);
+            const float d = (next->Time - prev->Time) / 3.0f;
+            DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
+            prev = next;
+            prevPos = nextPos;
         }
     }
 }
@@ -409,7 +405,6 @@ void Spline::OnDebugDrawSelected()
 {
     const Color color = GetSplineColor();
     DrawSpline(this, color.AlphaMultiplied(0.3f), _transform, false);
-    DrawSpline(this, color, _transform, true);
 
     // Base
     Actor::OnDebugDrawSelected();
