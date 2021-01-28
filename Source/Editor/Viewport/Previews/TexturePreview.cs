@@ -159,12 +159,13 @@ namespace FlaxEditor.Viewport.Previews
             float prevScale = _viewScale;
             _viewScale = Mathf.Clamp(_viewScale + delta * 0.24f, 0.001f, 20.0f);
 
-            // Move view to make use of the control much more soother
-            //float coeff = (prevScale + (_viewScale - prevScale)) / prevScale;
-            //_viewPos += (location * coeff - location) / _viewScale;
-            //_viewPos += location / _viewScale;
-            Vector2 sizeDelta = (_viewScale - prevScale) * _textureRect.Size;
+            // Compensate for the Rectangle.MakeScaled
+            Vector2 sizeDelta = (_viewScale - prevScale) * _textureRect.Size * 0.5f;
             _viewPos += sizeDelta * 0.5f;
+
+            // Move to zoom position
+            Vector2 locationOnTexture = (location - _textureRect.Location) / _textureRect.Size;
+            _viewPos -= sizeDelta * locationOnTexture;
 
             return true;
         }
