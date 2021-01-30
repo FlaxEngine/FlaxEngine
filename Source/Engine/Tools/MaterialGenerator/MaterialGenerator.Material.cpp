@@ -435,6 +435,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Blackbody
     case 35:
     {
+        // Based on unity's implementation by using data gathered by Mitchell Charity.
+
         const auto temperature = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
 
         // Value X
