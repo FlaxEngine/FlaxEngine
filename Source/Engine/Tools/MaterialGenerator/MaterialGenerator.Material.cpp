@@ -435,6 +435,23 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Blackbody
     case 35:
     {
+        const auto temperature = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
+
+        // Value X
+        auto x = writeLocal(ValueType::Float, String::Format(TEXT("56100000.0f * pow({0}, (-3.0f / 2.0f)) + 148.0f"), temperature.Value), node);
+
+        // Value Y
+        auto y = writeLocal(ValueType::Float, String::Format(TEXT("{0} > 6500.0f ? 35200000.0f * pow({0}, (-3.0f / 2.0f)) + 184.0f : 100.04f * log({0}) - 623.6f"), temperature.Value), node);
+
+        // Value Z
+        auto z = writeLocal(ValueType::Float, String::Format(TEXT("194.18f * log({0}) - 1448.6f"), temperature.Value), node);
+
+        // Final color
+        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2})"), x.Value, y.Value, z.Value), node);
+        color = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp({0}, 0.0f, 255.0f) / 255.0f"), color.Value), node);
+        color = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
+
+        value = color;
         break;
     }
     default:

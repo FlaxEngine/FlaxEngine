@@ -805,9 +805,13 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Simulates black body radiation via a given temperature in kelvin",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(120, 25),
+                DefaultValues = new object[]
+                {
+                    0.0f,
+                },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Temp", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(0, "Temp", true, typeof(float), 0, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 1),
                 }
             },
