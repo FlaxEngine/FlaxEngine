@@ -13,7 +13,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Keyboard);
 public:
 
     /// <summary>
-    /// The mouse state.
+    /// The keyboard state.
     /// </summary>
     struct State
     {
@@ -157,6 +157,7 @@ public:
         if (UpdateState())
             return true;
 
+        _state.InputTextLength = 0;
         // Handle events
         for (int32 i = 0; i < _queue.Count(); i++)
         {
