@@ -438,10 +438,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         const auto temperature = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
 
         // Value X
-        auto x = writeLocal(ValueType::Float, String::Format(TEXT("56100000.0f * pow({0}, (-3.0f / 2.0f)) + 148.0f"), temperature.Value), node);
+        auto x = writeLocal(ValueType::Float, String::Format(TEXT("56100000.0f * pow({0}, -1) + 148.0f"), temperature.Value), node);
 
         // Value Y
-        auto y = writeLocal(ValueType::Float, String::Format(TEXT("{0} > 6500.0f ? 35200000.0f * pow({0}, (-3.0f / 2.0f)) + 184.0f : 100.04f * log({0}) - 623.6f"), temperature.Value), node);
+        auto y = writeLocal(ValueType::Float, String::Format(TEXT("{0} > 6500.0f ? 35200000.0f * pow({0}, -1) + 184.0f : 100.04f * log({0}) - 623.6f"), temperature.Value), node);
 
         // Value Z
         auto z = writeLocal(ValueType::Float, String::Format(TEXT("194.18f * log({0}) - 1448.6f"), temperature.Value), node);
