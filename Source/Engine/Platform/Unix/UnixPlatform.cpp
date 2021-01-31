@@ -51,6 +51,25 @@ void UnixPlatform::Free(void* ptr)
     }
 }
 
+uint64 Win32Platform::GetDefaultPageSize()
+{
+    return 16;
+}
+
+void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    const uint64 numBytes = numPages * pageSize;
+
+    // Fallback to malloc
+    return malloc(numBytes);
+}
+
+void Win32Platform::FreePages(void* ptr)
+{
+    // Fallback to free
+    free(ptr);
+}
+
 uint64 UnixPlatform::GetCurrentProcessId()
 {
     return getpid();

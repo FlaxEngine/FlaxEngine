@@ -298,6 +298,29 @@ void Win32Platform::AtomicStore(int64 volatile* dst, int64 value)
     InterlockedExchange64(dst, value);
 }
 
+uint64 Win32Platform::GetDefaultPageSize()
+{
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo(&systemInfo);
+
+    // Return the page size obtained from system
+    return systemInfo.dwPageSize;
+}
+
+void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    const uint64 numBytes = numPages * pageSize;
+
+    // Use VirtualAlloc to allocate page-aligned memory
+    return VirtualAlloc(nullptr, numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+}
+
+void Win32Platform::FreePages(void* ptr)
+{
+    // Free page-aligned memory
+    VirtualFree(ptr, 0, MEM_RELEASE);
+}
+
 bool Win32Platform::Is64BitPlatform()
 {
 #ifdef PLATFORM_64BITS
