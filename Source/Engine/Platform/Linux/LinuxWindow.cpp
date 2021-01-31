@@ -106,8 +106,12 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		visualInfo->visual,
 		CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &windowAttributes);
 	_window = window;
-
 	LinuxWindow::SetTitle(settings.Title);
+
+	// Link process id with window
+	X11::Atom wmPid = X11::XInternAtom(display, "_NET_WM_PID", 0);
+	const uint64 pid = Platform::GetCurrentProcessId();
+	X11::XChangeProperty(display, window, wmPid, 6, 32, PropModeReplace, (unsigned char*)&pid, 1);
 
 	// Position/size might have (and usually will) get overridden by the WM, so re-apply them
 	X11::XSizeHints hints;
@@ -136,9 +140,11 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 
 	// Ensures the child window is always on top of the parent window
 	if (settings.Parent)
+	{
 		X11::XSetTransientForHint(display, window, (X11::Window)((LinuxWindow*)settings.Parent)->GetNativePtr());
+	}
 
-	// Set mask
+	// Set events mask
 	long eventMask =
 			ExposureMask | FocusChangeMask |
 			KeyPressMask | KeyReleaseMask |
@@ -154,9 +160,29 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	// Make sure we get the window delete message from WM
 	X11::XSetWMProtocols(display, window, &xAtomDeleteWindow, 1);
 
+	// Adjust style for borderless windows
+	if (!settings.HasBorder)
+	{
+		typedef struct X11Hints
+		{
+			unsigned long flags = 0;
+			unsigned long functions = 0;
+			unsigned long decorations = 0;
+			long inputMode = 0;
+			unsigned long status = 0;
+		} X11Hints;
+		X11Hints hints;
+		hints.flags = 2;
+		X11::Atom wmHints = X11::XInternAtom(display, "_MOTIF_WM_HINTS", 1);
+		X11::Atom property;
+		X11::XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
+	}
+
 	// Hide from taskbar if need to
 	if (!settings.ShowInTaskbar)
+	{
 		ShowOnTaskbar(false);
+	}
 }
 
 LinuxWindow::~LinuxWindow()
@@ -230,13 +256,13 @@ void LinuxWindow::Restore()
 void LinuxWindow::BringToFront(bool force)
 {
 	LINUX_WINDOW_PROLOG;
-	X11::Atom net_active_window = X11::XInternAtom(display, "_NET_ACTIVE_WINDOW", 0);
+	X11::Atom activeWindow = X11::XInternAtom(display, "_NET_ACTIVE_WINDOW", 0);
 
 	X11::XEvent event;
 	Platform::MemoryClear(&event, sizeof(event));
 	event.type = ClientMessage;
 	event.xclient.window = window;
-	event.xclient.message_type = net_active_window;
+	event.xclient.message_type = activeWindow;
 	event.xclient.format = 32;
 	event.xclient.data.l[0] = 1;
 	event.xclient.data.l[1] = CurrentTime;
@@ -633,6 +659,7 @@ void LinuxWindow::SetTitle(const StringView& title)
 	const char* text = titleAnsi.Get();
 
 	X11::XStoreName(display, window, text);
+	X11::XSetIconName(display, window, text);
 
 	const X11::Atom netWmName = X11::XInternAtom(display, "_NET_WM_NAME", false);
 	const X11::Atom utf8String = X11::XInternAtom(display, "UTF8_STRING", false);
