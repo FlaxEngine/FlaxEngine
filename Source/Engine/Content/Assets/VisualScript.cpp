@@ -1155,6 +1155,61 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         // Switch on Int
     case 6:
     {
+        /*const bool condition = (bool)tryGetValue(node->GetBox(1), Value::Zero);
+        boxBase = node->GetBox(condition ? 2 : 3);
+        if (boxBase->HasConnection())
+            eatBox(node, boxBase->FirstConnection());*/
+
+        const auto switchValue = tryGetValue(node->GetBox(1), Value::Zero).AsInt;
+
+        auto& mappingData = node->Values[2];
+        if (mappingData.Type.Type != VariantType::Blob)
+        {
+            LOG(Error, "Invalid switch mapping data");
+            PrintStack(LogType::Error);
+            return;
+        }
+
+        MemoryReadStream stream((byte*)mappingData.AsBlob.Data, mappingData.AsBlob.Length);
+
+        if (stream.ReadByte() != 1)
+        {
+            LOG(Error, "Unsupported switch version");
+            PrintStack(LogType::Error);
+            return;
+        }
+
+        int caseValueCount;
+        stream.ReadInt32(&caseValueCount);
+
+        int caseValue = -1;
+        int caseCount = -1;
+        int boxID = -1;
+        for (int i = 0; i < caseValueCount; i++)
+        {
+            stream.ReadInt32(&caseValue);
+            stream.ReadInt32(&caseCount);
+
+            if (switchValue != caseValue)
+            {
+                auto skipSize = caseCount * sizeof(int);
+                stream.SetPosition(stream.GetPosition() + skipSize);
+                continue;
+            }
+
+            for (int j = 0; j < caseCount; j++)
+            {
+                stream.ReadInt32(&boxID);
+
+                if (boxID == -1)
+                    continue;
+
+                auto caseBox = node->GetBox(boxID);
+
+                if (caseBox->HasConnection())
+                    eatBox(node, caseBox->FirstConnection());
+            }
+        }
         break;
         //TODO: Implement, currently difficulty is finding the correct output box.
         // 1. Get Int value.

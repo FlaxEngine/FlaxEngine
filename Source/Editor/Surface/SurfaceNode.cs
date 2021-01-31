@@ -337,13 +337,24 @@ namespace FlaxEditor.Surface
                 // Sync properties for exiting box
                 box.Text = text;
                 box.CurrentType = type;
-                box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
+
+                ChangeBoxYLevel(box, yLevel);
             }
 
             // Update box
             box.OnConnectionsChanged();
             
             return box;
+        }
+
+        /// <summary>
+        /// Update box y-level
+        /// </summary>
+        /// <param name="box">box to use</param>
+        /// <param name="yLevel">new y-level</param>
+        public void ChangeBoxYLevel(Box box, int yLevel)
+        {
+            box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
         }
 
         /// <summary>

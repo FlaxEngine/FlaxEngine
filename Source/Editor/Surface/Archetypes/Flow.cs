@@ -1,11 +1,15 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -101,26 +105,55 @@ namespace FlaxEditor.Surface.Archetypes
 
         private class SwitchIntNode : SurfaceNode
         {
+            private enum SwitchNodeState
+            {
+                Default,
+                AddCase,
+                RemoveCase,
+                UpdateMapData
+            }
+
+            private class CaseTextBox : IntValueBox
+            {
+                /// <summary>
+                /// Gets called when the value gets updated
+                /// </summary>
+                public event EventHandler<int> CaseValueUpdated;
+
+                public CaseTextBox(int caseValue, float x, float y, float width = 120) : base(caseValue, x, y, width)
+                {
+                }
+
+                protected override void OnValueChanged()
+                {
+                    base.OnValueChanged();
+
+                    CaseValueUpdated?.Invoke(this, this.Value);
+                }
+            }
+
+            private class CaseTuple
+            {
+                public CaseTuple(CaseTextBox label, Box box)
+                {
+                    CaseBox = label;
+                    Box = box;
+                }
+
+                public CaseTextBox CaseBox;
+                public Box Box;
+            }
+
             private Button _addButton;
             private Button _removeButton;
+            private List<CaseTuple> _cases = new List<CaseTuple>();
+            private bool _reinitialize = true;
+            private Box _defaultBox = null;
+            private SwitchNodeState _currentAction;
 
             public SwitchIntNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-            }
-
-            public override void OnLoaded()
-            {
-                base.OnLoaded();
-
-                // TODO: Is this even correctly implemented??
-                // Restore saved output boxes layout
-                var outPinCount = (int)Values[0];
-
-                for (int i = 0; i < outPinCount; i++)
-                    AddBox(true, i + 1, i, string.Empty, new ScriptType(typeof(void)), true);
-
-                AddBox(true, 101, outPinCount, "Default", new ScriptType(typeof(void)), true);
             }
 
             public override void OnSurfaceLoaded()
@@ -133,7 +166,12 @@ namespace FlaxEditor.Surface.Archetypes
                     TooltipText = "Remove last sequence output",
                     Parent = this
                 };
-                _removeButton.Clicked += () => SetValue(0, (int)Values[0] - 1);
+                _removeButton.Clicked += () =>
+                {
+                    _currentAction = SwitchNodeState.RemoveCase;
+                    _reinitialize = true;
+                    SetValue(0, (int)Values[0] - 1);
+                };
 
                 _addButton = new Button(0, 0, 20, 20)
                 {
@@ -141,7 +179,12 @@ namespace FlaxEditor.Surface.Archetypes
                     TooltipText = "Add sequence output",
                     Parent = this
                 };
-                _addButton.Clicked += () => SetValue(0, (int)Values[0] + 1);
+                _addButton.Clicked += () =>
+                {
+                    _currentAction = SwitchNodeState.AddCase;
+                    _reinitialize = true;
+                    SetValue(0, (int)Values[0] + 1);
+                };
 
                 UpdateUI();
             }
@@ -159,47 +202,214 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnValuesChanged();
 
-                UpdateUI();
+                if (_currentAction != SwitchNodeState.UpdateMapData)
+                    UpdateUI();
             }
 
             private void UpdateUI()
             {
-                // NOTE: The pin ID is bound between min and max, min is not 0 because its used for the input impulse
+                // Generic
+                var outPinCount = (int)Values[0]; // Total pin count
+                var outPinMin = 0;   // Min pin count
+                var outPinMax = 101; // Max pin count
 
-                var outPinCount = (int)Values[0];
-                var outPinMin = 0;
-                var outPinMax = 101; // Should be enough or maybe too much?
-
-                var startIndex = (int)Values[2];
-
-                // Remove default, if null nothing will happen.
-                RemoveElement(GetBox(102));
-
-                // Add all boxes
-                for (int i = 0; i < outPinCount; i++)
-                    AddBox(true, i + 1, i, (startIndex + i).ToString(), new ScriptType(typeof(void)), true);
-
-                AddBox(true, 102, outPinCount, "Default", new ScriptType(typeof(void)), true);
-
-                // Cull boxes
-                for (int i = outPinCount; i <= outPinMax; i++)
+                if (_reinitialize)
                 {
-                    var box = GetBox(i + 1);
-
-                    if (box == null) break;
-                    RemoveElement(box);
+                    this.Initialize();
+                    _reinitialize = false;
                 }
 
-                _addButton.Enabled = outPinCount < outPinMax-1 && Surface.CanEdit;
+                _addButton.Enabled = outPinCount < outPinMax && Surface.CanEdit;
                 _removeButton.Enabled = outPinCount > outPinMin && Surface.CanEdit;
 
                 if (!(outPinCount <= 1))
                 {
-                    Resize(150, 60 + (outPinCount - 1) * 20);
+                    Resize(170, 60 + (outPinCount - 1) * 20);
                 }
 
                 _addButton.Location = new Vector2(Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX, Height - 20 - FlaxEditor.Surface.Constants.NodeMarginY - FlaxEditor.Surface.Constants.NodeFooterSize);
                 _removeButton.Location = new Vector2(_addButton.X - _removeButton.Width - 4, _addButton.Y);
+
+                // Re-position default case label
+                ChangeBoxYLevel(_defaultBox, _cases.Count);
+            }
+
+            private void Initialize()
+            {
+                // Generic
+                var outPinCount = (int)Values[0]; // Total pin count
+                var outPinMin = 0;   // Min pin count
+                var outPinMax = 101; // Max pin count
+
+                // Default box
+                Box targetBox = null;
+                bool hasConnection = false;
+
+                // Add default pin
+                if (_defaultBox == null)
+                    _defaultBox = AddBox(true, 102, outPinCount, "Default", new ScriptType(typeof(void)), true);
+
+                if (_currentAction == SwitchNodeState.Default)
+                {
+                    for (int i = 0; i < outPinCount; i++)
+                        CreateCase(i);
+
+                    UpdateMapData();
+                }
+                else if (_currentAction == SwitchNodeState.AddCase)
+                {
+                    CreateCase(outPinCount - 1);
+                    UpdateMapData();
+                }
+                else if (_currentAction == SwitchNodeState.RemoveCase)
+                {
+                    var lastCase = _cases[_cases.Count - 1];
+                    RemoveCase(lastCase);
+                    UpdateMapData();
+                }
+
+                _currentAction = SwitchNodeState.Default;
+
+                void CreateCase(int caseIndex)
+                {
+                    // Output event pin
+                    var box = AddBox(true, int.MaxValue - caseIndex, caseIndex, string.Empty, new ScriptType(typeof(void)), true);
+
+                    // The case int
+                    var caseBox = new CaseTextBox(caseIndex, box.Location.X - 50, box.Location.Y, 50)
+                    {
+                        TooltipText = "Add sequence output",
+                        Parent = this
+                    };
+
+                    var caseTuple = new CaseTuple(caseBox, box);
+
+                    caseBox.CaseValueUpdated += Case_ValueUpdated;
+
+                    _cases.Add(new CaseTuple(caseBox, box));
+                }
+            }
+
+            private void UpdateMapData()
+            {
+                _currentAction = SwitchNodeState.UpdateMapData;
+
+                var tupleBuffer = new CaseTuple[_cases.Count];
+                var processedValues = new HashSet<int>();
+                var arrayIndex = 0;
+                var caseCount = 0;
+
+                using (var stream = new MemoryStream())
+                using (var writer = new BinaryWriter(stream))
+                {
+                    writer.Write((byte)1); // Version
+
+                    writer.Write(0); // Case count
+
+                    for (int i = 0; i < _cases.Count; i++)
+                    {
+                        var caseTuple = _cases[i];
+                        int caseValue = caseTuple.CaseBox.Value;
+
+                        if (processedValues.Contains(caseValue))
+                            continue;
+
+                        CollectTuplesForCaseValue(caseValue);
+
+                        if (arrayIndex == 0)
+                            continue;
+
+                        writer.Write(caseValue); // Case value
+                        writer.Write(arrayIndex); // Case box id for the value
+
+                        for (int j = 0; j < arrayIndex; j++)
+                        {
+                            var processedCaseTuple = tupleBuffer[j];
+
+                            writer.Write(processedCaseTuple.Box.ID); // Box ID
+                        }
+
+                        caseCount++;
+                        processedValues.Add(caseValue);
+                    }
+
+                    writer.BaseStream.Position = 1;
+                    writer.Write(caseCount);
+
+                    SetValue(2, stream.ToArray());
+                }
+
+                _currentAction = SwitchNodeState.Default;
+
+                void CollectTuplesForCaseValue(int caseValue)
+                {
+                    arrayIndex = 0;
+
+                    for (int i = 0; i < _cases.Count; i++)
+                    {
+                        var caseTuple = _cases[i];
+
+                        if (caseTuple.CaseBox.Value == caseValue)
+                        {
+                            tupleBuffer[arrayIndex] = caseTuple;
+                            arrayIndex++;
+                        }
+                    }
+                }
+            }
+
+            private void Case_ValueUpdated(object sender, int newValue)
+            {
+                CaseTextBox caseBox = (CaseTextBox)sender;
+
+                if (IsCaseValueExisting(caseBox, caseBox.Value))
+                {
+                    // TODO: Figure out what to do with this shit
+                    Debug.Logger.Log("Case already exists!");
+                }
+            }
+
+            /// <summary>
+            /// Checks if a specific switch case value is already existing
+            /// </summary>
+            /// <param name="sender">case textbox sender</param>
+            /// <param name="caseValue">value to be checked</param>
+            /// <returns>whether the case value is already existing or not</returns>
+            private bool IsCaseValueExisting(CaseTextBox sender, int caseValue)
+            {
+                for (int i = _cases.Count - 1; i >= 0; i--)
+                {
+                    var tuple = _cases[i];
+
+                    if (tuple.CaseBox != sender && tuple.CaseBox.Value == caseValue)
+                        return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Remove all old cases
+            /// </summary>
+            private void RemoveOldCases()
+            {
+                for (int i = _cases.Count - 1; i >= 0; i--)
+                {
+                    var tuple = _cases[i];
+                    RemoveCase(tuple);
+                }
+            }
+
+            /// <summary>
+            /// Remove case
+            /// </summary>
+            /// <param name="caseTuple">case to remove</param>
+            private void RemoveCase(CaseTuple caseTuple)
+            {
+                caseTuple.CaseBox.CaseValueUpdated -= Case_ValueUpdated;
+                this.RemoveChild(caseTuple.CaseBox);
+                this.RemoveElement(caseTuple.Box);
+                _cases.Remove(caseTuple);
             }
         }
 
@@ -403,14 +613,14 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new SwitchIntNode(id, context, arch, groupArch),
                 Description = "Executes the output that matches the input value, if not found, default is executed.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(150, 80),
-                DefaultValues = new object[] { 2, 0, 0 },
+                Size = new Vector2(170, 80),
+                // Output count, default value for the case value
+                DefaultValues = new object[] { 2, 0, new byte[0] },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
                     // 102 is reserved for default, 1-101 are reserved for the output pins.
                     NodeElementArchetype.Factory.Input(1, "Int", true, typeof(int), 103, 1),
-                    NodeElementArchetype.Factory.Input(2, "Start", true, typeof(int), 104, 2)
                 }
             },
         };
