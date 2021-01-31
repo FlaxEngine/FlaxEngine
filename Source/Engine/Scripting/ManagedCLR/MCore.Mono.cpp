@@ -27,6 +27,9 @@
 #include <ThirdParty/mono-2.0/mono/metadata/mono-config.h>
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 #include <ThirdParty/mono-2.0/mono/metadata/profiler.h>
+#if USE_MONO_DYNAMIC_LIB
+#include <ThirdParty/mono-2.0/mono/utils/mono-dl-fallback.h>
+#endif
 
 #ifdef USE_MONO_AOT_MODULE
 void* MonoAotModuleHandle = nullptr;
@@ -291,6 +294,36 @@ void OnPrintErrorCallback(const char* string, mono_bool isStdout)
     LOG_STR(Error, String(string));
 }
 
+#if PLATFORM_LINUX && !USE_MONO_DYNAMIC_LIB
+
+#include <dlfcn.h>
+
+#define MONO_THIS_LIB_HANDLE ((void*)(intptr)-1)
+
+static void* ThisLibHandle = nullptr;
+
+static void* OnMonoLinuxDlOpen(const char* name, int flags, char** err, void* user_data)
+{
+    void* result = nullptr;
+	if (name && StringUtils::Compare(name + StringUtils::Length(name) - 17, "libmono-native.so") == 0)
+    {
+        result = MONO_THIS_LIB_HANDLE;
+    }
+    return result;
+}
+
+static void* OnMonoLinuxDlSym(void* handle, const char* name, char** err, void* user_data)
+{
+	void* result = nullptr;
+    if (handle == MONO_THIS_LIB_HANDLE && ThisLibHandle != nullptr)
+    {
+        result = dlsym(ThisLibHandle, name);
+    }
+	return result;
+}
+
+#endif
+
 bool MCore::LoadEngine()
 {
     ASSERT(Globals::MonoPath.IsANSI());
@@ -428,6 +461,12 @@ bool MCore::LoadEngine()
 #elif PLATFORM_LINUX
     // Adjust GC threads suspending mode on Linux
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+
+#if !USE_MONO_DYNAMIC_LIB
+    // Hook for missing library (when using static linking)
+    ThisLibHandle = dlopen(nullptr, RTLD_LAZY);
+	mono_dl_fallback_register(OnMonoLinuxDlOpen, OnMonoLinuxDlSym, nullptr, nullptr);
+#endif
 #endif
     mono_config_parse(nullptr);
 
@@ -513,6 +552,14 @@ void MCore::UnloadEngine()
 
 #ifdef USE_MONO_AOT_MODULE
     Platform::FreeLibrary(MonoAotModuleHandle);
+#endif
+
+#if PLATFORM_LINUX && !USE_MONO_DYNAMIC_LIB
+    if (ThisLibHandle)
+    {
+        dlclose(ThisLibHandle);
+        ThisLibHandle = nullptr;
+    }
 #endif
 }
 
