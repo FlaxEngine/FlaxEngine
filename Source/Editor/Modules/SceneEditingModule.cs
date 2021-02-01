@@ -200,7 +200,8 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent actor. Set null as default.</param>
-        public void Spawn(Actor actor, Actor parent = null)
+        /// <param name="autoSelect">True if automatically select the spawned actor, otherwise false.</param>
+        public void Spawn(Actor actor, Actor parent = null, bool autoSelect = true)
         {
             bool isPlayMode = Editor.StateMachine.IsPlayMode;
 
@@ -225,7 +226,15 @@ namespace FlaxEditor.Modules
             actorNode.PostSpawn();
 
             // Create undo action
-            var action = new DeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
+            IUndoAction action = new DeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
+            if (autoSelect)
+            {
+                var before = Selection.ToArray();
+                Selection.Clear();
+                Selection.Add(actorNode);
+                OnSelectionChanged();
+                action = new MultiUndoAction(action, new SelectionChangeAction(before, Selection.ToArray(), OnSelectionUndo));
+            }
             Undo.AddAction(action);
 
             // Mark scene as dirty
