@@ -98,6 +98,201 @@ Delegate<StringView> Input::ActionTriggered;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
+void Mouse::OnMouseMoved(const Vector2& newPosition)
+{
+    _prevState.MousePosition = newPosition;
+    _state.MousePosition = newPosition;
+}
+
+void Mouse::OnMouseDown(const Vector2& position, const MouseButton button, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseDown;
+    e.Target = target;
+    e.MouseData.Button = button;
+    e.MouseData.Position = position;
+}
+
+void Mouse::OnMouseUp(const Vector2& position, const MouseButton button, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseUp;
+    e.Target = target;
+    e.MouseData.Button = button;
+    e.MouseData.Position = position;
+}
+
+void Mouse::OnMouseDoubleClick(const Vector2& position, const MouseButton button, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseDoubleClick;
+    e.Target = target;
+    e.MouseData.Button = button;
+    e.MouseData.Position = position;
+}
+
+void Mouse::OnMouseMove(const Vector2& position, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseMove;
+    e.Target = target;
+    e.MouseData.Position = position;
+}
+
+void Mouse::OnMouseLeave(Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseLeave;
+    e.Target = target;
+}
+
+void Mouse::OnMouseWheel(const Vector2& position, float delta, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseWheel;
+    e.Target = target;
+    e.MouseWheelData.WheelDelta = delta;
+    e.MouseWheelData.Position = position;
+}
+
+void Mouse::ResetState()
+{
+    InputDevice::ResetState();
+
+    _prevState.Clear();
+    _state.Clear();
+}
+
+bool Mouse::Update(EventQueue& queue)
+{
+    // Move the current state to the previous
+    Platform::MemoryCopy(&_prevState, &_state, sizeof(State));
+
+    // Gather new events
+    if (UpdateState())
+        return true;
+
+    // Handle events
+    _state.MouseWheelDelta = 0;
+    for (int32 i = 0; i < _queue.Count(); i++)
+    {
+        const Event& e = _queue[i];
+        switch (e.Type)
+        {
+        case EventType::MouseDown:
+        {
+            _state.MouseButtons[static_cast<int32>(e.MouseData.Button)] = true;
+            break;
+        }
+        case EventType::MouseUp:
+        {
+            _state.MouseButtons[static_cast<int32>(e.MouseData.Button)] = false;
+            break;
+        }
+        case EventType::MouseDoubleClick:
+        {
+            break;
+        }
+        case EventType::MouseWheel:
+        {
+            _state.MouseWheelDelta += e.MouseWheelData.WheelDelta;
+            break;
+        }
+        case EventType::MouseMove:
+        {
+            _state.MousePosition = e.MouseData.Position;
+            break;
+        }
+        case EventType::MouseLeave:
+        {
+            break;
+        }
+        }
+    }
+
+    // Send events further
+    queue.Add(_queue);
+    _queue.Clear();
+    return false;
+}
+
+void Keyboard::OnCharInput(Char c, Window* target)
+{
+    // Skip control characters
+    if (c < 32)
+        return;
+
+    Event& e = _queue.AddOne();
+    e.Type = EventType::Char;
+    e.Target = target;
+    e.CharData.Char = c;
+}
+
+void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::KeyUp;
+    e.Target = target;
+    e.KeyData.Key = key;
+}
+
+void Keyboard::OnKeyDown(KeyboardKeys key, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::KeyDown;
+    e.Target = target;
+    e.KeyData.Key = key;
+}
+
+void Keyboard::ResetState()
+{
+    InputDevice::ResetState();
+
+    _prevState.Clear();
+    _state.Clear();
+}
+
+bool Keyboard::Update(EventQueue& queue)
+{
+    // Move the current state to the previous
+    Platform::MemoryCopy(&_prevState, &_state, sizeof(State));
+
+    // Gather new events
+    if (UpdateState())
+        return true;
+
+    // Handle events
+    _state.InputTextLength = 0;
+    for (int32 i = 0; i < _queue.Count(); i++)
+    {
+        const Event& e = _queue[i];
+        switch (e.Type)
+        {
+        case EventType::Char:
+        {
+            if (_state.InputTextLength < ARRAY_COUNT(_state.InputText) - 1)
+                _state.InputText[_state.InputTextLength++] = e.CharData.Char;
+            break;
+        }
+        case EventType::KeyDown:
+        {
+            _state.Keys[static_cast<int32>(e.KeyData.Key)] = true;
+            break;
+        }
+        case EventType::KeyUp:
+        {
+            _state.Keys[static_cast<int32>(e.KeyData.Key)] = false;
+            break;
+        }
+        }
+    }
+
+    // Send events further
+    queue.Add(_queue);
+    _queue.Clear();
+    return false;
+}
+
 int32 Input::GetGamepadsCount()
 {
     return Gamepads.Count();
