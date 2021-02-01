@@ -339,6 +339,13 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     // Downscale motion vectors texture down to tileSize/tileSize (with max velocity calculation NxN kernel)
     rtDesc.Width = motionVectorsWidth / tileSize;
     rtDesc.Height = motionVectorsHeight / tileSize;
+    
+    if (rtDesc.Width < 1)
+        rtDesc.Width = 1;
+    
+    if (rtDesc.Height < 1)
+        rtDesc.Height = 1;
+
     auto vMaxBuffer = RenderTargetPool::Get(rtDesc);
     context->ResetRenderTarget();
     context->SetRenderTarget(vMaxBuffer->View());
