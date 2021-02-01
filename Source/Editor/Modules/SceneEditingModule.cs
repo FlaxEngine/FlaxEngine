@@ -358,7 +358,15 @@ namespace FlaxEditor.Modules
             var pasteAction = PasteActorsAction.Paste(data, pasteTargetActor?.ID ?? Guid.Empty);
             if (pasteAction != null)
             {
-                OnPasteAction(pasteAction);
+                pasteAction.Do(out _, out var nodeParents);
+
+                // Select spawned objects (parents only)
+                var selectAction = new SelectionChangeAction(Selection.ToArray(), nodeParents.Cast<SceneGraphNode>().ToArray(), OnSelectionUndo);
+                selectAction.Do();
+
+                // Build single compound undo action that pastes the actors and selects the created objects (parents only)
+                Undo.AddAction(new MultiUndoAction(pasteAction, selectAction));
+                OnSelectionChanged();
             }
         }
 
@@ -377,12 +385,57 @@ namespace FlaxEditor.Modules
         public void Duplicate()
         {
             // Peek things that can be copied (copy all actors)
-            var objects = Selection.Where(x => x.CanCopyPaste).ToList().BuildAllNodes().Where(x => x.CanCopyPaste && x is ActorNode).ToList();
-            if (objects.Count == 0)
+            var nodes = Selection.Where(x => x.CanDuplicate).ToList().BuildAllNodes();
+            if (nodes.Count == 0)
                 return;
+            var actors = new List<Actor>();
+            var newSelection = new List<SceneGraphNode>();
+            List<IUndoAction> customUndoActions = null;
+            foreach (var node in nodes)
+            {
+                if (node.CanDuplicate)
+                {
+                    if (node is ActorNode actorNode)
+                    {
+                        actors.Add(actorNode.Actor);
+                    }
+                    else
+                    {
+                        var customDuplicatedObject = node.Duplicate(out var customUndoAction);
+                        if (customDuplicatedObject != null)
+                            newSelection.Add(customDuplicatedObject);
+                        if (customUndoAction != null)
+                        {
+                            if (customUndoActions == null)
+                                customUndoActions = new List<IUndoAction>();
+                            customUndoActions.Add(customUndoAction);
+                        }
+                    }
+                }
+            }
+            if (actors.Count == 0)
+            {
+                // Duplicate custom scene graph nodes only without actors
+                if (newSelection.Count != 0)
+                {
+                    // Select spawned objects (parents only)
+                    var selectAction = new SelectionChangeAction(Selection.ToArray(), newSelection.ToArray(), OnSelectionUndo);
+                    selectAction.Do();
+
+                    // Build a single compound undo action that pastes the actors, pastes custom stuff (scene graph extension) and selects the created objects (parents only)
+                    var customUndoActionsCount = customUndoActions?.Count ?? 0;
+                    var undoActions = new IUndoAction[1 + customUndoActionsCount];
+                    for (int i = 0; i < customUndoActionsCount; i++)
+                        undoActions[i] = customUndoActions[i];
+                    undoActions[undoActions.Length - 1] = selectAction;
+
+                    Undo.AddAction(new MultiUndoAction(undoActions));
+                    OnSelectionChanged();
+                }
+                return;
+            }
 
             // Serialize actors
-            var actors = objects.ConvertAll(x => ((ActorNode)x).Actor);
             var data = Actor.ToBytes(actors.ToArray());
             if (data == null)
             {
@@ -394,20 +447,24 @@ namespace FlaxEditor.Modules
             var pasteAction = PasteActorsAction.Duplicate(data, Guid.Empty);
             if (pasteAction != null)
             {
-                OnPasteAction(pasteAction);
+                pasteAction.Do(out _, out var nodeParents);
+
+                // Select spawned objects (parents only)
+                newSelection.AddRange(nodeParents);
+                var selectAction = new SelectionChangeAction(Selection.ToArray(), newSelection.ToArray(), OnSelectionUndo);
+                selectAction.Do();
+
+                // Build a single compound undo action that pastes the actors, pastes custom stuff (scene graph extension) and selects the created objects (parents only)
+                var customUndoActionsCount = customUndoActions?.Count ?? 0;
+                var undoActions = new IUndoAction[2 + customUndoActionsCount];
+                undoActions[0] = pasteAction;
+                for (int i = 0; i < customUndoActionsCount; i++)
+                    undoActions[i + 1] = customUndoActions[i];
+                undoActions[undoActions.Length - 1] = selectAction;
+
+                Undo.AddAction(new MultiUndoAction(undoActions));
+                OnSelectionChanged();
             }
-        }
-
-        private void OnPasteAction(PasteActorsAction pasteAction)
-        {
-            pasteAction.Do(out _, out var nodeParents);
-
-            // Select spawned objects
-            var selectAction = new SelectionChangeAction(Selection.ToArray(), nodeParents.Cast<SceneGraphNode>().ToArray(), OnSelectionUndo);
-            selectAction.Do();
-
-            Undo.AddAction(new MultiUndoAction(pasteAction, selectAction));
-            OnSelectionChanged();
         }
 
         /// <summary>

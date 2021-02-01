@@ -183,6 +183,9 @@ namespace FlaxEditor.SceneGraph
         public override bool CanCopyPaste => (_actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
         /// <inheritdoc />
+        public override bool CanDuplicate => (_actor.HideFlags & HideFlags.HideInHierarchy) == 0;
+
+        /// <inheritdoc />
         public override bool IsActive => _actor.IsActive;
 
         /// <inheritdoc />

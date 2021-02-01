@@ -64,6 +64,9 @@ namespace FlaxEditor.SceneGraph
         public override bool CanCopyPaste => false;
 
         /// <inheritdoc />
+        public override bool CanDuplicate => false;
+
+        /// <inheritdoc />
         public override bool CanDrag => false;
 
         /// <inheritdoc />

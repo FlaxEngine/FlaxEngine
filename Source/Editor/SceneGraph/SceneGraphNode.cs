@@ -66,6 +66,11 @@ namespace FlaxEditor.SceneGraph
         public virtual bool CanCopyPaste => true;
 
         /// <summary>
+        /// Gets a value indicating whether this instance can be duplicated by the user.
+        /// </summary>
+        public virtual bool CanDuplicate => true;
+
+        /// <summary>
         /// Gets a value indicating whether this node can be deleted by the user.
         /// </summary>
         public virtual bool CanDelete => true;
@@ -357,6 +362,17 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual void Delete()
         {
+        }
+
+        /// <summary>
+        /// Duplicates this object. Valid only if <see cref="CanDuplicate"/> returns true.
+        /// </summary>
+        /// <param name="undoAction">The undo action that duplicated the object (already performed), null if skip it.</param>
+        /// <returns>The duplicated object node.</returns>
+        public virtual SceneGraphNode Duplicate(out IUndoAction undoAction)
+        {
+            undoAction = null;
+            return null;
         }
 
         /// <summary>
