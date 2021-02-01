@@ -169,6 +169,12 @@ float Spline::GetSplineLength() const
     return Math::Sqrt(sum);
 }
 
+float Spline::GetSplineTime(int32 index) const
+{
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), 0.0f)
+    return Curve[index].Time;
+}
+
 namespace
 {
     void FindTimeClosestToPoint(const Vector3& point, const Spline::Keyframe& start, const Spline::Keyframe& end, float& bestDistanceSquared, float& bestTime)

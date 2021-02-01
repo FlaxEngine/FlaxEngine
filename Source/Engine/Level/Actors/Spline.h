@@ -172,6 +172,13 @@ public:
     API_PROPERTY() float GetSplineLength() const;
 
     /// <summary>
+    /// Gets the time of the spline keyframe.
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <returns>The spline time.</returns>
+    API_FUNCTION() float GetSplineTime(int32 index) const;
+
+    /// <summary>
     /// Calculates the closest point to the given location and returns the spline time at that point.
     /// </summary>
     /// <param name="point">The point in world-space to find the spline point that is closest to it.</param>

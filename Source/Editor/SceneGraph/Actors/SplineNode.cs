@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.Json;
 using Object = FlaxEngine.Object;
@@ -27,6 +28,8 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool CanBeSelectedDirectly => true;
 
+            public override bool CanDuplicate => true;
+
             public override bool CanDelete => true;
 
             public override bool CanUseState => true;
@@ -45,7 +48,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
             }
 
-            private struct Data
+            struct Data
             {
                 public Guid Spline;
                 public int Index;
@@ -76,6 +79,69 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 var actor = (Spline)_node.Actor;
                 actor.RemoveSplinePoint(Index);
+            }
+
+            class DuplicateUndoAction : IUndoAction, ISceneEditAction
+            {
+                public Guid SplineId;
+                public int Index;
+                public float Time;
+                public Transform Value;
+
+                public string ActionString => "Duplicate spline point";
+
+                public void Dispose()
+                {
+                }
+
+                public void Do()
+                {
+                    var spline = Object.Find<Spline>(ref SplineId);
+                    spline.InsertSplineLocalPoint(Index, Time, Value);
+                }
+
+                public void Undo()
+                {
+                    var spline = Object.Find<Spline>(ref SplineId);
+                    spline.RemoveSplinePoint(Index);
+                }
+
+                public void MarkSceneEdited(SceneModule sceneModule)
+                {
+                    var spline = Object.Find<Spline>(ref SplineId);
+                    sceneModule.MarkSceneEdited(spline.Scene);
+                }
+            }
+
+            public override SceneGraphNode Duplicate(out IUndoAction undoAction)
+            {
+                var actor = (Spline)_node.Actor;
+                int newIndex;
+                float newTime;
+                if (Index == actor.SplinePointsCount - 1)
+                {
+                    // Append to the end
+                    newIndex = actor.SplinePointsCount;
+                    newTime = actor.GetSplineTime(newIndex - 1) + 1.0f;
+                }
+                else
+                {
+                    // Insert between this and next point
+                    newIndex = Index + 1;
+                    newTime = (actor.GetSplineTime(Index) + actor.GetSplineTime(Index + 1)) * 0.5f;
+                }
+                var action = new DuplicateUndoAction
+                {
+                    SplineId = actor.ID,
+                    Index = newIndex,
+                    Time = newTime,
+                    Value = actor.GetSplineLocalTransform(Index),
+                };
+                actor.InsertSplineLocalPoint(newIndex, newTime, action.Value);
+                undoAction = action;
+                var splineNode = (SplineNode)SceneGraphFactory.FindNode(action.SplineId);
+                splineNode.OnUpdate();
+                return splineNode.ActorChildNodes[newIndex];
             }
 
             public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
