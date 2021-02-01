@@ -199,9 +199,8 @@ void Renderer::Render(SceneRenderTask* task)
 #endif
 
     // Perform the actual rendering
+    task->OnPreRender(context, renderContext);
     RenderInner(task, renderContext);
-
-    // Custom additional rendering
     task->OnPostRender(context, renderContext);
 
 #if USE_EDITOR
@@ -305,7 +304,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         aaMode = AntialiasingMode::FastApproximateAntialiasing;
 #endif
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
-
 
     // Prepare
     renderContext.View.Prepare(renderContext);
