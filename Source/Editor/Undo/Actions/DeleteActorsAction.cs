@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 
 namespace FlaxEditor.Actions
@@ -15,7 +16,13 @@ namespace FlaxEditor.Actions
     class DeleteActorsAction : IUndoAction
     {
         [Serialize]
-        private byte[] _data;
+        private byte[] _actorsData;
+
+        [Serialize]
+        private List<SceneGraphNode.StateData> _nodesData;
+
+        [Serialize]
+        private Guid[] _nodeParentsIDs;
 
         [Serialize]
         private Guid[] _prefabIds;
@@ -30,31 +37,51 @@ namespace FlaxEditor.Actions
         /// The node parents.
         /// </summary>
         [Serialize]
-        protected List<ActorNode> _nodeParents;
+        protected List<SceneGraphNode> _nodeParents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DeleteActorsAction"/> class.
         /// </summary>
-        /// <param name="objects">The objects.</param>
+        /// <param name="nodes">The objects.</param>
         /// <param name="isInverted">If set to <c>true</c> action will be inverted - instead of delete it will be create actors.</param>
-        internal DeleteActorsAction(List<SceneGraphNode> objects, bool isInverted = false)
+        internal DeleteActorsAction(List<SceneGraphNode> nodes, bool isInverted = false)
         {
             _isInverted = isInverted;
-            _nodeParents = new List<ActorNode>(objects.Count);
-            var actorNodes = new List<ActorNode>(objects.Count);
-            var actors = new List<Actor>(objects.Count);
-            for (int i = 0; i < objects.Count; i++)
+
+            // Collect nodes to delete
+            var deleteNodes = new List<SceneGraphNode>(nodes.Count);
+            var actors = new List<Actor>(nodes.Count);
+            for (int i = 0; i < nodes.Count; i++)
             {
-                if (objects[i] is ActorNode node)
+                var node = nodes[i];
+                if (node is ActorNode actorNode)
                 {
-                    actorNodes.Add(node);
-                    actors.Add(node.Actor);
+                    deleteNodes.Add(actorNode);
+                    actors.Add(actorNode.Actor);
+                }
+                else
+                {
+                    deleteNodes.Add(node);
+                    if (node.CanUseState)
+                    {
+                        if (_nodesData == null)
+                            _nodesData = new List<SceneGraphNode.StateData>();
+                        _nodesData.Add(node.State);
+                    }
                 }
             }
-            actorNodes.BuildNodesParents(_nodeParents);
 
-            _data = Actor.ToBytes(actors.ToArray());
+            // Collect parent nodes to delete
+            _nodeParents = new List<SceneGraphNode>(nodes.Count);
+            deleteNodes.BuildNodesParents(_nodeParents);
+            _nodeParentsIDs = new Guid[_nodeParents.Count];
+            for (int i = 0; i < _nodeParentsIDs.Length; i++)
+                _nodeParentsIDs[i] = _nodeParents[i].ID;
 
+            // Serialize actors
+            _actorsData = Actor.ToBytes(actors.ToArray());
+
+            // Cache actors linkage to prefab objects
             _prefabIds = new Guid[actors.Count];
             _prefabObjectIds = new Guid[actors.Count];
             for (int i = 0; i < actors.Count; i++)
@@ -88,9 +115,11 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Dispose()
         {
-            _data = null;
+            _actorsData = null;
+            _nodeParentsIDs = null;
             _prefabIds = null;
             _prefabObjectIds = null;
+            _nodeParents.Clear();
         }
 
         /// <summary>
@@ -123,28 +152,64 @@ namespace FlaxEditor.Actions
         /// </summary>
         protected virtual void Create()
         {
-            // Restore objects
-            var actors = Actor.FromBytes(_data);
-            if (actors == null)
-                return;
-            for (int i = 0; i < actors.Length; i++)
+            var nodes = new List<SceneGraphNode>();
+
+            // Restore actors
+            var actors = Actor.FromBytes(_actorsData);
+            if (actors != null)
             {
-                Guid prefabId = _prefabIds[i];
-                if (prefabId != Guid.Empty)
+                nodes.Capacity = Math.Max(nodes.Capacity, actors.Length);
+
+                // Preserve prefab objects linkage
+                for (int i = 0; i < actors.Length; i++)
                 {
-                    Actor.Internal_LinkPrefab(FlaxEngine.Object.GetUnmanagedPtr(actors[i]), ref prefabId, ref _prefabObjectIds[i]);
+                    Guid prefabId = _prefabIds[i];
+                    if (prefabId != Guid.Empty)
+                    {
+                        Actor.Internal_LinkPrefab(FlaxEngine.Object.GetUnmanagedPtr(actors[i]), ref prefabId, ref _prefabObjectIds[i]);
+                    }
                 }
             }
-            var actorNodes = new List<ActorNode>(actors.Length);
-            for (int i = 0; i < actors.Length; i++)
+
+            // Restore nodes state
+            if (_nodesData != null)
             {
-                var foundNode = GetNode(actors[i].ID);
+                for (int i = 0; i < _nodesData.Count; i++)
+                {
+                    var state = _nodesData[i];
+                    var type = TypeUtils.GetManagedType(state.TypeName);
+                    if (type == null)
+                    {
+                        Editor.LogError($"Missing type {state.TypeName} for scene graph node undo state restore.");
+                        continue;
+                    }
+                    var method = type.GetMethod(state.CreateMethodName);
+                    if (method == null)
+                    {
+                        Editor.LogError($"Missing method {state.CreateMethodName} from type {state.TypeName} for scene graph node undo state restore.");
+                        continue;
+                    }
+                    var node = method.Invoke(null, new object[] { state });
+                    if (node == null)
+                    {
+                        Editor.LogError($"Failed to restore scene graph node state via method {state.CreateMethodName} from type {state.TypeName}.");
+                        continue;
+                    }
+                }
+            }
+
+            // Cache parent nodes ids
+            for (int i = 0; i < _nodeParentsIDs.Length; i++)
+            {
+                var foundNode = GetNode(_nodeParentsIDs[i]);
                 if (foundNode is ActorNode node)
                 {
-                    actorNodes.Add(node);
+                    nodes.Add(node);
                 }
             }
-            actorNodes.BuildNodesParents(_nodeParents);
+            nodes.BuildNodesParents(_nodeParents);
+
+            // Mark scenes as modified
             for (int i = 0; i < _nodeParents.Count; i++)
             {
                 Editor.Instance.Scene.MarkSceneEdited(_nodeParents[i].ParentScene);

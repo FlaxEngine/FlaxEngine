@@ -313,6 +313,46 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// The scene graph node state container. Used for Editor undo actions (eg. restoring deleted node).
+        /// </summary>
+        public struct StateData
+        {
+            /// <summary>
+            /// The name of the scene graph node type (full).
+            /// </summary>
+            public string TypeName;
+
+            /// <summary>
+            /// The name of the method (in <see cref="TypeName"/>) that takes this state as a parameter and returns the created scene graph node. Used by the undo actions to restore deleted objects.
+            /// </summary>
+            public string CreateMethodName;
+
+            /// <summary>
+            /// The custom state data (as string).
+            /// </summary>
+            public string State;
+
+            /// <summary>
+            /// The custom state data (as raw bytes).
+            /// </summary>
+            public byte[] StateRaw;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this node can use <see cref="State"/> property for editor undo operations.
+        /// </summary>
+        public virtual bool CanUseState => false;
+
+        /// <summary>
+        /// Gets or sets the node state.
+        /// </summary>
+        public virtual StateData State
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Deletes object represented by this node eg. actor.
         /// </summary>
         public virtual void Delete()

@@ -194,8 +194,8 @@ namespace FlaxEditor.Windows.Assets
 
         private class CustomDeleteActorsAction : DeleteActorsAction
         {
-            public CustomDeleteActorsAction(List<SceneGraphNode> objects, bool isInverted = false)
-            : base(objects, isInverted)
+            public CustomDeleteActorsAction(List<SceneGraphNode> nodes, bool isInverted = false)
+            : base(nodes, isInverted)
             {
             }
 
@@ -207,7 +207,8 @@ namespace FlaxEditor.Windows.Assets
                 // Unlink nodes from parents (actors spawned for prefab editing are not in a gameplay and may not send some important events)
                 for (int i = 0; i < nodes.Length; i++)
                 {
-                    nodes[i].Actor.Parent = null;
+                    if (nodes[i] is ActorNode actorNode)
+                        actorNode.Actor.Parent = null;
                 }
 
                 base.Delete();
