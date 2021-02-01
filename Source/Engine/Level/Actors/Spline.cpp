@@ -244,6 +244,14 @@ void Spline::ClearSpline()
     UpdateSpline();
 }
 
+void Spline::RemoveSplinePoint(int32 index, bool updateSpline)
+{
+    CHECK(index >= 0 && index < GetSplinePointsCount());
+    Curve.GetKeyframes().RemoveAtKeepOrder(index);
+    if (updateSpline)
+        UpdateSpline();
+}
+
 void Spline::SetSplinePoint(int32 index, const Vector3& point, bool updateSpline)
 {
     CHECK(index >= 0 && index < GetSplinePointsCount());
@@ -327,6 +335,22 @@ void Spline::AddSplineLocalPoint(const Transform& point, bool updateSpline)
 {
     const Keyframe k(Curve.IsEmpty() ? 0.0f : Curve.GetKeyframes().Last().Time + 1.0f, point);
     Curve.GetKeyframes().Add(k);
+    if (updateSpline)
+        UpdateSpline();
+}
+
+void Spline::InsertSplinePoint(int32 index, float time, const Transform& point, bool updateSpline)
+{
+    const Keyframe k(time, _transform.WorldToLocal(point));
+    Curve.GetKeyframes().Insert(index, k);
+    if (updateSpline)
+        UpdateSpline();
+}
+
+void Spline::InsertSplineLocalPoint(int32 index, float time, const Transform& point, bool updateSpline)
+{
+    const Keyframe k(time, point);
+    Curve.GetKeyframes().Insert(index, k);
     if (updateSpline)
         UpdateSpline();
 }

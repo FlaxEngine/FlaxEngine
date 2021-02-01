@@ -37,5 +37,27 @@ namespace FlaxEngine
                 Internal_SetKeyframes(__unmanagedPtr, value);
             }
         }
+
+        /// <summary>
+        /// Gets the spline keyframe.
+        /// </summary>
+        /// <param name="index">The spline point index.</param>
+        /// <returns>The keyframe.</returns>
+        public BezierCurve<Transform>.Keyframe GetSplineKeyframe(int index)
+        {
+            return SplineKeyframes[index];
+        }
+
+        /// <summary>
+        /// Sets the spline keyframe.
+        /// </summary>
+        /// <param name="index">The spline point index.</param>
+        /// <param name="keyframe">The keyframe.</param>
+        public void SetSplineKeyframe(int index, BezierCurve<Transform>.Keyframe keyframe)
+        {
+            SetSplineLocalTransform(index, keyframe.Value, false);
+            SetSplineLocalTangent(index, keyframe.Value + keyframe.TangentIn, true, false);
+            SetSplineLocalTangent(index, keyframe.Value + keyframe.TangentOut, false);
+        }
     }
 }

@@ -217,11 +217,18 @@ public:
     API_FUNCTION() void ClearSpline();
 
     /// <summary>
+    /// Removes the spline curve point at the given index.
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="updateSpline">True if update spline after removing the point, otherwise false.</param>
+    API_FUNCTION() void RemoveSplinePoint(int32 index, bool updateSpline = true);
+
+    /// <summary>
     /// Sets the spline curve at the given index (world-space).
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The location of the point to set (world-space).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplinePoint(int32 index, const Vector3& point, bool updateSpline = true);
 
     /// <summary>
@@ -229,7 +236,7 @@ public:
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The location of the point to set (local-space).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplineLocalPoint(int32 index, const Vector3& point, bool updateSpline = true);
 
     /// <summary>
@@ -237,7 +244,7 @@ public:
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The transformation of the point to set (world-space).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplineTransform(int32 index, const Transform& point, bool updateSpline = true);
 
     /// <summary>
@@ -245,7 +252,7 @@ public:
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The transformation of the point to set (local-space).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplineLocalTransform(int32 index, const Transform& point, bool updateSpline = true);
 
     /// <summary>
@@ -255,7 +262,7 @@ public:
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The transformation of the tangent to set (world-space).</param>
     /// <param name="isIn">True if set arrive tangent, otherwise sets leave tangent (in or out).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplineTangent(int32 index, const Transform& point, bool isIn, bool updateSpline = true);
 
     /// <summary>
@@ -265,7 +272,7 @@ public:
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="point">The transformation of the tangent to set (local-space).</param>
     /// <param name="isIn">True if set arrive tangent, otherwise sets leave tangent (in or out).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplineLocalTangent(int32 index, const Transform& point, bool isIn, bool updateSpline = true);
 
     /// <summary>
@@ -273,14 +280,14 @@ public:
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
     /// <param name="time">The time to set.</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void SetSplinePointTime(int32 index, float time, bool updateSpline = true);
 
     /// <summary>
     /// Adds the point to the spline curve (at the end).
     /// </summary>
     /// <param name="point">The location of the point to add to the curve (world-space).</param>
-    /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
+    /// <param name="updateSpline">True if update spline after editing the point, otherwise false.</param>
     API_FUNCTION() void AddSplinePoint(const Vector3& point, bool updateSpline = true);
 
     /// <summary>
@@ -303,6 +310,24 @@ public:
     /// <param name="point">The transformation of the point to add to the curve (local-space).</param>
     /// <param name="updateSpline">True if update spline after adding the point, otherwise false.</param>
     API_FUNCTION() void AddSplineLocalPoint(const Transform& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Inserts the spline curve point at the given index (world-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="time">The time value.</param>
+    /// <param name="point">The location of the point to add to the curve (world-space).</param>
+    /// <param name="updateSpline">True if update spline after removing the point, otherwise false.</param>
+    API_FUNCTION() void InsertSplinePoint(int32 index, float time, const Transform& point, bool updateSpline = true);
+
+    /// <summary>
+    /// Inserts the spline curve point at the given index (local-space).
+    /// </summary>
+    /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <param name="time">The time value.</param>
+    /// <param name="point">The location of the point to add to the curve (local-space).</param>
+    /// <param name="updateSpline">True if update spline after removing the point, otherwise false.</param>
+    API_FUNCTION() void InsertSplineLocalPoint(int32 index, float time, const Transform& point, bool updateSpline = true);
 
     /// <summary>
     /// Updates the curve tangent points to make curve linear.
