@@ -229,6 +229,24 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets global controls bounds rectangle.(Recursing all parents)
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Rectangle GlobalBounds
+        {
+            get {
+                if(Parent != null && !(Parent is CanvasContainer))
+                {
+                    Rectangle bnds = _bounds;
+                    bnds.X += Parent.GlobalBounds.X;
+                    bnds.Y += Parent.GlobalBounds.Y;
+                    return bnds;
+                }
+                return Bounds;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the scale.
         /// </summary>
         [EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter.")]
