@@ -27,7 +27,7 @@
 #include <ThirdParty/mono-2.0/mono/metadata/mono-config.h>
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 #include <ThirdParty/mono-2.0/mono/metadata/profiler.h>
-#if USE_MONO_DYNAMIC_LIB
+#if !USE_MONO_DYNAMIC_LIB
 #include <ThirdParty/mono-2.0/mono/utils/mono-dl-fallback.h>
 #endif
 

@@ -37,7 +37,7 @@ public class mono : DepsModule
             if (useDynamicLinking)
             {
                 // Dynamic linking (requires mono-2.0-sgen.dll to deploy side-by-side with the Flax)
-                options.PrivateDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+                options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
                 options.OutputFiles.Add(Path.Combine(depsRoot, "mono-2.0-sgen.lib"));
                 options.DependencyFiles.Add(Path.Combine(depsRoot, "mono-2.0-sgen.dll"));
                 options.OptionalDependencyFiles.Add(Path.Combine(depsRoot, "mono-2.0-sgen.pdb"));
@@ -68,7 +68,7 @@ public class mono : DepsModule
             break;
         }
         case TargetPlatform.Linux:
-            options.PrivateDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+            options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1"));
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1.0.0"));
@@ -81,7 +81,7 @@ public class mono : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "mono.a"));
             break;
         case TargetPlatform.Android:
-            options.PrivateDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+            options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             break;
