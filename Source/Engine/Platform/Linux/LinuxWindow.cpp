@@ -479,7 +479,7 @@ void LinuxWindow::OnButtonPress(void* event)
 {
 	auto buttonEvent = (X11::XButtonPressedEvent*)event;
 
-	Vector2 mousePos((float)buttonEvent->x_root, (float)buttonEvent->y_root);
+	Vector2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
 	MouseButton mouseButton;
 	switch (buttonEvent->button)
 	{
@@ -517,7 +517,7 @@ void LinuxWindow::OnButtonPress(void* event)
 void LinuxWindow::OnButtonRelease(void* event)
 {
 	auto buttonEvent = (X11::XButtonReleasedEvent*)event;
-	Vector2 mousePos((float)buttonEvent->x_root, (float)buttonEvent->y_root);
+	Vector2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
 	switch (buttonEvent->button)
 	{
 	case Button1:
