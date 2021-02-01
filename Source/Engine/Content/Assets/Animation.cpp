@@ -5,6 +5,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -358,9 +359,9 @@ bool Animation::Save(const StringView& path)
         {
             auto& anim = Data.Channels[i];
             stream.WriteString(anim.NodeName, 172);
-            anim.Position.Serialize(stream);
-            anim.Rotation.Serialize(stream);
-            anim.Scale.Serialize(stream);
+            Serialization::Serialize(stream, anim.Position);
+            Serialization::Serialize(stream, anim.Rotation);
+            Serialization::Serialize(stream, anim.Scale);
         }
 
         // Set data to the chunk asset
@@ -442,9 +443,9 @@ Asset::LoadResult Animation::load()
         auto& anim = Data.Channels[i];
 
         stream.ReadString(&anim.NodeName, 172);
-        bool failed = anim.Position.Deserialize(stream);
-        failed |= anim.Rotation.Deserialize(stream);
-        failed |= anim.Scale.Deserialize(stream);
+        bool failed = Serialization::Deserialize(stream, anim.Position);
+        failed |= Serialization::Deserialize(stream, anim.Rotation);
+        failed |= Serialization::Deserialize(stream, anim.Scale);
 
         if (failed)
         {

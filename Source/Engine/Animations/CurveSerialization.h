@@ -3,7 +3,9 @@
 #pragma once
 
 #include "Curve.h"
-#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Serialization/ReadStream.h"
+#include "Engine/Serialization/WriteStream.h"
 #include "Engine/Serialization/Serialization.h"
 
 // @formatter:off
@@ -165,6 +167,51 @@ namespace Serialization
             for (rapidjson::SizeType i = 0; i < keyframesArray.Size(); i++)
                 Deserialize(keyframesArray[i], keyframes[i], modifier);
         }
+    }
+
+    template<class T, typename KeyFrame>
+    inline void Serialize(WriteStream& stream, const Curve<T, KeyFrame>& v)
+    {
+        auto& keyframes = v.GetKeyframes();
+
+        // Version
+        if (keyframes.IsEmpty())
+        {
+            stream.WriteInt32(0);
+            return;
+        }
+        stream.WriteInt32(1);
+
+        // TODO: support compression (serialize compression mode)
+
+        // Raw keyframes data
+        stream.WriteInt32(keyframes.Count());
+        stream.WriteBytes(keyframes.Get(), keyframes.Count() * sizeof(KeyFrame));
+    }
+
+    template<class T, typename KeyFrame>
+    inline bool Deserialize(ReadStream& stream, Curve<T, KeyFrame>& v)
+    {
+        auto& keyframes = v.GetKeyframes();
+        keyframes.Resize(0);
+
+        // Version
+        int32 version;
+        stream.ReadInt32(&version);
+        if (version == 0)
+            return false;
+        if (version != 1)
+        {
+            return true;
+        }
+
+        // Raw keyframes data
+        int32 keyframesCount;
+        stream.ReadInt32(&keyframesCount);
+        keyframes.Resize(keyframesCount, false);
+        stream.ReadBytes(keyframes.Get(), keyframes.Count() * sizeof(KeyFrame));
+
+        return false;
     }
 }
 

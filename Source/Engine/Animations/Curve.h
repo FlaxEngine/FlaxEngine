@@ -4,9 +4,7 @@
 
 #include "AnimationUtils.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Types/DataContainer.h"
-#include "Engine/Serialization/ReadStream.h"
-#include "Engine/Serialization/WriteStream.h"
+#include "Engine/Core/Types/Span.h"
 
 // @formatter:off
 
@@ -289,7 +287,7 @@ class CurveBase
 {
 public:
 
-    typedef DataContainer<KeyFrame> KeyFrameData;
+    typedef Span<KeyFrame> KeyFrameData;
 
 protected:
 
@@ -641,7 +639,7 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void Evaluate(T& result, float time, bool loop = true) const
     {
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         Base::Evaluate(data, result, time, loop);
     }
 
@@ -653,7 +651,7 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void EvaluateFirstDerivative(T& result, float time, bool loop = true) const
     {
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         Base::EvaluateFirstDerivative(data, result, time, loop);
     }
 
@@ -665,7 +663,7 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void EvaluateKey(KeyFrame& result, float time, bool loop = true) const
     {
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         Base::EvaluateKey(data, result, time, loop);
     }
 
@@ -686,7 +684,7 @@ public:
             return;
         }
 
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         KeyFrame startValue, endValue;
         Base::EvaluateKey(data, startValue, start, false);
         Base::EvaluateKey(data, endValue, end, false);
@@ -747,57 +745,6 @@ public:
     {
         for (int32 i = 0; i < _keyframes.Count(); i++)
             _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;;
-    }
-
-public:
-
-    /// <summary>
-    /// Serializes the curve data to the stream.
-    /// </summary>
-    /// <param name="stream">The output stream.</param>
-    void Serialize(WriteStream& stream) const
-    {
-        // Version
-        if (_keyframes.IsEmpty())
-        {
-            stream.WriteInt32(0);
-            return;
-        }
-        stream.WriteInt32(1);
-
-        // TODO: support compression (serialize compression mode)
-
-        // Raw keyframes data
-        stream.WriteInt32(_keyframes.Count());
-        stream.WriteBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
-    }
-
-    /// <summary>
-    /// Deserializes the curve data from the stream.
-    /// </summary>
-    /// <param name="stream">The input stream.</param>
-    bool Deserialize(ReadStream& stream)
-    {
-        // Cleanup
-        _keyframes.Resize(0);
-
-        // Version
-        int32 version;
-        stream.ReadInt32(&version);
-        if (version == 0)
-            return false;
-        if (version != 1)
-        {
-            return true;
-        }
-
-        // Raw keyframes data
-        int32 keyframesCount;
-        stream.ReadInt32(&keyframesCount);
-        _keyframes.Resize(keyframesCount, false);
-        stream.ReadBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
-
-        return false;
     }
 
 public:
