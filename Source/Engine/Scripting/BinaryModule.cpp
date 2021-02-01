@@ -606,6 +606,8 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
     for (int32 typeIndex = 0; typeIndex < Types.Count(); typeIndex++)
     {
         ScriptingType& type = Types[typeIndex];
+        if (type.Type == ScriptingTypes::Interface)
+            continue; // TODO: generate C# class for interfaces in API
         ASSERT(type.ManagedClass == nullptr);
 
         // Cache class
