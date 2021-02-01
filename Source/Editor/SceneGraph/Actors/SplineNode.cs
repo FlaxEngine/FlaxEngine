@@ -3,6 +3,7 @@
 using System;
 using FlaxEngine;
 using FlaxEngine.Json;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.SceneGraph.Actors
 {
@@ -26,6 +27,10 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool CanBeSelectedDirectly => true;
 
+            public override bool CanDelete => true;
+
+            public override bool CanUseState => true;
+
             public override Transform Transform
             {
                 get
@@ -38,6 +43,39 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = (Spline)_node.Actor;
                     actor.SetSplineTransform(Index, value);
                 }
+            }
+
+            private struct Data
+            {
+                public Guid Spline;
+                public int Index;
+                public BezierCurve<Transform>.Keyframe Keyframe;
+            }
+
+            public override StateData State
+            {
+                get
+                {
+                    var actor = (Spline)_node.Actor;
+                    return new StateData
+                    {
+                        TypeName = typeof(SplinePointNode).FullName,
+                        CreateMethodName = nameof(Create),
+                        State = JsonSerializer.Serialize(new Data
+                        {
+                            Spline = actor.ID,
+                            Index = Index,
+                            Keyframe = actor.GetSplineKeyframe(Index),
+                        }),
+                    };
+                }
+                set => throw new NotImplementedException();
+            }
+
+            public override void Delete()
+            {
+                var actor = (Spline)_node.Actor;
+                actor.RemoveSplinePoint(Index);
             }
 
             public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
@@ -72,6 +110,19 @@ namespace FlaxEditor.SceneGraph.Actors
                     DebugDraw.DrawLine(pos, tangentOut, Color.White.AlphaMultiplied(0.6f), 0, false);
                     DebugDraw.DrawWireSphere(new BoundingSphere(tangentOut, 4.0f), Color.White, 0, false);
                 }
+            }
+
+            public static SceneGraphNode Create(StateData state)
+            {
+                var data = JsonSerializer.Deserialize<Data>(state.State);
+                var spline = Object.Find<Spline>(ref data.Spline);
+                spline.InsertSplineLocalPoint(data.Index, data.Keyframe.Time, data.Keyframe.Value, false);
+                spline.SetSplineKeyframe(data.Index, data.Keyframe);
+                var splineNode = (SplineNode)SceneGraphFactory.FindNode(data.Spline);
+                if (splineNode == null)
+                    return null;
+                splineNode.OnUpdate();
+                return splineNode.ActorChildNodes[data.Index];
             }
         }
 
