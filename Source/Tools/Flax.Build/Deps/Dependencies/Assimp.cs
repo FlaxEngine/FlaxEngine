@@ -76,7 +76,9 @@ namespace Flax.Deps.Dependencies
                     RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ASSIMP_TOOLS=OFF -DASSIMP_BUILD_TESTS=OFF");
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
-                    Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.so.4.1.0"), Path.Combine(depsFolder, "libassimp.so.4.1.0"));
+                    var libName = "libassimp.so.4.1.0";
+                    Utilities.FileCopy(Path.Combine(root, "lib", libName), Path.Combine(depsFolder, libName));
+                    Utilities.Run("strip", libName, null, depsFolder, Utilities.RunOptions.None);
                     break;
                 }
                 }
