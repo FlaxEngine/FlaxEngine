@@ -4,7 +4,6 @@
 
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
-#include "LinuxInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -22,6 +21,9 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/Mouse.h"
+#include "Engine/Input/Keyboard.h"
 #include "IncludeX11.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -513,106 +515,98 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 
 		switch (e.type)
 		{
-			case Expose:
-				if (e.xexpose.count > 0)
+		case Expose:
+			if (e.xexpose.count > 0)
+			{
+				draw = false;
+			}
+			break;
+		case FocusIn:
+			// Got focus.
+			has_focus = true;
+			break;
+		case FocusOut:
+			// Lost focus. Reset button and mouse info
+			has_focus = false;
+			data->button_press_index = -1;
+			data->mouse_over_index = -1;
+			break;
+		case MotionNotify:
+			if (has_focus)
+			{
+				// Mouse moved
+				const int previndex = data->mouse_over_index;
+				data->mouse_over_index = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
+				if (data->mouse_over_index == previndex)
 				{
 					draw = false;
 				}
-				break;
-
-			case FocusIn:
-				// Got focus.
-				has_focus = true;
-				break;
-
-			case FocusOut:
-				// Lost focus. Reset button and mouse info
-				has_focus = false;
-				data->button_press_index = -1;
-				data->mouse_over_index = -1;
-				break;
-
-			case MotionNotify:
-				if (has_focus)
-				{
-					// Mouse moved
-					const int previndex = data->mouse_over_index;
-					data->mouse_over_index = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
-					if (data->mouse_over_index == previndex)
-					{
-						draw = false;
-					}
-				}
-				break;
-
-			case ClientMessage:
-				if (e.xclient.message_type == data->wm_protocols &&
-					e.xclient.format == 32 &&
-					e.xclient.data.l[0] == data->wm_delete_message)
-				{
-					close_dialog = true;
-				}
-				break;
-
-			case KeyPress:
-				// Store key press - we make sure in key release that we got both
-				last_key_pressed = X11::XLookupKeysym(&e.xkey, 0);
-				break;
-
-			case KeyRelease:
-			{
-				uint32 mask = 0;
-				const X11::KeySym key = X11::XLookupKeysym(&e.xkey, 0);
-
-				// If this is a key release for something we didn't get the key down for, then bail
-				if (key != last_key_pressed)
-					break;
-
-				if (key == XK_Escape)
-					mask = MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
-				else if ((key == XK_Return) || (key == XK_KP_Enter))
-					mask = MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-
-				if (mask)
-				{
-					// Look for first button with this mask set, and return it if found
-					for (int buttonIndex = 0; buttonIndex < data->numbuttons; buttonIndex++)
-					{
-						const auto button = &data->buttons[buttonIndex];
-						if (button->flags & mask)
-						{
-							data->resultButtonIndex = buttonIndex;
-							close_dialog = true;
-							break;
-						}
-					}
-				}
-				break;
 			}
+			break;
+		case ClientMessage:
+			if (e.xclient.message_type == data->wm_protocols &&
+				e.xclient.format == 32 &&
+				e.xclient.data.l[0] == data->wm_delete_message)
+			{
+				close_dialog = true;
+			}
+			break;
+		case KeyPress:
+			// Store key press - we make sure in key release that we got both
+			last_key_pressed = X11::XLookupKeysym(&e.xkey, 0);
+			break;
+		case KeyRelease:
+		{
+			uint32 mask = 0;
+			const X11::KeySym key = X11::XLookupKeysym(&e.xkey, 0);
 
-			case ButtonPress:
-				data->button_press_index = -1;
-				if (e.xbutton.button == Button1)
-				{
-					// Find index of button they clicked on
-					data->button_press_index = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
-				}
+			// If this is a key release for something we didn't get the key down for, then bail
+			if (key != last_key_pressed)
 				break;
 
-			case ButtonRelease:
-				// If button is released over the same button that was clicked down on, then return it
-				if ((e.xbutton.button == Button1) && (data->button_press_index >= 0))
+			if (key == XK_Escape)
+				mask = MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+			else if ((key == XK_Return) || (key == XK_KP_Enter))
+				mask = MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+
+			if (mask)
+			{
+				// Look for first button with this mask set, and return it if found
+				for (int buttonIndex = 0; buttonIndex < data->numbuttons; buttonIndex++)
 				{
-					const int buttonIndex = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
-					if (data->button_press_index == buttonIndex)
+					const auto button = &data->buttons[buttonIndex];
+					if (button->flags & mask)
 					{
-						const MessageBoxButtonData* button = &data->buttons[buttonIndex];
 						data->resultButtonIndex = buttonIndex;
 						close_dialog = true;
+						break;
 					}
 				}
-				data->button_press_index = -1;
-				break;
+			}
+			break;
+		}
+		case ButtonPress:
+			data->button_press_index = -1;
+			if (e.xbutton.button == Button1)
+			{
+				// Find index of button they clicked on
+				data->button_press_index = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
+			}
+			break;
+		case ButtonRelease:
+			// If button is released over the same button that was clicked down on, then return it
+			if ((e.xbutton.button == Button1) && (data->button_press_index >= 0))
+			{
+				const int buttonIndex = GetHitButtonIndex(data, e.xbutton.x, e.xbutton.y);
+				if (data->button_press_index == buttonIndex)
+				{
+					const MessageBoxButtonData* button = &data->buttons[buttonIndex];
+					data->resultButtonIndex = buttonIndex;
+					close_dialog = true;
+				}
+			}
+			data->button_press_index = -1;
+			break;
 		}
 
 		if (draw)
@@ -642,126 +636,126 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 	Platform::MemoryClear(&buttonsData, sizeof(buttonsData));
 	switch (buttons)
 	{
-		case MessageBoxButtons::AbortRetryIgnore:
-		{
-			data.numbuttons = 3;
+	case MessageBoxButtons::AbortRetryIgnore:
+	{
+		data.numbuttons = 3;
 
-			// Abort
-			auto& abort = buttonsData[0];
-			abort.text = "Abort";
-			abort.result = DialogResult::Abort;
-			abort.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-			abort.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// Abort
+		auto& abort = buttonsData[0];
+		abort.text = "Abort";
+		abort.result = DialogResult::Abort;
+		abort.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		abort.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			// Retry
-			auto& retry = buttonsData[1];
-			retry.text = "Retry";
-			retry.result = DialogResult::Retry;
-			retry.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-			retry.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// Retry
+		auto& retry = buttonsData[1];
+		retry.text = "Retry";
+		retry.result = DialogResult::Retry;
+		retry.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		retry.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			// Ignore
-			auto& ignore = buttonsData[2];
-			ignore.text = "Ignore";
-			ignore.result = DialogResult::Ignore;
-			ignore.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-			ignore.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// Ignore
+		auto& ignore = buttonsData[2];
+		ignore.text = "Ignore";
+		ignore.result = DialogResult::Ignore;
+		ignore.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		ignore.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			break;
-		}
-		case MessageBoxButtons::OK:
-		{
-			data.numbuttons = 1;
+		break;
+	}
+	case MessageBoxButtons::OK:
+	{
+		data.numbuttons = 1;
 
-			// OK
-			auto& ok = buttonsData[0];
-			ok.text = "OK";
-			ok.result = DialogResult::OK;
-			ok.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-			ok.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// OK
+		auto& ok = buttonsData[0];
+		ok.text = "OK";
+		ok.result = DialogResult::OK;
+		ok.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		ok.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			break;
-		}
-		case MessageBoxButtons::OKCancel:
-		{
-			data.numbuttons = 2;
+		break;
+	}
+	case MessageBoxButtons::OKCancel:
+	{
+		data.numbuttons = 2;
 
-			// OK
-			auto& ok = buttonsData[0];
-			ok.text = "OK";
-			ok.result = DialogResult::OK;
-			ok.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		// OK
+		auto& ok = buttonsData[0];
+		ok.text = "OK";
+		ok.result = DialogResult::OK;
+		ok.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
 
-			// Cancel
-			auto& cancel = buttonsData[1];
-			cancel.text = "Cancel";
-			cancel.result = DialogResult::Cancel;
-			cancel.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// Cancel
+		auto& cancel = buttonsData[1];
+		cancel.text = "Cancel";
+		cancel.result = DialogResult::Cancel;
+		cancel.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			break;
-		}
-		case MessageBoxButtons::RetryCancel:
-		{
-			data.numbuttons = 2;
+		break;
+	}
+	case MessageBoxButtons::RetryCancel:
+	{
+		data.numbuttons = 2;
 
-			// Retry
-			auto& retry = buttonsData[0];
-			retry.text = "Retry";
-			retry.result = DialogResult::Retry;
-			retry.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		// Retry
+		auto& retry = buttonsData[0];
+		retry.text = "Retry";
+		retry.result = DialogResult::Retry;
+		retry.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
 
-			// Cancel
-			auto& cancel = buttonsData[1];
-			cancel.text = "Cancel";
-			cancel.result = DialogResult::Cancel;
-			cancel.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// Cancel
+		auto& cancel = buttonsData[1];
+		cancel.text = "Cancel";
+		cancel.result = DialogResult::Cancel;
+		cancel.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			break;
-		}
-		case MessageBoxButtons::YesNo:
-		{
-			data.numbuttons = 2;
+		break;
+	}
+	case MessageBoxButtons::YesNo:
+	{
+		data.numbuttons = 2;
 
-			// Yes
-			auto& yes = buttonsData[0];
-			yes.text = "Yes";
-			yes.result = DialogResult::Yes;
-			yes.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		// Yes
+		auto& yes = buttonsData[0];
+		yes.text = "Yes";
+		yes.result = DialogResult::Yes;
+		yes.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
 
-			// No
-			auto& no = buttonsData[1];
-			no.text = "No";
-			no.result = DialogResult::No;
-			no.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// No
+		auto& no = buttonsData[1];
+		no.text = "No";
+		no.result = DialogResult::No;
+		no.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			break;
-		}
-		case MessageBoxButtons::YesNoCancel:
-		{
-			data.numbuttons = 3;
+		break;
+	}
+	case MessageBoxButtons::YesNoCancel:
+	{
+		data.numbuttons = 3;
 
-			// Yes
-			auto& yes = buttonsData[0];
-			yes.text = "Yes";
-			yes.result = DialogResult::Yes;
-			yes.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+		// Yes
+		auto& yes = buttonsData[0];
+		yes.text = "Yes";
+		yes.result = DialogResult::Yes;
+		yes.flags |= MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
 
-			// No
-			auto& no = buttonsData[1];
-			no.text = "No";
-			no.result = DialogResult::No;
-			no.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+		// No
+		auto& no = buttonsData[1];
+		no.text = "No";
+		no.result = DialogResult::No;
+		no.flags |= MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 
-			// Cancel
-			auto& cancel = buttonsData[2];
-			cancel.text = "Cancel";
-			cancel.result = DialogResult::Cancel;
+		// Cancel
+		auto& cancel = buttonsData[2];
+		cancel.text = "Cancel";
+		cancel.result = DialogResult::Cancel;
 
-			break;
-		}
-		default:
-			LINUX_DIALOG_PRINT("Invalid message box buttons setup.");
-			return DialogResult::None;
+		break;
+	}
+	default:
+		LINUX_DIALOG_PRINT("Invalid message box buttons setup.");
+		return DialogResult::None;
 	}
 	// TODO: add support for icon
 
@@ -945,7 +939,7 @@ const char* ButtonCodeToKeyName(KeyboardKeys code)
 	case KeyboardKeys::NumpadAdd: return "KPAD";
 	case KeyboardKeys::NumpadDecimal: return "KPDL";
 	//case KeyboardKeys::: return "KPEN"; // Numpad Enter
-//case KeyboardKeys::: return "KPEQ"; // Numpad Equals
+	//case KeyboardKeys::: return "KPEQ"; // Numpad Equals
 
 		// Special keys
 	case KeyboardKeys::Scroll: return "SCLK";
@@ -1143,6 +1137,40 @@ err:
     if (rc < 0)
         errno = -rc;
     return rc;
+}
+
+class LinuxKeyboard : public Keyboard
+{
+public:
+	explicit LinuxKeyboard()
+		: Keyboard()
+	{
+	}
+};
+
+class LinuxMouse : public Mouse
+{
+public:
+	explicit LinuxMouse()
+		: Mouse()
+	{
+	}
+
+public:
+
+    // [Mouse]
+    void SetMousePosition(const Vector2& newPosition) final override
+    {
+        LinuxPlatform::SetMousePosition(newPosition);
+
+        OnMouseMoved(newPosition);
+    }
+};
+
+namespace Impl
+{
+	LinuxKeyboard Keyboard;
+	LinuxMouse Mouse;
 }
 
 void* LinuxPlatform::GetXDisplay()
@@ -1623,7 +1651,8 @@ bool LinuxPlatform::Init()
 		}
 	}
 
-	LinuxInput::Init();
+    Input::Mouse = &Impl::Mouse;
+    Input::Keyboard = &Impl::Keyboard;
 
     return false;
 }
