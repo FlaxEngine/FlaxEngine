@@ -333,6 +333,6 @@ struct TIsPODType<GeometryDrawStateData>
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
 	if (drawState.PrevFrame != frame) \
 	{ \
-		drawState.PrevWorld = _world; \
+		drawState.PrevWorld = worldMatrix; \
 		drawState.PrevFrame = frame; \
 	}
