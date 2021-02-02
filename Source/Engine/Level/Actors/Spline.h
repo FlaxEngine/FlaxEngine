@@ -349,6 +349,11 @@ public:
 public:
 
     /// <summary>
+    /// Called when spline gets updated (eg. after curve modification).
+    /// </summary>
+    API_EVENT() Action SplineUpdated;
+
+    /// <summary>
     /// Updates the spline after it was modified. Recreates the collision and/or any cached state that depends on the spline type.
     /// </summary>
     API_FUNCTION() virtual void UpdateSpline();

@@ -416,6 +416,8 @@ void Spline::UpdateSpline()
         last.TangentIn = first.TangentIn;
         last.TangentOut = first.TangentOut;
     }
+
+    SplineUpdated();
 }
 
 void Spline::GetKeyframes(MonoArray* data)
