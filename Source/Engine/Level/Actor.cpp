@@ -948,11 +948,19 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     const auto parent = Scripting::FindObject<Actor>(parentId);
     if (_parent != parent)
     {
-        if (_parent)
-            _parent->Children.RemoveKeepOrder(this);
-        _parent = parent;
-        if (_parent)
-            _parent->Children.Add(this);
+        if (IsDuringPlay())
+        {
+            SetParent(parent, false, false);
+        }
+        else
+        {
+            if (_parent)
+                _parent->Children.RemoveKeepOrder(this);
+            _parent = parent;
+            if (_parent)
+                _parent->Children.Add(this);
+            OnParentChanged();
+        }
     }
     else if (!parent && parentId.IsValid())
     {
@@ -1042,6 +1050,10 @@ void Actor::OnDisable()
         if (script->GetEnabled() && script->_wasEnableCalled)
             script->Disable();
     }
+}
+
+void Actor::OnParentChanged()
+{
 }
 
 void Actor::OnTransformChanged()

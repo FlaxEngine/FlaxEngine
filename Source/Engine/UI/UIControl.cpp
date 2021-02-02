@@ -156,6 +156,9 @@ void UIControl::OnParentChanged()
     // Base
     Actor::OnParentChanged();
 
+    if (!IsDuringPlay())
+        return;
+
     UICONTROL_INVOKE(ParentChanged);
 }
 

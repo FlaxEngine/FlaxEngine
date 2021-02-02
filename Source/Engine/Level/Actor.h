@@ -918,9 +918,7 @@ public:
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    virtual void OnParentChanged()
-    {
-    }
+    virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.
