@@ -211,7 +211,7 @@ public:
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport. Use null to skip it.</param>
-    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() virtual void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera

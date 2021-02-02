@@ -260,6 +260,11 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
     CollectDrawCalls(renderContext);
 }
 
+void SceneRenderTask::OnPreRender(GPUContext* context, RenderContext& renderContext)
+{
+    PreRender(context, renderContext);
+}
+
 void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderContext)
 {
     PostRender(context, renderContext);

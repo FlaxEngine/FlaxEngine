@@ -277,6 +277,7 @@ namespace FlaxEditor.Windows.Assets
             private readonly StagingTexture[] _stagingTextures = new StagingTexture[FrameLatency + 1];
             private RenderProgress _progress;
             private RenderEditorState _editorState;
+            private GameWindow _gameWindow;
 
             public RenderOptions Options => _options;
 
@@ -373,6 +374,9 @@ namespace FlaxEditor.Windows.Assets
                 gameWin.Viewport.Task.PostRender += OnPostRender;
                 if (!gameWin.Visible)
                     gameWin.Show();
+                else if (!gameWin.IsFocused)
+                    gameWin.Focus();
+                _gameWindow = gameWin;
                 _warmUpTimeLeft = _options.WarmUpTime;
                 _animationFrame = 0;
                 var stagingTextureDesc = GPUTextureDescription.New2D(resolution.X, resolution.Y, gameWin.Viewport.Task.Output.Format, GPUTextureFlags.None);
@@ -385,6 +389,12 @@ namespace FlaxEditor.Windows.Assets
                     _stagingTextures[i].TaskFrame = -1;
                 }
                 _player.Play();
+                if (!_player.IsPlaying)
+                {
+                    Editor.LogError("Scene Animation Player failed to start playing.");
+                    CancelRendering();
+                    return;
+                }
                 if (_warmUpTimeLeft > 0.0f)
                 {
                     // Start warmup time
@@ -438,8 +448,11 @@ namespace FlaxEditor.Windows.Assets
                     _stagingTextures[i].Texture.ReleaseGPU();
                     Object.Destroy(ref _stagingTextures[i].Texture);
                 }
-                _progress.End();
-                editor.ProgressReporting.UnregisterHandler(_progress);
+                if (_progress != null)
+                {
+                    _progress.End();
+                    editor.ProgressReporting.UnregisterHandler(_progress);
+                }
                 if (_editorState != null)
                 {
                     editor.StateMachine.GoToState(editor.StateMachine.EditingSceneState);
@@ -452,6 +465,7 @@ namespace FlaxEditor.Windows.Assets
                 gameWin.Viewport.BackgroundColor = Color.Transparent;
                 gameWin.Viewport.KeepAspectRatio = false;
                 gameWin.Viewport.Task.PostRender -= OnPostRender;
+                _gameWindow = null;
                 _isRendering = false;
                 _presenter.Panel.Enabled = true;
                 _presenter.BuildLayoutOnUpdate();
@@ -467,6 +481,11 @@ namespace FlaxEditor.Windows.Assets
                     {
                         // Render first frame
                         _player.Play();
+                        if (!_player.IsPlaying)
+                        {
+                            Editor.LogError("Scene Animation Player failed to start playing.");
+                            CancelRendering();
+                        }
                         _warmUpTimeLeft = -1;
                         _state = States.Render;
                     }
@@ -503,8 +522,7 @@ namespace FlaxEditor.Windows.Assets
 
             private void OnPostRender(GPUContext context, RenderContext renderContext)
             {
-                var gameWin = Editor.Instance.Windows.GameWin;
-                var task = gameWin.Viewport.Task;
+                var task = _gameWindow.Viewport.Task;
                 var taskFrame = task.FrameCount;
 
                 // Check all staging textures for finished GPU to CPU transfers
@@ -540,7 +558,7 @@ namespace FlaxEditor.Windows.Assets
                     ref var stagingTexture = ref _stagingTextures[textureIdx];
                     stagingTexture.AnimationFrame = _animationFrame;
                     stagingTexture.TaskFrame = taskFrame;
-                    _options.VideoOutputFormat.RenderFrame(context, ref stagingTexture, _options, gameWin.Viewport.Task.Output);
+                    _options.VideoOutputFormat.RenderFrame(context, ref stagingTexture, _options, _gameWindow.Viewport.Task.Output);
 
                     // Now wait for the next animation frame to be updated
                     _state = States.Update;

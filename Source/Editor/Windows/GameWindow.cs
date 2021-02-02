@@ -387,6 +387,12 @@ namespace FlaxEditor.Windows
             }
             }
 
+            // Prevent closing the game window tab during a play session
+            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this, key))
+            {
+                return true;
+            }
+
             return base.OnKeyDown(key);
         }
 

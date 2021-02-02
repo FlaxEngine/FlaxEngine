@@ -173,6 +173,11 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         return nullptr;
     }
     auto root = (Actor*)sceneObjects.Value->At(0);
+    if (!root)
+    {
+        LOG(Warning, "Failed to load prefab root object.");
+        return nullptr;
+    }
 
     // Prepare parent linkage for prefab root actor
     root->_parent = parent;

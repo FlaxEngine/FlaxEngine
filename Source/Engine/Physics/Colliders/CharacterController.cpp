@@ -29,6 +29,7 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _nonWalkableMode(CharacterController::NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
+    static_assert(sizeof(_filterData) == sizeof(PxFilterData), "Invalid filter data size.");
 }
 
 void CharacterController::SetRadius(const float value)
@@ -112,7 +113,7 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
     {
         const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
         PxControllerFilters filters;
-        filters.mFilterData = &_filterData;
+        filters.mFilterData = (PxFilterData*)&_filterData;
         filters.mFilterCallback = Physics::GetCharacterQueryFilterCallback();
         filters.mFilterFlags = PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER;
 
@@ -281,7 +282,7 @@ void CharacterController::UpdateLayerBits()
     Collider::UpdateLayerBits();
 
     // Cache filter data
-    _filterData = _shape->getSimulationFilterData();
+    *(PxFilterData*)&_filterData = _shape->getSimulationFilterData();
 }
 
 void CharacterController::BeginPlay(SceneBeginData* data)

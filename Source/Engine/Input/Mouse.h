@@ -127,11 +127,7 @@ public:
     /// Called when mouse cursor gets moved by the application. Invalidates the previous cached mouse position to prevent mouse jitter when locking the cursor programmatically.
     /// </summary>
     /// <param name="newPosition">The new mouse position.</param>
-    void OnMouseMoved(const Vector2& newPosition)
-    {
-        _prevState.MousePosition = newPosition;
-        _state.MousePosition = newPosition;
-    }
+    void OnMouseMoved(const Vector2& newPosition);
 
     /// <summary>
     /// Called when mouse button goes down.
@@ -139,14 +135,7 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseDown(const Vector2& position, const MouseButton button, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseDown;
-        e.Target = target;
-        e.MouseData.Button = button;
-        e.MouseData.Position = position;
-    }
+    void OnMouseDown(const Vector2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse button goes up.
@@ -154,14 +143,7 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseUp(const Vector2& position, const MouseButton button, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseUp;
-        e.Target = target;
-        e.MouseData.Button = button;
-        e.MouseData.Position = position;
-    }
+    void OnMouseUp(const Vector2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse double clicks.
@@ -169,38 +151,20 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseDoubleClick(const Vector2& position, const MouseButton button, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseDoubleClick;
-        e.Target = target;
-        e.MouseData.Button = button;
-        e.MouseData.Position = position;
-    }
+    void OnMouseDoubleClick(const Vector2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse moves.
     /// </summary>
     /// <param name="position">The mouse position.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseMove(const Vector2& position, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseMove;
-        e.Target = target;
-        e.MouseData.Position = position;
-    }
+    void OnMouseMove(const Vector2& position, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse leaves the input source area.
     /// </summary>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseLeave(Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseLeave;
-        e.Target = target;
-    }
+    void OnMouseLeave(Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse wheel moves.
@@ -208,76 +172,11 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="delta">The normalized delta (range [-1;1]).</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseWheel(const Vector2& position, const float delta, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::MouseWheel;
-        e.Target = target;
-        e.MouseWheelData.WheelDelta = delta;
-        e.MouseWheelData.Position = position;
-    }
+    void OnMouseWheel(const Vector2& position, float delta, Window* target = nullptr);
 
 public:
 
     // [InputDevice]
-    void ResetState() override
-    {
-        InputDevice::ResetState();
-
-        _prevState.Clear();
-        _state.Clear();
-    }
-
-    bool Update(EventQueue& queue) final override
-    {
-        // Move the current state to the previous
-        Platform::MemoryCopy(&_prevState, &_state, sizeof(State));
-
-        // Gather new events
-        if (UpdateState())
-            return true;
-
-        // Handle events
-        _state.MouseWheelDelta = 0;
-        for (int32 i = 0; i < _queue.Count(); i++)
-        {
-            const Event& e = _queue[i];
-            switch (e.Type)
-            {
-            case EventType::MouseDown:
-            {
-                _state.MouseButtons[static_cast<int32>(e.MouseData.Button)] = true;
-                break;
-            }
-            case EventType::MouseUp:
-            {
-                _state.MouseButtons[static_cast<int32>(e.MouseData.Button)] = false;
-                break;
-            }
-            case EventType::MouseDoubleClick:
-            {
-                break;
-            }
-            case EventType::MouseWheel:
-            {
-                _state.MouseWheelDelta += e.MouseWheelData.WheelDelta;
-                break;
-            }
-            case EventType::MouseMove:
-            {
-                _state.MousePosition = e.MouseData.Position;
-                break;
-            }
-            case EventType::MouseLeave:
-            {
-                break;
-            }
-            }
-        }
-
-        // Send events further
-        queue.Add(_queue);
-        _queue.Clear();
-        return false;
-    }
+    void ResetState() override;
+    bool Update(EventQueue& queue) final override;
 };

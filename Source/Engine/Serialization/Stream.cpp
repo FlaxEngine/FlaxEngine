@@ -228,6 +228,8 @@ void ReadStream::ReadVariantType(VariantType* data)
     if (typeNameLength == MAX_int32)
     {
         ReadInt32(&typeNameLength);
+        if (typeNameLength == 0)
+            return;
         data->TypeName = static_cast<char*>(Allocator::Allocate(typeNameLength + 1));
         char* ptr = data->TypeName;
         Read(ptr, typeNameLength);
@@ -602,12 +604,20 @@ void WriteStream::WriteVariant(const Variant& data)
         break;
     case VariantType::Structure:
     case VariantType::Blob:
-    case VariantType::BoundingBox:
-    case VariantType::Transform:
-    case VariantType::Ray:
-    case VariantType::Matrix:
         WriteInt32(data.AsBlob.Length);
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
+        break;
+    case VariantType::BoundingBox:
+        WriteBytes(data.AsBlob.Data, sizeof(BoundingBox));
+        break;
+    case VariantType::Transform:
+        WriteBytes(data.AsBlob.Data, sizeof(Transform));
+        break;
+    case VariantType::Ray:
+        WriteBytes(data.AsBlob.Data, sizeof(Ray));
+        break;
+    case VariantType::Matrix:
+        WriteBytes(data.AsBlob.Data, sizeof(Matrix));
         break;
     case VariantType::Asset:
         id = data.AsAsset ? data.AsAsset->GetID() : Guid::Empty;

@@ -850,7 +850,11 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             }
 
             // Keep root unlinked
-            root->_parent = nullptr;
+            if (root->_parent)
+            {
+                root->_parent->Children.Remove(root);
+                root->_parent = nullptr;
+            }
         }
 
         // Link objects hierarchy

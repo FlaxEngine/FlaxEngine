@@ -138,9 +138,7 @@ namespace FlaxEditor.Viewport
 
         private bool _isControllingMouse;
         private int _deltaFilteringStep;
-        private Vector2 _startPosMiddle;
-        private Vector2 _startPosRight;
-        private Vector2 _startPosLeft;
+        private Vector2 _startPos;
         private Vector2 _mouseDeltaRightLast;
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
 
@@ -850,7 +848,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected virtual void OnLeftMouseButtonDown()
         {
-            _startPosLeft = _viewMousePos;
+            _startPos = _viewMousePos;
         }
 
         /// <summary>
@@ -865,7 +863,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected virtual void OnRightMouseButtonDown()
         {
-            _startPosRight = _viewMousePos;
+            _startPos = _viewMousePos;
         }
 
         /// <summary>
@@ -880,7 +878,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected virtual void OnMiddleMouseButtonDown()
         {
-            _startPosMiddle = _viewMousePos;
+            _startPos = _viewMousePos;
         }
 
         /// <summary>
@@ -1051,7 +1049,13 @@ namespace FlaxEditor.Viewport
                     moveDelta *= 0.3f;
 
                 // Calculate smooth mouse delta not dependant on viewport size
-                Vector2 offset = _viewMousePos - (_input.IsMouseMiddleDown ? _startPosMiddle : _startPosRight);
+
+                Vector2 offset = _viewMousePos - _startPos;
+                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown)
+                {
+                    offset = Vector2.Zero;
+                }
+
                 offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                 offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
                 _mouseDeltaRight = offset / size;
@@ -1093,7 +1097,7 @@ namespace FlaxEditor.Viewport
                 // Move mouse back to the root position
                 if (centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown))
                 {
-                    Vector2 center = PointToWindow(_input.IsMouseMiddleDown ? _startPosMiddle : _startPosRight);
+                    Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
                 }
             }
@@ -1139,11 +1143,11 @@ namespace FlaxEditor.Viewport
             if (_input.IsMouseLeftDown)
             {
                 // Calculate smooth mouse delta not dependant on viewport size
-                Vector2 offset = _viewMousePos - _startPosLeft;
+                Vector2 offset = _viewMousePos - _startPos;
                 offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                 offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
                 _mouseDeltaLeft = offset / size;
-                _startPosLeft = _viewMousePos;
+                _startPos = _viewMousePos;
             }
             else
             {

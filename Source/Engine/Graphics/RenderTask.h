@@ -314,6 +314,18 @@ public:
     virtual void OnCollectDrawCalls(RenderContext& renderContext);
 
     /// <summary>
+    /// The action called after scene rendering. Can be used to perform custom pre-rendering or to modify the render view.
+    /// </summary>
+    API_EVENT() Delegate<GPUContext*, RenderContext&> PreRender;
+
+    /// <summary>
+    /// Called before scene rendering. Can be used to perform custom pre-rendering or to modify the render view.
+    /// </summary>
+    /// <param name="context">The GPU commands context.</param>
+    /// <param name="renderContext">The rendering context.</param>
+    virtual void OnPreRender(GPUContext* context, RenderContext& renderContext);
+
+    /// <summary>
     /// The action called after scene rendering. Can be used to render additional visual elements to the output.
     /// </summary>
     API_EVENT() Delegate<GPUContext*, RenderContext&> PostRender;
