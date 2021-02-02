@@ -691,6 +691,28 @@ namespace Flax.Build.Bindings
             else
                 propertyInfo.Setter = functionInfo;
 
+            if (propertyInfo.Getter != null && propertyInfo.Setter != null)
+            {
+                // Check if getter and setter types are matching (const and ref specifiers are skipped)
+                var getterType = propertyInfo.Getter.ReturnType;
+                var setterType = propertyInfo.Setter.Parameters[0].Type;
+                if (!string.Equals(getterType.Type, setterType.Type) ||
+                    getterType.IsPtr != setterType.IsPtr ||
+                    getterType.IsArray != setterType.IsArray ||
+                    getterType.IsBitField != setterType.IsBitField ||
+                    getterType.ArraySize != setterType.ArraySize ||
+                    getterType.BitSize != setterType.BitSize ||
+                    !TypeInfo.Equals(getterType.GenericArgs, setterType.GenericArgs))
+                {
+                    // Skip compatible types
+                    if (getterType.Type == "String" && setterType.Type == "StringView")
+                        return propertyInfo;
+                    if (getterType.Type == "Array" && setterType.Type == "Span" && getterType.GenericArgs?.Count == 1 && setterType.GenericArgs?.Count == 1 && getterType.GenericArgs[0].Equals(setterType.GenericArgs[0]))
+                        return propertyInfo;
+                    throw new Exception($"Property {propertyName} in class {classInfo.Name} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
+                }
+            }
+
             return propertyInfo;
         }
 
