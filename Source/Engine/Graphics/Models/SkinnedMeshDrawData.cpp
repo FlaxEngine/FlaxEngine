@@ -4,53 +4,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Animations/Config.h"
 #include "Engine/Core/Math/Matrix.h"
-
-struct SkinMatrix3x4
-{
-    float M[3][4];
-
-    FORCE_INLINE void SetMatrix(const Matrix& mat)
-    {
-        const float* src = mat.Raw;
-        float* dest = &(M[0][0]);
-
-        dest[0] = src[0]; // [0][0]
-        dest[1] = src[1]; // [0][1]
-        dest[2] = src[2]; // [0][2]
-        dest[3] = src[3]; // [0][3]
-
-        dest[4] = src[4]; // [1][0]
-        dest[5] = src[5]; // [1][1]
-        dest[6] = src[6]; // [1][2]
-        dest[7] = src[7]; // [1][3]
-
-        dest[8] = src[8]; // [2][0]
-        dest[9] = src[9]; // [2][1]
-        dest[10] = src[10]; // [2][2]
-        dest[11] = src[11]; // [2][3]
-    }
-
-    FORCE_INLINE void SetMatrixTranspose(const Matrix& mat)
-    {
-        const float* src = mat.Raw;
-        float* dest = &(M[0][0]);
-
-        dest[0] = src[0]; // [0][0]
-        dest[1] = src[4]; // [1][0]
-        dest[2] = src[8]; // [2][0]
-        dest[3] = src[12]; // [3][0]
-
-        dest[4] = src[1]; // [0][1]
-        dest[5] = src[5]; // [1][1]
-        dest[6] = src[9]; // [2][1]
-        dest[7] = src[13]; // [3][1]
-
-        dest[8] = src[2]; // [0][2]
-        dest[9] = src[6]; // [1][2]
-        dest[10] = src[10]; // [2][2]
-        dest[11] = src[14]; // [3][2]
-    }
-};
+#include "Engine/Core/Math/Matrix3x4.h"
 
 SkinnedMeshDrawData::~SkinnedMeshDrawData()
 {
@@ -99,7 +53,6 @@ void SkinnedMeshDrawData::SetData(const Matrix* bones, bool dropHistory)
                 LOG(Fatal, "Failed to initialize the skinned mesh bones buffer");
             }
         }
-
         Swap(PrevBoneMatrices, BoneMatrices);
     }
     else
@@ -109,15 +62,15 @@ void SkinnedMeshDrawData::SetData(const Matrix* bones, bool dropHistory)
 
     // Copy bones to the buffer
     const int32 count = BonesCount;
-    const int32 PreFetchStride = 2;
+    const int32 preFetchStride = 2;
     const Matrix* input = bones;
-    const auto output = (SkinMatrix3x4*)Data.Get();
-    ASSERT(Data.Count() == count * sizeof(SkinMatrix3x4));
+    const auto output = (Matrix3x4*)Data.Get();
+    ASSERT(Data.Count() == count * sizeof(Matrix3x4));
     for (int32 i = 0; i < count; i++)
     {
-        SkinMatrix3x4* bone = output + i;
-        Platform::Prefetch(bone + PreFetchStride);
-        Platform::Prefetch((byte*)(bone + PreFetchStride) + PLATFORM_CACHE_LINE_SIZE);
+        Matrix3x4* bone = output + i;
+        Platform::Prefetch(bone + preFetchStride);
+        Platform::Prefetch((byte*)(bone + preFetchStride) + PLATFORM_CACHE_LINE_SIZE);
         bone->SetMatrixTranspose(input[i]);
     }
 
