@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
@@ -112,6 +113,24 @@ namespace FlaxEditor.Windows
             }
 
             // Custom options
+
+            bool showCustomNodeOptions = Editor.SceneEditing.Selection.Count == 1;
+            if (!showCustomNodeOptions && Editor.SceneEditing.Selection.Count != 0)
+            {
+                showCustomNodeOptions = true;
+                for (int i = 1; i < Editor.SceneEditing.Selection.Count; i++)
+                {
+                    if (Editor.SceneEditing.Selection[0].GetType() != Editor.SceneEditing.Selection[i].GetType())
+                    {
+                        showCustomNodeOptions = false;
+                        break;
+                    }
+                }
+            }
+            if (showCustomNodeOptions)
+            {
+                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu);
+            }
 
             ContextMenuShow?.Invoke(contextMenu);
 

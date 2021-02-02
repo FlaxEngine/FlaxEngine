@@ -318,6 +318,13 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Called when scene tree window wants to show the context menu. Allows to add custom options.
+        /// </summary>
+        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu contextMenu)
+        {
+        }
+
+        /// <summary>
         /// The scene graph node state container. Used for Editor undo actions (eg. restoring deleted node).
         /// </summary>
         public struct StateData
