@@ -1679,7 +1679,18 @@ public:
     //@{
 
     const Ch* GetString() const { RAPIDJSON_ASSERT(IsString()); return (data_.f.flags & kInlineStrFlag) ? data_.ss.str : GetStringPointer(); }
-	::String GetText() const { RAPIDJSON_ASSERT(IsString()); return ::String(GetString(), GetStringLength()); }
+	::String GetText() const
+    {
+        ::String result;
+        if (IsString())
+        {
+            if (data_.f.flags & kInlineStrFlag)
+                result.Set(data_.ss.str, data_.ss.GetLength());
+            else
+                result.Set(GetStringPointer(), data_.s.length);
+        }
+        return result;
+    }
 
     //! Get the length of string.
     /*! Since rapidjson permits "\\u0000" in the json string, strlen(v.GetString()) may not equal to v.GetStringLength().
