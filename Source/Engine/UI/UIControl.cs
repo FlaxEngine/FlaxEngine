@@ -13,6 +13,7 @@ namespace FlaxEngine
     partial class UIControl
     {
         private Control _control;
+        private static bool _blockEvents; // Used to ignore internal events from C++ UIControl impl when performing state sync with C# UI
 
         /// <summary>
         /// Gets or sets the GUI control used by this actor.
@@ -44,6 +45,7 @@ namespace FlaxEngine
                 if (_control != null)
                 {
                     // Setup control
+                    _blockEvents = true;
                     var containerControl = _control as ContainerControl;
                     if (containerControl != null)
                         containerControl.UnlockChildrenRecursive();
@@ -68,6 +70,7 @@ namespace FlaxEngine
                     }
 
                     // Refresh
+                    _blockEvents = false;
                     if (prevControl == null && _control.Parent != null)
                         _control.Parent.PerformLayout();
                     else
@@ -178,7 +181,9 @@ namespace FlaxEngine
 
         private void OnControlLocationChanged(Control control)
         {
+            _blockEvents = true;
             LocalPosition = new Vector3(control.Location, LocalPosition.Z);
+            _blockEvents = false;
         }
 
         /// <summary>
@@ -293,7 +298,7 @@ namespace FlaxEngine
 
         internal void ParentChanged()
         {
-            if (_control != null)
+            if (_control != null && !_blockEvents)
             {
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
@@ -302,13 +307,15 @@ namespace FlaxEngine
 
         internal void TransformChanged()
         {
-            if (_control != null)
+            if (_control != null && !_blockEvents)
+            {
                 _control.Location = new Vector2(LocalPosition);
+            }
         }
 
         internal void ActiveInTreeChanged()
         {
-            if (_control != null)
+            if (_control != null && !_blockEvents)
             {
                 // Link or unlink control (won't modify Enable/Visible state)
                 _control.Parent = GetParent();
@@ -318,8 +325,10 @@ namespace FlaxEngine
 
         internal void OrderInParentChanged()
         {
-            if (_control != null)
+            if (_control != null && !_blockEvents)
+            {
                 _control.IndexInParent = OrderInParent;
+            }
         }
 
         internal void BeginPlay()
