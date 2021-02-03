@@ -435,7 +435,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Blackbody
     case 35:
     {
-        // Based on unity's implementation by using data gathered by Mitchell Charity.
+        // Reference: Mitchell Charity, http://www.vendian.org/mncharity/dir3/blackbody/
 
         const auto temperature = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
 
@@ -451,9 +451,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Final color
         auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2})"), x.Value, y.Value, z.Value), node);
         color = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp({0}, 0.0f, 255.0f) / 255.0f"), color.Value), node);
-        color = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
-
-        value = color;
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
         break;
     }
     default:
