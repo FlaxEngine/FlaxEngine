@@ -10,6 +10,7 @@
 #include "Engine/Renderer/DepthOfFieldPass.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/ShadowsPass.h"
+#include "Engine/Renderer/RenderList.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -54,8 +55,9 @@ DrawPass ForwardMaterialShader::GetDrawModes() const
     return _drawModes;
 }
 
-bool ForwardMaterialShader::CanUseInstancing() const
+bool ForwardMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
+    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, SurfaceDrawCallHandler::WriteDrawCall, };
     return true;
 }
 
@@ -82,12 +84,12 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
     // Check if is using mesh skinning
-    const bool useSkinning = drawCall.Skinning != nullptr;
+    const bool useSkinning = drawCall.Surface.Skinning != nullptr;
     if (useSkinning)
     {
         // Bind skinning buffer
-        ASSERT(drawCall.Skinning->IsReady());
-        context->BindSR(0, drawCall.Skinning->BoneMatrices->View());
+        ASSERT(drawCall.Surface.Skinning->IsReady());
+        context->BindSR(0, drawCall.Surface.Skinning->BoneMatrices->View());
     }
 
     // Setup material constants data
@@ -97,7 +99,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
-        Matrix::Transpose(drawCall.PrevWorld, materialData->PrevWorldMatrix);
+        Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
         Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
 
         materialData->ViewPos = view.Position;
@@ -118,9 +120,9 @@ void ForwardMaterialShader::Bind(BindParameters& params)
 
         materialData->WorldInvScale = worldInvScale;
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
-        materialData->LODDitherFactor = drawCall.LODDitherFactor;
+        materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
-        materialData->GeometrySize = drawCall.GeometrySize;
+        materialData->GeometrySize = drawCall.Surface.GeometrySize;
     }
 
     // Setup lighting constants data
@@ -249,7 +251,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.IsNegativeScale())
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
     {
         // Invert culling when scale is negative
         if (cullMode == CullMode::Normal)

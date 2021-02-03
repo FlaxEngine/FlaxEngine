@@ -5,6 +5,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -48,8 +49,9 @@ bool DeferredMaterialShader::CanUseLightmap() const
     return true;
 }
 
-bool DeferredMaterialShader::CanUseInstancing() const
+bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
+    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, SurfaceDrawCallHandler::WriteDrawCall, };
     return true;
 }
 
@@ -79,7 +81,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
-        Matrix::Transpose(drawCall.PrevWorld, materialData->PrevWorldMatrix);
+        Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
         Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
 
         materialData->ViewPos = view.Position;
@@ -100,40 +102,40 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
         materialData->WorldInvScale = worldInvScale;
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
-        materialData->LODDitherFactor = drawCall.LODDitherFactor;
+        materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->TemporalAAJitter = view.TemporalAAJitter;
-        materialData->GeometrySize = drawCall.GeometrySize;
+        materialData->GeometrySize = drawCall.Surface.GeometrySize;
     }
     const bool useLightmap = view.Flags & ViewFlags::GI
 #if USE_EDITOR
             && EnableLightmapsUsage
 #endif
-            && drawCall.Lightmap != nullptr;
+            && drawCall.Surface.Lightmap != nullptr;
     if (useLightmap)
     {
         // Bind lightmap textures
         GPUTexture *lightmap0, *lightmap1, *lightmap2;
-        drawCall.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
+        drawCall.Surface.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
         context->BindSR(0, lightmap0);
         context->BindSR(1, lightmap1);
         context->BindSR(2, lightmap2);
 
         // Set lightmap data
-        materialData->LightmapArea = drawCall.LightmapUVsArea;
+        materialData->LightmapArea = drawCall.Surface.LightmapUVsArea;
     }
 
     // Check if is using mesh skinning
-    const bool useSkinning = drawCall.Skinning != nullptr;
+    const bool useSkinning = drawCall.Surface.Skinning != nullptr;
     bool perBoneMotionBlur = false;
     if (useSkinning)
     {
         // Bind skinning buffer
-        ASSERT(drawCall.Skinning->IsReady());
-        context->BindSR(0, drawCall.Skinning->BoneMatrices->View());
-        if (drawCall.Skinning->PrevBoneMatrices && drawCall.Skinning->PrevBoneMatrices->IsAllocated())
+        ASSERT(drawCall.Surface.Skinning->IsReady());
+        context->BindSR(0, drawCall.Surface.Skinning->BoneMatrices->View());
+        if (drawCall.Surface.Skinning->PrevBoneMatrices && drawCall.Surface.Skinning->PrevBoneMatrices->IsAllocated())
         {
-            context->BindSR(1, drawCall.Skinning->PrevBoneMatrices->View());
+            context->BindSR(1, drawCall.Surface.Skinning->PrevBoneMatrices->View());
             perBoneMotionBlur = true;
         }
     }
@@ -152,7 +154,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.IsNegativeScale())
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
     {
         // Invert culling when scale is negative
         if (cullMode == CullMode::Normal)

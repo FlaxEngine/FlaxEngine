@@ -423,7 +423,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     {
         const int32 moduleIndex = renderModulesIndices[index];
         auto module = emitter->Graph.RenderModules[moduleIndex];
-        drawCall.Module = module;
+        drawCall.Particle.Module = module;
 
         switch (module->TypeID)
         {
@@ -486,7 +486,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             int32 count = buffer->CPU.Count;
 
             // Setup ribbon data
-            auto& ribbon = drawCall.Ribbon;
+            auto& ribbon = drawCall.Particle.Ribbon;
             ribbon.UVTilingDistance = uvTilingDistance;
             ribbon.SegmentCount = ribbonModulesSegmentCount[ribbonModuleIndex];
             ribbon.UVScaleX = uvScale.X;
@@ -788,7 +788,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     {
         int32 moduleIndex = renderModulesIndices[index];
         auto module = emitter->Graph.RenderModules[moduleIndex];
-        drawCall.Module = module;
+        drawCall.Particle.Module = module;
 
         switch (module->TypeID)
         {
@@ -875,9 +875,7 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
 
     // Setup a draw call common data
     DrawCall drawCall;
-    drawCall.LightmapUVsArea = Rectangle::Empty;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
-    drawCall.LODDitherFactor = 1.0f;
     drawCall.ObjectPosition = world.GetTranslation();
 
     // Draw all emitters
@@ -890,9 +888,8 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
         auto emitter = buffer->Emitter;
 
         drawCall.World = emitter->SimulationSpace == ParticlesSimulationSpace::World ? Matrix::Identity : world;
-        drawCall.PrevWorld = drawCall.World;
         drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
-        drawCall.Particles = buffer;
+        drawCall.Particle.Particles = buffer;
 
         // Check if need to render any module
         RenderModulesIndices renderModulesIndices;

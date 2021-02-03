@@ -393,15 +393,15 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = world;
-    drawCall.PrevWorld = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.GeometrySize = _box.GetSize();
-    drawCall.Lightmap = nullptr;
-    drawCall.LightmapUVsArea = Rectangle::Empty;
-    drawCall.Skinning = nullptr;
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.Surface.Lightmap = nullptr;
+    drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
+    drawCall.Surface.Skinning = nullptr;
+    drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = 0.0f;
-    drawCall.LODDitherFactor = 0.0f;
     renderContext.List->AddDrawCall(DrawPass::Default, flags, drawCall, receiveDecals);
 }
 
@@ -456,15 +456,15 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = *info.World;
-    drawCall.PrevWorld = info.DrawState->PrevWorld;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.GeometrySize = _box.GetSize();
-    drawCall.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
-    drawCall.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Skinning = nullptr;
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
+    drawCall.Surface.Skinning = nullptr;
+    drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
-    drawCall.LODDitherFactor = lodDitherFactor;
     renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 

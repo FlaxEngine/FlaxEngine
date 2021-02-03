@@ -93,36 +93,36 @@ void TerrainMaterialShader::Bind(BindParameters& params)
 
         data->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         data->PerInstanceRandom = drawCall.PerInstanceRandom;
-        data->CurrentLOD = drawCall.TerrainData.CurrentLOD;
-        data->ChunkSizeNextLOD = drawCall.TerrainData.ChunkSizeNextLOD;
-        data->TerrainChunkSizeLOD0 = drawCall.TerrainData.TerrainChunkSizeLOD0;
-        data->HeightmapUVScaleBias = drawCall.TerrainData.HeightmapUVScaleBias;
-        data->NeighborLOD = drawCall.TerrainData.NeighborLOD;
-        data->OffsetUV = drawCall.TerrainData.OffsetUV;
+        data->CurrentLOD = drawCall.Terrain.CurrentLOD;
+        data->ChunkSizeNextLOD = drawCall.Terrain.ChunkSizeNextLOD;
+        data->TerrainChunkSizeLOD0 = drawCall.Terrain.TerrainChunkSizeLOD0;
+        data->HeightmapUVScaleBias = drawCall.Terrain.HeightmapUVScaleBias;
+        data->NeighborLOD = drawCall.Terrain.NeighborLOD;
+        data->OffsetUV = drawCall.Terrain.OffsetUV;
     }
     const bool useLightmap = view.Flags & ViewFlags::GI
 #if USE_EDITOR
             && EnableLightmapsUsage
 #endif
             && view.Pass == DrawPass::GBuffer
-            && drawCall.Lightmap != nullptr;
+            && drawCall.Terrain.Lightmap != nullptr;
     if (useLightmap)
     {
         // Bind lightmap textures
         GPUTexture *lightmap0, *lightmap1, *lightmap2;
-        drawCall.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
+        drawCall.Terrain.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
         context->BindSR(0, lightmap0);
         context->BindSR(1, lightmap1);
         context->BindSR(2, lightmap2);
 
         // Set lightmap data
-        data->LightmapArea = drawCall.LightmapUVsArea;
+        data->LightmapArea = drawCall.Terrain.LightmapUVsArea;
     }
 
     // Bind terrain textures
-    const auto heightmap = drawCall.TerrainData.Patch->Heightmap.Get()->GetTexture();
-    const auto splatmap0 = drawCall.TerrainData.Patch->Splatmap[0] ? drawCall.TerrainData.Patch->Splatmap[0]->GetTexture() : nullptr;
-    const auto splatmap1 = drawCall.TerrainData.Patch->Splatmap[1] ? drawCall.TerrainData.Patch->Splatmap[1]->GetTexture() : nullptr;
+    const auto heightmap = drawCall.Terrain.Patch->Heightmap.Get()->GetTexture();
+    const auto splatmap0 = drawCall.Terrain.Patch->Splatmap[0] ? drawCall.Terrain.Patch->Splatmap[0]->GetTexture() : nullptr;
+    const auto splatmap1 = drawCall.Terrain.Patch->Splatmap[1] ? drawCall.Terrain.Patch->Splatmap[1]->GetTexture() : nullptr;
     context->BindSR(3, heightmap);
     context->BindSR(4, splatmap0);
     context->BindSR(5, splatmap1);
@@ -141,7 +141,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.IsNegativeScale())
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
     {
         // Invert culling when scale is negative
         if (cullMode == CullMode::Normal)

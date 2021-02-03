@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Threading/Task.h"
 #include "MaterialInfo.h"
 
 struct MaterialParamsLink;
@@ -82,24 +81,6 @@ public:
     }
 
     /// <summary>
-    /// Checks if material needs vertex color vertex buffer data for rendering.
-    /// </summary>
-    /// <returns>True if mesh renderer have to provide vertex color buffer to render that material</returns>
-    FORCE_INLINE bool RequireVertexColor() const
-    {
-        return (GetInfo().UsageFlags & MaterialUsageFlags::UseVertexColor) != 0;
-    }
-
-    /// <summary>
-    /// Checks if material supports dithered LOD transitions.
-    /// </summary>
-    /// <returns>True if material supports dithered LOD transitions, otherwise false.</returns>
-    FORCE_INLINE bool IsDitheredLODTransition() const
-    {
-        return (GetInfo().FeaturesFlags & MaterialFeaturesFlags::DitheredLODTransition) != 0;
-    }
-
-    /// <summary>
     /// Returns true if material is ready for rendering.
     /// </summary>
     /// <returns>True if can render that material</returns>
@@ -124,10 +105,21 @@ public:
     }
 
     /// <summary>
+    /// The instancing handling used to hash, batch and write draw calls.
+    /// </summary>
+    struct InstancingHandler
+    {
+        void (*GetHash)(const DrawCall& drawCall, int32& batchKey);
+        bool (*CanBatch)(const DrawCall& a, const DrawCall& b);
+        void (*WriteDrawCall)(struct InstanceData* instanceData, const DrawCall& drawCall);
+    };
+
+    /// <summary>
     /// Returns true if material can use draw calls instancing.
     /// </summary>
+    /// <param name="handler">The output data for the instancing handling used to hash, batch and write draw calls. Valid only when function returns true.</param>
     /// <returns>True if can use instancing, otherwise false.</returns>
-    virtual bool CanUseInstancing() const
+    virtual bool CanUseInstancing(InstancingHandler& handler) const
     {
         return false;
     }

@@ -19,6 +19,11 @@
 #define BATCH_KEY_BITS 32
 #define BATCH_KEY_MASK ((1 << BATCH_KEY_BITS) - 1)
 
+static_assert(sizeof(DrawCall) <= 280, "Too big draw call data size.");
+static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Terrain), "Wrong draw call data size.");
+static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Particle), "Wrong draw call data size.");
+static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Custom), "Wrong draw call data size.");
+
 namespace
 {
     // Cached data for the draw calls sorting
@@ -495,24 +500,24 @@ end:
     }
 }
 
-/// <summary>
-/// Checks if this draw call be batched together with the other one.
-/// </summary>
-/// <param name="a">The first draw call.</param>
-/// <param name="b">The second draw call.</param>
-/// <returns>True if can merge them, otherwise false.</returns>
-FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b)
+namespace
 {
-    return Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
-            a.Material == b.Material &&
-            a.Lightmap == b.Lightmap &&
-            // TODO: add batch.CanBatch flag computed in AddDrawCall to remove those checks here for Skinning and IndirectDrawArgs
-            a.Skinning == nullptr &&
-            b.Skinning == nullptr &&
-            a.IndirectArgsBuffer == nullptr &&
-            b.IndirectArgsBuffer == nullptr &&
-            a.WorldDeterminantSign == b.WorldDeterminantSign &&
-            a.Material->CanUseInstancing();
+    /// <summary>
+    /// Checks if this draw call be batched together with the other one.
+    /// </summary>
+    /// <param name="a">The first draw call.</param>
+    /// <param name="b">The second draw call.</param>
+    /// <returns>True if can merge them, otherwise false.</returns>
+    FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b)
+    {
+        IMaterial::InstancingHandler handler;
+        return a.Material == b.Material &&
+                a.Material->CanUseInstancing(handler) &&
+                Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
+                a.IndirectArgsBuffer == nullptr &&
+                b.IndirectArgsBuffer == nullptr &&
+                a.WorldDeterminantSign == b.WorldDeterminantSign;
+    }
 }
 
 void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list)
@@ -540,7 +545,9 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Material);
-        batchKey = (batchKey * 397) ^ GetHash(drawCall.Lightmap);
+        IMaterial::InstancingHandler handler;
+        if (drawCall.Material->CanUseInstancing(handler))
+            handler.GetHash(drawCall, batchKey);
         batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
 #if USE_BATCH_KEY_MASK
 		const uint32 batchHashKey = (uint32)batchKey & BATCH_KEY_MASK;
@@ -635,14 +642,12 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             auto& batch = list.Batches[i];
             if (batch.BatchSize > 1)
             {
+                IMaterial::InstancingHandler handler;
+                DrawCalls[list.Indices[batch.StartIndex]].Material->CanUseInstancing(handler);
                 for (int32 j = 0; j < batch.BatchSize; j++)
                 {
                     auto& drawCall = DrawCalls[list.Indices[batch.StartIndex + j]];
-                    instanceData->InstanceOrigin = Vector4(drawCall.World.M41, drawCall.World.M42, drawCall.World.M43, drawCall.PerInstanceRandom);
-                    instanceData->InstanceTransform1 = Vector4(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13, drawCall.LODDitherFactor);
-                    instanceData->InstanceTransform2 = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23);
-                    instanceData->InstanceTransform3 = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33);
-                    instanceData->InstanceLightmapArea = Half4(drawCall.LightmapUVsArea);
+                    handler.WriteDrawCall(instanceData, drawCall);
                     instanceData++;
                 }
             }
@@ -741,4 +746,27 @@ DRAW:
             }
         }
     }
+}
+
+void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, int32& batchKey)
+{
+    batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
+}
+
+bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b)
+{
+    return a.Surface.Lightmap == b.Surface.Lightmap &&
+            a.Surface.Skinning == nullptr &&
+            b.Surface.Skinning == nullptr;
+}
+
+void SurfaceDrawCallHandler::WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall)
+{
+    instanceData->InstanceOrigin = Vector3(drawCall.World.M41, drawCall.World.M42, drawCall.World.M43);
+    instanceData->PerInstanceRandom = drawCall.PerInstanceRandom;
+    instanceData->InstanceTransform1 = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13);
+    instanceData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
+    instanceData->InstanceTransform2 = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23);
+    instanceData->InstanceTransform3 = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33);
+    instanceData->InstanceLightmapArea = Half4(drawCall.Surface.LightmapUVsArea);
 }

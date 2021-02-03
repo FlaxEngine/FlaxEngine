@@ -145,7 +145,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
                     drawCall.Material = _lightmapUVsDensityMaterialShader;
                 }
             }
-            if (!_lightmapUVsDensityMaterialShader->CanUseInstancing())
+            IMaterial::InstancingHandler handler;
+            if (!_lightmapUVsDensityMaterialShader->CanUseInstancing(handler))
             {
                 drawCallsList.CanUseInstancing = false;
             }
@@ -166,7 +167,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
                     drawCall.Material = _vertexColorsMaterialShader;
                 }
             }
-            if (!_vertexColorsMaterialShader->CanUseInstancing())
+            IMaterial::InstancingHandler handler;
+            if (!_vertexColorsMaterialShader->CanUseInstancing(handler))
             {
                 drawCallsList.CanUseInstancing = false;
             }
@@ -311,8 +313,6 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     DrawCall drawCall;
     MaterialBase::BindParameters bindParams(gpuContext, renderContext, drawCall);
     drawCall.Material = nullptr;
-    drawCall.Lightmap = nullptr;
-    drawCall.Skinning = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 
     // Draw all decals
