@@ -30,10 +30,11 @@ namespace FlaxEngine
                     return;
 
                 // Cleanup previous
-                if (_control != null)
+                var prevControl = _control;
+                if (prevControl != null)
                 {
-                    _control.LocationChanged -= OnControlLocationChanged;
-                    _control.Dispose();
+                    prevControl.LocationChanged -= OnControlLocationChanged;
+                    prevControl.Dispose();
                 }
 
                 // Set value
@@ -42,16 +43,17 @@ namespace FlaxEngine
                 // Link the new one (events and parent)
                 if (_control != null)
                 {
+                    // Setup control
                     var containerControl = _control as ContainerControl;
                     if (containerControl != null)
                         containerControl.UnlockChildrenRecursive();
-
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
                     _control.Location = new Vector2(LocalPosition);
                     // TODO: sync control order in parent with actor order in parent (think about special cases like Panel with scroll bars used as internal controls)
                     _control.LocationChanged += OnControlLocationChanged;
 
+                    // Link children UI controls
                     if (containerControl != null && IsActiveInHierarchy)
                     {
                         var children = ChildrenCount;
@@ -64,6 +66,12 @@ namespace FlaxEngine
                             }
                         }
                     }
+
+                    // Refresh
+                    if (prevControl == null && _control.Parent != null)
+                        _control.Parent.PerformLayout();
+                    else
+                        _control.PerformLayout();
                 }
             }
         }
