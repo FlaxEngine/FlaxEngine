@@ -967,7 +967,7 @@ void DrawBatch(int32 startIndex, int32 count)
         // Downscale (or not) and extract the background image for the blurring
         Context->ResetRenderTarget();
         Context->SetRenderTarget(blurA->View());
-        Context->SetViewport((float)renderTargetWidth, (float)renderTargetHeight);
+        Context->SetViewportAndScissors((float)renderTargetWidth, (float)renderTargetHeight);
         Context->BindSR(0, Output);
         Context->SetState(CurrentPso->PS_Downscale);
         Context->DrawFullscreenTriangle();
