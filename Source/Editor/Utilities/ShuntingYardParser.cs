@@ -193,6 +193,7 @@ namespace FlaxEditor.Utilities
                         {
                         case 'x':
                         case 'X':
+                        {
                             // Hexadecimal value
                             i++;
                             token.Clear();
@@ -200,21 +201,34 @@ namespace FlaxEditor.Utilities
                                 throw new ParsingException("invalid hexadecimal number");
                             while (i + 1 < text.Length && StringUtils.IsHexDigit(text[i + 1]))
                             {
-                                i++;
-                                token.Append(text[i]);
+                                token.Append(text[++i]);
                             }
                             var value = ulong.Parse(token.ToString(), NumberStyles.HexNumber);
                             token.Clear();
                             token.Append(value.ToString());
                             break;
+                        }
                         default:
+                        {
                             // Decimal value
                             while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
                             {
-                                i++;
-                                token.Append(text[i]);
+                                token.Append(text[++i]);
+                            }
+
+                            // Exponential notation
+                            if (i + 2 < text.Length && (text[i + 1] == 'e' || text[i + 1] == 'E'))
+                            {
+                                token.Append(text[++i]);
+                                if (text[i + 1] == '-' || text[i + 1] == '+')
+                                    token.Append(text[++i]);
+                                while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                                {
+                                    token.Append(text[++i]);
+                                }
                             }
                             break;
+                        }
                         }
                     }
 
