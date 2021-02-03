@@ -725,7 +725,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 30,
                 Title = "DDX",
-                Description = "Returns the partial derivative of the specified value with respect to the screen-space x-coordinate.",
+                Description = "Returns the partial derivative of the specified value with respect to the screen-space x-coordinate",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(90, 25),
                 ConnectionsHints = ConnectionsHint.Numeric,
@@ -741,7 +741,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 31,
                 Title = "DDY",
-                Description = "Returns the partial derivative of the specified value with respect to the screen-space y-coordinate.",
+                Description = "Returns the partial derivative of the specified value with respect to the screen-space y-coordinate",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(90, 25),
                 ConnectionsHints = ConnectionsHint.Numeric,
@@ -751,6 +751,68 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 32,
+                Title = "Sign",
+                Description = "Returns -1 if value is less than zero; 0 if value equals zero; and 1 if value is greater than zero",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 33,
+                Title = "Any",
+                Description = "True if any components of value are non-zero; otherwise, false",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 34,
+                Title = "All",
+                Description = "Determines if all components of the specified value are non-zero",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 35,
+                Title = "Black Body",
+                Description = "Simulates black body radiation via a given temperature in kelvin",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(120, 25),
+                DefaultValues = new object[]
+                {
+                    0.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Temp", true, typeof(float), 0, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 1),
                 }
             },
         };

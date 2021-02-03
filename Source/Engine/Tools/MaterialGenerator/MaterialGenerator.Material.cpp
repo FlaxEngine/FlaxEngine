@@ -351,15 +351,15 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Rotator
     case 27:
     {
-        auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
-        auto center = tryGetValue(node->GetBox(1), Value::Zero).AsVector2();
-        auto rotationAngle = tryGetValue(node->GetBox(2), Value::Zero).AsFloat();
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        const auto center = tryGetValue(node->GetBox(1), Value::Zero).AsVector2();
+        const auto rotationAngle = tryGetValue(node->GetBox(2), Value::Zero).AsFloat();
 
-        const auto x1 = writeLocal(ValueType::Vector2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, uv.Value), node);
-        const auto raCosSin = writeLocal(ValueType::Vector2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
+        auto x1 = writeLocal(ValueType::Vector2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, uv.Value), node);
+        auto raCosSin = writeLocal(ValueType::Vector2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
 
-        const auto dotB1 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), raCosSin.Value), node);
-        const auto dotB2 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.y, {0}.x)"), raCosSin.Value), node);
+        auto dotB1 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), raCosSin.Value), node);
+        auto dotB2 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.y, {0}.x)"), raCosSin.Value), node);
 
         value = writeLocal(ValueType::Vector2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, dotB1.Value, dotB2.Value, center.Value), node);
         break;
@@ -367,11 +367,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Sphere Mask
     case 28:
     {
-        Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
-        Value b = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(a.Type);
-        Value radius = tryGetValue(node->GetBox(2), node->Values[0]).AsFloat();
-        Value hardness = tryGetValue(node->GetBox(3), node->Values[1]).AsFloat();
-        Value invert = tryGetValue(node->GetBox(4), node->Values[2]).AsBool();
+        const auto a = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        const auto b = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(a.Type);
+        const auto radius = tryGetValue(node->GetBox(2), node->Values[0]).AsFloat();
+        const auto hardness = tryGetValue(node->GetBox(3), node->Values[1]).AsFloat();
+        const auto invert = tryGetValue(node->GetBox(4), node->Values[2]).AsBool();
 
         // Get distance and apply radius
         auto x1 = writeLocal(ValueType::Float, String::Format(TEXT("distance({0},{1}) * (1 / {2})"), a.Value, b.Value, radius.Value), node);
@@ -385,9 +385,9 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Tiling & Offset
     case 29:
     {
-        auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
-        auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsVector2();
-        auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsVector2();
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        const auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsVector2();
+        const auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsVector2();
 
         value = writeLocal(ValueType::Vector2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
         break;
@@ -395,7 +395,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // DDX
     case 30:
     {
-        auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
 
         value = writeLocal(inValue.Type, String::Format(TEXT("ddx({0})"), inValue.Value), node);
         break;
@@ -403,9 +403,55 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // DDY
     case 31:
     {
-        auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
 
         value = writeLocal(inValue.Type, String::Format(TEXT("ddy({0})"), inValue.Value), node);
+        break;
+    }
+        // Sign
+    case 32:
+    {
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+
+        value = writeLocal(ValueType::Float, String::Format(TEXT("sign({0})"), inValue.Value), node);
+        break;
+    }
+        // Any
+    case 33:
+    {
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+
+        value = writeLocal(ValueType::Bool, String::Format(TEXT("any({0})"), inValue.Value), node);
+        break;
+    }
+        // All
+    case 34:
+    {
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+
+        value = writeLocal(ValueType::Bool, String::Format(TEXT("all({0})"), inValue.Value), node);
+        break;
+    }
+        // Blackbody
+    case 35:
+    {
+        // Reference: Mitchell Charity, http://www.vendian.org/mncharity/dir3/blackbody/
+
+        const auto temperature = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
+
+        // Value X
+        auto x = writeLocal(ValueType::Float, String::Format(TEXT("56100000.0f * pow({0}, -1) + 148.0f"), temperature.Value), node);
+
+        // Value Y
+        auto y = writeLocal(ValueType::Float, String::Format(TEXT("{0} > 6500.0f ? 35200000.0f * pow({0}, -1) + 184.0f : 100.04f * log({0}) - 623.6f"), temperature.Value), node);
+
+        // Value Z
+        auto z = writeLocal(ValueType::Float, String::Format(TEXT("194.18f * log({0}) - 1448.6f"), temperature.Value), node);
+
+        // Final color
+        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2})"), x.Value, y.Value, z.Value), node);
+        color = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp({0}, 0.0f, 255.0f) / 255.0f"), color.Value), node);
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
         break;
     }
     default:
