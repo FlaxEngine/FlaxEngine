@@ -294,7 +294,9 @@ namespace FlaxEditor.Windows
             {
                 if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor.Control != null)
                 {
-                    Render2D.DrawRectangle(controlActor.Control.Bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
+                    var control = controlActor.Control;
+                    var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Vector2.Zero), control.PointToParent(_viewport, control.Size));
+                    Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
 
