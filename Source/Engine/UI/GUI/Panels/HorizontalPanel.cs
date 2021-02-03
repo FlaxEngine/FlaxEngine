@@ -45,7 +45,7 @@ namespace FlaxEngine.GUI
                 if (c.Visible)
                 {
                     var w = c.Width;
-                    c.Bounds = new Rectangle(x + _offset.X, _margin.Top + _offset.Y, h, w);
+                    c.Bounds = new Rectangle(x + _offset.X, _margin.Top + _offset.Y, w, h);
                     x = c.Right + _spacing;
                     hasAnyItem = true;
                 }
