@@ -196,12 +196,10 @@ namespace FlaxEditor.Gizmo
         private void UpdateTranslateScale()
         {
             bool isScaling = _activeMode == Mode.Scale;
-
             Vector3 delta = Vector3.Zero;
             Ray ray = Owner.MouseRay;
 
-            Matrix invRotationMatrix;
-            Matrix.Invert(ref _rotationMatrix, out invRotationMatrix);
+            Matrix.Invert(ref _rotationMatrix, out var invRotationMatrix);
             ray.Position = Vector3.Transform(ray.Position, invRotationMatrix);
             Vector3.TransformNormal(ref ray.Direction, ref invRotationMatrix, out ray.Direction);
 
@@ -211,9 +209,7 @@ namespace FlaxEditor.Gizmo
             case Axis.X:
             {
                 var plane = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
-
-                float intersection;
-                if (ray.Intersects(ref plane, out intersection))
+                if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -222,18 +218,14 @@ namespace FlaxEditor.Gizmo
                             ? new Vector3(_tDelta.X, 0, 0)
                             : new Vector3(_tDelta.X, _tDelta.Y, 0);
                 }
-
                 break;
             }
-
             case Axis.Z:
             case Axis.YZ:
             case Axis.Y:
             {
                 var plane = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
-
-                float intersection;
-                if (ray.Intersects(ref plane, out intersection))
+                if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -251,41 +243,31 @@ namespace FlaxEditor.Gizmo
                         break;
                     }
                 }
-
                 break;
             }
-
             case Axis.ZX:
             {
                 var plane = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
-
-                float intersection;
-                if (ray.Intersects(ref plane, out intersection))
+                if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
                 }
-
                 break;
             }
-
             case Axis.Center:
             {
-                Vector3 gizmoToView = Position - Owner.ViewPosition;
+                var gizmoToView = Position - Owner.ViewPosition;
                 var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
-
-                float intersection;
-                if (ray.Intersects(ref plane, out intersection))
+                if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                 }
-
                 delta = _tDelta;
-
                 break;
             }
             }
@@ -299,14 +281,11 @@ namespace FlaxEditor.Gizmo
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
                 float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
-
                 _translationScaleSnapDelta += delta;
-
                 delta = new Vector3(
                                     (int)(_translationScaleSnapDelta.X / snapValue) * snapValue,
                                     (int)(_translationScaleSnapDelta.Y / snapValue) * snapValue,
                                     (int)(_translationScaleSnapDelta.Z / snapValue) * snapValue);
-
                 _translationScaleSnapDelta -= delta;
             }
 
@@ -318,7 +297,30 @@ namespace FlaxEditor.Gizmo
             }
             else if (_activeMode == Mode.Scale)
             {
-                // Apply scale
+                // Scale
+                if (_activeTransformSpace == TransformSpace.World && _activeAxis != Axis.Center)
+                {
+                    var deltaLocal = delta;
+                    Quaternion orientation = GetSelectedObject(0).Orientation;
+                    delta = Vector3.Transform(delta, orientation);
+
+                    // Fix axis sign of delta movement for rotated object in some cases (eg. rotated object by 90 deg on Y axis and scale in world space with Red/X axis)
+                    switch (_activeAxis)
+                    {
+                    case Axis.X:
+                        if (deltaLocal.X < 0)
+                            delta *= -1;
+                        break;
+                    case Axis.Y:
+                        if (deltaLocal.Y < 0)
+                            delta *= -1;
+                        break;
+                    case Axis.Z:
+                        if (deltaLocal.Z < 0)
+                            delta *= -1;
+                        break;
+                    }
+                }
                 _scaleDelta = delta;
             }
         }
@@ -382,7 +384,7 @@ namespace FlaxEditor.Gizmo
             // Snap to ground
             if (_activeAxis == Axis.None && SelectionCount != 0 && Owner.SnapToGround)
             {
-                if (Physics.RayCast(Position, Vector3.Down, out var hit, float.MaxValue, int.MaxValue, false))
+                if (Physics.RayCast(Position, Vector3.Down, out var hit, float.MaxValue, uint.MaxValue, false))
                 {
                     StartTransforming();
                     var translationDelta = hit.Point - Position;
@@ -408,7 +410,6 @@ namespace FlaxEditor.Gizmo
                     case Mode.Translate:
                         UpdateTranslateScale();
                         break;
-
                     case Mode.Rotate:
                         UpdateRotate(dt);
                         break;
@@ -437,7 +438,7 @@ namespace FlaxEditor.Gizmo
                         translationDelta = _translationDelta;
                         _translationDelta = Vector3.Zero;
 
-                        // Prevent from moving objects too far away, like to different galaxy or sth
+                        // Prevent from moving objects too far away, like to a different galaxy or sth
                         Vector3 prevMoveDelta = _accMoveDelta;
                         _accMoveDelta += _translationDelta;
                         if (_accMoveDelta.Length > Owner.ViewFarPlane * 0.7f)
