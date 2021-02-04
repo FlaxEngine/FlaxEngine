@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 @0// Tessellation: Defines
+#define TessalationProjectOntoPlane(planeNormal, planePosition, pointToProject) pointToProject - dot(pointToProject - planePosition, planeNormal) * planeNormal
 @1// Tessellation: Includes
 @2// Tessellation: Constants
 @3// Tessellation: Resources
@@ -11,22 +12,10 @@
 // Interpolants passed from the hull shader to the domain shader
 struct TessalationHSToDS
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-#if USE_VERTEX_COLOR
-	half4 VertexColor        : COLOR;
-#endif
-	float3 WorldNormal       : TEXCOORD3;
-	float4 WorldTangent      : TEXCOORD4;
+	float4 Position : SV_Position;
+	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
-#endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float2 InstanceParams    : TEXCOORD7;
-#if IS_MOTION_VECTORS_PASS
-	float3 PrevWorldPosition : TEXCOORD8;
 #endif
 	float TessellationMultiplier : TESS;
 };
@@ -34,41 +23,19 @@ struct TessalationHSToDS
 // Interpolants passed from the domain shader and to the pixel shader
 struct TessalationDSToPS
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-#if USE_VERTEX_COLOR
-	half4 VertexColor        : COLOR;
-#endif
-	float3 WorldNormal       : TEXCOORD3;
-	float4 WorldTangent      : TEXCOORD4;
+	float4 Position : SV_Position;
+	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
-#endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float2 InstanceParams    : TEXCOORD7;
-#if IS_MOTION_VECTORS_PASS
-	float3 PrevWorldPosition : TEXCOORD8;
 #endif
 };
 
 MaterialInput GetMaterialInput(TessalationDSToPS input)
 {
 	MaterialInput result = (MaterialInput)0;
-	result.WorldPosition = input.WorldPosition;
-	result.TexCoord = input.TexCoord;
-#if USE_LIGHTMAP
-	result.LightmapUV = input.LightmapUV;
-#endif
-#if USE_VERTEX_COLOR
-	result.VertexColor = input.VertexColor;
-#endif
-	result.TBN = CalcTangentBasis(input.WorldNormal, input.WorldTangent);
-	result.TwoSidedSign = WorldDeterminantSign;
-	result.InstanceOrigin = input.InstanceOrigin;
-	result.InstanceParams = input.InstanceParams;
 	result.SvPosition = input.Position;
+	GetGeometryMaterialInput(result, input.Geometry);
+	result.TwoSidedSign = WorldDeterminantSign;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	result.CustomVSToPS = input.CustomVSToPS;
 #endif
@@ -78,7 +45,7 @@ MaterialInput GetMaterialInput(TessalationDSToPS input)
 struct TessalationPatch
 {
 	float EdgeTessFactor[3] : SV_TessFactor;
-	float InsideTessFactor  : SV_InsideTessFactor;
+	float InsideTessFactor : SV_InsideTessFactor;
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PN
 	float3 B210 : POSITION4;
 	float3 B120 : POSITION5;
@@ -110,20 +77,19 @@ TessalationPatch HS_PatchConstant(InputPatch<VertexOutput, 3> input)
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PN
 	// Calculate PN Triangle control points
 	// Reference: [Vlachos 2001]
-	float3 p1 = input[0].WorldPosition;
-	float3 p2 = input[1].WorldPosition;
-	float3 p3 = input[2].WorldPosition;
-	float3 n1 = input[0].WorldNormal;
-	float3 n2 = input[1].WorldNormal;
-	float3 n3 = input[2].WorldNormal;
+	float3 p1 = input[0].Geometry.WorldPosition;
+	float3 p2 = input[1].Geometry.WorldPosition;
+	float3 p3 = input[2].Geometry.WorldPosition;
+	float3 n1 = input[0].Geometry.WorldNormal;
+	float3 n2 = input[1].Geometry.WorldNormal;
+	float3 n3 = input[2].Geometry.WorldNormal;
 	output.B210 = (2.0f * p1 + p2 - dot((p2 - p1), n1) * n1) / 3.0f;
 	output.B120 = (2.0f * p2 + p1 - dot((p1 - p2), n2) * n2) / 3.0f;
 	output.B021 = (2.0f * p2 + p3 - dot((p3 - p2), n2) * n2) / 3.0f;
 	output.B012 = (2.0f * p3 + p2 - dot((p2 - p3), n3) * n3) / 3.0f;
 	output.B102 = (2.0f * p3 + p1 - dot((p1 - p3), n3) * n3) / 3.0f;
 	output.B201 = (2.0f * p1 + p3 - dot((p3 - p1), n1) * n1) / 3.0f;
-	float3 e = (output.B210 + output.B120 + output.B021 + 
-	output.B012 + output.B102 + output.B201) / 6.0f;
+	float3 e = (output.B210 + output.B120 + output.B021 + output.B012 + output.B102 + output.B201) / 6.0f;
 	float3 v = (p1 + p2 + p3) / 3.0f;
 	output.B111 = e + ((e - v) / 2.0f);
 #endif
@@ -132,8 +98,6 @@ TessalationPatch HS_PatchConstant(InputPatch<VertexOutput, 3> input)
 }
 
 META_HS(USE_TESSELLATION, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(IS_MOTION_VECTORS_PASS=0)
-META_PERMUTATION_1(IS_MOTION_VECTORS_PASS=1)
 META_HS_PATCH(TESSELLATION_IN_CONTROL_POINTS)
 [domain("tri")]
 [partitioning("fractional_odd")]
@@ -148,19 +112,7 @@ TessalationHSToDS HS(InputPatch<VertexOutput, TESSELLATION_IN_CONTROL_POINTS> in
 	// Pass through shader
 #define COPY(thing) output.thing = input[ControlPointID].thing;
 	COPY(Position);
-	COPY(WorldPosition);
-	COPY(TexCoord);
-	COPY(LightmapUV);
-#if USE_VERTEX_COLOR
-	COPY(VertexColor);
-#endif
-	COPY(WorldNormal);
-	COPY(WorldTangent);
-	COPY(InstanceOrigin);
-	COPY(InstanceParams);
-#if IS_MOTION_VECTORS_PASS
-	COPY(PrevWorldPosition);
-#endif
+	COPY(Geometry);
 	COPY(TessellationMultiplier);
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	COPY(CustomVSToPS);
@@ -170,19 +122,7 @@ TessalationHSToDS HS(InputPatch<VertexOutput, TESSELLATION_IN_CONTROL_POINTS> in
 	return output;
 }
 
-#if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PHONG
-
-// Orthogonal projection on to plane
-float3 ProjectOntoPlane(float3 planeNormal, float3 planePosition, float3 pointToProject)
-{
-    return pointToProject - dot(pointToProject - planePosition, planeNormal) * planeNormal;
-}
-
-#endif
-
 META_DS(USE_TESSELLATION, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(IS_MOTION_VECTORS_PASS=0)
-META_PERMUTATION_1(IS_MOTION_VECTORS_PASS=1)
 [domain("tri")]
 TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : SV_DomainLocation, const OutputPatch<TessalationHSToDS, 3> input)
 {
@@ -194,22 +134,18 @@ TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : S
 	float W = barycentricCoords.z;
 
 	// Interpolate patch attributes to generated vertices
+	output.Geometry = InterpolateGeometry(input[0].Geometry, U, input[1].Geometry, V, input[2].Geometry, W);
 #define INTERPOLATE(thing) output.thing = U * input[0].thing + V * input[1].thing + W * input[2].thing
-#define COPY(thing) output.thing = input[0].thing
 	INTERPOLATE(Position);
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PN
+	// Interpolate using barycentric coordinates and PN Triangle control points
 	float UU = U * U;
 	float VV = V * V;
 	float WW = W * W;
 	float UU3 = UU * 3.0f;
 	float VV3 = VV * 3.0f;
 	float WW3 = WW * 3.0f;
-
-	// Interpolate using barycentric coordinates and PN Triangle control points
-	output.WorldPosition =
-		input[0].WorldPosition * UU * U +
-		input[1].WorldPosition * VV * V + 
-		input[2].WorldPosition * WW * W + 
+	float3 offset = 
 		constantData.B210 * UU3 * V +
 		constantData.B120 * VV3 * U +
 		constantData.B021 * VV3 * W +
@@ -217,76 +153,31 @@ TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : S
 		constantData.B102 * WW3 * U +
 		constantData.B201 * UU3 * W +
 		constantData.B111 * 6.0f * W * U * V;
-#if IS_MOTION_VECTORS_PASS
-	output.PrevWorldPosition =
-		input[0].PrevWorldPosition * UU * U +
-		input[1].PrevWorldPosition * VV * V + 
-		input[2].PrevWorldPosition * WW * W + 
-		constantData.B210 * UU3 * V +
-		constantData.B120 * VV3 * U +
-		constantData.B021 * VV3 * W +
-		constantData.B012 * WW3 * V +
-		constantData.B102 * WW3 * U +
-		constantData.B201 * UU3 * W +
-		constantData.B111 * 6.0f * W * U * V;
-#endif
+	InterpolateGeometryPositions(output.Geometry, input[0].Geometry, UU * U, input[1].Geometry, VV * V, input[2].Geometry, WW * W, offset);
 #else
-	INTERPOLATE(WorldPosition);
-#if IS_MOTION_VECTORS_PASS
-	INTERPOLATE(PrevWorldPosition);
+	InterpolateGeometryPositions(output.Geometry, input[0].Geometry, U, input[1].Geometry, V, input[2].Geometry, W, float3(0, 0, 0));
 #endif
-#endif
-	INTERPOLATE(TexCoord);
-	INTERPOLATE(LightmapUV);
-#if USE_VERTEX_COLOR
-	INTERPOLATE(VertexColor);
-#endif
-	INTERPOLATE(WorldNormal);
-	INTERPOLATE(WorldTangent);
-	COPY(InstanceOrigin);
-	COPY(InstanceParams);
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	UNROLL
 	for (int i = 0; i < CUSTOM_VERTEX_INTERPOLATORS_COUNT; i++)
-	{
 		INTERPOLATE(CustomVSToPS[i]);
-	}
 #endif
 #undef INTERPOLATE
-#undef COPY
-
-	// Interpolating tangents can unnormalize it, so normalize it
-	output.WorldNormal = normalize(output.WorldNormal);
-	output.WorldTangent.xyz = normalize(output.WorldTangent.xyz);
 
 #if MATERIAL_TESSELLATION == MATERIAL_TESSELLATION_PHONG
-	// Orthogonal projection in the tangent planes
-	float3 posProjectedU = ProjectOntoPlane(input[0].WorldNormal, input[0].WorldPosition, output.WorldPosition);
-	float3 posProjectedV = ProjectOntoPlane(input[1].WorldNormal, input[1].WorldPosition, output.WorldPosition);
-	float3 posProjectedW = ProjectOntoPlane(input[2].WorldNormal, input[2].WorldPosition, output.WorldPosition);
-
-	// Interpolate the projected points
-	output.WorldPosition = U * posProjectedU + V * posProjectedV + W * posProjectedW;
-#if IS_MOTION_VECTORS_PASS
-	posProjectedU = ProjectOntoPlane(input[0].WorldNormal, input[0].PrevWorldPosition, output.PrevWorldPosition);
-	posProjectedV = ProjectOntoPlane(input[1].WorldNormal, input[1].PrevWorldPosition, output.PrevWorldPosition);
-	posProjectedW = ProjectOntoPlane(input[2].WorldNormal, input[2].PrevWorldPosition, output.PrevWorldPosition);
-	output.PrevWorldPosition = U * posProjectedU + V * posProjectedV + W * posProjectedW;
-#endif
+	// Orthogonal projection in the tangent planes with interpolation
+	ApplyGeometryPositionsPhongTess(output.Geometry, input[0].Geometry, input[1].Geometry, input[2].Geometry, U, V, W);
 #endif
 
 	// Perform displacement mapping
 #if USE_DISPLACEMENT
 	MaterialInput materialInput = GetMaterialInput(output);
 	Material material = GetMaterialDS(materialInput);
-	output.WorldPosition += material.WorldDisplacement;
-#if IS_MOTION_VECTORS_PASS
-	output.PrevWorldPosition += material.WorldDisplacement;
-#endif
+	OffsetGeometryPositions(output.Geometry, material.WorldDisplacement);
 #endif
 
 	// Recalculate the clip space position
-	output.Position = mul(float4(output.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	return output;
 }

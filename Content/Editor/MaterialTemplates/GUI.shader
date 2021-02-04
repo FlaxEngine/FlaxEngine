@@ -199,9 +199,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Vertex Shader function for GUI materials rendering
 META_VS(true, FEATURE_LEVEL_ES2)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT,       0, ALIGN, PER_VERTEX, 0, true)

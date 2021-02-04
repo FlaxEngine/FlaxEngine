@@ -61,9 +61,6 @@
 #ifndef MAX_TESSELLATION_FACTOR
 	#define MAX_TESSELLATION_FACTOR 15
 #endif
-#ifndef IS_MOTION_VECTORS_PASS
-	#define IS_MOTION_VECTORS_PASS 0
-#endif
 #ifndef PER_BONE_MOTION_BLUR
 	#define PER_BONE_MOTION_BLUR 0
 #endif
@@ -162,6 +159,12 @@ float3x3 CalcTangentBasisFromWorldNormal(float3 normal)
 	float3 tangent = cross(normal, float3(1, 0, 0));
 	float3 bitangent = cross(normal, tangent);
 	return float3x3(tangent, bitangent, normal);
+}
+
+float3x3 CalcTangentBasis(float3 normal, float4 tangent)
+{
+	float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
+	return float3x3(tangent.xyz, bitangent, normal);
 }
 
 // [Jimenez et al. 2016, "Practical Realtime Strategies for Accurate Indirect Occlusion"]

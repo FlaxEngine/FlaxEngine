@@ -187,6 +187,11 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(LightmapFeature);
         break;
+    case MaterialDomain::Terrain:
+        if (materialInfo.TessellationMode != TessellationMethod::None)
+        ADD_FEATURE(TessellationFeature);
+        ADD_FEATURE(LightmapFeature);
+        break;
     default:
         break;
     }
@@ -387,7 +392,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             srv = 1;
             break;
         case MaterialDomain::Terrain:
-            srv = 6;
+            srv = 3; // Heightmap + 2 splatmaps
             break;
         case MaterialDomain::Particle:
             srv = 5;

@@ -136,9 +136,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Pixel Shader function for PostFx materials rendering
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_PostFx(PixelInput input) : SV_Target0

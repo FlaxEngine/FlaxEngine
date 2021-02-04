@@ -167,8 +167,14 @@ struct DrawCall
         struct
         {
             const Lightmap* Lightmap;
-            SkinnedMeshDrawData* Skinning;
             Rectangle LightmapUVsArea;
+        } Features;
+
+        struct
+        {
+            const Lightmap* Lightmap;
+            Rectangle LightmapUVsArea;
+            SkinnedMeshDrawData* Skinning;
             Vector3 GeometrySize; // Object geometry size in the world (unscaled).
             float LODDitherFactor; // The model LOD transition dither progress.
             Matrix PrevWorld;
@@ -176,15 +182,15 @@ struct DrawCall
 
         struct
         {
+            const Lightmap* Lightmap;
+            Rectangle LightmapUVsArea;
             Vector4 HeightmapUVScaleBias;
             Vector4 NeighborLOD;
             Vector2 OffsetUV;
             float CurrentLOD;
             float ChunkSizeNextLOD;
             float TerrainChunkSizeLOD0;
-            Rectangle LightmapUVsArea;
             const class TerrainPatch* Patch;
-            const Lightmap* Lightmap;
         } Terrain;
 
         struct

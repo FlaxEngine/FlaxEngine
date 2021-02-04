@@ -32,25 +32,30 @@ float Dummy1;
 
 // Material shader resources
 @2
+
+// Geometry data passed though the graphics rendering stages up to the pixel shader
+struct GeometryData
+{
+	float3 WorldPosition : TEXCOORD0;
+	float2 TexCoord : TEXCOORD1;
+	float2 LightmapUV : TEXCOORD2;
+#if USE_VERTEX_COLOR
+	half4 VertexColor : COLOR;
+#endif
+	float3 WorldNormal : TEXCOORD3;
+	float4 WorldTangent : TEXCOORD4;
+	float3 InstanceOrigin : TEXCOORD6;
+	float2 InstanceParams : TEXCOORD7; // x-PerInstanceRandom, y-LODDitherFactor
+	float3 PrevWorldPosition : TEXCOORD8;
+};
+
 // Interpolants passed from the vertex shader
 struct VertexOutput
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-#if USE_VERTEX_COLOR
-	half4 VertexColor        : COLOR;
-#endif
-	float3 WorldNormal       : TEXCOORD3;
-	float4 WorldTangent      : TEXCOORD4;
+	float4 Position : SV_Position;
+	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
-#endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float2 InstanceParams    : TEXCOORD7; // x-PerInstanceRandom, y-LODDitherFactor
-#if IS_MOTION_VECTORS_PASS
-	float3 PrevWorldPosition : TEXCOORD8;
 #endif
 #if USE_TESSELLATION
     float TessellationMultiplier : TESS;
@@ -60,24 +65,12 @@ struct VertexOutput
 // Interpolants passed to the pixel shader
 struct PixelInput
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-#if USE_VERTEX_COLOR
-	half4 VertexColor        : COLOR;
-#endif
-	float3 WorldNormal       : TEXCOORD3;
-	float4 WorldTangent      : TEXCOORD4;
+	float4 Position : SV_Position;
+	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
 #endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float2 InstanceParams    : TEXCOORD7; // x-PerInstanceRandom, y-LODDitherFactor
-#if IS_MOTION_VECTORS_PASS
-	float3 PrevWorldPosition : TEXCOORD8;
-#endif
-	bool IsFrontFace         : SV_IsFrontFace;
+	bool IsFrontFace : SV_IsFrontFace;
 };
 
 // Material properties generation input
@@ -108,24 +101,75 @@ struct MaterialInput
 #endif
 };
 
-float3x3 CalcTangentBasis(float3 normal, float4 tangent)
+// Extracts geometry data to the material input
+void GetGeometryMaterialInput(inout MaterialInput result, in GeometryData geometry)
 {
-	float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
-	return float3x3(tangent.xyz, bitangent, normal);
+	result.WorldPosition = geometry.WorldPosition;
+	result.TexCoord = geometry.TexCoord;
+#if USE_LIGHTMAP
+	result.LightmapUV = geometry.LightmapUV;
+#endif
+#if USE_VERTEX_COLOR
+	result.VertexColor = geometry.VertexColor;
+#endif
+	result.TBN = CalcTangentBasis(geometry.WorldNormal, geometry.WorldTangent);
+	result.InstanceOrigin = geometry.InstanceOrigin;
+	result.InstanceParams = geometry.InstanceParams;
 }
+
+#if USE_TESSELLATION
+
+// Interpolates the geometry positions data only (used by the tessallation when generating vertices)
+#define InterpolateGeometryPositions(output, p0, w0, p1, w1, p2, w2, offset) output.WorldPosition = p0.WorldPosition * w0 + p1.WorldPosition * w1 + p2.WorldPosition * w2 + offset; output.PrevWorldPosition = p0.PrevWorldPosition * w0 + p1.PrevWorldPosition * w1 + p2.PrevWorldPosition * w2 + offset
+
+// Offsets the geometry positions data only (used by the tessallation when generating vertices)
+#define OffsetGeometryPositions(geometry, offset) geometry.WorldPosition += offset; geometry.PrevWorldPosition += offset
+
+// Applies the Phong tessallation to the geometry positions (used by the tessallation when doing Phong tess)
+#define ApplyGeometryPositionsPhongTess(geometry, p0, p1, p2, U, V, W) \
+	float3 posProjectedU = TessalationProjectOntoPlane(p0.WorldNormal, p0.WorldPosition, geometry.WorldPosition); \
+	float3 posProjectedV = TessalationProjectOntoPlane(p1.WorldNormal, p1.WorldPosition, geometry.WorldPosition); \
+	float3 posProjectedW = TessalationProjectOntoPlane(p2.WorldNormal, p2.WorldPosition, geometry.WorldPosition); \
+	geometry.WorldPosition = U * posProjectedU + V * posProjectedV + W * posProjectedW; \
+	posProjectedU = TessalationProjectOntoPlane(p0.WorldNormal, p0.PrevWorldPosition, geometry.PrevWorldPosition); \
+	posProjectedV = TessalationProjectOntoPlane(p1.WorldNormal, p1.PrevWorldPosition, geometry.PrevWorldPosition); \
+	posProjectedW = TessalationProjectOntoPlane(p2.WorldNormal, p2.PrevWorldPosition, geometry.PrevWorldPosition); \
+	geometry.PrevWorldPosition = U * posProjectedU + V * posProjectedV + W * posProjectedW
+
+// Interpolates the geometry data except positions (used by the tessallation when generating vertices)
+GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, float w1, GeometryData p2, float w2)
+{
+	GeometryData output = (GeometryData)0;
+	output.TexCoord = p0.TexCoord * w0 + p1.TexCoord * w1 + p2.TexCoord * w2;
+#if USE_LIGHTMAP
+	output.LightmapUV = p0.LightmapUV * w0 + p1.LightmapUV * w1 + p2.LightmapUV * w2;
+#endif
+#if USE_VERTEX_COLOR
+	output.VertexColor = p0.VertexColor * w0 + p1.VertexColor * w1 + p2.VertexColor * w2;
+#endif
+	output.WorldNormal = p0.WorldNormal * w0 + p1.WorldNormal * w1 + p2.WorldNormal * w2;
+	output.WorldNormal = normalize(output.WorldNormal);
+	output.WorldTangent = p0.WorldTangent * w0 + p1.WorldTangent * w1 + p2.WorldTangent * w2;
+	output.WorldTangent.xyz = normalize(output.WorldTangent.xyz);
+	output.InstanceOrigin = p0.InstanceOrigin;
+	output.InstanceParams = p0.InstanceParams;
+	return output;
+}
+
+#endif
 
 MaterialInput GetMaterialInput(ModelInput input, VertexOutput output, float3 localNormal)
 {
 	MaterialInput result = (MaterialInput)0;
-	result.WorldPosition = output.WorldPosition;
-	result.TexCoord = output.TexCoord;
+	result.WorldPosition = output.Geometry.WorldPosition;
+	result.TexCoord = output.Geometry.TexCoord;
 #if USE_LIGHTMAP
-	result.LightmapUV = output.LightmapUV;
+	result.LightmapUV = output.Geometry.LightmapUV;
 #endif
 #if USE_VERTEX_COLOR
-	result.VertexColor = output.VertexColor;
+	result.VertexColor = output.Geometry.VertexColor;
 #endif
-	result.TBN = CalcTangentBasis(output.WorldNormal, output.WorldTangent);
+	result.TBN = CalcTangentBasis(output.Geometry.WorldNormal, output.Geometry.WorldTangent);
 	result.TwoSidedSign = WorldDeterminantSign;
 	result.SvPosition = output.Position;
 	result.PreSkinnedPosition = input.Position.xyz;
@@ -146,15 +190,15 @@ MaterialInput GetMaterialInput(ModelInput input, VertexOutput output, float3 loc
 MaterialInput GetMaterialInput(VertexOutput output, float3 localPosition, float3 localNormal)
 {
 	MaterialInput result = (MaterialInput)0;
-	result.WorldPosition = output.WorldPosition;
-	result.TexCoord = output.TexCoord;
+	result.WorldPosition = output.Geometry.WorldPosition;
+	result.TexCoord = output.Geometry.TexCoord;
 #if USE_LIGHTMAP
-	result.LightmapUV = output.LightmapUV;
+	result.LightmapUV = output.Geometry.LightmapUV;
 #endif
 #if USE_VERTEX_COLOR
-	result.VertexColor = output.VertexColor;
+	result.VertexColor = output.Geometry.VertexColor;
 #endif
-	result.TBN = CalcTangentBasis(output.WorldNormal, output.WorldTangent);
+	result.TBN = CalcTangentBasis(output.Geometry.WorldNormal, output.Geometry.WorldTangent);
 	result.TwoSidedSign = WorldDeterminantSign;
 	result.InstanceOrigin = WorldMatrix[3].xyz;
 	result.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
@@ -167,18 +211,18 @@ MaterialInput GetMaterialInput(VertexOutput output, float3 localPosition, float3
 MaterialInput GetMaterialInput(PixelInput input)
 {
 	MaterialInput result = (MaterialInput)0;
-	result.WorldPosition = input.WorldPosition;
-	result.TexCoord = input.TexCoord;
+	result.WorldPosition = input.Geometry.WorldPosition;
+	result.TexCoord = input.Geometry.TexCoord;
 #if USE_LIGHTMAP
-	result.LightmapUV = input.LightmapUV;
+	result.LightmapUV = input.Geometry.LightmapUV;
 #endif
 #if USE_VERTEX_COLOR
-	result.VertexColor = input.VertexColor;
+	result.VertexColor = input.Geometry.VertexColor;
 #endif
-	result.TBN = CalcTangentBasis(input.WorldNormal, input.WorldTangent);
+	result.TBN = CalcTangentBasis(input.Geometry.WorldNormal, input.Geometry.WorldTangent);
 	result.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
-	result.InstanceOrigin = input.InstanceOrigin;
-	result.InstanceParams = input.InstanceParams;
+	result.InstanceOrigin = input.Geometry.InstanceOrigin;
+	result.InstanceParams = input.Geometry.InstanceParams;
 	result.SvPosition = input.Position;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	result.CustomVSToPS = input.CustomVSToPS;
@@ -330,9 +374,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Calculates the transform matrix from mesh tangent space to local space
 float3x3 CalcTangentToLocal(ModelInput input)
 {
@@ -353,7 +394,6 @@ float3x3 CalcTangentToWorld(float4x4 world, float3x3 tangentToLocal)
 META_VS(IS_SURFACE, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_INSTANCING=0)
 META_PERMUTATION_1(USE_INSTANCING=1)
-META_PERMUTATION_2(USE_INSTANCING=0, IS_MOTION_VECTORS_PASS=1)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT,      1, 0,     PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(NORMAL,   0, R10G10B10A2_UNORM, 1, ALIGN, PER_VERTEX, 0, true)
@@ -371,34 +411,32 @@ VertexOutput VS(ModelInput input)
 
 	// Compute world space vertex position
 	float4x4 world = GetInstanceTransform(input);
-	output.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
-#if IS_MOTION_VECTORS_PASS
-	output.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
-#endif
+	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
 
 	// Compute clip space position
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.TexCoord = input.TexCoord;
+	output.Geometry.TexCoord = input.TexCoord;
 #if USE_VERTEX_COLOR
-	output.VertexColor = input.Color;
+	output.Geometry.VertexColor = input.Color;
 #endif
-	output.InstanceOrigin = world[3].xyz;
+	output.Geometry.InstanceOrigin = world[3].xyz;
 #if USE_INSTANCING
-	output.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
-	output.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
+	output.Geometry.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
+	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
 #else
-	output.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
-	output.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
+	output.Geometry.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
+	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
 #endif
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
 	float3x3 tangentToLocal = CalcTangentToLocal(input);
 	float3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
-	output.WorldNormal = tangentToWorld[2];
-	output.WorldTangent.xyz = tangentToWorld[0];
-	output.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
+	output.Geometry.WorldNormal = tangentToWorld[2];
+	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
+	output.Geometry.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
 
 	// Get material input params if need to evaluate any material property
 #if USE_POSITION_OFFSET || USE_TESSELLATION || USE_CUSTOM_VERTEX_INTERPOLATORS
@@ -408,8 +446,8 @@ VertexOutput VS(ModelInput input)
 
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
-	output.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)
@@ -439,7 +477,7 @@ float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 {
 	float4x4 world = GetInstanceTransform(input);
 	float3 worldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
-	float4 position = mul(float4(worldPosition.xyz, 1), ViewProjectionMatrix);
+	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
 	return position;
 }
 
@@ -524,8 +562,7 @@ float3x3 SkinTangents(ModelInput_Skinned input, SkinningData data)
 // Vertex Shader function for GBuffers/Depth Pass (skinned mesh rendering)
 META_VS(IS_SURFACE, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_SKINNING=1)
-META_PERMUTATION_2(USE_SKINNING=1, IS_MOTION_VECTORS_PASS=1)
-META_PERMUTATION_3(USE_SKINNING=1, IS_MOTION_VECTORS_PASS=1, PER_BONE_MOTION_BLUR=1)
+META_PERMUTATION_2(USE_SKINNING=1, PER_BONE_MOTION_BLUR=1)
 META_VS_IN_ELEMENT(POSITION,     0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD,     0, R16G16_FLOAT,      0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(NORMAL,       0, R10G10B10A2_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
@@ -544,37 +581,35 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	
 	// Compute world space vertex position
 	float4x4 world = GetInstanceTransform(input);
-	output.WorldPosition = mul(float4(position, 1), world).xyz;
-#if IS_MOTION_VECTORS_PASS
+	output.Geometry.WorldPosition = mul(float4(position, 1), world).xyz;
 #if PER_BONE_MOTION_BLUR
 	float3 prevPosition = SkinPrevPosition(input);
-	output.PrevWorldPosition = mul(float4(prevPosition, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), PrevWorldMatrix).xyz;
 #else
-	output.PrevWorldPosition = mul(float4(position, 1), PrevWorldMatrix).xyz;
-#endif
+	output.Geometry.PrevWorldPosition = mul(float4(position, 1), PrevWorldMatrix).xyz;
 #endif
 
 	// Compute clip space position
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.TexCoord = input.TexCoord;
+	output.Geometry.TexCoord = input.TexCoord;
 #if USE_VERTEX_COLOR
-	output.VertexColor = float4(0, 0, 0, 1);
+	output.Geometry.VertexColor = float4(0, 0, 0, 1);
 #endif
-	output.LightmapUV = float2(0, 0);
-	output.InstanceOrigin = world[3].xyz;
+	output.Geometry.LightmapUV = float2(0, 0);
+	output.Geometry.InstanceOrigin = world[3].xyz;
 #if USE_INSTANCING
-	output.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
+	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
 #else
-	output.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
+	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
 #endif
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
 	float3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
-	output.WorldNormal = tangentToWorld[2];
-	output.WorldTangent.xyz = tangentToWorld[0];
-	output.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
+	output.Geometry.WorldNormal = tangentToWorld[2];
+	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
+	output.Geometry.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
 
 	// Get material input params if need to evaluate any material property
 #if USE_POSITION_OFFSET || USE_TESSELLATION || USE_CUSTOM_VERTEX_INTERPOLATORS
@@ -584,8 +619,8 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
-	output.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)
@@ -721,10 +756,8 @@ void PS_Depth(PixelInput input
 
 // Pixel Shader function for Motion Vectors Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(IS_MOTION_VECTORS_PASS=1)
 float4 PS_MotionVectors(PixelInput input) : SV_Target0
 {
-#if IS_MOTION_VECTORS_PASS
 	// LOD masking
 	ClipLODTransition(input);
 
@@ -736,8 +769,8 @@ float4 PS_MotionVectors(PixelInput input) : SV_Target0
 #endif
 
 	// Calculate this and previosu frame pixel locations in clip space
-	float4 prevClipPos = mul(float4(input.PrevWorldPosition, 1), PrevViewProjectionMatrix);
-	float4 curClipPos = mul(float4(input.WorldPosition, 1), ViewProjectionMatrix);
+	float4 prevClipPos = mul(float4(input.Geometry.PrevWorldPosition, 1), PrevViewProjectionMatrix);
+	float4 curClipPos = mul(float4(input.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 	float2 prevHPos = prevClipPos.xy / prevClipPos.w;
 	float2 curHPos = curClipPos.xy / curClipPos.w;
 
@@ -753,9 +786,6 @@ float4 PS_MotionVectors(PixelInput input) : SV_Target0
 
 	// Calculate per-pixel motion vector
 	return float4(vPosCur - vPosPrev, 0, 1);
-#else
-	return float4(0, 0, 0, 1);
-#endif
 }
 
 @9

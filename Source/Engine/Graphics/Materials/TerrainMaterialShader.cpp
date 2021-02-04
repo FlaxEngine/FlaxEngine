@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "TerrainMaterialShader.h"
+#include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -25,7 +26,6 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
     float TimeParam;
     Vector4 ViewInfo;
     Vector4 ScreenSize;
-    Rectangle LightmapArea;
     Vector3 WorldInvScale;
     float WorldDeterminantSign;
     float PerInstanceRandom;
@@ -56,11 +56,21 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.FirstDrawCall;
     const auto cb0 = _shader->GetCB(0);
     const bool hasCb0 = cb0->GetSize() != 0;
+    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
+    byte* cb = _cb0Data.Get();
+    auto materialData = reinterpret_cast<TerrainMaterialShaderData*>(cb);
+    cb += sizeof(TerrainMaterialShaderData);
+    int32 srv = 3;
+
+    // Setup features
+    if (_info.TessellationMode != TessellationMethod::None)
+        TessellationFeature::Bind(params, cb, srv);
+    const bool useLightmap = LightmapFeature::Bind(params, cb, srv);
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Constants = hasCb0 ? _cb0Data.Get() + sizeof(TerrainMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = false;
@@ -68,64 +78,42 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
     // Setup material constants data
-    auto data = reinterpret_cast<TerrainMaterialShaderData*>(_cb0Data.Get());
     if (hasCb0)
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), data->ViewProjectionMatrix);
-        Matrix::Transpose(drawCall.World, data->WorldMatrix);
-        Matrix::Transpose(view.View, data->ViewMatrix);
+        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
+        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
+        Matrix::Transpose(view.View, materialData->ViewMatrix);
 
-        data->ViewPos = view.Position;
-        data->ViewFar = view.Far;
-        data->ViewDir = view.Direction;
-        data->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
-        data->ViewInfo = view.ViewInfo;
-        data->ScreenSize = view.ScreenSize;
-
-        // Extract per axis scales from LocalToWorld transform
+        materialData->ViewPos = view.Position;
+        materialData->ViewFar = view.Far;
+        materialData->ViewDir = view.Direction;
+        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->ViewInfo = view.ViewInfo;
+        materialData->ScreenSize = view.ScreenSize;
         const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
         const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
         const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        data->WorldInvScale = Vector3(
+        materialData->WorldInvScale = Vector3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
-
-        data->WorldDeterminantSign = drawCall.WorldDeterminantSign;
-        data->PerInstanceRandom = drawCall.PerInstanceRandom;
-        data->CurrentLOD = drawCall.Terrain.CurrentLOD;
-        data->ChunkSizeNextLOD = drawCall.Terrain.ChunkSizeNextLOD;
-        data->TerrainChunkSizeLOD0 = drawCall.Terrain.TerrainChunkSizeLOD0;
-        data->HeightmapUVScaleBias = drawCall.Terrain.HeightmapUVScaleBias;
-        data->NeighborLOD = drawCall.Terrain.NeighborLOD;
-        data->OffsetUV = drawCall.Terrain.OffsetUV;
-    }
-    const bool useLightmap = view.Flags & ViewFlags::GI
-#if USE_EDITOR
-            && EnableLightmapsUsage
-#endif
-            && view.Pass == DrawPass::GBuffer
-            && drawCall.Terrain.Lightmap != nullptr;
-    if (useLightmap)
-    {
-        // Bind lightmap textures
-        GPUTexture *lightmap0, *lightmap1, *lightmap2;
-        drawCall.Terrain.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
-        context->BindSR(0, lightmap0);
-        context->BindSR(1, lightmap1);
-        context->BindSR(2, lightmap2);
-
-        // Set lightmap data
-        data->LightmapArea = drawCall.Terrain.LightmapUVsArea;
+        materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
+        materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
+        materialData->CurrentLOD = drawCall.Terrain.CurrentLOD;
+        materialData->ChunkSizeNextLOD = drawCall.Terrain.ChunkSizeNextLOD;
+        materialData->TerrainChunkSizeLOD0 = drawCall.Terrain.TerrainChunkSizeLOD0;
+        materialData->HeightmapUVScaleBias = drawCall.Terrain.HeightmapUVScaleBias;
+        materialData->NeighborLOD = drawCall.Terrain.NeighborLOD;
+        materialData->OffsetUV = drawCall.Terrain.OffsetUV;
     }
 
     // Bind terrain textures
-    const auto heightmap = drawCall.Terrain.Patch->Heightmap.Get()->GetTexture();
+    const auto heightmap = drawCall.Terrain.Patch->Heightmap->GetTexture();
     const auto splatmap0 = drawCall.Terrain.Patch->Splatmap[0] ? drawCall.Terrain.Patch->Splatmap[0]->GetTexture() : nullptr;
     const auto splatmap1 = drawCall.Terrain.Patch->Splatmap[1] ? drawCall.Terrain.Patch->Splatmap[1]->GetTexture() : nullptr;
-    context->BindSR(3, heightmap);
-    context->BindSR(4, splatmap0);
-    context->BindSR(5, splatmap1);
+    context->BindSR(0, heightmap);
+    context->BindSR(1, splatmap0);
+    context->BindSR(2, splatmap1);
 
     // Bind constants
     if (hasCb0)

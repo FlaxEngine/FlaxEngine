@@ -194,7 +194,7 @@ bool DeferredMaterialShader::Load()
     psDesc.VS = _shader->GetVS("VS", 1);
     _cacheInstanced.Default.Init(psDesc);
 
-    // GBuffer Pass with lightmap (use pixel shader permutation for USE_LIGHTMAP=1)
+    // GBuffer Pass with lightmap (pixel shader permutation for USE_LIGHTMAP=1)
     psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
@@ -210,21 +210,16 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthWriteEnable = false;
     psDesc.DepthTestEnable = true;
     psDesc.DepthFunc = ComparisonFunc::LessEqual;
-    if (useTess)
-    {
-        psDesc.HS = _shader->GetHS("HS", 1);
-        psDesc.DS = _shader->GetDS("DS", 1);
-    }
-    psDesc.VS = _shader->GetVS("VS", 2);
+    psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
     _cache.MotionVectors.Init(psDesc);
 
     // Motion Vectors pass with skinning
-    psDesc.VS = _shader->GetVS("VS_Skinned", 1);
+    psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.MotionVectorsSkinned.Init(psDesc);
 
     // Motion Vectors pass with skinning (with per-bone motion blur)
-    psDesc.VS = _shader->GetVS("VS_Skinned", 2);
+    psDesc.VS = _shader->GetVS("VS_Skinned", 1);
     _cache.MotionVectorsSkinnedPerBone.Init(psDesc);
 
     // Depth Pass

@@ -116,9 +116,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Input macro specified by the material: DECAL_BLEND_MODE
 
 #define DECAL_BLEND_MODE_TRANSLUCENT 0

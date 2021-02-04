@@ -139,13 +139,13 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, in
     {
         // Bind lightmap textures
         GPUTexture *lightmap0, *lightmap1, *lightmap2;
-        drawCall.Surface.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
-        context->BindSR(0, lightmap0);
-        context->BindSR(1, lightmap1);
-        context->BindSR(2, lightmap2);
+        drawCall.Features.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
+        context->BindSR(srv + 0, lightmap0);
+        context->BindSR(srv + 1, lightmap1);
+        context->BindSR(srv + 2, lightmap2);
 
         // Set lightmap data
-        data.LightmapArea = drawCall.Surface.LightmapUVsArea;
+        data.LightmapArea = drawCall.Features.LightmapUVsArea;
     }
 
     srv += SRVs;

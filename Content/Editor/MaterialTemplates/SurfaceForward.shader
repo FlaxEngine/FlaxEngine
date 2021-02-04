@@ -338,9 +338,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Calculates the transform matrix from mesh tangent space to local space
 half3x3 CalcTangentToLocal(ModelInput input)
 {
@@ -431,31 +428,6 @@ VertexOutput VS(ModelInput input)
 
 // The skeletal bones matrix buffer (stored as 4x3, 3 float4 behind each other)
 Buffer<float4> BoneMatrices : register(t0);
-
-#if PER_BONE_MOTION_BLUR
-
-// The skeletal bones matrix buffer from the previous frame
-Buffer<float4> PrevBoneMatrices : register(t1);
-
-float3x4 GetPrevBoneMatrix(int index)
-{
-	float4 a = PrevBoneMatrices[index * 3];
-	float4 b = PrevBoneMatrices[index * 3 + 1];
-	float4 c = PrevBoneMatrices[index * 3 + 2];
-	return float3x4(a, b, c);
-}
-
-float3 SkinPrevPosition(ModelInput_Skinned input)
-{
-	float4 position = float4(input.Position.xyz, 1);
-	float3x4 boneMatrix = input.BlendWeights.x * GetPrevBoneMatrix(input.BlendIndices.x);
-	boneMatrix += input.BlendWeights.y * GetPrevBoneMatrix(input.BlendIndices.y);
-	boneMatrix += input.BlendWeights.z * GetPrevBoneMatrix(input.BlendIndices.z);
-	boneMatrix += input.BlendWeights.w * GetPrevBoneMatrix(input.BlendIndices.w);
-	return mul(boneMatrix, position);
-}
-
-#endif
 
 // Cached skinning data to avoid multiple calculation 
 struct SkinningData

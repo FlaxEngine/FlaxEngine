@@ -332,9 +332,6 @@ Material GetMaterialPS(MaterialInput input)
 @4
 }
 
-// Fix line for errors/warnings for shader code from template
-#line 1000
-
 // Calculates the transform matrix from mesh tangent space to local space
 half3x3 CalcTangentToLocal(ModelInput input)
 {
