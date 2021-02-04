@@ -43,11 +43,6 @@ struct ForwardShadingFeature : MaterialShaderFeature
 // Material shader feature that adds geometry hardware tessellation (using Hull and Domain shaders).
 struct TessellationFeature : MaterialShaderFeature
 {
-    enum { SRVs = 0 };
-
-    static void Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv)
-    {
-    }
 #if USE_EDITOR
     static void Generate(GeneratorData& data);
 #endif
@@ -64,6 +59,14 @@ struct LightmapFeature : MaterialShaderFeature
         });
 
     static bool Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv);
+#if USE_EDITOR
+    static void Generate(GeneratorData& data);
+#endif
+};
+
+// Material shader feature that adds distortion vectors rendering pass.
+struct DistortionFeature : MaterialShaderFeature
+{
 #if USE_EDITOR
     static void Generate(GeneratorData& data);
 #endif

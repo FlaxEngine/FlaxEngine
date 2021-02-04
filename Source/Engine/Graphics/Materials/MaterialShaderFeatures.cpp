@@ -159,7 +159,7 @@ void TessellationFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Tessellation.hlsl");
     data.ConstantsSize = 0;
-    data.ResourcesCount = SRVs;
+    data.ResourcesCount = 0;
 }
 
 void LightmapFeature::Generate(GeneratorData& data)
@@ -167,6 +167,13 @@ void LightmapFeature::Generate(GeneratorData& data)
     data.Template = TEXT("Lightmap.hlsl");
     data.ConstantsSize = sizeof(Data);
     data.ResourcesCount = SRVs;
+}
+
+void DistortionFeature::Generate(GeneratorData& data)
+{
+    data.Template = TEXT("Distortion.hlsl");
+    data.ConstantsSize = 0;
+    data.ResourcesCount = 0;
 }
 
 #endif

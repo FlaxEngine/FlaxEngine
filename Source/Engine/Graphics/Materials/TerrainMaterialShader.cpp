@@ -63,8 +63,6 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     int32 srv = 3;
 
     // Setup features
-    if (_info.TessellationMode != TessellationMethod::None)
-        TessellationFeature::Bind(params, cb, srv);
     const bool useLightmap = LightmapFeature::Bind(params, cb, srv);
 
     // Setup parameters

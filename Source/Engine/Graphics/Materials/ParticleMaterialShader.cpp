@@ -72,16 +72,23 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     auto& view = params.RenderContext.View;
     auto cache = params.RenderContext.List;
     auto& drawCall = *params.FirstDrawCall;
+    const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
     const auto cb0 = _shader->GetCB(0);
     const bool hasCb0 = cb0->GetSize() != 0;
+    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
     const auto cb1 = _shader->GetCB(1);
-    const bool hasCb1 = cb1->GetSize() != 0;
-    const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
+    const bool hasCb1 = cb1 && cb1->GetSize() != 0;
+    byte* cb = _cb0Data.Get();
+    auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb);
+    cb += sizeof(ParticleMaterialShaderData);
+    int32 srv = 0;
+    
+    // Setup features
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Constants = hasCb0 ? _cb0Data.Get() + sizeof(ParticleMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;

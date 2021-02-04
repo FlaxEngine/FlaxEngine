@@ -186,6 +186,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(LightmapFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        ADD_FEATURE(DistortionFeature);
         break;
     case MaterialDomain::Terrain:
         if (materialInfo.TessellationMode != TessellationMethod::None)
@@ -193,6 +195,10 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(LightmapFeature);
         break;
     default:
+    case MaterialDomain::Particle:
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        ADD_FEATURE(DistortionFeature);
+        break;
         break;
     }
 #undef ADD_FEATURE
