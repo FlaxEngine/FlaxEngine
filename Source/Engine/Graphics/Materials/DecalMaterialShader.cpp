@@ -44,7 +44,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(DecalMaterialShaderData) : nullptr;
+    bindMeta.Constants = hasCb0 ? _cb0Data.Get() + sizeof(DecalMaterialShaderData) : nullptr;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = true;

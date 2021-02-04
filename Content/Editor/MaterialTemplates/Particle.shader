@@ -312,6 +312,8 @@ float3 TransformParticleVector(float3 input)
 	return mul(float4(input, 0.0f), WorldMatrixInverseTransposed).xyz;
 }
 
+@8
+
 // Get material properties function (for vertex shader)
 Material GetMaterialVS(MaterialInput input)
 {
@@ -865,3 +867,5 @@ void PS_Depth(PixelInput input
 	OutColor = 0;
 #endif
 }
+
+@9

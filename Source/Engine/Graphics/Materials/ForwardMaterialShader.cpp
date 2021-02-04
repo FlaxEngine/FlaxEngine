@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ForwardMaterialShader.h"
+#include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPULimits.h"
@@ -29,7 +30,6 @@ PACK_STRUCT(struct ForwardMaterialShaderData {
     float TimeParam;
     Vector4 ViewInfo;
     Vector4 ScreenSize;
-    Rectangle LightmapArea;
     Vector3 WorldInvScale;
     float WorldDeterminantSign;
     Vector2 Dummy0;
@@ -70,13 +70,22 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.FirstDrawCall;
     const auto cb0 = _shader->GetCB(0);
     const bool hasCb0 = cb0 && cb0->GetSize() != 0;
+    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
     const auto cb1 = _shader->GetCB(1);
     const bool hasCb1 = cb1 && cb1->GetSize() != 0;
+    byte* cb = _cb0Data.Get();
+    auto materialData = reinterpret_cast<ForwardMaterialShaderData*>(cb);
+    cb += sizeof(ForwardMaterialShaderData);
+    int32 srv = 0;
+
+    // Setup features
+    if (_info.TessellationMode != TessellationMethod::None)
+        TessellationFeature::Bind(params, cb, srv);
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(ForwardMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr; // forward pass materials cannot sample scene color for now
     bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;
@@ -93,7 +102,6 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     }
 
     // Setup material constants data
-    const auto materialData = reinterpret_cast<ForwardMaterialShaderData*>(_cb0Data.Get());
     if (hasCb0)
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);

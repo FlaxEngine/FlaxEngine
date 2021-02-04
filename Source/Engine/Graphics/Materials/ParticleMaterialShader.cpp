@@ -81,7 +81,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(ParticleMaterialShaderData) : nullptr;
+    bindMeta.Constants = hasCb0 ? _cb0Data.Get() + sizeof(ParticleMaterialShaderData) : nullptr;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;
@@ -105,7 +105,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
                     auto name = StringView(param.GetName().Get() + 9);
 
                     const int32 offset = drawCall.Particle.Particles->Layout->FindAttributeOffset(name);
-                    *((int32*)(bindMeta.Buffer0 + param.GetBindOffset())) = offset;
+                    *((int32*)(bindMeta.Constants + param.GetBindOffset())) = offset;
                 }
             }
         }

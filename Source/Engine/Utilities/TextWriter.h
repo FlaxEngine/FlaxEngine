@@ -4,6 +4,8 @@
 
 #include "Engine/Core/NonCopyable.h"
 #include "Engine/Core/Formatting.h"
+#include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 
 /// <summary>
@@ -95,6 +97,24 @@ public:
         const int32 len = (int32)w.size();
         _buffer.WriteBytes((void*)w.data(), len * sizeof(CharType));
         WriteLine();
+    }
+
+    /// <summary>
+    /// Write text to the buffer
+    /// </summary>
+    /// <param name="text">Data</param>
+    void Write(const StringViewBase<CharType>& text)
+    {
+        _buffer.WriteBytes((void*)text.Get(), text.Length() * sizeof(CharType));
+    }
+
+    /// <summary>
+    /// Write text to the buffer
+    /// </summary>
+    /// <param name="text">Data</param>
+    void Write(const StringBase<CharType>& text)
+    {
+        _buffer.WriteBytes((void*)text.Get(), text.Length() * sizeof(CharType));
     }
 
     /// <summary>

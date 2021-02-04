@@ -29,7 +29,6 @@ public:
     /// <summary>
     /// Determines whether material is a surface shader.
     /// </summary>
-    /// <returns><c>true</c> if material is surface shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsSurface() const
     {
         return GetInfo().Domain == MaterialDomain::Surface;
@@ -38,7 +37,6 @@ public:
     /// <summary>
     /// Determines whether material is a post fx.
     /// </summary>
-    /// <returns><c>true</c> if material is post fx; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsPostFx() const
     {
         return GetInfo().Domain == MaterialDomain::PostProcess;
@@ -47,7 +45,6 @@ public:
     /// <summary>
     /// Determines whether material is a decal.
     /// </summary>
-    /// <returns><c>true</c> if material is decal; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsDecal() const
     {
         return GetInfo().Domain == MaterialDomain::Decal;
@@ -56,7 +53,6 @@ public:
     /// <summary>
     /// Determines whether material is a GUI shader.
     /// </summary>
-    /// <returns><c>true</c> if material is GUI shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsGUI() const
     {
         return GetInfo().Domain == MaterialDomain::GUI;
@@ -65,7 +61,6 @@ public:
     /// <summary>
     /// Determines whether material is a terrain shader.
     /// </summary>
-    /// <returns><c>true</c> if material is terrain shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsTerrain() const
     {
         return GetInfo().Domain == MaterialDomain::Terrain;
@@ -74,7 +69,6 @@ public:
     /// <summary>
     /// Determines whether material is a particle shader.
     /// </summary>
-    /// <returns><c>true</c> if material is particle shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsParticle() const
     {
         return GetInfo().Domain == MaterialDomain::Particle;

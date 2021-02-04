@@ -36,7 +36,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(GUIMaterialShaderData) : nullptr;
+    bindMeta.Constants = hasCb0 ? _cb0Data.Get() + sizeof(GUIMaterialShaderData) : nullptr;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = false;

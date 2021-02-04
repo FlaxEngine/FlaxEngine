@@ -185,6 +185,8 @@ float4 GetVertexColor(MaterialInput input)
 #endif
 }
 
+@8
+
 // Get material properties function (for vertex shader)
 Material GetMaterialVS(MaterialInput input)
 {
@@ -257,3 +259,5 @@ float4 PS_GUI(PixelInput input) : SV_Target0
 
 	return float4(material.Emissive, material.Opacity);
 }
+
+@9

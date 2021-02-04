@@ -108,6 +108,8 @@ float4 GetVertexColor(MaterialInput input)
 	return 1;
 }
 
+@8
+
 // Get material properties function (for pixel shader)
 Material GetMaterialPS(MaterialInput input)
 {
@@ -211,3 +213,5 @@ void PS_Decal(
 	#error "Invalid decal blending mode"
 #endif
 }
+
+@9

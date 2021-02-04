@@ -39,14 +39,10 @@ float2 OffsetUV;
 float2 Dummy0;
 @1META_CB_END
 
-#if CAN_USE_LIGHTMAP
-
 // Irradiance and directionality prebaked lightmaps
 Texture2D Lightmap0 : register(t0);
 Texture2D Lightmap1 : register(t1);
 Texture2D Lightmap2 : register(t2);
-
-#endif
 
 // Terrain data
 Texture2D Heightmap : register(t3);
@@ -215,6 +211,22 @@ float4 GetVertexColor(MaterialInput input)
 {
 	return 1;
 }
+
+// Evaluates the H-Basis coefficients in the tangent space normal direction
+float3 GetHBasisIrradiance(float3 n, float3 h0, float3 h1, float3 h2, float3 h3)
+{
+	// Band 0
+	float3 color = h0 * (1.0f / sqrt(2.0f * PI));
+
+	// Band 1
+	color += h1 * -sqrt(1.5f / PI) * n.y;
+	color += h2 *  sqrt(1.5f / PI) * (2 * n.z - 1.0f);
+	color += h3 * -sqrt(1.5f / PI) * n.x;
+
+	return color;
+}
+
+@8
 
 // Get material properties function (for vertex shader)
 Material GetMaterialVS(MaterialInput input)
@@ -781,3 +793,5 @@ void PS_Depth(PixelInput input
 	OutColor = 0;
 #endif
 }
+
+@9

@@ -458,7 +458,6 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
     options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrain && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
     options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
-    options.Macros.Add({ "CAN_USE_LIGHTMAP", Numbers[isSurfaceOrTerrain ? 1 : 0] });
 #endif
 }
 

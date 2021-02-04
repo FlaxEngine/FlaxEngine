@@ -209,8 +209,6 @@ public:
     static MaterialGraphBoxesMapping MaterialGraphBoxesMappings[];
 
     static const MaterialGraphBoxesMapping& GetMaterialRootNodeBox(MaterialGraphBoxes box);
-
-    static byte getStartSrvRegister(MaterialLayer* baseLayer);
 };
 
 #endif

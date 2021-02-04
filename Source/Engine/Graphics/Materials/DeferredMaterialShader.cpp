@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "DeferredMaterialShader.h"
+#include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
@@ -28,7 +29,6 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
     float TimeParam;
     Vector4 ViewInfo;
     Vector4 ScreenSize;
-    Rectangle LightmapArea;
     Vector3 WorldInvScale;
     float WorldDeterminantSign;
     Vector2 Dummy0;
@@ -63,11 +63,21 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.FirstDrawCall;
     const auto cb0 = _shader->GetCB(0);
     const bool hasCb0 = cb0 && cb0->GetSize() != 0;
+    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
+    byte* cb = _cb0Data.Get();
+    auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(cb);
+    cb += sizeof(DeferredMaterialShaderData);
+    int32 srv = 0;
+
+    // Setup features
+    if (_info.TessellationMode != TessellationMethod::None)
+        TessellationFeature::Bind(params, cb, srv);
+    const bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && LightmapFeature::Bind(params, cb, srv);
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(DeferredMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = false;
@@ -75,7 +85,6 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
     // Setup material constants data
-    auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(_cb0Data.Get());
     if (hasCb0)
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
@@ -106,23 +115,6 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->TemporalAAJitter = view.TemporalAAJitter;
         materialData->GeometrySize = drawCall.Surface.GeometrySize;
-    }
-    const bool useLightmap = view.Flags & ViewFlags::GI
-#if USE_EDITOR
-            && EnableLightmapsUsage
-#endif
-            && drawCall.Surface.Lightmap != nullptr;
-    if (useLightmap)
-    {
-        // Bind lightmap textures
-        GPUTexture *lightmap0, *lightmap1, *lightmap2;
-        drawCall.Surface.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
-        context->BindSR(0, lightmap0);
-        context->BindSR(1, lightmap1);
-        context->BindSR(2, lightmap2);
-
-        // Set lightmap data
-        materialData->LightmapArea = drawCall.Surface.LightmapUVsArea;
     }
 
     // Check if is using mesh skinning
