@@ -72,7 +72,28 @@ namespace FlaxEditor.Viewport.Previews
         public Actor Instance
         {
             get => _instance;
-            internal set => _instance = value;
+            internal set
+            {
+                if (_instance == value)
+                    return;
+
+                if (_instance)
+                {
+                    if (customControlLinked != null)
+                    {
+                        customControlLinked.Parent = null;
+                        customControlLinked = null;
+                    }
+                    Task.RemoveCustomActor(_instance);
+                }
+
+                _instance = value;
+
+                if (_instance)
+                {
+                    Task.AddCustomActor(_instance);
+                }
+            }
         }
 
         /// <summary>
