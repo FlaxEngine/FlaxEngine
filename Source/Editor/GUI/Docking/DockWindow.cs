@@ -307,6 +307,14 @@ namespace FlaxEditor.GUI.Docking
             _dockedTo?.SelectTab(this, autoFocus);
         }
 
+        /// <summary>
+        /// Brings the window to the front of the Z order.
+        /// </summary>
+        public void BringToFront()
+        {
+            _dockedTo?.RootWindow?.BringToFront();
+        }
+
         internal void OnUnlinkInternal()
         {
             OnUnlink();
@@ -412,6 +420,7 @@ namespace FlaxEditor.GUI.Docking
             base.Focus();
 
             SelectTab();
+            BringToFront();
         }
 
         /// <inheritdoc />
