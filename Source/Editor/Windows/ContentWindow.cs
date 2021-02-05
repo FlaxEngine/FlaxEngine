@@ -422,7 +422,7 @@ namespace FlaxEditor.Windows
             // TODO: just remove invalid locations from the history (those are removed)
             NavigationClearHistory();
 
-            // Delete
+            // Delete items
             for (int i = 0; i < toDelete.Count; i++)
                 Editor.ContentDatabase.Delete(toDelete[i]);
 
