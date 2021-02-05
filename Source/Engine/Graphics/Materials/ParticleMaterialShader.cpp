@@ -60,10 +60,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
     const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
-    const auto cb0 = _shader->GetCB(0);
-    const bool hasCb0 = cb0->GetSize() != 0;
-    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
-    byte* cb = _cb0Data.Get();
+    byte* cb = _cbData.Get();
     auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb);
     cb += sizeof(ParticleMaterialShaderData);
     int32 srv = 2;
@@ -86,7 +83,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     context->BindSR(1, drawCall.Particle.Particles->GPU.SortedIndices ? drawCall.Particle.Particles->GPU.SortedIndices->View() : nullptr);
 
     // Setup particles attributes binding info
-    if (hasCb0)
     {
         const auto& p = *params.ParamsLink->This;
         for (int32 i = 0; i < p.Count(); i++)
@@ -129,19 +125,16 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         static StringView ParticleRibbonTwist(TEXT("RibbonTwist"));
         static StringView ParticleRibbonFacingVector(TEXT("RibbonFacingVector"));
 
-        if (hasCb0)
-        {
-            materialData->RibbonWidthOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonWidth, ParticleAttribute::ValueTypes::Float, -1);
-            materialData->RibbonTwistOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonTwist, ParticleAttribute::ValueTypes::Float, -1);
-            materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Vector3, -1);
+        materialData->RibbonWidthOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonWidth, ParticleAttribute::ValueTypes::Float, -1);
+        materialData->RibbonTwistOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonTwist, ParticleAttribute::ValueTypes::Float, -1);
+        materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Vector3, -1);
 
-            materialData->RibbonUVTilingDistance = drawCall.Particle.Ribbon.UVTilingDistance;
-            materialData->RibbonUVScale.X = drawCall.Particle.Ribbon.UVScaleX;
-            materialData->RibbonUVScale.Y = drawCall.Particle.Ribbon.UVScaleY;
-            materialData->RibbonUVOffset.X = drawCall.Particle.Ribbon.UVOffsetX;
-            materialData->RibbonUVOffset.Y = drawCall.Particle.Ribbon.UVOffsetY;
-            materialData->RibbonSegmentCount = drawCall.Particle.Ribbon.SegmentCount;
-        }
+        materialData->RibbonUVTilingDistance = drawCall.Particle.Ribbon.UVTilingDistance;
+        materialData->RibbonUVScale.X = drawCall.Particle.Ribbon.UVScaleX;
+        materialData->RibbonUVScale.Y = drawCall.Particle.Ribbon.UVScaleY;
+        materialData->RibbonUVOffset.X = drawCall.Particle.Ribbon.UVOffsetX;
+        materialData->RibbonUVOffset.Y = drawCall.Particle.Ribbon.UVOffsetY;
+        materialData->RibbonSegmentCount = drawCall.Particle.Ribbon.SegmentCount;
 
         if (drawCall.Particle.Ribbon.SegmentDistances)
             context->BindSR(1, drawCall.Particle.Ribbon.SegmentDistances->View());
@@ -153,7 +146,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
 
     // Setup material constants data
-    if (hasCb0)
     {
         static StringView ParticlePosition(TEXT("Position"));
         static StringView ParticleSpriteSize(TEXT("SpriteSize"));
@@ -188,10 +180,10 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     }
 
     // Bind constants
-    if (hasCb0)
+    if (_cb)
     {
-        context->UpdateCB(cb0, _cb0Data.Get());
-        context->BindCB(0, cb0);
+        context->UpdateCB(_cb, _cbData.Get());
+        context->BindCB(0, _cb);
     }
 
     // Bind pipeline

@@ -185,6 +185,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         if (materialInfo.TessellationMode != TessellationMethod::None)
         ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(MotionVectorsFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(DeferredShadingFeature);

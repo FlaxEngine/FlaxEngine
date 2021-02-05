@@ -141,14 +141,11 @@ MaterialInput GetMaterialInput(PixelInput input)
 }
 
 // Gets the local to world transform matrix (supports instancing)
-float4x4 GetInstanceTransform(ModelInput input)
-{
-	return WorldMatrix;
-}
-float4x4 GetInstanceTransform(MaterialInput input)
-{
-	return WorldMatrix;
-}
+#if USE_INSTANCING
+#define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
+#else
+#define GetInstanceTransform(input) WorldMatrix;
+#endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)

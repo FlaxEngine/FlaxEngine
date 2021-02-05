@@ -32,14 +32,13 @@ struct TessalationDSToPS
 
 MaterialInput GetMaterialInput(TessalationDSToPS input)
 {
-	MaterialInput result = (MaterialInput)0;
-	result.SvPosition = input.Position;
-	GetGeometryMaterialInput(result, input.Geometry);
-	result.TwoSidedSign = WorldDeterminantSign;
+	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
+	output.SvPosition = input.Position;
+	output.TwoSidedSign = WorldDeterminantSign;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
-	result.CustomVSToPS = input.CustomVSToPS;
+	output.CustomVSToPS = input.CustomVSToPS;
 #endif
-	return result;
+	return output;
 }
 
 struct TessalationPatch

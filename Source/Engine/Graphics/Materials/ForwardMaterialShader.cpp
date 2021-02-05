@@ -58,10 +58,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    const auto cb0 = _shader->GetCB(0);
-    const bool hasCb0 = cb0 && cb0->GetSize() != 0;
-    ASSERT(hasCb0 && "TODO: fix it"); // TODO: always make cb pointer valid even if cb is missing
-    byte* cb = _cb0Data.Get();
+    byte* cb = _cbData.Get();
     auto materialData = reinterpret_cast<ForwardMaterialShaderData*>(cb);
     cb += sizeof(ForwardMaterialShaderData);
     int32 srv = 2;
@@ -89,7 +86,6 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     }
 
     // Setup material constants data
-    if (hasCb0)
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
@@ -121,10 +117,10 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     }
 
     // Bind constants
-    if (hasCb0)
+    if (_cb)
     {
-        context->UpdateCB(cb0, _cb0Data.Get());
-        context->BindCB(0, cb0);
+        context->UpdateCB(_cb, _cbData.Get());
+        context->BindCB(0, _cb);
     }
 
     // Select pipeline state based on current pass and render mode

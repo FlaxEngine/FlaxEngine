@@ -12,8 +12,6 @@ struct MaterialShaderFeature
     struct GeneratorData
     {
         const Char* Template;
-        int32 ConstantsSize;
-        int32 ResourcesCount;
     };
 #endif;
 };
@@ -77,6 +75,14 @@ struct LightmapFeature : MaterialShaderFeature
 
 // Material shader feature that adds distortion vectors rendering pass.
 struct DistortionFeature : MaterialShaderFeature
+{
+#if USE_EDITOR
+    static void Generate(GeneratorData& data);
+#endif
+};
+
+// Material shader feature that adds motion vectors rendering pass.
+struct MotionVectorsFeature : MaterialShaderFeature
 {
 #if USE_EDITOR
     static void Generate(GeneratorData& data);

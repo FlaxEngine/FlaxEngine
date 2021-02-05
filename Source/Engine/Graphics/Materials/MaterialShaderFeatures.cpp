@@ -158,36 +158,31 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, in
 void ForwardShadingFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/ForwardShading.hlsl");
-    data.ConstantsSize = sizeof(Data);
-    data.ResourcesCount = SRVs;
 }
 
 void DeferredShadingFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/DeferredShading.hlsl");
-    data.ConstantsSize = 0;
-    data.ResourcesCount = 0;
 }
 
 void TessellationFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/Tessellation.hlsl");
-    data.ConstantsSize = 0;
-    data.ResourcesCount = 0;
 }
 
 void LightmapFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/Lightmap.hlsl");
-    data.ConstantsSize = sizeof(Data);
-    data.ResourcesCount = SRVs;
 }
 
 void DistortionFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/Distortion.hlsl");
-    data.ConstantsSize = 0;
-    data.ResourcesCount = 0;
+}
+
+void MotionVectorsFeature::Generate(GeneratorData& data)
+{
+    data.Template = TEXT("Features/MotionVectors.hlsl");
 }
 
 #endif

@@ -14,18 +14,15 @@
 #include "GUIMaterialShader.h"
 #include "TerrainMaterialShader.h"
 #include "ParticleMaterialShader.h"
+//#include "DeformableMaterialShader.h"
 
-GPUPipelineState* MaterialShader::PipelineStateCache::GetPS(CullMode mode, bool wireframe)
+GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
 {
-    const int32 index = static_cast<int32>(mode) + (wireframe ? 3 : 0);
-    if (PS[index])
-        return PS[index];
-
     Desc.CullMode = mode;
     Desc.Wireframe = wireframe;
-    PS[index] = GPUDevice::Instance->CreatePipelineState();
-    PS[index]->Init(Desc);
-    return PS[index];
+    auto ps = GPUDevice::Instance->CreatePipelineState();
+    ps->Init(Desc);
+    return ps;
 }
 
 MaterialShader::MaterialShader(const String& name)
@@ -65,6 +62,9 @@ MaterialShader* MaterialShader::Create(const String& name, MemoryReadStream& sha
     case MaterialDomain::Particle:
         material = New<ParticleMaterialShader>(name);
         break;
+        /*case MaterialDomain::Deformable:
+            material = New<DeformableMaterialShader>(name);
+            break;*/
     default:
         LOG(Fatal, "Unknown material type.");
         return nullptr;
@@ -138,10 +138,17 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
     }
 
     // Init memory for a constant buffer
-    const auto cb0 = _shader->GetCB(0);
-    if (cb0)
+    _cb = _shader->GetCB(0);
+    if (_cb)
     {
-        _cb0Data.Resize(cb0->GetSize(), false);
+        int32 cbSize = _cb->GetSize();
+        if (cbSize == 0)
+        {
+            // Handle unused constant buffer (eg. postFx returning solid color)
+            cbSize = 1024;
+            _cb = nullptr;
+        }
+        _cbData.Resize(cbSize, false);
     }
 
     // Initialize the material based on type (create pipeline states and setup)
@@ -157,6 +164,7 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
 void MaterialShader::Unload()
 {
     _isLoaded = false;
-    _cb0Data.Resize(0, false);
+    _cb = nullptr;
+    _cbData.Resize(0, false);
     _shader->ReleaseGPU();
 }
