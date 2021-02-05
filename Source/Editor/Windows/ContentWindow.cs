@@ -396,7 +396,7 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(new List<ContentItem> { item });
+            Delete(new List<ContentItem>(1) { item });
         }
 
         /// <summary>
@@ -405,36 +405,18 @@ namespace FlaxEditor.Windows
         /// <param name="items">The items to delete.</param>
         public void Delete(List<ContentItem> items)
         {
+            if (items.Count == 0) return;
+
             // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
             var toDelete = new List<ContentItem>(items);
 
+            string msg = toDelete.Count == 1 ? 
+                  string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
+                : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
+
             // Ask user
-            if (toDelete.Count == 1)
-            {
-                // Single item
-                if (MessageBox.Show(string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path),
-                                    "Delete asset(s)",
-                                    MessageBoxButtons.OKCancel,
-                                    MessageBoxIcon.Question)
-                    != DialogResult.OK)
-                {
-                    // Break
-                    return;
-                }
-            }
-            else
-            {
-                // Many items
-                if (MessageBox.Show(string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count),
-                                    "Delete asset(s)",
-                                    MessageBoxButtons.OKCancel,
-                                    MessageBoxIcon.Question)
-                    != DialogResult.OK)
-                {
-                    // Break
-                    return;
-                }
-            }
+            if (MessageBox.Show(msg, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                return;
 
             // Clear navigation
             // TODO: just remove invalid locations from the history (those are removed)
