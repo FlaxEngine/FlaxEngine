@@ -26,7 +26,6 @@ void PostFxMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
     const auto cb0 = _shader->GetCB(0);
     const bool hasCb0 = cb0->GetSize() != 0;
 

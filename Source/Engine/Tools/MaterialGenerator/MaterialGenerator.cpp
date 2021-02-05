@@ -59,7 +59,7 @@ namespace
 bool FeatureData::Init()
 {
     // Load template file
-    const String path = Globals::EngineContentFolder / TEXT("Editor/MaterialTemplates/Features/") + Data.Template;
+    const String path = Globals::EngineContentFolder / TEXT("Editor/MaterialTemplates/") + Data.Template;
     String contents;
     if (File::ReadAllText(path, contents))
     {
@@ -188,17 +188,20 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
+        ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Terrain:
         if (materialInfo.TessellationMode != TessellationMethod::None)
         ADD_FEATURE(TessellationFeature);
         ADD_FEATURE(LightmapFeature);
         break;
-    default:
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        ADD_FEATURE(ForwardShadingFeature);
         break;
+    default:
         break;
     }
 #undef ADD_FEATURE
@@ -390,18 +393,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         int32 srv = 0;
         switch (baseLayer->Domain)
         {
-        case MaterialDomain::Surface:
-            if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
-                srv = 3; // Forward shading resources
-            break;
         case MaterialDomain::Decal:
-            srv = 1;
+            srv = 1; // Depth buffer
             break;
         case MaterialDomain::Terrain:
             srv = 3; // Heightmap + 2 splatmaps
             break;
         case MaterialDomain::Particle:
-            srv = 5;
+            srv = 2; // Particles data + Sorted indices/Ribbon segments
             break;
         }
         for (auto f : features)

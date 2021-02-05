@@ -42,9 +42,8 @@ Texture2D Heightmap : register(t0);
 Texture2D Splatmap0 : register(t1);
 Texture2D Splatmap1 : register(t2);
 
-// Material shader resources
+// Shader resources
 @2
-
 // Geometry data passed though the graphics rendering stages up to the pixel shader
 struct GeometryData
 {

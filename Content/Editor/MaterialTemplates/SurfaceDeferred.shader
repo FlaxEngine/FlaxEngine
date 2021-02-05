@@ -30,9 +30,8 @@ float3 GeometrySize;
 float Dummy1;
 @1META_CB_END
 
-// Material shader resources
+// Shader resources
 @2
-
 // Geometry data passed though the graphics rendering stages up to the pixel shader
 struct GeometryData
 {

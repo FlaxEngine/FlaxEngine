@@ -53,7 +53,6 @@ protected:
     bool _isLoaded;
     GPUShader* _shader;
     Array<byte> _cb0Data;
-    Array<byte> _cb1Data;
     MaterialInfo _info;
 
 protected:

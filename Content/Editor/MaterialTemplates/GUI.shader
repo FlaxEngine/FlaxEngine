@@ -3,7 +3,6 @@
 
 #define MATERIAL 1
 @3
-
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
@@ -22,7 +21,7 @@ float4 ViewInfo;
 float4 ScreenSize;
 @1META_CB_END
 
-// Material shader resources
+// Shader resources
 @2
 // Interpolants passed from the vertex shader
 struct VertexOutput

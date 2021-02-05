@@ -38,6 +38,9 @@ struct ForwardShadingFeature : MaterialShaderFeature
         });
 
     static void Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv);
+#if USE_EDITOR
+    static void Generate(GeneratorData& data);
+#endif
 };
 
 // Material shader feature that adds geometry hardware tessellation (using Hull and Domain shaders).

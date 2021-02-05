@@ -143,11 +143,6 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
     {
         _cb0Data.Resize(cb0->GetSize(), false);
     }
-    const auto cb1 = _shader->GetCB(1);
-    if (cb1)
-    {
-        _cb1Data.Resize(cb1->GetSize(), false);
-    }
 
     // Initialize the material based on type (create pipeline states and setup)
     if (Load())
@@ -163,6 +158,5 @@ void MaterialShader::Unload()
 {
     _isLoaded = false;
     _cb0Data.Resize(0, false);
-    _cb1Data.Resize(0, false);
     _shader->ReleaseGPU();
 }

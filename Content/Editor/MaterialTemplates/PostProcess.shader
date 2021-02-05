@@ -20,7 +20,7 @@ float4 ScreenSize;
 float4 TemporalAAJitter;
 @1META_CB_END
 
-// Material shader resources
+// Shader resources
 @2
 // Interpolants passed to the pixel shader
 struct PixelInput
