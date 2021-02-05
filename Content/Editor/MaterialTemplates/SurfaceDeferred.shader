@@ -651,84 +651,7 @@ void ClipLODTransition(PixelInput input)
 	}
 }
 
-#else
-
-void ClipLODTransition(PixelInput input)
-{
-}
-
 #endif
-
-// Pixel Shader function for GBuffer Pass
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(USE_LIGHTMAP=0)
-META_PERMUTATION_1(USE_LIGHTMAP=1)
-void PS_GBuffer(
-		in PixelInput input
-		,out float4 Light : SV_Target0
-#if MATERIAL_DOMAIN == MATERIAL_DOMAIN_SURFACE
-		// GBuffer
-		,out float4 RT0   : SV_Target1
-		,out float4 RT1   : SV_Target2
-		,out float4 RT2   : SV_Target3
-#if USE_GBUFFER_CUSTOM_DATA
-		,out float4 RT3   : SV_Target4
-#endif
-#endif
-	)
-{
-	Light = 0;
-
-	// LOD masking
-	ClipLODTransition(input);
-
-	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
-	Material material = GetMaterialPS(materialInput);
-
-#if MATERIAL_DOMAIN == MATERIAL_DOMAIN_SURFACE
-
-	// Masking
-#if MATERIAL_MASKED
-	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
-#endif
-	
-#if USE_LIGHTMAP
-
-	float3 diffuseColor = GetDiffuseColor(material.Color, material.Metalness);
-	float3 specularColor = GetSpecularColor(material.Color, material.Specular, material.Metalness);
-
-	// Sample lightmap
-	float3 diffuseIndirectLighting = SampleLightmap(material, materialInput);
-
-	// Apply static indirect light
-	Light.rgb = diffuseColor * diffuseIndirectLighting * AOMultiBounce(material.AO, diffuseColor);
-
-#endif
-
-	// Pack material properties to GBuffer
-	RT0 = float4(material.Color, material.AO);
-	RT1 = float4(material.WorldNormal * 0.5 + 0.5, MATERIAL_SHADING_MODEL * (1.0 / 3.0));
-	RT2 = float4(material.Roughness, material.Metalness, material.Specular, 0);
-
-	// Custom data
-#if USE_GBUFFER_CUSTOM_DATA
-#if MATERIAL_SHADING_MODEL == SHADING_MODEL_SUBSURFACE
-	RT3 = float4(material.SubsurfaceColor, material.Opacity);
-#elif MATERIAL_SHADING_MODEL == SHADING_MODEL_FOLIAGE
-	RT3 = float4(material.SubsurfaceColor, material.Opacity);
-#else
-	RT3 = float4(0, 0, 0, 0);
-#endif
-#endif
-
-#endif
-
-	// Add light emission
-#if USE_EMISSIVE
-	Light.rgb += material.Emissive;
-#endif
-}
 
 // Pixel Shader function for Depth Pass
 META_PS(IS_SURFACE, FEATURE_LEVEL_ES2)
@@ -738,8 +661,10 @@ void PS_Depth(PixelInput input
 #endif
 	)
 {	
+#if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
 	ClipLODTransition(input);
+#endif
 
 #if MATERIAL_MASKED
 	// Perform per pixel clipping if material requries it
@@ -757,8 +682,10 @@ void PS_Depth(PixelInput input
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_MotionVectors(PixelInput input) : SV_Target0
 {
+#if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
 	ClipLODTransition(input);
+#endif
 
 #if MATERIAL_MASKED
 	// Perform per pixel clipping if material requries it

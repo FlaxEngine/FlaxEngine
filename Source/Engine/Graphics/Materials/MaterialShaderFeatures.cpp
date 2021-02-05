@@ -162,6 +162,13 @@ void ForwardShadingFeature::Generate(GeneratorData& data)
     data.ResourcesCount = SRVs;
 }
 
+void DeferredShadingFeature::Generate(GeneratorData& data)
+{
+    data.Template = TEXT("Features/DeferredShading.hlsl");
+    data.ConstantsSize = 0;
+    data.ResourcesCount = 0;
+}
+
 void TessellationFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/Tessellation.hlsl");

@@ -186,6 +186,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(LightmapFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
@@ -195,6 +197,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         if (materialInfo.TessellationMode != TessellationMethod::None)
         ADD_FEATURE(TessellationFeature);
         ADD_FEATURE(LightmapFeature);
+        ADD_FEATURE(DeferredShadingFeature);
         break;
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)

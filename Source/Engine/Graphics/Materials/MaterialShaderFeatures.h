@@ -43,6 +43,14 @@ struct ForwardShadingFeature : MaterialShaderFeature
 #endif
 };
 
+// Material shader feature that add support for Deferred shading inside the material shader.
+struct DeferredShadingFeature : MaterialShaderFeature
+{
+#if USE_EDITOR
+    static void Generate(GeneratorData& data);
+#endif
+};
+
 // Material shader feature that adds geometry hardware tessellation (using Hull and Domain shaders).
 struct TessellationFeature : MaterialShaderFeature
 {

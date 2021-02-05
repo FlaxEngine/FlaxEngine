@@ -26,6 +26,7 @@ Texture2DArray DirectionalLightShadowMap : register(t__SRV__);
 @4// Forward Shading: Utilities
 DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
 @5// Forward Shading: Shaders
+
 // Pixel Shader function for Forward Pass
 META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
 float4 PS_Forward(PixelInput input) : SV_Target0
