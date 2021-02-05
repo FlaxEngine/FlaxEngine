@@ -369,7 +369,7 @@ namespace FlaxEngine
                     _renderer = null;
                 }
 #if FLAX_EDITOR
-                if (_editorRoot)
+                if (_editorRoot != null)
                     _guiRoot.Parent = _editorRoot;
 #endif
                 break;
