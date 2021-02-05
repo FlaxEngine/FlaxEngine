@@ -396,6 +396,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         int32 srv = 0;
         switch (baseLayer->Domain)
         {
+        case MaterialDomain::Surface:
+            srv = 2; // Skinning Bones + Prev Bones
+            break;
         case MaterialDomain::Decal:
             srv = 1; // Depth buffer
             break;
@@ -467,10 +470,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         switch (materialInfo.Domain)
         {
         case MaterialDomain::Surface:
-            if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-                path /= TEXT("SurfaceDeferred.shader");
-            else
-                path /= TEXT("SurfaceForward.shader");
+            path /= TEXT("Surface.shader");
             break;
         case MaterialDomain::PostProcess:
             path /= TEXT("PostProcess.shader");

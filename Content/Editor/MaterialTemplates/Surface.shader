@@ -229,28 +229,38 @@ MaterialInput GetMaterialInput(PixelInput input)
 	return result;
 }
 
-#if USE_INSTANCING
-#define INSTANCE_TRANS_WORLD float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
-#else
-#define INSTANCE_TRANS_WORLD WorldMatrix
-#endif
-
 // Gets the local to world transform matrix (supports instancing)
 float4x4 GetInstanceTransform(ModelInput input)
 {
-	return INSTANCE_TRANS_WORLD;
+#if USE_INSTANCING
+	return float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f));
+#else
+	return WorldMatrix;
+#endif
 }
 float4x4 GetInstanceTransform(ModelInput_Skinned input)
 {
-	return INSTANCE_TRANS_WORLD;
+#if USE_INSTANCING
+	return float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f));
+#else
+	return WorldMatrix;
+#endif
 }
 float4x4 GetInstanceTransform(ModelInput_PosOnly input)
 {
-	return INSTANCE_TRANS_WORLD;
+#if USE_INSTANCING
+	return float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f));
+#else
+	return WorldMatrix;
+#endif
 }
 float4x4 GetInstanceTransform(MaterialInput input)
 {
-	return INSTANCE_TRANS_WORLD;
+#if USE_INSTANCING
+	return float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f));
+#else
+	return WorldMatrix;
+#endif
 }
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
@@ -390,7 +400,7 @@ float3x3 CalcTangentToWorld(float4x4 world, float3x3 tangentToLocal)
 }
 
 // Vertex Shader function for GBuffer Pass and Depth Pass (with full vertex data)
-META_VS(IS_SURFACE, FEATURE_LEVEL_ES2)
+META_VS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_INSTANCING=0)
 META_PERMUTATION_1(USE_INSTANCING=1)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
@@ -426,7 +436,11 @@ VertexOutput VS(ModelInput input)
 	output.Geometry.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
 	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
 #else
+#if USE_LIGHTMAP
 	output.Geometry.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
+#else
+	output.Geometry.LightmapUV = input.LightmapUV;
+#endif
 	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
 #endif
 
@@ -463,7 +477,7 @@ VertexOutput VS(ModelInput input)
 }
 
 // Vertex Shader function for Depth Pass
-META_VS(IS_SURFACE, FEATURE_LEVEL_ES2)
+META_VS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_INSTANCING=0)
 META_PERMUTATION_1(USE_INSTANCING=1)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
@@ -559,7 +573,7 @@ float3x3 SkinTangents(ModelInput_Skinned input, SkinningData data)
 }
 
 // Vertex Shader function for GBuffers/Depth Pass (skinned mesh rendering)
-META_VS(IS_SURFACE, FEATURE_LEVEL_ES2)
+META_VS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_SKINNING=1)
 META_PERMUTATION_2(USE_SKINNING=1, PER_BONE_MOTION_BLUR=1)
 META_VS_IN_ELEMENT(POSITION,     0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
@@ -654,7 +668,7 @@ void ClipLODTransition(PixelInput input)
 #endif
 
 // Pixel Shader function for Depth Pass
-META_PS(IS_SURFACE, FEATURE_LEVEL_ES2)
+META_PS(true, FEATURE_LEVEL_ES2)
 void PS_Depth(PixelInput input
 #if GLSL
 	, out float4 OutColor : SV_Target0
@@ -666,11 +680,18 @@ void PS_Depth(PixelInput input
 	ClipLODTransition(input);
 #endif
 
-#if MATERIAL_MASKED
-	// Perform per pixel clipping if material requries it
+#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE 
+	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
+
+	// Perform per pixel clipping
+#if MATERIAL_MASKED
 	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
+#endif
+#if MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
+	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
+#endif
 #endif
 
 #if GLSL
@@ -679,7 +700,7 @@ void PS_Depth(PixelInput input
 }
 
 // Pixel Shader function for Motion Vectors Pass
-META_PS(true, FEATURE_LEVEL_ES2)
+META_PS(USE_DEFERRED, FEATURE_LEVEL_ES2)
 float4 PS_MotionVectors(PixelInput input) : SV_Target0
 {
 #if USE_DITHERED_LOD_TRANSITION

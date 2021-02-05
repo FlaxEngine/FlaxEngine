@@ -67,7 +67,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     byte* cb = _cb0Data.Get();
     auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(cb);
     cb += sizeof(DeferredMaterialShaderData);
-    int32 srv = 0;
+    int32 srv = 2;
 
     // Setup features
     const bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && LightmapFeature::Bind(params, cb, srv);

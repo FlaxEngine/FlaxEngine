@@ -36,6 +36,7 @@ PACK_STRUCT(struct ForwardMaterialShaderData {
     Vector2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
+    Vector4 TemporalAAJitter;
     Vector3 GeometrySize;
     float Dummy1;
     });
@@ -63,7 +64,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     byte* cb = _cb0Data.Get();
     auto materialData = reinterpret_cast<ForwardMaterialShaderData*>(cb);
     cb += sizeof(ForwardMaterialShaderData);
-    int32 srv = 0;
+    int32 srv = 2;
 
     // Setup features
     ForwardShadingFeature::Bind(params, cb, srv);
