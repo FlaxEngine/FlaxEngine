@@ -104,18 +104,20 @@ struct MaterialInput
 };
 
 // Extracts geometry data to the material input
-void GetGeometryMaterialInput(inout MaterialInput result, in GeometryData geometry)
+MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 {
-	result.WorldPosition = geometry.WorldPosition;
-	result.TexCoord = geometry.TexCoord;
+	MaterialInput output = (MaterialInput)0;
+	output.WorldPosition = geometry.WorldPosition;
+	output.TexCoord = geometry.TexCoord;
 #if USE_LIGHTMAP
-	result.LightmapUV = geometry.LightmapUV;
+	output.LightmapUV = geometry.LightmapUV;
 #endif
-	result.TBN = CalcTangentBasisFromWorldNormal(geometry.WorldNormal);
-	result.HolesMask = geometry.HolesMask;
+	output.TBN = CalcTangentBasisFromWorldNormal(geometry.WorldNormal);
+	output.HolesMask = geometry.HolesMask;
 #if USE_TERRAIN_LAYERS
-	result.Layers = geometry.Layers;
+	output.Layers = geometry.Layers;
 #endif
+	return output;
 }
 
 #if USE_TESSELLATION
@@ -154,23 +156,13 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 
 MaterialInput GetMaterialInput(PixelInput input)
 {
-	MaterialInput result = (MaterialInput)0;
-	result.WorldPosition = input.Geometry.WorldPosition;
-	result.TexCoord = input.Geometry.TexCoord;
-#if USE_LIGHTMAP
-	result.LightmapUV = input.Geometry.LightmapUV;
-#endif
-	result.TBN = CalcTangentBasisFromWorldNormal(input.Geometry.WorldNormal);
-	result.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
-	result.SvPosition = input.Position;
-	result.HolesMask = input.Geometry.HolesMask;
-#if USE_TERRAIN_LAYERS
-	result.Layers = input.Geometry.Layers;
-#endif
+	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
+	output.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
+	output.SvPosition = input.Position;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
-	result.CustomVSToPS = input.CustomVSToPS;
+	output.CustomVSToPS = input.CustomVSToPS;
 #endif
-	return result;
+	return output;
 }
 
 // Removes the scale vector from the local to world transformation matrix
