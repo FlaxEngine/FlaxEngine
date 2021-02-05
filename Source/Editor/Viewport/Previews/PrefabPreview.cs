@@ -31,44 +31,34 @@ namespace FlaxEditor.Viewport.Previews
                 if (_prefab == value)
                     return;
 
+                // Unset and cleanup spawned instance
                 if (_instance)
                 {
-                    // Unlink UI control
-                    if (customControlLinked)
-                    {
-                        if (customControlLinked.Control?.Parent == this)
-                            customControlLinked.Control.Parent = null;
-                        customControlLinked = null;
-                    }
-
-                    // Remove for preview
-                    Task.RemoveCustomActor(_instance);
-
-                    // Delete
-                    Object.Destroy(_instance);
+                    var instance = _instance;
+                    Instance = null;
+                    Object.Destroy(instance);
                 }
 
                 _prefab = value;
 
                 if (_prefab)
                 {
+                    // Load prefab
                     _prefab.WaitForLoaded();
 
+                    // Spawn prefab
                     var prevPreview = LoadingPreview;
                     LoadingPreview = this;
-
-                    _instance = PrefabManager.SpawnPrefab(_prefab, null);
-
+                    var instance = PrefabManager.SpawnPrefab(_prefab, null);
                     LoadingPreview = prevPreview;
-
-                    if (_instance == null)
+                    if (instance == null)
                     {
                         _prefab = null;
                         throw new FlaxException("Failed to spawn a prefab for the preview.");
                     }
 
-                    // Add to preview
-                    Task.AddCustomActor(_instance);
+                    // Set instance
+                    Instance = instance;
                 }
             }
         }
@@ -94,7 +84,7 @@ namespace FlaxEditor.Viewport.Previews
                         customControlLinked = null;
                     }
 
-                    // Remove for preview
+                    // Remove for the preview
                     Task.RemoveCustomActor(_instance);
                 }
 
@@ -102,9 +92,23 @@ namespace FlaxEditor.Viewport.Previews
 
                 if (_instance)
                 {
-                    // Add to preview
+                    // Add to the preview
                     Task.AddCustomActor(_instance);
+
+                    // Link UI canvases to the preview
+                    LinkCanvas(_instance);
                 }
+            }
+        }
+
+        private void LinkCanvas(Actor actor)
+        {
+            if (actor is UICanvas uiCanvas)
+                uiCanvas.EditorOverride(Task, this);
+            var children = actor.ChildrenCount;
+            for (int i = 0; i < children; i++)
+            {
+                LinkCanvas(actor.GetChild(i));
             }
         }
 
