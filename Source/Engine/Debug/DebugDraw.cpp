@@ -19,6 +19,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Debug/DebugLog.h"
 
 // Debug draw service configuration
 #define DEBUG_DRAW_INITIAL_VB_CAPACITY (4 * 1024)
@@ -631,7 +632,7 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
 {
     if (lines.Length() % 2 == 0)
     {
-        LOG(Error, "Cannot draw debug lines with uneven amount of items in array");
+        DebugLog::ThrowException("Cannot draw debug lines with uneven amount of items in array");
         return;
     }
 
