@@ -256,10 +256,8 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
     }
         // Scene Depth
     case 8:
-    {
         sampleSceneDepth(node, value, box);
         break;
-    }
         // Texture
     case 11:
     {
