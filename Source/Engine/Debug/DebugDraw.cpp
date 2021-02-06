@@ -644,7 +644,7 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
 
     if (depthTest) 
         list = duration > 0 ? &DebugDrawDepthTest.DefaultLines : &DebugDrawDepthTest.OneFrameLines;
-    else 
+    else
         list = duration > 0 ? &DebugDrawDefault.DefaultLines : &DebugDrawDefault.OneFrameLines;
 
     list->EnsureCapacity(list->Count() + lines.Length());
