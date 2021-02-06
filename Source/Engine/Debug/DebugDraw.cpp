@@ -630,7 +630,7 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
 
 void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
 {
-    if (lines.Length() % 2 == 0)
+    if (lines.Length() % 2 != 0)
     {
         DebugLog::ThrowException("Cannot draw debug lines with uneven amount of items in array");
         return;
