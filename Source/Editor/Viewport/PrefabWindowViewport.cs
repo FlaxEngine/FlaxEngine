@@ -486,6 +486,23 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Selected UI controls outline
+            for (var i = 0; i < _window.Selection.Count; i++)
+            {
+                if (_window.Selection[i].EditableObject is UIControl controlActor && controlActor.Control != null)
+                {
+                    var control = controlActor.Control;
+                    var bounds = Rectangle.FromPoints(control.PointToParent(this, Vector2.Zero), control.PointToParent(this, control.Size));
+                    Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
+                }
+            }
+        }
+
+        /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
