@@ -276,6 +276,10 @@ void PersistentScriptingObject::OnManagedInstanceDeleted()
         _gcHandle = 0;
     }
 
+    // Unregister object
+    if (IsRegistered())
+        UnregisterObject();
+
     // But do not delete itself
 }
 
@@ -501,11 +505,6 @@ public:
             obj->RegisterObject();
     }
 
-    static void ManagedInstanceDeleted(ScriptingObject* obj)
-    {
-        Scripting::OnManagedInstanceDeleted(obj);
-    }
-
     static void Destroy(ManagedScriptingObject* obj, float timeLeft)
     {
         // Use scaled game time for removing actors/scripts by the user (maybe expose it to the api?)
@@ -544,7 +543,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create1", &Create1);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create2", &Create2);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceCreated", &ManagedInstanceCreated);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &ManagedInstanceDeleted);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &Scripting::OnManagedInstanceDeleted);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Destroy", &Destroy);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetTypeName", &GetTypeName);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &FindObject);
