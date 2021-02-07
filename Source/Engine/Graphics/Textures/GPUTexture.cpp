@@ -458,43 +458,13 @@ protected:
     // [ThreadPoolTask]
     bool Run() override
     {
-        // Check resources
         auto texture = _texture.Get();
         if (texture == nullptr || _staging == nullptr || _data == nullptr)
         {
             LOG(Warning, "Cannot download texture data. Missing objects.");
             return true;
         }
-
-        const auto arraySize = texture->ArraySize();
-        const auto mipLevels = texture->MipLevels();
-
-        // Get all mip maps for each array slice
-        auto& rawResultData = _data->Items;
-        rawResultData.Resize(arraySize, false);
-        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
-        {
-            auto& arraySlice = rawResultData[arrayIndex];
-            arraySlice.Mips.Resize(mipLevels);
-
-            for (int32 mipMapIndex = 0; mipMapIndex < mipLevels; mipMapIndex++)
-            {
-                auto& mip = arraySlice.Mips[mipMapIndex];
-                const int32 mipWidth = _data->Width >> mipMapIndex;
-                const int32 mipHeight = _data->Height >> mipMapIndex;
-                uint32 mipRowPitch, mipSlicePitch;
-                RenderTools::ComputePitch(_data->Format, mipWidth, mipHeight, mipRowPitch, mipSlicePitch);
-
-                // Gather data
-                if (_staging->GetData(arrayIndex, mipMapIndex, mip, mipRowPitch))
-                {
-                    LOG(Warning, "Staging resource of \'{0}\' get data failed.", texture->ToString());
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return _staging->DownloadData(*_data);
     }
 
     void OnEnd() override
@@ -508,6 +478,57 @@ protected:
 
 bool GPUTexture::DownloadData(TextureData& result)
 {
+    // Skip for empty ones
+    if (MipLevels() == 0)
+    {
+        LOG(Warning, "Cannot download GPU texture data from an empty texture.");
+        return true;
+    }
+    if (Depth() != 1)
+    {
+        MISSING_CODE("support volume texture data downloading.");
+    }
+
+    // Use faster path for staging resources
+    if (IsStaging())
+    {
+        const auto arraySize = ArraySize();
+        const auto mipLevels = MipLevels();
+
+        // Set texture info
+        result.Width = Width();
+        result.Height = Height();
+        result.Depth = Depth();
+        result.Format = Format();
+
+        // Get all mip maps for each array slice
+        auto& rawResultData = result.Items;
+        rawResultData.Resize(arraySize, false);
+        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            auto& arraySlice = rawResultData[arrayIndex];
+            arraySlice.Mips.Resize(mipLevels);
+
+            for (int32 mipMapIndex = 0; mipMapIndex < mipLevels; mipMapIndex++)
+            {
+                auto& mip = arraySlice.Mips[mipMapIndex];
+                const int32 mipWidth = result.Width >> mipMapIndex;
+                const int32 mipHeight = result.Height >> mipMapIndex;
+                uint32 mipRowPitch, mipSlicePitch;
+                RenderTools::ComputePitch(result.Format, mipWidth, mipHeight, mipRowPitch, mipSlicePitch);
+
+                // Gather data
+                if (GetData(arrayIndex, mipMapIndex, mip, mipRowPitch))
+                {
+                    LOG(Warning, "Staging resource of \'{0}\' get data failed.", ToString());
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     const auto name = ToString();
 
     // Ensure not running on main thread - we support DownloadData from textures only on a worker threads (Thread Pool Workers or Content Loaders)
@@ -538,7 +559,8 @@ bool GPUTexture::DownloadData(TextureData& result)
 
 Task* GPUTexture::DownloadDataAsync(TextureData& result)
 {
-    if (!IsAllocated())
+    // Skip for empty ones
+    if (MipLevels() == 0)
     {
         LOG(Warning, "Cannot download texture data. It has not ben created yet.");
         return nullptr;
@@ -548,19 +570,12 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
         MISSING_CODE("support volume texture data downloading.");
     }
 
-    // Set texture info
-    result.Width = Width();
-    result.Height = Height();
-    result.Depth = Depth();
-    result.Format = Format();
-
-    // Quicker path if texture is already readback
-    if (_desc.Usage == GPUResourceUsage::StagingReadback)
+    // Use faster path for staging resources
+    if (IsStaging())
     {
         // Create task to copy downloaded data to TextureData container
         auto getDataTask = ::New<TextureDownloadDataTask>(this, this, result);
         ASSERT(getDataTask->HasReference(this));
-
         return getDataTask;
     }
 
