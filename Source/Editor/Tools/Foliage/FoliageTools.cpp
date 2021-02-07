@@ -67,7 +67,7 @@ struct GeometryLookup
     static bool Search(Actor* actor, GeometryLookup& lookup)
     {
         // Early out if object is not intersecting with the foliage brush bounds
-        if (!actor->GetBox().Intersects(lookup.Brush))
+        if (!actor->GetIsActive() || !actor->GetBox().Intersects(lookup.Brush))
             return true;
 
         const auto brush = lookup.Brush;
