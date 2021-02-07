@@ -741,6 +741,59 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
     return false;
 }
 
+bool EditorUtilities::IsInvalidPathChar(Char c)
+{
+    char illegalChars[] =
+    {
+        '?',
+        '\\',
+        '/',
+        '\"',
+        '<',
+        '>',
+        '|',
+        ':',
+        '*',
+        '\u0001',
+        '\u0002',
+        '\u0003',
+        '\u0004',
+        '\u0005',
+        '\u0006',
+        '\a',
+        '\b',
+        '\t',
+        '\n',
+        '\v',
+        '\f',
+        '\r',
+        '\u000E',
+        '\u000F',
+        '\u0010',
+        '\u0011',
+        '\u0012',
+        '\u0013',
+        '\u0014',
+        '\u0015',
+        '\u0016',
+        '\u0017',
+        '\u0018',
+        '\u0019',
+        '\u001A',
+        '\u001B',
+        '\u001C',
+        '\u001D',
+        '\u001E',
+        '\u001F'
+    };
+    for (auto i : illegalChars)
+    {
+        if (c == i)
+            return true;
+    }
+    return false;
+}
+
 bool EditorUtilities::ReplaceInFiles(const String& folderPath, const Char* searchPattern, DirectorySearchOption searchOption, const String& findWhat, const String& replaceWith)
 {
     Array<String> files;

@@ -178,7 +178,7 @@ void CreateAssetContext::ApplyChanges()
     // Move file
     if (FileSystem::MoveFile(TargetAssetPath, OutputPath, true))
     {
-        LOG(Warning, "Cannot move imported file to the destination path.");
+        LOG(Warning, "Cannot move imported file {0} to the destination path {1}.", OutputPath, TargetAssetPath);
         _applyChangesResult = CreateAssetResult::CannotSaveFile;
         return;
     }
