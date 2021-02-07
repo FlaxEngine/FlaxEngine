@@ -711,6 +711,13 @@ namespace Flax.Build.Bindings
                         return propertyInfo;
                     throw new Exception($"Property {propertyName} in class {classInfo.Name} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
                 }
+
+                // Fix documentation comment to reflect both getter and setters available
+                for (var i = 0; i < propertyInfo.Comment.Length; i++)
+                {
+                    ref var comment = ref propertyInfo.Comment[i];
+                    comment = comment.Replace("/// Gets ", "/// Gets or sets ");
+                }
             }
 
             return propertyInfo;
