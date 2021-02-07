@@ -342,10 +342,14 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Blend Normals
     case 26:
     {
-        const auto baseNormal = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
-        const auto additionalNormal = tryGetValue(node->GetBox(1), Value::Zero).AsVector3();
-        const String text = String::Format(TEXT("float3((float2({0}.xy) + float2({1}.xy) * 2.0), sqrt(saturate(1.0 - dot((float2({0}.xy) + float2({1}.xy) * 2.0).xy, (float2({0}.xy) + float2({1}.xy) * 2.0).xy))))"), baseNormal.Value, additionalNormal.Value);
-        value = writeLocal(ValueType::Vector3, text, node);
+        const auto baseNormal = tryGetValue(node->GetBox(0), getNormalZero).AsVector3();
+        const auto additionalNormal = tryGetValue(node->GetBox(1), getNormalZero).AsVector3();
+
+        const String text1 = String::Format(TEXT("(float2({0}.xy) + float2({1}.xy) * 2.0)"), baseNormal.Value, additionalNormal.Value);
+        const auto appendXY = writeLocal(ValueType::Vector2, text1, node);
+
+        const String text2 = String::Format(TEXT("float3({0}, sqrt(saturate(1.0 - dot({0}.xy, {0}.xy))))"), appendXY.Value);
+        value = writeLocal(ValueType::Vector3, text2, node);
         break;
     }
         // Rotator
