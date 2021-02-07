@@ -310,7 +310,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the GUI window root control which contains that control (or null if not linked to any).
         /// </summary>
-        public virtual WindowRootControl RootWindow => _parent?.RootWindow;
+        public virtual WindowRootControl RootWindow => _parent?.RootWindow; // TODO: Why doesn't this just go "_root?.RootWindow" or something?
 
         /// <summary>
         /// Gets screen position of the control (upper left corner).

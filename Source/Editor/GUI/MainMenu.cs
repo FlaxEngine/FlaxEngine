@@ -185,14 +185,14 @@ namespace FlaxEditor.GUI
 
         private WindowHitCodes OnHitTest(ref Vector2 mouse)
         {
-            var pos = _window.ScreenToClient(mouse * Platform.DpiScale);
+            var dpiScale = _window.DpiScale;
+            var pos = _window.ScreenToClient(mouse * dpiScale);
 
             if (_window.IsMinimized)
                 return WindowHitCodes.NoWhere;
 
             if (!_window.IsMaximized)
             {
-                var dpiScale = Platform.DpiScale;
                 var winSize = RootWindow.Size * dpiScale;
 
                 // Distance from which the mouse is considered to be on the border/corner
@@ -227,7 +227,7 @@ namespace FlaxEditor.GUI
             var controlUnderMouse = GetChildAt(menuPos);
             var isMouseOverSth = controlUnderMouse != null && controlUnderMouse != _title;
             var rb = GetRightButton();
-            if (rb != null && _minimizeButton != null && new Rectangle(rb.UpperRight * Platform.DpiScale, (_minimizeButton.BottomLeft - rb.UpperRight) * Platform.DpiScale).Contains(ref menuPos) && !isMouseOverSth)
+            if (rb != null && _minimizeButton != null && new Rectangle(rb.UpperRight * dpiScale, (_minimizeButton.BottomLeft - rb.UpperRight) * dpiScale).Contains(ref menuPos) && !isMouseOverSth)
                 return WindowHitCodes.Caption;
 
             return WindowHitCodes.Client;

@@ -67,7 +67,7 @@ bool FontManagerService::Init()
     ASSERT(Library == nullptr);
 
     // Scale UI fonts to match the monitor DPI
-    FontManager::FontScale = (float)Platform::GetDpi() / (float)DefaultDPI;
+    FontManager::FontScale = (float)Platform::GetDpi() / (float)DefaultDPI; // TODO: Adjust this at runtime
 
     // Init Free Type
     FreeTypeMemory.user = nullptr;

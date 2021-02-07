@@ -58,7 +58,7 @@ int32 CalculateDpi(HMODULE shCoreDll)
 
         if (getDPIForMonitor)
         {
-            HMONITOR monitor = GetPrimaryMonitorHandle();
+            HMONITOR monitor = GetPrimaryMonitorHandle(); // TODO: Use the game window monitor
 
             UINT x = 0, y = 0;
             HRESULT hr = getDPIForMonitor(monitor, 0, &x, &y);
@@ -659,7 +659,7 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
 
     if (setProcessDpiAwareness)
     {
-        setProcessDpiAwareness(enable ? PROCESS_SYSTEM_DPI_AWARE : PROCESS_DPI_UNAWARE);
+        setProcessDpiAwareness(enable ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE);
     }
 
     SystemDpi = CalculateDpi(shCoreDll);

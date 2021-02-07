@@ -1657,7 +1657,7 @@ namespace FlaxEditor.Utilities
             settings.AllowMinimize = false;
             settings.HasSizingFrame = false;
             settings.StartPosition = WindowStartPosition.CenterScreen;
-            settings.Size = new Vector2(500, 600) * Platform.DpiScale;
+            settings.Size = new Vector2(500, 600) * Platform.DpiScale; // TODO: Place the window on the correct screen (and use that screen's size)
             settings.Title = title;
             var dialog = Platform.CreateWindow(ref settings);
 

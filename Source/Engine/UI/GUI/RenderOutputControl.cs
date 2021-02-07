@@ -221,7 +221,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public void SyncBackbufferSize()
         {
-            float scale = ResolutionScale * Platform.DpiScale;
+            float scale = ResolutionScale * (Root?.RootWindow?.Window?.DpiScale ?? 1); // TODO: Figure this out
             int width = Mathf.CeilToInt(Width * scale);
             int height = Mathf.CeilToInt(Height * scale);
             if (_customResolution.HasValue)
