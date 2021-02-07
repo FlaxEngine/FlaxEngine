@@ -42,7 +42,7 @@ namespace FlaxEngine.GUI
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
-                if (c.Visible)
+                if (c.Visible && Mathf.IsZero(c.AnchorMax.Y))
                 {
                     var h = c.Height;
                     c.Bounds = new Rectangle(_margin.Left + _offset.X, y + _offset.Y, w, h);
