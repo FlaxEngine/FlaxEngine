@@ -355,7 +355,7 @@ public:
     /// </summary>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor() const
+    FORCE_INLINE static T* FindActor()
     {
         return (T*)FindActor(T::GetStaticClass());
     }
@@ -372,7 +372,7 @@ public:
     /// </summary>
     /// <returns>Script instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindScript() const
+    FORCE_INLINE static T* FindScript()
     {
         return (T*)FindScript(T::GetStaticClass());
     }
