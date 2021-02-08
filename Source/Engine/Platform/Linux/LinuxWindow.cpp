@@ -591,17 +591,27 @@ void LinuxWindow::Maximize(bool enable)
 	X11::Atom wmMaxHorz = X11::XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_HORZ", 0);
 	X11::Atom wmMaxVert = X11::XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_VERT", 0);
 
-	X11::XEvent event;
-	Platform::MemoryClear(&event, sizeof(event));
-	event.type = ClientMessage;
-	event.xclient.window = window;
-	event.xclient.message_type = wmState;
-	event.xclient.format = 32;
-	event.xclient.data.l[0] = enable ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
-	event.xclient.data.l[1] = wmMaxHorz;
-	event.xclient.data.l[2] = wmMaxVert;
+	if (IsWindowMapped())
+	{
+		X11::XEvent event;
+		Platform::MemoryClear(&event, sizeof(event));
+		event.type = ClientMessage;
+		event.xclient.window = window;
+		event.xclient.message_type = wmState;
+		event.xclient.format = 32;
+		event.xclient.data.l[0] = enable ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
+		event.xclient.data.l[1] = wmMaxHorz;
+		event.xclient.data.l[2] = wmMaxVert;
 
-	XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
+		XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
+	}
+	else
+	{
+		X11::Atom states[2];
+        states[0] = wmMaxVert;
+        states[1] = wmMaxHorz;
+		X11::XChangeProperty(display, window, wmState, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)states, 2);
+	}
 }
 
 void LinuxWindow::Minimize(bool enable)
