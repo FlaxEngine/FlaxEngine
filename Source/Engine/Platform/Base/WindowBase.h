@@ -551,7 +551,6 @@ public:
         return _dpi;
     }
 
-    // TODO: This doesn't actually include the custom DPI scale 
     /// <summary>
     /// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
     /// </summary>

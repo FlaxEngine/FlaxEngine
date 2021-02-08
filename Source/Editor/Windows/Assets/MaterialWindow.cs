@@ -241,10 +241,10 @@ namespace FlaxEditor.Windows.Assets
         /// Shows the material source code window.
         /// </summary>
         /// <param name="material">The material asset.</param>
-        public static void ShowSourceCode(Material material)
+        public void ShowSourceCode(Material material)
         {
             var source = Editor.GetShaderSourceCode(material);
-            Utilities.Utils.ShowSourceCodeWindow(source, "Material Source");
+            Utilities.Utils.ShowSourceCodeWindow(source, "Material Source", RootWindow.Window);
         }
 
         /// <summary>

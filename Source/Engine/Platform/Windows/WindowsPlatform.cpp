@@ -58,7 +58,7 @@ int32 CalculateDpi(HMODULE shCoreDll)
 
         if (getDPIForMonitor)
         {
-            HMONITOR monitor = GetPrimaryMonitorHandle(); // TODO: Use the game window monitor
+            HMONITOR monitor = GetPrimaryMonitorHandle();
 
             UINT x = 0, y = 0;
             HRESULT hr = getDPIForMonitor(monitor, 0, &x, &y);

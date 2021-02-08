@@ -99,7 +99,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         nullptr);
     
     _dpi = DefaultDPI;
-    // TODO: Is this the correct way of doing this?
+    
     const HMODULE user32Dll = LoadLibraryW(L"user32.dll");
     if (user32Dll)
     {
