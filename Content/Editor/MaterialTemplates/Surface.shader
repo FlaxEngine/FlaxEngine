@@ -43,9 +43,9 @@ struct GeometryData
 #endif
 	float3 WorldNormal : TEXCOORD3;
 	float4 WorldTangent : TEXCOORD4;
-	float3 InstanceOrigin : TEXCOORD6;
-	float2 InstanceParams : TEXCOORD7; // x-PerInstanceRandom, y-LODDitherFactor
-	float3 PrevWorldPosition : TEXCOORD8;
+	float3 InstanceOrigin : TEXCOORD5;
+	float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
+	float3 PrevWorldPosition : TEXCOORD7;
 };
 
 // Interpolants passed from the vertex shader
@@ -475,8 +475,7 @@ float3x4 GetBoneMatrix(ModelInput_Skinned input)
 // Transforms the vertex position by weighted sum of the skinning matrices
 float3 SkinPosition(ModelInput_Skinned input, SkinningData data)
 {
-	float4 position = float4(input.Position.xyz, 1);
-	return mul(data.BlendMatrix, position);
+	return mul(data.BlendMatrix, float4(input.Position.xyz, 1));
 }
 
 // Transforms the vertex position by weighted sum of the skinning matrices
@@ -596,11 +595,7 @@ void ClipLODTransition(PixelInput input)
 
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-void PS_Depth(PixelInput input
-#if GLSL
-	, out float4 OutColor : SV_Target0
-#endif
-	)
+void PS_Depth(PixelInput input)
 {	
 #if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
@@ -619,10 +614,6 @@ void PS_Depth(PixelInput input
 #if MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
 	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
 #endif
-#endif
-
-#if GLSL
-	OutColor = 0;
 #endif
 }
 

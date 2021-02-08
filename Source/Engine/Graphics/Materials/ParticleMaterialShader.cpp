@@ -145,7 +145,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
 
-    // Setup material constants data
+    // Setup material constants
     {
         static StringView ParticlePosition(TEXT("Position"));
         static StringView ParticleSpriteSize(TEXT("SpriteSize"));

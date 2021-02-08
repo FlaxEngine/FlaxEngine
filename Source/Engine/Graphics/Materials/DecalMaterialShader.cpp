@@ -56,7 +56,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     // Decals use depth buffer to draw on top of the objects
     context->BindSR(0, GET_TEXTURE_VIEW_SAFE(params.RenderContext.Buffers->DepthBuffer));
 
-    // Setup material constants data
+    // Setup material constants
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);

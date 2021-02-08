@@ -72,12 +72,11 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
-    // Setup material constants data
+    // Setup material constants
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
-
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;

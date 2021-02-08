@@ -41,7 +41,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
     bindMeta.CanSampleGBuffer = true;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
-    // Setup material constants data
+    // Setup material constants
     {
         Matrix::Transpose(view.View, materialData->ViewMatrix);
         materialData->ViewPos = view.Position;

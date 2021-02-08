@@ -448,21 +448,13 @@ VertexOutput VS(TerrainVertexInput input)
 
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-void PS_Depth(PixelInput input
-#if GLSL
-	, out float4 OutColor : SV_Target0
-#endif
-	)
+void PS_Depth(PixelInput input)
 {
 #if MATERIAL_MASKED
 	// Perform per pixel clipping if material requries it
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
-#endif
-
-#if GLSL
-	OutColor = 0;
 #endif
 }
 

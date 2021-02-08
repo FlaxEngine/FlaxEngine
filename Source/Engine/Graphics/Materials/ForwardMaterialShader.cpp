@@ -85,31 +85,26 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         context->BindSR(0, drawCall.Surface.Skinning->BoneMatrices->View());
     }
 
-    // Setup material constants data
+    // Setup material constants
     {
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
         Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
-
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
         materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-
-        // Extract per axis scales from LocalToWorld transform
         const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
         const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
         const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        const Vector3 worldInvScale = Vector3(
+        materialData->WorldInvScale = Vector3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
-
-        materialData->WorldInvScale = worldInvScale;
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;

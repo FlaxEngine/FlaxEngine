@@ -44,7 +44,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
-    // Setup material constants data
+    // Setup material constants
     {
         const auto viewProjectionMatrix = (Matrix*)params.CustomData;
         Matrix::Transpose(*viewProjectionMatrix, materialData->ViewProjectionMatrix);

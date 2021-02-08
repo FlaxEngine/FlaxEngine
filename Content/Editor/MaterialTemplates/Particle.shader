@@ -679,11 +679,7 @@ VertexOutput VS_Ribbon(uint vertexIndex : SV_VertexID)
 
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-void PS_Depth(PixelInput input
-#if GLSL
-	, out float4 OutColor : SV_Target0
-#endif
-	)
+void PS_Depth(PixelInput input)
 {
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
@@ -695,10 +691,6 @@ void PS_Depth(PixelInput input
 #endif
 #if MATERIAL_BLEND == MATERIAL_BLEND_TRANSPARENT
 	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
-#endif
-
-#if GLSL
-	OutColor = 0;
 #endif
 }
 
