@@ -717,7 +717,9 @@ namespace FlaxEditor.Modules
 #endif
             {
                 settings.HasBorder = false;
+#if PLATFORM_WINDOWS
                 settings.HasSizingFrame = false;
+#endif
             }
 
             MainWindow = Platform.CreateWindow(ref settings);

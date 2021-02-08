@@ -80,13 +80,10 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	/*
 	WindowStartPosition StartPosition;
 	bool Fullscreen;
-	bool HasBorder;
 	bool AllowInput;
 	bool AllowMinimize;
 	bool AllowMaximize;
 	bool AllowDragAndDrop;
-	bool IsTopmost;
-	bool IsRegularWindow;
 	*/
 
 	switch (settings.StartPosition)
@@ -135,6 +132,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		hints.max_width = (int)settings.MaximumSize.X;
 		hints.min_height = (int)settings.MinimumSize.Y;
 		hints.max_height = (int)settings.MaximumSize.Y;
+		hints.flags |= USSize;
 	}
 	X11::XSetNormalHints(display, window, &hints);
 
@@ -175,14 +173,46 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		hints.flags = 2;
 		X11::Atom wmHints = X11::XInternAtom(display, "_MOTIF_WM_HINTS", 1);
 		X11::Atom property;
-		X11::XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
+		if (wmHints)
+			X11::XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
 	}
 
-	// Hide from taskbar if need to
+	// Adjust type for utility windows
+	if (!settings.IsRegularWindow)
+	{
+		X11::Atom wmTypeUtility = X11::XInternAtom(display, "_NET_WM_WINDOW_TYPE_UTILITY", 0);
+		X11::Atom wmType = X11::XInternAtom(display, "_NET_WM_WINDOW_TYPE", 0);
+		if (wmTypeUtility && wmType)
+			X11::XChangeProperty(display, window, wmTypeUtility, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&wmType, 1);
+	}
+
+	// Initialize statee
+	X11::Atom wmState = X11::XInternAtom(display, "_NET_WM_STATE", 0);
+	X11::Atom wmStateAbove = X11::XInternAtom(display, "_NET_WM_STATE_ABOVE", 0);
+	X11::Atom wmSateSkipTaskbar = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
+	X11::Atom wmStateSkipPager = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_PAGER", 0);
+	X11::Atom wmStateFullscreen = X11::XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", 0);
+	X11::Atom states[2];
+	int32 statesCount = 0;
+	if (settings.IsTopmost)
+	{
+		states[statesCount++] = wmStateAbove;
+	}
 	if (!settings.ShowInTaskbar)
 	{
-		ShowOnTaskbar(false);
+		states[statesCount++] = wmSateSkipTaskbar;
+		states[statesCount++] = wmStateSkipPager;
 	}
+	if (settings.Fullscreen)
+	{
+		states[statesCount++] = wmStateFullscreen;
+	}
+	X11::XChangeProperty(display, window, wmState, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)states, statesCount);
+
+	// Sync
+	X11::XFlush(display);
+	X11::XSync(display, 0);
+	X11::XFree(visualInfo);
 }
 
 LinuxWindow::~LinuxWindow()
@@ -589,31 +619,6 @@ void LinuxWindow::Minimize(bool enable)
 	event.xclient.data.l[0] = enable ? WM_IconicState : WM_NormalState;
 
 	XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
-}
-
-void LinuxWindow::ShowOnTaskbar(bool enable)
-{
-	LINUX_WINDOW_PROLOG;
-
-	X11::Atom wmState = X11::XInternAtom(display, "_NET_WM_STATE", 0);
-	X11::Atom wmSkipTaskbar = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
-	X11::Atom wmSkipPager = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_PAGER", 0);
-
-	X11::XEvent event;
-	Platform::MemoryClear(&event, sizeof(event));
-	event.type = ClientMessage;
-	event.xclient.window = window;
-	event.xclient.message_type = wmState;
-	event.xclient.format = 32;
-	event.xclient.data.l[0] = enable ? _NET_WM_STATE_REMOVE : _NET_WM_STATE_ADD;
-	event.xclient.data.l[1] = wmSkipTaskbar;
-
-	X11::XSendEvent(display, X11_DefaultRootWindow(display), 0,SubstructureRedirectMask | SubstructureNotifyMask, &event);
-
-	event.xclient.data.l[1] = wmSkipPager;
-	X11::XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
-
-	X11::XSync(display, 0);
 }
 
 bool LinuxWindow::IsWindowMapped()

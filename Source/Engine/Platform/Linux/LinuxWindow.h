@@ -61,7 +61,6 @@ private:
 
 	void Maximize(bool enable);
 	void Minimize(bool enable);
-	void ShowOnTaskbar(bool enable);
 	bool IsWindowMapped();
 
 public:
