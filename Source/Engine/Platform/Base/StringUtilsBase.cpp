@@ -261,7 +261,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
     path.Clear();
     for (auto& e : stack)
         path /= e;
-    if (isRooted)
+    if (isRooted && path[0] != '/')
         path.Insert(0, TEXT("/"));
 }
 

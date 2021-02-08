@@ -227,7 +227,7 @@ namespace FlaxEngine
 
             bool isRooted = path.StartsWith("/");
             string result = string.Join(Path.DirectorySeparatorChar.ToString(), stack.Reverse());
-            if (isRooted)
+            if (isRooted && result[0] != '/')
                 result = result.Insert(0, "/");
             return result;
         }
