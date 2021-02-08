@@ -124,7 +124,7 @@ namespace FlaxEditor.GUI.Docking
                     throw new InvalidOperationException("Missing parent window.");
                 var control = _tabsProxy != null ? (Control)_tabsProxy : this;
                 var clientPos = control.PointToWindow(Vector2.Zero);
-                return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * RootWindow.Window.DpiScale);
+                return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * RootWindow.DpiScale);
             }
         }
 

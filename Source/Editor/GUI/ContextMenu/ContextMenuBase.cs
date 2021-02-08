@@ -124,7 +124,7 @@ namespace FlaxEditor.GUI.ContextMenu
             PerformLayout();
 
             // Calculate popup direction and initial location (fit on a single monitor)
-            var dpiScale = parentWin.Window.DpiScale;
+            var dpiScale = parentWin.DpiScale;
             Vector2 dpiSize = Size * dpiScale;
             Vector2 locationWS = parent.PointToWindow(location);
             Vector2 locationSS = parentWin.PointToScreen(locationWS);
