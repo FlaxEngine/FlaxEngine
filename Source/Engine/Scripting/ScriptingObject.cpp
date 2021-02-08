@@ -276,10 +276,6 @@ void PersistentScriptingObject::OnManagedInstanceDeleted()
         _gcHandle = 0;
     }
 
-    // Unregister object
-    if (IsRegistered())
-        UnregisterObject();
-
     // But do not delete itself
 }
 
