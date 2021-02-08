@@ -98,7 +98,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         (HINSTANCE)Platform::Instance,
         nullptr);
     
-    _dpi = DefaultDPI;
+    _dpi = Platform::GetDpi();
     
     const HMODULE user32Dll = LoadLibraryW(L"user32.dll");
     if (user32Dll)

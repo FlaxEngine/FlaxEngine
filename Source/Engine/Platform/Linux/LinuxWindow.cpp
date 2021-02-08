@@ -31,6 +31,7 @@
 #define _NET_WM_STATE_REMOVE 0L // remove/unset property
 #define _NET_WM_STATE_ADD 1L // add/set property
 #define _NET_WM_STATE_TOGGLE 2L // toggle property
+#define DefaultDPI 96
 
 // Window routines function prolog
 #define LINUX_WINDOW_PROLOG X11::Display* display = (X11::Display*)LinuxPlatform::GetXDisplay(); X11::Window window =  (X11::Window)_window
@@ -138,6 +139,9 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	if (settings.Parent)
 		X11::XSetTransientForHint(display, window, (X11::Window)((LinuxWindow*)settings.Parent)->GetNativePtr());
 
+    _dpi = Platform::GetDpi();
+    _dpiScale = (float)_dpi / (float)DefaultDPI;
+    
 	// Set mask
 	long eventMask =
 			ExposureMask | FocusChangeMask |
