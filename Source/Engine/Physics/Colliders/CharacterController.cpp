@@ -361,6 +361,11 @@ void CharacterController::OnTransformChanged()
         UpdateScale();
         UpdateBounds();
     }
+    else if (!_controller)
+    {
+        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        BoundingSphere::FromBox(_box, _sphere);
+    }
 }
 
 void CharacterController::Serialize(SerializeStream& stream, const void* otherObj)
