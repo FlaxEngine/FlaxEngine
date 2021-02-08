@@ -70,7 +70,7 @@ namespace AnimationUtils
     FORCE_INLINE void GetTangent<Quaternion>(const Quaternion& a, const Quaternion& b, float length, Quaternion& result)
     {
         const float oneThird = 1.0f / 3.0f;
-        Quaternion::Slerp(a, b, oneThird, result);
+        Quaternion::Slerp(a, b, length * oneThird, result);
     }
 
     template<>
@@ -79,8 +79,8 @@ namespace AnimationUtils
         const float oneThird = 1.0f / 3.0f;
         const float oneThirdLength = length * oneThird;
         result.Translation = a.Translation + b.Translation * oneThirdLength;
-        Quaternion::Slerp(a.Orientation, b.Orientation, oneThird, result.Orientation);
-        result.Scale = a.Scale + b.Scale * oneThirdLength;
+        Quaternion::Slerp(a.Orientation, b.Orientation, oneThirdLength, result.Orientation);
+        result.Scale = a.Scale + (b.Scale - a.Scale) * oneThirdLength;
     }
 
     template<class T>
@@ -99,6 +99,14 @@ namespace AnimationUtils
     FORCE_INLINE void Interpolate<Quaternion>(const Quaternion& a, const Quaternion& b, float t, Quaternion& result)
     {
         Quaternion::Slerp(a, b, t, result);
+    }
+
+    template<>
+    FORCE_INLINE void Interpolate<Transform>(const Transform& a, const Transform& b, float t, Transform& result)
+    {
+        Vector3::Lerp(a.Translation, b.Translation, t, result.Translation);
+        Quaternion::Slerp(a.Orientation, b.Orientation, t, result.Orientation);
+        Vector3::Lerp(a.Scale, b.Scale, t, result.Scale);
     }
 
     static void WrapTime(float& time, float start, float end, bool loop)
