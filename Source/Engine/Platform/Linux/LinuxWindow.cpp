@@ -319,13 +319,10 @@ void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
 	{
 		X11::XSizeHints hints;
 		hints.flags = PMinSize | PMaxSize;
-
 		hints.min_height = height;
 		hints.max_height = height;
-
 		hints.min_width = width;
 		hints.max_width = width;
-
 		X11::XSetNormalHints(display, window, &hints);
 	}
 
@@ -605,7 +602,7 @@ void LinuxWindow::Maximize(bool enable)
 
 		XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
 	}
-	else
+	else if (enable)
 	{
 		X11::Atom states[2];
         states[0] = wmMaxVert;

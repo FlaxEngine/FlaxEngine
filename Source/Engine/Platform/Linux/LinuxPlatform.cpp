@@ -1681,7 +1681,6 @@ void LinuxPlatform::Tick()
 		switch (event.type)
 		{
 			case ClientMessage:
-			{
 				// User requested the window to close
 				if ((X11::Atom)event.xclient.data.l[0] == xAtomDeleteWindow)
 				{
@@ -1691,31 +1690,32 @@ void LinuxPlatform::Tick()
 						window->Close(ClosingReason::User);
 					}
 				}
-			}
 			break;
 			case FocusIn:
-			{
 				// Update input context focus
 				X11::XSetICFocus(IC);
-
 				window = WindowsManager::GetByNativePtr((void*)event.xfocus.window);
 				if (window)
 				{
 					window->OnGotFocus();
 				}
-			}
 			break;
 			case FocusOut:
-			{
 				// Update input context focus
 				X11::XUnsetICFocus(IC);
-
 				window = WindowsManager::GetByNativePtr((void*)event.xfocus.window);
 				if (window)
 				{
 					window->OnLostFocus();
 				}
-			}
+			break;
+			case ConfigureNotify:
+				// Handle window resizing
+				window = WindowsManager::GetByNativePtr((void*)event.xclient.window);
+				if (window)
+				{
+					window->CheckForWindowResize();
+				}
 			break;
 			case PropertyNotify:
 				// Report minimize, maximize and restore events
@@ -1736,7 +1736,6 @@ void LinuxPlatform::Tick()
 						window = WindowsManager::GetByNativePtr((void*)event.xproperty.window);
 						if (window == nullptr)
 							continue;
-
 						X11::Atom* atoms = (X11::Atom*)data;
 
 						bool foundHorz = false;

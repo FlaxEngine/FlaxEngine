@@ -483,8 +483,9 @@ int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)>
 
         // Recreate swapchain
         ASSERT(_swapChain != VK_NULL_HANDLE);
+        int32 width = _width, height = _height;
         ReleaseGPU();
-        CreateSwapChain(_width, _height);
+        CreateSwapChain(width, height);
 
         // Flush commands
         _device->GetMainContext()->Flush();
@@ -571,8 +572,9 @@ void GPUSwapChainVulkan::Present(bool vsync)
         }
 
         // Rebuild swapchain for the next present
+        int32 width = _width, height = _height;
         ReleaseGPU();
-        CreateSwapChain(_width, _height);
+        CreateSwapChain(width, height);
         _device->GetMainContext()->Flush();
         _device->WaitForGPU();
         return;
