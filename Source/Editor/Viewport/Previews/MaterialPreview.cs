@@ -172,6 +172,9 @@ namespace FlaxEditor.Viewport.Previews
                         usePreviewActor = false;
                         particleMaterial = _material;
                         break;
+                    case MaterialDomain.Deformable:
+                        // TODO: preview Deformable material (eg. by using Spline with Spline Model)
+                        break;
                     default: throw new ArgumentOutOfRangeException();
                     }
                 }

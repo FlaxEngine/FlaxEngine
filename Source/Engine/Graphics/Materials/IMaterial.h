@@ -75,6 +75,14 @@ public:
     }
 
     /// <summary>
+    /// Determines whether material is a deformable shader.
+    /// </summary>
+    FORCE_INLINE bool IsDeformable() const
+    {
+        return GetInfo().Domain == MaterialDomain::Deformable;
+    }
+
+    /// <summary>
     /// Returns true if material is ready for rendering.
     /// </summary>
     /// <returns>True if can render that material</returns>

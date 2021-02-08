@@ -206,6 +206,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DistortionFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
+    case MaterialDomain::Deformable:
+        if (materialInfo.TessellationMode != TessellationMethod::None)
+        ADD_FEATURE(TessellationFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(DeferredShadingFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
+        ADD_FEATURE(ForwardShadingFeature);
+        break;
     default:
         break;
     }
@@ -228,7 +236,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     {
         materialVarPS = Value(VariantType::Void, baseLayer->GetVariableName(nullptr));
         _writer.Write(TEXT("\tMaterial {0} = (Material)0;\n"), materialVarPS.Value);
-        if (baseLayer->Domain == MaterialDomain::Surface || baseLayer->Domain == MaterialDomain::Terrain || baseLayer->Domain == MaterialDomain::Particle)
+        if (baseLayer->Domain == MaterialDomain::Surface || baseLayer->Domain == MaterialDomain::Terrain || baseLayer->Domain == MaterialDomain::Particle || baseLayer->Domain == MaterialDomain::Deformable)
         {
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Emissive);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Normal);
@@ -410,6 +418,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         case MaterialDomain::Particle:
             srv = 2; // Particles data + Sorted indices/Ribbon segments
             break;
+        case MaterialDomain::Deformable:
+            srv = 1; // Mesh deformation buffer
+            break;
         }
         for (auto f : features)
         {
@@ -488,6 +499,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             break;
         case MaterialDomain::Particle:
             path /= TEXT("Particle.shader");
+            break;
+        case MaterialDomain::Deformable:
+            path /= TEXT("Deformable.shader");
             break;
         default:
             LOG(Warning, "Unknown material domain.");

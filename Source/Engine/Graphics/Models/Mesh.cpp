@@ -350,7 +350,7 @@ bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vect
 #endif
 }
 
-void Mesh::GetDrawCallGeometry(DrawCall& drawCall)
+void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
 {
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];

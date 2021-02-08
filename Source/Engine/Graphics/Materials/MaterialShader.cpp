@@ -14,7 +14,7 @@
 #include "GUIMaterialShader.h"
 #include "TerrainMaterialShader.h"
 #include "ParticleMaterialShader.h"
-//#include "DeformableMaterialShader.h"
+#include "DeformableMaterialShader.h"
 
 GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
 {
@@ -62,9 +62,9 @@ MaterialShader* MaterialShader::Create(const String& name, MemoryReadStream& sha
     case MaterialDomain::Particle:
         material = New<ParticleMaterialShader>(name);
         break;
-        /*case MaterialDomain::Deformable:
-            material = New<DeformableMaterialShader>(name);
-            break;*/
+    case MaterialDomain::Deformable:
+        material = New<DeformableMaterialShader>(name);
+        break;
     default:
         LOG(Fatal, "Unknown material type.");
         return nullptr;

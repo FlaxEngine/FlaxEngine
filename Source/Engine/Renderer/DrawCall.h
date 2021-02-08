@@ -213,6 +213,17 @@ struct DrawCall
 
         struct
         {
+            GPUBuffer* SplineDeformation;
+            Matrix LocalMatrix; // Geometry transformation applied before deformation.
+            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            float Segment;
+            float ChunksPerSegment;
+            float MeshMinZ;
+            float MeshMaxZ;
+        } Deformable;
+
+        struct
+        {
             byte Raw[96];
         } Custom;
     };
