@@ -398,5 +398,17 @@ namespace FlaxEngine.Utilities
             random.NextBytes(numArray);
             return (long)(BitConverter.ToUInt64(numArray, 0) & long.MaxValue);
         }
+
+        /// <summary>
+        /// Returns a random value of the given enum.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum to get the value from.</typeparam>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random enum value.</returns>
+        public static TEnum NextEnum<TEnum>(this Random random)
+        {
+            Array values = Enum.GetValues(typeof(TEnum));
+            return (TEnum)values.GetValue(random.Next(values.Length));
+        }
     }
 }
