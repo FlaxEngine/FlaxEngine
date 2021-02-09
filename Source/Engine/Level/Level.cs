@@ -77,5 +77,33 @@ namespace FlaxEngine
         {
             return FindActor(id) as T;
         }
+
+        /// <summary>
+        /// Finds all the scripts of the given type in all the loaded scenes.
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Found scripts list.</returns>
+        public static T[] GetScripts<T>() where T : Script
+        {
+            var scripts = GetScripts(typeof(T));
+            var result = new T[scripts.Length];
+            for (int i = 0; i < scripts.Length; i++)
+                result[i] = scripts[i] as T;
+            return result;
+        }
+
+        /// <summary>
+        /// Finds all the actors of the given type in all the loaded scenes.
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Found actors list.</returns>
+        public static T[] GetActors<T>() where T : Actor
+        {
+            var actors = GetActors(typeof(T));
+            var result = new T[actors.Length];
+            for (int i = 0; i < actors.Length; i++)
+                result[i] = actors[i] as T;
+            return result;
+        }
     }
 }

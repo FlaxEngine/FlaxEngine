@@ -1326,12 +1326,8 @@ Actor* Level::FindActor(const MClass* type)
     CHECK_RETURN(type, nullptr);
     Actor* result = nullptr;
     ScopeLock lock(ScenesLock);
-
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
-    {
         result = Scenes[i]->FindActor(type);
-    }
-
     return result;
 }
 
@@ -1340,25 +1336,57 @@ Script* Level::FindScript(const MClass* type)
     CHECK_RETURN(type, nullptr);
     Script* result = nullptr;
     ScopeLock lock(ScenesLock);
-
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
-    {
         result = Scenes[i]->FindScript(type);
+    return result;
+}
+
+namespace
+{
+    void GetActors(const MClass* type, Actor* actor, Array<Actor*>& result)
+    {
+        if (actor->GetClass()->IsSubClassOf(type))
+            result.Add(actor);
+        for (auto child : actor->Children)
+            GetActors(type, child, result);
     }
 
+    void GetScripts(const MClass* type, Actor* actor, Array<Script*>& result)
+    {
+        for (auto script : actor->Scripts)
+            if (script->GetClass()->IsSubClassOf(type))
+                result.Add(script);
+        for (auto child : actor->Children)
+            GetScripts(type, child, result);
+    }
+}
+
+Array<Actor*> Level::GetActors(const MClass* type)
+{
+    Array<Actor*> result;
+    CHECK_RETURN(type, result);
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; i < Scenes.Count(); i++)
+        ::GetActors(type, Scenes[i], result);
+    return result;
+}
+
+Array<Script*> Level::GetScripts(const MClass* type)
+{
+    Array<Script*> result;
+    CHECK_RETURN(type, result);
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; i < Scenes.Count(); i++)
+        ::GetScripts(type, Scenes[i], result);
     return result;
 }
 
 Scene* Level::FindScene(const Guid& id)
 {
     ScopeLock lock(ScenesLock);
-
     for (int32 i = 0; i < Scenes.Count(); i++)
-    {
         if (Scenes[i]->GetID() == id)
             return Scenes[i];
-    }
-
     return nullptr;
 }
 
