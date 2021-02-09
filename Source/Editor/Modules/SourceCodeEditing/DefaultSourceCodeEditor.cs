@@ -39,6 +39,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         {
             var codeEditing = Editor.Instance.CodeEditing;
 
+#if PLATFORM_WINDOW
             // Favor the newest Visual Studio
             for (int i = (int)CodeEditorTypes.VS2019; i >= (int)CodeEditorTypes.VS2008; i--)
             {
@@ -49,6 +50,15 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                     return;
                 }
             }
+#elif PLATFORM_LINUX
+            // Favor the VS Code
+            var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
+            if (vsCode != null)
+            {
+                _currentEditor = vsCode;
+                return;
+            }
+#endif
 
             // Fallback default editor (always valid)
             _currentEditor = codeEditing.GetInBuildEditor(CodeEditorTypes.SystemDefault);
