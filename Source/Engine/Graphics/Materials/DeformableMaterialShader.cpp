@@ -26,7 +26,7 @@ PACK_STRUCT(struct DeformableMaterialShaderData {
     float TimeParam;
     Vector4 ViewInfo;
     Vector4 ScreenSize;
-    Vector3 WorldInvScale;
+    Vector3 Dummy0;
     float WorldDeterminantSign;
     float MeshMinZ;
     float Segment;
@@ -79,13 +79,6 @@ void DeformableMaterialShader::Bind(BindParameters& params)
         materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        materialData->WorldInvScale = Vector3(
-            scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
-            scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
-            scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->Segment = drawCall.Deformable.Segment;
         materialData->ChunksPerSegment = drawCall.Deformable.ChunksPerSegment;

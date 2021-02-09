@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.Json;
@@ -178,6 +179,11 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
             }
 
+            public override void OnContextMenu(ContextMenu contextMenu)
+            {
+                ParentNode.OnContextMenu(contextMenu);
+            }
+
             public static SceneGraphNode Create(StateData state)
             {
                 var data = JsonSerializer.Deserialize<Data>(state.State);
@@ -239,6 +245,11 @@ namespace FlaxEditor.SceneGraph.Actors
                 DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.YellowGreen, 0, false);
             }
 
+            public override void OnContextMenu(ContextMenu contextMenu)
+            {
+                ParentNode.OnContextMenu(contextMenu);
+            }
+
             public override void OnDispose()
             {
                 _node = null;
@@ -290,6 +301,24 @@ namespace FlaxEditor.SceneGraph.Actors
             var spline = (Spline)Actor;
             spline.AddSplineLocalPoint(Vector3.Zero, false);
             spline.AddSplineLocalPoint(new Vector3(0, 0, 100.0f));
+        }
+
+        /// <inheritdoc />
+        public override void OnContextMenu(ContextMenu contextMenu)
+        {
+            base.OnContextMenu(contextMenu);
+
+            contextMenu.AddButton("Add spline model", OnAddSplineMode);
+        }
+
+        private void OnAddSplineMode()
+        {
+            var actor = new SplineModel
+            {
+                StaticFlags = Actor.StaticFlags,
+                Transform = Actor.Transform,
+            };
+            Editor.Instance.SceneEditing.Spawn(actor, Actor);
         }
 
         /// <inheritdoc />

@@ -19,7 +19,7 @@ float3 ViewDir;
 float TimeParam;
 float4 ViewInfo;
 float4 ScreenSize;
-float3 WorldInvScale;
+float3 Dummy0;
 float WorldDeterminantSign;
 float MeshMinZ;
 float Segment;
@@ -148,9 +148,17 @@ MaterialInput GetMaterialInput(PixelInput input)
 // Removes the scale vector from the local to world transformation matrix
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
 {
-	localToWorld[0] *= WorldInvScale.x;
-	localToWorld[1] *= WorldInvScale.y;
-	localToWorld[2] *= WorldInvScale.z;
+	// Extract per axis scales from localToWorld transform
+	float scaleX = length(localToWorld[0]);
+	float scaleY = length(localToWorld[1]);
+	float scaleZ = length(localToWorld[2]);
+	float3 invScale = float3(
+		scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
+		scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
+		scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
+	localToWorld[0] *= invScale.x;
+	localToWorld[1] *= invScale.y;
+	localToWorld[2] *= invScale.z;
 	return localToWorld;
 }
 
@@ -278,6 +286,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 
 	// Apply local transformation of the geometry before deformation
 	float3 position = mul(float4(input.Position, 1), LocalMatrix).xyz;
+	float4x4 world = LocalMatrix;
 
 	// Apply spline curve deformation
 	float splineAlpha = saturate((position.z - MeshMinZ) / (MeshMaxZ - MeshMinZ));
@@ -285,9 +294,12 @@ VertexOutput VS_SplineModel(ModelInput input)
 	position.z = splineAlpha;
 	float3x4 splineMatrix = float3x4(SplineDeformation[splineIndex * 3], SplineDeformation[splineIndex * 3 + 1], SplineDeformation[splineIndex * 3 + 2]);
 	position = mul(splineMatrix, float4(position, 1));
+	float4x3 splineMatrixT = transpose(splineMatrix);
+	world = mul(world, float4x4(float4(splineMatrixT[0], 0), float4(splineMatrixT[1], 0), float4(splineMatrixT[2], 0), float4(splineMatrixT[3], 1)));
 
 	// Compute world space vertex position
 	output.Geometry.WorldPosition = mul(float4(position, 1), WorldMatrix).xyz;
+	world = mul(world, WorldMatrix);
 
 	// Compute clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
@@ -300,7 +312,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
 	float3x3 tangentToLocal = CalcTangentToLocal(input);
-	float3x3 localToWorld = RemoveScaleFromLocalToWorld((float3x3)WorldMatrix);
+	float3x3 localToWorld = RemoveScaleFromLocalToWorld((float3x3)world);
 	float3x3 tangentToWorld = mul(tangentToLocal, localToWorld); 
 	output.Geometry.WorldNormal = tangentToWorld[2];
 	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
@@ -333,16 +345,6 @@ VertexOutput VS_SplineModel(ModelInput input)
 #endif
 
 	return output;
-}
-
-// Vertex Shader function for Depth Pass
-META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
-float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
-{
-	float3 worldPosition = mul(float4(input.Position.xyz, 1), WorldMatrix).xyz;
-	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
-	return position;
 }
 
 #if USE_DITHERED_LOD_TRANSITION

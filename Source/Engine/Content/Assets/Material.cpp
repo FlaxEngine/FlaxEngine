@@ -390,12 +390,12 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
 
     // Prepare
     auto& info = _shaderHeader.Material.Info;
-    const bool isSurfaceOrTerrain = info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Terrain;
+    const bool isSurfaceOrTerrainOrDeformable = info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Terrain || info.Domain == MaterialDomain::Deformable;
     const bool useCustomData = info.ShadingModel == MaterialShadingModel::Subsurface || info.ShadingModel == MaterialShadingModel::Foliage;
     const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && info.BlendMode != MaterialBlendMode::Opaque) || info.Domain == MaterialDomain::Particle;
     const bool useTess =
             info.TessellationMode != TessellationMethod::None &&
-            RenderTools::CanSupportTessellation(options.Profile) && isSurfaceOrTerrain;
+            RenderTools::CanSupportTessellation(options.Profile) && isSurfaceOrTerrainOrDeformable;
     const bool useDistortion =
             (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
             info.BlendMode != MaterialBlendMode::Opaque &&
@@ -457,7 +457,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "IS_PARTICLE", Numbers[info.Domain == MaterialDomain::Particle ? 1 : 0] });
     options.Macros.Add({ "IS_DEFORMABLE", Numbers[info.Domain == MaterialDomain::Deformable ? 1 : 0] });
     options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
-    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrain && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
+    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
     options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
 #endif
 }
