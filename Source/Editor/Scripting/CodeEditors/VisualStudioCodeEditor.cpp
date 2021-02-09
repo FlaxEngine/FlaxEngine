@@ -42,6 +42,30 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
     {
         output->Add(New<VisualStudioCodeEditor>(path, isInsiders));
     }
+#elif PLATFORM_LINUX
+    char buffer[128];
+    FILE* pipe = popen("/bin/bash -c \"type -p code\"", "r");
+    if (pipe)
+    {
+        StringAnsi pathAnsi;
+        while (fgets(buffer, sizeof(buffer), pipe) != NULL)
+            pathAnsi += buffer;
+        pclose(pipe);
+        const String path(pathAnsi.Get(), pathAnsi.Length() != 0 ? pathAnsi.Length() - 1 : 0);
+        if (FileSystem::FileExists(path))
+        {
+            output->Add(New<VisualStudioCodeEditor>(path, false));
+            return;
+        }
+    }
+    {
+        const String path(TEXT("/usr/bin/code"));
+        if (FileSystem::FileExists(path))
+        {
+            output->Add(New<VisualStudioCodeEditor>(path, false));
+            return;
+        }
+    }
 #endif
 }
 
