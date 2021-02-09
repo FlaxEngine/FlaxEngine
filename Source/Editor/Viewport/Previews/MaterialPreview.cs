@@ -35,6 +35,8 @@ namespace FlaxEditor.Viewport.Previews
         private StaticModel _previewModel;
         private Decal _decal;
         private Terrain _terrain;
+        private Spline _spline;
+        private SplineModel _splineModel;
         private ParticleEffect _particleEffect;
         private MaterialBase _particleEffectMaterial;
         private ParticleEmitter _particleEffectEmitter;
@@ -140,6 +142,7 @@ namespace FlaxEditor.Viewport.Previews
             MaterialBase guiMaterial = null;
             MaterialBase terrainMaterial = null;
             MaterialBase particleMaterial = null;
+            MaterialBase deformableMaterial = null;
             bool usePreviewActor = true;
             if (_material != null)
             {
@@ -173,7 +176,8 @@ namespace FlaxEditor.Viewport.Previews
                         particleMaterial = _material;
                         break;
                     case MaterialDomain.Deformable:
-                        // TODO: preview Deformable material (eg. by using Spline with Spline Model)
+                        usePreviewActor = false;
+                        deformableMaterial = _material;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                     }
@@ -282,6 +286,25 @@ namespace FlaxEditor.Viewport.Previews
                     }
                 }
             }
+
+            // Deformable
+            if (deformableMaterial && _spline == null)
+            {
+                _spline = new Spline();
+                _spline.AddSplineLocalPoint(new Vector3(0, 0, -50.0f), false);
+                _spline.AddSplineLocalPoint(new Vector3(0, 0, 50.0f));
+                _splineModel = new SplineModel
+                {
+                    Scale = new Vector3(0.45f),
+                    Parent = _spline,
+                };
+                Task.AddCustomActor(_spline);
+            }
+            if (_splineModel != null)
+            {
+                _splineModel.Model = _previewModel.Model;
+                _splineModel.SetMaterial(0, deformableMaterial);
+            }
         }
 
         /// <inheritdoc />
@@ -298,6 +321,8 @@ namespace FlaxEditor.Viewport.Previews
             Object.Destroy(ref _previewModel);
             Object.Destroy(ref _decal);
             Object.Destroy(ref _terrain);
+            Object.Destroy(ref _spline);
+            Object.Destroy(ref _splineModel);
             Object.Destroy(ref _particleEffect);
             Object.Destroy(ref _particleEffectEmitter);
             Object.Destroy(ref _particleEffectSystem);
