@@ -9,7 +9,7 @@
 /// <summary>
 /// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to c#.
 /// </summary>
-class SettingsBase
+class FLAXENGINE_API SettingsBase
 {
 public:
 
