@@ -1714,7 +1714,7 @@ void LinuxPlatform::Tick()
 				window = WindowsManager::GetByNativePtr((void*)event.xclient.window);
 				if (window)
 				{
-					window->CheckForWindowResize();
+					window->OnConfigureNotify(&event.xconfigure);
 				}
 			break;
 			case PropertyNotify:

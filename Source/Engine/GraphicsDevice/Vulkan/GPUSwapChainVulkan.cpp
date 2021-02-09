@@ -51,6 +51,10 @@ void GPUSwapChainVulkan::ReleaseBackBuffer()
 
 void GPUSwapChainVulkan::OnReleaseGPU()
 {
+    GPUDeviceLock lock(_device);
+
+    _device->WaitForGPU();
+
     ReleaseBackBuffer();
 
     // Release data

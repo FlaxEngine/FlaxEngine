@@ -56,6 +56,7 @@ public:
 	void OnButtonRelease(void* event);
 	void OnMotionNotify(void* event);
 	void OnLeaveNotify(void* event);
+	void OnConfigureNotify(void* event);
 
 private:
 

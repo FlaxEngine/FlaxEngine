@@ -451,16 +451,17 @@ void LinuxWindow::CheckForWindowResize()
 
 	LINUX_WINDOW_PROLOG;
 
-	// Cache client size
+	// Get client size
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
-	int32 width = xwa.width;
-	int32 height = xwa.height;
-	_clientSize = Vector2(static_cast<float>(width), static_cast<float>(height));
+	const int32 width = xwa.width;
+	const int32 height = xwa.height;
+	const Vector2 clientSize((float)width, (float)height);
 
     // Check if window size has been changed
-    if (width > 0 && height > 0 && (_swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
-    {
+	if (clientSize != _clientSize && width > 0 && height > 0)
+	{
+		_clientSize = clientSize;
         OnResize(width, height);
     }
 }
@@ -578,6 +579,17 @@ void LinuxWindow::OnLeaveNotify(void* event)
 {
 	auto crossingEvent = (X11::XCrossingEvent*)event;
 	Input::Mouse->OnMouseLeave(this);
+}
+
+void LinuxWindow::OnConfigureNotify(void* event)
+{
+	auto configureEvent = (X11::XConfigureEvent*)event;
+	const Vector2 clientSize((float)configureEvent->width, (float)configureEvent->height);
+	if (clientSize != _clientSize)
+	{
+		_clientSize = clientSize;
+		OnResize(configureEvent->width, configureEvent->height);
+	}
 }
 
 void LinuxWindow::Maximize(bool enable)
