@@ -20,7 +20,7 @@ public:
 
 private:
 
-	bool _resizeDisabled;
+	bool _resizeDisabled, _focusOnMapped = false;
 	float _opacity = 1.0f;
 	HandleType _window;
 
@@ -74,6 +74,7 @@ public:
 	void Maximize() override;
 	void Restore() override;
 	bool IsClosed() const override;
+    bool IsForegroundWindow() const override;
 	void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
 	void SetPosition(const Vector2& position) override;

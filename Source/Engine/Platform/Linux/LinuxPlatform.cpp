@@ -1691,6 +1691,15 @@ void LinuxPlatform::Tick()
 					}
 				}
 			break;
+			case MapNotify:
+				// Auto-focus shown windows
+				window = WindowsManager::GetByNativePtr((void*)event.xmap.window);
+				if (window && window->_focusOnMapped)
+				{
+					window->_focusOnMapped = false;
+					window->Focus();
+				}
+			break;
 			case FocusIn:
 				// Update input context focus
 				X11::XSetICFocus(IC);

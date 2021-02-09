@@ -242,10 +242,7 @@ void LinuxWindow::Show()
 		LINUX_WINDOW_PROLOG;
 		X11::XMapWindow(display, window);
 		X11::XFlush(display);
-		if (_settings.AllowInput && _settings.ActivateWhenFirstShown)
-		{
-			Focus();
-		}
+		_focusOnMapped = _settings.AllowInput && _settings.ActivateWhenFirstShown;
 
 		// Base
 		WindowBase::Show();
@@ -304,6 +301,11 @@ void LinuxWindow::BringToFront(bool force)
 bool LinuxWindow::IsClosed() const
 {
 	return _isClosing;
+}
+
+bool LinuxWindow::IsForegroundWindow() const
+{
+	return _focused || _focusOnMapped;
 }
 
 void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
@@ -673,7 +675,14 @@ void LinuxWindow::SetOpacity(const float opacity)
 
 void LinuxWindow::Focus()
 {
-	// TODO: impl this
+	if (_focused || !IsWindowMapped())
+		return;
+
+	LINUX_WINDOW_PROLOG;
+
+	X11::XSetInputFocus(display, window, RevertToPointerRoot, CurrentTime);
+	X11::XFlush(display);
+	X11::XSync(display, 0);
 }
 
 void LinuxWindow::SetTitle(const StringView& title)
