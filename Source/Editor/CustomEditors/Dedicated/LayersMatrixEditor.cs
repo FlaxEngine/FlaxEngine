@@ -76,7 +76,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 upperRightCell.AddChild(new Label
                 {
                     Height = labelsHeight,
-                    Text = layerNames[layerIndex],
+                    Text = layerNames[layerNames.Length - layerIndex - 1],
                     HorizontalAlignment = TextAlignment.Near,
                 });
                 bottomLeftCell.AddChild(new Label
