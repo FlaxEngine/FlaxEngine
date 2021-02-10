@@ -132,8 +132,8 @@ namespace Flax.Build.Bindings
                 return result;
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference") && typeInfo.GenericArgs != null)
+            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
+            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return typeInfo.GenericArgs[0].Type.Replace("::", ".");
 
             // Array or Span
@@ -188,8 +188,8 @@ namespace Flax.Build.Bindings
                     return "IntPtr";
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference") && typeInfo.GenericArgs != null)
+            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
+            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return "IntPtr";
 
             return GenerateCSharpNativeToManaged(buildData, typeInfo, caller);
@@ -231,8 +231,8 @@ namespace Flax.Build.Bindings
                         return "FlaxEngine.Object.GetUnmanagedPtr";
                 }
 
-                // ScriptingObjectReference or AssetReference or WeakAssetReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference") && typeInfo.GenericArgs != null)
+                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
+                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                     return "FlaxEngine.Object.GetUnmanagedPtr";
 
                 // Default

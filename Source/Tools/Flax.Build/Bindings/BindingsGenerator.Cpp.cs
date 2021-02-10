@@ -100,7 +100,7 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"Variant(StringView({value}))";
-            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "ScriptingObjectReference")
+            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
                 return $"Variant({value}.Get())";
             if (typeInfo.IsArray)
             {
@@ -149,7 +149,7 @@ namespace Flax.Build.Bindings
                 return $"((StringView){value}).GetText()";
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
-            if (typeInfo.Type == "ScriptingObjectReference")
+            if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsArray)
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
@@ -340,8 +340,8 @@ namespace Flax.Build.Bindings
                     }
                 }
 
-                // ScriptingObjectReference or AssetReference or WeakAssetReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference") && typeInfo.GenericArgs != null)
+                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
+                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoObject*";
                     return "{0}.GetManagedInstance()";
@@ -448,8 +448,8 @@ namespace Flax.Build.Bindings
                 type = "MonoReflectionType*";
                 return "MUtils::UnboxVariantType({0})";
             default:
-                // ScriptingObjectReference or AssetReference or WeakAssetReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference") && typeInfo.GenericArgs != null)
+                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
+                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     // For non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration)
