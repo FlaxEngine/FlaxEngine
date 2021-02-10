@@ -382,5 +382,4 @@ public:
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    void OnEnable() override;
 };

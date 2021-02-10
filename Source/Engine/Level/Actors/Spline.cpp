@@ -505,12 +505,3 @@ void Spline::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
         UpdateSpline();
     }
 }
-
-void Spline::OnEnable()
-{
-    // Base
-    Actor::OnEnable();
-
-    // Initialize spline
-    UpdateSpline();
-}
