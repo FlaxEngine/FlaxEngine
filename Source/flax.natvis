@@ -206,4 +206,13 @@
     </Expand>
   </Type>
 
+  <!-- ScriptingTypeHandle -->
+  <Type Name="ScriptingTypeHandle">
+    <DisplayString Condition="Module == 0">Null</DisplayString>
+    <DisplayString Condition="Module != 0">Type={Module->Types._allocation._data[TypeIndex].Fullname}</DisplayString>
+    <Expand>
+      <Item Name="[Type]" ExcludeView="simple">Module->Types._allocation._data[TypeIndex]</Item>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>
