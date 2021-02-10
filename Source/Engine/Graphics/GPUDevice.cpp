@@ -13,10 +13,10 @@
 #include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Core/Utilities.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
@@ -230,10 +230,10 @@ void GPUDevice::preDispose()
     RenderTargetPool::Flush();
 
     // Release resources
-    _res->DefaultMaterial.Unlink();
-    _res->DefaultNormalMap.Unlink();
-    _res->DefaultWhiteTexture.Unlink();
-    _res->DefaultBlackTexture.Unlink();
+    _res->DefaultMaterial = nullptr;
+    _res->DefaultNormalMap = nullptr;
+    _res->DefaultWhiteTexture = nullptr;
+    _res->DefaultBlackTexture = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_res->PS_CopyLinear);
     SAFE_DELETE_GPU_RESOURCE(_res->PS_Clear);
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);

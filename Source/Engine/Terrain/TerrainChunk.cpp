@@ -21,7 +21,7 @@ void TerrainChunk::Init(TerrainPatch* patch, uint16 x, uint16 z)
     _yHeight = 1;
     _heightmapUVScaleBias = Vector4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
     _perInstanceRandom = (_patch->_terrain->_id.C ^ _x ^ _z) * (1.0f / MAX_uint32);
-    OverrideMaterial.Unlink();
+    OverrideMaterial = nullptr;
 }
 
 bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)

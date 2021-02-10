@@ -79,7 +79,7 @@ void Lightmap::EnsureSize(int32 size)
             {
                 // Unlink texture that cannot be loaded
                 LOG(Warning, "Lightmap::EnsureSize failed to load texture");
-                texture.Unlink();
+                texture = nullptr;
             }
             else
             {
@@ -88,7 +88,7 @@ void Lightmap::EnsureSize(int32 size)
                 {
                     // Unlink texture and import new with valid size
                     LOG(Info, "Changing lightmap {0}:{1} size from {2} to {3}", _index, textureIndex, texture->GetTexture()->Size(), size);
-                    texture.Unlink();
+                    texture = nullptr;
                 }
             }
         }

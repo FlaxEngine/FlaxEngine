@@ -40,8 +40,7 @@ void NavMesh::SaveNavMesh()
     // Check if has no navmesh data generated (someone could just remove navmesh volumes or generate for empty scene)
     if (Data.Tiles.IsEmpty())
     {
-        // Keep asset reference valid
-        DataAsset.Unlink();
+        DataAsset = nullptr;
         return;
     }
 

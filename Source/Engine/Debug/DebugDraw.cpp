@@ -487,7 +487,7 @@ void DebugDrawService::Dispose()
     DebugDrawPsDepthTest.Release();
     DebugDrawPsDepthTest.Release();
     SAFE_DELETE(DebugDrawVB);
-    DebugDrawShader.Unlink();
+    DebugDrawShader = nullptr;
 }
 
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)

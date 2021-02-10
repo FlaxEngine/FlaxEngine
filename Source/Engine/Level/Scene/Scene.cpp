@@ -298,8 +298,8 @@ void Scene::OnDeleteObject()
 {
     // Cleanup
     LightmapsData.UnloadLightmaps();
-    CSGData.Model.Unlink();
-    CSGData.CollisionData.Unlink();
+    CSGData.Model = nullptr;
+    CSGData.CollisionData = nullptr;
 
     // Base
     Actor::OnDeleteObject();

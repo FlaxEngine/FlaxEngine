@@ -557,7 +557,7 @@ void OnShaderReloading(Asset* obj)
 
 void CleanupGPUParticlesSorting()
 {
-    GPUParticlesSorting.Unlink();
+    GPUParticlesSorting = nullptr;
 }
 
 void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices)

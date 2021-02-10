@@ -77,14 +77,11 @@ void GBufferPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
-
-    // Release assets
-    _gBufferShader.Unlink();
-    _skyModel.Unlink();
-    _boxModel.Unlink();
-
+    _gBufferShader = nullptr;
+    _skyModel = nullptr;
+    _boxModel = nullptr;
 #if USE_EDITOR
     SAFE_DELETE(_lightmapUVsDensityMaterialShader);
     SAFE_DELETE(_vertexColorsMaterialShader);
