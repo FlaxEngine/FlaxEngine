@@ -74,6 +74,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/SSR"));
     data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultMaterial"));
+    data.AddRootEngineAsset(TEXT("Engine/DefaultDeformableMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultTerrainMaterial"));
     if (!gameSettings->NoSplashScreen && !gameSettings->SplashScreen.IsValid())
         data.AddRootEngineAsset(TEXT("Engine/Textures/Logo"));

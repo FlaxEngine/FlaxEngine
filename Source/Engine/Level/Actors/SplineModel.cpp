@@ -408,7 +408,7 @@ void SplineModel::Draw(RenderContext& renderContext)
             else if (slot.Material && slot.Material->IsLoaded())
                 material = slot.Material;
             else
-                material = nullptr;
+                material = GPUDevice::Instance->GetDefaultDeformableMaterial();
             if (!material || !material->IsDeformable())
                 continue;
 

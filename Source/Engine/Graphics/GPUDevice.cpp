@@ -18,6 +18,7 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Scripting/SoftObjectReference.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -127,6 +128,7 @@ struct GPUDevice::PrivateData
     GPUPipelineState* PS_Clear = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
+    SoftObjectReference<Material> DefaultDeformableMaterial;
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;
@@ -206,6 +208,7 @@ bool GPUDevice::LoadContent()
     _res->DefaultMaterial = Content::LoadAsyncInternal<Material>(TEXT("Engine/DefaultMaterial"));
     if (_res->DefaultMaterial == nullptr)
         return true;
+    _res->DefaultDeformableMaterial = Guid(0x639e12c0, 0x42d34bae, 0x89dd8b81, 0x7e1efc2d);
 
     // Load default normal map
     _res->DefaultNormalMap = Content::LoadAsyncInternal<Texture>(TEXT("Engine/Textures/NormalTexture"));
@@ -231,6 +234,7 @@ void GPUDevice::preDispose()
 
     // Release resources
     _res->DefaultMaterial = nullptr;
+    _res->DefaultDeformableMaterial = nullptr;
     _res->DefaultNormalMap = nullptr;
     _res->DefaultWhiteTexture = nullptr;
     _res->DefaultBlackTexture = nullptr;
@@ -378,6 +382,11 @@ void GPUDevice::Dispose()
 MaterialBase* GPUDevice::GetDefaultMaterial() const
 {
     return _res->DefaultMaterial;
+}
+
+MaterialBase* GPUDevice::GetDefaultDeformableMaterial() const
+{
+    return _res->DefaultDeformableMaterial.Get();
 }
 
 GPUTexture* GPUDevice::GetDefaultNormalMap() const

@@ -311,9 +311,10 @@ public:
     /// Sets the object.
     /// </summary>
     /// <param name="id">The object ID. Uses Scripting to find the registered object of the given ID.</param>
-    FORCE_INLINE void Set(const Guid& id)
+    void Set(const Guid& id)
     {
-        Set(static_cast<T*>(FindObject(id, T::GetStaticClass())));
+        _id = id;
+        _object = nullptr;
     }
 
     /// <summary>
