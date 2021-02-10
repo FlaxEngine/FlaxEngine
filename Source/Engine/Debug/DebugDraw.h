@@ -114,6 +114,15 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     API_FUNCTION() static void DrawTriangles(const Span<Vector3>& vertices, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
+    /// Draws the triangles.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
     /// Draws the triangles using the given index buffer.
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
@@ -122,6 +131,16 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the given index buffer.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list.</param>
+    /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Array<int32, HeapAllocation>& indices, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe box.

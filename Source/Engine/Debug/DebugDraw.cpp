@@ -869,9 +869,9 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
         list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
     else
         list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length());
+    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
 
-    for (int32 i = 0; i < vertices.Length() * 3;)
+    for (int32 i = 0; i < vertices.Length();)
     {
         t.V0 = vertices[i++];
         t.V1 = vertices[i++];
@@ -879,6 +879,11 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
 
         list->Add(t);
     }
+}
+
+void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Color& color, float duration, bool depthTest)
+{
+    DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), color, duration, depthTest);
 }
 
 void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Color& color, float duration, bool depthTest)
@@ -894,9 +899,9 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
         list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
     else
         list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length());
+    list->EnsureCapacity(list->Count() + indices.Length() / 3);
 
-    for (int32 i = 0; i < indices.Length() * 3;)
+    for (int32 i = 0; i < indices.Length();)
     {
         t.V0 = vertices[indices[i++]];
         t.V1 = vertices[indices[i++]];
@@ -904,6 +909,11 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
 
         list->Add(t);
     }
+}
+
+void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Array<int32, HeapAllocation>& indices, const Color& color, float duration, bool depthTest)
+{
+    DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), Span<int32>(indices.Get(), indices.Count()), color, duration, depthTest);
 }
 
 void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
