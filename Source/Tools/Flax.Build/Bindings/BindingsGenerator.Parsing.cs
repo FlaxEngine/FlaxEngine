@@ -1022,11 +1022,30 @@ namespace Flax.Build.Bindings
 
             // Read parameters from the tag
             var tagParams = ParseTagParameters(ref context);
+            context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' keyword
-            desc.IsStatic = context.Tokenizer.NextToken().Value == "static";
-            if (!desc.IsStatic)
-                context.Tokenizer.PreviousToken();
+            // Read 'static' or 'mutable'
+            Token token;
+            var isMutable = false;
+            while (true)
+            {
+                token = context.Tokenizer.CurrentToken;
+                if (!desc.IsStatic && token.Value == "static")
+                {
+                    desc.IsStatic = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!isMutable && token.Value == "mutable")
+                {
+                    isMutable = true;
+                    context.Tokenizer.NextToken();
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
 
             // Read type
             desc.Type = ParseType(ref context);
@@ -1035,7 +1054,7 @@ namespace Flax.Build.Bindings
             desc.Name = ParseName(ref context);
 
             // Read ';' or default value or array size or bit-field size
-            var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
+            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
             if (token.Type == TokenType.Equal)
             {
                 context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
