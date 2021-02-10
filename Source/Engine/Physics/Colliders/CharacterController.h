@@ -212,12 +212,6 @@ protected:
     /// </summary>
     void UpdateSize() const;
 
-private:
-
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
-
 public:
 
     // [Collider]
@@ -240,12 +234,12 @@ protected:
 
     // [PhysicsActor]
     void UpdateGeometry() override;
+    void GetGeometry(PxGeometryHolder& geometry) override;
     void UpdateLayerBits() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 #if USE_EDITOR
-    void OnEnable() override;
-    void OnDisable() override;
+    void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void OnActiveInTreeChanged() override;
     void OnParentChanged() override;

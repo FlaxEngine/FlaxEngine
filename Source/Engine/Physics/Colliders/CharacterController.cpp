@@ -7,9 +7,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Physics/PhysicalMaterial.h"
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 #include <ThirdParty/PhysX/PxRigidActor.h>
 #include <ThirdParty/PhysX/PxRigidDynamic.h>
 #include <ThirdParty/PhysX/PxPhysics.h>
@@ -276,6 +273,11 @@ void CharacterController::UpdateGeometry()
     UpdateSize();
 }
 
+void CharacterController::GetGeometry(PxGeometryHolder& geometry)
+{
+    // Unused
+}
+
 void CharacterController::UpdateLayerBits()
 {
     // Base
@@ -308,26 +310,6 @@ void CharacterController::EndPlay()
     }
     _shape = nullptr;
 }
-
-#if USE_EDITOR
-
-void CharacterController::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<CharacterController, &CharacterController::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void CharacterController::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<CharacterController, &CharacterController::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
 
 void CharacterController::OnActiveInTreeChanged()
 {
