@@ -28,10 +28,7 @@ public:
     /// Whether to use spline as closed loop. In that case, ensure to place start and end at the same location.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Spline\")")
-    FORCE_INLINE bool GetIsLoop() const
-    {
-        return _loop;
-    }
+    bool GetIsLoop() const;
 
     /// <summary>
     /// Whether to use spline as closed loop. In that case, ensure to place start and end at the same location.

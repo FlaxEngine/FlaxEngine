@@ -10,6 +10,11 @@ Spline::Spline(const SpawnParams& params)
 {
 }
 
+bool Spline::GetIsLoop() const
+{
+    return _loop;
+}
+
 void Spline::SetIsLoop(bool value)
 {
     if (_loop != value)

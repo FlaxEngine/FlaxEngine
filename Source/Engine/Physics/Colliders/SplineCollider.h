@@ -1,0 +1,61 @@
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "Collider.h"
+#include "Engine/Content/AssetReference.h"
+#include "Engine/Physics/CollisionData.h"
+
+class Spline;
+
+/// <summary>
+/// A collider represented by an arbitrary mesh that goes over the spline.
+/// </summary>
+/// <seealso cref="Collider" />
+/// <seealso cref="Spline" />
+API_CLASS() class FLAXENGINE_API SplineCollider : public Collider
+{
+DECLARE_SCENE_OBJECT(SplineCollider);
+private:
+    Spline* _spline = nullptr;
+    PxTriangleMesh* _triangleMesh = nullptr;
+    Array<Vector3> _vertexBuffer;
+    Array<int32> _indexBuffer;
+
+public:
+
+    /// <summary>
+    /// Linked collision data asset that contains convex mesh or triangle mesh used to represent a spline collider shape.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), DefaultValue(null), EditorDisplay(\"Collider\")")
+    AssetReference<CollisionData> CollisionData;
+
+private:
+
+    void OnCollisionDataChanged();
+    void OnCollisionDataLoaded();
+    void OnSplineUpdated();
+
+public:
+
+    // [Collider]
+    bool CanAttach(RigidBody* rigidBody) const override;
+    bool CanBeTrigger() const override;
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
+#endif
+    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void OnParentChanged() override;
+    void EndPlay() override;
+
+protected:
+
+    // [Collider]
+#if USE_EDITOR
+    void DrawPhysicsDebug(RenderView& view) override;
+#endif
+    void UpdateBounds() override;
+    void GetGeometry(PxGeometryHolder& geometry) override;
+};

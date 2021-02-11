@@ -308,16 +308,28 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu);
 
-            contextMenu.AddButton("Add spline model", OnAddSplineMode);
+            contextMenu.AddButton("Add spline model", OnAddSplineModel);
+            contextMenu.AddButton("Add spline collider", OnAddSplineCollider);
         }
 
-        private void OnAddSplineMode()
+        private void OnAddSplineModel()
         {
             var actor = new SplineModel
             {
                 StaticFlags = Actor.StaticFlags,
                 Transform = Actor.Transform,
             };
+            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+        }
+
+        private void OnAddSplineCollider()
+        {
+            var actor = new SplineCollider
+            {
+                StaticFlags = Actor.StaticFlags,
+                Transform = Actor.Transform,
+            };
+            // TODO: auto pick the collision data if already using spline model
             Editor.Instance.SceneEditing.Spawn(actor, Actor);
         }
 
