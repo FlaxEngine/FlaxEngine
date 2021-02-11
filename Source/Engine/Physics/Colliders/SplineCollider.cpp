@@ -22,6 +22,19 @@ SplineCollider::SplineCollider(const SpawnParams& params)
     CollisionData.Loaded.Bind<SplineCollider, &SplineCollider::OnCollisionDataLoaded>(this);
 }
 
+Quaternion SplineCollider::GetPreRotation() const
+{
+    return _preRotation;
+}
+
+void SplineCollider::SetPreRotation(const Quaternion& value)
+{
+    if (_preRotation == value)
+        return;
+    _preRotation = value;
+    UpdateGeometry();
+}
+
 void SplineCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
@@ -180,11 +193,10 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
     }
 
     // Apply local mesh transformation
-    const Transform localTransform = _localTransform;
-    if (!localTransform.IsIdentity())
+    if (!_preRotation.IsIdentity())
     {
         for (int32 i = 0; i < collisionVertices.Count(); i++)
-            collisionVertices[i] = localTransform.LocalToWorld(collisionVertices[i]);
+            collisionVertices[i] = Vector3::Transform(collisionVertices[i], _preRotation);
     }
 
     // Find collision geometry local bounds

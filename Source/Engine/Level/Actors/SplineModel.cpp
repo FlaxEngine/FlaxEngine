@@ -28,6 +28,19 @@ SplineModel::~SplineModel()
         Allocator::Free(_deformationBufferData);
 }
 
+Quaternion SplineModel::GetPreRotation() const
+{
+    return _preRotation;
+}
+
+void SplineModel::SetPreRotation(const Quaternion& value)
+{
+    if (_preRotation == value)
+        return;
+    _preRotation = value;
+    OnSplineUpdated();
+}
+
 float SplineModel::GetQuality() const
 {
     return _quality;
@@ -108,12 +121,11 @@ void SplineModel::OnSplineUpdated()
     const int32 segments = keyframes.Count() - 1;
     const int32 chunksPerSegment = Math::Clamp(Math::CeilToInt(SPLINE_RESOLUTION * _quality), 2, 1024);
     const float chunksPerSegmentInv = 1.0f / (float)chunksPerSegment;
-    const Transform splineTransform = _spline->GetTransform();
+    const Transform splineTransform = GetTransform();
     _instances.Resize(segments, false);
-    BoundingBox localModelBounds;
+    BoundingBox localModelBounds(Vector3::Maximum, Vector3::Minimum);
     {
         auto& meshes = Model->LODs[0].Meshes;
-        Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
         Vector3 corners[8];
         for (int32 j = 0; j < meshes.Count(); j++)
         {
@@ -122,12 +134,9 @@ void SplineModel::OnSplineUpdated()
 
             for (int32 i = 0; i < 8; i++)
             {
-                //Vector3::Transform(corners[i], localTransform, tmp);
-                //_localTransform.LocalToWorld(corners[i], tmp);
-
-                // Transform mesh corner using local spline model transformation but use double-precision to prevent issues when rotating model
-                tmp = corners[i] * _localTransform.Scale;
-                double rotation[4] = { (double)_localTransform.Orientation.X, (double)_localTransform.Orientation.Y, (double)_localTransform.Orientation.Z, (double)_localTransform.Orientation.W };
+                // Transform mesh corner using pre-transform but use double-precision to prevent issues when rotating model
+                Vector3 tmp = corners[i];
+                double rotation[4] = { (double)_preRotation.X, (double)_preRotation.Y, (double)_preRotation.Z, (double)_preRotation.W };
                 const double length = sqrt(rotation[0] * rotation[0] + rotation[1] * rotation[1] + rotation[2] * rotation[2] + rotation[3] * rotation[3]);
                 const double inv = 1.0 / length;
                 rotation[0] *= inv;
@@ -151,13 +160,11 @@ void SplineModel::OnSplineUpdated()
                     (float)(pos[0] * (1.0 - yy - zz) + pos[1] * (xy - wz) + pos[2] * (xz + wy)),
                     (float)(pos[0] * (xy + wz) + pos[1] * (1.0 - xx - zz) + pos[2] * (yz - wx)),
                     (float)(pos[0] * (xz - wy) + pos[1] * (yz + wx) + pos[2] * (1.0 - xx - yy)));
-                Vector3::Add(tmp, _localTransform.Translation, tmp);
 
-                min = Vector3::Min(min, tmp);
-                max = Vector3::Max(max, tmp);
+                localModelBounds.Minimum = Vector3::Min(localModelBounds.Minimum, tmp);
+                localModelBounds.Maximum = Vector3::Max(localModelBounds.Maximum, tmp);
             }
         }
-        localModelBounds = BoundingBox(min, max);
     }
     _meshMinZ = localModelBounds.Minimum.Z;
     _meshMaxZ = localModelBounds.Maximum.Z;
@@ -185,9 +192,7 @@ void SplineModel::OnSplineUpdated()
             segmentPoints.Add(chunkWorld.Translation);
             maxScale = Math::Max(maxScale, chunkWorld.Scale.GetAbsolute().MaxValue());
         }
-        maxScale = Math::Max(maxScale, _localTransform.Scale.GetAbsolute().MaxValue());
         BoundingSphere::FromPoints(segmentPoints.Get(), segmentPoints.Count(), instance.Sphere);
-        instance.Sphere.Center += _localTransform.Translation;
         instance.Sphere.Radius *= maxScale * _boundsScale;
     }
 
@@ -356,8 +361,8 @@ void SplineModel::Draw(RenderContext& renderContext)
     drawCall.Deformable.MeshMaxZ = _meshMaxZ;
     drawCall.Deformable.GeometrySize = _box.GetSize();
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
-    _localTransform.GetWorld(drawCall.Deformable.LocalMatrix);
-    const Transform splineTransform = _spline->GetTransform();
+    Matrix::RotationQuaternion(_preRotation, drawCall.Deformable.LocalMatrix);
+    const Transform splineTransform = GetTransform();
     splineTransform.GetWorld(drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
     const float worldDeterminantSign = drawCall.World.RotDeterminant() * drawCall.Deformable.LocalMatrix.RotDeterminant();
