@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Modules;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 
 namespace FlaxEditor.Actions
@@ -45,6 +46,7 @@ namespace FlaxEditor.Actions
             if (spline == null)
                 return;
             spline.SplineKeyframes = _after;
+            SplineNode.OnSplineEdited(spline);
         }
 
         /// <inheritdoc />
@@ -54,6 +56,7 @@ namespace FlaxEditor.Actions
             if (spline == null)
                 return;
             spline.SplineKeyframes = _before;
+            SplineNode.OnSplineEdited(spline);
         }
 
         /// <inheritdoc />

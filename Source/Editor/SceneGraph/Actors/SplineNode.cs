@@ -337,7 +337,7 @@ namespace FlaxEditor.SceneGraph.Actors
             Editor.Instance.SceneEditing.Spawn(actor, Actor);
         }
 
-        private static void OnSplineEdited(Spline spline)
+        internal static void OnSplineEdited(Spline spline)
         {
             var collider = spline.GetChild<SplineCollider>();
             if (collider && collider.Scene && collider.IsActiveInHierarchy && collider.HasStaticFlag(StaticFlags.Navigation) && !Editor.IsPlayMode)

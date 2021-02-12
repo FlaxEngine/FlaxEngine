@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.Actions;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -40,6 +41,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     spline.SetTangentsLinear();
                     if (enableUndo)
                         Presenter.Undo.AddAction(new EditSplineAction(spline, before));
+                    SplineNode.OnSplineEdited(spline);
                     Editor.Instance.Scene.MarkSceneEdited(spline.Scene);
                 }
             }
@@ -56,6 +58,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     spline.SetTangentsSmooth();
                     if (enableUndo)
                         Presenter.Undo.AddAction(new EditSplineAction(spline, before));
+                    SplineNode.OnSplineEdited(spline);
                     Editor.Instance.Scene.MarkSceneEdited(spline.Scene);
                 }
             }
