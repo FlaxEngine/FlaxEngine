@@ -15,7 +15,7 @@
 #define ENSURE_CAN_COOK \
 	if (Physics::GetCooking() == nullptr) \
 	{ \
-		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use terrain generation at runtime."); \
+		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use collision generation at runtime."); \
 		return true; \
 	}
 

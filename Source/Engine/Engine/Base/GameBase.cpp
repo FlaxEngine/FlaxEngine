@@ -259,13 +259,13 @@ void GameBaseImpl::OnSplashScreenEnd()
 {
     // Hide splash screen
     SplashScreenTime = 0;
-    SplashScreen.Unlink();
+    SplashScreen = nullptr;
     MainRenderTask::Instance->PostRender.Unbind(&OnPostRender);
 
     // Load the first scene
     LOG(Info, "Loading the first scene");
     const auto sceneId = FirstScene ? FirstScene.GetID() : Guid::Empty;
-    FirstScene.Unlink();
+    FirstScene = nullptr;
     if (Level::LoadSceneAsync(sceneId))
     {
         LOG(Fatal, "Cannot load the first scene.");

@@ -75,12 +75,8 @@ public:
 
     GPUResourceProperty& operator=(const GPUResourceProperty& other)
     {
-        // Protect against invalid self-assignment
         if (this != &other)
-        {
             Set(other.Get());
-        }
-
         return *this;
     }
 
@@ -158,7 +154,6 @@ public:
     /// <param name="value">Value to assign</param>
     void Set(T* value)
     {
-        // Check if value will change
         if (_resource != value)
         {
             // Remove reference from the old one
@@ -179,7 +174,6 @@ public:
     /// </summary>
     void Unlink()
     {
-        // Check if value will change
         if (_resource)
         {
             // Remove reference from the old one
@@ -194,10 +188,7 @@ private:
     {
         if (_resource)
         {
-            // Unlink
             _resource = nullptr;
-
-            // Fire event
             OnUnload(this);
         }
     }
