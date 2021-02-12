@@ -447,6 +447,7 @@ void SplineModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(BoundsScale, _boundsScale);
     SERIALIZE_MEMBER(LODBias, _lodBias);
     SERIALIZE_MEMBER(ForcedLOD, _forcedLod);
+    SERIALIZE_MEMBER(PreRotation, _preRotation)
     SERIALIZE(Model);
     SERIALIZE(DrawModes);
 
@@ -463,6 +464,7 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(BoundsScale, _boundsScale);
     DESERIALIZE_MEMBER(LODBias, _lodBias);
     DESERIALIZE_MEMBER(ForcedLOD, _forcedLod);
+    DESERIALIZE_MEMBER(PreRotation, _preRotation);
     DESERIALIZE(Model);
     DESERIALIZE(DrawModes);
 

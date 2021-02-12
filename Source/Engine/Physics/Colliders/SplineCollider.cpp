@@ -120,6 +120,7 @@ void SplineCollider::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(SplineCollider);
 
     SERIALIZE(CollisionData);
+    SERIALIZE_MEMBER(PreRotation, _preRotation)
 }
 
 void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -128,6 +129,7 @@ void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     Collider::Deserialize(stream, modifier);
 
     DESERIALIZE(CollisionData);
+    DESERIALIZE_MEMBER(PreRotation, _preRotation);
 }
 
 void SplineCollider::OnParentChanged()
@@ -325,7 +327,7 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
 
 #if !USE_EDITOR
         // Free memory for static splines (if editor collision preview is not needed)
-        if (IsStatic())
+        if (IsTransformStatic())
         {
             _vertexBuffer.Resize(0);
             _indexBuffer.Resize(0);
