@@ -630,12 +630,12 @@ void WindowsPlatform::Exit()
 
 void WindowsPlatform::Log(const StringView& msg)
 {
-    Char buffer[500];
+    Char buffer[512];
     Char* str;
     if (msg.Length() + 3 < ARRAY_COUNT(buffer))
         str = buffer;
     else
-        str = new Char[msg.Length() + 3];
+        str = (Char*)Allocate((msg.Length() + 3) * sizeof(Char), 16);
     MemoryCopy(str, msg.Get(), msg.Length() * sizeof(Char));
     str[msg.Length() + 0] = '\r';
     str[msg.Length() + 1] = '\n';
