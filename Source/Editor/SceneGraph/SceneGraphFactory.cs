@@ -69,6 +69,7 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(SplineModel), typeof(ActorNode));
             CustomNodesTypes.Add(typeof(SplineCollider), typeof(ColliderNode));
             CustomNodesTypes.Add(typeof(SplineRopeBody), typeof(ActorNode));
+            CustomNodesTypes.Add(typeof(NavMesh), typeof(ActorNode));
         }
 
         /// <summary>
