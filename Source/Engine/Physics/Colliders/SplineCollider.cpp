@@ -92,12 +92,12 @@ bool SplineCollider::CanBeTrigger() const
 
 void SplineCollider::DrawPhysicsDebug(RenderView& view)
 {
-    DEBUG_DRAW_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow * 0.8f, 0, true);
+    DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void SplineCollider::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow, 0, false);
+    DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow, 0, false);
 
     // Base
     Collider::OnDebugDrawSelected();
