@@ -13,6 +13,7 @@ class Spline;
 /// <seealso cref="Spline" />
 API_CLASS() class FLAXENGINE_API SplineRopeBody : public Actor
 {
+API_AUTO_SERIALIZATION();
 DECLARE_SCENE_OBJECT(SplineRopeBody);
 private:
 
@@ -54,6 +55,12 @@ public:
     API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Rope\")")
     bool EnableStiffness = false;
 
+    /// <summary>
+    /// The rope simulation update substep (in seconds). Defines the frequency of physics update.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(40), Limit(0, 0.1f, 0.0001f), EditorDisplay(\"Rope\")")
+    float SubstepTime = 0.02f;
+
 private:
 
     void Tick();
@@ -61,8 +68,6 @@ private:
 public:
 
     // [Actor]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnEnable() override;
     void OnDisable() override;
     void OnTransformChanged() override;

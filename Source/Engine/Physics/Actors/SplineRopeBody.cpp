@@ -19,10 +19,6 @@ void SplineRopeBody::Tick()
         return;
     PROFILE_CPU();
 
-    // TODO: add as configs
-    const float SubstepTime = 0.02f;
-    const int32 SolverIterations = 1;
-
     // Cache data
     const Vector3 gravity = Physics::GetGravity() * GravityScale;
     auto& keyframes = _spline->Curve.GetKeyframes();
@@ -92,17 +88,40 @@ void SplineRopeBody::Tick()
             }
         }
 
-        // Constraints solving
-        for (int32 iteration = 0; iteration < SolverIterations; iteration++)
+        // Distance constraint
+        for (int32 i = 1; i < keyframesCount; i++)
         {
-            // Distance constraint
-            for (int32 i = 1; i < keyframesCount; i++)
+            auto& massA = _masses[i - 1];
+            auto& massB = _masses[i];
+            Vector3 offset = massB.Position - massA.Position;
+            const float distance = offset.Length();
+            const float scale = (distance - massB.SegmentLength) / Math::Max(distance, ZeroTolerance);
+            if (massA.Unconstrained && massB.Unconstrained)
             {
-                auto& massA = _masses[i - 1];
+                offset *= scale * 0.5f;
+                massA.Position += offset;
+                massB.Position -= offset;
+            }
+            else if (massA.Unconstrained)
+            {
+                massA.Position += scale * offset;
+            }
+            else if (massB.Unconstrained)
+            {
+                massB.Position -= scale * offset;
+            }
+        }
+
+        // Stiffness constraint
+        if (EnableStiffness)
+        {
+            for (int32 i = 2; i < keyframesCount; i++)
+            {
+                auto& massA = _masses[i - 2];
                 auto& massB = _masses[i];
                 Vector3 offset = massB.Position - massA.Position;
                 const float distance = offset.Length();
-                const float scale = (distance - massB.SegmentLength) / Math::Max(distance, ZeroTolerance);
+                const float scale = (distance - massB.SegmentLength * 2.0f) / Math::Max(distance, ZeroTolerance);
                 if (massA.Unconstrained && massB.Unconstrained)
                 {
                     offset *= scale * 0.5f;
@@ -116,33 +135,6 @@ void SplineRopeBody::Tick()
                 else if (massB.Unconstrained)
                 {
                     massB.Position -= scale * offset;
-                }
-            }
-
-            // Stiffness constraint
-            if (EnableStiffness)
-            {
-                for (int32 i = 2; i < keyframesCount; i++)
-                {
-                    auto& massA = _masses[i - 2];
-                    auto& massB = _masses[i];
-                    Vector3 offset = massB.Position - massA.Position;
-                    const float distance = offset.Length();
-                    const float scale = (distance - massB.SegmentLength * 2.0f) / Math::Max(distance, ZeroTolerance);
-                    if (massA.Unconstrained && massB.Unconstrained)
-                    {
-                        offset *= scale * 0.5f;
-                        massA.Position += offset;
-                        massB.Position -= offset;
-                    }
-                    else if (massA.Unconstrained)
-                    {
-                        massA.Position += scale * offset;
-                    }
-                    else if (massB.Unconstrained)
-                    {
-                        massB.Position -= scale * offset;
-                    }
                 }
             }
         }
@@ -161,31 +153,9 @@ void SplineRopeBody::Tick()
     }
 }
 
-void SplineRopeBody::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    Actor::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SplineRopeBody);
-
-    SERIALIZE(AttachEnd);
-    SERIALIZE(GravityScale);
-    SERIALIZE(AdditionalForce);
-    SERIALIZE(EnableStiffness);
-}
-
-void SplineRopeBody::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    Actor::Deserialize(stream, modifier);
-
-    DESERIALIZE(AttachEnd);
-    DESERIALIZE(GravityScale);
-    DESERIALIZE(AdditionalForce);
-    DESERIALIZE(EnableStiffness);
-}
-
 void SplineRopeBody::OnEnable()
 {
-    GetScene()->Ticking.Update.AddTick<SplineRopeBody, &SplineRopeBody::Tick>(this);
+    GetScene()->Ticking.FixedUpdate.AddTick<SplineRopeBody, &SplineRopeBody::Tick>(this);
 
     Actor::OnEnable();
 }
@@ -194,7 +164,7 @@ void SplineRopeBody::OnDisable()
 {
     Actor::OnDisable();
 
-    GetScene()->Ticking.Update.RemoveTick(this);
+    GetScene()->Ticking.FixedUpdate.RemoveTick(this);
 }
 
 void SplineRopeBody::OnParentChanged()
