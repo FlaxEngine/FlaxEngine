@@ -66,6 +66,8 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(ParticleEffect), typeof(ParticleEffectNode));
             CustomNodesTypes.Add(typeof(SceneAnimationPlayer), typeof(SceneAnimationPlayerNode));
             CustomNodesTypes.Add(typeof(Spline), typeof(SplineNode));
+            CustomNodesTypes.Add(typeof(SplineModel), typeof(ActorNode));
+            CustomNodesTypes.Add(typeof(SplineCollider), typeof(ColliderNode));
         }
 
         /// <summary>
