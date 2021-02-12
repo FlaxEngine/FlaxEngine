@@ -46,6 +46,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 {
                     var actor = (Spline)_node.Actor;
                     actor.SetSplineTransform(Index, value);
+                    OnSplineEdited(actor);
                 }
             }
 
@@ -111,6 +112,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 {
                     var spline = Object.Find<Spline>(ref SplineId);
                     sceneModule.MarkSceneEdited(spline.Scene);
+                    OnSplineEdited(spline);
                 }
             }
 
@@ -142,6 +144,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 undoAction = action;
                 var splineNode = (SplineNode)SceneGraphFactory.FindNode(action.SplineId);
                 splineNode.OnUpdate();
+                OnSplineEdited(actor);
                 return splineNode.ActorChildNodes[newIndex];
             }
 
@@ -194,6 +197,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (splineNode == null)
                     return null;
                 splineNode.OnUpdate();
+                OnSplineEdited(spline);
                 return splineNode.ActorChildNodes[data.Index];
             }
         }
@@ -331,6 +335,19 @@ namespace FlaxEditor.SceneGraph.Actors
             };
             // TODO: auto pick the collision data if already using spline model
             Editor.Instance.SceneEditing.Spawn(actor, Actor);
+        }
+
+        private static void OnSplineEdited(Spline spline)
+        {
+            var collider = spline.GetChild<SplineCollider>();
+            if (collider && collider.Scene && collider.IsActiveInHierarchy && collider.HasStaticFlag(StaticFlags.Navigation) && !Editor.IsPlayMode)
+            {
+                var options = Editor.Instance.Options.Options.General;
+                if (options.AutoRebuildNavMesh)
+                {
+                    Navigation.BuildNavMesh(collider.Scene, collider.Box, options.AutoRebuildNavMeshTimeoutMs);
+                }
+            }
         }
 
         /// <inheritdoc />
