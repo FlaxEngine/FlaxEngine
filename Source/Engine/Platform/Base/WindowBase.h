@@ -284,6 +284,7 @@ protected:
 
     Vector2 _trackingMouseOffset;
     bool _isUsingMouseOffset;
+    Rectangle _mouseOffsetScreenSize;
     bool _isTrackingMouse;
 
     explicit WindowBase(const CreateWindowSettings& settings);
