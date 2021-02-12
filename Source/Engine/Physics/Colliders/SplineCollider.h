@@ -42,6 +42,17 @@ public:
     /// </summary>
     API_PROPERTY() void SetPreRotation(const Quaternion& value);
 
+#if USE_EDITOR
+
+    /// <summary>
+    /// Extracts the collision data geometry into list of triangles.
+    /// </summary>
+    /// <param name="vertexBuffer">The output vertex buffer.</param>
+    /// <param name="indexBuffer">The output index buffer.</param>
+    void ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const;
+
+#endif
+
 private:
 
     void OnCollisionDataChanged();

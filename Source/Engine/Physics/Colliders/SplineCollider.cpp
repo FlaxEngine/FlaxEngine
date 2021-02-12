@@ -35,6 +35,16 @@ void SplineCollider::SetPreRotation(const Quaternion& value)
     UpdateGeometry();
 }
 
+#if USE_EDITOR
+
+void SplineCollider::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const
+{
+    vertexBuffer.Add(_vertexBuffer);
+    indexBuffer.Add(_indexBuffer);
+}
+
+#endif
+
 void SplineCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene

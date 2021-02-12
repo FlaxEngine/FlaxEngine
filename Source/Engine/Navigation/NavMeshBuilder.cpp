@@ -16,6 +16,7 @@
 #include "Engine/Physics/Colliders/SphereCollider.h"
 #include "Engine/Physics/Colliders/CapsuleCollider.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
+#include "Engine/Physics/Colliders/SplineCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
@@ -256,6 +257,18 @@ struct NavigationSceneRasterization
                 return true;
 
             collisionData->ExtractGeometry(vb, ib);
+
+            e.RasterizeTriangles();
+        }
+        else if (const auto* splineCollider = dynamic_cast<SplineCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("SplineCollider");
+
+            auto collisionData = splineCollider->CollisionData.Get();
+            if (!collisionData || collisionData->WaitForLoaded())
+                return true;
+
+            splineCollider->ExtractGeometry(vb, ib);
 
             e.RasterizeTriangles();
         }
