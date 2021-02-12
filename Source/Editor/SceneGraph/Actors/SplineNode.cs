@@ -314,6 +314,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             contextMenu.AddButton("Add spline model", OnAddSplineModel);
             contextMenu.AddButton("Add spline collider", OnAddSplineCollider);
+            contextMenu.AddButton("Add spline rope body", OnAddSplineRopeBody);
         }
 
         private void OnAddSplineModel()
@@ -334,6 +335,16 @@ namespace FlaxEditor.SceneGraph.Actors
                 Transform = Actor.Transform,
             };
             // TODO: auto pick the collision data if already using spline model
+            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+        }
+
+        private void OnAddSplineRopeBody()
+        {
+            var actor = new SplineRopeBody
+            {
+                StaticFlags = StaticFlags.None,
+                Transform = Actor.Transform,
+            };
             Editor.Instance.SceneEditing.Spawn(actor, Actor);
         }
 
