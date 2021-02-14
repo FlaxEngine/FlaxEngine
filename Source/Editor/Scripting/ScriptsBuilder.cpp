@@ -217,39 +217,29 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args)
         return true;
     }
 
-#if PLATFORM_WINDOWS
     // Prepare build options
-    StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 30);
-    cmdLine.Append(TEXT("\""));
-    cmdLine.Append(buildToolPath);
-    cmdLine.Append(TEXT("\" "));
-    cmdLine.Append(args.Get(), args.Length());
-    cmdLine.Append(TEXT('\0'));
-#else
-    // Use mono to run the build tool
-    const String monoPath = Globals::MonoPath / TEXT("bin/mono.exe");
+    StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 200);
+#if PLATFORM_LINUX
+    const String monoPath = Globals::MonoPath / TEXT("bin/mono");
     if (!FileSystem::FileExists(monoPath))
     {
         Log::FileNotFoundException(monoPath).SetLevel(LogType::Fatal);
         return true;
     }
-
-    // Prepare build options
-    StringBuilder cmdLine(monoPath.Length() + args.Length() + buildToolPath.Length() + 30);
+    //const String monoPath = TEXT("mono");
     cmdLine.Append(TEXT("\""));
     cmdLine.Append(monoPath);
-    cmdLine.Append(TEXT("\" \""));
+    cmdLine.Append(TEXT("\" "));
+#endif
+    cmdLine.Append(TEXT("\""));
     cmdLine.Append(buildToolPath);
     cmdLine.Append(TEXT("\" "));
     cmdLine.Append(args.Get(), args.Length());
     cmdLine.Append(TEXT('\0'));
-
-    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance
-#endif
+    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
     const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), StringView::Empty);
-
     return result != 0;
 }
 
@@ -344,8 +334,8 @@ void ScriptsBuilder::GetBinariesConfiguration(StringView& target, StringView& pl
 
 void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& platform, const Char*& architecture, const Char*& configuration)
 {
-    if (Editor::Project->ProjectFolderPath == Globals::StartupFolder)
     // Special case when opening engine project
+    if (Editor::Project->ProjectFolderPath == Globals::StartupFolder)
     {
         target = platform = architecture = configuration = nullptr;
         return;
