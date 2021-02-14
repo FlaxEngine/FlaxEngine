@@ -258,9 +258,8 @@ namespace Flax.Deps.Dependencies
             "mono_type_normalize",
         };
 
-        private void BuildMsvc(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture)
+        private void BuildMsvc(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture, string configuration = "Release")
         {
-            var configuration = "Release";
             string buildPlatform;
             switch (architecture)
             {
@@ -491,12 +490,13 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 {
-                    BuildMsvc(options, platform, TargetArchitecture.x64);
+                    var configuration = "Release";
+                    BuildMsvc(options, platform, TargetArchitecture.x64, configuration);
                     //BuildBcl(options, platform);
 
                     // Export header files
-                    Deploy.VCEnvironment.BuildSolution(Path.Combine(root, "msvc", "libmono-dynamic.vcxproj"), "Release", "x64");
-                    Deploy.VCEnvironment.BuildSolution(Path.Combine(root, "msvc", "build-install.vcxproj"), "Release", "x64");
+                    Deploy.VCEnvironment.BuildSolution(Path.Combine(root, "msvc", "libmono-dynamic.vcxproj"), configuration, "x64");
+                    Deploy.VCEnvironment.BuildSolution(Path.Combine(root, "msvc", "build-install.vcxproj"), configuration, "x64");
 
                     // Get exported mono methods to forward them in engine module (on Win32 platforms)
                     GetMonoExports(options);

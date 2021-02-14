@@ -11,7 +11,6 @@
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
-#include "ManagedCLR/MUtils.h"
 #if PLATFORM_LINUX
 #include "ManagedCLR/MCore.h"
 #endif
