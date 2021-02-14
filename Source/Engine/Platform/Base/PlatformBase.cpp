@@ -468,7 +468,7 @@ int32 PlatformBase::StartProcess(const StringView& filename, const StringView& a
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
-    return RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+    return Platform::RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)

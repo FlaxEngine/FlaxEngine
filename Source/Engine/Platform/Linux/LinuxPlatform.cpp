@@ -2061,6 +2061,82 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+{
+	String command(filename);
+	if (args.HasChars())
+		command += TEXT(" ") + String(args);
+    LOG(Info, "Command: {0}", command);
+    if (workingDir.HasChars())
+    {
+        LOG(Info, "Working directory: {0}", workingDir);
+    }
+
+	// TODO: support workingDir
+	// TODO: support hiddenWindow
+	// TODO: support waitForEnd
+
+	StringAnsi commandAnsi(command);
+	system(commandAnsi.GetText());
+    return 0;
+}
+
+int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
+{
+    return RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+}
+
+int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
+{
+    LOG(Info, "Command: {0}", cmdLine);
+    if (workingDir.HasChars())
+    {
+        LOG(Info, "Working directory: {0}", workingDir);
+    }
+
+	// TODO: support environment
+	// TODO: support hiddenWindow
+
+	String dir = GetWorkingDirectory();
+	StringAnsi cmdLineAnsi;
+	if (workingDir.HasChars())
+	{
+		cmdLineAnsi += "chmod ";
+		cmdLineAnsi += StringAnsi(workingDir);
+		cmdLineAnsi += "; ";
+	}
+	cmdLineAnsi += StringAnsi(cmdLine);
+
+    FILE* pipe = popen(cmdLineAnsi.GetText(), "r");
+    if (!pipe)
+	{
+        LOG(Warning, "Cannot start process '{0}'", cmdLine);
+        return 1;
+	}
+
+	char rawData[256];
+	StringAnsi pathAnsi;
+	Array<Char> logData;
+	while (fgets(rawData, sizeof(rawData), pipe) != NULL)
+	{
+		logData.Clear();
+		int32 rawDataLength = StringUtils::Length(rawData);
+		if (rawDataLength == 0)
+			continue;
+		if (rawData[rawDataLength - 1] == '\0')
+			rawDataLength--;
+		if (rawData[rawDataLength - 1] == '\n')
+			rawDataLength--;
+		logData.Resize(rawDataLength + 1);
+		StringUtils::ConvertANSI2UTF16(rawData, logData.Get(), rawDataLength);
+		logData.Last() = '\0';
+		Log::Logger::Write(LogType::Info, StringView(logData.Get(), rawDataLength));
+	}
+
+	int32 result = pclose(pipe);
+    return result;
+}
+
 void* LinuxPlatform::LoadLibrary(const Char* filename)
 {
     const StringAsANSI<> filenameANSI(filename);
