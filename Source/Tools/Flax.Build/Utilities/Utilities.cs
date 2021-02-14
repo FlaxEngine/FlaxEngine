@@ -167,6 +167,19 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Deletes the file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        public static void FileDelete(string filePath)
+        {
+            var file = new FileInfo(filePath);
+            if (!file.Exists)
+                return;
+
+            file.Delete();
+        }
+
+        /// <summary>
         /// Deletes the directory.
         /// </summary>
         /// <param name="directoryPath">The directory path.</param>
@@ -174,7 +187,6 @@ namespace Flax.Build
         public static void DirectoryDelete(string directoryPath, bool withSubdirs = true)
         {
             var dir = new DirectoryInfo(directoryPath);
-
             if (!dir.Exists)
                 return;
 
@@ -182,6 +194,26 @@ namespace Flax.Build
                 DirectoryDelete(dir);
             else
                 dir.Delete();
+        }
+
+        /// <summary>
+        /// Deletes the files inside a directory.
+        /// </summary>
+        /// <param name="directoryPath">The directory path.</param>
+        /// <param name="searchPattern">The custom filter for the filenames to delete. Can be used to select files to delete. Null if unused.</param>
+        /// <param name="withSubdirs">if set to <c>true</c> with sub-directories (recursive delete operation).</param>
+        public static void FilesDelete(string directoryPath, string searchPattern = null, bool withSubdirs = true)
+        {
+            if (!Directory.Exists(directoryPath))
+                return;
+            if (searchPattern == null)
+                searchPattern = "*";
+
+            var files = Directory.GetFiles(directoryPath, searchPattern, withSubdirs ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            for (int i = 0; i < files.Length; i++)
+            {
+                File.Delete(files[i]);
+            }
         }
 
         /// <summary>

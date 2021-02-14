@@ -540,18 +540,21 @@ namespace Flax.Deps.Dependencies
                     {
                         "--with-xen-opt=no",
                         "--without-ikvm-native",
-                        //"--disable-executables",
                         "--disable-boehm",
-                        "--disable-mcs-build",
+                        //"--disable-mcs-build",
+                        "--with-mcs-docs=no",
                         //"--enable-static",
                     };
                     var buildDir = Path.Combine(root, "build-linux");
 
+                    // Build mono
                     SetupDirectory(buildDir, true);
                     var archName = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
                     Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root, Utilities.RunOptions.Default, envVars);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None, envVars);
                     Utilities.Run("make", "install", null, root, Utilities.RunOptions.None, envVars);
+
+                    // Deploy binaries
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, "lib", "libmonosgen-2.0.so.1.0.0"), Path.Combine(depsFolder, "libmonosgen-2.0.so.1.0.0"));
                     var gameLibOutput = Path.Combine(options.PlatformsFolder, "Linux", "Binaries", "Mono", "lib");
@@ -560,6 +563,21 @@ namespace Flax.Deps.Dependencies
                     var editorLibOutput = Path.Combine(options.PlatformsFolder, "Editor", "Linux", "Mono", "lib");
                     Utilities.FileCopy(Path.Combine(buildDir, "lib", "libMonoPosixHelper.so"), Path.Combine(editorLibOutput, "libMonoPosixHelper.so"));
                     Utilities.FileCopy(Path.Combine(buildDir, "lib", "libmono-native.so"), Path.Combine(editorLibOutput, "libmono-native.so"));
+                    var editoBinOutput = Path.Combine(options.PlatformsFolder, "Editor", "Linux", "Mono", "bin");
+                    Utilities.FileCopy(Path.Combine(buildDir, "bin", "mono-sgen"), Path.Combine(editoBinOutput, "mono"));
+                    Utilities.Run("strip", "mono", null, editoBinOutput, Utilities.RunOptions.None);
+                    var srcMonoLibs = Path.Combine(buildDir, "lib", "mono");
+                    var dstMonoLibs = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "lib", "mono");
+                    var dstMonoEditorLibs = Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Mono", "lib", "mono");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoLibs, "4.5"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoEditorLibs, "4.5"), false, true, "*.dll");
+                    Utilities.FileCopy(Path.Combine(srcMonoLibs, "4.5", "csc.exe"), Path.Combine(dstMonoEditorLibs, "4.5", "csc.exe"), true);
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5", "Facades"), Path.Combine(dstMonoEditorLibs, "4.5", "Facades"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5-api"), Path.Combine(dstMonoEditorLibs, "4.5-api"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "xbuild", "14.0"), Path.Combine(dstMonoEditorLibs, "xbuild", "14.0"), true, true);
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), Path.Combine(dstMonoEditorLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), true, true);
+                    Utilities.FilesDelete(dstMonoLibs, "*.pdb", true);
+                    Utilities.FilesDelete(dstMonoEditorLibs, "*.pdb", true);
                     break;
                 }
                 case TargetPlatform.PS4:
