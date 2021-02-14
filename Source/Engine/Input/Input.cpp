@@ -191,6 +191,7 @@ bool Mouse::Update(EventQueue& queue)
         }
         case EventType::MouseDoubleClick:
         {
+            _state.MouseButtons[static_cast<int32>(e.MouseData.Button)] = true;
             break;
         }
         case EventType::MouseWheel:
