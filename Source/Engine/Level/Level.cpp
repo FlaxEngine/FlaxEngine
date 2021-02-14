@@ -973,7 +973,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
         if (obj && obj->GetParent() == nullptr)
         {
             sceneObjects->At(i) = nullptr;
-            LOG(Warning, "Scene object {0} {1} has missing parent object after scene load. Removing it.", obj->GetID(), obj->ToString());
+            LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
             obj->DeleteObject();
         }
     }

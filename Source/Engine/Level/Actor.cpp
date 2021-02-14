@@ -43,6 +43,8 @@ Actor::Actor(const SpawnParams& params)
     , _staticFlags(StaticFlags::FullyStatic)
     , _localTransform(Transform::Identity)
     , _transform(Transform::Identity)
+    , _sphere(BoundingSphere::Empty)
+    , _box(BoundingBox::Empty)
     , HideFlags(HideFlags::None)
 {
 }
