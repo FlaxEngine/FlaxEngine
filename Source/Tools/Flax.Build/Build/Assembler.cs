@@ -18,7 +18,7 @@ namespace Flax.Build
         /// </summary>
         public static readonly Assembly[] DefaultReferences =
         {
-            typeof(IntPtr).Assembly, // mscorlib.dll
+            //typeof(IntPtr).Assembly, // mscorlib.dll
             typeof(Enumerable).Assembly, // System.Linq.dll
             typeof(ISet<>).Assembly, // System.dll
             typeof(Builder).Assembly, // Flax.Build.exe
@@ -62,8 +62,10 @@ namespace Flax.Build
             foreach (var assemblyFile in References)
                 references.Add(assemblyFile);
             foreach (var assembly in Assemblies)
+            {
                 if (!assembly.IsDynamic)
                     references.Add(assembly.Location);
+            }
 
             // Setup compilation options
             CompilerParameters cp = new CompilerParameters();
@@ -89,31 +91,22 @@ namespace Flax.Build
             // Run the compilation
             CompilerResults cr = provider.CompileAssemblyFromFile(cp, SourceFiles.ToArray());
 
-            // Process warnings
-            if (cr.Errors.HasWarnings)
+            // Process warnings and errors
+            bool hasError = false;
+            foreach (CompilerError ce in cr.Errors)
             {
-                foreach (CompilerError ce in cr.Errors)
+                if (ce.IsWarning)
                 {
-                    if (ce.IsWarning)
-                    {
-                        Log.Warning(string.Format("{0} at {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
-                    }
+                    Log.Warning(string.Format("{0} at {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
+                }
+                else
+                {
+                    Log.Error(string.Format("{0} at line {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
+                    hasError = true;
                 }
             }
-
-            // Process errors
-            if (cr.Errors.HasErrors)
-            {
-                foreach (CompilerError ce in cr.Errors)
-                {
-                    if (!ce.IsWarning)
-                    {
-                        Log.Error(string.Format("{0} at line {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
-                    }
-                }
-
+            if (hasError)
                 throw new Exception("Failed to build assembly.");
-            }
 
             return cr.CompiledAssembly;
         }
