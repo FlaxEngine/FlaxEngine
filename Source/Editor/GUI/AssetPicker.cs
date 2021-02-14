@@ -355,12 +355,10 @@ namespace FlaxEditor.GUI
             _mousePos = location;
 
             // Check if start drag drop
-            if (_isMouseDown && Vector2.Distance(location, _mouseDownPos) > 10.0f)
+            if (_isMouseDown && Vector2.Distance(location, _mouseDownPos) > 10.0f && IconRect.Contains(_mouseDownPos))
             {
-                // Clear flag
-                _isMouseDown = false;
-
                 // Do the drag
+                _isMouseDown = false;
                 DoDrag();
             }
 
@@ -370,35 +368,35 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && _isMouseDown)
             {
                 _isMouseDown = false;
-            }
 
-            // Buttons logic
-            if (Button1Rect.Contains(location))
-            {
-                // Show asset picker popup
-                Focus();
-                AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, assetItem =>
+                // Buttons logic
+                if (Button1Rect.Contains(location))
                 {
-                    SelectedItem = assetItem;
-                    RootWindow.Focus();
+                    // Show asset picker popup
                     Focus();
-                });
-            }
-            else if (_selected != null || _selectedItem != null)
-            {
-                if (Button2Rect.Contains(location) && _selectedItem != null)
-                {
-                    // Select asset
-                    Editor.Instance.Windows.ContentWin.Select(_selectedItem);
+                    AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, assetItem =>
+                    {
+                        SelectedItem = assetItem;
+                        RootWindow.Focus();
+                        Focus();
+                    });
                 }
-                else if (Button3Rect.Contains(location))
+                else if (_selected != null || _selectedItem != null)
                 {
-                    // Deselect asset
-                    Focus();
-                    SelectedItem = null;
+                    if (Button2Rect.Contains(location) && _selectedItem != null)
+                    {
+                        // Select asset
+                        Editor.Instance.Windows.ContentWin.Select(_selectedItem);
+                    }
+                    else if (Button3Rect.Contains(location))
+                    {
+                        // Deselect asset
+                        Focus();
+                        SelectedItem = null;
+                    }
                 }
             }
 
@@ -409,8 +407,7 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            // Set flag for dragging asset
-            if (button == MouseButton.Left && IconRect.Contains(location))
+            if (button == MouseButton.Left)
             {
                 _isMouseDown = true;
                 _mouseDownPos = location;
