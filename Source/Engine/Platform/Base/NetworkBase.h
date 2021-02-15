@@ -9,7 +9,7 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
 #define SOCKGROUP_MAXCOUNT 64
 #define SOCKGROUP_ITEMSIZE 16
 
-enum class FLAXENGINE_API NetworkProtocolType
+enum class FLAXENGINE_API NetworkProtocol
 {
     /// <summary>Not specified.</summary>
     Undefined,
@@ -31,7 +31,7 @@ enum class FLAXENGINE_API NetworkIPVersion
 
 struct FLAXENGINE_API NetworkSocket
 {
-    NetworkProtocolType Protocol = NetworkProtocolType::Undefined;
+    NetworkProtocol Protocol = NetworkProtocol::Undefined;
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
     byte Data[8] = {};
 };

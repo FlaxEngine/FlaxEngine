@@ -135,13 +135,13 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
     }
 }
 
-bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
+bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv)
 {
     socket.Protocol = proto;
     socket.IPVersion = ipv;
     const uint8 family = socket.IPVersion == NetworkIPVersion::IPv6 ? AF_INET6 : AF_INET;
-    const uint8 stype = socket.Protocol == NetworkProtocolType::Tcp ? SOCK_STREAM : SOCK_DGRAM;
-    const uint8 prot = socket.Protocol == NetworkProtocolType::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
+    const uint8 stype = socket.Protocol == NetworkProtocol::Tcp ? SOCK_STREAM : SOCK_DGRAM;
+    const uint8 prot = socket.Protocol == NetworkProtocol::Tcp ? IPPROTO_TCP : IPPROTO_UDP;
     SOCKET sock;
 
     if ((sock = ::socket(family, stype, prot)) == INVALID_SOCKET)
@@ -259,7 +259,7 @@ bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
 
 bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint)
 {
-    if (serverSock.Protocol != NetworkProtocolType::Tcp)
+    if (serverSock.Protocol != NetworkProtocol::Tcp)
     {
         LOG(Warning, "Can't accept connection on UDP socket! Socket : {0}", *(SOCKET*)serverSock.Data);
         return true;
@@ -372,7 +372,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
         return -1;
     }
     uint32 size;
-    if (endPoint == nullptr && socket.Protocol == NetworkProtocolType::Tcp)
+    if (endPoint == nullptr && socket.Protocol == NetworkProtocol::Tcp)
     {
         if ((size = send(*(SOCKET*)socket.Data, (const char*)data, length, 0)) == SOCKET_ERROR)
         {
@@ -380,7 +380,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
             return -1;
         }
     }
-    else if (endPoint != nullptr && socket.Protocol == NetworkProtocolType::Udp)
+    else if (endPoint != nullptr && socket.Protocol == NetworkProtocol::Udp)
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
