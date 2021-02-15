@@ -15,7 +15,7 @@ namespace FlaxEditor.SceneGraph
     /// A <see cref="SceneModule"/> class is responsible for Scene Graph management.
     /// </summary>
     [HideInEditor]
-    public abstract class SceneGraphNode : ITransformable
+    public abstract class SceneGraphNode
     {
         /// <summary>
         /// The parent node.

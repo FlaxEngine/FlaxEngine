@@ -206,7 +206,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 node.Text = CustomEditorsUtil.GetPropertyNameUI(removed.PrefabObject.GetType().Name);
             }
             // Actor or Script
-            else if (editor.Values[0] is ISceneObject sceneObject)
+            else if (editor.Values[0] is SceneObject sceneObject)
             {
                 node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
                 node.Text = CustomEditorsUtil.GetPropertyNameUI(sceneObject.GetType().Name);

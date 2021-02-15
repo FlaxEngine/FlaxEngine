@@ -167,14 +167,14 @@ namespace FlaxEditor.CustomEditors
             {
                 if (_hasReferenceValue)
                 {
-                    if (_referenceValue is ISceneObject referenceSceneObject && referenceSceneObject.HasPrefabLink)
+                    if (_referenceValue is SceneObject referenceSceneObject && referenceSceneObject.HasPrefabLink)
                     {
                         for (int i = 0; i < Count; i++)
                         {
                             if (this[i] == referenceSceneObject)
                                 continue;
 
-                            if (this[i] == null || (this[i] is ISceneObject valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))
+                            if (this[i] == null || (this[i] is SceneObject valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))
                                 return true;
                         }
                     }

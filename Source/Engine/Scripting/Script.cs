@@ -2,7 +2,7 @@
 
 namespace FlaxEngine
 {
-    partial class Script : ISceneObject
+    partial class Script
     {
         /// <summary>
         /// Gets the scene object which contains this script.

@@ -4,7 +4,7 @@ using System;
 
 namespace FlaxEngine
 {
-    partial class Actor : ITransformable, ISceneObject
+    partial class Actor
     {
         /// <summary>
         /// Returns true if object is fully static on the scene, otherwise false.
