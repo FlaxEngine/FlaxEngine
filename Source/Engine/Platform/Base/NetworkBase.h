@@ -76,6 +76,8 @@ enum class FLAXENGINE_API NetworkSocketOption
     NoDelay,
     /// <summary>Enables IPv6 communication only for TCP socket.</summary>
     IPv6Only,
+    /// <summary>Retrieve the current path MTU, the socket must be connected UDP/TCP.</summary>
+    Mtu
 };
 
 struct FLAXENGINE_API NetworkSocketState
