@@ -69,7 +69,7 @@ namespace
 
             scale *= 1.72531f;
         }
-        return noise / weight;
+        return noise / Math::Max(weight, ZeroTolerance);
     }
 
     VariantType::Types GetVariantType(ParticleAttribute::ValueTypes type)
@@ -486,7 +486,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	float particleDrag = drag; \
     if (useSpriteSize) \
         particleDrag *= ((Vector2*)spriteSizePtr)->MulValues(); \
-    *((Vector3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * _deltaTime) / *(float*)massPtr); \
+    *((Vector3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * _deltaTime) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     velocityPtr += stride; \
     massPtr += stride; \
     spriteSizePtr += stride
@@ -545,7 +545,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	Vector3 vectorFieldUVW = Vector3::Transform(*((Vector3*)positionPtr), invFieldTransformMatrix); \
 	Vector3 force = Noise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
     force = Vector3::Transform(force, fieldTransformMatrix) * intensity; \
-    *((Vector3*)velocityPtr) += force * (_deltaTime / *(float*)massPtr); \
+    *((Vector3*)velocityPtr) += force * (_deltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     positionPtr += stride; \
     velocityPtr += stride; \
     massPtr += stride
@@ -1009,7 +1009,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
 #define INPUTS_FETCH() \
 	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
-	const float radius = (float)GetValue(radiusBox, 3); \
+	const float radius = Math::Max((float)GetValue(radiusBox, 3), ZeroTolerance); \
 	const float thickness = (float)GetValue(thicknessBox, 4); \
 	const float arc = (float)GetValue(arcBox, 5) * DegreesToRadians
 #define LOGIC() \
@@ -1017,20 +1017,20 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	float sinTheta, cosTheta; \
 	Math::SinCos(u.X * TWO_PI, sinTheta, cosTheta); \
 	float r = Math::Saturate(thickness / radius); \
-	Vector2 s1_1 = r * Vector2(cosTheta, sinTheta) + Vector2(1, 0); \
-	Vector2 s1_2 = r * Vector2(-cosTheta, sinTheta) + Vector2(1, 0); \
-	float w = s1_1.X / (s1_1.X + s1_2.X); \
+	Vector2 s11 = r * Vector2(cosTheta, sinTheta) + Vector2(1, 0); \
+	Vector2 s12 = r * Vector2(-cosTheta, sinTheta) + Vector2(1, 0); \
+	float w = s11.X / (s11.X + s12.X); \
 	Vector3 t; \
 	float phi; \
 	if (u.Y < w) \
 	{ \
 		phi = arc * u.Y / w; \
-		t = Vector3(s1_1.X, 0, s1_1.Y); \
+		t = Vector3(s11.X, 0, s11.Y); \
 	} \
 	else \
 	{ \
 		phi = arc * (u.Y - w) / (1.0f - w); \
-		t = Vector3(s1_2.X, 0, s1_2.Y); \
+		t = Vector3(s12.X, 0, s12.Y); \
 	} \
 	float s, c; \
 	Math::SinCos(phi, c, s); \
@@ -1262,7 +1262,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	if (sign * sqrLength <= sign * totalRadius * totalRadius) \
 	{ \
 		float dist = Math::Sqrt(sqrLength); \
-		Vector3 n = sign * dir / dist; \
+		Vector3 n = sign * dir / Math::Max(dist, ZeroTolerance); \
 		*(Vector3*)positionPtr = position - n * (dist - totalRadius) * sign; \
 	COLLISION_LOGIC()
 
@@ -1374,7 +1374,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 		collision = Math::Abs(dir.Y) > halfHeight || sqrLength > cylinderRadiusT * cylinderRadiusT; \
 	if (collision) \
 	{ \
-		float dist = Math::Sqrt(sqrLength); \
+		float dist = Math::Max(Math::Sqrt(sqrLength), ZeroTolerance); \
 		float distToCap = sign * (halfHeight - Math::Abs(dir.Y)); \
 		float distToSide = sign * (cylinderRadiusT - dist); \
 		Vector3 n = Vector3(dir.X / dist, Math::Sign(dir.Y), dir.Z / dist) * sign; \

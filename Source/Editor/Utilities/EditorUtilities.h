@@ -43,6 +43,13 @@ public:
 public:
 
     /// <summary>
+    /// Determines whether the specified path character is invalid.
+    /// </summary>
+    /// <param name="c">The path character.</param>
+    /// <returns><c>true</c> if the given character cannot be used as a path because it is illegal character; otherwise, <c>false</c>.</returns>
+    static bool IsInvalidPathChar(Char c);
+
+    /// <summary>
     /// Replaces the given text with other one in the files.
     /// </summary>
     /// <param name="folderPath">The relative or absolute path to the directory to search.</param>

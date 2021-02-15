@@ -56,7 +56,45 @@ namespace
     MDomain* _monoRootDomain = nullptr;
     MDomain* _monoScriptsDomain = nullptr;
     CriticalSection _objectsLocker;
+#define USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING 0
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    struct ScriptingObjectData
+    {
+        ScriptingObject* Ptr;
+        StringAnsi TypeName;
+
+        ScriptingObjectData()
+        {
+            Ptr = nullptr;
+        }
+
+        ScriptingObjectData(ScriptingObject* ptr)
+        {
+            Ptr = ptr;
+            if (ptr && ptr->GetTypeHandle() && ptr->GetTypeHandle().TypeIndex < ptr->GetTypeHandle().Module->Types.Count())
+                TypeName = ptr->GetType().Fullname;
+        }
+
+        ScriptingObject* operator->() const
+        {
+            return Ptr;
+        }
+
+        explicit operator ScriptingObject*()
+        {
+            return Ptr;
+        }
+
+        operator ScriptingObject*() const
+        {
+            return Ptr;
+        }
+    };
+
+    Dictionary<Guid, ScriptingObjectData> _objectsDictionary(1024 * 16);
+#else
     Dictionary<Guid, ScriptingObject*> _objectsDictionary(1024 * 16);
+#endif
     bool _isEngineAssemblyLoaded = false;
     bool _hasGameModulesLoaded = false;
     MMethod* _method_Update = nullptr;
@@ -456,6 +494,9 @@ void Scripting::Release()
         for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
         {
             auto obj = i->Value;
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+            LOG(Info, "[OnScriptingDispose] obj = 0x{0:x}, {1}", (uint64)obj.Ptr, String(obj.TypeName));
+#endif
             obj->OnScriptingDispose();
         }
     }
@@ -498,7 +539,9 @@ void Scripting::Release()
         }
     }
 
+#if !USE_SINGLE_DOMAIN
     MCore::Instance()->UnloadDomain("Scripts Domain");
+#endif
 }
 
 #if USE_EDITOR
@@ -545,6 +588,24 @@ void Scripting::Reload(bool canTriggerSceneReload)
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
     MCore::GC::WaitForPendingFinalizers();
+
+    // Destroy objects from game assemblies (eg. not released objects that might crash if persist in memory after reload)
+    _objectsLocker.Lock();
+    {
+        const auto flaxModule = GetBinaryModuleFlaxEngine();
+        for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
+        {
+            auto obj = i->Value;
+            if (obj->GetTypeHandle().Module == flaxModule)
+                continue;
+
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+            LOG(Info, "[OnScriptingDispose] obj = 0x{0:x}, {1}", (uint64)obj.Ptr, String(obj.TypeName));
+#endif
+            obj->OnScriptingDispose();
+        }
+    }
+    _objectsLocker.Unlock();
 
     // Unload all game modules
     LOG(Info, "Unloading game binary modules");
@@ -683,10 +744,18 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     }
 
     // Try to find it
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    ScriptingObjectData data;
+    _objectsLocker.Lock();
+    _objectsDictionary.TryGet(id, data);
+    _objectsLocker.Unlock();
+    auto result = data.Ptr;
+#else
     ScriptingObject* result = nullptr;
     _objectsLocker.Lock();
     _objectsDictionary.TryGet(id, result);
     _objectsLocker.Unlock();
+#endif
     if (result)
     {
         // Check type
@@ -718,11 +787,20 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
     }
 
     // Try to find it
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    ScriptingObjectData data;
+    _objectsLocker.Lock();
+    _objectsDictionary.TryGet(id, data);
+    _objectsLocker.Unlock();
+    auto result = data.Ptr;
+#else
     ScriptingObject* result = nullptr;
     _objectsLocker.Lock();
     _objectsDictionary.TryGet(id, result);
     _objectsLocker.Unlock();
+#endif
 
+    // Check type
     if (result && !result->Is(type))
     {
         result = nullptr;
@@ -753,28 +831,23 @@ ScriptingObject* Scripting::FindObject(const MonoObject* managedInstance)
 
 void Scripting::OnManagedInstanceDeleted(ScriptingObject* obj)
 {
+    PROFILE_CPU_NAMED("OnManagedInstanceDeleted");
     ASSERT(obj);
 
-    PROFILE_CPU_NAMED("OnManagedInstanceDeleted");
-
-    // This is sometimes crashing, probably rawPtr field is not cleared in some cases
-    // TODO: use faster callback without crashing
-    //obj->OnManagedInstanceDeleted();
-
     // Validate if object still exists
-    bool isValid;
+    _objectsLocker.Lock();
+    if (_objectsDictionary.ContainsValue(obj))
     {
-        ScopeLock lock(_objectsLocker);
-        isValid = _objectsDictionary.ContainsValue(obj);
-    }
-    if (isValid)
-    {
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+        LOG(Info, "[OnManagedInstanceDeleted] obj = 0x{0:x}, {1}", (uint64)obj, String(ScriptingObjectData(obj).TypeName));
+#endif
         obj->OnManagedInstanceDeleted();
     }
     else
     {
         //LOG(Warning, "Object finalization called for already removed object (address={0:x})", (uint64)obj);
     }
+    _objectsLocker.Unlock();
 }
 
 bool Scripting::HasGameModulesLoaded()
@@ -805,18 +878,25 @@ void Scripting::RegisterObject(ScriptingObject* obj)
 
     //ASSERT(!_objectsDictionary.ContainsValue(obj));
 #if ENABLE_ASSERTION
-    ScriptingObject* other = nullptr;
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    ScriptingObjectData other;
     if (_objectsDictionary.TryGet(obj->GetID(), other))
+#else
+    ScriptingObject* other;
+    if (_objectsDictionary.TryGet(obj->GetID(), other))
+#endif
     {
         // Something went wrong...
-        LOG(Error, "Objects registry already contains object with ID={0}! Trying to register object {1} (type '{2}').", obj->GetID(), obj->ToString(), String(obj->GetClass()->GetFullName()));
-
+        LOG(Error, "Objects registry already contains object with ID={0} (type '{3}')! Trying to register object {1} (type '{2}').", obj->GetID(), obj->ToString(), String(obj->GetClass()->GetFullName()), String(other->GetClass()->GetFullName()));
         _objectsDictionary.Remove(obj->GetID());
     }
 #else
 	ASSERT(!_objectsDictionary.ContainsKey(obj->_id));
 #endif
 
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    LOG(Info, "[RegisterObject] obj = 0x{0:x}, {1}", (uint64)obj, String(ScriptingObjectData(obj).TypeName));
+#endif
     _objectsDictionary.Add(obj->GetID(), obj);
 }
 
@@ -826,6 +906,9 @@ void Scripting::UnregisterObject(ScriptingObject* obj)
 
     //ASSERT(!obj->_id.IsValid() || _objectsDictionary.ContainsValue(obj));
 
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    LOG(Info, "[UnregisterObject] obj = 0x{0:x}, {1}", (uint64)obj, String(ScriptingObjectData(obj).TypeName));
+#endif
     _objectsDictionary.Remove(obj->GetID());
 }
 

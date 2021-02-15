@@ -115,6 +115,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("That's what she said"),
     TEXT("Compiling Shaders (93,788)"),
     TEXT("Hi There"),
+    TEXT("BAGUETTE"),
 };
 
 SplashScreen::~SplashScreen()

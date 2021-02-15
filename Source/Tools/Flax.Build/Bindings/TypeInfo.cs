@@ -83,7 +83,7 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        private static bool Equals(List<TypeInfo> a, List<TypeInfo> b)
+        public static bool Equals(List<TypeInfo> a, List<TypeInfo> b)
         {
             if (a == null && b == null)
                 return true;

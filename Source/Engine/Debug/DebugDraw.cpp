@@ -19,6 +19,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Debug/DebugLog.h"
 
 // Debug draw service configuration
 #define DEBUG_DRAW_INITIAL_VB_CAPACITY (4 * 1024)
@@ -674,7 +675,11 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
 
 void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
 {
-    ASSERT(lines.Length() % 2 == 0);
+    if (lines.Length() % 2 != 0)
+    {
+        DebugLog::ThrowException("Cannot draw debug lines with uneven amount of items in array");
+        return;
+    }
 
     // Create draw call entry
     DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
@@ -682,10 +687,12 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
     // Add lines
     const Vector3* p = lines.Get();
     Array<DebugLine>* list;
-    if (depthTest)
+
+    if (depthTest) 
         list = duration > 0 ? &DebugDrawDepthTest.DefaultLines : &DebugDrawDepthTest.OneFrameLines;
     else
         list = duration > 0 ? &DebugDrawDefault.DefaultLines : &DebugDrawDefault.OneFrameLines;
+
     list->EnsureCapacity(list->Count() + lines.Length());
     for (int32 i = 0; i < lines.Length(); i += 2)
     {

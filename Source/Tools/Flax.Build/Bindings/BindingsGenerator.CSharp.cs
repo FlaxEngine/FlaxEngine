@@ -528,10 +528,7 @@ namespace Flax.Build.Bindings
                 {
                     if (comment.Contains("/// <returns>"))
                         continue;
-                    var c = comment.Replace("::", ".");
-                    contents.Append(indent);
-                    contents.Append(c);
-                    contents.AppendLine();
+                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
                 }
 
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
@@ -626,11 +623,7 @@ namespace Flax.Build.Bindings
                 {
                     if (comment.Contains("/// <returns>"))
                         continue;
-
-                    var c = comment.Replace("::", ".");
-                    contents.Append(indent);
-                    contents.Append(c);
-                    contents.AppendLine();
+                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
                 }
 
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue);
@@ -690,14 +683,7 @@ namespace Flax.Build.Bindings
                 {
                     if (comment.Contains("/// <returns>") || comment.Contains("<param name="))
                         continue;
-
-                    var c = comment.Replace("::", ".");
-                    contents.Append(indent);
-                    if (propertyInfo.Getter != null && propertyInfo.Setter != null)
-                        contents.Append(c.Replace("/// Gets ", "/// Gets or sets "));
-                    else
-                        contents.Append(c);
-                    contents.AppendLine();
+                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
                 }
 
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);

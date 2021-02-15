@@ -355,7 +355,7 @@ public:
     /// </summary>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor() const
+    FORCE_INLINE static T* FindActor()
     {
         return (T*)FindActor(T::GetStaticClass());
     }
@@ -372,10 +372,24 @@ public:
     /// </summary>
     /// <returns>Script instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindScript() const
+    FORCE_INLINE static T* FindScript()
     {
         return (T*)FindScript(T::GetStaticClass());
     }
+
+    /// <summary>
+    /// Finds all the actors of the given type in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <returns>Found actors list.</returns>
+    API_FUNCTION() static Array<Actor*> GetActors(const MClass* type);
+
+    /// <summary>
+    /// Finds all the scripts of the given type in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <returns>Found scripts list.</returns>
+    API_FUNCTION() static Array<Script*> GetScripts(const MClass* type);
 
     /// <summary>
     /// Tries to find scene with given ID.

@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors
                 // Space before word starting with uppercase letter
                 if (char.IsUpper(c) && i > 0)
                 {
-                    if (i + 2 < length && !char.IsUpper(name[i + 1]) && !char.IsUpper(name[i + 2]))
+                    if (i + 1 < length && !char.IsUpper(name[i + 1]))
                         sb.Append(' ');
                 }
                 // Space instead of underscore

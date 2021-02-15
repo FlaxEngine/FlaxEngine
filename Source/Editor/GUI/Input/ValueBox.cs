@@ -49,6 +49,11 @@ namespace FlaxEditor.GUI.Input
         /// </summary>
         protected T _startSlideValue;
 
+        /// <summary>
+        /// The text cached on editing start. Used to compare with the end result to detect changes.
+        /// </summary>
+        protected string _startEditText;
+
         private Vector2 _startSlideLocation;
 
         /// <summary>
@@ -258,10 +263,22 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
+        protected override void OnEditBegin()
+        {
+            base.OnEditBegin();
+
+            _startEditText = _text;
+        }
+
+        /// <inheritdoc />
         protected override void OnEditEnd()
         {
-            // Update value
-            TryGetValue();
+            if (_startEditText != _text)
+            {
+                // Update value
+                TryGetValue();
+            }
+            _startEditText = null;
 
             base.OnEditEnd();
         }

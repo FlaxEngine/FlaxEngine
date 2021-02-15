@@ -17,13 +17,17 @@ MMethod* UICanvas_OnDisable = nullptr;
 MMethod* UICanvas_EndPlay = nullptr;
 
 #define UICANVAS_INVOKE(event) \
-	MonoObject* exception = nullptr; \
-	UICanvas_##event->Invoke(GetManagedInstance(), nullptr, &exception); \
-	if (exception) \
-	{ \
-		MException ex(exception); \
-		ex.Log(LogType::Error, TEXT("UICanvas::" #event)); \
-	}
+    auto instance = GetManagedInstance(); \
+    if (instance) \
+    { \
+	    MonoObject* exception = nullptr; \
+	    UICanvas_##event->Invoke(instance, nullptr, &exception); \
+	    if (exception) \
+	    { \
+		    MException ex(exception); \
+		    ex.Log(LogType::Error, TEXT("UICanvas::" #event)); \
+	    } \
+    }
 
 UICanvas::UICanvas(const SpawnParams& params)
     : Actor(params)

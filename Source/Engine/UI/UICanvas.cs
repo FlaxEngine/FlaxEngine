@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -279,16 +280,41 @@ namespace FlaxEngine
             else if (_renderMode == CanvasRenderMode.CameraSpace)
             {
                 Matrix tmp1, tmp2;
+                Vector3 viewPos, viewUp, viewForward, pos;
+                Quaternion viewRot;
 
                 // Use default camera is not specified
                 var camera = RenderCamera ?? Camera.MainCamera;
+
+#if FLAX_EDITOR
+                if (_editorTask)
+                {
+                    // Use editor viewport task to override Camera Space placement
+                    var view = _editorTask.View;
+                    var frustum = view.Frustum;
+                    if (!frustum.IsOrthographic)
+                        _guiRoot.Size = new Vector2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
+                    else
+                        _guiRoot.Size = _editorTask.Viewport.Size;
+                    Matrix.Translation(_guiRoot.Width / -2.0f, _guiRoot.Height / -2.0f, 0, out world);
+                    Matrix.RotationYawPitchRoll(Mathf.Pi, Mathf.Pi, 0, out tmp2);
+                    Matrix.Multiply(ref world, ref tmp2, out tmp1);
+                    viewPos = view.Position;
+                    viewRot = view.Direction != Vector3.Up ? Quaternion.LookRotation(view.Direction, Vector3.Up) : Quaternion.LookRotation(view.Direction, Vector3.Right);
+                    viewUp = Vector3.Up * viewRot;
+                    viewForward = view.Direction;
+                    pos = view.Position + view.Direction * Distance;
+                    Matrix.Billboard(ref pos, ref viewPos, ref viewUp, ref viewForward, out tmp2);
+                    Matrix.Multiply(ref tmp1, ref tmp2, out world);
+                    return;
+                }
+#endif
 
                 // Adjust GUI size to the viewport size at the given distance form the camera
                 var viewport = camera.Viewport;
                 if (camera.UsePerspective)
                 {
-                    Matrix tmp3;
-                    camera.GetMatrices(out tmp1, out tmp3, ref viewport);
+                    camera.GetMatrices(out tmp1, out var tmp3, ref viewport);
                     Matrix.Multiply(ref tmp1, ref tmp3, out tmp2);
                     var frustum = new BoundingFrustum(tmp2);
                     _guiRoot.Size = new Vector2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
@@ -304,11 +330,11 @@ namespace FlaxEngine
                 Matrix.Multiply(ref world, ref tmp2, out tmp1);
 
                 // In front of the camera
-                var viewPos = camera.Position;
-                var viewRot = camera.Orientation;
-                var viewUp = Vector3.Up * viewRot;
-                var viewForward = Vector3.Forward * viewRot;
-                var pos = viewPos + viewForward * Distance;
+                viewPos = camera.Position;
+                viewRot = camera.Orientation;
+                viewUp = Vector3.Up * viewRot;
+                viewForward = Vector3.Forward * viewRot;
+                pos = viewPos + viewForward * Distance;
                 Matrix.Billboard(ref pos, ref viewPos, ref viewUp, ref viewForward, out tmp2);
 
                 Matrix.Multiply(ref tmp1, ref tmp2, out world);
@@ -334,11 +360,18 @@ namespace FlaxEngine
                 _guiRoot.Offsets = Margin.Zero;
                 if (_renderer)
                 {
+#if FLAX_EDITOR
+                    _editorTask?.CustomPostFx.Remove(_renderer);
+#endif
                     SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
                     _renderer.Canvas = null;
                     Destroy(_renderer);
                     _renderer = null;
                 }
+#if FLAX_EDITOR
+                if (_editorRoot != null)
+                    _guiRoot.Parent = _editorRoot;
+#endif
                 break;
             }
             case CanvasRenderMode.CameraSpace:
@@ -346,12 +379,31 @@ namespace FlaxEngine
             {
                 // Render canvas manually
                 _guiRoot.AnchorPreset = AnchorPresets.TopLeft;
+#if FLAX_EDITOR
+                if (_editorRoot != null && _guiRoot != null)
+                    _guiRoot.Parent = null;
+#endif
                 if (_renderer == null)
                 {
                     _renderer = New<CanvasRenderer>();
                     _renderer.Canvas = this;
                     if (IsActiveInHierarchy && Scene)
+                    {
+#if FLAX_EDITOR
+                        if (_editorTask != null)
+                        {
+                            _editorTask.CustomPostFx.Add(_renderer);
+                            break;
+                        }
+#endif
                         SceneRenderTask.GlobalCustomPostFx.Add(_renderer);
+                    }
+#if FLAX_EDITOR
+                    else if (_editorTask != null && IsActiveInHierarchy)
+                    {
+                        _editorTask.CustomPostFx.Add(_renderer);
+                    }
+#endif
                 }
                 break;
             }
@@ -490,10 +542,21 @@ namespace FlaxEngine
 
         internal void OnEnable()
         {
+#if FLAX_EDITOR
+            _guiRoot.Parent = _editorRoot ?? RootControl.CanvasRoot;
+#else
             _guiRoot.Parent = RootControl.CanvasRoot;
+#endif
 
             if (_renderer)
             {
+#if FLAX_EDITOR
+                if (_editorTask != null)
+                {
+                    _editorTask.CustomPostFx.Add(_renderer);
+                    return;
+                }
+#endif
                 SceneRenderTask.GlobalCustomPostFx.Add(_renderer);
             }
         }
@@ -518,5 +581,25 @@ namespace FlaxEngine
                 _renderer = null;
             }
         }
+
+#if FLAX_EDITOR
+        private SceneRenderTask _editorTask;
+        private ContainerControl _editorRoot;
+
+        internal void EditorOverride(SceneRenderTask task, ContainerControl root)
+        {
+            if (_editorTask != null && _renderer != null)
+                _editorTask.CustomPostFx.Remove(_renderer);
+            if (_editorRoot != null && _guiRoot != null)
+                _guiRoot.Parent = null;
+
+            _editorTask = task;
+            _editorRoot = root;
+            Setup();
+
+            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
+                _guiRoot.Parent = _editorRoot;
+        }
+#endif
     }
 }

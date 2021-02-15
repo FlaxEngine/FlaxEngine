@@ -951,7 +951,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         chunk._yHeight = chunkHeights[chunkIndex];
         chunk.UpdateTransform();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
     UpdateCollision();
 
 #if TERRAIN_UPDATING
@@ -1431,7 +1431,7 @@ bool TerrainPatch::ModifyHeightMap(const float* samples, const Int2& modifiedOff
         chunk._yHeight = chunkHeights[chunkIndex];
         chunk.UpdateTransform();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
     return UpdateHeightData(info, modifiedOffset, modifiedSize, wasHeightRangeChanged);
 }
 
@@ -2108,9 +2108,8 @@ void TerrainPatch::UpdatePostManualDeserialization()
     {
         auto& chunk = Chunks[chunkIndex];
         chunk.UpdateTransform();
-        chunk.UpdateBounds();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
 
     ScopeLock lock(_collisionLocker);
 

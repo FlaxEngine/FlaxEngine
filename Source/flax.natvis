@@ -52,7 +52,7 @@
         <Size>_elementsCount</Size>
         <Loop>
           <Break Condition="i == _tableSize" />
-          <If Condition="_table[i]._state != 0">  
+          <If Condition="_table[i]._state == 2">  
             <Item>_table[i]</Item>
           </If>
           <Exec>i++</Exec>
@@ -72,7 +72,7 @@
         <Size>_elementsCount</Size>
         <Loop>
           <Break Condition="i == _tableSize" />
-          <If Condition="_table[i]._state != 0">  
+          <If Condition="_table[i]._state == 2">  
             <Item>_table[i]</Item>
           </If>
           <Exec>i++</Exec>

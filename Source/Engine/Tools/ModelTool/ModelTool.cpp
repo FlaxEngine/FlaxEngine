@@ -15,7 +15,8 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
-#include "ThirdParty/meshoptimizer/meshoptimizer.h"
+#include "Editor/Utilities/EditorUtilities.h"
+#include <ThirdParty/meshoptimizer/meshoptimizer.h>
 
 void RemoveNamespace(String& name)
 {
@@ -486,6 +487,11 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
         if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == 0 || texture.FilePath.IsEmpty())
             continue;
         auto filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath);
+        for (int32 j = filename.Length() - 1; j >= 0; j--)
+        {
+            if (EditorUtilities::IsInvalidPathChar(filename[j]))
+                filename[j] = ' ';
+        }
         if (importedFileNames.Contains(filename))
         {
             int32 counter = 1;
@@ -526,6 +532,11 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
         if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Materials) == 0 || !material.UsesProperties())
             continue;
         auto filename = material.Name;
+        for (int32 j = filename.Length() - 1; j >= 0; j--)
+        {
+            if (EditorUtilities::IsInvalidPathChar(filename[j]))
+                filename[j] = ' ';
+        }
         if (importedFileNames.Contains(filename))
         {
             int32 counter = 1;

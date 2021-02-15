@@ -284,7 +284,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     {
         const float age = GET_PARTICLE_ATTRIBUTE(0, float);
         const float lifetime = GET_PARTICLE_ATTRIBUTE(1, float);
-        value = age / lifetime;
+        value = age / Math::Max(lifetime, ZeroTolerance);
         break;
     }
         // Effect Position

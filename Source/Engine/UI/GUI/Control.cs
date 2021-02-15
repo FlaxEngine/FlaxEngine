@@ -1006,10 +1006,9 @@ namespace FlaxEngine.GUI
 
                 c = c.Parent;
                 if (c == parent)
-                    return location;
+                    break;
             }
-
-            throw new ArgumentException();
+            return location;
         }
 
         /// <summary>

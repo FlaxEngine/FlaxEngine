@@ -74,7 +74,8 @@ protected:
 /// <summary>
 /// Generic type of Json-format asset. It provides the managed representation of this resource data so it can be accessed via C# API.
 /// </summary>
-API_CLASS(NoSpawn) class JsonAsset : public JsonAssetBase
+/// <seealso cref="JsonAssetBase" />
+API_CLASS(NoSpawn) class FLAXENGINE_API JsonAsset : public JsonAssetBase
 {
 DECLARE_ASSET_HEADER(JsonAsset);
 private:

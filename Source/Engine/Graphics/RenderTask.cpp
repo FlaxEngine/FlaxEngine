@@ -283,11 +283,10 @@ Viewport SceneRenderTask::GetViewport() const
 
 GPUTextureView* SceneRenderTask::GetOutputView() const
 {
-    if (Output)
+    if (Output && Output->IsAllocated())
         return Output->View();
     if (SwapChain)
         return SwapChain->GetBackBufferView();
-    CRASH;
     return nullptr;
 }
 
