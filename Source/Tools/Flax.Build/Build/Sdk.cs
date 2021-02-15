@@ -68,7 +68,7 @@ namespace Flax.Build
                 using (new ProfileEventScope("GetSdks"))
                 {
                     _sdks = new Dictionary<string, Sdk>();
-                    var types = typeof(Sdk).Assembly.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Sdk)));
+                    var types = Builder.BuildTypes.Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Sdk)));
                     foreach (var type in types)
                     {
                         object instance = null;

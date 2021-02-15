@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Flax.Build.NativeCpp;
 using BuildData = Flax.Build.Builder.BuildData;
 
@@ -58,11 +57,8 @@ namespace Flax.Build.Bindings
 
         private static ModuleInfo ParseModuleInner(BuildData buildData, Module module, BuildOptions moduleOptions = null)
         {
-            if (buildData.ModulesInfo.TryGetValue(module, out var moduleInfo))
-                return moduleInfo;
-
             // Setup bindings module info descriptor
-            moduleInfo = new ModuleInfo
+            var moduleInfo = new ModuleInfo
             {
                 Module = module,
                 Name = module.BinaryModuleName,
@@ -81,26 +77,35 @@ namespace Flax.Build.Bindings
                 throw new Exception($"Cannot parse module {module.Name} without options.");
 
             // Collect all header files that can have public symbols for API
-            var headerFiles = moduleOptions.SourceFiles.Where(x => x.EndsWith(".h")).ToList();
-
-            // Skip if no header files to process
+            var headerFiles = new List<string>(moduleOptions.SourceFiles.Count / 2);
+            for (int i = 0; i < moduleOptions.SourceFiles.Count; i++)
+            {
+                if (moduleOptions.SourceFiles[i].EndsWith(".h", StringComparison.OrdinalIgnoreCase))
+                    headerFiles.Add(moduleOptions.SourceFiles[i]);
+            }
             if (headerFiles.Count == 0)
                 return moduleInfo;
+            if (module.Name == "Core")
+            {
+                // Special case for Core module to ignore API tags defines
+                for (int i = 0; i < headerFiles.Count; i++)
+                {
+                    if (headerFiles[i].EndsWith("Config.h", StringComparison.Ordinal))
+                    {
+                        headerFiles.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
 
-            // TODO: use aynsc tasks or thread pool to load and parse multiple header files at once using multi-threading
+            // TODO: use async tasks or thread pool to load and parse multiple header files at once using multi-threading
 
             // Find and load files with API tags
             string[] headerFilesContents = null;
-            //using (new ProfileEventScope("LoadHeaderFiles"))
+            using (new ProfileEventScope("LoadHeaderFiles"))
             {
-                var anyApi = false;
                 for (int i = 0; i < headerFiles.Count; i++)
                 {
-                    // Skip scripting tags definitions file
-                    if (headerFiles[i].Replace('\\', '/').EndsWith("Engine/Core/Config.h", StringComparison.Ordinal))
-                        continue;
-
-                    // Check if file contains any valid API tag
                     var contents = File.ReadAllText(headerFiles[i]);
                     for (int j = 0; j < ApiTokens.SearchTags.Length; j++)
                     {
@@ -109,15 +114,13 @@ namespace Flax.Build.Bindings
                             if (headerFilesContents == null)
                                 headerFilesContents = new string[headerFiles.Count];
                             headerFilesContents[i] = contents;
-                            anyApi = true;
                             break;
                         }
                     }
                 }
-
-                if (!anyApi)
-                    return moduleInfo;
             }
+            if (headerFilesContents == null)
+                return moduleInfo;
 
             // Skip if none of the headers was modified after last time generated C++ file was edited
             // TODO: skip parsing if module has API cache file -> then load it from disk

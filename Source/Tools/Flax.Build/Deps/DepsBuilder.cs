@@ -51,7 +51,7 @@ namespace Flax.Deps
             }
 
             // Get all deps
-            var dependencies = typeof(DepsBuilder).Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Dependency))).Select(Activator.CreateInstance).Cast<Dependency>().ToArray();
+            var dependencies = Builder.BuildTypes.Where(x => x.IsSubclassOf(typeof(Dependency))).Select(Activator.CreateInstance).Cast<Dependency>().ToArray();
             if (dependencies.Length == 0)
                 Log.Warning("No dependencies found!");
             for (var i = 0; i < dependencies.Length; i++)
