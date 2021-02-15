@@ -74,7 +74,7 @@ enum class FLAXENGINE_API NetworkSocketOption
     Error,
     /// <summary>Enables the Nagle algorithm for TCP sockets.</summary>
     NoDelay,
-    /// <summary>Enables IPv6 communication only for TCP socket.</summary>
+    /// <summary>Enables IPv6/Ipv4 dual-stacking, UDP/TCP.</summary>
     IPv6Only,
     /// <summary>Retrieve the current path MTU, the socket must be connected UDP/TCP.</summary>
     Mtu
