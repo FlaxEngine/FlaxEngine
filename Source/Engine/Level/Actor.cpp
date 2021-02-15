@@ -44,7 +44,7 @@ Actor::Actor(const SpawnParams& params)
     , _localTransform(Transform::Identity)
     , _transform(Transform::Identity)
     , _sphere(BoundingSphere::Empty)
-    , _box(BoundingBox::Empty)
+    , _box(BoundingBox::Zero)
     , HideFlags(HideFlags::None)
 {
 }
