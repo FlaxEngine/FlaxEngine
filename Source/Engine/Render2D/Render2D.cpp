@@ -1744,3 +1744,41 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
     drawCall.AsBlur.BottomRightY = p.Y;
     WriteRect(rect, Color::White);
 }
+
+void Render2D::DrawVertices(GPUTexture* t, const Array<Vector2> vertices, const Array<Vector2> uvs)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Count();
+    drawCall.AsTexture.Ptr = t;
+
+    for (int32 i = 0; i < vertices.Count(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
+}
+
+void Render2D::DrawVertices(const Array<Vector2> vertices, const Array<Color> colors, bool useAlpha)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = useAlpha ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Count();
+
+    for (int32 i = 0; i < vertices.Count(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], colors[i], colors[i + 1], colors[i + 2]);
+}
+
+void Render2D::FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = color.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 3;
+    WriteTri(p0, p1, p2, color, color, color);
+}
