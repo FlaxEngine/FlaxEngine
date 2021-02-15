@@ -359,8 +359,8 @@ void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
 }
 
 void Mesh::Render(GPUContext* context) const
@@ -386,11 +386,9 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
@@ -449,11 +447,9 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
     }
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();

@@ -83,8 +83,6 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, lod))
         return;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = _cachedDrawMaterial;
     drawCall.World = _world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
@@ -140,8 +138,6 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, lod))
         return;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = _world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();

@@ -173,7 +173,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 context->SetState(_psRenderCacheTerrain);
                 context->BindIB(drawCall.Geometry.IndexBuffer);
                 context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 1));
-                context->DrawIndexed(drawCall.Geometry.IndicesCount, 0, drawCall.Geometry.StartIndex);
+                context->DrawIndexed(drawCall.Draw.IndicesCount, 0, drawCall.Draw.StartIndex);
 
                 break;
             }

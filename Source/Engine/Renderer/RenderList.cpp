@@ -514,8 +514,8 @@ namespace
         return a.Material == b.Material &&
                 a.Material->CanUseInstancing(handler) &&
                 Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
-                a.IndirectArgsBuffer == nullptr &&
-                b.IndirectArgsBuffer == nullptr &&
+                a.InstanceCount != 0 &&
+                b.InstanceCount != 0 &&
                 a.WorldDeterminantSign == b.WorldDeterminantSign;
     }
 }
@@ -690,20 +690,20 @@ DRAW:
 
             context->BindIB(drawCall.Geometry.IndexBuffer);
 
-            if (drawCall.IndirectArgsBuffer)
+            if (drawCall.InstanceCount == 0)
             {
                 // No support for batching indirect draw calls
                 ASSERT(batch.BatchSize == 1);
 
                 context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                context->DrawIndexedInstancedIndirect(drawCall.IndirectArgsBuffer, drawCall.IndirectArgsOffset);
+                context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
             }
             else
             {
                 if (batch.BatchSize == 1)
                 {
                     context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Geometry.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Geometry.StartIndex);
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
                 else
                 {
@@ -712,7 +712,7 @@ DRAW:
                     vbOffsets[vbCount] = 0;
                     vbCount++;
                     context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Geometry.IndicesCount, batch.InstanceCount, instanceBufferOffset, 0, drawCall.Geometry.StartIndex);
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, instanceBufferOffset, 0, drawCall.Draw.StartIndex);
 
                     instanceBufferOffset += batch.BatchSize;
                 }
@@ -735,13 +735,13 @@ DRAW:
                 context->BindIB(drawCall.Geometry.IndexBuffer);
                 context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
 
-                if (drawCall.IndirectArgsBuffer)
+                if (drawCall.InstanceCount == 0)
                 {
-                    context->DrawIndexedInstancedIndirect(drawCall.IndirectArgsBuffer, drawCall.IndirectArgsOffset);
+                    context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
                 }
                 else
                 {
-                    context->DrawIndexedInstanced(drawCall.Geometry.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Geometry.StartIndex);
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
             }
         }

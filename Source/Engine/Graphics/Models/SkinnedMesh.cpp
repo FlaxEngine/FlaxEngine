@@ -186,11 +186,9 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();

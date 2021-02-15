@@ -83,8 +83,8 @@ public:
         drawCall.Geometry.VertexBuffersOffsets[0] = 0;
         drawCall.Geometry.VertexBuffersOffsets[1] = 0;
         drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-        drawCall.Geometry.StartIndex = 0;
-        drawCall.Geometry.IndicesCount = IndexCount;
+        drawCall.Draw.StartIndex = 0;
+        drawCall.Draw.IndicesCount = IndexCount;
     }
 };
 
@@ -172,10 +172,6 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         return;
     const auto context = GPUDevice::Instance->GetMainContext();
     auto emitter = buffer->Emitter;
-
-    drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
 
     // Check if need to perform any particles sorting
     if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
@@ -516,8 +512,8 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Geometry.VertexBuffersOffsets[0] = 0;
             drawCall.Geometry.VertexBuffersOffsets[1] = 0;
             drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-            drawCall.Geometry.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
-            drawCall.Geometry.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
+            drawCall.Draw.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
+            drawCall.Draw.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
             drawCall.InstanceCount = 1;
             renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
 
@@ -802,8 +798,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = 0;
-            drawCall.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-            drawCall.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+            drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
+            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
             renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
             indirectDrawCallIndex++;
 
@@ -830,8 +826,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // Execute draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = 0;
-                drawCall.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-                drawCall.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+                drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
+                drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
                 renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
                 indirectDrawCallIndex++;
             }

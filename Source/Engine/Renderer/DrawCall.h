@@ -134,16 +134,6 @@ struct DrawCall
         /// The geometry vertex buffers byte offsets.
         /// </summary>
         uint32 VertexBuffersOffsets[3];
-
-        /// <summary>
-        /// The location of the first index read by the GPU from the index buffer.
-        /// </summary>
-        int32 StartIndex;
-
-        /// <summary>
-        /// The indices count.
-        /// </summary>
-        int32 IndicesCount;
     } Geometry;
 
     /// <summary>
@@ -151,15 +141,34 @@ struct DrawCall
     /// </summary>
     int32 InstanceCount;
 
-    /// <summary>
-    /// The indirect draw arguments offset.
-    /// </summary>
-    uint32 IndirectArgsOffset;
+    union
+    {
+        struct
+        {
+            /// <summary>
+            /// The location of the first index read by the GPU from the index buffer.
+            /// </summary>
+            int32 StartIndex;
 
-    /// <summary>
-    /// The indirect draw arguments buffer.
-    /// </summary>
-    GPUBuffer* IndirectArgsBuffer;
+            /// <summary>
+            /// The indices count.
+            /// </summary>
+            int32 IndicesCount;
+        };
+
+        struct
+        {
+            /// <summary>
+            /// The indirect draw arguments offset.
+            /// </summary>
+            uint32 IndirectArgsOffset;
+
+            /// <summary>
+            /// The indirect draw arguments buffer.
+            /// </summary>
+            GPUBuffer* IndirectArgsBuffer;
+        };
+    } Draw;
 
     // Per-material shader data packed into union
     union

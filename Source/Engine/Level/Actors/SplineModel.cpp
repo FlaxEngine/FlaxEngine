@@ -353,8 +353,6 @@ void SplineModel::Draw(RenderContext& renderContext)
     // Draw all segments
     DrawCall drawCall;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Deformable.SplineDeformation = _deformationBuffer;
     drawCall.Deformable.ChunksPerSegment = _chunksPerSegment;
     drawCall.Deformable.MeshMinZ = _meshMinZ;

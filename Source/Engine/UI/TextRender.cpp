@@ -336,14 +336,12 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.Geometry.VertexBuffersOffsets[1] = 0;
         drawCall.Geometry.VertexBuffersOffsets[2] = 0;
         drawCall.InstanceCount = 1;
-        drawCall.IndirectArgsBuffer = nullptr;
-        drawCall.IndirectArgsOffset = 0;
 
         // Submit draw calls
         for (const auto& e : _drawChunks)
         {
-            drawCall.Geometry.IndicesCount = e.IndicesCount;
-            drawCall.Geometry.StartIndex = e.StartIndex;
+            drawCall.Draw.IndicesCount = e.IndicesCount;
+            drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
             renderContext.List->AddDrawCall(drawModes, GetStaticFlags(), drawCall, true);
         }
