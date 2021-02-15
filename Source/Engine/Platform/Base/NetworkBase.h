@@ -105,7 +105,7 @@ public:
     /// <param name="proto">The protocol.</param>
     /// <param name="ipv">The ip version.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
+    static bool CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv);
 
     /// <summary>
     /// Closes native socket.
