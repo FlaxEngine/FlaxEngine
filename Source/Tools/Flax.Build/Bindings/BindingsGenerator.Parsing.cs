@@ -17,6 +17,7 @@ namespace Flax.Build.Bindings
             public Stack<ApiTypeInfo> ScopeTypeStack;
             public Stack<AccessLevel> ScopeAccessStack;
             public Dictionary<string, string> PreprocessorDefines;
+            public List<string> StringCache;
 
             public ApiTypeInfo ValidScopeInfoFromStack
             {
@@ -46,14 +47,12 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static List<string> _commentCache;
-
         private static string[] ParseComment(ref ParsingContext context)
         {
-            if (_commentCache == null)
-                _commentCache = new List<string>();
+            if (context.StringCache == null)
+                context.StringCache = new List<string>();
             else
-                _commentCache.Clear();
+                context.StringCache.Clear();
 
             int tokensCount = 0;
             bool isValid = true;
@@ -77,7 +76,7 @@ namespace Flax.Build.Bindings
                     if (commentLine.StartsWith("// "))
                         commentLine = "/// " + commentLine.Substring(3);
 
-                    _commentCache.Insert(0, commentLine);
+                    context.StringCache.Insert(0, commentLine);
                     break;
                 }
                 default:
@@ -90,14 +89,14 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < tokensCount; i++)
                 context.Tokenizer.NextToken(true, true);
 
-            if (_commentCache.Count == 1)
+            if (context.StringCache.Count == 1)
             {
                 // Ensure to have summary begin/end pair
-                _commentCache.Insert(0, "/// <summary>");
-                _commentCache.Add("/// </summary>");
+                context.StringCache.Insert(0, "/// <summary>");
+                context.StringCache.Add("/// </summary>");
             }
 
-            return _commentCache.ToArray();
+            return context.StringCache.ToArray();
         }
 
         private struct TagParameter

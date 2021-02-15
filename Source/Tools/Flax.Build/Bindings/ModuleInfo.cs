@@ -13,5 +13,14 @@ namespace Flax.Build.Bindings
         {
             return "module " + Name;
         }
+
+        /// <inheritdoc />
+        public override void Init(Builder.BuildData buildData)
+        {
+            base.Init(buildData);
+
+            // Sort module files to prevent bindings rebuild due to order changes (list might be created in async)
+            Children.Sort();
+        }
     }
 }
