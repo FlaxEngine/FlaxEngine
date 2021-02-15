@@ -22,16 +22,16 @@ SplineCollider::SplineCollider(const SpawnParams& params)
     CollisionData.Loaded.Bind<SplineCollider, &SplineCollider::OnCollisionDataLoaded>(this);
 }
 
-Quaternion SplineCollider::GetPreRotation() const
+Transform SplineCollider::GetPreTransform() const
 {
-    return _preRotation;
+    return _preTransform;
 }
 
-void SplineCollider::SetPreRotation(const Quaternion& value)
+void SplineCollider::SetPreTransform(const Transform& value)
 {
-    if (_preRotation == value)
+    if (_preTransform == value)
         return;
-    _preRotation = value;
+    _preTransform = value;
     UpdateGeometry();
 }
 
@@ -130,7 +130,7 @@ void SplineCollider::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(SplineCollider);
 
     SERIALIZE(CollisionData);
-    SERIALIZE_MEMBER(PreRotation, _preRotation)
+    SERIALIZE_MEMBER(PreTransform, _preTransform)
 }
 
 void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -139,7 +139,7 @@ void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     Collider::Deserialize(stream, modifier);
 
     DESERIALIZE(CollisionData);
-    DESERIALIZE_MEMBER(PreRotation, _preRotation);
+    DESERIALIZE_MEMBER(PreTransform, _preTransform);
 }
 
 void SplineCollider::OnParentChanged()
@@ -205,10 +205,10 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
     }
 
     // Apply local mesh transformation
-    if (!_preRotation.IsIdentity())
+    if (!_preTransform.IsIdentity())
     {
         for (int32 i = 0; i < collisionVertices.Count(); i++)
-            collisionVertices[i] = Vector3::Transform(collisionVertices[i], _preRotation);
+            collisionVertices[i] = _preTransform.LocalToWorld(collisionVertices[i]);
     }
 
     // Find collision geometry local bounds

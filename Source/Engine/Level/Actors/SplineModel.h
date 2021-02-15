@@ -26,7 +26,7 @@ private:
     char _forcedLod = -1;
     bool _deformationDirty = false;
     Array<Instance> _instances;
-    Quaternion _preRotation = Quaternion::Identity;
+    Transform _preTransform = Transform::Identity;
     Spline* _spline = nullptr;
     GPUBuffer* _deformationBuffer = nullptr;
     void* _deformationBufferData = nullptr;
@@ -43,15 +43,15 @@ public:
     AssetReference<Model> Model;
 
     /// <summary>
-    /// Gets the rotation applied to the model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
+    /// Gets the transformation applied to the model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(21), EditorDisplay(\"Model\")")
-    Quaternion GetPreRotation() const;
+    Transform GetPreTransform() const;
 
     /// <summary>
-    /// Sets the rotation applied to the model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
+    /// Sets the transformation applied to the model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
     /// </summary>
-    API_PROPERTY() void SetPreRotation(const Quaternion& value);
+    API_PROPERTY() void SetPreTransform(const Transform& value);
 
     /// <summary>
     /// The draw passes to use for rendering this object.

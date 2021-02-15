@@ -21,7 +21,7 @@ private:
     PxTriangleMesh* _triangleMesh = nullptr;
     Array<Vector3> _vertexBuffer;
     Array<int32> _indexBuffer;
-    Quaternion _preRotation = Quaternion::Identity;
+    Transform _preTransform = Transform::Identity;
 
 public:
 
@@ -32,15 +32,15 @@ public:
     AssetReference<CollisionData> CollisionData;
 
     /// <summary>
-    /// Gets the rotation applied to the collision data model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
+    /// Gets the transformation applied to the collision data model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(101), EditorDisplay(\"Collider\")")
-    Quaternion GetPreRotation() const;
+    Transform GetPreTransform() const;
 
     /// <summary>
-    /// Sets the rotation applied to the collision data model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
+    /// Sets the transformation applied to the collision data model geometry before placing it over the spline. Can be used to change the way model goes over the spline.
     /// </summary>
-    API_PROPERTY() void SetPreRotation(const Quaternion& value);
+    API_PROPERTY() void SetPreTransform(const Transform& value);
 
 #if USE_EDITOR
 

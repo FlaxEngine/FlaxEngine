@@ -28,16 +28,16 @@ SplineModel::~SplineModel()
         Allocator::Free(_deformationBufferData);
 }
 
-Quaternion SplineModel::GetPreRotation() const
+Transform SplineModel::GetPreTransform() const
 {
-    return _preRotation;
+    return _preTransform;
 }
 
-void SplineModel::SetPreRotation(const Quaternion& value)
+void SplineModel::SetPreTransform(const Transform& value)
 {
-    if (_preRotation == value)
+    if (_preTransform == value)
         return;
-    _preRotation = value;
+    _preTransform = value;
     OnSplineUpdated();
 }
 
@@ -135,8 +135,8 @@ void SplineModel::OnSplineUpdated()
             for (int32 i = 0; i < 8; i++)
             {
                 // Transform mesh corner using pre-transform but use double-precision to prevent issues when rotating model
-                Vector3 tmp = corners[i];
-                double rotation[4] = { (double)_preRotation.X, (double)_preRotation.Y, (double)_preRotation.Z, (double)_preRotation.W };
+                Vector3 tmp = corners[i] * _preTransform.Scale;
+                double rotation[4] = { (double)_preTransform.Orientation.X, (double)_preTransform.Orientation.Y, (double)_preTransform.Orientation.Z, (double)_preTransform.Orientation.W };
                 const double length = sqrt(rotation[0] * rotation[0] + rotation[1] * rotation[1] + rotation[2] * rotation[2] + rotation[3] * rotation[3]);
                 const double inv = 1.0 / length;
                 rotation[0] *= inv;
@@ -157,9 +157,9 @@ void SplineModel::OnSplineUpdated()
                 const double yz = rotation[1] * z;
                 const double zz = rotation[2] * z;
                 tmp = Vector3(
-                    (float)(pos[0] * (1.0 - yy - zz) + pos[1] * (xy - wz) + pos[2] * (xz + wy)),
-                    (float)(pos[0] * (xy + wz) + pos[1] * (1.0 - xx - zz) + pos[2] * (yz - wx)),
-                    (float)(pos[0] * (xz - wy) + pos[1] * (yz + wx) + pos[2] * (1.0 - xx - yy)));
+                    (float)(pos[0] * (1.0 - yy - zz) + pos[1] * (xy - wz) + pos[2] * (xz + wy)) + _preTransform.Translation.X,
+                    (float)(pos[0] * (xy + wz) + pos[1] * (1.0 - xx - zz) + pos[2] * (yz - wx)) + _preTransform.Translation.Y,
+                    (float)(pos[0] * (xz - wy) + pos[1] * (yz + wx) + pos[2] * (1.0 - xx - yy)) + _preTransform.Translation.Z);
 
                 localModelBounds.Minimum = Vector3::Min(localModelBounds.Minimum, tmp);
                 localModelBounds.Maximum = Vector3::Max(localModelBounds.Maximum, tmp);
@@ -359,7 +359,7 @@ void SplineModel::Draw(RenderContext& renderContext)
     drawCall.Deformable.MeshMaxZ = _meshMaxZ;
     drawCall.Deformable.GeometrySize = _box.GetSize();
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
-    Matrix::RotationQuaternion(_preRotation, drawCall.Deformable.LocalMatrix);
+    _preTransform.GetWorld(drawCall.Deformable.LocalMatrix);
     const Transform splineTransform = GetTransform();
     splineTransform.GetWorld(drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
@@ -445,7 +445,7 @@ void SplineModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(BoundsScale, _boundsScale);
     SERIALIZE_MEMBER(LODBias, _lodBias);
     SERIALIZE_MEMBER(ForcedLOD, _forcedLod);
-    SERIALIZE_MEMBER(PreRotation, _preRotation)
+    SERIALIZE_MEMBER(PreTransform, _preTransform)
     SERIALIZE(Model);
     SERIALIZE(DrawModes);
 
@@ -462,7 +462,7 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(BoundsScale, _boundsScale);
     DESERIALIZE_MEMBER(LODBias, _lodBias);
     DESERIALIZE_MEMBER(ForcedLOD, _forcedLod);
-    DESERIALIZE_MEMBER(PreRotation, _preRotation);
+    DESERIALIZE_MEMBER(PreTransform, _preTransform);
     DESERIALIZE(Model);
     DESERIALIZE(DrawModes);
 
