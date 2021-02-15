@@ -6,10 +6,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
@@ -247,7 +245,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
         iconTexSize = Math::RoundUpToPowerOf2(width);
     }
 
-    // Try to pick a proper mip (requrie the same size)
+    // Try to pick a proper mip (require the same size)
     const TextureMipData* srcPixels = nullptr;
     int32 mipLevels = icon->GetMipLevels();
     for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
@@ -740,6 +738,59 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
         return true;
     }
 
+    return false;
+}
+
+bool EditorUtilities::IsInvalidPathChar(Char c)
+{
+    char illegalChars[] =
+    {
+        '?',
+        '\\',
+        '/',
+        '\"',
+        '<',
+        '>',
+        '|',
+        ':',
+        '*',
+        '\u0001',
+        '\u0002',
+        '\u0003',
+        '\u0004',
+        '\u0005',
+        '\u0006',
+        '\a',
+        '\b',
+        '\t',
+        '\n',
+        '\v',
+        '\f',
+        '\r',
+        '\u000E',
+        '\u000F',
+        '\u0010',
+        '\u0011',
+        '\u0012',
+        '\u0013',
+        '\u0014',
+        '\u0015',
+        '\u0016',
+        '\u0017',
+        '\u0018',
+        '\u0019',
+        '\u001A',
+        '\u001B',
+        '\u001C',
+        '\u001D',
+        '\u001E',
+        '\u001F'
+    };
+    for (auto i : illegalChars)
+    {
+        if (c == i)
+            return true;
+    }
     return false;
 }
 

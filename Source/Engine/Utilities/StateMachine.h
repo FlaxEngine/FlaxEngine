@@ -50,7 +50,7 @@ public:
     /// <summary>
     /// Checks if can exit from that state
     /// </summary>
-    /// <param name="nextState">Next state to ener after exit from the current state</param>
+    /// <param name="nextState">Next state to enter after exit from the current state</param>
     /// <returns>True if can exit from that state, otherwise false</returns>
     virtual bool CanExit(State* nextState) const
     {

@@ -483,7 +483,7 @@ public:
     /// <summary>
     /// Creates new staging readback texture with the same dimensions and properties as a source texture (but without a data transferred; warning: caller must delete object).
     /// </summary>
-    /// <returns>Thr staging readback texture.</returns>
+    /// <returns>The staging readback texture.</returns>
     GPUTexture* ToStagingReadback() const;
 
     /// <summary>

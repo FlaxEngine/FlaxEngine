@@ -33,7 +33,7 @@ Font::~Font()
 
 void Font::GetCharacter(Char c, FontCharacterEntry& result)
 {
-    // Try get character or cache it if cannot find
+    // Try to get the character or cache it if cannot be found
     if (!_characters.TryGet(c, result))
     {
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)

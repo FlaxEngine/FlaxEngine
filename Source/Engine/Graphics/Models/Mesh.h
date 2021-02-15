@@ -216,9 +216,9 @@ public:
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, int32* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, uint32* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, false);
     }
@@ -231,7 +231,7 @@ public:
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, uint16* ib)
     {
@@ -240,16 +240,50 @@ public:
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// Mesh data will be cached and uploaded to the GPU with a delay.
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb0">The first vertex buffer data.</param>
     /// <param name="vb1">The second vertex buffer data.</param>
     /// <param name="vb2">The third vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices);
+
+    /// <summary>
+    /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// Mesh data will be cached and uploaded to the GPU with a delay.
+    /// </summary>
+    /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
+    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
+    /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
+    /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+    /// <param name="normals">The normal vectors (per vertex).</param>
+    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="uvs">The texture coordinates (per vertex).</param>
+    /// <param name="colors">The vertex colors (per vertex).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint16* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
+
+    /// <summary>
+    /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// Mesh data will be cached and uploaded to the GPU with a delay.
+    /// </summary>
+    /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
+    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
+    /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
+    /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+    /// <param name="normals">The normal vectors (per vertex).</param>
+    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="uvs">The texture coordinates (per vertex).</param>
+    /// <param name="colors">The vertex colors (per vertex).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
 
 public:
 
@@ -259,7 +293,7 @@ public:
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="ib">The index buffer.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, int32* ib)
+    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, uint32* ib)
     {
         return UpdateTriangles(triangleCount, ib, false);
     }

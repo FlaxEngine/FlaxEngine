@@ -254,7 +254,7 @@ namespace FlaxEditor
             if (loadingPreview != null)
             {
                 // Link it to the prefab preview to see it in the editor
-                loadingPreview.customControlLinked = control.Control;
+                loadingPreview.customControlLinked = control;
                 return loadingPreview;
             }
             return null;

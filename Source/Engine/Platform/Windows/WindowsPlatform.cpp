@@ -630,8 +630,19 @@ void WindowsPlatform::Exit()
 
 void WindowsPlatform::Log(const StringView& msg)
 {
-    OutputDebugStringW(msg.Get());
-    OutputDebugStringW(TEXT(PLATFORM_LINE_TERMINATOR));
+    Char buffer[512];
+    Char* str;
+    if (msg.Length() + 3 < ARRAY_COUNT(buffer))
+        str = buffer;
+    else
+        str = (Char*)Allocate((msg.Length() + 3) * sizeof(Char), 16);
+    MemoryCopy(str, msg.Get(), msg.Length() * sizeof(Char));
+    str[msg.Length() + 0] = '\r';
+    str[msg.Length() + 1] = '\n';
+    str[msg.Length() + 2] = 0;
+    OutputDebugStringW(str);
+    if (str != buffer)
+        Free(str);
 }
 
 bool WindowsPlatform::IsDebuggerPresent()

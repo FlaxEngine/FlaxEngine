@@ -276,8 +276,8 @@ namespace FlaxEditor.Modules
                 // Get metadata
                 int version = int.Parse(root.Attributes["Version"].Value, CultureInfo.InvariantCulture);
                 var virtualDesktopBounds = Platform.VirtualDesktopBounds;
-                var virtualDesktopSafeLeftCorner = virtualDesktopBounds.Location + new Vector2(0, 23); // 23 is a window strip size
-                var virtualDesktopSafeRightCorner = virtualDesktopBounds.BottomRight - new Vector2(50, 50); // apply some safe area
+                var virtualDesktopSafeLeftCorner = virtualDesktopBounds.Location;
+                var virtualDesktopSafeRightCorner = virtualDesktopBounds.BottomRight;
 
                 switch (version)
                 {
@@ -971,7 +971,7 @@ namespace FlaxEditor.Modules
         }
 
         #region Window Events
-        
+
         private void OnEditorStateChanged()
         {
             for (int i = 0; i < Windows.Count; i++)

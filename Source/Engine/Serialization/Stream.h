@@ -37,9 +37,9 @@ public:
 public:
 
     /// <summary>
-    /// Returns true if error occured during reading/writing to the stream
+    /// Returns true if error occurred during reading/writing to the stream
     /// </summary>
-    /// <returns>True if error occured during reading/writing to the stream</returns>
+    /// <returns>True if error occurred during reading/writing to the stream</returns>
     virtual bool HasError() const
     {
         return _hasError;

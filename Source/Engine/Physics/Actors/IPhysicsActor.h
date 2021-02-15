@@ -2,7 +2,11 @@
 
 #pragma once
 
-#include <ThirdParty/PhysX/foundation/PxTransform.h>
+namespace physx
+{
+    class PxRigidActor;
+    class PxTransform;
+}
 
 /// <summary>
 /// A base interface for all physical actors types/owners that can responds on transformation changed event.
@@ -20,7 +24,7 @@ public:
     /// Gets the rigid actor (PhysX object) may be null.
     /// </summary>
     /// <returns>PhysX rigid actor or null if not using</returns>
-    virtual PxRigidActor* GetRigidActor() = 0;
+    virtual physx::PxRigidActor* GetRigidActor() = 0;
 
     /// <summary>
     /// Called when actor's active transformation gets changed after the physics simulation step.

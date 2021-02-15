@@ -4,7 +4,6 @@
 
 #include "Collider.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
-#include <PxFiltering.h>
 
 /// <summary>
 /// Physical objects that allows to easily do player movement constrained by collisions without having to deal with a rigidbody.
@@ -68,7 +67,7 @@ private:
     bool _isUpdatingTransform;
     NonWalkableModes _nonWalkableMode;
     CollisionFlags _lastFlags;
-    PxFilterData _filterData;
+    uint32 _filterData[4];
 
 public:
 

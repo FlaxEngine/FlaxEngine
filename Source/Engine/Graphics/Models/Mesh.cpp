@@ -10,6 +10,127 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
+namespace
+{
+    template<typename IndexType>
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, Vector3* vertices, IndexType* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+    {
+        auto model = mesh->GetModel();
+        CHECK_RETURN(model && model->IsVirtual(), true);
+        CHECK_RETURN(triangles && vertices, true);
+
+        // Pack mesh data into vertex buffers
+        Array<VB1ElementType> vb1;
+        Array<VB2ElementType> vb2;
+        vb1.Resize(vertexCount);
+        if (normals)
+        {
+            if (tangents)
+            {
+                for (uint32 i = 0; i < vertexCount; i++)
+                {
+                    const Vector3 normal = normals[i];
+                    const Vector3 tangent = tangents[i];
+
+                    // Calculate bitangent sign
+                    Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
+                    byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+
+                    // Set tangent frame
+                    vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+                    vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                }
+            }
+            else
+            {
+                for (uint32 i = 0; i < vertexCount; i++)
+                {
+                    const Vector3 normal = normals[i];
+
+                    // Calculate tangent
+                    Vector3 c1 = Vector3::Cross(normal, Vector3::UnitZ);
+                    Vector3 c2 = Vector3::Cross(normal, Vector3::UnitY);
+                    Vector3 tangent;
+                    if (c1.LengthSquared() > c2.LengthSquared())
+                        tangent = c1;
+                    else
+                        tangent = c2;
+
+                    // Calculate bitangent sign
+                    Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
+                    byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+
+                    // Set tangent frame
+                    vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+                    vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                }
+            }
+        }
+        else
+        {
+            // Set default tangent frame
+            const auto n = Float1010102(Vector3::UnitZ);
+            const auto t = Float1010102(Vector3::UnitX);
+            for (uint32 i = 0; i < vertexCount; i++)
+            {
+                vb1[i].Normal = n;
+                vb1[i].Tangent = t;
+            }
+        }
+        if (uvs)
+        {
+            for (uint32 i = 0; i < vertexCount; i++)
+                vb1[i].TexCoord = Half2(uvs[i]);
+        }
+        else
+        {
+            auto v = Half2(0, 0);
+            for (uint32 i = 0; i < vertexCount; i++)
+                vb1[i].TexCoord = v;
+        }
+        {
+            auto v = Half2(0, 0);
+            for (uint32 i = 0; i < vertexCount; i++)
+                vb1[i].LightmapUVs = v;
+        }
+        if (colors)
+        {
+            vb2.Resize(vertexCount);
+            for (uint32 i = 0; i < vertexCount; i++)
+                vb2[i].Color = colors[i];
+        }
+
+        return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vertices, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, triangles);
+    }
+
+    template<typename IndexType>
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
+    {
+        ASSERT((uint32)mono_array_length(verticesObj) >= vertexCount);
+        ASSERT((uint32)mono_array_length(trianglesObj) / 3 >= triangleCount);
+        auto vertices = (Vector3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Vector3), 0);
+        auto triangles = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
+        const auto normals = normalsObj ? (Vector3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Vector3), 0) : nullptr;
+        const auto tangents = tangentsObj ? (Vector3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Vector3), 0) : nullptr;
+        const auto uvs = uvObj ? (Vector2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Vector2), 0) : nullptr;
+        const auto colors = colorsObj ? (Color32*)(void*)mono_array_addr_with_size(colorsObj, sizeof(Color32), 0) : nullptr;
+        return UpdateMesh<IndexType>(mesh, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
+    }
+
+    template<typename IndexType>
+    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, MonoArray* trianglesObj)
+    {
+        const auto model = mesh->GetModel();
+        ASSERT(model && model->IsVirtual() && trianglesObj);
+
+        // Get buffer data
+        ASSERT((int32)mono_array_length(trianglesObj) / 3 >= triangleCount);
+        auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
+
+        return mesh->UpdateTriangles(triangleCount, ib);
+    }
+}
+
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices)
 {
     Unload();
@@ -29,6 +150,16 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* 
     }
 
     return failed;
+}
+
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint16* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+{
+    return ::UpdateMesh<uint16>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
+}
+
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+{
+    return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
 bool Mesh::UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices)
@@ -384,108 +515,9 @@ ScriptingObject* Mesh::GetParentModel()
     return _model;
 }
 
-template<typename IndexType>
-bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
-{
-    auto model = mesh->GetModel();
-    ASSERT(model && model->IsVirtual() && verticesObj && trianglesObj);
-
-    // Get buffers data
-    ASSERT((uint32)mono_array_length(verticesObj) >= vertexCount);
-    ASSERT((uint32)mono_array_length(trianglesObj) / 3 >= triangleCount);
-    auto vb0 = (Vector3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Vector3), 0);
-    auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
-    Array<VB1ElementType> vb1;
-    Array<VB2ElementType> vb2;
-    vb1.Resize(vertexCount);
-    if (normalsObj)
-    {
-        const auto normals = (Vector3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Vector3), 0);
-        if (tangentsObj)
-        {
-            const auto tangents = (Vector3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Vector3), 0);
-            for (uint32 i = 0; i < vertexCount; i++)
-            {
-                // Peek normal and tangent
-                const Vector3 normal = normals[i];
-                const Vector3 tangent = tangents[i];
-
-                // Calculate bitangent sign
-                Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                // Set tangent frame
-                vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
-            }
-        }
-        else
-        {
-            for (uint32 i = 0; i < vertexCount; i++)
-            {
-                // Peek normal
-                const Vector3 normal = normals[i];
-
-                // Calculate tangent
-                Vector3 c1 = Vector3::Cross(normal, Vector3::UnitZ);
-                Vector3 c2 = Vector3::Cross(normal, Vector3::UnitY);
-                Vector3 tangent;
-                if (c1.LengthSquared() > c2.LengthSquared())
-                    tangent = c1;
-                else
-                    tangent = c2;
-
-                // Calculate bitangent sign
-                Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                // Set tangent frame
-                vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
-            }
-        }
-    }
-    else
-    {
-        const auto n = Float1010102(Vector3::UnitZ);
-        const auto t = Float1010102(Vector3::UnitX);
-        for (uint32 i = 0; i < vertexCount; i++)
-        {
-            vb1[i].Normal = n;
-            vb1[i].Tangent = t;
-        }
-    }
-    if (uvObj)
-    {
-        const auto uvs = (Vector2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Vector2), 0);
-        for (uint32 i = 0; i < vertexCount; i++)
-            vb1[i].TexCoord = Half2(uvs[i]);
-    }
-    else
-    {
-        auto v = Half2(0, 0);
-        for (uint32 i = 0; i < vertexCount; i++)
-            vb1[i].TexCoord = v;
-    }
-    {
-        auto v = Half2(0, 0);
-        for (uint32 i = 0; i < vertexCount; i++)
-            vb1[i].LightmapUVs = v;
-    }
-    if (colorsObj)
-    {
-        vb2.Resize(vertexCount);
-        const auto colors = (Color32*)(void*)mono_array_addr_with_size(colorsObj, sizeof(Color32), 0);
-        for (uint32 i = 0; i < vertexCount; i++)
-            vb2[i].Color = colors[i];
-    }
-
-    return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vb0, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, ib);
-}
-
 bool Mesh::UpdateMeshInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
 {
-    return ::UpdateMesh<int32>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
+    return ::UpdateMesh<uint32>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
 bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
@@ -493,22 +525,9 @@ bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* v
     return ::UpdateMesh<uint16>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
-template<typename IndexType>
-bool UpdateTriangles(Mesh* mesh, int32 triangleCount, MonoArray* trianglesObj)
-{
-    auto model = mesh->GetModel();
-    ASSERT(model && model->IsVirtual() && trianglesObj);
-
-    // Get buffer data
-    ASSERT((int32)mono_array_length(trianglesObj) / 3 >= triangleCount);
-    auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
-
-    return mesh->UpdateTriangles(triangleCount, ib);
-}
-
 bool Mesh::UpdateTrianglesInt(int32 triangleCount, MonoArray* trianglesObj)
 {
-    return ::UpdateTriangles<int32>(this, triangleCount, trianglesObj);
+    return ::UpdateTriangles<uint32>(this, triangleCount, trianglesObj);
 }
 
 bool Mesh::UpdateTrianglesUShort(int32 triangleCount, MonoArray* trianglesObj)

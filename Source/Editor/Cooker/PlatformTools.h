@@ -48,7 +48,7 @@ public:
     /// <summary>
     /// Gets the value indicating whenever platform requires AOT.
     /// </summary>
-    /// <returns>True if platform uses AOT and needs C# assemblies to be be precompiled, otherwise false.</returns>
+    /// <returns>True if platform uses AOT and needs C# assemblies to be precompiled, otherwise false.</returns>
     virtual bool UseAOT() const
     {
         return false;

@@ -284,6 +284,9 @@ namespace FlaxEditor.Windows.Assets
             {
                 // Simply update changes
                 Editor.Prefabs.ApplyAll(_viewport.Instance);
+
+                // Refresh properties panel to sync new prefab default values
+                _propertiesEditor.BuildLayout();
             }
             catch (Exception)
             {

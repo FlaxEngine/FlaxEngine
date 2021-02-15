@@ -49,7 +49,7 @@ namespace FlaxEditor.Tools
                 set => Tab._gizmoMode.BrushStrength = value;
             }
 
-            [EditorOrder(20), EditorDisplay("Brush"), Limit(0.0f, 1.0f, 0.01f), Tooltip("The falloff parameter fo the brush. Adjusts the paint strength for the vertices that are far from the brush center. Use lower values to make painting smoother and softer.")]
+            [EditorOrder(20), EditorDisplay("Brush"), Limit(0.0f, 1.0f, 0.01f), Tooltip("The falloff parameter for the brush. Adjusts the paint strength for the vertices that are far from the brush center. Use lower values to make painting smoother and softer.")]
             public float BrushFalloff
             {
                 get => Tab._gizmoMode.BrushFalloff;

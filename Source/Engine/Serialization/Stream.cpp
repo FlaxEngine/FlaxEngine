@@ -4,8 +4,9 @@
 #include "WriteStream.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Content/Asset.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Content/Asset.h"
+#include "Engine/Debug/DebugLog.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 
@@ -227,6 +228,8 @@ void ReadStream::ReadVariantType(VariantType* data)
     if (typeNameLength == MAX_int32)
     {
         ReadInt32(&typeNameLength);
+        if (typeNameLength == 0)
+            return;
         data->TypeName = static_cast<char*>(Allocator::Allocate(typeNameLength + 1));
         char* ptr = data->TypeName;
         Read(ptr, typeNameLength);
@@ -330,8 +333,19 @@ void ReadStream::ReadVariant(Variant* data)
     {
         int32 length;
         ReadInt32(&length);
-        ASSERT(data->AsBlob.Length == length);
-        ReadBytes(data->AsBlob.Data, length);
+        if (data->AsBlob.Length == length)
+        {
+            ReadBytes(data->AsBlob.Data, length);
+        }
+        else
+        {
+            LOG(Error, "Invalid Variant {2} data length {0}. Expected {1} bytes from stream.", data->AsBlob.Length, length, data->Type.ToString());
+
+            // Skip those bytes
+            void* ptr = Allocator::Allocate(length);
+            ReadBytes(ptr, length);
+            Allocator::Free(ptr);
+        }
         break;
     }
     case VariantType::Blob:
@@ -590,12 +604,20 @@ void WriteStream::WriteVariant(const Variant& data)
         break;
     case VariantType::Structure:
     case VariantType::Blob:
-    case VariantType::BoundingBox:
-    case VariantType::Transform:
-    case VariantType::Ray:
-    case VariantType::Matrix:
         WriteInt32(data.AsBlob.Length);
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
+        break;
+    case VariantType::BoundingBox:
+        WriteBytes(data.AsBlob.Data, sizeof(BoundingBox));
+        break;
+    case VariantType::Transform:
+        WriteBytes(data.AsBlob.Data, sizeof(Transform));
+        break;
+    case VariantType::Ray:
+        WriteBytes(data.AsBlob.Data, sizeof(Ray));
+        break;
+    case VariantType::Matrix:
+        WriteBytes(data.AsBlob.Data, sizeof(Matrix));
         break;
     case VariantType::Asset:
         id = data.AsAsset ? data.AsAsset->GetID() : Guid::Empty;

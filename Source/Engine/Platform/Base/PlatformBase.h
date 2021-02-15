@@ -11,6 +11,7 @@ struct CPUInfo;
 struct MemoryStats;
 struct ProcessMemoryStats;
 struct CreateWindowSettings;
+struct BatteryInfo;
 
 // ReSharper disable CppFunctionIsNotImplemented
 
@@ -547,6 +548,11 @@ public:
     /// Sets the High DPI awareness.
     /// </summary>
     static void SetHighDpiAwarenessEnabled(bool enable);
+
+    /// <summary>
+    /// Gets the battery information.
+    /// </summary>
+    API_PROPERTY() static BatteryInfo GetBatteryInfo();
 
     /// <summary>
     /// Gets the screen DPI setting.

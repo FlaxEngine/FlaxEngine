@@ -53,7 +53,7 @@ public:
         ScopeLock lock(Locker);
 
         const int32 prevCount = MaterialSlots.Count();
-        MaterialSlots.Resize(slotsCount);
+        MaterialSlots.Resize(slotsCount, false);
 
         // Initialize slot names
         for (int32 i = prevCount; i < slotsCount; i++)

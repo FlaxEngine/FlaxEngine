@@ -23,6 +23,15 @@ namespace FlaxEditor.Viewport.Previews
             "Cone"
         };
 
+        private static readonly Transform[] Transforms =
+        {
+            new Transform(Vector3.Zero, Quaternion.RotationY(Mathf.Pi), new Vector3(0.45f)),
+            new Transform(Vector3.Zero, Quaternion.RotationY(Mathf.Pi), new Vector3(0.45f)),
+            new Transform(Vector3.Zero, Quaternion.Identity, new Vector3(0.45f)),
+            new Transform(Vector3.Zero, Quaternion.RotationY(Mathf.Pi), new Vector3(0.45f)),
+            new Transform(Vector3.Zero, Quaternion.RotationY(Mathf.Pi), new Vector3(0.45f)),
+        };
+
         private StaticModel _previewModel;
         private Decal _decal;
         private Terrain _terrain;
@@ -65,6 +74,7 @@ namespace FlaxEditor.Viewport.Previews
 
                 _selectedModelIndex = value;
                 _previewModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/" + Models[value]);
+                _previewModel.Transform = Transforms[value];
             }
         }
 
@@ -77,7 +87,6 @@ namespace FlaxEditor.Viewport.Previews
         {
             // Setup preview scene
             _previewModel = new StaticModel();
-            _previewModel.Transform = new Transform(Vector3.Zero, Quaternion.RotationY(Mathf.Pi), new Vector3(0.45f));
             SelectedModelIndex = 0;
 
             // Link actors for rendering

@@ -437,13 +437,13 @@ public:
     }
 
     /// <summary>
-    /// Sets actor orientation in 3D space
+    /// Sets actor orientation in 3D space.
     /// </summary>
     /// <param name="value">The value to set.</param>
     API_PROPERTY() void SetOrientation(const Quaternion& value);
 
     /// <summary>
-    /// Gets actor scale in 3D space
+    /// Gets actor scale in 3D space.
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
     FORCE_INLINE Vector3 GetScale() const
@@ -458,13 +458,13 @@ public:
     API_PROPERTY() void SetScale(const Vector3& value);
 
     /// <summary>
-    /// Gets actor rotation matrix
+    /// Gets actor rotation matrix.
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
     Matrix GetRotation() const;
 
     /// <summary>
-    /// Sets actor rotation matrix
+    /// Sets actor rotation matrix.
     /// </summary>
     /// <param name="value">The value to set.</param>
     API_PROPERTY() void SetRotation(const Matrix& value);

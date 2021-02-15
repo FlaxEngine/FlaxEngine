@@ -2894,7 +2894,7 @@ static float getFramerateFromTimeMode(FrameRate time_mode, float custom_frame_ra
 {
 	switch (time_mode)
 	{
-		case FrameRate_DEFAULT: return 1;
+		case FrameRate_DEFAULT: return 14;
 		case FrameRate_120: return 120;
 		case FrameRate_100: return 100;
 		case FrameRate_60: return 60;

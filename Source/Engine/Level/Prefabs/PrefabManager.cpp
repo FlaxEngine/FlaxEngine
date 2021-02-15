@@ -173,9 +173,16 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         return nullptr;
     }
     auto root = (Actor*)sceneObjects.Value->At(0);
+    if (!root)
+    {
+        LOG(Warning, "Failed to load prefab root object.");
+        return nullptr;
+    }
 
     // Prepare parent linkage for prefab root actor
     root->_parent = parent;
+    if (parent)
+        parent->Children.Add(root);
 
     // Link actors hierarchy
     for (int32 i = 0; i < sceneObjects->Count(); i++)
@@ -221,7 +228,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         if (obj && obj->GetParent() == nullptr)
         {
             sceneObjects->At(i) = nullptr;
-            LOG(Warning, "Scene object {0} {1} has missing parent objct after prefab spawn. Removing it.", obj->GetID(), obj->ToString());
+            LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
             obj->DeleteObject();
         }
     }

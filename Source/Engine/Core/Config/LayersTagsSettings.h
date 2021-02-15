@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
+#include "Engine/Serialization/Json.h"
 
 /// <summary>
 /// Layers and objects tags settings.

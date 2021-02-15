@@ -251,7 +251,7 @@ namespace FlaxEditor.Utilities
 
             var list = new List<MemberComparison>();
 #if DEBUG_OBJECT_SNAPSHOT_COMPARISION
-            Debug.Logger.LogHandler.LogWrite(LogType.Warning, "-------------- Comparision --------------");
+            Debug.Logger.LogHandler.LogWrite(LogType.Warning, "-------------- Comparison --------------");
 #endif
             for (int i = _members.Count - 1; i >= 0; i--)
             {

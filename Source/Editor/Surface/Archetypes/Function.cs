@@ -867,8 +867,15 @@ namespace FlaxEditor.Surface.Archetypes
                                 for (int i = 0; i < signature.Params.Length; i++)
                                 {
                                     ref var param = ref signature.Params[i];
-                                    if (param.Type != memberParameters[i].Type || param.IsOut != memberParameters[i].IsOut)
+                                    ref var paramMember = ref memberParameters[i];
+                                    if (param.Type != paramMember.Type || param.IsOut != paramMember.IsOut)
                                     {
+                                        // Special case: param.Type is serialized as just a type while paramMember.Type might be a reference for output parameters (eg. `out Int32` vs `out Int32&`)
+                                        var paramMemberTypeName = paramMember.Type.TypeName;
+                                        if (param.IsOut && param.IsOut == paramMember.IsOut && paramMember.Type.IsReference && !param.Type.IsReference &&
+                                            paramMemberTypeName.Substring(0, paramMemberTypeName.Length - 1) == param.Type.TypeName)
+                                            continue;
+
                                         isInvalid = true;
                                         break;
                                     }
@@ -1176,7 +1183,7 @@ namespace FlaxEditor.Surface.Archetypes
                 [EditorOrder(0), Tooltip("The name of the parameter."), ExpandGroups]
                 public string Name;
 
-                [EditorOrder(1), Tooltip("The type fo the parameter value.")]
+                [EditorOrder(1), Tooltip("The type for the parameter value.")]
                 [TypeReference(typeof(object), nameof(IsTypeValid))]
                 public ScriptType Type;
 
@@ -1547,7 +1554,7 @@ namespace FlaxEditor.Surface.Archetypes
                     // Check if return type has been changed
                     if (_signature.ReturnType != prevReturnType)
                     {
-                        // Update all return nodes used by this function to match teh new type
+                        // Update all return nodes used by this function to match the new type
                         var usedNodes = DepthFirstTraversal(false);
                         var hasAnyReturnNode = false;
                         foreach (var node in usedNodes)

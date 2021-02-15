@@ -1004,7 +1004,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _refreshOnLODsLoaded = true;
-            _preview.ViewportCamera.SerArcBallView(Asset.GetBox());
+            _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model

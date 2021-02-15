@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
-using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -19,7 +18,7 @@ namespace FlaxEditor.Viewport.Previews
 
         private Prefab _prefab;
         private Actor _instance;
-        internal Control customControlLinked;
+        internal UIControl customControlLinked;
 
         /// <summary>
         /// Gets or sets the prefab asset to preview.
@@ -29,39 +28,37 @@ namespace FlaxEditor.Viewport.Previews
             get => _prefab;
             set
             {
-                if (_prefab != value)
+                if (_prefab == value)
+                    return;
+
+                // Unset and cleanup spawned instance
+                if (_instance)
                 {
-                    if (_instance)
+                    var instance = _instance;
+                    Instance = null;
+                    Object.Destroy(instance);
+                }
+
+                _prefab = value;
+
+                if (_prefab)
+                {
+                    // Load prefab
+                    _prefab.WaitForLoaded();
+
+                    // Spawn prefab
+                    var prevPreview = LoadingPreview;
+                    LoadingPreview = this;
+                    var instance = PrefabManager.SpawnPrefab(_prefab, null);
+                    LoadingPreview = prevPreview;
+                    if (instance == null)
                     {
-                        if (customControlLinked != null)
-                        {
-                            customControlLinked.Parent = null;
-                            customControlLinked = null;
-                        }
-                        Task.RemoveCustomActor(_instance);
-                        Object.Destroy(_instance);
+                        _prefab = null;
+                        throw new FlaxException("Failed to spawn a prefab for the preview.");
                     }
 
-                    _prefab = value;
-
-                    if (_prefab)
-                    {
-                        _prefab.WaitForLoaded(); // TODO: use lazy prefab spawning to reduce stalls
-
-                        var prevPreview = LoadingPreview;
-                        LoadingPreview = this;
-
-                        _instance = PrefabManager.SpawnPrefab(_prefab, null);
-
-                        LoadingPreview = prevPreview;
-
-                        if (_instance == null)
-                        {
-                            _prefab = null;
-                            throw new FlaxException("Failed to spawn a prefab for the preview.");
-                        }
-                        Task.AddCustomActor(_instance);
-                    }
+                    // Set instance
+                    Instance = instance;
                 }
             }
         }
@@ -72,7 +69,47 @@ namespace FlaxEditor.Viewport.Previews
         public Actor Instance
         {
             get => _instance;
-            internal set => _instance = value;
+            internal set
+            {
+                if (_instance == value)
+                    return;
+
+                if (_instance)
+                {
+                    // Unlink UI control
+                    if (customControlLinked)
+                    {
+                        if (customControlLinked.Control?.Parent == this)
+                            customControlLinked.Control.Parent = null;
+                        customControlLinked = null;
+                    }
+
+                    // Remove for the preview
+                    Task.RemoveCustomActor(_instance);
+                }
+
+                _instance = value;
+
+                if (_instance)
+                {
+                    // Add to the preview
+                    Task.AddCustomActor(_instance);
+
+                    // Link UI canvases to the preview
+                    LinkCanvas(_instance);
+                }
+            }
+        }
+
+        private void LinkCanvas(Actor actor)
+        {
+            if (actor is UICanvas uiCanvas)
+                uiCanvas.EditorOverride(Task, this);
+            var children = actor.ChildrenCount;
+            for (int i = 0; i < children; i++)
+            {
+                LinkCanvas(actor.GetChild(i));
+            }
         }
 
         /// <summary>
@@ -87,7 +124,6 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            // Cleanup
             Prefab = null;
 
             base.OnDestroy();

@@ -79,7 +79,7 @@ namespace Flax.Build.Platforms
         {
             switch (platform)
             {
-            case TargetPlatform.Linux: return true;
+            case TargetPlatform.Linux: return HasRequiredSDKsInstalled;
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
             default: return false;
             }

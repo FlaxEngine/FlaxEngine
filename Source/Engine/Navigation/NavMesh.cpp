@@ -79,7 +79,7 @@ void NavMesh::EnsureCapacity(int32 tilesToAddCount)
     // Ensure to have size assigned
     ASSERT(_tileSize != 0);
 
-    // Fre previous data (if any)
+    // Free previous data (if any)
     if (_navMesh)
     {
         dtFreeNavMesh(_navMesh);

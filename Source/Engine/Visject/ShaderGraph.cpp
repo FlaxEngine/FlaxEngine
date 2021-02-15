@@ -381,6 +381,15 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, TEXT("atan2"));
         break;
     }
+        // Near Equal
+    case 42:
+    {
+        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), Value::Zero).Cast(v1.Type);
+        Value epsilon = tryGetValue(node->GetBox(2), 2, Value::Zero);
+        value = writeLocal(ValueType::Bool, String::Format(TEXT("distance({0},{1}) < {2}"), v1.Value, v2.Value, epsilon.Value), node);
+        break;
+    }
         // Degrees
     case 43:
     {
@@ -391,6 +400,18 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 44:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("radians"));
+        break;
+    }
+        // Remap
+    case 48:
+    {
+        const auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
+        const auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
+        const auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
+        const auto clamp  = tryGetValue(node->GetBox(3), node->Values[3]).AsBool();
+
+        const auto mapFunc = String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value);
+        value = writeLocal(ValueType::Float, String::Format(TEXT("{2} ? clamp({0}, {1}.x, {1}.y) : {0}"), mapFunc, rangeB.Value, clamp.Value), node);
         break;
     }
     default:
@@ -911,7 +932,7 @@ void ShaderGenerator::ProcessGroupComparisons(Box* box, Node* node, Value& value
         const Value condition = tryGetValue(node->GetBox(0), Value::False).AsBool();
         const Value onTrue = tryGetValue(node->GetBox(2), 1, Value::Zero);
         const Value onFalse = tryGetValue(node->GetBox(1), 0, Value::Zero).Cast(onTrue.Type);
-        value = writeLocal(onTrue.Type, String::Format(TEXT("({0}) ? ({1}) : ({2})"), condition.Value, onTrue.Value, onFalse.Value), node);
+        value = writeLocal(onTrue.Type, String::Format(TEXT("{0} ? {1} : {2}"), condition.Value, onTrue.Value, onFalse.Value), node);
         break;
     }
     }

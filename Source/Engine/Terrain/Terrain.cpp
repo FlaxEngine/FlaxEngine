@@ -36,6 +36,7 @@ Terrain::~Terrain()
 
 void Terrain::UpdateBounds()
 {
+    PROFILE_CPU();
     _box = BoundingBox(_transform.Translation, _transform.Translation);
     for (int32 i = 0; i < _patches.Count(); i++)
     {
@@ -48,6 +49,7 @@ void Terrain::UpdateBounds()
 
 void Terrain::CacheNeighbors()
 {
+    PROFILE_CPU();
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
@@ -489,7 +491,7 @@ void Terrain::RemovePatch(const Int2& patchCoord)
     const auto patch = GetPatch(patchCoord);
     if (patch == nullptr)
     {
-        LOG(Warning, "Cannot remvoe patch at {0}x{1}. It does not exist.", patchCoord.X, patchCoord.Y);
+        LOG(Warning, "Cannot remove patch at {0}x{1}. It does not exist.", patchCoord.X, patchCoord.Y);
         return;
     }
 

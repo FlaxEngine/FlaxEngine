@@ -74,7 +74,7 @@ namespace FlaxEditor.History
                     _reverseActions.PushBack(reverse[i]);
                 }
 
-                // Cleanup reaming actions
+                // Cleanup remaining actions
                 for (int i = _historyActionsLimit; i < history.Length; i++)
                 {
                     history[i].Dispose();

@@ -240,7 +240,7 @@ float IESLoader::ExtractInR16(Array<byte>& output)
             float result = 0.0f;
             for (uint32 i = 0; i < hAnglesCount; i++)
                 result += InterpolateBilinear(static_cast<float>(i), v);
-            *out++ = ConvertFloatToHalf(invMaxValue * result / (float)hAnglesCount);
+            *out++ = Float16Compressor::Compress(invMaxValue * result / (float)hAnglesCount);
         }
     }
 

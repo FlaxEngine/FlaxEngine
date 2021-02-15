@@ -208,7 +208,7 @@ void ContentLoadingManagerService::Dispose()
     MainThread = nullptr;
     ThisThread = nullptr;
 
-    // Cancel all reaming tasks (no chance to execute them)
+    // Cancel all remaining tasks (no chance to execute them)
     Tasks.CancelAll();
 }
 

@@ -51,18 +51,18 @@ bool Log::Logger::Init()
     {
         // Check if there are any files to delete
         const int32 maxLogFiles = 20;
-        int32 reaming = oldLogs.Count() - maxLogFiles + 1;
-        if (reaming > 0)
+        int32 remaining = oldLogs.Count() - maxLogFiles + 1;
+        if (remaining > 0)
         {
             Sorting::QuickSort(oldLogs.Get(), oldLogs.Count());
 
             // Delete the oldest logs
             int32 i = 0;
-            while (reaming > 0)
+            while (remaining > 0)
             {
                 FileSystem::DeleteFile(oldLogs[i++]);
                 filesDeleted++;
-                reaming--;
+                remaining--;
             }
         }
     }

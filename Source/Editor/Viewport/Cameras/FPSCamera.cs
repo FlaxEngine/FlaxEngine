@@ -24,7 +24,7 @@ namespace FlaxEditor.Viewport.Cameras
         public bool IsAnimatingMove => _moveStartTime > Mathf.Epsilon;
 
         /// <summary>
-        /// The target point location. It's used to orbit around it whe user clicks Alt+LMB.
+        /// The target point location. It's used to orbit around it when user clicks Alt+LMB.
         /// </summary>
         public Vector3 TargetPoint = new Vector3(-200);
 
@@ -188,8 +188,16 @@ namespace FlaxEditor.Viewport.Cameras
             if (input.IsPanning)
             {
                 var panningSpeed = 0.8f;
-                position -= right * (mouseDelta.X * panningSpeed);
-                position -= up * (mouseDelta.Y * panningSpeed);
+                if (Viewport.InvertPanning)
+                {
+                    position += up * (mouseDelta.Y * panningSpeed);
+                    position += right * (mouseDelta.X * panningSpeed);
+                }
+                else
+                {
+                    position -= right * (mouseDelta.X * panningSpeed);
+                    position -= up * (mouseDelta.Y * panningSpeed);
+                }
             }
 
             // Move

@@ -239,7 +239,7 @@ void GPUDevice::preDispose()
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);
 
     // Release GPU resources memory and unlink from device
-    // Note: after that noe GPU resources should be used/created, only deleted
+    // Note: after that no GPU resources should be used/created, only deleted
     Resources.OnDeviceDispose();
 }
 

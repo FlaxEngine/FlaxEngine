@@ -182,41 +182,44 @@ struct ClipMask
 
 Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping;
 
-// Private Stuff
-GPUContext* Context = nullptr;
-GPUTextureView* Output = nullptr;
-GPUTextureView* DepthBuffer = nullptr;
-Viewport View;
-Matrix ViewProjection;
+namespace
+{
+    // Private Stuff
+    GPUContext* Context = nullptr;
+    GPUTextureView* Output = nullptr;
+    GPUTextureView* DepthBuffer = nullptr;
+    Viewport View;
+    Matrix ViewProjection;
 
-// Drawing
-Array<Render2DDrawCall> DrawCalls;
-Array<FontLineCache> Lines;
-Array<Vector2> Lines2;
-bool IsScissorsRectEmpty;
-bool IsScissorsRectEnabled;
+    // Drawing
+    Array<Render2DDrawCall> DrawCalls;
+    Array<FontLineCache> Lines;
+    Array<Vector2> Lines2;
+    bool IsScissorsRectEmpty;
+    bool IsScissorsRectEnabled;
 
-// Transform
-// Note: we use Matrix3x3 instead of Matrix because we use only 2D transformations on CPU side
-// Matrix layout:
-// [ m1, m2, 0 ]
-// [ m3, m4, 0 ]
-// [ t1, t2, 1 ]
-// where 'm' is 2D transformation (scale, shear and rotate), 't' is translation
-Array<Matrix3x3, InlinedAllocation<64>> TransformLayersStack;
-Matrix3x3 TransformCached;
+    // Transform
+    // Note: we use Matrix3x3 instead of Matrix because we use only 2D transformations on CPU side
+    // Matrix layout:
+    // [ m1, m2, 0 ]
+    // [ m3, m4, 0 ]
+    // [ t1, t2, 1 ]
+    // where 'm' is 2D transformation (scale, shear and rotate), 't' is translation
+    Array<Matrix3x3, InlinedAllocation<64>> TransformLayersStack;
+    Matrix3x3 TransformCached;
 
-Array<ClipMask, InlinedAllocation<64>> ClipLayersStack;
+    Array<ClipMask, InlinedAllocation<64>> ClipLayersStack;
 
-// Shader
-AssetReference<Shader> GUIShader;
-CachedPSO PsoDepth;
-CachedPSO PsoNoDepth;
-CachedPSO* CurrentPso = nullptr;
-DynamicVertexBuffer VB(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
-DynamicIndexBuffer IB(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), TEXT("Render2D.IB"));
-uint32 VBIndex = 0;
-uint32 IBIndex = 0;
+    // Shader
+    AssetReference<Shader> GUIShader;
+    CachedPSO PsoDepth;
+    CachedPSO PsoNoDepth;
+    CachedPSO* CurrentPso = nullptr;
+    DynamicVertexBuffer VB(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
+    DynamicIndexBuffer IB(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), TEXT("Render2D.IB"));
+    uint32 VBIndex = 0;
+    uint32 IBIndex = 0;
+}
 
 #define RENDER2D_WRITE_IB_QUAD(indices) \
     indices[0] = VBIndex + 0; \
@@ -957,8 +960,8 @@ void DrawBatch(int32 startIndex, int32 count)
         data.Bounds.Y = bounds.Y;
         data.Bounds.Z = bounds.Z - bounds.X;
         data.Bounds.W = bounds.W - bounds.Y;
-        data.InvBufferSize.X = 1.0f / renderTargetWidth;
-        data.InvBufferSize.Y = 1.0f / renderTargetHeight;
+        data.InvBufferSize.X = 1.0f / (float)renderTargetWidth;
+        data.InvBufferSize.Y = 1.0f / (float)renderTargetHeight;
         data.SampleCount = ComputeBlurWeights(kernelSize, blurStrength, data.WeightAndOffsets);
         const auto cb = GUIShader->GetShader()->GetCB(1);
         Context->UpdateCB(cb, &data);
@@ -967,7 +970,7 @@ void DrawBatch(int32 startIndex, int32 count)
         // Downscale (or not) and extract the background image for the blurring
         Context->ResetRenderTarget();
         Context->SetRenderTarget(blurA->View());
-        Context->SetViewport((float)renderTargetWidth, (float)renderTargetHeight);
+        Context->SetViewportAndScissors((float)renderTargetWidth, (float)renderTargetHeight);
         Context->BindSR(0, Output);
         Context->SetState(CurrentPso->PS_Downscale);
         Context->DrawFullscreenTriangle();
@@ -1003,11 +1006,8 @@ void DrawBatch(int32 startIndex, int32 count)
         break;
     }
     case DrawCallType::ClipScissors:
-    {
-        Rectangle* scissorsRect = (Rectangle*)&d.AsClipScissors.X;
-        Context->SetScissor(*scissorsRect);
+        Context->SetScissor(*(Rectangle*)&d.AsClipScissors.X);
         return;
-    }
     case DrawCallType::LineAA:
         Context->SetState(CurrentPso->PS_LineAA);
         break;

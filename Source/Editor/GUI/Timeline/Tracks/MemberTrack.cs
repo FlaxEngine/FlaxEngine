@@ -179,7 +179,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <summary>
-        /// Evaluates the member value value at the specified time.
+        /// Evaluates the member value at the specified time.
         /// </summary>
         /// <param name="time">The time to evaluate the member at.</param>
         /// <returns>The member value at provided time.</returns>

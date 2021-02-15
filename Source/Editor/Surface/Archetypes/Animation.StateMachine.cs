@@ -1046,7 +1046,7 @@ namespace FlaxEditor.Surface.Archetypes
                         startPos += nrm;
                         endPos += nrm;
 
-                        // Swap fo the other arrow
+                        // Swap to the other arrow
                         if (!diff)
                         {
                             var tmp = startPos;

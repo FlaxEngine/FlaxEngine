@@ -163,7 +163,7 @@ public:
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, int32* ib)
     {
@@ -176,7 +176,7 @@ public:
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer, clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, uint16* ib)
     {
@@ -189,7 +189,7 @@ public:
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
-    /// <param name="ib">The index buffer.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, void* ib, bool use16BitIndices);

@@ -75,14 +75,14 @@ namespace Flax.Stats
         /// <summary>
         /// Gets total amount of memory used by that node and all child nodes
         /// </summary>
-        public long TotaSizeOnDisk
+        public long TotalSizeOnDisk
         {
             get
             {
                 long result = SizeOnDisk;
                 for (int i = 0; i < Children.Length; i++)
                 {
-                    result += Children[i].TotaSizeOnDisk;
+                    result += Children[i].TotalSizeOnDisk;
                 }
                 return result;
             }
@@ -153,15 +153,15 @@ namespace Flax.Stats
         /// <summary>
         /// Gets total amount of lines of code per language
         /// </summary>
-        /// <param name="languge">Language</param>
+        /// <param name="language">Language</param>
         /// <returns>Result amount of lines</returns>
-        public long GetTotalLinesOfCode(Languages languge)
+        public long GetTotalLinesOfCode(Languages language)
         {
             long result = 0;
-            result += LinesOfCode[(int)languge];
+            result += LinesOfCode[(int)language];
             for (int i = 0; i < Children.Length; i++)
             {
-                result += Children[i].GetTotalLinesOfCode(languge);
+                result += Children[i].GetTotalLinesOfCode(language);
             }
             return result;
         }
@@ -270,9 +270,9 @@ namespace Flax.Stats
 
         public void CleanupDirectories()
         {
-            var chld = Children.ToList();
-            chld.RemoveAll(e => ignoredFolders.Contains(e.ShortName.ToLower()));
-            Children = chld.ToArray();
+            var child = Children.ToList();
+            child.RemoveAll(e => ignoredFolders.Contains(e.ShortName.ToLower()));
+            Children = child.ToArray();
 
             foreach (var a in Children)
             {

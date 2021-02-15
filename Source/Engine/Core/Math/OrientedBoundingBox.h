@@ -8,7 +8,7 @@
 #include "CollisionsHelper.h"
 
 // Oriented Bounding Box (OBB) is a rectangular block, much like an AABB (Bounding Box) but with an arbitrary orientation in 3D space.
-API_STRUCT(InBuild) struct OrientedBoundingBox
+API_STRUCT(InBuild) struct FLAXENGINE_API OrientedBoundingBox
 {
 public:
 

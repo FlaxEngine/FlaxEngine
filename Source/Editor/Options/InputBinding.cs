@@ -143,7 +143,31 @@ namespace FlaxEditor.Options
         {
             var root = control.Root;
 
-            if (root.GetKeyDown(Key))
+            if (root.GetKey(Key))
+            {
+                if (Modifier1 == KeyboardKeys.None || root.GetKey(Modifier1))
+                {
+                    if (Modifier2 == KeyboardKeys.None || root.GetKey(Modifier2))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Processes this input binding to check if state matches.
+        /// </summary>
+        /// <param name="control">The input providing control.</param>
+        /// <param name="key">The input key.</param>
+        /// <returns>True if input has been processed, otherwise false.</returns>
+        public bool Process(Control control, KeyboardKeys key)
+        {
+            var root = control.Root;
+
+            if (key == Key)
             {
                 if (Modifier1 == KeyboardKeys.None || root.GetKey(Modifier1))
                 {
@@ -435,16 +459,10 @@ namespace FlaxEditor.Options
             for (int i = 0; i < _bindings.Count; i++)
             {
                 var binding = _bindings[i].Binder(options);
-                if (binding.Key == key)
+                if (binding.Process(control, key))
                 {
-                    if (binding.Modifier1 == KeyboardKeys.None || root.GetKey(binding.Modifier1))
-                    {
-                        if (binding.Modifier2 == KeyboardKeys.None || root.GetKey(binding.Modifier2))
-                        {
-                            _bindings[i].Callback();
-                            return true;
-                        }
-                    }
+                    _bindings[i].Callback();
+                    return true;
                 }
             }
 

@@ -295,7 +295,8 @@ namespace FlaxEditor.Content
                     StartRenaming();
                     return true;
                 case KeyboardKeys.Delete:
-                    Editor.Instance.Windows.ContentWin.Delete(Folder);
+                    if (Folder.Exists)
+                        Editor.Instance.Windows.ContentWin.Delete(Folder);
                     return true;
                 }
                 if (RootWindow.GetKey(KeyboardKeys.Control))
@@ -303,7 +304,8 @@ namespace FlaxEditor.Content
                     switch (key)
                     {
                     case KeyboardKeys.D:
-                        Editor.Instance.Windows.ContentWin.Duplicate(Folder);
+                        if (Folder.Exists)
+                            Editor.Instance.Windows.ContentWin.Duplicate(Folder);
                         return true;
                     }
                 }

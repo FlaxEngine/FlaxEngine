@@ -532,6 +532,8 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Enum:
             case VariantType.Structure:
+            case VariantType.ManagedObject:
+            case VariantType.Typename:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
                 break;
@@ -742,6 +744,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return new ScriptType(typeof(object[]));
             case VariantType.Dictionary: return new ScriptType(typeof(Dictionary<object, object>));
             case VariantType.ManagedObject: return new ScriptType(typeof(object));
+            case VariantType.Blob: return new ScriptType(typeof(byte[]));
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }
@@ -760,7 +763,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (byte)(c ^ 77);
                 }
                 var typeName = System.Text.Encoding.ASCII.GetString(data);
-                return TypeUtils.GetType(typeName).Type;
+                return TypeUtils.GetManagedType(typeName);
             }
             if (typeNameLength > 0)
             {
@@ -772,7 +775,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (char)(c ^ 77);
                 }
                 var typeName = new string(data);
-                return TypeUtils.GetType(typeName).Type;
+                return TypeUtils.GetManagedType(typeName);
             }
             switch (variantType)
             {
@@ -805,6 +808,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return typeof(object[]);
             case VariantType.Dictionary: return typeof(Dictionary<object, object>);
             case VariantType.ManagedObject: return typeof(object);
+            case VariantType.Blob: return typeof(byte[]);
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }
@@ -824,7 +828,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (byte)(c ^ 77);
                 }
                 var typeName = System.Text.Encoding.ASCII.GetString(data);
-                type = TypeUtils.GetType(typeName).Type;
+                type = TypeUtils.GetManagedType(typeName);
             }
             else if (typeNameLength > 0)
             {
@@ -836,7 +840,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (char)(c ^ 77);
                 }
                 var typeName = new string(data);
-                type = TypeUtils.GetType(typeName).Type;
+                type = TypeUtils.GetManagedType(typeName);
             }
             switch (variantType)
             {

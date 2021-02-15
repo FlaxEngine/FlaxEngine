@@ -32,8 +32,8 @@ namespace FlaxEditor.Surface.Elements
             }
             set
             {
-                if (!string.IsNullOrEmpty(value))
-                    SelectedIndex = _nodeNameToIndex[value];
+                if (!string.IsNullOrEmpty(value) && _nodeNameToIndex.TryGetValue(value, out var index))
+                    SelectedIndex = index;
                 else
                     SelectedIndex = -1;
             }
@@ -60,8 +60,8 @@ namespace FlaxEditor.Surface.Elements
         {
             _selectedIndices.Clear();
             var selectedNode = (string)ParentNode.Values[Archetype.ValueIndex];
-            if (!string.IsNullOrEmpty(selectedNode))
-                _selectedIndices.Add(_nodeNameToIndex[selectedNode]);
+            if (!string.IsNullOrEmpty(selectedNode) && _nodeNameToIndex.TryGetValue(selectedNode, out var index))
+                _selectedIndices.Add(index);
             OnSelectedIndexChanged();
         }
 
@@ -92,7 +92,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 sb.Clear();
                 var node = nodes[nodeIndex];
-                _nodeNameToIndex.Add(node.Name, nodeIndex);
+                _nodeNameToIndex[node.Name] = nodeIndex;
                 int parent = node.ParentIndex;
                 while (parent != -1)
                 {

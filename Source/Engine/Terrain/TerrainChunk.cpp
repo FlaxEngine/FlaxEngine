@@ -192,7 +192,7 @@ bool TerrainChunk::Intersects(const Ray& ray, float& distance)
 void TerrainChunk::UpdateBounds()
 {
     const Vector3 boundsExtent = _patch->_terrain->_boundsExtent;
-    const float size = _patch->_terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX;
+    const float size = (float)_patch->_terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX;
     Transform terrainTransform = _patch->_terrain->_transform;
 
     Transform localTransform;

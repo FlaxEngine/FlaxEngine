@@ -379,7 +379,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Value", typeof(uint), 0),
-                    NodeElementArchetype.Factory.Integer(0, 0, 0)
+                    NodeElementArchetype.Factory.UnsignedInteger(0, 0, 0, -1, 0, int.MaxValue)
                 }
             },
         };

@@ -942,6 +942,8 @@ namespace FlaxEngine.GUI
         {
             base.OnLostFocus();
 
+            if (IsReadOnly)
+                return;
             OnEditEnd();
         }
 

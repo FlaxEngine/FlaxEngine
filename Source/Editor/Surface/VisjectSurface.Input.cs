@@ -24,7 +24,9 @@ namespace FlaxEditor.Surface
 
         private class InputBracket
         {
+            private readonly float DefaultWidth = 120f;
             private readonly Margin _padding = new Margin(10f);
+
             public Box Box { get; }
             public Vector2 EndBracketPosition { get; }
             public List<SurfaceNode> Nodes { get; } = new List<SurfaceNode>();
@@ -33,7 +35,7 @@ namespace FlaxEditor.Surface
             public InputBracket(Box box, Vector2 nodePosition)
             {
                 Box = box;
-                EndBracketPosition = nodePosition;
+                EndBracketPosition = nodePosition + new Vector2(DefaultWidth, 0);
                 Update();
             }
 
@@ -47,11 +49,10 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    area = new Rectangle(EndBracketPosition, new Vector2(120f, 80f));
+                    area = new Rectangle(EndBracketPosition, new Vector2(DefaultWidth, 80f));
                 }
                 _padding.ExpandRectangle(ref area);
-                Vector2 endPoint = area.Location + new Vector2(area.Width, area.Height / 2f);
-                Vector2 offset = EndBracketPosition - endPoint;
+                Vector2 offset = EndBracketPosition - area.UpperRight;
                 area.Location += offset;
                 Area = area;
                 if (!offset.IsZero)
@@ -100,27 +101,13 @@ namespace FlaxEditor.Surface
         public event Window.MouseWheelDelegate CustomMouseWheel;
 
         /// <summary>
-        /// Gets the node under the mouse location.
-        /// </summary>
-        /// <returns>The node or null if no intersection.</returns>
-        public SurfaceNode GetNodeUnderMouse()
-        {
-            var pos = _rootControl.PointFromParent(ref _mousePos);
-            if (_rootControl.GetChildAt(pos) is SurfaceNode node)
-                return node;
-            return null;
-        }
-
-        /// <summary>
         /// Gets the control under the mouse location.
         /// </summary>
         /// <returns>The control or null if no intersection.</returns>
         public SurfaceControl GetControlUnderMouse()
         {
             var pos = _rootControl.PointFromParent(ref _mousePos);
-            if (_rootControl.GetChildAtRecursive(pos) is SurfaceControl control)
-                return control;
-            return null;
+            return _rootControl.GetChildAt(pos) as SurfaceControl;
         }
 
         private void UpdateSelectionRectangle()
@@ -464,15 +451,7 @@ namespace FlaxEditor.Surface
                 {
                     // Check if any control is under the mouse
                     _cmStartPos = location;
-                    if (controlUnderMouse != null)
-                    {
-                        if (!HasNodesSelection)
-                            Select(controlUnderMouse);
-
-                        // Show secondary context menu
-                        ShowSecondaryCM(_cmStartPos, controlUnderMouse);
-                    }
-                    else
+                    if (controlUnderMouse == null)
                     {
                         // Show primary context menu
                         ShowPrimaryMenu(_cmStartPos);
@@ -708,31 +687,38 @@ namespace FlaxEditor.Surface
 
         private Vector2 FindEmptySpace(Box box)
         {
-            int boxIndex = 0;
+            Vector2 distanceBetweenNodes = new Vector2(30, 30);
 
             var node = box.ParentNode;
+
+            // Same height as node
+            float yLocation = node.Top;
+
             for (int i = 0; i < node.Elements.Count; i++)
             {
-                // Box on the same side above the current box
                 if (node.Elements[i] is Box nodeBox && nodeBox.IsOutput == box.IsOutput && nodeBox.Y < box.Y)
                 {
-                    boxIndex++;
+                    // Below connected node
+                    yLocation = Mathf.Max(yLocation, nodeBox.ParentNode.Bottom + distanceBetweenNodes.Y);
                 }
             }
+
             // TODO: Dodge the other nodes
 
-            Vector2 distanceBetweenNodes = new Vector2(40, 20);
-            const float NodeHeight = 120;
+            float xLocation = node.Location.X;
+            if (box.IsOutput)
+            {
+                xLocation += node.Width + distanceBetweenNodes.X;
+            }
+            else
+            {
+                xLocation += -120 - distanceBetweenNodes.X;
+            }
 
-            float direction = box.IsOutput ? 1 : -1;
-
-            Vector2 newNodeLocation = node.Location +
-                                      new Vector2(
-                                                  (node.Width + distanceBetweenNodes.X) * direction,
-                                                  boxIndex * (NodeHeight + distanceBetweenNodes.Y)
-                                                 );
-
-            return newNodeLocation;
+            return new Vector2(
+                xLocation,
+                yLocation
+            );
         }
     }
 }
