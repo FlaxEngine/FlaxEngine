@@ -270,6 +270,34 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, 
     };
 }
 
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2, const Color& color0, const Color& color1, const Color& color2)
+{
+    Render2DVertex tris[3];
+    tris[0] = MakeVertex(p0, uv0, color0);
+    tris[1] = MakeVertex(p1, uv1, color1);
+    tris[2] = MakeVertex(p2, uv2, color2);
+    VB.Write(tris, sizeof(tris));
+
+    uint32 indices[3];
+    indices[0] = VBIndex + 0;
+    indices[1] = VBIndex + 1;
+    indices[2] = VBIndex + 2;
+    IB.Write(indices, sizeof(indices));
+    
+    VBIndex += 3;
+    IBIndex += 3;
+}
+
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color0, const Color& color1, const Color& color2)
+{
+    WriteTri(p0, p1, p2, Vector2::Zero, Vector2::Zero, Vector2::Zero, color0, color1, color2);
+}
+
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2)
+{
+    WriteTri(p0, p1, p2, uv0, uv1, uv2, Color::Black, Color::Black, Color::Black);
+}
+
 void WriteRect(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4)
 {
     const Vector2 uvUpperLeft = Vector2::Zero;
