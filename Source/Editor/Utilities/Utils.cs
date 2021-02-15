@@ -1646,7 +1646,8 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="source">The source code.</param>
         /// <param name="title">The window title.</param>
-        public static void ShowSourceCodeWindow(string source, string title)
+        /// <param name="control">The context control used to show source code window popup in a proper location.</param>
+        public static void ShowSourceCodeWindow(string source, string title, Control control = null)
         {
             if (string.IsNullOrEmpty(source))
             {
@@ -1659,8 +1660,9 @@ namespace FlaxEditor.Utilities
             settings.AllowMaximize = false;
             settings.AllowMinimize = false;
             settings.HasSizingFrame = false;
-            settings.StartPosition = WindowStartPosition.CenterScreen;
+            settings.StartPosition = WindowStartPosition.CenterParent;
             settings.Size = new Vector2(500, 600) * Platform.DpiScale;
+            settings.Parent = control?.RootWindow?.Window ?? Editor.Instance.Windows.MainWindow;
             settings.Title = title;
             var dialog = Platform.CreateWindow(ref settings);
 
