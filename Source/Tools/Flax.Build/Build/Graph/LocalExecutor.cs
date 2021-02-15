@@ -27,12 +27,12 @@ namespace Flax.Build.BuildSystem.Graph
         /// <summary>
         /// The maximum amount of threads to be used for the parallel execution.
         /// </summary>
-        public int ThreadCountMax = 1410;
+        public int ThreadCountMax = Configuration.MaxConcurrency;
 
         /// <summary>
         /// The amount of threads to allocate per processor. Use it to allocate more threads for faster execution or use less to keep reduce CPU usage during build.
         /// </summary>
-        public float ProcessorCountScale = 1.0f;
+        public float ProcessorCountScale = Configuration.ConcurrencyProcessorScale;
 
         /// <inheritdoc />
         public override int Execute(List<Task> tasks)

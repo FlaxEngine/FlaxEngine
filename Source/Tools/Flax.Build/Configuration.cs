@@ -134,6 +134,18 @@ namespace Flax.Build
         public static string LogFile = "Cache/Intermediate/Log.txt";
 
         /// <summary>
+        /// The maximum allowed concurrency for a build system (maximum active worker threads count).
+        /// </summary>
+        [CommandLine("maxConcurrency", "<threads>", "The maximum allowed concurrency for a build system (maximum active worker threads count).")]
+        public static int MaxConcurrency = 1410;
+
+        /// <summary>
+        /// The concurrency scale for a build system that specifies how many worker threads allocate per-logical processor.
+        /// </summary>
+        [CommandLine("concurrencyProcessorScale", "<scale>", "The concurrency scale for a build system that specifies how many worker threads allocate per-logical processor.")]
+        public static float ConcurrencyProcessorScale = 1.0f;
+
+        /// <summary>
         /// The output binaries folder path relative to the working directory.
         /// </summary>
         [CommandLine("binaries", "<path>", "The output binaries folder path relative to the working directory.")]
