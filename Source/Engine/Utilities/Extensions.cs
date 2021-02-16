@@ -291,9 +291,26 @@ namespace FlaxEngine.Utilities
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
             return Quaternion.Euler(
-                NextFloat(random, -180, 180),
-                NextFloat(random, -180, 180),
-                randomRoll ? NextFloat(random, -180, 180) : 0);
+                NextFloat(random, -180.0f, 180.0f),
+                NextFloat(random, -180.0f, 180.0f),
+                randomRoll ? NextFloat(random, -180.0f, 180.0f) : 0.0f);
+        }
+
+        /// <summary>
+        /// Generates a random <see cref="Vector2"/> point in a circle of a given radius.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="radius">Radius of circle. Default 1.0f./>.</param>
+        /// <returns>A random <see cref="Vector2"/>.</returns>
+        public static Vector2 NextUnitVector2(this Random random, float radius = 1.0f)
+        {
+            var randomRadius = (float)random.NextDouble() * radius;
+
+            return new Vector2
+            {
+                X = (float)Math.Cos(random.NextDouble()) * randomRadius,
+                Y = (float)Math.Sin(random.NextDouble()) * randomRadius,
+            };
         }
 
         /// <summary>
@@ -301,7 +318,7 @@ namespace FlaxEngine.Utilities
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <returns>A random <see cref="Vector3"/>.</returns>
-        public static Vector3 NextVector3(this Random random)
+        public static Vector3 NextUnitVector3(this Random random)
         {
             Vector3 output;
             float l;
@@ -323,19 +340,53 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
-        /// Generates a random <see cref="Vector2"/> point in a circle of a given radius.
+        /// Gets a random <see cref="Vector2"/> with components in a given range.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <param name="radius">Radius of circle. Default 1.0f./>.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
         /// <returns>A random <see cref="Vector2"/>.</returns>
-        public static Vector2 NextVector2(this Random random, float radius = 1.0f)
+        public static Vector2 NextVector2(this Random random, float min = 0.0f, float max = 1.0f)
         {
-            var randomRadius = (float)random.NextDouble() * radius;
-
-            return new Vector2
+            return new Vector2 
             {
-                X = (float)Math.Cos(random.NextDouble()) * randomRadius,
-                Y = (float)Math.Sin(random.NextDouble()) * randomRadius,
+                X = NextFloat(random, min, max), 
+                Y = NextFloat(random, min, max)
+            };
+        }
+
+        /// <summary>
+        /// Gets a random <see cref="Vector3"/> with components in a given range.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>A random <see cref="Vector3"/>.</returns>
+        public static Vector3 NextVector3(this Random random, float min = 0.0f, float max = 1.0f)
+        {
+            return new Vector3
+            {
+                X = NextFloat(random, min, max),
+                Y = NextFloat(random, min, max),
+                Z = NextFloat(random, min, max)
+            };
+        }
+
+        /// <summary>
+        /// Gets a random <see cref="Vector4"/> with components in a given range.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>A random <see cref="Vector4"/>.</returns>
+        public static Vector4 NextVector4(this Random random, float min = 0.0f, float max = 1.0f)
+        {
+            return new Vector4
+            {
+                X = NextFloat(random, min, max),
+                Y = NextFloat(random, min, max),
+                Z = NextFloat(random, min, max),
+                W = NextFloat(random, min, max)
             };
         }
 
@@ -347,10 +398,13 @@ namespace FlaxEngine.Utilities
         /// <returns>A nice random <see cref="Color"/>.</returns>
         public static Color NextColor(this Random random, bool randomAlpha = false)
         {
-            return new Color(
-                NextFloat(random),
-                NextFloat(random),
-                NextFloat(random), randomAlpha ? NextFloat(random) : 1f);
+            return new Color
+            {
+                R = NextFloat(random),
+                G = NextFloat(random),
+                B = NextFloat(random),
+                A = randomAlpha ? NextFloat(random) : 1.0f
+            };
         }
 
         /// <summary>
@@ -361,7 +415,13 @@ namespace FlaxEngine.Utilities
         /// <returns>A nice random <see cref="ColorHSV"/>.</returns>
         public static ColorHSV NextColorHSV(this Random random, bool randomAlpha = false)
         {
-            return new ColorHSV(NextFloat(random, 0f, 360f), 1f, 1f, randomAlpha ? NextFloat(random) : 1f);
+            return new ColorHSV 
+            {
+                H = NextFloat(random, 0.0f, 360.0f),
+                S = 1.0f,
+                V = 1.0f,
+                A = randomAlpha ? NextFloat(random) : 1.0f
+            };
         }
 
         /// <summary>
