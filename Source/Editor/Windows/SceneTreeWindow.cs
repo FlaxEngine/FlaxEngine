@@ -122,30 +122,7 @@ namespace FlaxEditor.Windows
             // Spawn it
             Editor.SceneEditing.Spawn(actor, parentActor);
         }
-        
-        private void Convert(Type to)
-        {
-            if (!Editor.SceneEditing.HasSthSelected || !(Editor.SceneEditing.Selection[0] is ActorNode))
-                return;
-            Actor old = ((ActorNode)Editor.SceneEditing.Selection[0]).Actor;
-            Actor actor = (Actor)FlaxEngine.Object.New(to);
-            actor.Transform = old.Transform;
-            if (old.Parent != null)
-                actor.Parent = old.Parent;
-            actor.StaticFlags = old.StaticFlags;
-            actor.HideFlags = old.HideFlags;
-            actor.Layer = old.Layer;
-            actor.Tag = old.Tag;
-            actor.Name = old.Name;
-            actor.IsActive = old.IsActive;
-            for (var i = old.Children.Length - 1; i >= 0 ; i--)
-            {
-                old.Children[i].Parent = actor;
-            }
-            Editor.SceneEditing.Delete();
-            Editor.SceneEditing.Spawn(actor, actor.Parent);
-        }
-        
+
         /// <summary>
         /// Focuses search box.
         /// </summary>

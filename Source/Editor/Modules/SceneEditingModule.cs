@@ -250,6 +250,84 @@ namespace FlaxEditor.Modules
             }
         }
 
+        public void Convert(Type to)
+        {
+            if (!Editor.SceneEditing.HasSthSelected || !(Editor.SceneEditing.Selection[0] is ActorNode))
+                return;
+
+            if (Level.IsAnySceneLoaded == false)
+                throw new InvalidOperationException("Cannot spawn actor when no scene is loaded.");
+
+            var actionList = new List<IUndoAction>();
+            
+            Actor old = ((ActorNode)Editor.SceneEditing.Selection[0]).Actor;
+            Actor actor = (Actor)FlaxEngine.Object.New(to);
+
+            actionList.Add(new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[0], OnSelectionUndo));
+            actionList.Add(new DeleteActorsAction(new List<SceneGraphNode>
+            {
+                Editor.SceneEditing.Selection[0]
+            }));
+            SelectionDeleteBegin?.Invoke();
+            actionList[1].Do();
+            SelectionDeleteEnd?.Invoke();
+
+            bool isPlayMode = Editor.StateMachine.IsPlayMode;
+            
+            SpawnBegin?.Invoke();
+            
+            actor.Transform = old.Transform;
+            if (old.Parent != null)
+                actor.Parent = old.Parent;
+            actor.StaticFlags = old.StaticFlags;
+            actor.HideFlags = old.HideFlags;
+            actor.Layer = old.Layer;
+            actor.Tag = old.Tag;
+            actor.Name = old.Name;
+            actor.IsActive = old.IsActive;
+            for (var i = old.Children.Length - 1; i >= 0 ; i--)
+            {
+                old.Children[i].Parent = actor;
+            }
+            
+            Level.SpawnActor(actor, actor.Parent);
+            
+            if (isPlayMode)
+                actor.StaticFlags = StaticFlags.None;
+            
+            var actorNode = Editor.Instance.Scene.GetActorNode(actor);
+            if (actorNode == null)
+                throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
+
+            actorNode.PostSpawn();
+            Editor.Scene.MarkSceneEdited(actor.Scene);
+            
+            actionList.Add(new DeleteActorsAction(new List<SceneGraphNode>
+            {
+                actorNode
+            }, true));
+            actionList.Add(new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[]{actorNode}, OnSelectionUndo));
+            var actions = new MultiUndoAction(actionList);
+            Undo.AddAction(actions);
+            SpawnEnd?.Invoke();
+
+            var options = Editor.Options.Options;
+
+            // Auto CSG mesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildCSG)
+            {
+                if (actor is BoxBrush && actor.Scene)
+                    actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
+            }
+
+            // Auto NavMesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && (actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+            {
+                var bounds = actor.BoxWithChildren;
+                Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+            }
+        }
+        
         /// <summary>
         /// Deletes the selected objects. Supports undo/redo.
         /// </summary>
