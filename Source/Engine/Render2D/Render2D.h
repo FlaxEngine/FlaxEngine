@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Types/Span.h"
 
 struct SpriteHandle;
 struct TextLayoutOptions;
@@ -347,7 +348,7 @@ public:
     /// <param name="t">The texture.</param>
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
-    API_FUNCTION() static void DrawVertices(GPUTexture* t, Array<Vector2> vertices, Array<Vector2> uvs);
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs);
     
     /// <summary>
     /// Draws vertices array.
@@ -355,7 +356,7 @@ public:
     /// <param name="vertices">The vertices array.</param>
     /// <param name="colors">The colors array.</param>
     /// <param name="useAlpha">If true alpha blending will be enabled.</param>
-    API_FUNCTION() static void DrawVertices(Array<Vector2> vertices, Array<Color> colors, bool useAlpha);
+    API_FUNCTION() static void FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha);
 
     /// <summary>
     /// Fills a triangular area.

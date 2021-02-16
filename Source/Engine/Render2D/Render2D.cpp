@@ -1745,7 +1745,7 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
     WriteRect(rect, Color::White);
 }
 
-void Render2D::DrawVertices(GPUTexture* t, const Array<Vector2> vertices, const Array<Vector2> uvs)
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     
@@ -1759,7 +1759,7 @@ void Render2D::DrawVertices(GPUTexture* t, const Array<Vector2> vertices, const 
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
 }
 
-void Render2D::DrawVertices(const Array<Vector2> vertices, const Array<Color> colors, bool useAlpha)
+void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     
