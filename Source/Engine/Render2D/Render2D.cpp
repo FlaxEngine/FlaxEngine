@@ -270,6 +270,34 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, 
     };
 }
 
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2, const Color& color0, const Color& color1, const Color& color2)
+{
+    Render2DVertex tris[3];
+    tris[0] = MakeVertex(p0, uv0, color0);
+    tris[1] = MakeVertex(p1, uv1, color1);
+    tris[2] = MakeVertex(p2, uv2, color2);
+    VB.Write(tris, sizeof(tris));
+
+    uint32 indices[3];
+    indices[0] = VBIndex + 0;
+    indices[1] = VBIndex + 1;
+    indices[2] = VBIndex + 2;
+    IB.Write(indices, sizeof(indices));
+    
+    VBIndex += 3;
+    IBIndex += 3;
+}
+
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color0, const Color& color1, const Color& color2)
+{
+    WriteTri(p0, p1, p2, Vector2::Zero, Vector2::Zero, Vector2::Zero, color0, color1, color2);
+}
+
+void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2)
+{
+    WriteTri(p0, p1, p2, uv0, uv1, uv2, Color::Black, Color::Black, Color::Black);
+}
+
 void WriteRect(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4)
 {
     const Vector2 uvUpperLeft = Vector2::Zero;
@@ -1715,4 +1743,46 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
     drawCall.AsBlur.BottomRightX = p.X;
     drawCall.AsBlur.BottomRightY = p.Y;
     WriteRect(rect, Color::White);
+}
+
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs)
+{
+    CHECK(vertices.Length() == uvs.Length())
+    
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Length();
+    drawCall.AsTexture.Ptr = t;
+
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
+}
+
+void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha)
+{
+    CHECK(vertices.Length() == colors.Length());
+    
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = useAlpha ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Length();
+
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], colors[i], colors[i + 1], colors[i + 2]);
+}
+
+void Render2D::FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = color.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 3;
+    WriteTri(p0, p1, p2, color, color, color);
 }
