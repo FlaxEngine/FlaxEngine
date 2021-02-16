@@ -33,6 +33,42 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// The build actions.
+        /// </summary>
+        public enum BuildAction
+        {
+            /// <summary>
+            /// Builds Constructive Solid Geometry brushes into meshes.
+            /// </summary>
+            [Tooltip("Builds Constructive Solid Geometry brushes into meshes.")]
+            CSG,
+
+            /// <summary>
+            /// Builds Env Probes and Sky Lights to prerendered cube textures.
+            /// </summary>
+            [Tooltip("Builds Env Probes and Sky Lights to prerendered cube textures.")]
+            EnvProbes,
+
+            /// <summary>
+            /// Builds static lighting into lightmaps.
+            /// </summary>
+            [Tooltip("Builds static lighting into lightmaps.")]
+            StaticLighting,
+
+            /// <summary>
+            /// Builds navigation meshes.
+            /// </summary>
+            [Tooltip("Builds navigation meshes.")]
+            NavMesh,
+
+            /// <summary>
+            /// Compiles the scripts.
+            /// </summary>
+            [Tooltip("Compiles the scripts.")]
+            CompileScripts,
+        }
+
+        /// <summary>
         /// Gets or sets the scene to load on editor startup.
         /// </summary>
         [DefaultValue(StartupSceneModes.LastOpened)]
@@ -52,6 +88,19 @@ namespace FlaxEditor.Options
         [DefaultValue(60.0f), Limit(0, 666)]
         [EditorDisplay("General", "Editor FPS"), EditorOrder(110), Tooltip("Limit for the editor draw/update frames per second rate (FPS). Use higher values if you need more responsive interface or lower values to use less device power. Value 0 disables any limits.")]
         public float EditorFPS { get; set; } = 60.0f;
+
+        /// <summary>
+        /// Gets or sets the sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).
+        /// </summary>
+        [EditorDisplay("General"), EditorOrder(200), Tooltip("The sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).")]
+        public BuildAction[] BuildActions { get; set; } =
+        {
+            BuildAction.CSG,
+            BuildAction.EnvProbes,
+            BuildAction.StaticLighting,
+            BuildAction.EnvProbes,
+            BuildAction.NavMesh,
+        };
 
         /// <summary>
         /// Gets or sets a value indicating whether perform automatic scripts reload on main window focus.

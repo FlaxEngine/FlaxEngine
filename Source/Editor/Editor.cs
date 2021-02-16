@@ -242,8 +242,6 @@ namespace FlaxEditor
             StateMachine = new EditorStateMachine(this);
             Undo = new EditorUndo(this);
 
-            ScriptsBuilder.ScriptsReloadBegin += ScriptsBuilder_ScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd += ScriptsBuilder_ScriptsReloadEnd;
             UIControl.FallbackParentGetDelegate += OnUIControlFallbackParentGet;
         }
 
@@ -258,18 +256,6 @@ namespace FlaxEditor
                 return loadingPreview;
             }
             return null;
-        }
-
-        private void ScriptsBuilder_ScriptsReloadBegin()
-        {
-            EnsureState<EditingSceneState>();
-            StateMachine.GoToState<ReloadingScriptsState>();
-        }
-
-        private void ScriptsBuilder_ScriptsReloadEnd()
-        {
-            EnsureState<ReloadingScriptsState>();
-            StateMachine.GoToState<EditingSceneState>();
         }
 
         internal void RegisterModule(EditorModule module)
@@ -496,9 +482,6 @@ namespace FlaxEditor
             Undo.Dispose();
             Surface.VisualScriptSurface.NodesCache.Clear();
             Instance = null;
-
-            ScriptsBuilder.ScriptsReloadBegin -= ScriptsBuilder_ScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd -= ScriptsBuilder_ScriptsReloadEnd;
 
             // Invoke new instance if need to open a project
             if (!string.IsNullOrEmpty(_projectToOpen))

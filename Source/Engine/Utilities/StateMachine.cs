@@ -36,6 +36,11 @@ namespace FlaxEngine.Utilities
         public event Action StateChanged;
 
         /// <summary>
+        /// Gets the states (read-only).
+        /// </summary>
+        public IReadOnlyList<State> States => states;
+
+        /// <summary>
         /// Gets state of given type.
         /// </summary>
         /// <typeparam name="TStateType">The type of the state.</typeparam>
