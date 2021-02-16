@@ -2,7 +2,7 @@
 
 #include "NetworkBase.h"
 
-bool NetworkBase::CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv)
+bool NetworkBase::CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv)
 {
     return true;
 }

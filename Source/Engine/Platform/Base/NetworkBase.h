@@ -9,7 +9,7 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
 #define SOCKGROUP_MAXCOUNT 64
 #define SOCKGROUP_ITEMSIZE 16
 
-enum class FLAXENGINE_API NetworkProtocolType
+enum class FLAXENGINE_API NetworkProtocol
 {
     /// <summary>Not specified.</summary>
     Undefined,
@@ -31,7 +31,7 @@ enum class FLAXENGINE_API NetworkIPVersion
 
 struct FLAXENGINE_API NetworkSocket
 {
-    NetworkProtocolType Protocol = NetworkProtocolType::Undefined;
+    NetworkProtocol Protocol = NetworkProtocol::Undefined;
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
     byte Data[8] = {};
 };
@@ -74,8 +74,10 @@ enum class FLAXENGINE_API NetworkSocketOption
     Error,
     /// <summary>Enables the Nagle algorithm for TCP sockets.</summary>
     NoDelay,
-    /// <summary>Enables IPv6 communication only for TCP socket.</summary>
+    /// <summary>Enables IPv6/Ipv4 dual-stacking, UDP/TCP.</summary>
     IPv6Only,
+    /// <summary>Retrieve the current path MTU, the socket must be connected UDP/TCP.</summary>
+    Mtu
 };
 
 struct FLAXENGINE_API NetworkSocketState
@@ -103,7 +105,7 @@ public:
     /// <param name="proto">The protocol.</param>
     /// <param name="ipv">The ip version.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool CreateSocket(NetworkSocket& socket, NetworkProtocolType proto, NetworkIPVersion ipv);
+    static bool CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv);
 
     /// <summary>
     /// Closes native socket.
