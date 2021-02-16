@@ -12,14 +12,16 @@ namespace FlaxEditor.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public sealed class MainMenu : ContainerControl
     {
+#if PLATFORM_WINDOWS
         private bool _useCustomWindowSystem;
         private Image _icon;
         private Label _title;
-        private MainMenuButton _selected;
         private Button _closeButton;
         private Button _minimizeButton;
         private Button _maximizeButton;
         private Window _window;
+#endif
+        private MainMenuButton _selected;
 
         /// <summary>
         /// Gets or sets the selected button (with opened context menu).
@@ -61,12 +63,11 @@ namespace FlaxEditor.GUI
         public MainMenu(RootControl mainWindow)
         : base(0, 0, 0, 20)
         {
-#if PLATFORM_WINDOWS
-            _useCustomWindowSystem = !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
-#endif
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
 
+#if PLATFORM_WINDOWS
+            _useCustomWindowSystem = !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
             if (_useCustomWindowSystem)
             {
                 BackgroundColor = Style.Current.LightBackground;
@@ -160,11 +161,13 @@ namespace FlaxEditor.GUI
                 };
             }
             else
+#endif
             {
                 BackgroundColor = Style.Current.LightBackground;
             }
         }
 
+#if PLATFORM_WINDOWS
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
@@ -234,6 +237,7 @@ namespace FlaxEditor.GUI
 
             return WindowHitCodes.Client;
         }
+#endif
 
         /// <summary>
         /// Return the rightmost button.
@@ -287,6 +291,7 @@ namespace FlaxEditor.GUI
             if (base.OnMouseDoubleClick(location, button))
                 return true;
 
+#if PLATFORM_WINDOWS
             if (_useCustomWindowSystem)
             {
                 if (_window.IsMaximized)
@@ -294,6 +299,7 @@ namespace FlaxEditor.GUI
                 else
                     _window.Maximize();
             }
+#endif
 
             return true;
         }
@@ -303,6 +309,7 @@ namespace FlaxEditor.GUI
         {
             float x = 0;
 
+#if PLATFORM_WINDOWS
             if (_useCustomWindowSystem)
             {
                 // Icon
@@ -310,6 +317,7 @@ namespace FlaxEditor.GUI
                 _icon.Size = new Vector2(Height);
                 x += _icon.Width;
             }
+#endif
 
             // Arrange controls
             MainMenuButton rightMostButton = null;
@@ -329,6 +337,7 @@ namespace FlaxEditor.GUI
                 }
             }
 
+#if PLATFORM_WINDOWS
             if (_useCustomWindowSystem)
             {
                 // Buttons
@@ -343,8 +352,10 @@ namespace FlaxEditor.GUI
                 _title.Bounds = new Rectangle(x + 2, 0, _minimizeButton.Left - x - 4, Height);
                 //_title.Text = _title.Width < 300.0f ? Editor.Instance.ProjectInfo.Name : _window.Title;
             }
+#endif
         }
 
+#if PLATFORM_WINDOWS
         /// <inheritdoc />
         public override void OnDestroy()
         {
@@ -356,5 +367,6 @@ namespace FlaxEditor.GUI
                 OnWindowClosed();
             }
         }
+#endif
     }
 }
