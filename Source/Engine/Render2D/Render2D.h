@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Types/Span.h"
 
 struct SpriteHandle;
