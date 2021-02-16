@@ -235,7 +235,7 @@ namespace AnimationUtils
     }
 
     template<>
-    static void BezierFirstDerivative<Quaternion>(const Quaternion& p0, const Quaternion& p1, const Quaternion& p2, const Quaternion& p3, float t, Quaternion& result)
+    void BezierFirstDerivative<Quaternion>(const Quaternion& p0, const Quaternion& p1, const Quaternion& p2, const Quaternion& p3, float t, Quaternion& result)
     {
         Vector3 euler;
         BezierFirstDerivative<Vector3>(p0.GetEuler(), p1.GetEuler(), p2.GetEuler(), p3.GetEuler(), t, euler);
@@ -243,7 +243,7 @@ namespace AnimationUtils
     }
 
     template<>
-    static void BezierFirstDerivative<Transform>(const Transform& p0, const Transform& p1, const Transform& p2, const Transform& p3, float t, Transform& result)
+    void BezierFirstDerivative<Transform>(const Transform& p0, const Transform& p1, const Transform& p2, const Transform& p3, float t, Transform& result)
     {
         BezierFirstDerivative<Vector3>(p0.Translation, p1.Translation, p2.Translation, p3.Translation, t, result.Translation);
         BezierFirstDerivative<Quaternion>(p0.Orientation, p1.Orientation, p2.Orientation, p3.Orientation, t, result.Orientation);

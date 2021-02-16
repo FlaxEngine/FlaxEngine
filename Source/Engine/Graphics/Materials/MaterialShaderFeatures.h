@@ -13,7 +13,7 @@ struct MaterialShaderFeature
     {
         const Char* Template;
     };
-#endif;
+#endif
 };
 
 // Material shader feature that add support for Forward shading inside the material shader.

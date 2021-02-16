@@ -1732,7 +1732,7 @@ void VisualScriptingBinaryModule::OnScriptsReloading()
 
 #endif
 
-void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>& parameters, const ScriptingTypeHandle& eventType, const StringView& eventName)
+void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant> parameters, ScriptingTypeHandle eventType, StringView eventName)
 {
     if (object)
     {

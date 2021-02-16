@@ -32,5 +32,5 @@ public:
     /// <remarks>
     /// Delegate parameters: event caller instance (null for static events), event invocation parameters list, event type name (full), event name.
     /// </remarks>
-    static Delegate<ScriptingObject*, Span<Variant>&, const ScriptingTypeHandle&, const StringView&> Event;
+    static Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> Event;
 };

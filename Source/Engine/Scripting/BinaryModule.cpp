@@ -17,7 +17,7 @@
 #include "Events.h"
 
 Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> ScriptingEvents::EventsTable;
-Delegate<ScriptingObject*, Span<Variant>&, const ScriptingTypeHandle&, const StringView&> ScriptingEvents::Event;
+Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> ScriptingEvents::Event;
 
 ManagedBinaryModule* GetBinaryModuleCorlib()
 {

@@ -327,7 +327,7 @@ private:
 #if USE_EDITOR
     void OnScriptsReloading();
 #endif
-    static void OnEvent(ScriptingObject* object, Span<Variant>& parameters, const ScriptingTypeHandle& eventType, const StringView& eventName);
+    static void OnEvent(ScriptingObject* object, Span<Variant> parameters, ScriptingTypeHandle eventType, StringView eventName);
 
 public:
 
