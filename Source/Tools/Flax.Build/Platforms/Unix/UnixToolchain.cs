@@ -255,12 +255,8 @@ namespace Flax.Build.Platforms
             var commonArgs = new List<string>();
             SetupCompileCppFilesArgs(graph, options, commonArgs, outputPath);
             {
-                // Don't link, only compile code
                 commonArgs.Add("-c");
-
                 commonArgs.Add("-pipe");
-
-                // C++ compile flags
                 commonArgs.Add("-x");
                 commonArgs.Add("c++");
                 commonArgs.Add("-std=c++14");
@@ -279,25 +275,6 @@ namespace Flax.Build.Platforms
 
                 if (compileEnvironment.TreatWarningsAsErrors)
                     commonArgs.Add("-Wall -Werror");
-
-                /*
-                if (ShouldUseLibcxx(CompileEnvironment.Architecture))
-                {
-                    commonArgs.Add("-nostdinc++");
-                    commonArgs.Add("-I" + "ThirdParty/Linux/LibCxx/include/");
-                    commonArgs.Add("-I" + "ThirdParty/Linux/LibCxx/include/c++/v1");
-                }
-                 */
-                /*
-               if (Options.HasFlag(LinuxToolChainOptions.EnableAddressSanitizer))
-                   commonArgs.Add("-fsanitize=address");
-
-               if (Options.HasFlag(LinuxToolChainOptions.EnableThreadSanitizer))
-                   commonArgs.Add("-fsanitize=thread");
-
-               if (Options.HasFlag(LinuxToolChainOptions.EnableUndefinedBehaviorSanitizer))
-                   commonArgs.Add("-fsanitize=undefined");
-               */
 
                 // TODO: compileEnvironment.IntrinsicFunctions
                 // TODO: compileEnvironment.FunctionLevelLinking
@@ -469,12 +446,18 @@ namespace Flax.Build.Platforms
             foreach (var library in linkEnvironment.InputLibraries)
             {
                 var dir = Path.GetDirectoryName(library);
+                var ext = Path.GetExtension(library);
                 if (string.IsNullOrEmpty(dir))
                 {
                     args.Add(string.Format("\"-l{0}\"", library));
                 }
-                else if (library.EndsWith(".so"))
+                else if (string.IsNullOrEmpty(ext))
                 {
+                    // Skip executable
+                }
+                else if (ext == ".so")
+                {
+                    // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
                     args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
@@ -488,12 +471,18 @@ namespace Flax.Build.Platforms
             foreach (var library in options.Libraries)
             {
                 var dir = Path.GetDirectoryName(library);
+                var ext = Path.GetExtension(library);
                 if (string.IsNullOrEmpty(dir))
                 {
                     args.Add(string.Format("\"-l{0}\"", library));
                 }
-                else if (library.EndsWith(".so"))
+                else if (string.IsNullOrEmpty(ext))
                 {
+                    // Skip executable
+                }
+                else if (ext == ".so")
+                {
+                    // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
                     args.Add(string.Format("\"-l{0}\"", GetLibName(library)));

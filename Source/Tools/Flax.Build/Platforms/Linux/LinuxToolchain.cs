@@ -43,8 +43,22 @@ namespace Flax.Build.Platforms
         {
             base.SetupCompileCppFilesArgs(graph, options, args, outputPath);
 
+            // Hide all symbols by default
+            args.Add("-fvisibility-inlines-hidden");
+            args.Add("-fvisibility-ms-compat");
+
             args.Add(string.Format("-target {0}", ArchitectureName));
             args.Add(string.Format("--sysroot=\"{0}\"", ToolsetRoot.Replace('\\', '/')));
+
+            if (Architecture == TargetArchitecture.x64)
+            {
+                args.Add("-mssse3");
+            }
+
+            if (options.Target.OutputType == TargetOutputType.Library)
+            {
+                args.Add("-fPIC");
+            }
         }
 
         /// <inheritdoc />
@@ -53,8 +67,6 @@ namespace Flax.Build.Platforms
             base.SetupLinkFilesArgs(graph, options, args, outputFilePath);
 
             args.Add("-Wl,-rpath,\"\\$ORIGIN\"");
-
-            // Speed up build
             //args.Add("-Wl,--as-needed");
             args.Add("-Wl,--hash-style=gnu");
             //args.Add("-Wl,--build-id");
@@ -62,7 +74,7 @@ namespace Flax.Build.Platforms
             if (options.LinkEnv.Output == LinkerOutput.SharedLibrary)
             {
                 args.Add("-shared");
-                args.Add(string.Format("-soname=\"{0}\"", Path.GetFileNameWithoutExtension(outputFilePath)));
+                args.Add(string.Format("-Wl,-soname=\"{0}\"", Path.GetFileNameWithoutExtension(outputFilePath)));
             }
 
             args.Add(string.Format("-target {0}", ArchitectureName));

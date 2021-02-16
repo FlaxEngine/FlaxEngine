@@ -2140,7 +2140,12 @@ int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& wor
 void* LinuxPlatform::LoadLibrary(const Char* filename)
 {
     const StringAsANSI<> filenameANSI(filename);
-	return dlopen(filenameANSI.Get(), RTLD_LAZY);
+    void* result = dlopen(filenameANSI.Get(), RTLD_LAZY | RTLD_LOCAL);
+    if (!result)
+    {
+        LOG(Error, "Failed to load {0} because {1}", filename, String(dlerror()));
+    }
+    return result;
 }
 
 void LinuxPlatform::FreeLibrary(void* handle)
