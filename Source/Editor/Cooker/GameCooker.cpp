@@ -257,7 +257,7 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
     return result;
 }
 
-void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options)
+void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines)
 {
     if (IsRunning())
     {
@@ -281,6 +281,7 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     data.Platform = platform;
     data.Configuration = configuration;
     data.Options = options;
+    data.CustomDefines = customDefines;
     data.OutputPath = outputPath;
     FileSystem::NormalizePath(data.OutputPath);
     data.OutputPath = data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OutputPath);

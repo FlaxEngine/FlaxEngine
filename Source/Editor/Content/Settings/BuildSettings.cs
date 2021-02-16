@@ -25,13 +25,6 @@ namespace FlaxEditor.Content.Settings
                         Platform = BuildPlatform.Windows64,
                         Mode = BuildConfiguration.Development,
                     },
-                    new BuildTarget
-                    {
-                        Name = "Windows 32bit",
-                        Output = "Output\\Win32",
-                        Platform = BuildPlatform.Windows32,
-                        Mode = BuildConfiguration.Development,
-                    },
                 }
             },
             new BuildPreset
@@ -44,14 +37,7 @@ namespace FlaxEditor.Content.Settings
                         Name = "Windows 64bit",
                         Output = "Output\\Win64",
                         Platform = BuildPlatform.Windows64,
-                        Mode = BuildConfiguration.Development,
-                    },
-                    new BuildTarget
-                    {
-                        Name = "Windows 32bit",
-                        Output = "Output\\Win32",
-                        Platform = BuildPlatform.Windows32,
-                        Mode = BuildConfiguration.Development,
+                        Mode = BuildConfiguration.Release,
                     },
                 }
             },
