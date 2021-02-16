@@ -35,15 +35,11 @@ void SplineCollider::SetPreTransform(const Transform& value)
     UpdateGeometry();
 }
 
-#if USE_EDITOR
-
 void SplineCollider::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
     vertexBuffer.Add(_vertexBuffer);
     indexBuffer.Add(_indexBuffer);
 }
-
-#endif
 
 void SplineCollider::OnCollisionDataChanged()
 {
@@ -316,11 +312,9 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
             return;
         }
 
-#if USE_EDITOR
-        // Transform vertices back to world space for debug shapes drawing
+        // Transform vertices back to world space for debug shapes drawing and navmesh building
         for (int32 i = 0; i < _vertexBuffer.Count(); i++)
             _vertexBuffer[i] = colliderTransform.LocalToWorld(_vertexBuffer[i]);
-#endif
 
         // Update bounds
         _box = P2C(_triangleMesh->getLocalBounds());
@@ -335,14 +329,7 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
         triangleMesh.triangleMesh = _triangleMesh;
         geometry.storeAny(triangleMesh);
 
-#if !USE_EDITOR
-        // Free memory for static splines (if editor collision preview is not needed)
-        if (IsTransformStatic())
-        {
-            _vertexBuffer.Resize(0);
-            _indexBuffer.Resize(0);
-        }
-#endif
+        // TODO: find a way of releasing _vertexBuffer and _indexBuffer for static colliders (note: ExtractGeometry usage for navmesh generation at runtime)
 
         return;
     }
