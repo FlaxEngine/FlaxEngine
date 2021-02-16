@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Flax.Build.NativeCpp;
@@ -65,7 +66,6 @@ namespace Flax.Build.Bindings
                 Module = module,
                 Name = module.BinaryModuleName,
                 Namespace = string.Empty,
-                Children = new List<ApiTypeInfo>(),
             };
             if (string.IsNullOrEmpty(moduleInfo.Name))
                 throw new Exception("Module name cannot be empty.");
@@ -479,41 +479,82 @@ namespace Flax.Build.Bindings
                 throw new Exception($"Invalid #if/endif pairing in file '{fileInfo.Name}'. Failed to generate API bindings for it.");
         }
 
+        private static bool UseBindings(object type)
+        {
+            var apiTypeInfo = type as ApiTypeInfo;
+            if (apiTypeInfo != null && apiTypeInfo.IsInBuild)
+                return false;
+            if ((type is ModuleInfo || type is FileInfo) && apiTypeInfo != null)
+            {
+                foreach (var child in apiTypeInfo.Children)
+                {
+                    if (UseBindings(child))
+                        return true;
+                }
+            }
+            return type is ClassInfo ||
+                   type is StructureInfo ||
+                   type is InterfaceInfo ||
+                   type is InjectCppCodeInfo;
+        }
+
         /// <summary>
         /// The API bindings generation utility that can produce scripting bindings for another languages to the native code.
         /// </summary>
         public static void GenerateBindings(BuildData buildData, Module module, ref BuildOptions moduleOptions, out BindingsResult bindings)
         {
             // Parse module (or load from cache)
+            var moduleInfo = ParseModule(buildData, module, moduleOptions);
             bindings = new BindingsResult
             {
+                UseBindings = UseBindings(moduleInfo),
                 GeneratedCppFilePath = Path.Combine(moduleOptions.IntermediateFolder, module.Name + ".Bindings.Gen.cpp"),
                 GeneratedCSharpFilePath = Path.Combine(moduleOptions.IntermediateFolder, module.Name + ".Bindings.Gen.cs"),
             };
-            var moduleInfo = ParseModule(buildData, module, moduleOptions);
+
+            if (bindings.UseBindings)
+            {
+                buildData.Modules.TryGetValue(moduleInfo.Module, out var moduleBuildInfo);
+
+                // Ensure that generated files are included into build
+                if (!moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
+                    moduleBuildInfo.SourceFiles.Add(bindings.GeneratedCSharpFilePath);
+            }
+
+            // Skip if module is cached (no scripting API changed)
+            if (moduleInfo.IsFromCache)
+                return;
 
             // Process parsed API
-            foreach (var child in moduleInfo.Children)
+            using (new ProfileEventScope("Process"))
             {
-                try
+                foreach (var child in moduleInfo.Children)
                 {
-                    foreach (var apiTypeInfo in child.Children)
-                        ProcessAndValidate(buildData, apiTypeInfo);
-                }
-                catch (Exception)
-                {
-                    if (child is FileInfo fileInfo)
-                        Log.Error($"Failed to validate '{fileInfo.Name}' file to generate bindings.");
-                    throw;
+                    try
+                    {
+                        foreach (var apiTypeInfo in child.Children)
+                            ProcessAndValidate(buildData, apiTypeInfo);
+                    }
+                    catch (Exception)
+                    {
+                        if (child is FileInfo fileInfo)
+                            Log.Error($"Failed to validate '{fileInfo.Name}' file to generate bindings.");
+                        throw;
+                    }
                 }
             }
 
             // Generate bindings for scripting
-            Log.Verbose($"Generating API bindings for {module.Name} ({moduleInfo.Name})");
-            GenerateCpp(buildData, moduleInfo, ref bindings);
-            GenerateCSharp(buildData, moduleInfo, ref bindings);
+            if (bindings.UseBindings)
+            {
+                Log.Verbose($"Generating API bindings for {module.Name} ({moduleInfo.Name})");
+                using (new ProfileEventScope("Cpp"))
+                    GenerateCpp(buildData, moduleInfo, ref bindings);
+                using (new ProfileEventScope("CSharp"))
+                    GenerateCSharp(buildData, moduleInfo, ref bindings);
 
-            // TODO: add support for extending this code and support generating bindings for other scripting languages
+                // TODO: add support for extending this code and support generating bindings for other scripting languages
+            }
         }
 
         /// <summary>

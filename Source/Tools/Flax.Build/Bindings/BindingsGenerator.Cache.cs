@@ -245,7 +245,7 @@ namespace Flax.Build.Bindings
                     Module = moduleInfo.Module,
                     Name = moduleInfo.Name,
                     Namespace = moduleInfo.Namespace,
-                    Children = new List<ApiTypeInfo>(),
+                    IsFromCache = true,
                 };
                 try
                 {

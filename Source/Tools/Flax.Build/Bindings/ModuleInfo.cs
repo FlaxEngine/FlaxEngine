@@ -11,6 +11,7 @@ namespace Flax.Build.Bindings
     public class ModuleInfo : ApiTypeInfo
     {
         public Module Module;
+        public bool IsFromCache;
 
         public override string ToString()
         {

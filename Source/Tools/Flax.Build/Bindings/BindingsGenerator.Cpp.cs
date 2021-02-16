@@ -1656,10 +1656,10 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static bool GenerateCppType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, object type)
+        private static void GenerateCppType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, object type)
         {
             if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
-                return false;
+                return;
 
             try
             {
@@ -1671,16 +1671,12 @@ namespace Flax.Build.Bindings
                     GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
                 else if (type is InjectCppCodeInfo injectCppCodeInfo)
                     contents.AppendLine(injectCppCodeInfo.Code);
-                else
-                    return false;
             }
             catch
             {
                 Log.Error($"Failed to generate C++ bindings for {type}.");
                 throw;
             }
-
-            return true;
         }
 
         private static void GenerateCppCppUsedNonPodTypes(BuildData buildData, ApiTypeInfo apiType)
@@ -1728,20 +1724,15 @@ namespace Flax.Build.Bindings
                     CppReferencesFiles.Add(fileInfo);
                 }
             }
-
             var headerPos = contents.Length;
 
             foreach (var child in moduleInfo.Children)
             {
                 foreach (var apiTypeInfo in child.Children)
                 {
-                    if (GenerateCppType(buildData, contents, moduleInfo, apiTypeInfo))
-                        bindings.UseBindings = true;
+                    GenerateCppType(buildData, contents, moduleInfo, apiTypeInfo);
                 }
             }
-
-            if (!bindings.UseBindings)
-                return;
 
             GenerateCppModuleSource?.Invoke(buildData, moduleInfo, contents);
 
@@ -2036,7 +2027,7 @@ namespace Flax.Build.Bindings
             var binaryModuleSourcePath = Path.Combine(project.ProjectFolderPath, "Source", binaryModuleName + ".Gen.cpp");
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
-            contents.AppendLine($"#include \"Engine/Scripting/BinaryModule.h\"");
+            contents.AppendLine("#include \"Engine/Scripting/BinaryModule.h\"");
             contents.AppendLine($"#include \"{binaryModuleName}.Gen.h\"");
             contents.AppendLine();
             contents.AppendLine($"StaticallyLinkedBinaryModuleInitializer StaticallyLinkedBinaryModule{binaryModuleName}(GetBinaryModule{binaryModuleName});");

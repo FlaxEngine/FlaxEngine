@@ -1028,9 +1028,6 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
-            if (!bindings.UseBindings)
-                return;
-
             var contents = new StringBuilder();
             buildData.Modules.TryGetValue(moduleInfo.Module, out var moduleBuildInfo);
 
@@ -1081,12 +1078,6 @@ namespace Flax.Build.Bindings
             // Save generated file
             contents.AppendLine("#endif");
             Utilities.WriteFileIfChanged(bindings.GeneratedCSharpFilePath, contents.ToString());
-
-            // Ensure that generated file is included into build
-            if (!moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
-            {
-                moduleBuildInfo.SourceFiles.Add(bindings.GeneratedCSharpFilePath);
-            }
         }
 
         internal struct GuidInterop
