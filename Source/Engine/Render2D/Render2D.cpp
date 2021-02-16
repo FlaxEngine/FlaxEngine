@@ -1752,10 +1752,10 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
-    drawCall.CountIB = vertices.Count();
+    drawCall.CountIB = vertices.Length();
     drawCall.AsTexture.Ptr = t;
 
-    for (int32 i = 0; i < vertices.Count(); i += 3)
+    for (int32 i = 0; i < vertices.Length(); i += 3)
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
 }
 
@@ -1766,9 +1766,9 @@ void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& c
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = useAlpha ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
-    drawCall.CountIB = vertices.Count();
+    drawCall.CountIB = vertices.Length();
 
-    for (int32 i = 0; i < vertices.Count(); i += 3)
+    for (int32 i = 0; i < vertices.Length(); i += 3)
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], colors[i], colors[i + 1], colors[i + 2]);
 }
 
