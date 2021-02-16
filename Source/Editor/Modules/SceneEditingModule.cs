@@ -285,6 +285,10 @@ namespace FlaxEditor.Modules
             actor.Tag = old.Tag;
             actor.Name = old.Name;
             actor.IsActive = old.IsActive;
+            for (var i = old.ScriptsCount - 1; i >=0; i--)
+            {
+                old.Scripts[i].Parent = actor;
+            }
             for (var i = old.Children.Length - 1; i >= 0 ; i--)
             {
                 old.Children[i].Parent = actor;
@@ -306,7 +310,7 @@ namespace FlaxEditor.Modules
             {
                 actorNode
             }, true));
-            actionList.Add(new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[]{actorNode}, OnSelectionUndo));
+            actionList.Add(new SelectionChangeAction(new SceneGraphNode[0], new SceneGraphNode[]{actorNode}, OnSelectionUndo));
             var actions = new MultiUndoAction(actionList);
             Undo.AddAction(actions);
             SpawnEnd?.Invoke();
