@@ -272,14 +272,14 @@ public:
     }
 
     /// <summary>
-    /// Gets the script of the given type.
+    /// Gets the script of the given type from this actor.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The script or null.</returns>
     API_FUNCTION() Script* GetScript(const MClass* type) const;
 
     /// <summary>
-    /// Gets the script of the given type.
+    /// Gets the script of the given type from this actor.
     /// </summary>
     /// <returns>The script or null.</returns>
     template<typename T>
@@ -289,14 +289,14 @@ public:
     }
 
     /// <summary>
-    /// Gets the scripts of the given type.
+    /// Gets the scripts of the given type from this actor.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The scripts.</returns>
     API_FUNCTION() Array<Script*> GetScripts(const MClass* type) const;
 
     /// <summary>
-    /// Gets the scripts of the given type.
+    /// Gets the scripts of the given type from this actor.
     /// </summary>
     /// <returns>The scripts.</returns>
     template<typename T>

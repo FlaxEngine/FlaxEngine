@@ -203,7 +203,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Finds the script of the given type.
+        /// Finds the script of the given type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>The script or null if failed to find.</returns>
@@ -213,7 +213,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Tries to find the script of the given type.
+        /// Tries to find the script of the given type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <param name="script">The returned script, valid only if method returns true.</param>
@@ -240,7 +240,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Searches for all scripts of a specific type.
+        /// Searches for all scripts of a specific type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the scripts to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>All scripts matching the specified type.</returns>
