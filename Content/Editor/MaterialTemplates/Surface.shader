@@ -350,7 +350,7 @@ VertexOutput VS(ModelInput input)
 	output.Geometry.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
 	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
 #else
-#if USE_LIGHTMAP
+#if CAN_USE_LIGHTMAP
 	output.Geometry.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
 #else
 	output.Geometry.LightmapUV = input.LightmapUV;

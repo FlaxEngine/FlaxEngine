@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 @0// Lightmap: Defines
+#define CAN_USE_LIGHTMAP 1
 @1// Lightmap: Includes
 @2// Lightmap: Constants
 float4 LightmapArea;
