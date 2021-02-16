@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="Bindings\ApiTypeInfo.cs" />
     <Compile Include="Bindings\BindingsGenerator.Api.cs" />
+    <Compile Include="Bindings\BindingsGenerator.Cache.cs" />
     <Compile Include="Bindings\BindingsGenerator.Cpp.cs" />
     <Compile Include="Bindings\BindingsGenerator.cs" />
     <Compile Include="Bindings\BindingsGenerator.CSharp.cs" />

@@ -475,13 +475,8 @@ namespace Flax.Build.Bindings
         {
             var desc = new ClassInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
                 BaseTypeInheritance = AccessLevel.Private,
-                Functions = new List<FunctionInfo>(),
-                Properties = new List<PropertyInfo>(),
-                Fields = new List<FieldInfo>(),
-                Events = new List<EventInfo>(),
             };
 
             // Read the documentation comment
@@ -559,7 +554,6 @@ namespace Flax.Build.Bindings
         {
             var desc = new InterfaceInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
             };
 
@@ -622,7 +616,6 @@ namespace Flax.Build.Bindings
             var desc = new FunctionInfo
             {
                 Access = context.CurrentAccessLevel,
-                Parameters = new List<FunctionInfo.ParameterInfo>(),
             };
 
             // Read the documentation comment
@@ -821,9 +814,7 @@ namespace Flax.Build.Bindings
         {
             var desc = new EnumInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
-                Entries = new List<EnumInfo.EntryInfo>(),
             };
 
             // Read the documentation comment
@@ -978,10 +969,7 @@ namespace Flax.Build.Bindings
         {
             var desc = new StructureInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
-                Fields = new List<FieldInfo>(),
-                Functions = new List<FunctionInfo>(),
             };
 
             // Read the documentation comment
@@ -1200,7 +1188,6 @@ namespace Flax.Build.Bindings
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
             var desc = new InjectCppCodeInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\""),
             };
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);

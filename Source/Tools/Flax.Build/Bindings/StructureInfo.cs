@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build.Bindings
 {
@@ -10,8 +11,8 @@ namespace Flax.Build.Bindings
     /// </summary>
     public class StructureInfo : ClassStructInfo
     {
-        public List<FieldInfo> Fields;
-        public List<FunctionInfo> Functions;
+        public List<FieldInfo> Fields = new List<FieldInfo>();
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
         public bool IsAutoSerialization;
         public bool ForceNoPod;
 
@@ -41,6 +42,26 @@ namespace Flax.Build.Bindings
                     _isPod = false;
                 }
             }
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            BindingsGenerator.Write(writer, Fields);
+            BindingsGenerator.Write(writer, Functions);
+            writer.Write(IsAutoSerialization);
+            writer.Write(ForceNoPod);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            Fields = BindingsGenerator.Read(reader, Fields);
+            Functions = BindingsGenerator.Read(reader, Functions);
+            IsAutoSerialization = reader.ReadBoolean();
+            ForceNoPod = reader.ReadBoolean();
+
+            base.Read(reader);
         }
 
         public override void AddChild(ApiTypeInfo apiTypeInfo)

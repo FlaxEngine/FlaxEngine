@@ -521,6 +521,7 @@ namespace Flax.Build.Bindings
             {
                 if (!useUnmanaged)
                     throw new NotImplementedException("TODO: support events inside non-static and non-scripting API class types.");
+                var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
 
                 contents.AppendLine();
 
@@ -542,10 +543,10 @@ namespace Flax.Build.Bindings
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
                 string eventSignature = "event Action";
-                if (eventInfo.Type.GenericArgs.Count != 0)
+                if (paramsCount != 0)
                 {
                     eventSignature += '<';
-                    for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                    for (var i = 0; i < paramsCount; i++)
                     {
                         if (i != 0)
                             eventSignature += ", ";
@@ -583,7 +584,7 @@ namespace Flax.Build.Bindings
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
                 contents.Append($"void Internal_{eventInfo.Name}_Invoke(");
-                for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                for (var i = 0; i < paramsCount; i++)
                 {
                     if (i != 0)
                         contents.Append(", ");
@@ -594,7 +595,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).Append('{').AppendLine();
                 contents.Append(indent).Append("    Internal_").Append(eventInfo.Name);
                 contents.Append('(');
-                for (var i = 0; i < eventInfo.Type.GenericArgs.Count; i++)
+                for (var i = 0; i < paramsCount; i++)
                 {
                     if (i != 0)
                         contents.Append(", ");

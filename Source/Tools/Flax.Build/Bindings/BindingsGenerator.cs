@@ -100,6 +100,26 @@ namespace Flax.Build.Bindings
                 }
             }
 
+            // Sort file paths to have stable results
+            headerFiles.Sort();
+
+            // Load cache
+            using (new ProfileEventScope("LoadCache"))
+            {
+                if (LoadCache(ref moduleInfo, moduleOptions, headerFiles))
+                {
+                    buildData.ModulesInfo[module] = moduleInfo;
+
+                    // Initialize API
+                    using (new ProfileEventScope("Init"))
+                    {
+                        moduleInfo.Init(buildData);
+                    }
+
+                    return moduleInfo;
+                }
+            }
+
             // Parse bindings
             Log.Verbose($"Parsing API bindings for {module.Name} ({moduleInfo.Name})");
             int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
@@ -117,9 +137,6 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                // Sort by file size to improve performance (parse larger files first)
-                headerFiles.Sort((a, b) => new System.IO.FileInfo(b).Length.CompareTo(new System.IO.FileInfo(a).Length));
-
                 // Multi-threaded
                 ThreadPool.GetMinThreads(out var workerThreads, out var completionPortThreads);
                 if (workerThreads != concurrency)
@@ -131,6 +148,12 @@ namespace Flax.Build.Bindings
                         ParseModuleInnerAsync(moduleInfo, moduleOptions, headerFiles, i);
                     }
                 });
+            }
+
+            // Save cache
+            using (new ProfileEventScope("SaveCache"))
+            {
+                SaveCache(moduleInfo, moduleOptions, headerFiles);
             }
 
             // Initialize API
@@ -162,7 +185,6 @@ namespace Flax.Build.Bindings
             var fileInfo = new FileInfo
             {
                 Parent = null,
-                Children = new List<ApiTypeInfo>(),
                 Name = headerFiles[workIndex],
                 Namespace = moduleInfo.Name,
             };

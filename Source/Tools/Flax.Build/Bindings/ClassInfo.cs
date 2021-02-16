@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Flax.Build.Bindings
@@ -29,10 +30,10 @@ namespace Flax.Build.Bindings
         public bool IsAutoSerialization;
         public bool NoSpawn;
         public bool NoConstructor;
-        public List<FunctionInfo> Functions;
-        public List<PropertyInfo> Properties;
-        public List<FieldInfo> Fields;
-        public List<EventInfo> Events;
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
+        public List<PropertyInfo> Properties = new List<PropertyInfo>();
+        public List<FieldInfo> Fields = new List<FieldInfo>();
+        public List<EventInfo> Events = new List<EventInfo>();
 
         internal HashSet<string> UniqueFunctionNames;
 
@@ -72,6 +73,40 @@ namespace Flax.Build.Bindings
                     _isScriptingObject = false;
                 }
             }
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            // TODO: convert into flags
+            writer.Write(IsStatic);
+            writer.Write(IsSealed);
+            writer.Write(IsAbstract);
+            writer.Write(IsAutoSerialization);
+            writer.Write(NoSpawn);
+            writer.Write(NoConstructor);
+            BindingsGenerator.Write(writer, Functions);
+            BindingsGenerator.Write(writer, Properties);
+            BindingsGenerator.Write(writer, Fields);
+            BindingsGenerator.Write(writer, Events);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            // TODO: convert into flags
+            IsStatic = reader.ReadBoolean();
+            IsSealed = reader.ReadBoolean();
+            IsAbstract = reader.ReadBoolean();
+            IsAutoSerialization = reader.ReadBoolean();
+            NoSpawn = reader.ReadBoolean();
+            NoConstructor = reader.ReadBoolean();
+            Functions = BindingsGenerator.Read(reader, Functions);
+            Properties = BindingsGenerator.Read(reader, Properties);
+            Fields = BindingsGenerator.Read(reader, Fields);
+            Events = BindingsGenerator.Read(reader, Events);
+
+            base.Read(reader);
         }
 
         public int GetScriptVTableSize(Builder.BuildData buildData, out int offset)

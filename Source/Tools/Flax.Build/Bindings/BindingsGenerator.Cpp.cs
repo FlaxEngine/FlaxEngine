@@ -1091,7 +1091,7 @@ namespace Flax.Build.Bindings
             {
                 if (!useScripting)
                     continue;
-                var paramsCount = eventInfo.Type.GenericArgs.Count;
+                var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
 
                 // C# event invoking wrapper (calls C# event from C++ delegate)
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
@@ -1109,7 +1109,7 @@ namespace Flax.Build.Bindings
                 contents.Append("    {").AppendLine();
                 contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
                 contents.Append("        if (!mmethod)").AppendLine();
-                contents.AppendFormat("            mmethod = {1}::GetStaticClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, eventInfo.Type.GenericArgs.Count).AppendLine();
+                contents.AppendFormat("            mmethod = {1}::GetStaticClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                 contents.Append("        CHECK(mmethod);").AppendLine();
                 contents.Append("        MonoObject* exception = nullptr;").AppendLine();
                 if (paramsCount == 0)
@@ -1174,7 +1174,7 @@ namespace Flax.Build.Bindings
                 if (paramsCount == 0)
                     contents.AppendLine("        Variant* params = nullptr;");
                 else
-                    contents.AppendLine($"        Variant params[{eventInfo.Type.GenericArgs.Count}];");
+                    contents.AppendLine($"        Variant params[{paramsCount}];");
                 for (var i = 0; i < paramsCount; i++)
                 {
                     var paramType = eventInfo.Type.GenericArgs[i];

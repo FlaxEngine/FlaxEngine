@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+using System.IO;
+
 namespace Flax.Build.Bindings
 {
     /// <summary>
@@ -21,6 +24,27 @@ namespace Flax.Build.Bindings
 
             // Sort module files to prevent bindings rebuild due to order changes (list might be created in async)
             Children.Sort();
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            writer.Write(Module.Name);
+            writer.Write(Module.FilePath);
+            BindingsGenerator.Write(writer, Module.BinaryModuleName);
+            writer.Write(Module.BuildNativeCode);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            if (reader.ReadString() != Module.Name ||
+                reader.ReadString() != Module.FilePath ||
+                BindingsGenerator.Read(reader, Module.BinaryModuleName) != Module.BinaryModuleName ||
+                reader.ReadBoolean() != Module.BuildNativeCode)
+                throw new Exception();
+
+            base.Read(reader);
         }
     }
 }

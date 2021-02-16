@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build.Bindings
 {
@@ -35,6 +35,26 @@ namespace Flax.Build.Bindings
                 if (Interfaces.Count == 0)
                     Interfaces = null;
             }
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            writer.Write((byte)Access);
+            writer.Write((byte)BaseTypeInheritance);
+            BindingsGenerator.Write(writer, BaseType);
+            BindingsGenerator.Write(writer, InterfaceNames);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            Access = (AccessLevel)reader.ReadByte();
+            BaseTypeInheritance = (AccessLevel)reader.ReadByte();
+            BaseType = BindingsGenerator.Read(reader, BaseType);
+            InterfaceNames = BindingsGenerator.Read(reader, InterfaceNames);
+
+            base.Read(reader);
         }
     }
 }
