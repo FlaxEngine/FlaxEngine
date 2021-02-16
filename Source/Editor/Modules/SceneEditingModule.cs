@@ -250,6 +250,10 @@ namespace FlaxEditor.Modules
             }
         }
 
+        /// <summary>
+        /// Converts the selected actor to another type.
+        /// </summary>
+        /// <param name="to">The type to convert in.</param>
         public void Convert(Type to)
         {
             if (!Editor.SceneEditing.HasSthSelected || !(Editor.SceneEditing.Selection[0] is ActorNode))
