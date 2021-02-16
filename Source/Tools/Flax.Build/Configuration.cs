@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
+
 namespace Flax.Build
 {
     /// <summary>
@@ -198,5 +200,10 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("customProjectFormat", "<type>", "Generates code project files for a custom project format type. Valid only with -genproject option.")]
         public static string ProjectFormatCustom = null;
+
+        /// <summary>
+        /// Custom configuration defines provided via command line for the build tool.
+        /// </summary>
+        public static List<string> CustomDefines = new List<string>();
     }
 }
