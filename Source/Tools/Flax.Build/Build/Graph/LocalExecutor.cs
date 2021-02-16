@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using Flax.Build.Graph;
 
@@ -178,7 +179,12 @@ namespace Flax.Build.BuildSystem.Graph
 
         private int ExecuteTask(Task task)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            string name = "Task";
+            if (task.ProducedFiles != null && task.ProducedFiles.Count != 0)
+                name = Path.GetFileName(task.ProducedFiles[0]);
+            var profilerEvent = Profiling.Begin(name);
+
+            var startInfo = new ProcessStartInfo
             {
                 WorkingDirectory = task.WorkingDirectory,
                 FileName = task.CommandPath,
@@ -230,10 +236,13 @@ namespace Flax.Build.BuildSystem.Graph
                 // Hang until process end
                 process.WaitForExit();
 
+                Profiling.End(profilerEvent);
                 return process.ExitCode;
             }
             finally
             {
+                Profiling.End(profilerEvent);
+
                 // Ensure to cleanup data
                 process?.Close();
             }
