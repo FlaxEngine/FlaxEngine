@@ -426,8 +426,8 @@ void WindowsWindow::GetScreenInfo(int32& x, int32& y, int32& width, int32& heigh
     // Calculate result
     x = monitorInfo.rcMonitor.left;
     y = monitorInfo.rcMonitor.top;
-    width = monitorInfo.rcMonitor.right - x;
-    height = monitorInfo.rcMonitor.bottom - y;
+    width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+    height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 }
 
 float WindowsWindow::GetOpacity() const
@@ -478,6 +478,10 @@ void WindowsWindow::StartTrackingMouse(bool useMouseScreenOffset)
         _isTrackingMouse = true;
         _trackingMouseOffset = Vector2::Zero;
         _isUsingMouseOffset = useMouseScreenOffset;
+
+        int32 x = 0 , y = 0, width = 0, height = 0;
+        GetScreenInfo(x, y, width, height);
+        _mouseOffsetScreenSize = Rectangle((float)x, (float)y, (float)width, (float)height);
 
         SetCapture(_handle);
     }
@@ -712,18 +716,20 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         if (_isTrackingMouse && _isUsingMouseOffset)
         {
             // Check if move mouse to another edge of the desktop
-            Vector2 destopSize = Platform::GetVirtualDesktopSize();
+            Vector2 desktopLocation = _mouseOffsetScreenSize.Location;
+            Vector2 destopSize = _mouseOffsetScreenSize.GetBottomRight();
+
             const Vector2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
             Vector2 mousePosition = ClientToScreen(mousePos);
             Vector2 newMousePosition = mousePosition;
-            if (mousePosition.X <= 1)
+            if (mousePosition.X <= desktopLocation.X + 2)
                 newMousePosition.X = destopSize.X - 2;
             else if (mousePosition.X >= destopSize.X - 1)
-                newMousePosition.X = 2;
-            if (mousePosition.Y <= 1)
+                newMousePosition.X = desktopLocation.X + 2;
+            if (mousePosition.Y <= desktopLocation.Y + 2)
                 newMousePosition.Y = destopSize.Y - 2;
             else if (mousePosition.Y >= destopSize.Y - 1)
-                newMousePosition.Y = 2;
+                newMousePosition.Y = desktopLocation.Y + 2;
             if (!Vector2::NearEqual(mousePosition, newMousePosition))
             {
                 _trackingMouseOffset -= newMousePosition - mousePosition;

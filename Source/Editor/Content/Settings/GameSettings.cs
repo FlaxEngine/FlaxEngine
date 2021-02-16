@@ -7,31 +7,10 @@ using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
 {
-    /// <summary>
-    /// The game settings asset archetype. Allows to edit asset via editor.
-    /// </summary>
-    public sealed class GameSettings : SettingsBase
+    partial class GameSettings
     {
         internal const string PS4PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS4PlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
-
-        /// <summary>
-        /// The product full name.
-        /// </summary>
-        [EditorOrder(0), EditorDisplay("General"), Tooltip("The name of your product.")]
-        public string ProductName;
-
-        /// <summary>
-        /// The company full name.
-        /// </summary>
-        [EditorOrder(10), EditorDisplay("General"), Tooltip("The name of your company or organization.")]
-        public string CompanyName;
-
-        /// <summary>
-        /// The copyright note used for content signing (eg. source code header).
-        /// </summary>
-        [EditorOrder(15), EditorDisplay("General"), Tooltip("The copyright note used for content signing (eg. source code header).")]
-        public string CopyrightNotice;
 
         /// <summary>
         /// The default application icon.

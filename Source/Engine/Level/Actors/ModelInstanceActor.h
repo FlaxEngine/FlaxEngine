@@ -20,11 +20,6 @@ public:
     ModelInstanceEntries Entries;
 
     /// <summary>
-    /// Updates the bounds of the actor.
-    /// </summary>
-    virtual void UpdateBounds() = 0;
-
-    /// <summary>
     /// Gets the model entries collection. Each entry contains data how to render meshes using this entry (transformation, material, shadows casting, etc.).
     /// </summary>
     API_PROPERTY(Attributes="Serialize, EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems = false, NotNullItems = true, ReadOnly = true, Spacing = 10)")
@@ -42,7 +37,7 @@ public:
     /// Sets the material to the entry slot. Can be used to override the material of the meshes using this slot.
     /// </summary>
     /// <param name="entryIndex">The material slot entry index.</param>
-    /// <param name="material">The material to set..</param>
+    /// <param name="material">The material to set.</param>
     API_FUNCTION() void SetMaterial(int32 entryIndex, MaterialBase* material);
 
     /// <summary>
@@ -63,7 +58,10 @@ public:
     /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True if the actor is intersected by the ray, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsEntry(int32 entryIndex, API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal) = 0;
+    API_FUNCTION() virtual bool IntersectsEntry(int32 entryIndex, API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal)
+    {
+        return false;
+    }
 
     /// <summary>
     /// Determines if there is an intersection between the model actor mesh entry and a ray.
@@ -76,7 +74,10 @@ public:
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <param name="entryIndex">When the method completes, contains the intersection entry index (if any valid).</param>
     /// <returns>True if the actor is intersected by the ray, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsEntry(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& entryIndex) = 0;
+    API_FUNCTION() virtual bool IntersectsEntry(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& entryIndex)
+    {
+        return false;
+    }
 
 protected:
 

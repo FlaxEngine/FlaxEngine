@@ -216,7 +216,7 @@ uint64 GPUContextDX12::Execute(bool waitForCompletion)
     ASSERT(_currentAllocator != nullptr);
     auto queue = _device->GetCommandQueue();
 
-    // Flush reaming and buffered commands
+    // Flush remaining and buffered commands
     FlushState();
     _currentState = nullptr;
 

@@ -305,7 +305,7 @@ void release()
     SAFE_DELETE_GPU_RESOURCE(_psInscatterS);
     SAFE_DELETE_GPU_RESOURCE(_psInscatterN);
     SAFE_DELETE_GPU_RESOURCE(_psCopyInscatterNAdd);
-    _shader.Unlink();
+    _shader = nullptr;
     SAFE_DELETE(_task);
     SAFE_DELETE_GPU_RESOURCE(AtmosphereTransmittance);
     SAFE_DELETE_GPU_RESOURCE(AtmosphereIrradiance);

@@ -199,7 +199,7 @@ public:
     /// Gets the current state of the audio playback (playing/paused/stopped).
     /// </summary>
     /// <returns>The value.</returns>
-    API_PROPERTY() FORCE_INLINE States GetState() const
+    API_PROPERTY() FORCE_INLINE AudioSource::States GetState() const
     {
         return _state;
     }

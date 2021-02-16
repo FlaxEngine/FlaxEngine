@@ -9,7 +9,7 @@
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int4.h"
 
 class Model;
 class SkinnedModel;

@@ -186,9 +186,9 @@ void Script::SetupType()
     while (typeHandle != Script::TypeInitializer)
     {
         auto& type = typeHandle.GetType();
-        _tickUpdate |= type.Class.ScriptVTable[8] != nullptr;
-        _tickLateUpdate |= type.Class.ScriptVTable[9] != nullptr;
-        _tickFixedUpdate |= type.Class.ScriptVTable[10] != nullptr;
+        _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
+        _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
+        _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
         typeHandle = type.GetBaseType();
     }
 }

@@ -25,6 +25,7 @@ private:
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2 * 2> _psShadowDir;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
+    bool _supportsShadows;
 
     // Shadow maps stuff
     int32 _shadowMapsSizeCSM;

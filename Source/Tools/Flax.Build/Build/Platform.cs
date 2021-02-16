@@ -157,7 +157,7 @@ namespace Flax.Build
             if (_platforms == null)
             {
                 using (new ProfileEventScope("GetPlatforms"))
-                    _platforms = typeof(Platform).Assembly.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Platform))).Select(Activator.CreateInstance).Cast<Platform>().ToArray();
+                    _platforms = Builder.BuildTypes.Where(x => x.IsClass && !x.IsAbstract && x.IsSubclassOf(typeof(Platform))).Select(Activator.CreateInstance).Cast<Platform>().ToArray();
             }
 
             foreach (var platform in _platforms)

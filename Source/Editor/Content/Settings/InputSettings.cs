@@ -4,10 +4,7 @@ using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
 {
-    /// <summary>
-    /// The input settings container. Allows to edit asset via editor.
-    /// </summary>
-    public sealed class InputSettings : SettingsBase
+    partial class InputSettings
     {
         /// <summary>
         /// Maps a discrete button or key press events to a "friendly name" that will later be bound to event-driven behavior. The end effect is that pressing (and/or releasing) a key, mouse button, or keypad button.

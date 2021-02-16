@@ -162,8 +162,7 @@ namespace FlaxEditor.Content
 
                 // Auto fit actor to camera
                 float targetSize = 30.0f;
-                BoundingBox bounds;
-                Editor.GetActorEditorBox(_preview.Instance, out bounds);
+                Editor.GetActorEditorBox(_preview.Instance, out var bounds);
                 float maxSize = Mathf.Max(0.001f, bounds.Size.MaxValue);
                 _preview.Instance.Scale = new Vector3(targetSize / maxSize);
                 _preview.Instance.Position = Vector3.Zero;
@@ -175,6 +174,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void OnThumbnailDrawEnd(ThumbnailRequest request, ContainerControl guiRoot)
         {
+            _preview.RemoveChildren();
             _preview.Prefab = null;
             _preview.Parent = null;
         }

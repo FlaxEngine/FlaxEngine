@@ -205,12 +205,11 @@ public:
     static MaterialValue getUVs;
     static MaterialValue getTime;
     static MaterialValue getNormal;
+    static MaterialValue getNormalZero;
     static MaterialValue getVertexColor;
     static MaterialGraphBoxesMapping MaterialGraphBoxesMappings[];
 
     static const MaterialGraphBoxesMapping& GetMaterialRootNodeBox(MaterialGraphBoxes box);
-
-    static byte getStartSrvRegister(MaterialLayer* baseLayer);
 };
 
 #endif

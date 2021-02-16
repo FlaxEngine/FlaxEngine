@@ -100,7 +100,7 @@ public:
 public:
 
     /// <summary>
-    /// Determinates whenever this emitter uses lights rendering.
+    /// Determines whenever this emitter uses lights rendering.
     /// </summary>
     /// <returns>True if emitter uses lights rendering, otherwise false.</returns>
     FORCE_INLINE bool UsesLightRendering() const

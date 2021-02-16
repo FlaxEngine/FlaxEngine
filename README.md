@@ -26,6 +26,10 @@ This repository contains full source code of the Flax (excluding NDA-protected p
 
 Follow the instructions below to compile and run the engine from source.
 
+## Flax plugin for Visual Studio
+
+Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source. This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
+
 ## Windows
 
 * Install Visual Studio 2015 or newer
@@ -34,7 +38,8 @@ Follow the instructions below to compile and run the engine from source.
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
-* Compile Flax project (hit F7 key)
+* Set Flax or FlaxEngine as startup project
+* Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
 ## Linux
@@ -48,10 +53,6 @@ Follow the instructions below to compile and run the engine from source.
 * Run `sudo bash GenerateProjectFiles.sh`
 * Open workspace with Visual Code
 * Build and run
-
-# Flax plugin for Visual Studio
-
-Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source. This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
 
 ## Workspace directory
 

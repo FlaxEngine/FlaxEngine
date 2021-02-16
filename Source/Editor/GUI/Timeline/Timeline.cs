@@ -20,6 +20,7 @@ namespace FlaxEditor.GUI.Timeline
     /// The timeline control that contains tracks section and headers. Can be used to create time-based media interface for camera tracks editing, audio mixing and events tracking.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class Timeline : ContainerControl
     {
         private static readonly KeyValuePair<float, string>[] FPSValues =

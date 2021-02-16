@@ -231,6 +231,14 @@ inline Color32 operator*(float a, const Color32& b)
     return b * a;
 }
 
+namespace Math
+{
+    FORCE_INLINE static bool NearEqual(const Color32& a, const Color32& b)
+    {
+        return a == b;
+    }
+}
+
 template<>
 struct TIsPODType<Color32>
 {

@@ -10,7 +10,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int2.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Utilities/StringConverter.h"

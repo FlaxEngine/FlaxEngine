@@ -62,8 +62,14 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(NavMeshBoundsVolume), typeof(NavMeshBoundsVolumeNode));
             CustomNodesTypes.Add(typeof(BoxVolume), typeof(BoxVolumeNode));
             CustomNodesTypes.Add(typeof(NavLink), typeof(NavLinkNode));
+            CustomNodesTypes.Add(typeof(NavModifierVolume), typeof(NavModifierVolumeNode));
             CustomNodesTypes.Add(typeof(ParticleEffect), typeof(ParticleEffectNode));
             CustomNodesTypes.Add(typeof(SceneAnimationPlayer), typeof(SceneAnimationPlayerNode));
+            CustomNodesTypes.Add(typeof(Spline), typeof(SplineNode));
+            CustomNodesTypes.Add(typeof(SplineModel), typeof(ActorNode));
+            CustomNodesTypes.Add(typeof(SplineCollider), typeof(ColliderNode));
+            CustomNodesTypes.Add(typeof(SplineRopeBody), typeof(ActorNode));
+            CustomNodesTypes.Add(typeof(NavMesh), typeof(ActorNode));
         }
 
         /// <summary>

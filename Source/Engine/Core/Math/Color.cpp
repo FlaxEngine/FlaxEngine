@@ -137,6 +137,26 @@ String Color::ToHexString() const
     return String(result, 6);
 }
 
+bool Color::IsTransparent() const
+{
+    return Math::IsZero(R + G + B + A);
+}
+
+bool Color::HasOpacity() const
+{
+    return !Math::IsOne(A);
+}
+
+bool Color::NearEqual(const Color& a, const Color& b)
+{
+    return Math::NearEqual(a.R, b.R) && Math::NearEqual(a.G, b.G) && Math::NearEqual(a.B, b.B) && Math::NearEqual(a.A, b.A);
+}
+
+bool Color::NearEqual(const Color& a, const Color& b, float epsilon)
+{
+    return Math::NearEqual(a.R, b.R, epsilon) && Math::NearEqual(a.G, b.G, epsilon) && Math::NearEqual(a.B, b.B, epsilon) && Math::NearEqual(a.A, b.A, epsilon);
+}
+
 Vector3 Color::ToVector3() const
 {
     return Vector3(R, G, B);
@@ -156,6 +176,21 @@ Vector3 Color::ToHSV() const
     const float saturation = rgbMax == 0.0f ? 0.0f : rgbRange / rgbMax;
     const float value = rgbMax;
     return Vector3(hue, saturation, value);
+}
+
+void Color::Lerp(const Color& start, const Color& end, float amount, Color& result)
+{
+    result.R = Math::Lerp(start.R, end.R, amount);
+    result.G = Math::Lerp(start.G, end.G, amount);
+    result.B = Math::Lerp(start.B, end.B, amount);
+    result.A = Math::Lerp(start.A, end.A, amount);
+}
+
+Color Color::Lerp(const Color& start, const Color& end, float amount)
+{
+    Color result;
+    Lerp(start, end, amount, result);
+    return result;
 }
 
 Color Color::LinearToSrgb(const Color& linear)

@@ -11,8 +11,14 @@ typedef uint16 Half;
 
 #define USE_SSE_HALF_CONVERSION 0
 
-class Float16Compressor
+/// <summary>
+/// Utility for packing/unpacking floating point value from single precision (32 bit) to half precision (16 bit).
+/// </summary>
+class FLAXENGINE_API Float16Compressor
 {
+    // Reference:
+    // http://www.cs.cmu.edu/~jinlianw/third_party/float16_compressor.hpp
+
     union Bits
     {
         float f;
@@ -22,24 +28,19 @@ class Float16Compressor
 
     static const int shift = 13;
     static const int shiftSign = 16;
-
     static const int32 infN = 0x7F800000; // flt32 infinity
     static const int32 maxN = 0x477FE000; // max flt16 normal as a flt32
     static const int32 minN = 0x38800000; // min flt16 normal as a flt32
     static const int32 signN = 0x80000000; // flt32 sign bit
-
     static const int32 infC = infN >> shift;
     static const int32 nanN = (infC + 1) << shift; // minimum flt16 nan as a flt32
     static const int32 maxC = maxN >> shift;
     static const int32 minC = minN >> shift;
     static const int32 signC = signN >> shiftSign; // flt16 sign bit
-
     static const int32 mulN = 0x52000000; // (1 << 23) / minN
     static const int32 mulC = 0x33800000; // minN / (1 << (23 - shift))
-
     static const int32 subC = 0x003FF; // max flt32 subnormal down shifted
     static const int32 norC = 0x00400; // min flt32 normal down shifted
-
     static const int32 maxD = infC - maxC - 1;
     static const int32 minD = minC - subC - 1;
 
@@ -48,9 +49,9 @@ public:
     static Half Compress(const float value)
     {
 #if USE_SSE_HALF_CONVERSION
-		__m128 V1 = _mm_set_ss(value);
-		__m128i V2 = _mm_cvtps_ph(V1, 0);
-		return static_cast<Half>(_mm_cvtsi128_si32(V2));
+		__m128 value1 = _mm_set_ss(value);
+		__m128i value2 = _mm_cvtps_ph(value1, 0);
+		return static_cast<Half>(_mm_cvtsi128_si32(value2));
 #else
         Bits v, s;
         v.f = value;
@@ -72,9 +73,9 @@ public:
     static float Decompress(const Half value)
     {
 #if USE_SSE_HALF_CONVERSION
-		__m128i V1 = _mm_cvtsi32_si128(static_cast<int>(value));
-		__m128 V2 = _mm_cvtph_ps(V1);
-		return _mm_cvtss_f32(V2);
+		__m128i value1 = _mm_cvtsi32_si128(static_cast<int>(value));
+		__m128 value2 = _mm_cvtph_ps(value1);
+		return _mm_cvtss_f32(value2);
 #else
         Bits v;
         v.ui = value;
@@ -95,20 +96,10 @@ public:
     }
 };
 
-inline float ConvertHalfToFloat(const Half value)
-{
-    return Float16Compressor::Decompress(value);
-}
-
-inline Half ConvertFloatToHalf(const float value)
-{
-    return Float16Compressor::Compress(value);
-}
-
 /// <summary>
 /// Defines a two component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half2
+struct FLAXENGINE_API Half2
 {
 public:
 
@@ -145,8 +136,8 @@ public:
     /// <param name="y">Y component</param>
     Half2(float x, float y)
     {
-        X = ConvertFloatToHalf(x);
-        Y = ConvertFloatToHalf(y);
+        X = Float16Compressor::Compress(x);
+        Y = Float16Compressor::Compress(y);
     }
 
     /// <summary>
@@ -167,7 +158,7 @@ public:
 /// <summary>
 /// Defines a three component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half3
+struct FLAXENGINE_API Half3
 {
 public:
 
@@ -201,9 +192,9 @@ public:
 
     Half3(const float x, const float y, const float z)
     {
-        X = ConvertFloatToHalf(x);
-        Y = ConvertFloatToHalf(y);
-        Z = ConvertFloatToHalf(z);
+        X = Float16Compressor::Compress(x);
+        Y = Float16Compressor::Compress(y);
+        Z = Float16Compressor::Compress(z);
     }
 
     Half3(const Vector3& v);
@@ -216,7 +207,7 @@ public:
 /// <summary>
 /// Defines a four component vector, using half precision floating point coordinates.
 /// </summary>
-struct Half4
+struct FLAXENGINE_API Half4
 {
 public:
 
@@ -255,31 +246,27 @@ public:
 
     Half4(const float x, const float y, const float z)
     {
-        X = ConvertFloatToHalf(x);
-        Y = ConvertFloatToHalf(y);
-        Z = ConvertFloatToHalf(z);
+        X = Float16Compressor::Compress(x);
+        Y = Float16Compressor::Compress(y);
+        Z = Float16Compressor::Compress(z);
         W = 0;
     }
 
     Half4(const float x, const float y, const float z, const float w)
     {
-        X = ConvertFloatToHalf(x);
-        Y = ConvertFloatToHalf(y);
-        Z = ConvertFloatToHalf(z);
-        W = ConvertFloatToHalf(w);
+        X = Float16Compressor::Compress(x);
+        Y = Float16Compressor::Compress(y);
+        Z = Float16Compressor::Compress(z);
+        W = Float16Compressor::Compress(w);
     }
 
     explicit Half4(const Vector4& v);
-
     explicit Half4(const Color& c);
-
     explicit Half4(const Rectangle& rect);
 
 public:
 
     Vector2 ToVector2() const;
-
     Vector3 ToVector3() const;
-
     Vector4 ToVector4() const;
 };

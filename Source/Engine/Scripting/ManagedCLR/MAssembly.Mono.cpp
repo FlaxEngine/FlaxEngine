@@ -29,7 +29,6 @@ MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const MAssembl
     , _isDependency(false)
     , _isFileLocked(false)
     , _hasCachedClasses(false)
-    , _classes(options.DictionaryInitialSize)
     , _reloadCount(0)
     , _name(name)
     , _options(options)
@@ -303,7 +302,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     const auto assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
     if (status != MONO_IMAGE_OK || assembly == nullptr)
     {
-        // Close image if error occured
+        // Close image if error occurred
         mono_image_close(assemblyImage);
 
         Log::CLRInnerException(TEXT("Mono assembly image is corrupted at ") + assemblyPath);
@@ -342,6 +341,8 @@ void MAssembly::OnLoading()
     Loading(this);
 
     _isLoading = true;
+    if (_classes.Capacity() == 0)
+        _classes.EnsureCapacity(_options.DictionaryInitialSize);
 
     // Pick a domain
     if (_domain == nullptr)

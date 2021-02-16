@@ -38,7 +38,7 @@ Asset::LoadResult SkeletonMask::load()
 
 void SkeletonMask::unload(bool isReloading)
 {
-    Skeleton.Unlink();
+    Skeleton = nullptr;
     _maskedNodes.Resize(0);
     _mask.Resize(0);
 }

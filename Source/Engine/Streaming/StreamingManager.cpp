@@ -92,7 +92,7 @@ void UpdateResource(StreamableResource* resource, DateTime now)
             }
         }
 
-        // Calculate residency level to stream in (resources may want to incease/decrease it's quality in steps rather than at once)
+        // Calculate residency level to stream in (resources may want to increase/decrease it's quality in steps rather than at once)
         int32 requestedResidency = handler->CalculateRequestedResidency(resource, targetResidency);
 
         // Create streaming task (resource type specific)

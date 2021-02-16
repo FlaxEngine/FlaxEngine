@@ -55,11 +55,9 @@ void FXAA::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     _psFXAA.Delete();
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)

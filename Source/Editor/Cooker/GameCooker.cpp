@@ -43,52 +43,10 @@
 #endif
 #if PLATFORM_TOOLS_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Editor/PlatformTools/XboxScarlettPlatformTools.h"
-#include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettPlatformSettings.h"
 #endif
 #if PLATFORM_TOOLS_ANDROID
 #include "Platform/Android/AndroidPlatformTools.h"
-#include "Engine/Platform/Android/AndroidPlatformSettings.h"
 #endif
-
-void LoadPlatformSettingsEditor(ISerializable::DeserializeStream& data)
-{
-#define LOAD_SETTINGS(nodeName, settingsType) \
-	{ \
-		Guid id = JsonTools::GetGuid(data, nodeName); \
-		if (id.IsValid()) \
-		{ \
-			AssetReference<JsonAsset> subAsset = Content::LoadAsync<JsonAsset>(id); \
-			if (subAsset) \
-			{ \
-				if (!subAsset->WaitForLoaded()) \
-				{ \
-					settingsType::Instance()->Deserialize(*subAsset->Data, nullptr); \
-                    settingsType::Instance()->Apply(); \
-				} \
-			} \
-			else \
-			{ LOG(Warning, "Cannot load " nodeName " settings"); } \
-		} \
-	}
-#if PLATFORM_TOOLS_WINDOWS
-    LOAD_SETTINGS("WindowsPlatform", WindowsPlatformSettings);
-#endif
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
-    LOAD_SETTINGS("UWPPlatform", UWPPlatformSettings);
-#endif
-#if PLATFORM_TOOLS_LINUX
-    LOAD_SETTINGS("LinuxPlatform", LinuxPlatformSettings);
-#endif
-#if PLATFORM_TOOLS_PS4
-    LOAD_SETTINGS("PS4Platform", PS4PlatformSettings);
-#endif
-#if PLATFORM_TOOLS_XBOX_SCARLETT
-    LOAD_SETTINGS("XboxScarlettPlatform", XboxScarlettPlatformSettings);
-#endif
-#if PLATFORM_TOOLS_ANDROID
-    LOAD_SETTINGS("AndroidPlatform", AndroidPlatformSettings);
-#endif
-}
 
 namespace GameCookerImpl
 {
@@ -299,7 +257,7 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
     return result;
 }
 
-void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options)
+void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines)
 {
     if (IsRunning())
     {
@@ -323,6 +281,7 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     data.Platform = platform;
     data.Configuration = configuration;
     data.Options = options;
+    data.CustomDefines = customDefines;
     data.OutputPath = outputPath;
     FileSystem::NormalizePath(data.OutputPath);
     data.OutputPath = data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OutputPath);

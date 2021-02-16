@@ -66,21 +66,17 @@ void DepthOfFieldPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDofDepthBlurGeneration);
     SAFE_DELETE_GPU_RESOURCE(_psBokehGeneration);
     SAFE_DELETE_GPU_RESOURCE(_psDoNotGenerateBokeh);
     SAFE_DELETE_GPU_RESOURCE(_psBokeh);
     SAFE_DELETE_GPU_RESOURCE(_psBokehComposite);
-
-    // Release assets
-    _shader.Unlink();
-    _defaultBokehHexagon.Unlink();
-    _defaultBokehOctagon.Unlink();
-    _defaultBokehCircle.Unlink();
-    _defaultBokehCross.Unlink();
-
-    // Release resources
+    _shader = nullptr;
+    _defaultBokehHexagon = nullptr;
+    _defaultBokehOctagon = nullptr;
+    _defaultBokehCircle = nullptr;
+    _defaultBokehCross = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_bokehBuffer);
     SAFE_DELETE_GPU_RESOURCE(_bokehIndirectArgsBuffer);
 }

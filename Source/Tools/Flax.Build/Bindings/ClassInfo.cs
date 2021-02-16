@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Flax.Build.Bindings
@@ -8,7 +9,7 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native class information for bindings generator.
     /// </summary>
-    public class ClassInfo : ApiTypeInfo
+    public class ClassInfo : ClassStructInfo
     {
         private static readonly HashSet<string> InBuildScriptingObjectTypes = new HashSet<string>
         {
@@ -22,19 +23,17 @@ namespace Flax.Build.Bindings
             "Actor",
         };
 
-        public AccessLevel Access;
-        public TypeInfo BaseType;
-        public AccessLevel BaseTypeInheritance;
+        public bool IsBaseTypeHidden;
         public bool IsStatic;
         public bool IsSealed;
         public bool IsAbstract;
         public bool IsAutoSerialization;
         public bool NoSpawn;
         public bool NoConstructor;
-        public List<FunctionInfo> Functions;
-        public List<PropertyInfo> Properties;
-        public List<FieldInfo> Fields;
-        public List<EventInfo> Events;
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
+        public List<PropertyInfo> Properties = new List<PropertyInfo>();
+        public List<FieldInfo> Fields = new List<FieldInfo>();
+        public List<EventInfo> Events = new List<EventInfo>();
 
         internal HashSet<string> UniqueFunctionNames;
 
@@ -49,6 +48,9 @@ namespace Flax.Build.Bindings
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
+
+            // Internal base types are usually hidden from bindings (used in core-only internally)
+            IsBaseTypeHidden = BaseTypeInheritance == AccessLevel.Private || BaseType == null;
 
             // Cache if it it Scripting Object type
             if (InBuildScriptingObjectTypes.Contains(Name))
@@ -71,6 +73,40 @@ namespace Flax.Build.Bindings
                     _isScriptingObject = false;
                 }
             }
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            // TODO: convert into flags
+            writer.Write(IsStatic);
+            writer.Write(IsSealed);
+            writer.Write(IsAbstract);
+            writer.Write(IsAutoSerialization);
+            writer.Write(NoSpawn);
+            writer.Write(NoConstructor);
+            BindingsGenerator.Write(writer, Functions);
+            BindingsGenerator.Write(writer, Properties);
+            BindingsGenerator.Write(writer, Fields);
+            BindingsGenerator.Write(writer, Events);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            // TODO: convert into flags
+            IsStatic = reader.ReadBoolean();
+            IsSealed = reader.ReadBoolean();
+            IsAbstract = reader.ReadBoolean();
+            IsAutoSerialization = reader.ReadBoolean();
+            NoSpawn = reader.ReadBoolean();
+            NoConstructor = reader.ReadBoolean();
+            Functions = BindingsGenerator.Read(reader, Functions);
+            Properties = BindingsGenerator.Read(reader, Properties);
+            Fields = BindingsGenerator.Read(reader, Fields);
+            Events = BindingsGenerator.Read(reader, Events);
+
+            base.Read(reader);
         }
 
         public int GetScriptVTableSize(Builder.BuildData buildData, out int offset)

@@ -2,122 +2,84 @@
 
 #pragma once
 
-#include "Engine/Core/Types/BaseTypes.h"
-#include "Engine/Platform/CriticalSection.h"
 #include "NavMeshData.h"
+#include "NavigationTypes.h"
+#include "Engine/Content/AssetReference.h"
+#include "Engine/Content/Assets/RawDataAsset.h"
+#include "Engine/Level/Actor.h"
 
-class NavigationScene;
-class dtNavMesh;
-class dtNavMeshQuery;
+class NavMeshBoundsVolume;
+class NavMeshRuntime;
 
-class NavMeshTile
+/// <summary>
+/// The navigation mesh actor that holds a navigation data for a scene.
+/// </summary>
+API_CLASS() class FLAXENGINE_API NavMesh : public Actor
 {
-public:
-
-    int32 X;
-    int32 Y;
-    int32 Layer;
-    NavigationScene* Scene;
-    BytesContainer Data;
-};
-
-class FLAXENGINE_API NavMesh
-{
-private:
-
-    dtNavMesh* _navMesh;
-    dtNavMeshQuery* _navMeshQuery;
-    float _tileSize;
-    Array<NavMeshTile> _tiles;
-
-public:
-
-    NavMesh();
-
-    ~NavMesh();
-
+DECLARE_SCENE_OBJECT(NavMesh);
 public:
 
     /// <summary>
-    /// The NavMesh object locker.
+    /// The flag used to mark that navigation data has been modified since load. Used to save runtime data to the file on scene serialization.
     /// </summary>
-    CriticalSection Locker;
+    bool IsDataDirty;
 
     /// <summary>
-    /// Gets the size of the tile (in world-units). Returns zero if not initialized yet.
+    /// The navmesh tiles data.
     /// </summary>
-    /// <returns>The tile size.</returns>
-    FORCE_INLINE float GetTileSize() const
-    {
-        return _tileSize;
-    }
+    NavMeshData Data;
 
-    dtNavMesh* GetNavMesh() const
-    {
-        return _navMesh;
-    }
+    /// <summary>
+    /// The cached navmesh data asset.
+    /// </summary>
+    AssetReference<RawDataAsset> DataAsset;
 
-    dtNavMeshQuery* GetNavMeshQuery() const
-    {
-        return _navMeshQuery;
-    }
+#if USE_EDITOR
 
-    int32 GetTilesCapacity() const;
+    /// <summary>
+    /// If checked, the navmesh will be drawn in debug view when showing navigation data.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1), EditorDisplay(\"Nav Mesh\")") bool ShowDebugDraw = true;
+
+#endif
+
+    /// <summary>
+    /// The navigation mesh properties.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Nav Mesh\")") NavMeshProperties Properties;
 
 public:
 
     /// <summary>
-    /// Sets the size of the tile (if not assigned). Disposes the mesh if added tiles have different size.
+    /// Saves the nav mesh tiles data to the asset. Supported only in builds with assets saving enabled (eg. editor) and not during gameplay (eg. design time).
     /// </summary>
-    /// <param name="tileSize">The size of the tile.</param>
-    void SetTileSize(float tileSize);
+    void SaveNavMesh();
 
     /// <summary>
-    /// Ensures the navmesh capacity for adding new tiles. Performs resizing if needed.
+    /// Clears the data.
     /// </summary>
-    /// <param name="tilesToAddCount">The new tiles amount.</param>
-    void EnsureCapacity(int32 tilesToAddCount);
+    void ClearData();
 
     /// <summary>
-    /// Adds the tiles from the given scene to the runtime navmesh.
+    /// Gets the navmesh runtime object that matches with properties.
     /// </summary>
-    /// <param name="scene">The navigation scene.</param>
-    void AddTiles(NavigationScene* scene);
-
-    /// <summary>
-    /// Adds the tile from the given scene to the runtime navmesh.
-    /// </summary>
-    /// <param name="scene">The navigation scene.</param>
-    /// <param name="tileData">The tile data.</param>
-    void AddTile(NavigationScene* scene, NavMeshTileData& tileData);
-
-    /// <summary>
-    /// Removes all the tiles from the navmesh that has been added from the given navigation scene.
-    /// </summary>
-    /// <param name="scene">The scene.</param>
-    void RemoveTiles(NavigationScene* scene);
-
-    /// <summary>
-    /// Removes the tile from the navmesh.
-    /// </summary>
-    /// <param name="x">The tile X coordinate.</param>
-    /// <param name="y">The tile Y coordinate.</param>
-    /// <param name="layer">The tile layer.</param>
-    void RemoveTile(int32 x, int32 y, int32 layer);
-
-    /// <summary>
-    /// Removes all the tiles that custom prediction callback marks.
-    /// </summary>
-    /// <param name="prediction">The prediction callback, returns true for tiles to remove and false for tiles to preserve.</param>
-    /// <param name="userData">The user data passed to the callback method.</param>
-    void RemoveTiles(bool (*prediction)(const NavMesh* navMesh, const NavMeshTile& tile, void* customData), void* userData);
-
-    /// <summary>
-    /// Releases the navmesh.
-    /// </summary>
-    void Dispose();
+    NavMeshRuntime* GetRuntime(bool createIfMissing = true) const;
 
 private:
 
-    void AddTileInternal(NavigationScene* scene, NavMeshTileData& tileData);
+    void AddTiles();
+    void RemoveTiles();
+    void OnDataAssetLoaded();
+
+public:
+
+    // [Actor]
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+
+protected:
+
+    // [Actor]
+    void OnEnable() override;
+    void OnDisable() override;
 };

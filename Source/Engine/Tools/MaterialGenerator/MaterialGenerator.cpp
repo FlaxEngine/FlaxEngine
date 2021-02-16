@@ -4,7 +4,9 @@
 
 #include "MaterialGenerator.h"
 #include "Engine/Visject/ShaderGraphUtilities.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
+#include "Engine/Graphics/Materials/MaterialShaderFeatures.h"
 
 /// <summary>
 /// Material shader source code template has special marks for generated code.
@@ -20,13 +22,90 @@ enum MaterialTemplateInputsMapping
     In_GetMaterialVS = 5,
     In_GetMaterialDS = 6,
     In_Includes = 7,
+    In_Utilities = 8,
+    In_Shaders = 9,
 
     In_MAX
 };
 
+/// <summary>
+/// Material shader feature source code template has special marks for generated code. Each starts with '@' char and index of the mapped string.
+/// </summary>
+enum class FeatureTemplateInputsMapping
+{
+    Defines = 0,
+    Includes = 1,
+    Constants = 2,
+    Resources = 3,
+    Utilities = 4,
+    Shaders = 5,
+    MAX
+};
+
+struct FeatureData
+{
+    MaterialShaderFeature::GeneratorData Data;
+    String Inputs[(int32)FeatureTemplateInputsMapping::MAX];
+
+    bool Init();
+};
+
+namespace
+{
+    // Loaded and parsed features data cache
+    Dictionary<StringAnsi, FeatureData> Features;
+}
+
+bool FeatureData::Init()
+{
+    // Load template file
+    const String path = Globals::EngineContentFolder / TEXT("Editor/MaterialTemplates/") + Data.Template;
+    String contents;
+    if (File::ReadAllText(path, contents))
+    {
+        LOG(Error, "Cannot open file {0}", path);
+        return true;
+    }
+
+    int32 i = 0;
+    const int32 length = contents.Length();
+
+    // Skip until input start
+    for (; i < length; i++)
+    {
+        if (contents[i] == '@')
+            break;
+    }
+
+    // Load all inputs
+    do
+    {
+        // Parse input type
+        i++;
+        const int32 inIndex = contents[i++] - '0';
+        ASSERT_LOW_LAYER(Math::IsInRange(inIndex, 0, (int32)FeatureTemplateInputsMapping::MAX - 1));
+
+        // Read until next input start
+        const Char* start = &contents[i];
+        for (; i < length; i++)
+        {
+            const auto c = contents[i];
+            if (c == '@')
+                break;
+        }
+        const Char* end = &contents[i];
+
+        // Set input
+        Inputs[inIndex].Set(start, (int32)(end - start));
+    } while (i < length);
+
+    return false;
+}
+
 MaterialValue MaterialGenerator::getUVs(VariantType::Vector2, TEXT("input.TexCoord"));
 MaterialValue MaterialGenerator::getTime(VariantType::Float, TEXT("TimeParam"));
 MaterialValue MaterialGenerator::getNormal(VariantType::Vector3, TEXT("input.TBN[2]"));
+MaterialValue MaterialGenerator::getNormalZero(VariantType::Vector3, TEXT("float3(0, 0, 1)"));
 MaterialValue MaterialGenerator::getVertexColor(VariantType::Vector4, TEXT("GetVertexColor(input)"));
 
 MaterialGenerator::MaterialGenerator()
@@ -53,6 +132,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     ASSERT_LOW_LAYER(_layers.Count() > 0);
 
     String inputs[In_MAX];
+    Array<StringAnsiView, FixedAllocation<8>> features;
 
     // Setup and prepare layers
     _writer.Clear();
@@ -87,6 +167,59 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     const MaterialGraphBox* layerInputBox = baseLayer->Root->GetBox(0);
     const bool isLayered = layerInputBox->HasConnection();
 
+    // Initialize features
+#define ADD_FEATURE(type) \
+    { \
+        StringAnsiView typeName(#type, ARRAY_COUNT(#type) - 1); \
+        features.Add(typeName); \
+        if (!Features.ContainsKey(typeName)) \
+        { \
+            auto& feature = Features[typeName]; \
+            type::Generate(feature.Data); \
+            if (feature.Init()) \
+                return true; \
+        } \
+    }
+    switch (baseLayer->Domain)
+    {
+    case MaterialDomain::Surface:
+        if (materialInfo.TessellationMode != TessellationMethod::None)
+        ADD_FEATURE(TessellationFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(MotionVectorsFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(LightmapFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(DeferredShadingFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
+        ADD_FEATURE(ForwardShadingFeature);
+        break;
+    case MaterialDomain::Terrain:
+        if (materialInfo.TessellationMode != TessellationMethod::None)
+        ADD_FEATURE(TessellationFeature);
+        ADD_FEATURE(LightmapFeature);
+        ADD_FEATURE(DeferredShadingFeature);
+        break;
+    case MaterialDomain::Particle:
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        ADD_FEATURE(DistortionFeature);
+        ADD_FEATURE(ForwardShadingFeature);
+        break;
+    case MaterialDomain::Deformable:
+        if (materialInfo.TessellationMode != TessellationMethod::None)
+        ADD_FEATURE(TessellationFeature);
+        if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
+        ADD_FEATURE(DeferredShadingFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
+        ADD_FEATURE(ForwardShadingFeature);
+        break;
+    default:
+        break;
+    }
+#undef ADD_FEATURE
+
     // Check if material is using special features and update the metadata flags
     if (!isLayered)
     {
@@ -104,7 +237,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     {
         materialVarPS = Value(VariantType::Void, baseLayer->GetVariableName(nullptr));
         _writer.Write(TEXT("\tMaterial {0} = (Material)0;\n"), materialVarPS.Value);
-        if (baseLayer->Domain == MaterialDomain::Surface || baseLayer->Domain == MaterialDomain::Terrain || baseLayer->Domain == MaterialDomain::Particle)
+        if (baseLayer->Domain == MaterialDomain::Surface || baseLayer->Domain == MaterialDomain::Terrain || baseLayer->Domain == MaterialDomain::Particle || baseLayer->Domain == MaterialDomain::Deformable)
         {
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Emissive);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Normal);
@@ -240,11 +373,13 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Update material usage based on material generator outputs
     materialInfo.UsageFlags = baseLayer->UsageFlags;
 
+#define WRITE_FEATURES(input) for (auto f : features) _writer.Write(Features[f].Inputs[(int32)FeatureTemplateInputsMapping::input]);
     // Defines
     {
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
-        _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})"), baseLayer->OpacityThreshold);
+        _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
+        WRITE_FEATURES(Defines);
         inputs[In_Defines] = _writer.ToString();
         _writer.Clear();
     }
@@ -252,28 +387,86 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Includes
     {
         for (auto& include : _includes)
-        {
             _writer.Write(TEXT("#include \"{0}\"\n"), include.Item);
-        }
+        WRITE_FEATURES(Includes);
         inputs[In_Includes] = _writer.ToString();
         _writer.Clear();
     }
 
-    // Check if material is using any parameters
-    if (_parameters.HasItems())
+    // Constants
     {
-        ShaderGraphUtilities::GenerateShaderConstantBuffer(_writer, _parameters);
+        WRITE_FEATURES(Constants);
+        if (_parameters.HasItems())
+            ShaderGraphUtilities::GenerateShaderConstantBuffer(_writer, _parameters);
         inputs[In_Constants] = _writer.ToString();
         _writer.Clear();
+    }
 
-        const int32 startRegister = getStartSrvRegister(baseLayer);
-        const auto error = ShaderGraphUtilities::GenerateShaderResources(_writer, _parameters, startRegister);
-        if (error)
+    // Resources
+    {
+        int32 srv = 0;
+        switch (baseLayer->Domain)
         {
-            OnError(nullptr, nullptr, error);
-            return true;
+        case MaterialDomain::Surface:
+            srv = 2; // Skinning Bones + Prev Bones
+            break;
+        case MaterialDomain::Decal:
+            srv = 1; // Depth buffer
+            break;
+        case MaterialDomain::Terrain:
+            srv = 3; // Heightmap + 2 splatmaps
+            break;
+        case MaterialDomain::Particle:
+            srv = 2; // Particles data + Sorted indices/Ribbon segments
+            break;
+        case MaterialDomain::Deformable:
+            srv = 1; // Mesh deformation buffer
+            break;
+        }
+        for (auto f : features)
+        {
+            const auto& text = Features[f].Inputs[(int32)FeatureTemplateInputsMapping::Resources];
+            const Char* str = text.Get();
+            int32 prevIdx = 0, idx = 0;
+            while (true)
+            {
+                idx = text.Find(TEXT("__SRV__"), StringSearchCase::CaseSensitive, prevIdx);
+                if (idx == -1)
+                    break;
+                int32 len = idx - prevIdx;
+                _writer.Write(StringView(str, len));
+                str += len;
+                _writer.Write(StringUtils::ToString(srv));
+                srv++;
+                str += ARRAY_COUNT("__SRV__") - 1;
+                prevIdx = idx + ARRAY_COUNT("__SRV__") - 1;
+            }
+            _writer.Write(StringView(str));
+        }
+        if (_parameters.HasItems())
+        {
+            const auto error = ShaderGraphUtilities::GenerateShaderResources(_writer, _parameters, srv);
+            if (error)
+            {
+                OnError(nullptr, nullptr, error);
+                return true;
+            }
         }
         inputs[In_ShaderResources] = _writer.ToString();
+        _writer.Clear();
+    }
+
+    // Utilities
+    {
+        WRITE_FEATURES(Utilities);
+        inputs[In_Utilities] = _writer.ToString();
+        _writer.Clear();
+    }
+
+    // Shaders
+    {
+        WRITE_FEATURES(Shaders);
+        inputs[In_Shaders] = _writer.ToString();
         _writer.Clear();
     }
 
@@ -291,10 +484,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         switch (materialInfo.Domain)
         {
         case MaterialDomain::Surface:
-            if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-                path /= TEXT("SurfaceDeferred.shader");
-            else
-                path /= TEXT("SurfaceForward.shader");
+            path /= TEXT("Surface.shader");
             break;
         case MaterialDomain::PostProcess:
             path /= TEXT("PostProcess.shader");
@@ -311,20 +501,22 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         case MaterialDomain::Particle:
             path /= TEXT("Particle.shader");
             break;
+        case MaterialDomain::Deformable:
+            path /= TEXT("Deformable.shader");
+            break;
         default:
             LOG(Warning, "Unknown material domain.");
             return true;
         }
-
         auto file = FileReadStream::Open(path);
         if (file == nullptr)
         {
-            LOG(Warning, "Cannot load material base source code.");
+            LOG(Error, "Cannot open file {0}", path);
             return true;
         }
 
         // Format template
-        uint32 length = file->GetLength();
+        const uint32 length = file->GetLength();
         Array<char> tmp;
         for (uint32 i = 0; i < length; i++)
         {

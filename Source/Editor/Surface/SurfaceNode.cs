@@ -185,9 +185,12 @@ namespace FlaxEditor.Surface
             var rightWidth = 40.0f;
             var boxLabelFont = Style.Current.FontSmall;
             var titleLabelFont = Style.Current.FontLarge;
-            for (int i = 0; i < Elements.Count; i++)
+            for (int i = 0; i < Children.Count; i++)
             {
-                if (Elements[i] is InputBox inputBox)
+                var child = Children[i];
+                if (!child.Visible)
+                    continue;
+                if (child is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
@@ -195,15 +198,23 @@ namespace FlaxEditor.Surface
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
                     leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Elements[i] is OutputBox outputBox)
+                else if (child is OutputBox outputBox)
                 {
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Elements[i] is Control control)
+                else if (child is Control control)
                 {
-                    width = Mathf.Max(width, control.Width + 10);
-                    height = Mathf.Max(height, control.Height + 10);
+                    if (control.AnchorPreset == AnchorPresets.TopLeft)
+                    {
+                        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
+                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
+                    }
+                    else
+                    {
+                        width = Mathf.Max(width, control.Width + 4);
+                        height = Mathf.Max(height, control.Height + 4);
+                    }
                 }
             }
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
@@ -267,6 +278,9 @@ namespace FlaxEditor.Surface
             case NodeElementType.Actor:
                 element = new ActorSelect(this, arch);
                 break;
+            case NodeElementType.UnsignedIntegerValue:
+                element = new UnsignedIntegerValue(this, arch);
+                break;
             //default: throw new NotImplementedException("Unknown node element type: " + arch.Type);
             }
             if (element != null)
@@ -303,12 +317,16 @@ namespace FlaxEditor.Surface
         {
             if (type == ScriptType.Null)
                 type = new ScriptType(typeof(object));
+
+            // Try to reuse box
             var box = GetBox(id);
             if ((isOut && box is InputBox) || (!isOut && box is OutputBox))
             {
                 box.Dispose();
                 box = null;
             }
+            
+            // Create new if missing
             if (box == null)
             {
                 if (isOut)
@@ -319,10 +337,15 @@ namespace FlaxEditor.Surface
             }
             else
             {
+                // Sync properties for exiting box
                 box.Text = text;
                 box.CurrentType = type;
                 box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
             }
+
+            // Update box
+            box.OnConnectionsChanged();
+            
             return box;
         }
 
@@ -984,7 +1007,7 @@ namespace FlaxEditor.Surface
             }
 
             // Secondary Context Menu
-            if (button == MouseButton.Right)
+            if (button == MouseButton.Right && false)
             {
                 if (!IsSelected)
                     Surface.Select(this);

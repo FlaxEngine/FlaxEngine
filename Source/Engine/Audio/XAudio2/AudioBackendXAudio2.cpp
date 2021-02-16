@@ -794,7 +794,7 @@ void AudioBackendXAudio2::Base_Update()
     }
 
     // Update dirty voices
-    const float dopplerFactor = AudioSettings::Instance()->DopplerFactor;
+    const float dopplerFactor = AudioSettings::Get()->DopplerFactor;
     X3DAUDIO_DSP_SETTINGS dsp = { 0 };
     dsp.DstChannelCount = XAudio2::Channels;
     dsp.pMatrixCoefficients = XAudio2::MatrixCoefficients;

@@ -31,9 +31,14 @@ namespace FlaxEngine.GUI
         protected bool _mouseOverHeader;
 
         /// <summary>
-        /// The 'mouse down' flag (over header).
+        /// The 'mouse down' flag (over header) for the left mouse button.
         /// </summary>
-        protected bool _mouseDown;
+        protected bool _mouseButtonLeftDown;
+
+        /// <summary>
+        /// The 'mouse down' flag (over header) for the right mouse button.
+        /// </summary>
+        protected bool _mouseButtonRightDown;
 
         /// <summary>
         /// The animation progress (normalized).
@@ -125,6 +130,11 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000)]
         public bool EnableDropDownIcon { get; set; }
+
+        /// <summary>
+        /// Occurs when mouse right-clicks over the header.
+        /// </summary>
+        public event Action<DropPanel, Vector2> MouseButtonRightClicked;
 
         /// <summary>
         /// Occurs when drop panel is opened or closed.
@@ -430,10 +440,14 @@ namespace FlaxEngine.GUI
                 return true;
 
             _mouseOverHeader = HeaderRectangle.Contains(location);
-
             if (button == MouseButton.Left && _mouseOverHeader)
             {
-                _mouseDown = true;
+                _mouseButtonLeftDown = true;
+                return true;
+            }
+            if (button == MouseButton.Right && _mouseOverHeader)
+            {
+                _mouseButtonRightDown = true;
                 return true;
             }
 
@@ -455,16 +469,17 @@ namespace FlaxEngine.GUI
                 return true;
 
             _mouseOverHeader = HeaderRectangle.Contains(location);
-
-            if (button == MouseButton.Left && _mouseDown)
+            if (button == MouseButton.Left && _mouseButtonLeftDown)
             {
-                _mouseDown = false;
-
+                _mouseButtonLeftDown = false;
                 if (_mouseOverHeader)
-                {
                     Toggle();
-                }
-
+                return true;
+            }
+            if (button == MouseButton.Right && _mouseButtonRightDown)
+            {
+                _mouseButtonRightDown = false;
+                MouseButtonRightClicked?.Invoke(this, location);
                 return true;
             }
 
@@ -474,7 +489,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            _mouseDown = false;
+            _mouseButtonLeftDown = false;
+            _mouseButtonRightDown = false;
             _mouseOverHeader = false;
 
             base.OnMouseLeave();

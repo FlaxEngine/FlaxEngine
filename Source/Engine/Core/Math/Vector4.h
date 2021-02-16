@@ -379,7 +379,7 @@ public:
 
     static bool NearEqual(const Vector4& a, const Vector4& b)
     {
-        return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) & Math::NearEqual(a.Z, b.Z) && Math::NearEqual(a.W, b.W);
+        return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z) && Math::NearEqual(a.W, b.W);
     }
 
     static bool NearEqual(const Vector4& a, const Vector4& b, float epsilon)

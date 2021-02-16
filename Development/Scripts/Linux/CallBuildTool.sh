@@ -3,6 +3,12 @@
 
 set -e
 
+testfilesize=$(wc -c < 'Source/Logo.png')
+if [ $testfilesize -le 1000 ]; then
+    echo "CallBuildTool ERROR: Repository was not cloned using Git LFS" 1>&2
+	exit 1
+fi
+
 # Compile the build tool.
 xbuild /nologo /verbosity:quiet "Source/Tools/Flax.Build/Flax.Build.csproj" /property:Configuration=Release /property:Platform=AnyCPU /target:Build
 

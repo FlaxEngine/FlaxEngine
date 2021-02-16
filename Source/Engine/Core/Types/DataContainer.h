@@ -324,9 +324,7 @@ public:
     void Append(T* data, int32 length)
     {
         if (length <= 0)
-        {
             return;
-        }
         if (Base::Length() == 0)
         {
             Copy(data, length);
@@ -337,16 +335,13 @@ public:
         const auto prevLength = Base::_length;
 
         Base::_length = prevLength + length;
-        Base::_data = Allocator::Allocate(Base::_length * sizeof(T));
+        Base::_data = (T*)Allocator::Allocate(Base::_length * sizeof(T));
 
         Platform::MemoryCopy(Base::_data, prev, prevLength * sizeof(T));
         Platform::MemoryCopy(Base::_data + prevLength * sizeof(T), data, length * sizeof(T));
 
         if (_isAllocated && prev)
-        {
             Allocator::Free(prev);
-        }
-
         _isAllocated = true;
     }
 

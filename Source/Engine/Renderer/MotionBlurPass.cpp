@@ -57,11 +57,11 @@ bool MotionBlurPass::Init()
 
     // Prepare formats for the buffers
     auto format = MOTION_VECTORS_PIXEL_FORMAT;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(format).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
     {
-        if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+        if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R32G32_Float;
-        else if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+        else if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R16G16B16A16_Float;
         else
             format = PixelFormat::R32G32B32A32_Float;
@@ -134,16 +134,14 @@ void MotionBlurPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psCameraMotionVectors);
     SAFE_DELETE_GPU_RESOURCE(_psMotionVectorsDebug);
     SAFE_DELETE_GPU_RESOURCE(_psTileMax);
     SAFE_DELETE_GPU_RESOURCE(_psTileMaxVariable);
     SAFE_DELETE_GPU_RESOURCE(_psNeighborMax);
     SAFE_DELETE_GPU_RESOURCE(_psMotionBlur);
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
@@ -285,7 +283,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     PROFILE_GPU_CPU("Motion Blur");
 
     // Setup shader inputs
-    const int32 maxBlurSize = (int32)((float)motionVectorsHeight * 0.05f);
+    const int32 maxBlurSize = Math::Max((int32)((float)motionVectorsHeight * 0.05f), 1);
     const int32 tileSize = Math::AlignUp(maxBlurSize, 8);
     const float timeScale = renderContext.Task->View.IsOfflinePass ? 1.0f : 1.0f / Time::Draw.UnscaledDeltaTime.GetTotalSeconds() / 60.0f; // 60fps as a reference
     Data data;
@@ -337,8 +335,8 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     RenderTargetPool::Release(vMaxBuffer4);
 
     // Downscale motion vectors texture down to tileSize/tileSize (with max velocity calculation NxN kernel)
-    rtDesc.Width = motionVectorsWidth / tileSize;
-    rtDesc.Height = motionVectorsHeight / tileSize;
+    rtDesc.Width = Math::Max(motionVectorsWidth / tileSize, 1);
+    rtDesc.Height = Math::Max(motionVectorsHeight / tileSize, 1);
     auto vMaxBuffer = RenderTargetPool::Get(rtDesc);
     context->ResetRenderTarget();
     context->SetRenderTarget(vMaxBuffer->View());

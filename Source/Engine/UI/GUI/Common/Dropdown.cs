@@ -26,7 +26,7 @@ namespace FlaxEngine.GUI
             public Action<int> ItemClicked;
 
             /// <summary>
-            /// Occurs when popup losts focus.
+            /// Occurs when popup lost focus.
             /// </summary>
             public Action LostFocus;
 

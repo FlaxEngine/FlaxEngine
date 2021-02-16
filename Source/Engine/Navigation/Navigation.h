@@ -2,36 +2,9 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Core/Math/Vector3.h"
+#include "NavigationTypes.h"
 
 class Scene;
-class NavMesh;
-
-#define NAV_MESH_PATH_MAX_SIZE 200
-
-/// <summary>
-/// The result information for navigation mesh queries.
-/// </summary>
-API_STRUCT() struct NavMeshHit
-{
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
-
-    /// <summary>
-    /// The hit point position.
-    /// </summary>
-    API_FIELD() Vector3 Position;
-
-    /// <summary>
-    /// The distance to hit point (from the query origin).
-    /// </summary>
-    API_FIELD() float Distance;
-
-    /// <summary>
-    /// The hit point normal vector.
-    /// </summary>
-    API_FIELD() Vector3 Normal;
-};
 
 /// <summary>
 /// The navigation service used for path finding and agents navigation system.
@@ -39,14 +12,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 API_CLASS(Static) class FLAXENGINE_API Navigation
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Navigation);
-public:
-
-    /// <summary>
-    /// Gets the navigation mesh (read-only). Use the other API to request data to use safe access to the navigation system.
-    /// </summary>
-    /// <returns>The navigation mesh.</returns>
-    static NavMesh* GetNavMesh();
-
 public:
 
     /// <summary>
@@ -66,6 +31,14 @@ public:
     /// <param name="resultPath">The result path.</param>
     /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
     API_FUNCTION() static bool FindPath(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) Array<Vector3, HeapAllocation>& resultPath);
+
+    /// <summary>
+    /// Tests the path between the two positions (non-partial).
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <returns>True if found valid path between given two points, otherwise false if failed.</returns>
+    API_FUNCTION() static bool TestPath(const Vector3& startPosition, const Vector3& endPosition);
 
     /// <summary>
     /// Projects the point to nav mesh surface (finds the nearest polygon).
@@ -121,7 +94,7 @@ public:
 
 #endif
 
-#if USE_EDITOR
+#if COMPILE_WITH_DEBUG_DRAW
 
     /// <summary>
     /// Draws the navigation for all the scenes (uses DebugDraw interface).

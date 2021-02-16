@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -532,6 +533,8 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Enum:
             case VariantType.Structure:
+            case VariantType.ManagedObject:
+            case VariantType.Typename:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
                 break;
@@ -742,6 +745,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return new ScriptType(typeof(object[]));
             case VariantType.Dictionary: return new ScriptType(typeof(Dictionary<object, object>));
             case VariantType.ManagedObject: return new ScriptType(typeof(object));
+            case VariantType.Blob: return new ScriptType(typeof(byte[]));
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }
@@ -760,7 +764,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (byte)(c ^ 77);
                 }
                 var typeName = System.Text.Encoding.ASCII.GetString(data);
-                return TypeUtils.GetType(typeName).Type;
+                return TypeUtils.GetManagedType(typeName);
             }
             if (typeNameLength > 0)
             {
@@ -772,7 +776,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (char)(c ^ 77);
                 }
                 var typeName = new string(data);
-                return TypeUtils.GetType(typeName).Type;
+                return TypeUtils.GetManagedType(typeName);
             }
             switch (variantType)
             {
@@ -805,6 +809,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array: return typeof(object[]);
             case VariantType.Dictionary: return typeof(Dictionary<object, object>);
             case VariantType.ManagedObject: return typeof(object);
+            case VariantType.Blob: return typeof(byte[]);
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
         }
@@ -824,7 +829,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (byte)(c ^ 77);
                 }
                 var typeName = System.Text.Encoding.ASCII.GetString(data);
-                type = TypeUtils.GetType(typeName).Type;
+                type = TypeUtils.GetManagedType(typeName);
             }
             else if (typeNameLength > 0)
             {
@@ -836,7 +841,7 @@ namespace FlaxEditor.Utilities
                     data[i] = (char)(c ^ 77);
                 }
                 var typeName = new string(data);
-                type = TypeUtils.GetType(typeName).Type;
+                type = TypeUtils.GetManagedType(typeName);
             }
             switch (variantType)
             {
@@ -1641,7 +1646,8 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="source">The source code.</param>
         /// <param name="title">The window title.</param>
-        public static void ShowSourceCodeWindow(string source, string title)
+        /// <param name="control">The context control used to show source code window popup in a proper location.</param>
+        public static void ShowSourceCodeWindow(string source, string title, Control control = null)
         {
             if (string.IsNullOrEmpty(source))
             {
@@ -1654,8 +1660,9 @@ namespace FlaxEditor.Utilities
             settings.AllowMaximize = false;
             settings.AllowMinimize = false;
             settings.HasSizingFrame = false;
-            settings.StartPosition = WindowStartPosition.CenterScreen;
+            settings.StartPosition = WindowStartPosition.CenterParent;
             settings.Size = new Vector2(500, 600) * Platform.DpiScale;
+            settings.Parent = control?.RootWindow?.Window ?? Editor.Instance.Windows.MainWindow;
             settings.Title = title;
             var dialog = Platform.CreateWindow(ref settings);
 
@@ -1731,6 +1738,45 @@ namespace FlaxEditor.Utilities
 
             distance = 0;
             return false;
+        }
+
+        /// <summary>
+        /// Initializes the object fields and properties with their default values based on <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public static void InitDefaultValues(object obj)
+        {
+            var scriptType = TypeUtils.GetObjectType(obj);
+            if (!scriptType)
+                return;
+            var isStructure = scriptType.IsStructure;
+
+            var fields = scriptType.GetFields(BindingFlags.Default | BindingFlags.Instance | BindingFlags.Public);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                var field = fields[i];
+                var attr = field.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
+                if (attr != null)
+                {
+                    field.SetValue(obj, attr.Value);
+                }
+                else if (isStructure)
+                {
+                    // C# doesn't support default values for structure members so initialize them
+                    field.SetValue(obj, TypeUtils.GetDefaultValue(field.ValueType));
+                }
+            }
+
+            var properties = scriptType.GetProperties(BindingFlags.Default | BindingFlags.Instance | BindingFlags.Public);
+            for (var i = 0; i < properties.Length; i++)
+            {
+                var property = properties[i];
+                var attr = property.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
+                if (attr != null)
+                {
+                    property.SetValue(obj, attr.Value);
+                }
+            }
         }
     }
 }

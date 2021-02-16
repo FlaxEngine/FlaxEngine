@@ -36,7 +36,7 @@ namespace Flax.Build
                 var path = Path.GetDirectoryName(Configuration.LogFile);
                 if (!string.IsNullOrEmpty(path) && !Directory.Exists(path))
                     Directory.CreateDirectory(path);
-                _logFile = new FileStream(Configuration.LogFile, FileMode.Create);
+                _logFile = new FileStream(Configuration.LogFile, FileMode.Create, FileAccess.Write, FileShare.Read);
                 _logFileWriter = new StreamWriter(_logFile);
             }
         }

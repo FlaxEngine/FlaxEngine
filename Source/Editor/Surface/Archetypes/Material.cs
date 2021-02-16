@@ -156,6 +156,7 @@ namespace FlaxEditor.Surface.Archetypes
                 case MaterialDomain.Surface:
                 case MaterialDomain.Terrain:
                 case MaterialDomain.Particle:
+                case MaterialDomain.Deformable:
                 {
                     bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
                     bool isTransparent = info.BlendMode == MaterialBlendMode.Transparent;
@@ -640,6 +641,179 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Vector3), 0),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 26,
+                Title = "Blend Normals",
+                Description = "Blend two normal maps to create a single normal map",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(170, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Base Normal", true, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Input(1, "Additional Normal", true, typeof(Vector3), 1),
+                    NodeElementArchetype.Factory.Output(0, "Result", typeof(Vector3), 2)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 27,
+                Title = "Rotator",
+                Description = "Rotates UV coordinates according to a scalar angle (0-1)",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 55),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Center", true, typeof(Vector2), 1),
+                    NodeElementArchetype.Factory.Input(2, "Rotation Angle", true, typeof(float), 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 28,
+                Title = "Sphere Mask",
+                Description = "Creates a sphere mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(150, 100),
+                ConnectionsHints = ConnectionsHint.Vector,
+                IndependentBoxes = new[]
+                {
+                    0,
+                    1
+                },
+                DefaultValues = new object[]
+                {
+                    0.3f,
+                    0.5f,
+                    false
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "A", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "B", true, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Radius", true, typeof(float), 2, 0),
+                    NodeElementArchetype.Factory.Input(3, "Hardness", true, typeof(float), 3, 1),
+                    NodeElementArchetype.Factory.Input(4, "Invert", true, typeof(bool), 4, 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 29,
+                Title = "UV Tiling & Offset",
+                Description = "Takes UVs and applies tiling and offset",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(175, 60),
+                DefaultValues = new object[]
+                {
+                    Vector2.One,
+                    Vector2.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Tiling", true, typeof(Vector2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Offset", true, typeof(Vector2), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 3),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 30,
+                Title = "DDX",
+                Description = "Returns the partial derivative of the specified value with respect to the screen-space x-coordinate",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                DependentBoxes = new[] { 1 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 31,
+                Title = "DDY",
+                Description = "Returns the partial derivative of the specified value with respect to the screen-space y-coordinate",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                DependentBoxes = new[] { 1 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 32,
+                Title = "Sign",
+                Description = "Returns -1 if value is less than zero; 0 if value equals zero; and 1 if value is greater than zero",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 33,
+                Title = "Any",
+                Description = "True if any components of value are non-zero; otherwise, false",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 34,
+                Title = "All",
+                Description = "Determines if all components of the specified value are non-zero",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(90, 25),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 35,
+                Title = "Black Body",
+                Description = "Simulates black body radiation via a given temperature in kelvin",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(120, 25),
+                DefaultValues = new object[]
+                {
+                    0.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Temp", true, typeof(float), 0, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 1),
                 }
             },
         };

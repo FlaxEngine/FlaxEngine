@@ -224,7 +224,7 @@ namespace FlaxEditor.Windows
         /// </summary>
         private void ExportSelection()
         {
-            if(FileSystem.ShowBrowseFolderDialog(Editor.Windows.MainWindow, null, "Select the output folder", out var outputFolder))
+            if (FileSystem.ShowBrowseFolderDialog(Editor.Windows.MainWindow, null, "Select the output folder", out var outputFolder))
                 return;
 
             var selection = _view.Selection;

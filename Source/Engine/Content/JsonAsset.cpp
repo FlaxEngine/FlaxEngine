@@ -10,7 +10,10 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
+#include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Engine/Utilities/StringConverter.h"
 
 JsonAssetBase::JsonAssetBase(const SpawnParams& params, const AssetInfo* info)
     : Asset(params, info)
@@ -175,53 +178,55 @@ void JsonAssetBase::onRename(const StringView& newPath)
 
 REGISTER_JSON_ASSET(JsonAsset, "FlaxEngine.JsonAsset");
 
-////////////////////////////////////////////////////////////////////////////////////
-
-#include "Engine/Physics/PhysicalMaterial.h"
-
-// Unmanaged json asset types that are serialized to JsonAsset and should be created by auto by asset.
-// This allows to reuse JsonAsset without creating dedicated asset types. It has been designed for lightweight resources.
-
-typedef ISerializable* (*UnmanagedJsonInstanceCreator)();
-
-template<typename T>
-ISerializable* Create()
-{
-    return New<T>();
-}
-
-Dictionary<String, UnmanagedJsonInstanceCreator> UnmanagedTypes(32);
-
-void InitUnmanagedJsonTypes()
-{
-    ASSERT(UnmanagedTypes.IsEmpty());
-
-    // Key: managed class typename, Value: unmanaged instance spawner function
-    UnmanagedTypes[TEXT("FlaxEngine.PhysicalMaterial")] = &Create<PhysicalMaterial>;
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-
 JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)
     , Instance(nullptr)
 {
-    if (UnmanagedTypes.IsEmpty())
-        InitUnmanagedJsonTypes();
 }
 
 Asset::LoadResult JsonAsset::loadAsset()
 {
     // Base
     auto result = JsonAssetBase::loadAsset();
-    if (result != LoadResult::Ok)
+    if (result != LoadResult::Ok || IsInternalType())
         return result;
 
-    UnmanagedJsonInstanceCreator instanceSpawner = nullptr;
-    if (UnmanagedTypes.TryGet(DataTypeName, instanceSpawner))
+    // Try to scripting type for this data
+    const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
+    const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
+    if (typeHandle)
     {
-        Instance = instanceSpawner();
-        Instance->Deserialize(*Data, nullptr);
+        auto& type = typeHandle.GetType();
+        switch (type.Type)
+        {
+        case ScriptingTypes::Class:
+        {
+            // Ensure that object can deserialized
+            const ScriptingType::InterfaceImplementation* interfaces = type.GetInterface(&ISerializable::TypeInitializer);
+            if (!interfaces)
+            {
+                LOG(Warning, "Cannot deserialize {0} from Json Asset because it doesn't implement ISerializable interface.", type.ToString());
+                break;
+            }
+
+            // Allocate object
+            const auto instance = Allocator::Allocate(type.Size);
+            if (!instance)
+                return LoadResult::Failed;
+            Instance = instance;
+            InstanceType = typeHandle;
+            _dtor = type.Class.Dtor;
+            type.Class.Ctor(instance);
+
+            // Deserialize object
+            auto modifier = Cache::ISerializeModifier.Get();
+            modifier->EngineBuild = DataEngineBuild;
+            ((ISerializable*)((byte*)instance + interfaces->VTableOffset))->Deserialize(*Data, modifier.Value);
+            // TODO: delete object when containing BinaryModule gets unloaded
+            break;
+        }
+        default: ;
+        }
     }
 
     return result;
@@ -232,5 +237,12 @@ void JsonAsset::unload(bool isReloading)
     // Base
     JsonAssetBase::unload(isReloading);
 
-    SAFE_DELETE(Instance);
+    if (Instance)
+    {
+        InstanceType = ScriptingTypeHandle();
+        _dtor(Instance);
+        Allocator::Free(Instance);
+        Instance = nullptr;
+        _dtor = nullptr;
+    }
 }

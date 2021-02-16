@@ -4,9 +4,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include <ThirdParty/PhysX/PxShape.h>
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 
 BoxCollider::BoxCollider(const SpawnParams& params)
     : Collider(params)
@@ -123,26 +120,6 @@ void BoxCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(Size, _size);
 }
 
-#if USE_EDITOR
-
-void BoxCollider::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<BoxCollider, &BoxCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void BoxCollider::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<BoxCollider, &BoxCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
-
 void BoxCollider::UpdateBounds()
 {
     // Cache bounds
@@ -152,32 +129,11 @@ void BoxCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void BoxCollider::CreateShape()
+void BoxCollider::GetGeometry(PxGeometryHolder& geometry)
 {
-    // Setup shape geometry
-    _cachedScale = GetScale();
     Vector3 size = _size * _cachedScale;
     size.Absolute();
     const float minSize = 0.001f;
-    const PxBoxGeometry geometry(Math::Max(size.X * 0.5f, minSize), Math::Max(size.Y * 0.5f, minSize), Math::Max(size.Z * 0.5f, minSize));
-
-    // Setup shape
-    CreateShapeBase(geometry);
-}
-
-void BoxCollider::UpdateGeometry()
-{
-    // Check if has no shape created
-    if (_shape == nullptr)
-        return;
-
-    // Setup shape geometry
-    _cachedScale = GetScale();
-    Vector3 size = _size * _cachedScale;
-    size.Absolute();
-    const float minSize = 0.001f;
-    const PxBoxGeometry geometry(Math::Max(size.X * 0.5f, minSize), Math::Max(size.Y * 0.5f, minSize), Math::Max(size.Z * 0.5f, minSize));
-
-    // Setup shape
-    _shape->setGeometry(geometry);
+    const PxBoxGeometry box(Math::Max(size.X * 0.5f, minSize), Math::Max(size.Y * 0.5f, minSize), Math::Max(size.Z * 0.5f, minSize));
+    geometry.storeAny(box);
 }

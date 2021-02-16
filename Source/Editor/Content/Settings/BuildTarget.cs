@@ -36,6 +36,12 @@ namespace FlaxEditor.Content.Settings
         public BuildConfiguration Mode;
 
         /// <summary>
+        /// The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).
+        /// </summary>
+        [EditorOrder(90), Tooltip("The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).")]
+        public string[] CustomDefines;
+
+        /// <summary>
         /// The pre-build action command line.
         /// </summary>
         [EditorOrder(100)]
@@ -46,11 +52,5 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         [EditorOrder(110)]
         public string PostBuildAction;
-
-        /// <summary>
-        /// Gets the build options computed from the target configuration.
-        /// </summary>
-        [HideInEditor, NoSerialize]
-        public virtual BuildOptions Options => BuildOptions.None;
     }
 }

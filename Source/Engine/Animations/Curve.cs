@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
@@ -338,6 +339,7 @@ namespace FlaxEngine
         /// <summary>
         /// A single keyframe that can be injected into linear curve.
         /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
         public struct Keyframe : IComparable, IComparable<Keyframe>
         {
             /// <summary>
@@ -586,6 +588,7 @@ namespace FlaxEngine
         /// <summary>
         /// A single keyframe that can be injected into Bezier curve.
         /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
         public struct Keyframe : IComparable, IComparable<Keyframe>
         {
             /// <summary>

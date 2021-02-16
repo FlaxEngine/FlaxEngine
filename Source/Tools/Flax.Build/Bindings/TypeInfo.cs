@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -10,7 +11,7 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native type information for bindings generator.
     /// </summary>
-    public class TypeInfo : IEquatable<TypeInfo>
+    public class TypeInfo : IEquatable<TypeInfo>, IBindingsCache
     {
         public string Type;
         public bool IsConst;
@@ -51,6 +52,34 @@ namespace Flax.Build.Bindings
             return true;
         }
 
+        public void Write(BinaryWriter writer)
+        {
+            BindingsGenerator.Write(writer, Type);
+            // TODO: pack as flags
+            writer.Write(IsConst);
+            writer.Write(IsRef);
+            writer.Write(IsPtr);
+            writer.Write(IsArray);
+            writer.Write(IsBitField);
+            writer.Write(ArraySize);
+            writer.Write(BitSize);
+            BindingsGenerator.Write(writer, GenericArgs);
+        }
+
+        public void Read(BinaryReader reader)
+        {
+            Type = BindingsGenerator.Read(reader, Type);
+            // TODO: convert into flags
+            IsConst = reader.ReadBoolean();
+            IsRef = reader.ReadBoolean();
+            IsPtr = reader.ReadBoolean();
+            IsArray = reader.ReadBoolean();
+            IsBitField = reader.ReadBoolean();
+            ArraySize = reader.ReadInt32();
+            BitSize = reader.ReadInt32();
+            GenericArgs = BindingsGenerator.Read(reader, GenericArgs);
+        }
+
         public override string ToString()
         {
             var sb = new StringBuilder(64);
@@ -83,7 +112,7 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        private static bool Equals(List<TypeInfo> a, List<TypeInfo> b)
+        public static bool Equals(List<TypeInfo> a, List<TypeInfo> b)
         {
             if (a == null && b == null)
                 return true;

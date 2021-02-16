@@ -355,7 +355,7 @@ public:
     /// </summary>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor() const
+    FORCE_INLINE static T* FindActor()
     {
         return (T*)FindActor(T::GetStaticClass());
     }
@@ -372,10 +372,24 @@ public:
     /// </summary>
     /// <returns>Script instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindScript() const
+    FORCE_INLINE static T* FindScript()
     {
         return (T*)FindScript(T::GetStaticClass());
     }
+
+    /// <summary>
+    /// Finds all the actors of the given type in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <returns>Found actors list.</returns>
+    API_FUNCTION() static Array<Actor*> GetActors(const MClass* type);
+
+    /// <summary>
+    /// Finds all the scripts of the given type in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <returns>Found scripts list.</returns>
+    API_FUNCTION() static Array<Script*> GetScripts(const MClass* type);
 
     /// <summary>
     /// Tries to find scene with given ID.
@@ -419,6 +433,31 @@ public:
     /// <param name="input">Input array of actors</param>
     /// <param name="output">Output array with only parents</param>
     static void ConstructParentActorsTreeList(const Array<Actor*>& input, Array<Actor*>& output);
+
+public:
+
+    /// <summary>
+    /// The tags names.
+    /// </summary>
+    static Array<String> Tags;
+
+    /// <summary>
+    /// The layers names.
+    /// </summary>
+    static String Layers[32];
+    
+    /// <summary>
+    /// Gets or adds the tag (returns the tag index).
+    /// </summary>
+    /// <param name="tag">The tag.</param>
+    /// <returns>The tag index.</returns>
+    static int32 GetOrAddTag(const StringView& tag);
+
+    /// <summary>
+    /// Gets the amount of non empty layer names (from the beginning, trims the last ones).
+    /// </summary>
+    /// <returns>The layers count.</returns>
+    static int32 GetNonEmptyLayerNamesCount();
 
 private:
 

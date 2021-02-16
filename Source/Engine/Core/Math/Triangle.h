@@ -8,7 +8,7 @@
 /// <summary>
 /// Represents a three dimensional triangle.
 /// </summary>
-struct Triangle
+struct FLAXENGINE_API Triangle
 {
 public:
 

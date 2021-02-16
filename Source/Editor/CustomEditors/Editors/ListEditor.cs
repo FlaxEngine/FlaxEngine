@@ -58,7 +58,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else if (newSize > 0)
                 {
-                    // Fill new entries
+                    // Fill new entries with default value
                     var defaultValue = Scripting.TypeUtils.GetDefaultValue(ElementType);
                     for (int i = oldSize; i < newSize; i++)
                     {

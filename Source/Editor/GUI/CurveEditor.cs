@@ -16,6 +16,7 @@ namespace FlaxEditor.GUI
     /// <summary>
     /// The base class for <see cref="CurveBase{T}"/> editors. Allows to use generic curve editor without type information at compile-time.
     /// </summary>
+    [HideInEditor]
     public abstract class CurveEditorBase : ContainerControl
     {
         /// <summary>
@@ -221,7 +222,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
-        /// Filters teh given value using the the <see cref="UseMode"/>.
+        /// Filters the given value using the <see cref="UseMode"/>.
         /// </summary>
         /// <param name="mode">The mode.</param>
         /// <param name="value">The value to process.</param>

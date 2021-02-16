@@ -98,7 +98,7 @@ void StaticModel::SetVertexColor(int32 lodIndex, int32 meshIndex, int32 vertexIn
 {
     if (!Model || Model->WaitForLoaded())
     {
-        LOG(Warning, "Cannot set vertex color if model is missing or faied to load.");
+        LOG(Warning, "Cannot set vertex color if model is missing or failed to load.");
         return;
     }
 

@@ -4,9 +4,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include <ThirdParty/PhysX/PxShape.h>
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
@@ -93,26 +90,6 @@ void CapsuleCollider::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE_MEMBER(Height, _height);
 }
 
-#if USE_EDITOR
-
-void CapsuleCollider::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<CapsuleCollider, &CapsuleCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void CapsuleCollider::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<CapsuleCollider, &CapsuleCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
-
 void CapsuleCollider::UpdateBounds()
 {
     // Cache bounds
@@ -123,34 +100,12 @@ void CapsuleCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void CapsuleCollider::CreateShape()
+void CapsuleCollider::GetGeometry(PxGeometryHolder& geometry)
 {
-    // Setup shape geometry
-    _cachedScale = GetScale();
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Setup shape
-    CreateShapeBase(geometry);
-}
-
-void CapsuleCollider::UpdateGeometry()
-{
-    // Check if has no shape created
-    if (_shape == nullptr)
-        return;
-
-    // Setup shape geometry
-    _cachedScale = GetScale();
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float minSize = 0.001f;
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
-    const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Setup shape
-    _shape->setGeometry(geometry);
+    const PxCapsuleGeometry capsule(radius, height * 0.5f);
+    geometry.storeAny(capsule);
 }

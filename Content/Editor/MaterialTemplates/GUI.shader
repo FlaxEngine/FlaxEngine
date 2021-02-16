@@ -3,7 +3,6 @@
 
 #define MATERIAL 1
 @3
-
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
@@ -22,7 +21,7 @@ float4 ViewInfo;
 float4 ScreenSize;
 @1META_CB_END
 
-// Material shader resources
+// Shader resources
 @2
 // Interpolants passed from the vertex shader
 struct VertexOutput
@@ -185,6 +184,8 @@ float4 GetVertexColor(MaterialInput input)
 #endif
 }
 
+@8
+
 // Get material properties function (for vertex shader)
 Material GetMaterialVS(MaterialInput input)
 {
@@ -196,9 +197,6 @@ Material GetMaterialPS(MaterialInput input)
 {
 @4
 }
-
-// Fix line for errors/warnings for shader code from template
-#line 1000
 
 // Vertex Shader function for GUI materials rendering
 META_VS(true, FEATURE_LEVEL_ES2)
@@ -257,3 +255,5 @@ float4 PS_GUI(PixelInput input) : SV_Target0
 
 	return float4(material.Emissive, material.Opacity);
 }
+
+@9

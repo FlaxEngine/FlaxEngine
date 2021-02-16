@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Threading/Task.h"
 #include "MaterialInfo.h"
 
 struct MaterialParamsLink;
@@ -30,7 +29,6 @@ public:
     /// <summary>
     /// Determines whether material is a surface shader.
     /// </summary>
-    /// <returns><c>true</c> if material is surface shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsSurface() const
     {
         return GetInfo().Domain == MaterialDomain::Surface;
@@ -39,7 +37,6 @@ public:
     /// <summary>
     /// Determines whether material is a post fx.
     /// </summary>
-    /// <returns><c>true</c> if material is post fx; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsPostFx() const
     {
         return GetInfo().Domain == MaterialDomain::PostProcess;
@@ -48,7 +45,6 @@ public:
     /// <summary>
     /// Determines whether material is a decal.
     /// </summary>
-    /// <returns><c>true</c> if material is decal; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsDecal() const
     {
         return GetInfo().Domain == MaterialDomain::Decal;
@@ -57,7 +53,6 @@ public:
     /// <summary>
     /// Determines whether material is a GUI shader.
     /// </summary>
-    /// <returns><c>true</c> if material is GUI shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsGUI() const
     {
         return GetInfo().Domain == MaterialDomain::GUI;
@@ -66,7 +61,6 @@ public:
     /// <summary>
     /// Determines whether material is a terrain shader.
     /// </summary>
-    /// <returns><c>true</c> if material is terrain shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsTerrain() const
     {
         return GetInfo().Domain == MaterialDomain::Terrain;
@@ -75,28 +69,17 @@ public:
     /// <summary>
     /// Determines whether material is a particle shader.
     /// </summary>
-    /// <returns><c>true</c> if material is particle shader; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsParticle() const
     {
         return GetInfo().Domain == MaterialDomain::Particle;
     }
 
     /// <summary>
-    /// Checks if material needs vertex color vertex buffer data for rendering.
+    /// Determines whether material is a deformable shader.
     /// </summary>
-    /// <returns>True if mesh renderer have to provide vertex color buffer to render that material</returns>
-    FORCE_INLINE bool RequireVertexColor() const
+    FORCE_INLINE bool IsDeformable() const
     {
-        return (GetInfo().UsageFlags & MaterialUsageFlags::UseVertexColor) != 0;
-    }
-
-    /// <summary>
-    /// Checks if material supports dithered LOD transitions.
-    /// </summary>
-    /// <returns>True if material supports dithered LOD transitions, otherwise false.</returns>
-    FORCE_INLINE bool IsDitheredLODTransition() const
-    {
-        return (GetInfo().FeaturesFlags & MaterialFeaturesFlags::DitheredLODTransition) != 0;
+        return GetInfo().Domain == MaterialDomain::Deformable;
     }
 
     /// <summary>
@@ -108,7 +91,7 @@ public:
     /// <summary>
     /// Gets the mask of render passes supported by this material.
     /// </summary>
-    /// <returns>The drw passes supported by this material.</returns>
+    /// <returns>The draw passes supported by this material.</returns>
     virtual DrawPass GetDrawModes() const
     {
         return DrawPass::None;
@@ -124,10 +107,21 @@ public:
     }
 
     /// <summary>
+    /// The instancing handling used to hash, batch and write draw calls.
+    /// </summary>
+    struct InstancingHandler
+    {
+        void (*GetHash)(const DrawCall& drawCall, int32& batchKey);
+        bool (*CanBatch)(const DrawCall& a, const DrawCall& b);
+        void (*WriteDrawCall)(struct InstanceData* instanceData, const DrawCall& drawCall);
+    };
+
+    /// <summary>
     /// Returns true if material can use draw calls instancing.
     /// </summary>
+    /// <param name="handler">The output data for the instancing handling used to hash, batch and write draw calls. Valid only when function returns true.</param>
     /// <returns>True if can use instancing, otherwise false.</returns>
-    virtual bool CanUseInstancing() const
+    virtual bool CanUseInstancing(InstancingHandler& handler) const
     {
         return false;
     }

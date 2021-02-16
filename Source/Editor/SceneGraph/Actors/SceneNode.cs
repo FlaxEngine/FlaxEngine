@@ -58,6 +58,9 @@ namespace FlaxEditor.SceneGraph.Actors
         public override bool CanCopyPaste => false;
 
         /// <inheritdoc />
+        public override bool CanDuplicate => false;
+
+        /// <inheritdoc />
         public override bool CanDelete => false;
 
         /// <inheritdoc />

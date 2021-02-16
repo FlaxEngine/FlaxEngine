@@ -876,7 +876,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     if (result)
     {
         // Validate type
-        if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()))
+        if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
         {
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
             return nullptr;
@@ -949,15 +949,6 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
         return nullptr;
     }
 
-    // Validate type
-    const StringAsANSI<> typeNameStd(assetInfo.TypeName.Get(), assetInfo.TypeName.Length());
-    const auto assetType = Scripting::FindScriptingType(StringAnsiView(typeNameStd.Get(), assetInfo.TypeName.Length()));
-    if (IsAssetTypeIdInvalid(type, assetType))
-    {
-        LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
-        return nullptr;
-    }
-
 #endif
 
     // Find asset factory based in its type
@@ -975,6 +966,18 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
         LOG(Error, "Cannot create asset object. Info: {0}", assetInfo.ToString());
         return nullptr;
     }
+
+#if ASSETS_LOADING_EXTRA_VERIFICATION
+
+    // Validate type
+    if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
+    {
+        LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
+        result->DeleteObject();
+        return nullptr;
+    }
+
+#endif
 
     // Register asset
     {

@@ -288,7 +288,7 @@ namespace FlaxEditor.Windows.Assets
     public abstract class AssetEditorWindowBase<T> : AssetEditorWindow where T : Asset
     {
         /// <summary>
-        /// Flag set to true if window is is waiting for asset to be loaded (to send <see cref="OnAssetLoaded"/> or <see cref="OnAssetLoadFailed"/> events).
+        /// Flag set to true if window is waiting for asset to be loaded (to send <see cref="OnAssetLoaded"/> or <see cref="OnAssetLoadFailed"/> events).
         /// </summary>
         protected bool _isWaitingForLoaded;
 
@@ -430,7 +430,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Gets the original asset. Note: <see cref="AssetEditorWindowBase{T}.Asset"/> is the cloned asset for local editing. Use <see cref="SaveToOriginal"/> to apply changes to the original asset.
         /// </summary>
-        public T OriginalAsset => (T)FlaxEngine.Content.GetAsset(_item.ID);
+        public T OriginalAsset => (T)FlaxEngine.Content.Load(_item.ID);
 
         /// <inheritdoc />
         protected ClonedAssetEditorWindowBase(Editor editor, AssetItem item)

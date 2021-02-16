@@ -83,8 +83,8 @@ public:
         drawCall.Geometry.VertexBuffersOffsets[0] = 0;
         drawCall.Geometry.VertexBuffersOffsets[1] = 0;
         drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-        drawCall.Geometry.StartIndex = 0;
-        drawCall.Geometry.IndicesCount = IndexCount;
+        drawCall.Draw.StartIndex = 0;
+        drawCall.Draw.IndicesCount = IndexCount;
     }
 };
 
@@ -172,10 +172,6 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         return;
     const auto context = GPUDevice::Instance->GetMainContext();
     auto emitter = buffer->Emitter;
-
-    drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
 
     // Check if need to perform any particles sorting
     if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
@@ -423,7 +419,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     {
         const int32 moduleIndex = renderModulesIndices[index];
         auto module = emitter->Graph.RenderModules[moduleIndex];
-        drawCall.Module = module;
+        drawCall.Particle.Module = module;
 
         switch (module->TypeID)
         {
@@ -486,7 +482,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             int32 count = buffer->CPU.Count;
 
             // Setup ribbon data
-            auto& ribbon = drawCall.Ribbon;
+            auto& ribbon = drawCall.Particle.Ribbon;
             ribbon.UVTilingDistance = uvTilingDistance;
             ribbon.SegmentCount = ribbonModulesSegmentCount[ribbonModuleIndex];
             ribbon.UVScaleX = uvScale.X;
@@ -516,8 +512,8 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Geometry.VertexBuffersOffsets[0] = 0;
             drawCall.Geometry.VertexBuffersOffsets[1] = 0;
             drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-            drawCall.Geometry.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
-            drawCall.Geometry.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
+            drawCall.Draw.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
+            drawCall.Draw.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
             drawCall.InstanceCount = 1;
             renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
 
@@ -557,7 +553,7 @@ void OnShaderReloading(Asset* obj)
 
 void CleanupGPUParticlesSorting()
 {
-    GPUParticlesSorting.Unlink();
+    GPUParticlesSorting = nullptr;
 }
 
 void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices)
@@ -788,7 +784,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     {
         int32 moduleIndex = renderModulesIndices[index];
         auto module = emitter->Graph.RenderModules[moduleIndex];
-        drawCall.Module = module;
+        drawCall.Particle.Module = module;
 
         switch (module->TypeID)
         {
@@ -802,8 +798,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = 0;
-            drawCall.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-            drawCall.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+            drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
+            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
             renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
             indirectDrawCallIndex++;
 
@@ -830,8 +826,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // Execute draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = 0;
-                drawCall.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-                drawCall.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+                drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
+                drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
                 renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
                 indirectDrawCallIndex++;
             }
@@ -875,9 +871,7 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
 
     // Setup a draw call common data
     DrawCall drawCall;
-    drawCall.LightmapUVsArea = Rectangle::Empty;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
-    drawCall.LODDitherFactor = 1.0f;
     drawCall.ObjectPosition = world.GetTranslation();
 
     // Draw all emitters
@@ -890,9 +884,8 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
         auto emitter = buffer->Emitter;
 
         drawCall.World = emitter->SimulationSpace == ParticlesSimulationSpace::World ? Matrix::Identity : world;
-        drawCall.PrevWorld = drawCall.World;
         drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
-        drawCall.Particles = buffer;
+        drawCall.Particle.Particles = buffer;
 
         // Check if need to render any module
         RenderModulesIndices renderModulesIndices;
@@ -1172,7 +1165,7 @@ void ParticleManagerService::Update()
             // Update bounds after first system update
             updateBounds = true;
         }
-        // TODO: if using fixed timestep quantize the dt and accumulate reaming part for the next update?
+        // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
         if (dt <= 1.0f / 240.0f)
             continue;
         dt *= effect->SimulationSpeed;

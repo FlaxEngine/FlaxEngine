@@ -5,7 +5,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
@@ -65,12 +64,12 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     {
         Chunks[i].Init(this, i % CHUNKS_COUNT_EDGE, i / CHUNKS_COUNT_EDGE);
     }
-    Heightmap.Unlink();
+    Heightmap = nullptr;
     for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
     {
-        Splatmap[i].Unlink();
+        Splatmap[i] = nullptr;
     }
-    _heightfield.Unlink();
+    _heightfield = nullptr;
 #if TERRAIN_UPDATING
     _cachedHeightMap.Resize(0);
     _cachedHolesMask.Resize(0);
@@ -952,7 +951,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         chunk._yHeight = chunkHeights[chunkIndex];
         chunk.UpdateTransform();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
     UpdateCollision();
 
 #if TERRAIN_UPDATING
@@ -1432,7 +1431,7 @@ bool TerrainPatch::ModifyHeightMap(const float* samples, const Int2& modifiedOff
         chunk._yHeight = chunkHeights[chunkIndex];
         chunk.UpdateTransform();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
     return UpdateHeightData(info, modifiedOffset, modifiedSize, wasHeightRangeChanged);
 }
 
@@ -2109,9 +2108,8 @@ void TerrainPatch::UpdatePostManualDeserialization()
     {
         auto& chunk = Chunks[chunkIndex];
         chunk.UpdateTransform();
-        chunk.UpdateBounds();
     }
-    UpdateBounds();
+    _terrain->UpdateBounds();
 
     ScopeLock lock(_collisionLocker);
 

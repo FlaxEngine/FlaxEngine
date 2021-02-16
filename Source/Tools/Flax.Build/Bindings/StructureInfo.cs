@@ -1,19 +1,18 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build.Bindings
 {
     /// <summary>
     /// The native structure information for bindings generator.
     /// </summary>
-    public class StructureInfo : ApiTypeInfo
+    public class StructureInfo : ClassStructInfo
     {
-        public AccessLevel Access;
-        public TypeInfo BaseType;
-        public List<FieldInfo> Fields;
-        public List<FunctionInfo> Functions;
+        public List<FieldInfo> Fields = new List<FieldInfo>();
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
         public bool IsAutoSerialization;
         public bool ForceNoPod;
 
@@ -27,7 +26,7 @@ namespace Flax.Build.Bindings
         {
             base.Init(buildData);
 
-            if (ForceNoPod)
+            if (ForceNoPod || (InterfaceNames != null && InterfaceNames.Count != 0))
             {
                 _isPod = false;
                 return;
@@ -43,6 +42,26 @@ namespace Flax.Build.Bindings
                     _isPod = false;
                 }
             }
+        }
+
+        public override void Write(BinaryWriter writer)
+        {
+            BindingsGenerator.Write(writer, Fields);
+            BindingsGenerator.Write(writer, Functions);
+            writer.Write(IsAutoSerialization);
+            writer.Write(ForceNoPod);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            Fields = BindingsGenerator.Read(reader, Fields);
+            Functions = BindingsGenerator.Read(reader, Functions);
+            IsAutoSerialization = reader.ReadBoolean();
+            ForceNoPod = reader.ReadBoolean();
+
+            base.Read(reader);
         }
 
         public override void AddChild(ApiTypeInfo apiTypeInfo)

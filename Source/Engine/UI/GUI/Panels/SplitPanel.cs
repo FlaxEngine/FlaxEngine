@@ -12,12 +12,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The splitter size (in pixels).
         /// </summary>
-        public const int SpliterSize = 4;
+        public const int SplitterSize = 4;
 
         /// <summary>
         /// The splitter half size (in pixels).
         /// </summary>
-        private const int SpliterSizeHalf = SpliterSize / 2;
+        private const int SplitterSizeHalf = SplitterSize / 2;
 
         private Orientation _orientation;
         private float _splitterValue;
@@ -105,12 +105,12 @@ namespace FlaxEngine.GUI
             if (_orientation == Orientation.Horizontal)
             {
                 var split = Mathf.RoundToInt(_splitterValue * Width);
-                _splitterRect = new Rectangle(Mathf.Clamp(split - SpliterSizeHalf, 0.0f, Width), 0, SpliterSize, Height);
+                _splitterRect = new Rectangle(Mathf.Clamp(split - SplitterSizeHalf, 0.0f, Width), 0, SplitterSize, Height);
             }
             else
             {
                 var split = Mathf.RoundToInt(_splitterValue * Height);
-                _splitterRect = new Rectangle(0, Mathf.Clamp(split - SpliterSizeHalf, 0.0f, Height), Width, SpliterSize);
+                _splitterRect = new Rectangle(0, Mathf.Clamp(split - SplitterSizeHalf, 0.0f, Height), Width, SplitterSize);
             }
         }
 
@@ -226,14 +226,14 @@ namespace FlaxEngine.GUI
             if (_orientation == Orientation.Horizontal)
             {
                 var split = Mathf.RoundToInt(_splitterValue * Width);
-                Panel1.Bounds = new Rectangle(0, 0, split - SpliterSizeHalf, Height);
-                Panel2.Bounds = new Rectangle(split + SpliterSizeHalf, 0, Width - split - SpliterSizeHalf, Height);
+                Panel1.Bounds = new Rectangle(0, 0, split - SplitterSizeHalf, Height);
+                Panel2.Bounds = new Rectangle(split + SplitterSizeHalf, 0, Width - split - SplitterSizeHalf, Height);
             }
             else
             {
                 var split = Mathf.RoundToInt(_splitterValue * Height);
-                Panel1.Bounds = new Rectangle(0, 0, Width, split - SpliterSizeHalf);
-                Panel2.Bounds = new Rectangle(0, split + SpliterSizeHalf, Width, Height - split - SpliterSizeHalf);
+                Panel1.Bounds = new Rectangle(0, 0, Width, split - SplitterSizeHalf);
+                Panel2.Bounds = new Rectangle(0, split + SplitterSizeHalf, Width, Height - split - SplitterSizeHalf);
             }
         }
     }

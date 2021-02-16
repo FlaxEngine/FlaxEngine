@@ -118,9 +118,11 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 if (noSerialize)
                     continue;
 
+                var isObsolete = attributes.Any(x => x is ObsoleteAttribute);
+
                 var jsonProperty = CreateProperty(p, memberSerialization);
                 jsonProperty.Writable = true;
-                jsonProperty.Readable = true;
+                jsonProperty.Readable = !isObsolete;
 
                 if (_flaxType.IsAssignableFrom(p.PropertyType))
                 {

@@ -230,36 +230,28 @@ void MaterialParameter::Bind(BindMeta& meta) const
     switch (_type)
     {
     case MaterialParameterType::Bool:
-        if (meta.Buffer0)
-            *((int32*)(meta.Buffer0 + _offset)) = _asBool;
+        *((int32*)(meta.Constants + _offset)) = _asBool;
         break;
     case MaterialParameterType::Integer:
-        if (meta.Buffer0)
-            *((int32*)(meta.Buffer0 + _offset)) = _asInteger;
+        *((int32*)(meta.Constants + _offset)) = _asInteger;
         break;
     case MaterialParameterType::Float:
-        if (meta.Buffer0)
-            *((float*)(meta.Buffer0 + _offset)) = _asFloat;
+        *((float*)(meta.Constants + _offset)) = _asFloat;
         break;
     case MaterialParameterType::Vector2:
-        if (meta.Buffer0)
-            *((Vector2*)(meta.Buffer0 + _offset)) = _asVector2;
+        *((Vector2*)(meta.Constants + _offset)) = _asVector2;
         break;
     case MaterialParameterType::Vector3:
-        if (meta.Buffer0)
-            *((Vector3*)(meta.Buffer0 + _offset)) = _asVector3;
+        *((Vector3*)(meta.Constants + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        if (meta.Buffer0)
-            *((Vector4*)(meta.Buffer0 + _offset)) = _asVector4;
+        *((Vector4*)(meta.Constants + _offset)) = _asVector4;
         break;
     case MaterialParameterType::Color:
-        if (meta.Buffer0)
-            *((Color*)(meta.Buffer0 + _offset)) = _asColor;
+        *((Color*)(meta.Constants + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
-        if (meta.Buffer0)
-            Matrix::Transpose(_asMatrix, *(Matrix*)(meta.Buffer0 + _offset));
+        Matrix::Transpose(_asMatrix, *(Matrix*)(meta.Constants + _offset));
         break;
     case MaterialParameterType::NormalMap:
     {
@@ -336,11 +328,10 @@ void MaterialParameter::Bind(BindMeta& meta) const
         break;
     }
     case MaterialParameterType::ChannelMask:
-        if (meta.Buffer0)
-            *((Vector4*)(meta.Buffer0 + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
+        *((Vector4*)(meta.Constants + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
         break;
     case MaterialParameterType::GameplayGlobal:
-        if (meta.Buffer0 && _asAsset)
+        if (_asAsset)
         {
             const auto e = _asAsset.As<GameplayGlobals>()->Variables.TryGet(_name);
             if (e)
@@ -348,26 +339,26 @@ void MaterialParameter::Bind(BindMeta& meta) const
                 switch (e->Value.Type.Type)
                 {
                 case VariantType::Bool:
-                    *((bool*)(meta.Buffer0 + _offset)) = e->Value.AsBool;
+                    *((bool*)(meta.Constants + _offset)) = e->Value.AsBool;
                     break;
                 case VariantType::Int:
-                    *((int32*)(meta.Buffer0 + _offset)) = e->Value.AsInt;
+                    *((int32*)(meta.Constants + _offset)) = e->Value.AsInt;
                     break;
                 case VariantType::Uint:
-                    *((uint32*)(meta.Buffer0 + _offset)) = e->Value.AsUint;
+                    *((uint32*)(meta.Constants + _offset)) = e->Value.AsUint;
                     break;
                 case VariantType::Float:
-                    *((float*)(meta.Buffer0 + _offset)) = e->Value.AsFloat;
+                    *((float*)(meta.Constants + _offset)) = e->Value.AsFloat;
                     break;
                 case VariantType::Vector2:
-                    *((Vector2*)(meta.Buffer0 + _offset)) = e->Value.AsVector2();
+                    *((Vector2*)(meta.Constants + _offset)) = e->Value.AsVector2();
                     break;
                 case VariantType::Vector3:
-                    *((Vector3*)(meta.Buffer0 + _offset)) = e->Value.AsVector3();
+                    *((Vector3*)(meta.Constants + _offset)) = e->Value.AsVector3();
                     break;
                 case VariantType::Vector4:
                 case VariantType::Color:
-                    *((Vector4*)(meta.Buffer0 + _offset)) = e->Value.AsVector4();
+                    *((Vector4*)(meta.Constants + _offset)) = e->Value.AsVector4();
                     break;
                 default: ;
                 }

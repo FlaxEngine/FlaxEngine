@@ -21,7 +21,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// The default node offset on Y axis.
         /// </summary>
-        public const float DefaultNodeOffsetY = 1;
+        public const float DefaultNodeOffsetY = 0;
 
         private Tree _tree;
 
@@ -539,7 +539,7 @@ namespace FlaxEditor.GUI.Tree
         {
             if (new Rectangle(_headerRect.X, _headerRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Above;
-            else if (IsCollapsed && new Rectangle(_headerRect.X, _headerRect.Bottom - DefaultDragInsertPositionMargin, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
+            else if ((IsCollapsed || !HasAnyVisibleChild) && new Rectangle(_headerRect.X, _headerRect.Bottom - DefaultDragInsertPositionMargin, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Below;
             else
                 _dragOverMode = DragItemPositioning.At;

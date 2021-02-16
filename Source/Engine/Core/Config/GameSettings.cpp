@@ -2,6 +2,7 @@
 
 #include "GameSettings.h"
 #include "Engine/Serialization/JsonTools.h"
+#include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Physics/PhysicsSettings.h"
 #include "Engine/Core/Log.h"
 #include "LayersTagsSettings.h"
@@ -17,30 +18,6 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
-#include "Engine/Engine/Time.h"
-
-String GameSettings::ProductName;
-String GameSettings::CompanyName;
-String GameSettings::CopyrightNotice;
-Guid GameSettings::Icon;
-Guid GameSettings::FirstScene;
-bool GameSettings::NoSplashScreen = false;
-Guid GameSettings::SplashScreen;
-Dictionary<String, Guid> GameSettings::CustomSettings;
-
-Array<SettingsBase*> SettingsBase::Containers(32);
-
-#if USE_EDITOR
-extern void LoadPlatformSettingsEditor(ISerializable::DeserializeStream& data);
-#endif
-
-void TimeSettings::Apply()
-{
-    Time::UpdateFPS = UpdateFPS;
-    Time::PhysicsFPS = PhysicsFPS;
-    Time::DrawFPS = DrawFPS;
-    Time::TimeScale = TimeScale;
-}
 
 class GameSettingsService : public EngineService
 {
@@ -49,9 +26,6 @@ public:
     GameSettingsService()
         : EngineService(TEXT("GameSettings"), -70)
     {
-        GameSettings::Icon = Guid::Empty;
-        GameSettings::FirstScene = Guid::Empty;
-        GameSettings::SplashScreen = Guid::Empty;
     }
 
     bool Init() override
@@ -60,62 +34,141 @@ public:
     }
 };
 
+IMPLEMENT_SETTINGS_GETTER(BuildSettings, GameCooking);
+IMPLEMENT_SETTINGS_GETTER(GraphicsSettings, Graphics);
+IMPLEMENT_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
+IMPLEMENT_SETTINGS_GETTER(TimeSettings, Time);
+IMPLEMENT_SETTINGS_GETTER(AudioSettings, Audio);
+IMPLEMENT_SETTINGS_GETTER(PhysicsSettings, Physics);
+IMPLEMENT_SETTINGS_GETTER(InputSettings, Input);
+
+#if !USE_EDITOR
+#if PLATFORM_WINDOWS
+IMPLEMENT_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
+#elif PLATFORM_UWP || PLATFORM_XBOX_ONE
+IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
+#elif PLATFORM_LINUX
+IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
+#elif PLATFORM_PS4
+IMPLEMENT_SETTINGS_GETTER(PS4PlatformSettings, PS4Platform);
+#elif PLATFORM_XBOX_SCARLETT
+IMPLEMENT_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatform);
+#elif PLATFORM_ANDROID
+IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
+#else
+#error Unknown platform
+#endif
+#endif
+
 GameSettingsService GameSettingsServiceInstance;
+AssetReference<JsonAsset> GameSettingsAsset;
+
+GameSettings* GameSettings::Get()
+{
+    if (!GameSettingsAsset)
+    {
+        // Load root game settings asset.
+        // It may be missing in editor during dev but must be ready in the build game.
+        const auto assetPath = Globals::ProjectContentFolder / TEXT("GameSettings.json");
+        GameSettingsAsset = Content::LoadAsync<JsonAsset>(assetPath);
+        if (GameSettingsAsset == nullptr)
+        {
+            LOG(Error, "Missing game settings asset.");
+            return nullptr;
+        }
+        if (GameSettingsAsset->WaitForLoaded())
+        {
+            return nullptr;
+        }
+        if (GameSettingsAsset->InstanceType != GameSettings::TypeInitializer)
+        {
+            LOG(Error, "Invalid game settings asset data type.");
+            return nullptr;
+        }
+    }
+    auto asset = GameSettingsAsset.Get();
+    if (asset && asset->WaitForLoaded())
+        asset = nullptr;
+    return asset ? (GameSettings*)asset->Instance : nullptr;
+}
 
 bool GameSettings::Load()
 {
+    // Load main settings asset
+    auto settings = Get();
+    if (!settings)
+    {
+        return true;
+    }
+
+    // Preload all settings assets
+#define PRELOAD_SETTINGS(type) \
+    { \
+        if (settings->type) \
+        { \
+            Content::LoadAsync<JsonAsset>(settings->type); \
+        } \
+        else \
+        { \
+            LOG(Warning, "Missing {0} settings", TEXT(#type)); \
+        } \
+    }
+    PRELOAD_SETTINGS(Time);
+    PRELOAD_SETTINGS(Audio);
+    PRELOAD_SETTINGS(LayersAndTags);
+    PRELOAD_SETTINGS(Physics);
+    PRELOAD_SETTINGS(Input);
+    PRELOAD_SETTINGS(Graphics);
+    PRELOAD_SETTINGS(Navigation);
+    PRELOAD_SETTINGS(GameCooking);
+#undef PRELOAD_SETTINGS
+
+    // Apply the game settings to the engine
+    settings->Apply();
+
+    return false;
+}
+
+void GameSettings::Apply()
+{
+    // TODO: impl this
+#define APPLY_SETTINGS(type) \
+    { \
+        type* obj = type::Get(); \
+        if (obj) \
+        { \
+            obj->Apply(); \
+        } \
+        else \
+        { \
+            LOG(Warning, "Missing {0} settings", TEXT(#type)); \
+        } \
+    }
+    APPLY_SETTINGS(TimeSettings);
+    APPLY_SETTINGS(AudioSettings);
+    APPLY_SETTINGS(LayersAndTagsSettings);
+    APPLY_SETTINGS(PhysicsSettings);
+    APPLY_SETTINGS(InputSettings);
+    APPLY_SETTINGS(GraphicsSettings);
+    APPLY_SETTINGS(NavigationSettings);
+    APPLY_SETTINGS(BuildSettings);
+    APPLY_SETTINGS(PlatformSettings);
+#undef APPLY_SETTINGS
+}
+
+void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    // Load properties
+    ProductName = JsonTools::GetString(stream, "ProductName");
+    CompanyName = JsonTools::GetString(stream, "CompanyName");
+    CopyrightNotice = JsonTools::GetString(stream, "CopyrightNotice");
+    Icon = JsonTools::GetGuid(stream, "Icon");
+    FirstScene = JsonTools::GetGuid(stream, "FirstScene");
+    NoSplashScreen = JsonTools::GetBool(stream, "NoSplashScreen", NoSplashScreen);
+    SplashScreen = JsonTools::GetGuid(stream, "SplashScreen");
     CustomSettings.Clear();
-
-#if USE_EDITOR
-#define END_POINT(msg) LOG(Warning, msg " Using default values."); return false
-#else
-#define END_POINT(msg) LOG(Fatal, msg); return true
-#endif
-
-#define LOAD_SETTINGS(nodeName, settingsType) \
-	{ \
-		Guid id = JsonTools::GetGuid(data, nodeName); \
-		if (id.IsValid()) \
-		{ \
-			AssetReference<JsonAsset> subAsset = Content::LoadAsync<JsonAsset>(id); \
-			if (subAsset && !subAsset->WaitForLoaded()) \
-			{ \
-				settingsType::Instance()->Deserialize(*subAsset->Data, nullptr); \
-                settingsType::Instance()->Apply(); \
-			} \
-			else \
-			{ LOG(Warning, "Cannot load " nodeName " settings"); } \
-		} \
-		else \
-		{ LOG(Warning, "Missing " nodeName " settings"); } \
-	}
-
-    // Load root game settings asset.
-    // It may be missing in editor during dev but must be ready in the build game.
-    const auto assetPath = Globals::ProjectContentFolder / TEXT("GameSettings.json");
-    AssetReference<JsonAsset> asset = Content::LoadAsync<JsonAsset>(assetPath);
-    if (asset == nullptr)
-    {
-        END_POINT("Missing game settings asset.");
-    }
-    if (asset->WaitForLoaded()
-        || asset->DataTypeName != TEXT("FlaxEditor.Content.Settings.GameSettings")
-        || asset->Data == nullptr)
-    {
-        END_POINT("Cannot load game settings asset.");
-    }
-    auto& data = *asset->Data;
-
-    // Load settings
-    ProductName = JsonTools::GetString(data, "ProductName");
-    CompanyName = JsonTools::GetString(data, "CompanyName");
-    CopyrightNotice = JsonTools::GetString(data, "CopyrightNotice");
-    Icon = JsonTools::GetGuid(data, "Icon");
-    FirstScene = JsonTools::GetGuid(data, "FirstScene");
-    NoSplashScreen = JsonTools::GetBool(data, "NoSplashScreen", NoSplashScreen);
-    SplashScreen = JsonTools::GetGuid(data, "SplashScreen");
-    const auto customSettings = data.FindMember("CustomSettings");
-    if (customSettings != data.MemberEnd())
+    const auto customSettings = stream.FindMember("CustomSettings");
+    if (customSettings != stream.MemberEnd())
     {
         auto& items = customSettings->value;
         for (auto it = items.MemberBegin(); it != items.MemberEnd(); ++it)
@@ -129,39 +182,21 @@ bool GameSettings::Load()
         }
     }
 
-    // Load child settings
-    LOAD_SETTINGS("Time", TimeSettings);
-    LOAD_SETTINGS("Physics", PhysicsSettings);
-    LOAD_SETTINGS("LayersAndTags", LayersAndTagsSettings);
-    LOAD_SETTINGS("Graphics", GraphicsSettings);
-    LOAD_SETTINGS("GameCooking", BuildSettings);
-    LOAD_SETTINGS("Input", InputSettings);
-    LOAD_SETTINGS("Audio", AudioSettings);
-    LOAD_SETTINGS("Navigation", NavigationSettings);
+    // Settings containers
+    DESERIALIZE(Time);
+    DESERIALIZE(Audio);
+    DESERIALIZE(LayersAndTags);
+    DESERIALIZE(Physics);
+    DESERIALIZE(Input);
+    DESERIALIZE(Graphics);
+    DESERIALIZE(Navigation);
+    DESERIALIZE(GameCooking);
 
-    // Load platform settings
-#if PLATFORM_WINDOWS
-    LOAD_SETTINGS("WindowsPlatform", WindowsPlatformSettings);
-#endif
-#if PLATFORM_UWP
-    LOAD_SETTINGS("UWPPlatform", UWPPlatformSettings);
-#endif
-#if PLATFORM_LINUX
-    LOAD_SETTINGS("LinuxPlatform", LinuxPlatformSettings);
-#endif
-#if PLATFORM_PS4
-    LOAD_SETTINGS("PS4Platform", PS4PlatformSettings);
-#endif
-#if PLATFORM_XBOX_SCARLETT
-    LOAD_SETTINGS("XboxScarlettPlatform", XboxScarlettPlatformSettings);
-#endif
-#if PLATFORM_ANDROID
-    LOAD_SETTINGS("AndroidPlatform", AndroidPlatformSettings);
-#endif
-#if USE_EDITOR
-    LoadPlatformSettingsEditor(data);
-#endif
-
-    return false;
-#undef END_POINT
+    // Per-platform settings containers
+    DESERIALIZE(WindowsPlatform);
+    DESERIALIZE(UWPPlatform);
+    DESERIALIZE(LinuxPlatform);
+    DESERIALIZE(PS4Platform);
+    DESERIALIZE(XboxScarlettPlatform);
+    DESERIALIZE(AndroidPlatform);
 }

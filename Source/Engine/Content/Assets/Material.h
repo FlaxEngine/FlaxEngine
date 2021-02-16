@@ -48,7 +48,7 @@ public:
     bool IsReady() const override;
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
-    bool CanUseInstancing() const override;
+    bool CanUseInstancing(InstancingHandler& handler) const override;
     void Bind(BindParameters& params) override;
 
     // [ShaderAssetBase]

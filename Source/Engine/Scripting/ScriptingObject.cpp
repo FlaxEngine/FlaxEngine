@@ -11,7 +11,6 @@
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
-#include "ManagedCLR/MUtils.h"
 #if PLATFORM_LINUX
 #include "ManagedCLR/MCore.h"
 #endif
@@ -70,6 +69,12 @@ ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
         mono_field_get_value(obj, ptrField, &ptr);
     }
     return ptr;
+}
+
+bool ScriptingObject::Is(const ScriptingTypeHandle& type) const
+{
+    CHECK_RETURN(type, false);
+    return _type == type || CanCast(GetClass(), type.GetType().ManagedClass);
 }
 
 void ScriptingObject::ChangeID(const Guid& newId)
@@ -204,6 +209,14 @@ void ScriptingObject::UnregisterObject()
 
     Flags &= ~ObjectFlags::IsRegistered;
     Scripting::UnregisterObject(this);
+}
+
+bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to)
+{
+    if (!from && !to)
+        return true;
+    CHECK_RETURN(from && to, false);
+    return CanCast(from.GetType().ManagedClass, to.GetType().ManagedClass);
 }
 
 bool ScriptingObject::CanCast(MClass* from, MClass* to)
@@ -357,7 +370,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
@@ -400,7 +413,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), type);
-        ScriptingObject* obj = type.GetType().Class.Spawn(params);
+        ScriptingObject* obj = type.GetType().Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeName));
@@ -454,7 +467,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
@@ -501,11 +514,6 @@ public:
             obj->RegisterObject();
     }
 
-    static void ManagedInstanceDeleted(ScriptingObject* obj)
-    {
-        Scripting::OnManagedInstanceDeleted(obj);
-    }
-
     static void Destroy(ManagedScriptingObject* obj, float timeLeft)
     {
         // Use scaled game time for removing actors/scripts by the user (maybe expose it to the api?)
@@ -544,7 +552,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create1", &Create1);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create2", &Create2);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceCreated", &ManagedInstanceCreated);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &ManagedInstanceDeleted);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &Scripting::OnManagedInstanceDeleted);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Destroy", &Destroy);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetTypeName", &GetTypeName);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &FindObject);

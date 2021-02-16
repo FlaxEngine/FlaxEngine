@@ -1,19 +1,153 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Navigation.h"
-#include "Engine/Threading/Threading.h"
-#include "Engine/Level/Scene/Scene.h"
-#include "Engine/Engine/EngineService.h"
+#include "NavigationSettings.h"
+#include "NavMeshRuntime.h"
 #include "NavMeshBuilder.h"
+#include "Engine/Core/Config/GameSettings.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+#include "Engine/Threading/Threading.h"
+#if USE_EDITOR
+#include "Engine/Level/Level.h"
+#include "Engine/Level/Scene/Scene.h"
+#endif
 #include "NavMesh.h"
-#include <ThirdParty/recastnavigation/RecastAlloc.h>
+
+#include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Serialization/Serialization.h"
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
-#include <ThirdParty/recastnavigation/DetourNavMeshQuery.h>
+#include <ThirdParty/recastnavigation/RecastAlloc.h>
 
-#define DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL 50.0f
-#define DEFAULT_NAV_QUERY_EXTENT_VERTICAL 250.0f
+namespace
+{
+    Array<NavMeshRuntime*, InlinedAllocation<16>> NavMeshes;
+}
 
-NavMesh* _navMesh = nullptr;
+NavMeshRuntime* NavMeshRuntime::Get(const StringView& navMeshName)
+{
+    NavMeshRuntime* result = nullptr;
+    for (auto navMesh : NavMeshes)
+    {
+        if (navMesh->Properties.Name == navMeshName)
+        {
+            result = navMesh;
+            break;
+        }
+    }
+    return result;
+}
+
+NavMeshRuntime* NavMeshRuntime::Get(const NavAgentProperties& agentProperties)
+{
+    NavMeshRuntime* result = nullptr;
+    // TODO: maybe build lookup table for agentProperties -> navMesh to improve perf on frequent calls?
+    float bestAgentRadiusDiff = -MAX_float;
+    float bestAgentHeightDiff = -MAX_float;
+    bool bestIsValid = false;
+    for (auto navMesh : NavMeshes)
+    {
+        const auto& navMeshProperties = navMesh->Properties;
+        const float agentRadiusDiff = navMeshProperties.Agent.Radius - agentProperties.Radius;
+        const float agentHeightDiff = navMeshProperties.Agent.Height - agentProperties.Height;
+        const bool isValid = agentRadiusDiff >= 0.0f && agentHeightDiff >= 0.0f;
+
+        // NavMesh must be valid for an agent and be first valid or have better properties than the best matching result so far
+        if (isValid
+            &&
+            (
+                !bestIsValid
+                ||
+                (agentRadiusDiff + agentHeightDiff < bestAgentRadiusDiff + bestAgentHeightDiff)
+            )
+        )
+        {
+            result = navMesh;
+            bestIsValid = true;
+            bestAgentRadiusDiff = agentRadiusDiff;
+            bestAgentHeightDiff = agentHeightDiff;
+        }
+    }
+    return result;
+}
+
+NavMeshRuntime* NavMeshRuntime::Get(const NavMeshProperties& navMeshProperties, bool createIfMissing)
+{
+    NavMeshRuntime* result = nullptr;
+    for (auto navMesh : NavMeshes)
+    {
+        if (navMesh->Properties == navMeshProperties)
+        {
+            result = navMesh;
+            break;
+        }
+    }
+    if (!result && createIfMissing)
+    {
+        // Create a new navmesh
+        result = New<NavMeshRuntime>(navMeshProperties);
+        NavMeshes.Add(result);
+    }
+    return result;
+}
+
+static_assert(ARRAY_COUNT(NavMeshRuntime::NavAreasCosts) == DT_MAX_AREAS, "Invalid nav areas amount limit.");
+float NavMeshRuntime::NavAreasCosts[64];
+#if COMPILE_WITH_DEBUG_DRAW
+Color NavMeshRuntime::NavAreasColors[64];
+#endif
+
+bool NavAgentProperties::operator==(const NavAgentProperties& other) const
+{
+    return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle);
+}
+
+bool NavAgentMask::IsAgentSupported(int32 agentIndex) const
+{
+    return (Mask & (1 << agentIndex)) != 0;
+}
+
+bool NavAgentMask::IsAgentSupported(const NavAgentProperties& agentProperties) const
+{
+    auto settings = NavigationSettings::Get();
+    for (int32 agentIndex = 0; agentIndex < settings->NavMeshes.Count(); agentIndex++)
+    {
+        if (settings->NavMeshes[agentIndex].Agent == agentProperties)
+        {
+            return (Mask & (1 << agentIndex)) != 0;
+        }
+    }
+    return false;
+}
+
+bool NavAgentMask::IsNavMeshSupported(const NavMeshProperties& navMeshProperties) const
+{
+    auto settings = NavigationSettings::Get();
+    for (int32 agentIndex = 0; agentIndex < settings->NavMeshes.Count(); agentIndex++)
+    {
+        if (settings->NavMeshes[agentIndex] == navMeshProperties)
+        {
+            return (Mask & (1 << agentIndex)) != 0;
+        }
+    }
+    return false;
+}
+
+bool NavAgentMask::operator==(const NavAgentMask& other) const
+{
+    return Mask == other.Mask;
+}
+
+bool NavAreaProperties::operator==(const NavAreaProperties& other) const
+{
+    return Name == other.Name && Id == other.Id && Math::NearEqual(Cost, other.Cost);
+}
+
+bool NavMeshProperties::operator==(const NavMeshProperties& other) const
+{
+    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent;
+}
 
 class NavigationService : public EngineService
 {
@@ -36,11 +170,6 @@ public:
 
 NavigationService NavigationServiceInstance;
 
-NavMesh* Navigation::GetNavMesh()
-{
-    return _navMesh;
-}
-
 void* dtAllocDefault(size_t size, dtAllocHint)
 {
     return Allocator::Allocate(size);
@@ -51,14 +180,88 @@ void* rcAllocDefault(size_t size, rcAllocHint)
     return Allocator::Allocate(size);
 }
 
+NavigationSettings::NavigationSettings()
+{
+    // Init navmeshes
+    NavMeshes.Resize(1);
+    auto& navMesh = NavMeshes[0];
+    navMesh.Name = TEXT("Default");
+
+    // Init nav areas
+    NavAreas.Resize(2);
+    auto& areaNull = NavAreas[0];
+    areaNull.Name = TEXT("Null");
+    areaNull.Color = Color::Transparent;
+    areaNull.Id = 0;
+    areaNull.Cost = MAX_float;
+    auto& areaWalkable = NavAreas[1];
+    areaWalkable.Name = TEXT("Walkable");
+    areaWalkable.Color = Color::Transparent;
+    areaWalkable.Id = 63;
+    areaWalkable.Cost = 1;
+}
+
+IMPLEMENT_SETTINGS_GETTER(NavigationSettings, Navigation);
+
+void NavigationSettings::Apply()
+{
+    // Cache areas properties
+    for (auto& area : NavAreas)
+    {
+        if (area.Id < DT_MAX_AREAS)
+        {
+            NavMeshRuntime::NavAreasCosts[area.Id] = area.Cost;
+#if USE_EDITOR
+            NavMeshRuntime::NavAreasColors[area.Id] = area.Color;
+#endif
+        }
+    }
+}
+
+void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(AutoAddMissingNavMeshes);
+    DESERIALIZE(AutoRemoveMissingNavMeshes);
+    DESERIALIZE(CellHeight);
+    DESERIALIZE(CellSize);
+    DESERIALIZE(TileSize);
+    DESERIALIZE(MinRegionArea);
+    DESERIALIZE(MergeRegionArea);
+    DESERIALIZE(MaxEdgeLen);
+    DESERIALIZE(MaxEdgeError);
+    DESERIALIZE(DetailSamplingDist);
+    DESERIALIZE(MaxDetailSamplingError);
+    if (modifier->EngineBuild >= 6215)
+    {
+        DESERIALIZE(NavMeshes);
+    }
+    else
+    {
+        // [Deprecated on 12.01.2021, expires on 12.01.2022]
+        float WalkableRadius = 34.0f;
+        float WalkableHeight = 144.0f;
+        float WalkableMaxClimb = 35.0f;
+        float WalkableMaxSlopeAngle = 60.0f;
+        DESERIALIZE(WalkableRadius);
+        DESERIALIZE(WalkableHeight);
+        DESERIALIZE(WalkableMaxClimb);
+        DESERIALIZE(WalkableMaxSlopeAngle);
+        NavMeshes.Resize(1);
+        auto& navMesh = NavMeshes[0];
+        navMesh.Name = TEXT("Default");
+        navMesh.Agent.Radius = WalkableRadius;
+        navMesh.Agent.Height = WalkableHeight;
+        navMesh.Agent.StepHeight = WalkableMaxClimb;
+        navMesh.Agent.MaxSlopeAngle = WalkableMaxSlopeAngle;
+    }
+    DESERIALIZE(NavAreas);
+}
+
 bool NavigationService::Init()
 {
     // Link memory allocation calls to use engine default allocator
     dtAllocSetCustom(dtAllocDefault, Allocator::Free);
     rcAllocSetCustom(rcAllocDefault, Allocator::Free);
-
-    // Create global nav mesh
-    _navMesh = New<NavMesh>();
 
     return false;
 }
@@ -74,156 +277,49 @@ void NavigationService::Update()
 
 void NavigationService::Dispose()
 {
-    if (_navMesh)
+    // Release nav meshes
+    for (auto navMesh : NavMeshes)
     {
-        _navMesh->Dispose();
-        Delete(_navMesh);
-        _navMesh = nullptr;
+        navMesh->Dispose();
+        Delete(navMesh);
     }
+    NavMeshes.Clear();
+    NavMeshes.ClearDelete();
 }
 
 bool Navigation::FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hitInfo, float maxDistance)
 {
-    ScopeLock lock(_navMesh->Locker);
-
-    const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
-    {
+    if (NavMeshes.IsEmpty())
         return false;
-    }
-
-    dtQueryFilter filter;
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
-
-    dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPosition.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
-        return false;
-    }
-
-    return dtStatusSucceed(_navMesh->GetNavMeshQuery()->findDistanceToWall(startPoly, &startPosition.X, maxDistance, &filter, &hitInfo.Distance, &hitInfo.Position.X, &hitInfo.Normal.X));
+    return NavMeshes.First()->FindDistanceToWall(startPosition, hitInfo, maxDistance);
 }
 
 bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath)
 {
-    resultPath.Clear();
-    ScopeLock lock(_navMesh->Locker);
-
-    const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
-    {
+    if (NavMeshes.IsEmpty())
         return false;
-    }
+    return NavMeshes.First()->FindPath(startPosition, endPosition, resultPath);
+}
 
-    dtQueryFilter filter;
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
-
-    dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPosition.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
+bool Navigation::TestPath(const Vector3& startPosition, const Vector3& endPosition)
+{
+    if (NavMeshes.IsEmpty())
         return false;
-    }
-    dtPolyRef endPoly = 0;
-    query->findNearestPoly(&endPosition.X, &extent.X, &filter, &endPoly, nullptr);
-    if (!endPoly)
-    {
-        return false;
-    }
-
-    dtPolyRef path[NAV_MESH_PATH_MAX_SIZE];
-    int32 pathSize;
-    const auto findPathStatus = _navMesh->GetNavMeshQuery()->findPath(startPoly, endPoly, &startPosition.X, &endPosition.X, &filter, path, &pathSize, NAV_MESH_PATH_MAX_SIZE);
-    if (dtStatusFailed(findPathStatus))
-    {
-        return false;
-    }
-
-    // Check for special case, where path has not been found, and starting polygon was the one closest to the target
-    if (pathSize == 1 && dtStatusDetail(findPathStatus, DT_PARTIAL_RESULT))
-    {
-        // In this case we find a point on starting polygon, that's closest to destination and store it as path end
-        resultPath.Resize(2);
-        resultPath[0] = startPosition;
-        resultPath[1] = startPosition;
-        _navMesh->GetNavMeshQuery()->closestPointOnPolyBoundary(startPoly, &endPosition.X, &resultPath[1].X);
-    }
-    else
-    {
-        int straightPathCount = 0;
-        resultPath.EnsureCapacity(NAV_MESH_PATH_MAX_SIZE);
-        const auto findStraightPathStatus = _navMesh->GetNavMeshQuery()->findStraightPath(&startPosition.X, &endPosition.X, path, pathSize, (float*)resultPath.Get(), nullptr, nullptr, &straightPathCount, resultPath.Capacity(), DT_STRAIGHTPATH_AREA_CROSSINGS);
-        if (dtStatusFailed(findStraightPathStatus))
-        {
-            return false;
-        }
-        resultPath.Resize(straightPathCount);
-    }
-
-    return true;
+    return NavMeshes.First()->TestPath(startPosition, endPosition);
 }
 
 bool Navigation::ProjectPoint(const Vector3& point, Vector3& result)
 {
-    ScopeLock lock(_navMesh->Locker);
-
-    const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
-    {
+    if (NavMeshes.IsEmpty())
         return false;
-    }
-
-    dtQueryFilter filter;
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
-
-    dtPolyRef startPoly = 0;
-    query->findNearestPoly(&point.X, &extent.X, &filter, &startPoly, &result.X);
-    if (!startPoly)
-    {
-        return false;
-    }
-
-    return true;
+    return NavMeshes.First()->ProjectPoint(point, result);
 }
 
 bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo)
 {
-    ScopeLock lock(_navMesh->Locker);
-
-    const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
-    {
+    if (NavMeshes.IsEmpty())
         return false;
-    }
-
-    dtQueryFilter filter;
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
-
-    dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPosition.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
-        return false;
-    }
-
-    dtRaycastHit hit;
-    hit.path = nullptr;
-    hit.maxPath = 0;
-    const bool result = dtStatusSucceed(_navMesh->GetNavMeshQuery()->raycast(startPoly, &startPosition.X, &endPosition.X, &filter, 0, &hit));
-    if (hit.t >= MAX_float)
-    {
-        hitInfo.Position = endPosition;
-        hitInfo.Distance = 0;
-    }
-    else
-    {
-        hitInfo.Position = startPosition + (endPosition - startPosition) * hit.t;
-        hitInfo.Distance = hit.t;
-    }
-    hitInfo.Normal = *(Vector3*)&hit.hitNormal;
-
-    return result;
+    return NavMeshes.First()->RayCast(startPosition, endPosition, hitInfo);
 }
 
 #if COMPILE_WITH_NAV_MESH_BUILDER
@@ -250,96 +346,34 @@ void Navigation::BuildNavMesh(Scene* scene, const BoundingBox& dirtyBounds, floa
 
 #endif
 
-#if USE_EDITOR
-
-#include "Engine/Debug/DebugDraw.h"
-
-void DrawPoly(const dtMeshTile& tile, const dtPoly& poly)
-{
-    const unsigned int ip = (unsigned int)(&poly - tile.polys);
-    const dtPolyDetail& pd = tile.detailMeshes[ip];
-    const float DrawOffsetY = 20.0f;
-
-    for (int i = 0; i < pd.triCount; i++)
-    {
-        Vector3 v[3];
-        const unsigned char* t = &tile.detailTris[(pd.triBase + i) * 4];
-
-        for (int k = 0; k < 3; k++)
-        {
-            if (t[k] < poly.vertCount)
-            {
-                v[k] = *(Vector3*)&tile.verts[poly.verts[t[k]] * 3];
-            }
-            else
-            {
-                v[k] = *(Vector3*)&tile.detailVerts[(pd.vertBase + t[k] - poly.vertCount) * 3];
-            }
-        }
-
-        v[0].Y += DrawOffsetY;
-        v[1].Y += DrawOffsetY;
-        v[2].Y += DrawOffsetY;
-
-        DEBUG_DRAW_TRIANGLE(v[0], v[1], v[2], Color::Green * 0.5f, 0, true);
-    }
-
-    for (int k = 0; k < pd.triCount; k++)
-    {
-        const unsigned char* t = &tile.detailTris[(pd.triBase + k) * 4];
-        Vector3 v[3];
-
-        for (int m = 0; m < 3; m++)
-        {
-            if (t[m] < poly.vertCount)
-                v[m] = *(Vector3*)&tile.verts[poly.verts[t[m]] * 3];
-            else
-                v[m] = *(Vector3*)&tile.detailVerts[(pd.vertBase + (t[m] - poly.vertCount)) * 3];
-        }
-
-        v[0].Y += DrawOffsetY;
-        v[1].Y += DrawOffsetY;
-        v[2].Y += DrawOffsetY;
-
-        for (int m = 0, n = 2; m < 3; n = m++)
-        {
-            // Skip inner detail edges
-            if (((t[3] >> (n * 2)) & 0x3) == 0)
-                continue;
-
-            DEBUG_DRAW_LINE(v[n], v[m], Color::YellowGreen, 0, true);
-        }
-    }
-}
+#if COMPILE_WITH_DEBUG_DRAW
 
 void Navigation::DrawNavMesh()
 {
-    if (!_navMesh)
-        return;
-
-    ScopeLock lock(_navMesh->Locker);
-
-    const dtNavMesh* dtNavMesh = _navMesh->GetNavMesh();
-    const int tilesCount = dtNavMesh ? dtNavMesh->getMaxTiles() : 0;
-    if (tilesCount == 0)
-        return;
-
-    for (int tileIndex = 0; tileIndex < tilesCount; tileIndex++)
+    for (auto navMesh : NavMeshes)
     {
-        const dtMeshTile* tile = dtNavMesh->getTile(tileIndex);
-        if (!tile->header)
-            continue;
-
-        //DebugDraw::DrawWireBox(*(BoundingBox*)&tile->header->bmin[0], Color::CadetBlue);
-
-        for (int i = 0; i < tile->header->polyCount; i++)
+#if USE_EDITOR
+        // Skip drawing if any of the navmeshes on scene has disabled ShowDebugDraw option
+        bool skip = false;
+        for (auto scene : Level::Scenes)
         {
-            const dtPoly* poly = &tile->polys[i];
-            if (poly->getType() != DT_POLYTYPE_GROUND)
-                continue;
-
-            DrawPoly(*tile, *poly);
+            for (auto e : scene->NavigationMeshes)
+            {
+                if (e->Properties == navMesh->Properties)
+                {
+                    if (!e->ShowDebugDraw)
+                    {
+                        skip = true;
+                    }
+                    break;
+                }
+            }
         }
+        if (skip)
+            continue;
+#endif
+
+        navMesh->DebugDraw();
     }
 }
 

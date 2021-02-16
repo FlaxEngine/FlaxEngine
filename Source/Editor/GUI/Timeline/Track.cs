@@ -16,6 +16,7 @@ namespace FlaxEditor.GUI.Timeline
     /// The Timeline track that contains a header and custom timeline events/media.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class Track : ContainerControl
     {
         /// <summary>

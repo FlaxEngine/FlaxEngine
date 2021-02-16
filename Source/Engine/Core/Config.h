@@ -44,6 +44,7 @@
 // Scripting API defines (see C++ scripting documentation for more info)
 #define API_ENUM(...)
 #define API_CLASS(...)
+#define API_INTERFACE(...)
 #define API_STRUCT(...)
 #define API_FUNCTION(...)
 #define API_PROPERTY(...)
@@ -52,3 +53,4 @@
 #define API_PARAM(...)
 #define API_INJECT_CPP_CODE(...)
 #define API_AUTO_SERIALIZATION(...) public: void Serialize(SerializeStream& stream, const void* otherObj) override; void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+#define DECLARE_SCRIPTING_TYPE_MINIMAL(type) public: friend class type##Internal; static struct ScriptingTypeInitializer TypeInitializer;

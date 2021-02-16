@@ -103,7 +103,7 @@ namespace Flax.Stats
         }
 
         /// <summary>
-        /// Write string in UTF-8 encoding to the stream and ofset data
+        /// Write string in UTF-8 encoding to the stream and offset data
         /// </summary>
         /// <param name="fs">File stream</param>
         /// <param name="data">Data to write</param>
@@ -292,7 +292,7 @@ namespace Flax.Stats
         }
 
         /// <summary>
-        /// Write arry of Guids to the stream
+        /// Write array of Guids to the stream
         /// </summary>
         /// <param name="fs">File stream</param>
         /// <param name="val">Value to write</param>

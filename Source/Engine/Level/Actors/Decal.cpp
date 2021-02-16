@@ -7,6 +7,7 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 
 Decal::Decal(const SpawnParams& params)
     : Actor(params)
@@ -66,6 +67,13 @@ void Decal::Draw(RenderContext& renderContext)
         Material->IsLoaded() &&
         Material->IsDecal())
     {
+        const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center, _sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+
+        // Check if decal is being culled
+        if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)
+            return;
+
         renderContext.List->Decals.Add(this);
     }
 }
@@ -80,6 +88,7 @@ void Decal::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Material);
     SERIALIZE_MEMBER(Size, _size);
     SERIALIZE(SortOrder);
+    SERIALIZE(DrawMinScreenSize);
 }
 
 void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -90,6 +99,7 @@ void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(Material);
     DESERIALIZE_MEMBER(Size, _size);
     DESERIALIZE(SortOrder);
+    DESERIALIZE(DrawMinScreenSize);
 }
 
 bool Decal::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

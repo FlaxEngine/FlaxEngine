@@ -2,7 +2,7 @@
 
 #include "NavMeshBoundsVolume.h"
 #include "Engine/Level/Scene/Scene.h"
-#include "NavigationScene.h"
+#include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
@@ -14,17 +14,35 @@ NavMeshBoundsVolume::NavMeshBoundsVolume(const SpawnParams& params)
 {
 }
 
+void NavMeshBoundsVolume::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    // Base
+    BoxVolume::Serialize(stream, otherObj);
+
+    SERIALIZE_GET_OTHER_OBJ(NavMeshBoundsVolume);
+
+    SERIALIZE_MEMBER(AgentsMask, AgentsMask.Mask);
+}
+
+void NavMeshBoundsVolume::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    // Base
+    BoxVolume::Deserialize(stream, modifier);
+
+    DESERIALIZE_MEMBER(AgentsMask, AgentsMask.Mask);
+}
+
 void NavMeshBoundsVolume::OnEnable()
 {
-    GetScene()->Navigation->Volumes.Add(this);
-
     // Base
     Actor::OnEnable();
+
+    GetScene()->NavigationVolumes.Add(this);
 }
 
 void NavMeshBoundsVolume::OnDisable()
 {
-    GetScene()->Navigation->Volumes.Remove(this);
+    GetScene()->NavigationVolumes.Remove(this);
 
     // Base
     Actor::OnDisable();

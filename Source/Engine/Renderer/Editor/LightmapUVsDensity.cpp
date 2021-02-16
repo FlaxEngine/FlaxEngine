@@ -178,7 +178,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
         data.LightmapTexelsPerWorldUnit = ShadowsOfMordor::LightmapTexelsPerWorldUnit;
         data.LightmapSize = 1024.0f;
-        data.LightmapArea = drawCall.LightmapUVsArea;
+        data.LightmapArea = drawCall.Surface.LightmapUVsArea;
         if (drawCallModel)
         {
             // Calculate current lightmap slot size for the object (matches the ShadowsOfMordor calculations when baking the lighting)

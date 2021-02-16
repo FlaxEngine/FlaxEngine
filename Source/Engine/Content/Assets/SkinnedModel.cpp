@@ -97,7 +97,7 @@ protected:
         {
             ASSERT(_asset->_streamingTask == this);
             _asset->_streamingTask = nullptr;
-            _asset.Unlink();
+            _asset = nullptr;
         }
         _dataLock.Release();
 

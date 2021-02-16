@@ -348,7 +348,7 @@ static int X11_MessageBoxCreateWindow(MessageBoxData* data)
 	{
 		windowdata = data->Parent;
 		windowdataWin = (X11::Window)windowdata->GetNativePtr();
-		// TODO: place popup on the the screen that parent window is
+		// TODO: place popup on the screen that parent window is
 		data->screen = X11_DefaultScreen(display);
 	}
 	else

@@ -85,7 +85,7 @@ namespace FlaxEditor.Surface.Elements
             else if (value is Vector4 valueVec4)
                 result = (uint)(arch.BoxID == 0 ? valueVec4.X : arch.BoxID == 1 ? valueVec4.Y : arch.BoxID == 2 ? valueVec4.Z : valueVec4.W);
             else
-                result = 0;
+                result = 0u;
 
             return result;
         }

@@ -8,6 +8,7 @@ namespace FlaxEditor.Progress
     /// <summary>
     /// Base class for all editor handlers used to report actions progress to the user.
     /// </summary>
+    [HideInEditor]
     public abstract class ProgressHandler
     {
         /// <summary>
@@ -79,7 +80,7 @@ namespace FlaxEditor.Progress
         }
 
         /// <summary>
-        /// Called when progress action gets updated (changed nfo text or progress value).
+        /// Called when progress action gets updated (changed info text or progress value).
         /// </summary>
         /// <param name="progress">The progress (normalized to range [0;1]).</param>
         /// <param name="infoText">The information text.</param>

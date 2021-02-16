@@ -64,7 +64,7 @@ void MaterialLayer::Prepare()
 
 Guid MaterialLayer::GetMappedParamId(const Guid& id)
 {
-    // TODO: test ParamIdsMappings using Dictionary. will performance change? mamybe we don't wont to allocate too much memory
+    // TODO: test ParamIdsMappings using Dictionary. will performance change? maybe we don't wont to allocate too much memory
 
     for (int32 i = 0; i < ParamIdsMappings.Count(); i++)
     {

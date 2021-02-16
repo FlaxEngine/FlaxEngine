@@ -7,9 +7,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Physics/PhysicalMaterial.h"
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 #include <ThirdParty/PhysX/PxRigidActor.h>
 #include <ThirdParty/PhysX/PxRigidDynamic.h>
 #include <ThirdParty/PhysX/PxPhysics.h>
@@ -29,6 +26,7 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _nonWalkableMode(CharacterController::NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
+    static_assert(sizeof(_filterData) == sizeof(PxFilterData), "Invalid filter data size.");
 }
 
 void CharacterController::SetRadius(const float value)
@@ -55,7 +53,7 @@ void CharacterController::SetHeight(const float value)
 
 void CharacterController::SetSlopeLimit(float value)
 {
-    value = Math::Clamp(value, 0.0f, 90.0f);
+    value = Math::Clamp(value, 0.0f, 89.0f);
     if (Math::NearEqual(value, _slopeLimit))
         return;
 
@@ -112,7 +110,7 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
     {
         const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
         PxControllerFilters filters;
-        filters.mFilterData = &_filterData;
+        filters.mFilterData = (PxFilterData*)&_filterData;
         filters.mFilterCallback = Physics::GetCharacterQueryFilterCallback();
         filters.mFilterFlags = PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER;
 
@@ -177,7 +175,7 @@ void CharacterController::CreateActor()
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     desc.height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    desc.radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
+    desc.radius = Math::Max(Math::Abs(_radius) * scaling - desc.contactOffset, minSize);
 
     // Create controller
     _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
@@ -202,7 +200,7 @@ void CharacterController::UpdateSize() const
     {
         const float scaling = _cachedScale.GetAbsolute().MaxValue();
         const float minSize = 0.001f;
-        const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
+        const float radius = Math::Max(Math::Abs(_radius) * scaling - Math::Max(_contactOffset, ZeroTolerance), minSize);
         const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
 
         _controller->setRadius(radius);
@@ -275,13 +273,18 @@ void CharacterController::UpdateGeometry()
     UpdateSize();
 }
 
+void CharacterController::GetGeometry(PxGeometryHolder& geometry)
+{
+    // Unused
+}
+
 void CharacterController::UpdateLayerBits()
 {
     // Base
     Collider::UpdateLayerBits();
 
     // Cache filter data
-    _filterData = _shape->getSimulationFilterData();
+    *(PxFilterData*)&_filterData = _shape->getSimulationFilterData();
 }
 
 void CharacterController::BeginPlay(SceneBeginData* data)
@@ -307,26 +310,6 @@ void CharacterController::EndPlay()
     }
     _shape = nullptr;
 }
-
-#if USE_EDITOR
-
-void CharacterController::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<CharacterController, &CharacterController::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void CharacterController::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<CharacterController, &CharacterController::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
 
 void CharacterController::OnActiveInTreeChanged()
 {
@@ -359,6 +342,11 @@ void CharacterController::OnTransformChanged()
 
         UpdateScale();
         UpdateBounds();
+    }
+    else if (!_controller)
+    {
+        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        BoundingSphere::FromBox(_box, _sphere);
     }
 }
 

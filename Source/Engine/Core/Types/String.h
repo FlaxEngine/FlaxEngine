@@ -220,7 +220,7 @@ public:
     /// <returns>The index of the found substring or -1 if not found.</returns>
     int32 Find(const T* subStr, StringSearchCase searchCase = StringSearchCase::CaseSensitive, int32 startPosition = -1) const
     {
-        if (subStr == nullptr)
+        if (subStr == nullptr || !_data)
             return -1;
         const T* start = _data;
         if (startPosition != -1)
@@ -241,7 +241,7 @@ public:
     int32 FindLast(const T* subStr, StringSearchCase searchCase = StringSearchCase::CaseSensitive, int32 startPosition = -1) const
     {
         const int32 subStrLen = StringUtils::Length(subStr);
-        if (subStrLen == 0)
+        if (subStrLen == 0 || !_data)
             return -1;
         if (startPosition == -1)
             startPosition = Length();

@@ -5,7 +5,7 @@
 #include "Terrain.h"
 #include "TerrainChunk.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int2.h"
 #include "Engine/Physics/Types.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Content/Assets/RawDataAsset.h"

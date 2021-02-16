@@ -222,7 +222,7 @@ namespace FlaxEditor.Windows
 
         private void PlayingStateOnSceneDuplicating()
         {
-            // Remove reaming GUI controls so loaded scene can add own GUI
+            // Remove remaining GUI controls so loaded scene can add own GUI
             //_guiRoot.DisposeChildren();
 
             // Show GUI
@@ -231,7 +231,7 @@ namespace FlaxEditor.Windows
 
         private void PlayingStateOnSceneRestored()
         {
-            // Remove reaming GUI controls so loaded scene can add own GUI
+            // Remove remaining GUI controls so loaded scene can add own GUI
             //_guiRoot.DisposeChildren();
 
             // Hide GUI
@@ -294,7 +294,9 @@ namespace FlaxEditor.Windows
             {
                 if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor.Control != null)
                 {
-                    Render2D.DrawRectangle(controlActor.Control.Bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
+                    var control = controlActor.Control;
+                    var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Vector2.Zero), control.PointToParent(_viewport, control.Size));
+                    Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
 
@@ -385,6 +387,12 @@ namespace FlaxEditor.Windows
                 }
                 break;
             }
+            }
+
+            // Prevent closing the game window tab during a play session
+            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this, key))
+            {
+                return true;
             }
 
             return base.OnKeyDown(key);

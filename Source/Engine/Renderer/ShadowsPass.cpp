@@ -6,6 +6,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -77,6 +78,19 @@ bool ShadowsPass::Init()
     _shader.Get()->OnReloading.Bind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
 #endif
 
+    // If GPU doesn't support linear sampling for the shadow map then fallback to the single sample on lowest quality
+    const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(SHADOW_MAPS_FORMAT, false);
+    const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(SHADOW_MAPS_FORMAT);
+    const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
+    _supportsShadows = FORMAT_FEATURES_ARE_SUPPORTED(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D)
+            && FORMAT_FEATURES_ARE_SUPPORTED(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
+    if (!_supportsShadows)
+    {
+        LOG(Warning, "GPU doesn't support shadows rendering");
+        LOG(Warning, "Format: {0} features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
+        LOG(Warning, "Format: {0} features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
+    }
+
     return false;
 }
 
@@ -130,24 +144,27 @@ void ShadowsPass::updateShadowMapSize()
 
     // Select new size
     _currentShadowMapsQuality = Graphics::ShadowMapsQuality;
-    switch (_currentShadowMapsQuality)
+    if (_supportsShadows)
     {
-    case Quality::Ultra:
-        newSizeCSM = 2048;
-        newSizeCube = 1024;
-        break;
-    case Quality::High:
-        newSizeCSM = 1024;
-        newSizeCube = 1024;
-        break;
-    case Quality::Medium:
-        newSizeCSM = 1024;
-        newSizeCube = 512;
-        break;
-    case Quality::Low:
-        newSizeCSM = 512;
-        newSizeCube = 256;
-        break;
+        switch (_currentShadowMapsQuality)
+        {
+        case Quality::Ultra:
+            newSizeCSM = 2048;
+            newSizeCube = 1024;
+            break;
+        case Quality::High:
+            newSizeCSM = 1024;
+            newSizeCube = 1024;
+            break;
+        case Quality::Medium:
+            newSizeCSM = 1024;
+            newSizeCube = 512;
+            break;
+        case Quality::Low:
+            newSizeCSM = 512;
+            newSizeCube = 256;
+            break;
+        }
     }
 
     // Check if size will change
@@ -176,11 +193,12 @@ void ShadowsPass::Dispose()
     // Base
     RendererPass::Dispose();
 
+    // Cleanup
     _psShadowDir.Delete();
     _psShadowPoint.Delete();
     _psShadowSpot.Delete();
-    _shader.Unlink();
-    _sphereModel.Unlink();
+    _shader = nullptr;
+    _sphereModel = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_shadowMapCSM);
     SAFE_DELETE_GPU_RESOURCE(_shadowMapCube);
 }
@@ -194,7 +212,7 @@ bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererPo
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
 
-    return fade > ZeroTolerance;
+    return fade > ZeroTolerance && _supportsShadows;
 }
 
 bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererSpotLightData& light)
@@ -206,12 +224,12 @@ bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererSp
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
 
-    return fade > ZeroTolerance;
+    return fade > ZeroTolerance && _supportsShadows;
 }
 
 bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererDirectionalLightData& light)
 {
-    return true;
+    return _supportsShadows;
 }
 
 void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)

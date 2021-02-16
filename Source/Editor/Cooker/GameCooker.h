@@ -84,7 +84,8 @@ public:
     /// <param name="configuration">The build configuration.</param>
     /// <param name="outputPath">The output path (output directory).</param>
     /// <param name="options">The build options.</param>
-    API_FUNCTION() static void Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options);
+    /// <param name="customDefines">The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).</param>
+    API_FUNCTION() static void Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines);
 
     /// <summary>
     /// Sends a cancel event to the game building service.

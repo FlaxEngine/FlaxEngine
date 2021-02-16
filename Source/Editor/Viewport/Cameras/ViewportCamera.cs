@@ -32,9 +32,9 @@ namespace FlaxEditor.Viewport.Cameras
         /// </summary>
         /// <param name="objectBounds">The target object bounds.</param>
         /// <param name="marginDistanceScale">The margin distance scale of the orbit radius.</param>
-        public void SerArcBallView(BoundingBox objectBounds, float marginDistanceScale = 2.0f)
+        public void SetArcBallView(BoundingBox objectBounds, float marginDistanceScale = 2.0f)
         {
-            SerArcBallView(BoundingSphere.FromBox(objectBounds), marginDistanceScale);
+            SetArcBallView(BoundingSphere.FromBox(objectBounds), marginDistanceScale);
         }
 
         /// <summary>
@@ -42,18 +42,18 @@ namespace FlaxEditor.Viewport.Cameras
         /// </summary>
         /// <param name="objectBounds">The target object bounds.</param>
         /// <param name="marginDistanceScale">The margin distance scale of the orbit radius.</param>
-        public void SerArcBallView(BoundingSphere objectBounds, float marginDistanceScale = 2.0f)
+        public void SetArcBallView(BoundingSphere objectBounds, float marginDistanceScale = 2.0f)
         {
-            SerArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), objectBounds.Center, objectBounds.Radius * marginDistanceScale);
+            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), objectBounds.Center, objectBounds.Radius * marginDistanceScale);
         }
 
         /// <summary>
         /// Sets view orientation and position to match the arc ball camera style view for the given orbit radius.
         /// </summary>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public void SerArcBallView(float orbitRadius)
+        public void SetArcBallView(float orbitRadius)
         {
-            SerArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
+            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="orientation">The view rotation.</param>
         /// <param name="orbitCenter">The orbit center location.</param>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public void SerArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        public void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
         {
             // Rotate
             Viewport.ViewOrientation = orientation;

@@ -69,6 +69,7 @@ namespace FlaxEditor.Windows.Assets
             bool hasSthSelected = Selection.Count > 0;
             bool isSingleActorSelected = Selection.Count == 1 && Selection[0] is ActorNode;
             bool isRootSelected = isSingleActorSelected && Selection[0] == Graph.Main;
+            bool hasPrefabLink = isSingleActorSelected && (Selection[0] as ActorNode).HasPrefabLink;
 
             // Create popup
 
@@ -97,7 +98,7 @@ namespace FlaxEditor.Windows.Assets
             b.Enabled = hasSthSelected && !isRootSelected;
 
             b = contextMenu.AddButton("Set Root", SetRoot);
-            b.Enabled = isSingleActorSelected && !isRootSelected;
+            b.Enabled = isSingleActorSelected && !isRootSelected && hasPrefabLink;
 
             // Prefab options
 
@@ -107,8 +108,6 @@ namespace FlaxEditor.Windows.Assets
             b.Enabled = isSingleActorSelected &&
                         (Selection[0] as ActorNode).CanCreatePrefab &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
-
-            bool hasPrefabLink = isSingleActorSelected && (Selection[0] as ActorNode).HasPrefabLink;
 
             b = contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
             b.Enabled = hasPrefabLink;

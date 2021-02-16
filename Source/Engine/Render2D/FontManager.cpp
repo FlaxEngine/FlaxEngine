@@ -214,7 +214,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
         return false;
     }
 
-    // Copy glyph data after rasterize (row by row)
+    // Copy glyph data after rasterization (row by row)
     for (int32 row = 0; row < glyphHeight; row++)
     {
         Platform::MemoryCopy(&GlyphImageData[row * glyphWidth], &bitmap->buffer[row * bitmap->pitch], glyphWidth);

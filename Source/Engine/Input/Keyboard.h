@@ -13,7 +13,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Keyboard);
 public:
 
     /// <summary>
-    /// The mouse state.
+    /// The keyboard state.
     /// </summary>
     struct State
     {
@@ -94,97 +94,32 @@ public:
         return !_state.Keys[static_cast<int32>(key)] && _prevState.Keys[static_cast<int32>(key)];
     }
 
+public:
+
     /// <summary>
     /// Called when keyboard enters input character.
     /// </summary>
     /// <param name="c">The Unicode character entered by the user.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnCharInput(const Char c, Window* target = nullptr)
-    {
-        // Skip control characters
-        if (c < 32)
-            return;
-
-        Event& e = _queue.AddOne();
-        e.Type = EventType::Char;
-        e.Target = target;
-        e.CharData.Char = c;
-    }
+    void OnCharInput(Char c, Window* target = nullptr);
 
     /// <summary>
     /// Called when key goes up.
     /// </summary>
     /// <param name="key">The keyboard key.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnKeyUp(const KeyboardKeys key, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::KeyUp;
-        e.Target = target;
-        e.KeyData.Key = key;
-    }
+    void OnKeyUp(KeyboardKeys key, Window* target = nullptr);
 
     /// <summary>
     /// Called when key goes down.
     /// </summary>
     /// <param name="key">The keyboard key.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnKeyDown(const KeyboardKeys key, Window* target = nullptr)
-    {
-        Event& e = _queue.AddOne();
-        e.Type = EventType::KeyDown;
-        e.Target = target;
-        e.KeyData.Key = key;
-    }
+    void OnKeyDown(KeyboardKeys key, Window* target = nullptr);
 
 public:
 
     // [InputDevice]
-    void ResetState() override
-    {
-        InputDevice::ResetState();
-
-        _prevState.Clear();
-        _state.Clear();
-    }
-
-    bool Update(EventQueue& queue) final override
-    {
-        // Move the current state to the previous
-        Platform::MemoryCopy(&_prevState, &_state, sizeof(State));
-
-        // Gather new events
-        if (UpdateState())
-            return true;
-
-        // Handle events
-        for (int32 i = 0; i < _queue.Count(); i++)
-        {
-            const Event& e = _queue[i];
-            switch (e.Type)
-            {
-            case EventType::Char:
-            {
-                if (_state.InputTextLength < ARRAY_COUNT(_state.InputText) - 1)
-                    _state.InputText[_state.InputTextLength++] = e.CharData.Char;
-                break;
-            }
-            case EventType::KeyDown:
-            {
-                _state.Keys[static_cast<int32>(e.KeyData.Key)] = true;
-                break;
-            }
-            case EventType::KeyUp:
-            {
-                _state.Keys[static_cast<int32>(e.KeyData.Key)] = false;
-                break;
-            }
-            }
-        }
-
-        // Send events further
-        queue.Add(_queue);
-        _queue.Clear();
-        return false;
-    }
+    void ResetState() override;;
+    bool Update(EventQueue& queue) final override;
 };

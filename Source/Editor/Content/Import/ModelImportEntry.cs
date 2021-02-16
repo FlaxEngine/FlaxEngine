@@ -262,9 +262,9 @@ namespace FlaxEditor.Content.Import
         public int BaseLOD { get; set; } = 0;
 
         /// <summary>
-        /// The amount of LODs to include in the model (all reaming ones starting from Base LOD will be generated).
+        /// The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).
         /// </summary>
-        [EditorOrder(1120), DefaultValue(4), Limit(1, Model.MaxLODs), EditorDisplay("Level Of Detail", "LOD Count"), Tooltip("The amount of LODs to include in the model (all reaming ones starting from Base LOD will be generated).")]
+        [EditorOrder(1120), DefaultValue(4), Limit(1, Model.MaxLODs), EditorDisplay("Level Of Detail", "LOD Count"), Tooltip("The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).")]
         public int LODCount { get; set; } = 4;
 
         /// <summary>

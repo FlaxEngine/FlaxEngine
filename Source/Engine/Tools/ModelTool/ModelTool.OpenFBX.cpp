@@ -744,7 +744,7 @@ bool ProcessMesh(OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& m
                 auto length = delta.Length();
                 if (length > ZeroTolerance)
                     delta /= length;*/
-                auto delta = Vector3::Zero; // TODO: blend shape normals deltas fix when importing from ofbx
+                auto delta = Vector3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
                 blendShapeData.Vertices[i].NormalDelta = delta;
             }
         }

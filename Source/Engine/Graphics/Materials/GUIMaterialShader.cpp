@@ -28,26 +28,24 @@ void GUIMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
     auto context = params.GPUContext;
-    auto& view = params.RenderContext.View;
-    const auto cb0 = _shader->GetCB(0);
-    const bool hasCb0 = cb0->GetSize() != 0;
+    byte* cb = _cbData.Get();
+    auto materialData = reinterpret_cast<GUIMaterialShaderData*>(cb);
+    cb += sizeof(GUIMaterialShaderData);
+    int32 srv = 0;
     const auto ps = context->IsDepthBufferBinded() ? _cache.Depth : _cache.NoDepth;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(GUIMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = false;
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
-    // Setup material constants data
-    if (hasCb0)
+    // Setup material constants
     {
-        auto materialData = reinterpret_cast<GUIMaterialShaderData*>(_cb0Data.Get());
-
         const auto viewProjectionMatrix = (Matrix*)params.CustomData;
         Matrix::Transpose(*viewProjectionMatrix, materialData->ViewProjectionMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->WorldMatrix);
@@ -62,10 +60,10 @@ void GUIMaterialShader::Bind(BindParameters& params)
     }
 
     // Bind constants
-    if (hasCb0)
+    if (_cb)
     {
-        context->UpdateCB(cb0, _cb0Data.Get());
-        context->BindCB(0, cb0);
+        context->UpdateCB(_cb, _cbData.Get());
+        context->BindCB(0, _cb);
     }
 
     // Bind pipeline

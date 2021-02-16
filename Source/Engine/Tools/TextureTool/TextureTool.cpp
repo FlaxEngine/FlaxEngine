@@ -7,7 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/VectorInt.h"
+#include "Engine/Core/Math/Int2.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -316,7 +316,7 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
     }
     if (src.Format == dstFormat)
     {
-        LOG(Warning, "Soure data and destination format are the same. Cannot perform conversion.");
+        LOG(Warning, "Source data and destination format are the same. Cannot perform conversion.");
         return true;
     }
     if (src.Depth != 1)
@@ -343,7 +343,7 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
     }
     if (src.Width == dstWidth && src.Height == dstHeight)
     {
-        LOG(Warning, "Soure data and destination dimensions are the same. Cannot perform resizing.");
+        LOG(Warning, "Source data and destination dimensions are the same. Cannot perform resizing.");
         return true;
     }
     if (src.Depth != 1)
@@ -489,11 +489,11 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Half),
         [](const void* ptr)
         {
-            return Color(ConvertHalfToFloat(*(Half*)ptr), 0, 0, 1);
+            return Color(Float16Compressor::Decompress(*(Half*)ptr), 0, 0, 1);
         },
         [](const void* ptr, const Color& color)
         {
-            *(Half*)ptr = ConvertFloatToHalf(color.R);
+            *(Half*)ptr = Float16Compressor::Compress(color.R);
         },
     },
     {

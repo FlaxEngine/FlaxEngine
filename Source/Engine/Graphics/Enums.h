@@ -985,7 +985,7 @@ API_ENUM() enum class TessellationMethod
 enum class ShaderFlags : uint32
 {
     /// <summary>
-    /// The default set fo flags.
+    /// The default set for flags.
     /// </summary>
     Default = 0,
 

@@ -9,6 +9,10 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+
+IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 
 const Char* LinuxPlatformTools::GetDisplayName() const
 {
@@ -32,7 +36,8 @@ ArchitectureType LinuxPlatformTools::GetArchitecture() const
 
 bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 {
-    const auto platformSettings = LinuxPlatformSettings::Instance();
+    const auto gameSettings = GameSettings::Get();
+    const auto platformSettings = LinuxPlatformSettings::Get();
     const auto outputPath = data.OutputPath;
 
     // Copy binaries
@@ -60,7 +65,7 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
     // Apply game executable file name
 #if !BUILD_DEBUG
 	const String outputExePath = outputPath / TEXT("FlaxGame");
-	const String gameExePath = outputPath / GameSettings::ProductName;
+	const String gameExePath = outputPath / gameSettings->ProductName;
 	if (FileSystem::FileExists(outputExePath) && gameExePath.Compare(outputExePath, StringSearchCase::IgnoreCase) == 0)
 	{
 		if (FileSystem::MoveFile(gameExePath, outputExePath, true))

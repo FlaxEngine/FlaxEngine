@@ -113,6 +113,131 @@ ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAt
     return value.Variable;
 }
 
+void ParticleEmitterGPUGenerator::ProcessGroupParameters(Box* box, Node* node, Value& value)
+{
+    switch (node->TypeID)
+    {
+        // Get
+    case 1:
+    case 2:
+    {
+        // Get parameter
+        const auto param = findParam((Guid)node->Values[0]);
+        if (param)
+        {
+            switch (param->Type)
+            {
+            case MaterialParameterType::Bool:
+                value = Value(VariantType::Bool, param->ShaderName);
+                break;
+            case MaterialParameterType::Integer:
+            case MaterialParameterType::SceneTexture:
+                value = Value(VariantType::Int, param->ShaderName);
+                break;
+            case MaterialParameterType::Float:
+                value = Value(VariantType::Float, param->ShaderName);
+                break;
+            case MaterialParameterType::Vector2:
+            case MaterialParameterType::Vector3:
+            case MaterialParameterType::Vector4:
+            case MaterialParameterType::Color:
+            {
+                // Set result values based on box ID
+                const Value sample(box->Type.Type, param->ShaderName);
+                switch (box->ID)
+                {
+                case 0:
+                    value = sample;
+                    break;
+                case 1:
+                    value.Value = sample.Value + _subs[0];
+                    break;
+                case 2:
+                    value.Value = sample.Value + _subs[1];
+                    break;
+                case 3:
+                    value.Value = sample.Value + _subs[2];
+                    break;
+                case 4:
+                    value.Value = sample.Value + _subs[3];
+                    break;
+                default: CRASH;
+                    break;
+                }
+                value.Type = box->Type.Type;
+                break;
+            }
+
+            case MaterialParameterType::Matrix:
+            {
+                value = Value(box->Type.Type, String::Format(TEXT("{0}[{1}]"), param->ShaderName, box->ID));
+                break;
+            }
+            case MaterialParameterType::ChannelMask:
+            {
+                const auto input = tryGetValue(node->GetBox(0), Value::Zero);
+                value = writeLocal(VariantType::Float, String::Format(TEXT("dot({0}, {1})"), input.Value, param->ShaderName), node);
+                break;
+            }
+            case MaterialParameterType::CubeTexture:
+            case MaterialParameterType::Texture:
+            case MaterialParameterType::GPUTextureArray:
+            case MaterialParameterType::GPUTextureCube:
+            case MaterialParameterType::GPUTextureVolume:
+            case MaterialParameterType::GPUTexture:
+                value = Value(VariantType::Object, param->ShaderName);
+                break;
+            default:
+            CRASH;
+                break;
+            }
+        }
+        else
+        {
+            OnError(node, box, String::Format(TEXT("Missing graph parameter {0}."), node->Values[0]));
+            value = Value::Zero;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void ParticleEmitterGPUGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
+{
+    switch (node->TypeID)
+    {
+        // Linearize Depth
+    case 7:
+    {
+        // Get input
+        const Value depth = tryGetValue(node->GetBox(0), Value::Zero).AsFloat();
+
+        // Linearize raw device depth
+        linearizeSceneDepth(node, depth, value);
+        break;
+    }
+        // Time
+    case 8:
+        value = box->ID == 0 ? Value(VariantType::Float, TEXT("Time")) : Value(VariantType::Float, TEXT("DeltaTime"));
+        break;
+        // Transform Position To Screen UV
+    case 9:
+    {
+        const Value position = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
+        const Value projPos = writeLocal(VariantType::Vector4, String::Format(TEXT("mul(float4({0}, 1.0f), ViewProjectionMatrix)"), position.Value), node);
+        _writer.Write(TEXT("\t{0}.xy /= {0}.w;\n"), projPos.Value);
+        _writer.Write(TEXT("\t{0}.xy = {0}.xy * 0.5f + 0.5f;\n"), projPos.Value);
+        value = Value(VariantType::Vector2, projPos.Value + TEXT(".xy"));
+        break;
+    }
+    default:
+        ShaderGenerator::ProcessGroupTools(box, node, value);
+        break;
+    }
+}
+
 void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)

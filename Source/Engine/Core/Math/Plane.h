@@ -8,7 +8,7 @@
 /// <summary>
 /// Represents a plane in three dimensional space.
 /// </summary>
-API_STRUCT() struct Plane
+API_STRUCT() struct FLAXENGINE_API Plane
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(Plane);
 public:

@@ -87,6 +87,38 @@ namespace FlaxEngine.Json
         }
     }
 
+    /// <summary>
+    /// Serialize SoftObjectReference as Guid in internal format.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class SoftObjectReferenceConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var id = ((SoftObjectReference)value).ID;
+            writer.WriteValue(JsonSerializer.GetStringID(&id));
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = new SoftObjectReference();
+            if (reader.TokenType == JsonToken.String)
+            {
+                JsonSerializer.ParseID((string)reader.Value, out var id);
+                result.ID = id;
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(SoftObjectReference);
+        }
+    }
+
     /*
     /// <summary>
     /// Serialize Guid values using `N` format
@@ -120,6 +152,7 @@ namespace FlaxEngine.Json
         }
     }
     */
+
     /// <summary>
     /// Objects serialization tool (json format).
     /// </summary>
@@ -183,6 +216,7 @@ namespace FlaxEngine.Json
                 ObjectConverter = new FlaxObjectConverter();
             settings.Converters.Add(ObjectConverter);
             settings.Converters.Add(new SceneReferenceConverter());
+            settings.Converters.Add(new SoftObjectReferenceConverter());
             settings.Converters.Add(new VersionConverter());
             //settings.Converters.Add(new GuidConverter());
             return settings;

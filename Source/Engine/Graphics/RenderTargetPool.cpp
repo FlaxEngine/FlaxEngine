@@ -108,5 +108,5 @@ void RenderTargetPool::Release(GPUTexture* rt)
         }
     }
 
-    LOG(Error, "Trying to release temporary render target which has not been registred in service!");
+    LOG(Error, "Trying to release temporary render target which has not been registered in service!");
 }

@@ -196,7 +196,7 @@ void AmbientOcclusionPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psApplyHalf);
 
     // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void AmbientOcclusionPass::Render(RenderContext& renderContext)

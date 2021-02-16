@@ -190,6 +190,16 @@ bool TextureTool::ExportTextureDirectXTex(ImageType type, const StringView& path
             }
             img = tmp.GetImage(0, 0, 0);
         }
+        else if (image.format == DXGI_FORMAT_R10G10B10A2_UNORM || image.format == DXGI_FORMAT_R11G11B10_FLOAT)
+        {
+            result = DirectX::Convert(image, DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, tmp);
+            if (FAILED(result))
+            {
+                LOG(Error, "Cannot convert texture, error: {0:x}", static_cast<uint32>(result));
+                return true;
+            }
+            img = tmp.GetImage(0, 0, 0);
+        }
 
         DirectX::WICCodecs codec;
         switch (type)

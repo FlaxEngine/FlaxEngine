@@ -19,7 +19,7 @@ namespace Flax.Build
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns>The file size text.</returns>
-        internal static uint GetHashCode(string str)
+        public static uint GetHashCode(string str)
         {
             uint hash = 5381;
             if (str != null)
@@ -31,6 +31,16 @@ namespace Flax.Build
                 }
             }
             return hash;
+        }
+
+        /// <summary>
+        /// Gets the empty array of the given type (shared one).
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <returns>The empty array object.</returns>
+        public static T[] GetEmptyArray<T>()
+        {
+            return Enumerable.Empty<T>() as T[];
         }
 
         /// <summary>

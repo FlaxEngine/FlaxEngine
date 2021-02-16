@@ -11,6 +11,7 @@ namespace FlaxEditor.GUI.Tabs
     /// Represents control which contains collection of <see cref="Tab"/>.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class Tabs : ContainerControl
     {
         /// <summary>

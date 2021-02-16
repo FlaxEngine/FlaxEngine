@@ -357,18 +357,6 @@ public:
 
 private:
 
-    /// <summary>
-    /// Represents data per instance element used for instanced rendering.
-    /// </summary>
-    struct InstanceData
-    {
-        Vector4 InstanceOrigin; // .w contains PerInstanceRandom
-        Vector4 InstanceTransform1; // .w contains LODDitherFactor
-        Vector3 InstanceTransform2;
-        Vector3 InstanceTransform3;
-        Half4 InstanceLightmapArea;
-    };
-
     DynamicVertexBuffer _instanceBuffer;
 
 public:
@@ -474,4 +462,25 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="list">The collected draw calls list.</param>
     void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list);
+};
+
+/// <summary>
+/// Represents data per instance element used for instanced rendering.
+/// </summary>
+struct FLAXENGINE_API InstanceData
+{
+    Vector3 InstanceOrigin;
+    float PerInstanceRandom;
+    Vector3 InstanceTransform1;
+    float LODDitherFactor;
+    Vector3 InstanceTransform2;
+    Vector3 InstanceTransform3;
+    Half4 InstanceLightmapArea;
+};
+
+struct SurfaceDrawCallHandler
+{
+    static void GetHash(const DrawCall& drawCall, int32& batchKey);
+    static bool CanBatch(const DrawCall& a, const DrawCall& b);
+    static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
 };

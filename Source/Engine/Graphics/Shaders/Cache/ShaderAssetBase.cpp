@@ -3,6 +3,7 @@
 #include "ShaderAssetBase.h"
 #include "ShaderStorage.h"
 #include "ShaderCacheManager.h"
+#include "Engine/Engine/CommandLine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
 
@@ -225,8 +226,11 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         options.SourceLength = sourceLength;
         options.Profile = shaderProfile;
         options.Output = &cacheStream;
-        //options.GenerateDebugData = true;
-        //options.NoOptimize = true;
+        if (CommandLine::Options.ShaderDebug)
+        {
+            options.GenerateDebugData = true;
+            options.NoOptimize = true;
+        }
         auto& platformDefine = options.Macros.AddOne();
 #if PLATFORM_WINDOWS
         platformDefine.Name = "PLATFORM_WINDOWS";

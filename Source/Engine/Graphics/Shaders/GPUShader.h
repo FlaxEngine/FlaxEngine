@@ -97,7 +97,7 @@ public:
     /// <summary>
     /// Gets the vertex shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramVS* GetVS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -108,7 +108,7 @@ public:
     /// <summary>
     /// Gets the hull shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramHS* GetHS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -119,7 +119,7 @@ public:
     /// <summary>
     /// Gets domain shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramDS* GetDS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -130,7 +130,7 @@ public:
     /// <summary>
     /// Gets the geometry shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramGS* GetGS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -141,7 +141,7 @@ public:
     /// <summary>
     /// Gets the pixel shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramPS* GetPS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -152,7 +152,7 @@ public:
     /// <summary>
     /// Gets the compute shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramCS* GetCS(const StringAnsiView& name, int32 permutationIndex = 0) const
@@ -176,7 +176,7 @@ public:
     /// <summary>
     /// Determines whether the specified shader program is in the shader.
     /// </summary>
-    /// <param name="name">Thr shader program name.</param>
+    /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns><c>true</c> if the shader is valid; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasShader(const StringAnsiView& name, int32 permutationIndex = 0) const

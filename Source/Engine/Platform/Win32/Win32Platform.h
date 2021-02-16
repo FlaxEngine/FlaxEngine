@@ -16,6 +16,7 @@ public:
 
     // [PlatformBase]
     static bool Init();
+    static void Exit();
     static void MemoryBarrier();
     static int64 InterlockedExchange(int64 volatile* dst, int64 exchange);
     static int32 InterlockedCompareExchange(int32 volatile* dst, int32 exchange, int32 comperand);
@@ -43,6 +44,7 @@ public:
         _aligned_free(ptr);
     }
     static bool Is64BitPlatform();
+    static BatteryInfo GetBatteryInfo();
     static CPUInfo GetCPUInfo();
     static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();

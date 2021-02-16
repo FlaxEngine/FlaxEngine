@@ -28,6 +28,7 @@ namespace physx
     class PxFoundation;
     class PxShape;
     class PxGeometry;
+    class PxGeometryHolder;
     class PxProfileZoneManager;
     class PxMaterial;
     class PxPvd;

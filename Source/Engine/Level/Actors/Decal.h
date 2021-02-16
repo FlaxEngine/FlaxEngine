@@ -30,8 +30,14 @@ public:
     /// <summary>
     /// The decal rendering order. The higher values are render later (on top).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(0), EditorDisplay(\"Decal\")")
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"Decal\")")
     int32 SortOrder = 0;
+
+    /// <summary>
+    /// The minimum screen size for the decal drawing. If the decal size on the screen is smaller than this value then decal will be culled. Set it to higher value to make culling more aggressive.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Decal\")")
+    float DrawMinScreenSize = 0.02f;
 
     /// <summary>
     /// Gets the decal bounds size (in local space).

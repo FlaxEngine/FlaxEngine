@@ -3,10 +3,10 @@
 #pragma once
 
 // Enables locking scenes during scene query execution can provide some safety when using scene queries from other threads but may provide stalls on a main thread
-#define SCENE_QUERIES_WITH_LOCK 0
+#define SCENE_QUERIES_WITH_LOCK 1
 
-#include "Scene/Scene.h"
 #include "Level.h"
+#include "Scene/Scene.h"
 #if SCENE_QUERIES_WITH_LOCK
 #include "Engine/Threading/Threading.h"
 #endif

@@ -387,7 +387,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(ToneMappingSettings);
     float WhiteTemperature = 6500.0f;
 
     /// <summary>
-    /// Adjusts the white balance temperature tint for the scene by adjusting the cyan and magenta color ranges. Ideally, this setting should be used once you've adjusted the white balance temporature to get accurate colors. Under some light temperatures, the colors may appear to be more yellow or blue. This can be used to balance the resulting color to look more natural. The default value is `0`.
+    /// Adjusts the white balance temperature tint for the scene by adjusting the cyan and magenta color ranges. Ideally, this setting should be used once you've adjusted the white balance temperature to get accurate colors. Under some light temperatures, the colors may appear to be more yellow or blue. This can be used to balance the resulting color to look more natural. The default value is `0`.
     /// </summary>
     API_FIELD(Attributes="DefaultValue(0.0f), Limit(-1, 1, 0.001f), EditorOrder(1), PostProcessSetting((int)ToneMappingSettingsOverride.WhiteTint)")
     float WhiteTint = 0.0f;

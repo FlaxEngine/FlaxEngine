@@ -12,6 +12,10 @@
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Editor/Utilities/EditorUtilities.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+
+IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 
 namespace
 {
@@ -106,7 +110,8 @@ void AndroidPlatformTools::OnBuildStarted(CookingData& data)
 
 bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 {
-    const auto platformSettings = AndroidPlatformSettings::Instance();
+    const auto gameSettings = GameSettings::Get();
+    const auto platformSettings = AndroidPlatformSettings::Get();
     const auto platformDataPath = data.GetPlatformBinariesRoot();
     const auto assetsPath = data.OutputPath;
     const auto jniLibsPath = data.OriginalOutputPath / TEXT("app/jniLibs");
@@ -125,11 +130,11 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     // Setup package name (eg. com.company.project)
     String packageName = platformSettings->PackageName;
     {
-        String productName = GameSettings::ProductName;
+        String productName = gameSettings->ProductName;
         productName.Replace(TEXT(" "), TEXT(""));
         productName.Replace(TEXT("."), TEXT(""));
         productName.Replace(TEXT("-"), TEXT(""));
-        String companyName = GameSettings::CompanyName;
+        String companyName = gameSettings->CompanyName;
         companyName.Replace(TEXT(" "), TEXT(""));
         companyName.Replace(TEXT("."), TEXT(""));
         companyName.Replace(TEXT("-"), TEXT(""));
@@ -141,7 +146,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
             const auto c = packageName[i];
             if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
             {
-                LOG(Error, "Android Package Name \'{0}\' contains invalid chaarcter. Only letters, numbers, dots and underscore characters are allowed.", packageName);
+                LOG(Error, "Android Package Name \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
                 return true;
             }
         }
@@ -235,7 +240,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${AndroidPermissions}"), permissions);
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${AndroidAttributes}"), attributes);
     const String stringsPath = data.OriginalOutputPath / TEXT("app/src/main/res/values/strings.xml");
-    EditorUtilities::ReplaceInFile(stringsPath, TEXT("${ProjectName}"), GameSettings::ProductName);
+    EditorUtilities::ReplaceInFile(stringsPath, TEXT("${ProjectName}"), gameSettings->ProductName);
 
     // Deploy native binaries to the output location (per-ABI)
     const String abiBinariesPath = jniLibsPath / abi;
@@ -256,7 +261,8 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // TODO: expose event to inject custom gradle and manifest options or custom binaries into app
 
-    if (BuildSettings::Instance()->SkipPackaging)
+    const auto buildSettings = BuildSettings::Get();
+    if (buildSettings->SkipPackaging)
     {
         return false;
     }
@@ -286,7 +292,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 #else
     const Char* gradlew = TEXT("gradlew");
 #endif
-    const bool distributionPackage = BuildSettings::Instance()->ForDistribution;
+    const bool distributionPackage = buildSettings->ForDistribution;
     const String gradleCommand = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
     const int32 result = Platform::RunProcess(gradleCommand, data.OriginalOutputPath, envVars, true);
     if (result != 0)
@@ -297,7 +303,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // Copy result package
     const String apk = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/apk/release/app-release-unsigned.apk") : TEXT("app/build/outputs/apk/debug/app-debug.apk"));
-    const String outputApk = data.OriginalOutputPath / GameSettings::ProductName + TEXT(".apk");
+    const String outputApk = data.OriginalOutputPath / gameSettings->ProductName + TEXT(".apk");
     if (FileSystem::CopyFile(outputApk, apk))
     {
         LOG(Error, "Failed to copy package from {0} to {1}", apk, outputApk);

@@ -115,7 +115,7 @@ namespace FlaxEditor.Windows
         {
             var thirdPartyPanel = new Panel(ScrollBars.Vertical)
             {
-                Bounds = new Rectangle(0, topParentControl.Bottom + 4, Width, Height - topParentControl.Bottom - 24),
+                Bounds = new Rectangle(4, topParentControl.Bottom + 4, Width - 8, Height - topParentControl.Bottom - 24),
                 Parent = this
             };
             var thirdPartyEntries = new[]

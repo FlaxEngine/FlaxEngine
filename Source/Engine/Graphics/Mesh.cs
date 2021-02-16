@@ -117,7 +117,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -163,7 +163,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -210,7 +210,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -257,7 +257,7 @@ namespace FlaxEngine
         /// Mesh data will be cached and uploaded to the GPU with a delay.
         /// </summary>
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
@@ -435,7 +435,7 @@ namespace FlaxEngine
         /// Downloads the third vertex buffer that contains mesh vertices data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
         /// </summary>
         /// <remarks>
-        /// If mesh has no vertex colors (stored in vertex buffer 2) the the returned value is null.
+        /// If mesh has no vertex colors (stored in vertex buffer 2) the returned value is null.
         /// </remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data or null if mesh has no vertex colors.</returns>

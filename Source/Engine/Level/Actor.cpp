@@ -8,7 +8,6 @@
 #include "Prefabs/Prefab.h"
 #include "Prefabs/PrefabManager.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Config/LayersTagsSettings.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Threading/Threading.h"
@@ -43,6 +42,8 @@ Actor::Actor(const SpawnParams& params)
     , _staticFlags(StaticFlags::FullyStatic)
     , _localTransform(Transform::Identity)
     , _transform(Transform::Identity)
+    , _sphere(BoundingSphere::Empty)
+    , _box(BoundingBox::Zero)
     , HideFlags(HideFlags::None)
 {
 }
@@ -386,21 +387,19 @@ Actor* Actor::GetChildByPrefabObjectId(const Guid& prefabObjectId) const
 
 bool Actor::HasTag(const StringView& tag) const
 {
-    return HasTag() && tag == LayersAndTagsSettings::Instance()->Tags[_tag];
+    return HasTag() && tag == Level::Tags[_tag];
 }
 
 const String& Actor::GetLayerName() const
 {
-    const auto settings = LayersAndTagsSettings::Instance();
-    return settings->Layers[_layer];
+    return Level::Layers[_layer];
 }
 
 const String& Actor::GetTag() const
 {
     if (HasTag())
     {
-        const auto settings = LayersAndTagsSettings::Instance();
-        return settings->Tags[_tag];
+        return Level::Tags[_tag];
     }
     return String::Empty;
 }
@@ -420,13 +419,13 @@ void Actor::SetTagIndex(int32 tagIndex)
     if (tagIndex == ACTOR_TAG_INVALID)
     {
     }
-    else if (LayersAndTagsSettings::Instance()->Tags.IsEmpty())
+    else if (Level::Tags.IsEmpty())
     {
         tagIndex = ACTOR_TAG_INVALID;
     }
     else
     {
-        tagIndex = tagIndex < 0 ? ACTOR_TAG_INVALID : Math::Min(tagIndex, LayersAndTagsSettings::Instance()->Tags.Count() - 1);
+        tagIndex = tagIndex < 0 ? ACTOR_TAG_INVALID : Math::Min(tagIndex, Level::Tags.Count() - 1);
     }
     if (tagIndex == _tag)
         return;
@@ -444,7 +443,7 @@ void Actor::SetTag(const StringView& tagName)
     }
     else
     {
-        tagIndex = LayersAndTagsSettings::Instance()->Tags.Find(tagName);
+        tagIndex = Level::Tags.Find(tagName);
         if (tagIndex == -1)
         {
             LOG(Error, "Cannot change actor tag. Given value is invalid.");
@@ -598,6 +597,11 @@ void Actor::SetDirection(const Vector3& value)
         Quaternion::LookRotation(value, up, orientation);
     }
     SetOrientation(orientation);
+}
+
+void Actor::ResetLocalTransform()
+{
+    SetLocalTransform(Transform::Identity);
 }
 
 void Actor::SetLocalTransform(const Transform& value)
@@ -946,11 +950,19 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     const auto parent = Scripting::FindObject<Actor>(parentId);
     if (_parent != parent)
     {
-        if (_parent)
-            _parent->Children.RemoveKeepOrder(this);
-        _parent = parent;
-        if (_parent)
-            _parent->Children.Add(this);
+        if (IsDuringPlay())
+        {
+            SetParent(parent, false, false);
+        }
+        else
+        {
+            if (_parent)
+                _parent->Children.RemoveKeepOrder(this);
+            _parent = parent;
+            if (_parent)
+                _parent->Children.Add(this);
+            OnParentChanged();
+        }
     }
     else if (!parent && parentId.IsValid())
     {
@@ -971,7 +983,7 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
         if (tag->value.IsString() && tag->value.GetStringLength())
         {
             const String tagName = tag->value.GetText();
-            _tag = LayersAndTagsSettings::Instance()->GetOrAddTag(tagName);
+            _tag = Level::GetOrAddTag(tagName);
         }
     }
 
@@ -1040,6 +1052,10 @@ void Actor::OnDisable()
         if (script->GetEnabled() && script->_wasEnableCalled)
             script->Disable();
     }
+}
+
+void Actor::OnParentChanged()
+{
 }
 
 void Actor::OnTransformChanged()
@@ -1259,6 +1275,11 @@ Script* Actor::GetScriptByPrefabObjectId(const Guid& prefabObjectId) const
         }
     }
     return result;
+}
+
+bool Actor::IsPrefabRoot() const
+{
+    return _isPrefabRoot != 0;
 }
 
 Actor* Actor::FindActor(const StringView& name) const

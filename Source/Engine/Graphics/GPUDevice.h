@@ -235,6 +235,11 @@ public:
     MaterialBase* GetDefaultMaterial() const;
 
     /// <summary>
+    /// Gets the default material (Deformable domain).
+    /// </summary>
+    MaterialBase* GetDefaultDeformableMaterial() const;
+
+    /// <summary>
     /// Gets the default normal map texture.
     /// </summary>
     GPUTexture* GetDefaultNormalMap() const;

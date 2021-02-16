@@ -215,7 +215,7 @@ public:
     /// Gets a CPU pointer to the resource by mapping its contents. Denies the GPU access to that resource.
     /// </summary>
     /// <param name="mode">The map operation mode.</param>
-    /// <returns>The pointer ot the mapped CPU buffer with resource data or null if failed.</returns>
+    /// <returns>The pointer of the mapped CPU buffer with resource data or null if failed.</returns>
     API_FUNCTION() virtual void* Map(GPUResourceMapMode mode) = 0;
 
     /// <summary>

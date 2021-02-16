@@ -108,7 +108,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Removes a quick action by name.
         /// </summary>
-        /// <param name="name">Thr action's name.</param>
+        /// <param name="name">The action's name.</param>
         /// <returns>True when it succeed, false if there is no Quick Action with this name.</returns>
         public bool RemoveQuickAction(string name)
         {

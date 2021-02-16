@@ -21,6 +21,7 @@ namespace FlaxEditor.Tools.Foliage
         private readonly Tabs _modes;
         private readonly ContainerControl _noFoliagePanel;
         private int _selectedFoliageTypeIndex = -1;
+        private Button _createNewFoliage;
 
         /// <summary>
         /// The editor instance.
@@ -99,6 +100,7 @@ namespace FlaxEditor.Tools.Foliage
         public FoliageTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            Level.SceneLoaded += OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
@@ -135,14 +137,31 @@ namespace FlaxEditor.Tools.Foliage
                 Offsets = Margin.Zero,
                 Parent = _noFoliagePanel
             };
-            var noFoliageButton = new Button
+            _createNewFoliage = new Button
             {
                 Text = "Create new foliage",
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = new Margin(-60, 120, -12, 24),
                 Parent = _noFoliagePanel,
+                Enabled = false
             };
-            noFoliageButton.Clicked += OnCreateNewFoliageClicked;
+            _createNewFoliage.Clicked += OnCreateNewFoliageClicked;
+        }
+
+        private void OnSceneLoaded(Scene arg1, Guid arg2)
+        {
+            _createNewFoliage.Enabled = true;
+
+            Level.SceneUnloaded += OnSceneUnloaded;
+            Level.SceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneUnloaded(Scene arg1, Guid arg2)
+        {
+            _createNewFoliage.Enabled = false;
+
+            Level.SceneLoaded += OnSceneLoaded;
+            Level.SceneUnloaded -= OnSceneUnloaded;
         }
 
         private void OnSelected(Tab tab)
@@ -164,11 +183,8 @@ namespace FlaxEditor.Tools.Foliage
             actor.StaticFlags = StaticFlags.FullyStatic;
             actor.Name = "Foliage";
 
-            // Spawn
+            // Spawn and select
             Editor.SceneEditing.Spawn(actor);
-
-            // Select
-            Editor.SceneEditing.Select(actor);
         }
 
         private void OnSelectionChanged()
@@ -247,6 +263,17 @@ namespace FlaxEditor.Tools.Foliage
         internal void OnSelectedFoliageTypesChanged()
         {
             SelectedFoliageTypesChanged?.Invoke();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_createNewFoliage.Enabled)
+                Level.SceneUnloaded -= OnSceneUnloaded;
+            else
+                Level.SceneLoaded -= OnSceneLoaded;
+
+            base.OnDestroy();
         }
     }
 }

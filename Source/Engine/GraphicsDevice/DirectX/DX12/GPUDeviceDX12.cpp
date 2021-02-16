@@ -45,7 +45,7 @@ GPUDevice* GPUDeviceDX12::Create()
     selectedAdapter.Description.VendorId = GPU_VENDOR_ID_AMD;
 #else
 #if !USE_EDITOR && PLATFORM_WINDOWS
-	auto winSettings = WindowsPlatformSettings::Instance();
+	auto winSettings = WindowsPlatformSettings::Get();
 	if (!winSettings->SupportDX12)
 	{
 		// Skip if there is no support
@@ -391,7 +391,7 @@ bool GPUDeviceDX12::Init()
     {
         // Descriptor tables
         D3D12_DESCRIPTOR_RANGE r[2];
-        // TODO: separate ranges for pixel/vertex visiblity and one shared for all?
+        // TODO: separate ranges for pixel/vertex visibility and one shared for all?
         {
             D3D12_DESCRIPTOR_RANGE& range = r[0];
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;

@@ -295,6 +295,9 @@ void Joint::OnParentChanged()
     // Base
     Actor::OnParentChanged();
 
+    if (!IsDuringPlay())
+        return;
+
     // Check reparenting Joint case
     const auto parent = dynamic_cast<IPhysicsActor*>(GetParent());
     if (parent == nullptr)
