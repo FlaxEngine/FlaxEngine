@@ -268,9 +268,10 @@ namespace FlaxEditor.Modules
             Actor actor = (Actor)FlaxEngine.Object.New(to);
 
             actionList.Add(new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[0], OnSelectionUndo));
+            actionList[0].Do();
             actionList.Add(new DeleteActorsAction(new List<SceneGraphNode>
             {
-                Editor.SceneEditing.Selection[0]
+                Editor.Instance.Scene.GetActorNode(old)
             }));
             SelectionDeleteBegin?.Invoke();
             actionList[1].Do();
@@ -291,9 +292,12 @@ namespace FlaxEditor.Modules
             actor.IsActive = old.IsActive;
             for (var i = old.ScriptsCount - 1; i >=0; i--)
             {
-                old.Scripts[i].Parent = actor;
+                var script = old.Scripts[i];
+                script.Actor = actor;
+                Guid newid = Guid.NewGuid();
+                FlaxEngine.Object.Internal_ChangeID(FlaxEngine.Object.GetUnmanagedPtr(script), ref newid);
             }
-            for (var i = old.Children.Length - 1; i >= 0 ; i--)
+            for (var i = old.Children.Length - 1; i >= 0; i--)
             {
                 old.Children[i].Parent = actor;
             }
@@ -315,6 +319,7 @@ namespace FlaxEditor.Modules
                 actorNode
             }, true));
             actionList.Add(new SelectionChangeAction(new SceneGraphNode[0], new SceneGraphNode[]{actorNode}, OnSelectionUndo));
+            actionList[3].Do();
             var actions = new MultiUndoAction(actionList);
             Undo.AddAction(actions);
             SpawnEnd?.Invoke();
