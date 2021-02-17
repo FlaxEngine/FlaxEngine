@@ -342,7 +342,7 @@ void AudioSource::Update()
 {
     // Update the velocity
     const Vector3 pos = GetPosition();
-    const float dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
+    const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), ZeroTolerance);
     const auto prevVelocity = _velocity;
     _velocity = (pos - _prevPos) / dt;
     _prevPos = pos;
