@@ -26,6 +26,18 @@ namespace FlaxEditor.Viewport
     /// <seealso cref="IGizmoOwner" />
     public class PrefabWindowViewport : PrefabPreview, IEditorPrimitivesOwner
     {
+        private sealed class PrefabSpritesRenderer : MainEditorGizmoViewport.EditorSpritesRenderer
+        {
+            public PrefabWindowViewport Viewport;
+
+            public override bool CanRender => (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Enabled;
+
+            protected override void Draw(ref RenderContext renderContext)
+            {
+                ViewportIconsRenderer.DrawIcons(ref renderContext, Viewport.Instance);
+            }
+        }
+
         private readonly PrefabWindow _window;
         private UpdateDelegate _update;
 
@@ -39,6 +51,7 @@ namespace FlaxEditor.Viewport
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private IntPtr _debugDrawContext;
+        private PrefabSpritesRenderer _spritesRenderer;
         private readonly DragAssets _dragAssets = new DragAssets(ValidateDragItem);
         private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
         private readonly DragHandlers _dragHandlers = new DragHandlers();
@@ -78,7 +91,7 @@ namespace FlaxEditor.Viewport
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
-            Task.ViewFlags = ViewFlags.DefaultEditor & ~ViewFlags.EditorSprites;
+            Task.ViewFlags = ViewFlags.DefaultEditor;
             Task.Begin += OnBegin;
             Task.CollectDrawCalls += OnCollectDrawCalls;
             Task.PostRender += OnPostRender;
@@ -90,6 +103,10 @@ namespace FlaxEditor.Viewport
             EditorPrimitives = FlaxEngine.Object.New<EditorPrimitives>();
             EditorPrimitives.Viewport = this;
             Task.CustomPostFx.Add(EditorPrimitives);
+            _spritesRenderer = FlaxEngine.Object.New<PrefabSpritesRenderer>();
+            _spritesRenderer.Task = Task;
+            _spritesRenderer.Viewport = this;
+            Task.CustomPostFx.Add(_spritesRenderer);
 
             // Add transformation gizmo
             TransformGizmo = new TransformGizmo(this);
@@ -256,6 +273,12 @@ namespace FlaxEditor.Viewport
                 if (EditorPrimitives && EditorPrimitives.CanRender)
                 {
                     EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
+                }
+
+                // Render editor sprites
+                if (_spritesRenderer && _spritesRenderer.CanRender)
+                {
+                    _spritesRenderer.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render selection outline
@@ -855,6 +878,7 @@ namespace FlaxEditor.Viewport
             }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
             FlaxEngine.Object.Destroy(ref EditorPrimitives);
+            FlaxEngine.Object.Destroy(ref _spritesRenderer);
 
             base.OnDestroy();
         }

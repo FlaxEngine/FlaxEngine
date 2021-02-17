@@ -62,7 +62,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         /// <seealso cref="FlaxEngine.PostProcessEffect" />
         [HideInEditor]
-        public sealed class EditorSpritesRenderer : PostProcessEffect
+        public class EditorSpritesRenderer : PostProcessEffect
         {
             /// <summary>
             /// The rendering task.
@@ -100,11 +100,7 @@ namespace FlaxEditor.Viewport
                 context.SetRenderTarget(depthBufferHandle, input.View());
 
                 // Collect draw calls
-                for (int i = 0; i < Level.ScenesCount; i++)
-                {
-                    var scene = Level.GetScene(i);
-                    ViewportIconsRenderer.DrawIcons(ref renderContext, scene);
-                }
+                Draw(ref renderContext);
 
                 // Sort draw calls
                 renderList.SortDrawCalls(ref renderContext, true, DrawCallsListType.Forward);
@@ -117,6 +113,18 @@ namespace FlaxEditor.Viewport
                 renderContext.List = prevList;
 
                 Profiler.EndEventGPU();
+            }
+
+            /// <summary>
+            /// Draws the icons.
+            /// </summary>
+            protected virtual void Draw(ref RenderContext renderContext)
+            {
+                for (int i = 0; i < Level.ScenesCount; i++)
+                {
+                    var scene = Level.GetScene(i);
+                    ViewportIconsRenderer.DrawIcons(ref renderContext, scene);
+                }
             }
         }
 
