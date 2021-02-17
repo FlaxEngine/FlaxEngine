@@ -313,10 +313,10 @@ bool DebugDrawService::Init()
     for (float a = 0.0f; a < TWO_PI; a += step)
     {
         // Calculate sines and cosines
-        float sinA = sin(a);
-        float cosA = cos(a);
-        float sinB = sin(a + step);
-        float cosB = cos(a + step);
+        float sinA = Math::Sin(a);
+        float cosA = Math::Cos(a);
+        float sinB = Math::Sin(a + step);
+        float cosB = Math::Cos(a + step);
 
         // XY loop
         SphereCache[index++] = Vector3(cosA, sinA, 0.0f);
@@ -337,10 +337,10 @@ bool DebugDrawService::Init()
     for (float a = 0.0f; a < TWO_PI; a += step)
     {
         // Calculate sines and cosines
-        float sinA = sin(a);
-        float cosA = cos(a);
-        float sinB = sin(a + step);
-        float cosB = cos(a + step);
+        float sinA = Math::Sin(a);
+        float cosA = Math::Cos(a);
+        float sinB = Math::Sin(a + step);
+        float cosB = Math::Cos(a + step);
 
         CircleCache[index++] = Vector3(cosA, sinA, 0.0f);
         CircleCache[index++] = Vector3(cosB, sinB, 0.0f);
@@ -1049,10 +1049,10 @@ void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientat
         {
             // Calculate sines and cosines
             // TODO: optimize this stuff
-            float sinA = sin(a) * radius;
-            float cosA = cos(a) * radius;
-            float sinB = sin(a + step) * radius;
-            float cosB = cos(a + step) * radius;
+            float sinA = Math::Sin(a) * radius;
+            float cosA = Math::Cos(a) * radius;
+            float sinB = Math::Sin(a + step) * radius;
+            float cosB = Math::Cos(a + step) * radius;
 
             // First XY loop
             DRAW_WIRE_BOX_LINE(cosA, sinA, -halfLength, cosB, sinB, -halfLength);
@@ -1098,8 +1098,8 @@ void DebugDraw::DrawWireCylinder(const Vector3& position, const Quaternion& orie
     {
         // Cache data
         float theta = i * angleBetweenFacets;
-        float x = cos(theta) * radius;
-        float z = sin(theta) * radius;
+        float x = Math::Cos(theta) * radius;
+        float z = Math::Sin(theta) * radius;
 
         // Top cap
         CylinderCache[index++] = Vector3(x, verticalOffset, z);
