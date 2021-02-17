@@ -198,7 +198,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
     // Check if value won't change
     if (_parent == value)
         return;
-    if (!IsInMainThread())
+    if (IsDuringPlay() && !IsInMainThread())
     {
         LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
         return;
