@@ -37,6 +37,8 @@ namespace FlaxEditor.Viewport
         private ViewportWidgetButton _rotateSnapping;
         private ViewportWidgetButton _scaleSnapping;
 
+        private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
+        private IntPtr _debugDrawContext;
         private readonly DragAssets _dragAssets = new DragAssets(ValidateDragItem);
         private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
         private readonly DragHandlers _dragHandlers = new DragHandlers();
@@ -57,6 +59,11 @@ namespace FlaxEditor.Viewport
         public EditorPrimitives EditorPrimitives;
 
         /// <summary>
+        /// Gets or sets a value indicating whether draw <see cref="DebugDraw"/> shapes.
+        /// </summary>
+        public bool DrawDebugDraw = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PrefabWindowViewport"/> class.
         /// </summary>
         /// <param name="window">Editor window.</param>
@@ -67,10 +74,13 @@ namespace FlaxEditor.Viewport
             _window.SelectionChanged += OnSelectionChanged;
             Undo = window.Undo;
             ViewportCamera = new FPSCamera();
+            _debugDrawContext = DebugDraw.AllocateContext();
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
             Task.ViewFlags = ViewFlags.DefaultEditor & ~ViewFlags.EditorSprites;
+            Task.Begin += OnBegin;
+            Task.CollectDrawCalls += OnCollectDrawCalls;
             Task.PostRender += OnPostRender;
 
             // Create post effects
@@ -214,6 +224,27 @@ namespace FlaxEditor.Viewport
             }
         }
 
+        private void OnBegin(RenderTask task, GPUContext context)
+        {
+            _debugDrawData.Clear();
+
+            // Collect selected objects debug shapes and visuals
+            var selectedParents = TransformGizmo.SelectedParents;
+            if (selectedParents.Count > 0)
+            {
+                for (int i = 0; i < selectedParents.Count; i++)
+                {
+                    if (selectedParents[i].IsActiveInHierarchy)
+                        selectedParents[i].OnDebugDraw(_debugDrawData);
+                }
+            }
+        }
+
+        private void OnCollectDrawCalls(RenderContext renderContext)
+        {
+            _debugDrawData.OnDraw(ref renderContext);
+        }
+
         private void OnPostRender(GPUContext context, RenderContext renderContext)
         {
             if (renderContext.View.Mode != ViewMode.Default)
@@ -222,7 +253,24 @@ namespace FlaxEditor.Viewport
 
                 // Render editor primitives, gizmo and debug shapes in debug view modes
                 // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers
-                EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
+                if (EditorPrimitives && EditorPrimitives.CanRender)
+                {
+                    EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
+                }
+
+                // Render selection outline
+                if (SelectionOutline && SelectionOutline.CanRender)
+                {
+                    // Use temporary intermediate buffer
+                    var desc = task.Output.Description;
+                    var temp = RenderTargetPool.Get(ref desc);
+                    SelectionOutline.Render(context, ref renderContext, task.Output, temp);
+
+                    // Copy the results back to the output
+                    context.CopyTexture(task.Output, 0, 0, 0, 0, temp, 0);
+
+                    RenderTargetPool.Release(temp);
+                }
             }
         }
 
@@ -800,6 +848,11 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (_debugDrawContext != IntPtr.Zero)
+            {
+                DebugDraw.FreeContext(_debugDrawContext);
+                _debugDrawContext = IntPtr.Zero;
+            }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
             FlaxEngine.Object.Destroy(ref EditorPrimitives);
 
@@ -809,6 +862,21 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
+            // Draw selected objects debug shapes and visuals
+            if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
+            {
+                DebugDraw.SetContext(_debugDrawContext);
+                DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Engine.FramesPerSecond);
+                unsafe
+                {
+                    fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
+                    {
+                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
+                    }
+                }
+                DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
+                DebugDraw.SetContext(IntPtr.Zero);
+            }
         }
     }
 }

@@ -205,20 +205,30 @@ struct DebugDrawData
     }
 };
 
-DebugDrawData DebugDrawDefault;
-DebugDrawData DebugDrawDepthTest;
-AssetReference<Shader> DebugDrawShader;
-PsData DebugDrawPsLinesDefault;
-PsData DebugDrawPsLinesDepthTest;
-PsData DebugDrawPsWireTrianglesDefault;
-PsData DebugDrawPsWireTrianglesDepthTest;
-PsData DebugDrawPsTrianglesDefault;
-PsData DebugDrawPsTrianglesDepthTest;
-DynamicVertexBuffer* DebugDrawVB = nullptr;
-Vector3 SphereCache[DEBUG_DRAW_SPHERE_VERTICES];
-Vector3 CircleCache[DEBUG_DRAW_CIRCLE_VERTICES];
-Vector3 CylinderCache[DEBUG_DRAW_CYLINDER_VERTICES];
-Array<Vector3> SphereTriangleCache;
+struct DebugDrawContext
+{
+    DebugDrawData DebugDrawDefault;
+    DebugDrawData DebugDrawDepthTest;
+};
+
+namespace
+{
+    DebugDrawContext GlobalContext;
+    DebugDrawContext* Context;
+    AssetReference<Shader> DebugDrawShader;
+    PsData DebugDrawPsLinesDefault;
+    PsData DebugDrawPsLinesDepthTest;
+    PsData DebugDrawPsWireTrianglesDefault;
+    PsData DebugDrawPsWireTrianglesDepthTest;
+    PsData DebugDrawPsTrianglesDefault;
+    PsData DebugDrawPsTrianglesDepthTest;
+    DynamicVertexBuffer* DebugDrawVB = nullptr;
+    Vector3 SphereCache[DEBUG_DRAW_SPHERE_VERTICES];
+    Vector3 CircleCache[DEBUG_DRAW_CIRCLE_VERTICES];
+    Vector3 CylinderCache[DEBUG_DRAW_CYLINDER_VERTICES];
+    Array<Vector3> SphereTriangleCache;
+};
+
 extern int32 BoxTrianglesIndicesCache[];
 
 struct DebugDrawCall
@@ -307,6 +317,8 @@ DebugDrawService DebugDrawServiceInstance;
 
 bool DebugDrawService::Init()
 {
+    Context = &GlobalContext;
+
     // Init wireframe sphere cache
     int32 index = 0;
     float step = TWO_PI / DEBUG_DRAW_SPHERE_RESOLUTION;
@@ -436,8 +448,8 @@ void DebugDrawService::Update()
     // Special case for Null renderer
     if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
     {
-        DebugDrawDefault.Clear();
-        DebugDrawDepthTest.Clear();
+        GlobalContext.DebugDrawDefault.Clear();
+        GlobalContext.DebugDrawDepthTest.Clear();
         return;
     }
 
@@ -445,8 +457,8 @@ void DebugDrawService::Update()
 
     // Update lists
     const float deltaTime = Time::Update.DeltaTime.GetTotalSeconds();
-    DebugDrawDefault.Update(deltaTime);
-    DebugDrawDepthTest.Update(deltaTime);
+    GlobalContext.DebugDrawDefault.Update(deltaTime);
+    GlobalContext.DebugDrawDepthTest.Update(deltaTime);
 
     // Check if need to setup a resources
     if (DebugDrawShader == nullptr)
@@ -501,8 +513,8 @@ void DebugDrawService::Update()
 void DebugDrawService::Dispose()
 {
     // Clear lists
-    DebugDrawDefault.Release();
-    DebugDrawDepthTest.Release();
+    GlobalContext.DebugDrawDefault.Release();
+    GlobalContext.DebugDrawDepthTest.Release();
 
     // Release resources
     SphereTriangleCache.Resize(0);
@@ -516,13 +528,41 @@ void DebugDrawService::Dispose()
     DebugDrawShader = nullptr;
 }
 
+#if USE_EDITOR
+
+void* DebugDraw::AllocateContext()
+{
+    auto context = (DebugDrawContext*)Allocator::Allocate(sizeof(DebugDrawContext));
+    Memory::ConstructItem(context);
+    return context;
+}
+
+void DebugDraw::FreeContext(void* context)
+{
+    Memory::DestructItem((DebugDrawContext*)context);
+    Allocator::Free(context);
+}
+
+void DebugDraw::UpdateContext(void* context, float deltaTime)
+{
+    ((DebugDrawContext*)context)->DebugDrawDefault.Update(deltaTime);
+    ((DebugDrawContext*)context)->DebugDrawDepthTest.Update(deltaTime);
+}
+
+void DebugDraw::SetContext(void* context)
+{
+    Context = context ? (DebugDrawContext*)context : &GlobalContext;
+}
+
+#endif
+
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)
 {
     PROFILE_GPU_CPU("Debug Draw");
 
     // Ensure to have shader loaded and any lines to render
-    const int32 debugDrawDepthTestCount = DebugDrawDepthTest.Count();
-    const int32 debugDrawDefaultCount = DebugDrawDefault.Count();
+    const int32 debugDrawDepthTestCount = Context->DebugDrawDepthTest.Count();
+    const int32 debugDrawDefaultCount = Context->DebugDrawDefault.Count();
     if (DebugDrawShader == nullptr || !DebugDrawShader->IsLoaded() || debugDrawDepthTestCount + debugDrawDefaultCount == 0)
         return;
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
@@ -539,12 +579,12 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
 #endif
     DebugDrawVB->Clear();
     int32 vertexCounter = 0;
-    const DebugDrawCall depthTestLines = WriteLists(vertexCounter, DebugDrawDepthTest.DefaultLines, DebugDrawDepthTest.OneFrameLines);
-    const DebugDrawCall defaultLines = WriteLists(vertexCounter, DebugDrawDefault.DefaultLines, DebugDrawDefault.OneFrameLines);
-    const DebugDrawCall depthTestTriangles = WriteLists(vertexCounter, DebugDrawDepthTest.DefaultTriangles, DebugDrawDepthTest.OneFrameTriangles);
-    const DebugDrawCall defaultTriangles = WriteLists(vertexCounter, DebugDrawDefault.DefaultTriangles, DebugDrawDefault.OneFrameTriangles);
-    const DebugDrawCall depthTestWireTriangles = WriteLists(vertexCounter, DebugDrawDepthTest.DefaultWireTriangles, DebugDrawDepthTest.OneFrameWireTriangles);
-    const DebugDrawCall defaultWireTriangles = WriteLists(vertexCounter, DebugDrawDefault.DefaultWireTriangles, DebugDrawDefault.OneFrameWireTriangles);
+    const DebugDrawCall depthTestLines = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultLines, Context->DebugDrawDepthTest.OneFrameLines);
+    const DebugDrawCall defaultLines = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultLines, Context->DebugDrawDefault.OneFrameLines);
+    const DebugDrawCall depthTestTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultTriangles, Context->DebugDrawDepthTest.OneFrameTriangles);
+    const DebugDrawCall defaultTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultTriangles, Context->DebugDrawDefault.OneFrameTriangles);
+    const DebugDrawCall depthTestWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultWireTriangles, Context->DebugDrawDepthTest.OneFrameWireTriangles);
+    const DebugDrawCall defaultWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultWireTriangles, Context->DebugDrawDefault.OneFrameWireTriangles);
     DebugDrawVB->Flush(context);
 #if COMPILE_WITH_PROFILER
     ProfilerCPU::EndEvent(updateBufferProfileKey);
@@ -580,7 +620,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
             context->BindVB(ToSpan(&vb, 1));
             context->Draw(depthTestLines.StartVertex, depthTestLines.VertexCount);
         }
-        
+
         // Wire Triangles
         if (depthTestWireTriangles.VertexCount)
         {
@@ -636,9 +676,10 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
 #undef DRAW
 }
 
-void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount)
+void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes)
 {
     PROFILE_CPU();
+
     if (selectedActors)
     {
         for (int32 i = 0; i < selectedActorsCount; i++)
@@ -649,16 +690,19 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount)
         }
     }
 
-    Function<bool(Actor*)> function = [](Actor* actor)-> bool
+    if (drawScenes)
     {
-        if (actor->IsActiveInHierarchy())
+        Function<bool(Actor*)> function = [](Actor* actor)-> bool
         {
-            actor->OnDebugDraw();
-            return true;
-        }
-        return false;
-    };
-    SceneQuery::TreeExecute(function);
+            if (actor->IsActiveInHierarchy())
+            {
+                actor->OnDebugDraw();
+                return true;
+            }
+            return false;
+        };
+        SceneQuery::TreeExecute(function);
+    }
 }
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)
@@ -668,9 +712,9 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
 
     // Add line
     if (depthTest)
-        DebugDrawDepthTest.Add(l);
+        Context->DebugDrawDepthTest.Add(l);
     else
-        DebugDrawDefault.Add(l);
+        Context->DebugDrawDefault.Add(l);
 }
 
 void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
@@ -688,10 +732,10 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
     const Vector3* p = lines.Get();
     Array<DebugLine>* list;
 
-    if (depthTest) 
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultLines : &DebugDrawDepthTest.OneFrameLines;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultLines : &Context->DebugDrawDepthTest.OneFrameLines;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultLines : &DebugDrawDefault.OneFrameLines;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultLines : &Context->DebugDrawDefault.OneFrameLines;
 
     list->EnsureCapacity(list->Count() + lines.Length());
     for (int32 i = 0; i < lines.Length(); i += 2)
@@ -707,9 +751,9 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     // Create draw call entry
     Array<DebugLine>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultLines : &DebugDrawDepthTest.OneFrameLines;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultLines : &Context->DebugDrawDepthTest.OneFrameLines;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultLines : &DebugDrawDefault.OneFrameLines;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultLines : &Context->DebugDrawDefault.OneFrameLines;
     DebugLine l = { p1, Vector3::Zero, Color32(color), duration };
 
     // Find amount of segments to use
@@ -731,7 +775,7 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     }
 }
 
-#define DRAW_WIRE_BOX_LINE(i0, i1, list) l.Start = corners[i0]; l.End = corners[i1]; list.Add(l)
+#define DRAW_WIRE_BOX_LINE(i0, i1, list) l.Start = corners[i0]; l.End = corners[i1]; Context->list.Add(l)
 #define DRAW_WIRE_BOX(list) \
 	DRAW_WIRE_BOX_LINE(0, 1, list); \
 	DRAW_WIRE_BOX_LINE(0, 3, list); \
@@ -818,7 +862,7 @@ void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color,
         {
             l.Start = sphere.Center + SphereCache[i++] * sphere.Radius;
             l.End = sphere.Center + SphereCache[i++] * sphere.Radius;
-            DebugDrawDepthTest.Add(l);
+            Context->DebugDrawDepthTest.Add(l);
         }
     }
     else
@@ -827,7 +871,7 @@ void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color,
         {
             l.Start = sphere.Center + SphereCache[i++] * sphere.Radius;
             l.End = sphere.Center + SphereCache[i++] * sphere.Radius;
-            DebugDrawDefault.Add(l);
+            Context->DebugDrawDefault.Add(l);
         }
     }
 }
@@ -840,9 +884,9 @@ void DebugDraw::DrawSphere(const BoundingSphere& sphere, const Color& color, flo
 
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
     list->EnsureCapacity(list->Count() + SphereTriangleCache.Count());
 
     for (int32 i = 0; i < SphereTriangleCache.Count();)
@@ -899,11 +943,11 @@ void DebugDraw::DrawTriangle(const Vector3& v0, const Vector3& v1, const Vector3
 
     if (depthTest)
     {
-        DebugDrawDepthTest.Add(t);
+        Context->DebugDrawDepthTest.Add(t);
     }
     else
     {
-        DebugDrawDefault.Add(t);
+        Context->DebugDrawDefault.Add(t);
     }
 }
 
@@ -917,9 +961,9 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
 
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
     list->EnsureCapacity(list->Count() + vertices.Length() / 3);
 
     for (int32 i = 0; i < vertices.Length();)
@@ -946,9 +990,9 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
 
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
     list->EnsureCapacity(list->Count() + indices.Length() / 3);
 
     for (int32 i = 0; i < indices.Length();)
@@ -975,9 +1019,9 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Color& co
 
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultWireTriangles : &DebugDrawDepthTest.OneFrameWireTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultWireTriangles : &DebugDrawDefault.OneFrameWireTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
     list->EnsureCapacity(list->Count() + vertices.Length() / 3);
 
     for (int32 i = 0; i < vertices.Length();)
@@ -1004,9 +1048,9 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Span<int3
 
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultWireTriangles : &DebugDrawDepthTest.OneFrameWireTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultWireTriangles : &DebugDrawDefault.OneFrameWireTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
     list->EnsureCapacity(list->Count() + indices.Length() / 3);
 
     for (int32 i = 0; i < indices.Length();)
@@ -1192,9 +1236,9 @@ void DebugDraw::DrawBox(const BoundingBox& box, const Color& color, float durati
     t.TimeLeft = duration;
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
     list->EnsureCapacity(list->Count() + 36);
     for (int i0 = 0; i0 < 36;)
     {
@@ -1218,9 +1262,9 @@ void DebugDraw::DrawBox(const OrientedBoundingBox& box, const Color& color, floa
     t.TimeLeft = duration;
     Array<DebugTriangle>* list;
     if (depthTest)
-        list = duration > 0 ? &DebugDrawDepthTest.DefaultTriangles : &DebugDrawDepthTest.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
-        list = duration > 0 ? &DebugDrawDefault.DefaultTriangles : &DebugDrawDefault.OneFrameTriangles;
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
     list->EnsureCapacity(list->Count() + 36);
     for (int i0 = 0; i0 < 36;)
     {

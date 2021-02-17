@@ -427,7 +427,7 @@ namespace FlaxEditor.Viewport
                 {
                     fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
                     {
-                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount);
+                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, true);
                     }
                 }
 

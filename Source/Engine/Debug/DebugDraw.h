@@ -23,6 +23,35 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 
+#if USE_EDITOR
+
+    /// <summary>
+    /// Allocates the context for Debug Drawing. Can be use to redirect debug shapes collecting to a separate container (instead of global state).
+    /// </summary>
+    /// <returns>The context object. Release it wil FreeContext. Returns null if failed.</returns>
+    API_FUNCTION() static void* AllocateContext();
+
+    /// <summary>
+    /// Frees the context for Debug Drawing.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    API_FUNCTION() static void FreeContext(void* context);
+
+    /// <summary>
+    /// Updates the context for Debug Drawing.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="deltaTime">The update delta time (in seconds).</param>
+    API_FUNCTION() static void UpdateContext(void* context, float deltaTime);
+
+    /// <summary>
+    /// Sets the context for Debug Drawing to a custom or null to use global default.
+    /// </summary>
+    /// <param name="context">The context or null.</param>
+    API_FUNCTION() static void SetContext(void* context);
+
+#endif
+
     /// <summary>
     /// Draws the collected debug shapes to the output.
     /// </summary>
@@ -37,7 +66,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// </summary>
     /// <param name="selectedActors">The list of actors to draw.</param>
     /// <param name="selectedActorsCount">The size of the list of actors.</param>
-    API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount);
+    /// <param name="drawScenes">True if draw all debug shapes from scenes too or false if draw just from specified actor list.</param>
+    API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes);
 
     /// <summary>
     /// Draws the line.
