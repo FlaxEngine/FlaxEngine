@@ -62,6 +62,7 @@ private:
     Array<byte> _restoreData;
     Camera* _cameraCutCam = nullptr;
     bool _isUsingCameraCuts = false;
+    Dictionary<Guid, Guid> _objectsMapping;
 
     // PostFx settings to use
     struct
@@ -188,6 +189,13 @@ public:
     /// </summary>
     /// <param name="dt">The update delta time (in seconds). It does not get scaled by player Speed parameter.</param>
     API_FUNCTION() void Tick(float dt);
+
+    /// <summary>
+    /// Adds an object mapping. The object `from` represented by it's unique ID will be redirected to the specified `to`. Can be used to reuse the same animation for different objects.
+    /// </summary>
+    /// <param name="from">The source object from the scene animation asset to replace.</param>
+    /// <param name="to">The destination object to animate.</param>
+    API_FUNCTION() void MapObject(const Guid& from, const Guid& to);
 
 private:
 

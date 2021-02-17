@@ -213,6 +213,11 @@ void SceneAnimationPlayer::Tick(float dt)
     _lastTime = _time = time;
 }
 
+void SceneAnimationPlayer::MapObject(const Guid& from, const Guid& to)
+{
+    _objectsMapping[from] = to;
+}
+
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 {
     // Restore all tracks
@@ -268,7 +273,9 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             case SceneAnimation::Track::Types::ObjectReferenceProperty:
             {
                 value = &_restoreData[state.RestoreStateIndex];
-                auto obj = Scripting::FindObject<ScriptingObject>(*(Guid*)value);
+                Guid id = *(Guid*)value;
+                _objectsMapping.TryGet(id, id);
+                auto obj = Scripting::FindObject<ScriptingObject>(id);
                 value = obj ? obj->GetOrCreateManagedInstance() : nullptr;
                 break;
             }
@@ -358,7 +365,9 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
         void* value = (void*)((byte*)trackDataKeyframes->Keyframes + keyframeSize * (leftKey) + sizeof(float));
         if (track.Type == SceneAnimation::Track::Types::ObjectReferenceProperty)
         {
-            auto obj = Scripting::FindObject<ScriptingObject>(*(Guid*)value);
+            Guid id = *(Guid*)value;
+            _objectsMapping.TryGet(id, id);
+            auto obj = Scripting::FindObject<ScriptingObject>(id);
             value = obj ? obj->GetOrCreateManagedInstance() : nullptr;
             *(void**)target = value;
         }
@@ -680,10 +689,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
 
                 // Find actor
                 const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
+                Guid id = trackData->ID;
+                _objectsMapping.TryGet(id, id);
                 state.Object = Scripting::FindObject<Actor>(trackData->ID);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", trackData->ID, track.Name, anim->ToString(), TEXT("actor"));
+                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
                     break;
                 }
             }
@@ -708,10 +719,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     break;
 
                 // Find script
-                state.Object = Scripting::FindObject<Script>(trackData->ID);
+                Guid id = trackData->ID;
+                _objectsMapping.TryGet(id, id);
+                state.Object = Scripting::FindObject<Script>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", trackData->ID, track.Name, anim->ToString(), TEXT("script"));
+                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("script"));
                     break;
                 }
 
@@ -940,10 +953,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 state.ManagedObject = nullptr;
 
                 // Find actor
-                state.Object = Scripting::FindObject<Camera>(trackData->ID);
+                Guid id = trackData->ID;
+                _objectsMapping.TryGet(id, id);
+                state.Object = Scripting::FindObject<Camera>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", trackData->ID, track.Name, anim->ToString(), TEXT("actor"));
+                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
                     break;
                 }
             }
