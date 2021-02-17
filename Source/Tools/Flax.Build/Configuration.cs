@@ -202,6 +202,12 @@ namespace Flax.Build
         public static string ProjectFormatCustom = null;
 
         /// <summary>
+        /// Overrides the compiler to use for building. Eg. v140 overrides the toolset when building for Windows.
+        /// </summary>
+        [CommandLine("compiler", "<name>", "Overrides the compiler to use for building. Eg. v140 overrides the toolset when building for Windows.")]
+        public static string Compiler = null;
+
+        /// <summary>
         /// Custom configuration defines provided via command line for the build tool.
         /// </summary>
         public static List<string> CustomDefines = new List<string>();

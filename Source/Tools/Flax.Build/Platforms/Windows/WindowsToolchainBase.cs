@@ -78,6 +78,13 @@ namespace Flax.Build.Platforms
             var toolsets = WindowsPlatformBase.GetToolsets();
             var sdks = WindowsPlatformBase.GetSDKs();
 
+            // Pick the overriden toolset
+            if (Configuration.Compiler != null)
+            {
+                if (Enum.TryParse(Configuration.Compiler, out WindowsPlatformToolset compiler))
+                    toolsetVer = compiler;
+            }
+
             // Pick the newest installed Visual Studio version if using the default toolset
             if (toolsetVer == WindowsPlatformToolset.Default)
             {
