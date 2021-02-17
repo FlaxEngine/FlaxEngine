@@ -327,14 +327,6 @@ void AnimatedModel::SyncParameters()
     }
 }
 
-void AnimatedModel::UpdateBounds()
-{
-    UpdateLocalBounds();
-
-    BoundingBox::Transform(_boxLocal, _world, _box);
-    BoundingSphere::FromBox(_box, _sphere);
-}
-
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
     if (SkinnedModel && SkinnedModel->IsLoaded())
@@ -399,6 +391,14 @@ void AnimatedModel::UpdateLocalBounds()
     box.Maximum *= BoundsScale;
 
     _boxLocal = box;
+}
+
+void AnimatedModel::UpdateBounds()
+{
+    UpdateLocalBounds();
+
+    BoundingBox::Transform(_boxLocal, _world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
 }
 
 void AnimatedModel::OnAnimUpdate()

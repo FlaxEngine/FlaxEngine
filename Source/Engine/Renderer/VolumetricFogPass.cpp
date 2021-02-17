@@ -89,26 +89,19 @@ void VolumetricFogPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     _psInjectLight.Delete();
-
     _csInitialize = nullptr;
     _csLightScattering.Clear();
     _csFinalIntegration = nullptr;
-
     SAFE_DELETE_GPU_RESOURCE(_vbCircleRasterize);
     SAFE_DELETE_GPU_RESOURCE(_ibCircleRasterize);
-
-    // Release assets
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
-float ComputeZSliceFromDepth(float SceneDepth, const VolumetricFogOptions& options, int32 GridSizeZ)
+float ComputeZSliceFromDepth(float sceneDepth, const VolumetricFogOptions& options, int32 gridSizeZ)
 {
-    // This must match frustum voxels depth distribution
-    // See ComputeNormalizedZSliceFromDepth() in VolumetricFog.shader
-
-    return SceneDepth / options.Distance * GridSizeZ;
+    return sceneDepth / options.Distance * (float)gridSizeZ;
 }
 
 bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options)

@@ -205,6 +205,11 @@ namespace FlaxEngine
             return obj?.__unmanagedPtr ?? IntPtr.Zero;
         }
 
+        internal static IntPtr GetUnmanagedPtr(SoftObjectReference reference)
+        {
+            return GetUnmanagedPtr(reference.Get<Object>());
+        }
+
         /// <inheritdoc />
         public override int GetHashCode()
         {

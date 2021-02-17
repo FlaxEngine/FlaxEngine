@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -1187,6 +1188,12 @@ namespace FlaxEditor.Surface.Archetypes
                 [TypeReference(typeof(object), nameof(IsTypeValid))]
                 public ScriptType Type;
 
+                public Parameter(ref ScriptMemberInfo.Parameter param)
+                {
+                    Name = param.Name;
+                    Type = param.Type;
+                }
+
                 private static bool IsTypeValid(ScriptType type)
                 {
                     return SurfaceUtils.IsValidVisualScriptFunctionType(type) && !type.IsVoid;
@@ -1394,12 +1401,22 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            /// <summary>
+            /// The cached signature. This might not be loaded if called from other not initialization (eg. node initialized before this function node). Then use GetSignature method.
+            /// </summary>
             internal Signature _signature;
 
             /// <inheritdoc />
             public VisualScriptFunctionNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
+            }
+
+            public void GetSignature(out Signature signature)
+            {
+                if (_signature.Node == null)
+                    LoadSignature();
+                signature = _signature;
             }
 
             private void SaveSignature()
@@ -1575,6 +1592,13 @@ namespace FlaxEditor.Surface.Archetypes
 
                     // Update node interface
                     UpdateUI();
+
+                    // Send event
+                    for (int i = 0; i < Surface.Nodes.Count; i++)
+                    {
+                        if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                            node.OnFunctionEdited(this);
+                    }
                 };
                 editor.Show(this, Vector2.Zero);
             }
@@ -1629,6 +1653,13 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnLoaded();
 
                 LoadSignature();
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionCreated(this);
+                }
             }
 
             /// <inheritdoc />
@@ -1637,6 +1668,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnSpawned();
 
                 // Setup initial signature
+                var defaultSignature = _signature.Node == null;
                 CheckFunctionName(ref _signature.Name);
                 if (_signature.ReturnType == ScriptType.Null)
                     _signature.ReturnType = new ScriptType(typeof(void));
@@ -1644,8 +1676,31 @@ namespace FlaxEditor.Surface.Archetypes
                 SaveSignature();
                 UpdateUI();
 
-                // Start editing
-                OnEditSignature();
+                if (defaultSignature)
+                {
+                    // Start editing
+                    OnEditSignature();
+                }
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionCreated(this);
+                }
+            }
+
+            /// <inheritdoc />
+            public override void OnDeleted()
+            {
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionDeleted(this);
+                }
+
+                base.OnDeleted();
             }
 
             /// <inheritdoc />
@@ -1654,6 +1709,13 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
 
                 LoadSignature();
+
+                // Send event
+                for (int i = 0; i < Surface.Nodes.Count; i++)
+                {
+                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                        node.OnFunctionEdited(this);
+                }
             }
 
             /// <inheritdoc />
@@ -1759,7 +1821,6 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private bool _isTypesChangedEventRegistered;
 
-            /// <inheritdoc />
             public SetFieldNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
@@ -1844,6 +1905,254 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 base.OnDestroy();
+            }
+        }
+
+        private abstract class EventBaseNode : SurfaceNode, IFunctionsDependantNode
+        {
+            private ComboBoxElement _combobox;
+            private Image _helperButton;
+            private bool _isBind;
+            private bool _isUpdateLocked = true;
+            private List<string> _tooltips = new List<string>();
+            private List<uint> _functionNodesIds = new List<uint>();
+            private ScriptMemberInfo.Parameter[] _signature;
+
+            protected EventBaseNode(bool isBind, uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                _isBind = isBind;
+            }
+
+            private bool IsValidFunctionSignature(ref VisualScriptFunctionNode.Signature sig)
+            {
+                if (!sig.ReturnType.IsVoid || sig.Parameters == null || sig.Parameters.Length != _signature.Length)
+                    return false;
+                for (int i = 0; i < _signature.Length; i++)
+                {
+                    if (_signature[i].Type != sig.Parameters[i].Type)
+                        return false;
+                }
+                return true;
+            }
+
+            private void UpdateUI()
+            {
+                if (_isUpdateLocked)
+                    return;
+                _isUpdateLocked = true;
+                if (_combobox == null)
+                {
+                    _combobox = (ComboBoxElement)_children[4];
+                    _combobox.TooltipText = _isBind ? "Select the function to call when the event occurs" : "Select the function to unbind from the event";
+                    _combobox.SelectedIndexChanged += OnSelectedChanged;
+                    _helperButton = new Image
+                    {
+                        Location = _combobox.UpperRight + new Vector2(4, 3),
+                        Size = new Vector2(12.0f),
+                        Parent = this,
+                    };
+                    _helperButton.Clicked += OnHelperButtonClicked;
+                }
+                int toSelect = -1;
+                var handlerFunctionNodeId = Convert.ToUInt32(Values[2]);
+                _combobox.ClearItems();
+                _tooltips.Clear();
+                _functionNodesIds.Clear();
+                var nodes = Surface.Nodes;
+                var count = _signature != null ? nodes.Count : 0;
+                for (int i = 0; i < count; i++)
+                {
+                    if (nodes[i] is VisualScriptFunctionNode functionNode)
+                    {
+                        // Get if function signature matches the event signature
+                        functionNode.GetSignature(out var functionSig);
+                        if (IsValidFunctionSignature(ref functionSig))
+                        {
+                            if (functionNode.ID == handlerFunctionNodeId)
+                                toSelect = _functionNodesIds.Count;
+                            _functionNodesIds.Add(functionNode.ID);
+                            _tooltips.Add(functionNode.TooltipText);
+                            _combobox.AddItem(functionSig.ToString());
+                        }
+                    }
+                }
+                _combobox.Tooltips = _tooltips.Count != 0 ? _tooltips.ToArray() : null;
+                _combobox.Enabled = _tooltips.Count != 0;
+                _combobox.SelectedIndex = toSelect;
+                if (toSelect != -1)
+                {
+                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Search12);
+                    _helperButton.Color = Color.White;
+                    _helperButton.TooltipText = "Navigate to the handler function";
+                }
+                else if (_isBind)
+                {
+                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Add48);
+                    _helperButton.Color = Color.Red;
+                    _helperButton.TooltipText = "Add new handler function and bind it to this event";
+                    _helperButton.Enabled = _signature != null;
+                }
+                else
+                {
+                    _helperButton.Enabled = false;
+                }
+                ResizeAuto();
+                _isUpdateLocked = false;
+            }
+
+            private void OnHelperButtonClicked(Image img, MouseButton mouseButton)
+            {
+                if (mouseButton != MouseButton.Left)
+                    return;
+                if (_combobox.SelectedIndex != -1)
+                {
+                    // Focus selected function
+                    var handlerFunctionNodeId = Convert.ToUInt32(Values[2]);
+                    var handlerFunctionNode = Surface.FindNode(handlerFunctionNodeId);
+                    Surface.FocusNode(handlerFunctionNode);
+                }
+                else if (_isBind)
+                {
+                    // Create new function that matches the event signature
+                    var surfaceBounds = Surface.AllNodesBounds;
+                    Surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
+                    var node = Surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50), null, OnBeforeSpawnedNewHandler);
+                    Surface.Select(node);
+
+                    // Bind this function
+                    SetValue(2, node.ID);
+                }
+            }
+
+            private void OnBeforeSpawnedNewHandler(SurfaceNode node)
+            {
+                // Initialize signature to match the event
+                var functionNode = (VisualScriptFunctionNode)node;
+                functionNode._signature = new VisualScriptFunctionNode.Signature
+                {
+                    Name = "On" + (string)Values[1],
+                    IsStatic = false,
+                    IsVirtual = false,
+                    Node = functionNode,
+                    ReturnType = ScriptType.Void,
+                    Parameters = new VisualScriptFunctionNode.Parameter[_signature.Length],
+                };
+                for (int i = 0; i < _signature.Length; i++)
+                    functionNode._signature.Parameters[i] = new VisualScriptFunctionNode.Parameter(ref _signature[i]);
+            }
+
+            private void OnSelectedChanged(ComboBox cb)
+            {
+                if (_isUpdateLocked)
+                    return;
+                var handlerFunctionNodeId = Convert.ToUInt32(Values[2]);
+                var selectedID = cb.SelectedIndex != -1 ? _functionNodesIds[cb.SelectedIndex] : 0u;
+                if (selectedID != handlerFunctionNodeId)
+                {
+                    SetValue(2, selectedID);
+                    UpdateUI();
+                }
+            }
+
+            public void OnFunctionCreated(SurfaceNode node)
+            {
+                UpdateUI();
+            }
+
+            public void OnFunctionEdited(SurfaceNode node)
+            {
+                UpdateUI();
+            }
+
+            public void OnFunctionDeleted(SurfaceNode node)
+            {
+                // Deselect if that function was selected
+                var handlerFunctionNodeId = Convert.ToUInt32(Values[2]);
+                if (node.ID == handlerFunctionNodeId)
+                    _combobox.SelectedIndex = -1;
+
+                UpdateUI();
+            }
+
+            public override void OnSurfaceLoaded()
+            {
+                base.OnSurfaceLoaded();
+
+                // Find reflection information about event
+                _signature = null;
+                var isStatic = false;
+                var eventName = (string)Values[1];
+                var eventType = TypeUtils.GetType((string)Values[0]);
+                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
+                {
+                    isStatic = member.IsStatic;
+                    _signature = member.GetParameters();
+                    TooltipText = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                }
+
+                // Setup instance box (static events don't need it)
+                var instanceBox = GetBox(1);
+                instanceBox.Visible = !isStatic;
+                if (isStatic)
+                    instanceBox.RemoveConnections();
+                else
+                    instanceBox.CurrentType = eventType;
+
+                _isUpdateLocked = false;
+                UpdateUI();
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateUI();
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                _combobox = null;
+                _helperButton = null;
+                _tooltips.Clear();
+                _tooltips = null;
+                _functionNodesIds.Clear();
+                _functionNodesIds = null;
+                _signature = null;
+
+                base.OnDestroy();
+            }
+        }
+
+        private sealed class BindEventNode : EventBaseNode
+        {
+            public BindEventNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(true, id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnSurfaceLoaded()
+            {
+                Title = "Bind " + (string)Values[1];
+
+                base.OnSurfaceLoaded();
+            }
+        }
+
+        private sealed class UnbindEventNode : EventBaseNode
+        {
+            public UnbindEventNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(false, id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnSurfaceLoaded()
+            {
+                Title = "Unbind " + (string)Values[1];
+
+                base.OnSurfaceLoaded();
             }
         }
 
@@ -1987,6 +2296,50 @@ namespace FlaxEditor.Surface.Archetypes
                     false, // Is Static
                     null, // Default value
                 },
+            },
+            new NodeArchetype
+            {
+                TypeID = 9,
+                Create = (id, context, arch, groupArch) => new BindEventNode(id, context, arch, groupArch),
+                Title = string.Empty,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                Size = new Vector2(260, 60),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Event type
+                    string.Empty, // Event name
+                    (uint)0, // Handler function nodeId
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(2, "Instance", true, typeof(object), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 2, true),
+                    NodeElementArchetype.Factory.Text(2, 20, "Handler function:"),
+                    NodeElementArchetype.Factory.ComboBox(100, 20, 140),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 10,
+                Create = (id, context, arch, groupArch) => new UnbindEventNode(id, context, arch, groupArch),
+                Title = string.Empty,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                Size = new Vector2(260, 60),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Event type
+                    string.Empty, // Event name
+                    (uint)0, // Handler function nodeId
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(2, "Instance", true, typeof(object), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 2, true),
+                    NodeElementArchetype.Factory.Text(2, 20, "Handler function:"),
+                    NodeElementArchetype.Factory.ComboBox(100, 20, 140),
+                }
             },
         };
     }

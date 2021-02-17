@@ -139,18 +139,14 @@ namespace FlaxEditor.Windows.Assets
 
             // Toolstrip
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.BracketsSlash32, () => ShowSourceCode(_asset)).LinkTooltip("Show generated shader source code");
+            _toolstrip.AddButton(editor.Icons.BracketsSlash32, ShowSourceCode).LinkTooltip("Show generated shader source code");
             _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
         }
 
-        /// <summary>
-        /// Shows the ParticleEmitter source code window.
-        /// </summary>
-        /// <param name="particleEmitter">The ParticleEmitter asset.</param>
-        public static void ShowSourceCode(ParticleEmitter particleEmitter)
+        private void ShowSourceCode()
         {
-            var source = Editor.GetShaderSourceCode(particleEmitter);
-            Utilities.Utils.ShowSourceCodeWindow(source, "Particle Emitter GPU Simulation Source");
+            var source = Editor.GetShaderSourceCode(_asset);
+            Utilities.Utils.ShowSourceCodeWindow(source, "Particle Emitter GPU Simulation Source", this);
         }
 
         /// <inheritdoc />

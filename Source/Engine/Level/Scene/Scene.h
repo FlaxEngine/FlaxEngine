@@ -12,8 +12,9 @@
 
 class MeshCollider;
 class Level;
-class NavigationScene;
 class ReloadScriptsAction;
+class NavMeshBoundsVolume;
+class NavMesh;
 
 /// <summary>
 /// The scene root object that contains a hierarchy of actors.
@@ -70,11 +71,6 @@ public:
     CSG::SceneCSGData CSGData;
 
     /// <summary>
-    /// The navigation scene (always valid).
-    /// </summary>
-    NavigationScene* Navigation;
-
-    /// <summary>
     /// Gets the lightmap settings (per scene).
     /// </summary>
     API_PROPERTY(Attributes="EditorDisplay(\"Lightmap Settings\", EditorDisplayAttribute.InlineStyle)")
@@ -84,6 +80,31 @@ public:
     /// Sets the lightmap settings (per scene).
     /// </summary>
     API_PROPERTY() void SetLightmapSettings(const LightmapSettings& value);
+
+public:
+
+    /// <summary>
+    /// The list of registered navigation bounds volumes (in the scene).
+    /// </summary>
+    Array<NavMeshBoundsVolume*> NavigationVolumes;
+
+    /// <summary>
+    /// The list of registered navigation meshes (in the scene).
+    /// </summary>
+    Array<NavMesh*> NavigationMeshes;
+
+    /// <summary>
+    /// Gets the total navigation volumes bounds.
+    /// </summary>
+    /// <returns>The navmesh bounds.</returns>
+    BoundingBox GetNavigationBounds();
+
+    /// <summary>
+    /// Finds the navigation volume bounds that have intersection with the given world-space bounding box.
+    /// </summary>
+    /// <param name="bounds">The bounds.</param>
+    /// <returns>The intersecting volume or null if none found.</returns>
+    NavMeshBoundsVolume* FindNavigationBoundsOverlap(const BoundingBox& bounds);
 
 public:
 
@@ -148,12 +169,10 @@ public:
 
 protected:
 
-    // [Scene]
+    // [Actor]
     void PostLoad() override;
     void PostSpawn() override;
     void BeginPlay(SceneBeginData* data) override;
-    void OnEnable() override;
-    void OnDisable() override;
     void OnTransformChanged() override;
 };
 

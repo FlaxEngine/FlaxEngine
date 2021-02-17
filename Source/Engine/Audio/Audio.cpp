@@ -44,9 +44,14 @@ Array<AudioDevice> Audio::Devices;
 Action Audio::DevicesChanged;
 Action Audio::ActiveDeviceChanged;
 AudioBackend* AudioBackend::Instance = nullptr;
-float MasterVolume = 1.0f;
-float Volume = 1.0f;
-int32 ActiveDeviceIndex = -1;
+
+namespace
+{
+    float MasterVolume = 1.0f;
+    float Volume = 1.0f;
+    int32 ActiveDeviceIndex = -1;
+    bool MuteOnFocusLoss = true;
+}
 
 class AudioService : public EngineService
 {
@@ -75,6 +80,11 @@ namespace
     {
         AudioBackend::SetVolume(Volume);
     }
+}
+
+void AudioSettings::Apply()
+{
+    ::MuteOnFocusLoss = MuteOnFocusLoss;
 }
 
 AudioDevice* Audio::GetActiveDevice()
@@ -161,7 +171,7 @@ void Audio::OnRemoveSource(AudioSource* source)
 
 bool AudioService::Init()
 {
-    const auto settings = AudioSettings::Instance();
+    const auto settings = AudioSettings::Get();
     const bool mute = CommandLine::Options.Mute.IsTrue() || settings->DisableAudio;
 
     // Pick a backend to use
@@ -225,11 +235,9 @@ void AudioService::Update()
 {
     PROFILE_CPU();
 
-    const auto settings = AudioSettings::Instance();
-
     // Update the master volume
     float masterVolume = MasterVolume;
-    if (settings->MuteOnFocusLoss && !Engine::HasFocus)
+    if (MuteOnFocusLoss && !Engine::HasFocus)
     {
         // Mute audio if app has no user focus
         masterVolume = 0.0f;

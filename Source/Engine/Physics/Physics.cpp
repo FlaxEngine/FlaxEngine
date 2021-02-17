@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
+#include "PhysicalMaterial.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -13,6 +14,8 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Serialization/Serialization.h"
+#include "Engine/Engine/Time.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxActor.h>
 #if WITH_PVD
@@ -110,34 +113,43 @@ struct ActionData
 };
 
 PxPhysics* CPhysX = nullptr;
-PhysXAllocator PhysXAllocatorCallback;
-PhysXError PhysXErrorCallback;
-PxSimulationFilterShader PhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
 #if WITH_PVD
 PxPvd* CPVD = nullptr;
 #endif
-PxTolerancesScale ToleranceScale;
-SimulationEventCallback EventsCallback;
-void* ScratchMemory = nullptr;
-FixedStepper* Stepper = nullptr;
-CriticalSection FlushLocker;
-Array<PxActor*> NewActors;
-Array<ActionData> Actions;
-Array<PxActor*> DeadActors;
-Array<PxMaterial*> DeadMaterials;
-Array<PxBase*> _deadObjects;
-Array<PhysicsColliderActor*> DeadColliders;
-Array<Joint*> DeadJoints;
-bool _isDuringSimulation = false;
-PxFoundation* _foundation = nullptr;
+
+namespace
+{
+    PhysXAllocator PhysXAllocatorCallback;
+    PhysXError PhysXErrorCallback;
+    PxSimulationFilterShader PhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
+    PxTolerancesScale ToleranceScale;
+    SimulationEventCallback EventsCallback;
+    void* ScratchMemory = nullptr;
+    FixedStepper* Stepper = nullptr;
+    CriticalSection FlushLocker;
+    Array<PxActor*> NewActors;
+    Array<ActionData> Actions;
+    Array<PxActor*> DeadActors;
+    Array<PxMaterial*> DeadMaterials;
+    Array<PxBase*> _deadObjects;
+    Array<PhysicsColliderActor*> DeadColliders;
+    Array<Joint*> DeadJoints;
+    bool _queriesHitTriggers = true;
+    bool _isDuringSimulation = false;
+    PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
+    PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
+    PxFoundation* _foundation = nullptr;
 #if COMPILE_WITH_PHYSICS_COOKING
-PxCooking* Cooking = nullptr;
+    PxCooking* Cooking = nullptr;
 #endif
-PxScene* PhysicsScene = nullptr;
-PxMaterial* DefaultMaterial = nullptr;
-PxControllerManager* ControllerManager = nullptr;
-PxCpuDispatcher* CpuDispatcher = nullptr;
+    PxScene* PhysicsScene = nullptr;
+    PxMaterial* DefaultMaterial = nullptr;
+    PxControllerManager* ControllerManager = nullptr;
+    PxCpuDispatcher* CpuDispatcher = nullptr;
+}
+
 bool Physics::AutoSimulation = true;
+uint32 Physics::LayerMasks[32];
 
 class PhysicsService : public EngineService
 {
@@ -146,6 +158,8 @@ public:
     PhysicsService()
         : EngineService(TEXT("Physics"), 0)
     {
+        for (int32 i = 0; i < 32; i++)
+            Physics::LayerMasks[i] = MAX_uint32;
     }
 
     bool Init() override;
@@ -155,12 +169,146 @@ public:
 
 PhysicsService PhysicsServiceInstance;
 
+PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
+{
+#if WITH_PVD
+	PxShapeFlags flags = PxShapeFlag::eVISUALIZATION;
+#else
+    PxShapeFlags flags = static_cast<PxShapeFlags>(0);
+#endif
+
+    if (isEnabled)
+    {
+        if (isTrigger)
+        {
+            flags |= PxShapeFlag::eTRIGGER_SHAPE;
+            if (_queriesHitTriggers)
+                flags |= PxShapeFlag::eSCENE_QUERY_SHAPE;
+        }
+        else
+        {
+            flags = PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE;
+        }
+    }
+
+    return flags;
+}
+
+void PhysicsSettings::Apply()
+{
+    Time::_physicsMaxDeltaTime = MaxDeltaTime;
+    _queriesHitTriggers = QueriesHitTriggers;
+    _frictionCombineMode = FrictionCombineMode;
+    _restitutionCombineMode = RestitutionCombineMode;
+    Platform::MemoryCopy(Physics::LayerMasks, LayerMasks, sizeof(LayerMasks));
+    Physics::SetGravity(DefaultGravity);
+    Physics::SetBounceThresholdVelocity(BounceThresholdVelocity);
+    Physics::SetEnableCCD(!DisableCCD);
+
+    // TODO: setting eADAPTIVE_FORCE requires PxScene setup (physx docs: This flag is not mutable, and must be set in PxSceneDesc at scene creation.)
+    // TODO: update all shapes filter data
+    // TODO: update all shapes flags
+
+    /*
+    {
+        get all actors and then:
+        
+        const PxU32 numShapes = actor->getNbShapes();
+        PxShape** shapes = (PxShape**)SAMPLE_ALLOC(sizeof(PxShape*)*numShapes);
+        actor->getShapes(shapes, numShapes);
+        for (PxU32 i = 0; i < numShapes; i++)
+        {
+            ..
+        }
+        SAMPLE_FREE(shapes);
+    }*/
+}
+
+PhysicsSettings::PhysicsSettings()
+{
+    for (int32 i = 0; i < 32; i++)
+        LayerMasks[i] = MAX_uint32;
+}
+
+void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(DefaultGravity);
+    DESERIALIZE(TriangleMeshTriangleMinAreaThreshold);
+    DESERIALIZE(BounceThresholdVelocity);
+    DESERIALIZE(FrictionCombineMode);
+    DESERIALIZE(RestitutionCombineMode);
+    DESERIALIZE(DisableCCD);
+    DESERIALIZE(EnableAdaptiveForce);
+    DESERIALIZE(MaxDeltaTime);
+    DESERIALIZE(EnableSubstepping);
+    DESERIALIZE(SubstepDeltaTime);
+    DESERIALIZE(MaxSubsteps);
+    DESERIALIZE(QueriesHitTriggers);
+    DESERIALIZE(SupportCookingAtRuntime);
+
+    const auto layers = stream.FindMember("LayerMasks");
+    if (layers != stream.MemberEnd())
+    {
+        auto& layersArray = layers->value;
+        ASSERT(layersArray.IsArray());
+        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        {
+            LayerMasks[i] = layersArray[i].GetUint();
+        }
+    }
+}
+
+PhysicalMaterial::PhysicalMaterial()
+    : _material(nullptr)
+{
+}
+
+PhysicalMaterial::~PhysicalMaterial()
+{
+    if (_material)
+    {
+        Physics::RemoveMaterial(_material);
+    }
+}
+
+PxMaterial* PhysicalMaterial::GetPhysXMaterial()
+{
+    if (_material == nullptr && CPhysX)
+    {
+        _material = CPhysX->createMaterial(Friction, Friction, Restitution);
+        _material->userData = this;
+
+        const PhysicsCombineMode useFrictionCombineMode = OverrideFrictionCombineMode ? FrictionCombineMode : _frictionCombineMode;
+        _material->setFrictionCombineMode(static_cast<PxCombineMode::Enum>(useFrictionCombineMode));
+
+        const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
+        _material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
+    }
+
+    return _material;
+}
+
+void PhysicalMaterial::UpdatePhysXMaterial()
+{
+    if (_material != nullptr)
+    {
+        _material->setStaticFriction(Friction);
+        _material->setDynamicFriction(Friction);
+        const PhysicsCombineMode useFrictionCombineMode = OverrideFrictionCombineMode ? FrictionCombineMode : _frictionCombineMode;
+        _material->setFrictionCombineMode(static_cast<PxCombineMode::Enum>(useFrictionCombineMode));
+
+        _material->setRestitution(Restitution);
+        const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
+        _material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
+    }
+}
+
 bool PhysicsService::Init()
 {
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return true; }
 
     auto cpuInfo = Platform::GetCPUInfo();
-    auto settings = PhysicsSettings::Instance();
+    auto& settings = *PhysicsSettings::Get();
 
     // Send info
     LOG(Info, "Setup NVIDIA PhysX {0}.{1}.{2}", PX_PHYSICS_VERSION_MAJOR, PX_PHYSICS_VERSION_MINOR, PX_PHYSICS_VERSION_BUGFIX);
@@ -220,7 +368,7 @@ bool PhysicsService::Init()
 #if COMPILE_WITH_PHYSICS_COOKING
 
 #if !USE_EDITOR
-    if (settings->SupportCookingAtRuntime)
+    if (settings.SupportCookingAtRuntime)
 #endif
     {
         // Init cooking
@@ -235,16 +383,16 @@ bool PhysicsService::Init()
 
     // Create scene description
     PxSceneDesc sceneDesc(CPhysX->getTolerancesScale());
-    sceneDesc.gravity = C2P(settings->DefaultGravity);
+    sceneDesc.gravity = C2P(settings.DefaultGravity);
     sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
     //sceneDesc.flags |= PxSceneFlag::eEXCLUDE_KINEMATICS_FROM_ACTIVE_ACTORS; // TODO: set it?
-    if (!settings->DisableCCD)
+    if (!settings.DisableCCD)
         sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
-    if (settings->EnableAdaptiveForce)
+    if (settings.EnableAdaptiveForce)
         sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE;
     sceneDesc.simulationEventCallback = &EventsCallback;
     sceneDesc.filterShader = PhysiXFilterShader;
-    sceneDesc.bounceThresholdVelocity = settings->BounceThresholdVelocity;
+    sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
         CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(cpuInfo.ProcessorCoreCount - 1, 1, 4));
@@ -366,7 +514,7 @@ void Physics::SetGravity(const Vector3& value)
 
 bool Physics::GetEnableCCD()
 {
-    return PhysicsScene ? (PhysicsScene->getFlags() & PxSceneFlag::eENABLE_CCD) == PxSceneFlag::eENABLE_CCD : !PhysicsSettings_DisableCCD;
+    return PhysicsScene ? (PhysicsScene->getFlags() & PxSceneFlag::eENABLE_CCD) == PxSceneFlag::eENABLE_CCD : !PhysicsSettings::Get()->DisableCCD;
 }
 
 void Physics::SetEnableCCD(const bool value)
@@ -377,7 +525,7 @@ void Physics::SetEnableCCD(const bool value)
 
 float Physics::GetBounceThresholdVelocity()
 {
-    return PhysicsScene ? PhysicsScene->getBounceThresholdVelocity() : PhysicsSettings_BounceThresholdVelocity;
+    return PhysicsScene ? PhysicsScene->getBounceThresholdVelocity() : PhysicsSettings::Get()->BounceThresholdVelocity;
 }
 
 void Physics::SetBounceThresholdVelocity(const float value)
@@ -390,13 +538,13 @@ void Physics::Simulate(float dt)
 {
     ASSERT(IsInMainThread() && !_isDuringSimulation);
     ASSERT(CPhysX);
-    const auto settings = PhysicsSettings::Instance();
+    const auto& settings = *PhysicsSettings::Get();
 
     // Flush the old/new objects and the other requests before the simulation
     FlushRequests();
 
     // Clamp delta
-    dt = Math::Clamp(dt, 0.0f, settings->MaxDeltaTime);
+    dt = Math::Clamp(dt, 0.0f, settings.MaxDeltaTime);
 
     // Prepare util objects
     if (ScratchMemory == nullptr)
@@ -407,10 +555,10 @@ void Physics::Simulate(float dt)
     {
         Stepper = New<FixedStepper>();
     }
-    if (settings->EnableSubstepping)
+    if (settings.EnableSubstepping)
     {
         // Use substeps
-        Stepper->Setup(settings->SubstepDeltaTime, settings->MaxSubsteps);
+        Stepper->Setup(settings.SubstepDeltaTime, settings.MaxSubsteps);
     }
     else
     {

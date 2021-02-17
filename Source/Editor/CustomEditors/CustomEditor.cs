@@ -624,7 +624,7 @@ namespace FlaxEditor.CustomEditors
             return FindPrefabRoot(actor.Parent);
         }
 
-        private ISceneObject FindObjectWithPrefabObjectId(Actor actor, ref Guid prefabObjectId)
+        private SceneObject FindObjectWithPrefabObjectId(Actor actor, ref Guid prefabObjectId)
         {
             if (actor.PrefabObjectID == prefabObjectId)
                 return actor;
@@ -667,7 +667,7 @@ namespace FlaxEditor.CustomEditors
         {
             // Special case for object references
             // If prefab object has reference to other object in prefab needs to revert to matching prefab instance object not the reference prefab object value
-            if (Values.ReferenceValue is ISceneObject referenceSceneObject && referenceSceneObject.HasPrefabLink)
+            if (Values.ReferenceValue is SceneObject referenceSceneObject && referenceSceneObject.HasPrefabLink)
             {
                 if (Values.Count > 1)
                 {

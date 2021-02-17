@@ -67,14 +67,6 @@ public:
     }
 
     /// <summary>
-    /// Clears the asset reference.
-    /// </summary>
-    FORCE_INLINE void Unlink()
-    {
-        OnSet(nullptr);
-    }
-
-    /// <summary>
     /// Gets the asset property value as string.
     /// </summary>
     /// <returns>The string.</returns>
@@ -103,7 +95,8 @@ protected:
     {
         ASSERT(_asset == asset);
         Unload();
-        Unlink();
+        asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnAssetUnloaded>(this);
+        asset = nullptr;
     }
 };
 

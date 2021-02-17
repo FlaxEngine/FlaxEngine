@@ -78,14 +78,14 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 get
                 {
-                    var actor = (BoxVolume)((BoxVolumeNode)ParentNode).Actor;
+                    var actor = (BoxVolume)_node.Actor;
                     var localOffset = _offset * actor.Size;
                     Transform localTrans = new Transform(localOffset);
                     return actor.Transform.LocalToWorld(localTrans);
                 }
                 set
                 {
-                    var actor = (BoxVolume)((BoxVolumeNode)ParentNode).Actor;
+                    var actor = (BoxVolume)_node.Actor;
                     Transform localTrans = actor.Transform.WorldToLocal(value);
                     var prevLocalOffset = _offset * actor.Size;
                     var localOffset = Vector3.Abs(_offset) * 2.0f * localTrans.Translation;

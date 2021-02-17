@@ -15,7 +15,7 @@ namespace FlaxEditor.SceneGraph
     /// A <see cref="SceneModule"/> class is responsible for Scene Graph management.
     /// </summary>
     [HideInEditor]
-    public abstract class SceneGraphNode : ITransformable
+    public abstract class SceneGraphNode
     {
         /// <summary>
         /// The parent node.
@@ -64,6 +64,11 @@ namespace FlaxEditor.SceneGraph
         /// Gets a value indicating whether this instance can be copied or/and pasted.
         /// </summary>
         public virtual bool CanCopyPaste => true;
+
+        /// <summary>
+        /// Gets a value indicating whether this instance can be duplicated by the user.
+        /// </summary>
+        public virtual bool CanDuplicate => true;
 
         /// <summary>
         /// Gets a value indicating whether this node can be deleted by the user.
@@ -313,10 +318,68 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Called when scene tree window wants to show the context menu. Allows to add custom options.
+        /// </summary>
+        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu contextMenu)
+        {
+        }
+
+        /// <summary>
+        /// The scene graph node state container. Used for Editor undo actions (eg. restoring deleted node).
+        /// </summary>
+        public struct StateData
+        {
+            /// <summary>
+            /// The name of the scene graph node type (full).
+            /// </summary>
+            public string TypeName;
+
+            /// <summary>
+            /// The name of the method (in <see cref="TypeName"/>) that takes this state as a parameter and returns the created scene graph node. Used by the undo actions to restore deleted objects.
+            /// </summary>
+            public string CreateMethodName;
+
+            /// <summary>
+            /// The custom state data (as string).
+            /// </summary>
+            public string State;
+
+            /// <summary>
+            /// The custom state data (as raw bytes).
+            /// </summary>
+            public byte[] StateRaw;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this node can use <see cref="State"/> property for editor undo operations.
+        /// </summary>
+        public virtual bool CanUseState => false;
+
+        /// <summary>
+        /// Gets or sets the node state.
+        /// </summary>
+        public virtual StateData State
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Deletes object represented by this node eg. actor.
         /// </summary>
         public virtual void Delete()
         {
+        }
+
+        /// <summary>
+        /// Duplicates this object. Valid only if <see cref="CanDuplicate"/> returns true.
+        /// </summary>
+        /// <param name="undoAction">The undo action that duplicated the object (already performed), null if skip it.</param>
+        /// <returns>The duplicated object node.</returns>
+        public virtual SceneGraphNode Duplicate(out IUndoAction undoAction)
+        {
+            undoAction = null;
+            return null;
         }
 
         /// <summary>

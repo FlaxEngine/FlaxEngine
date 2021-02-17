@@ -13,7 +13,6 @@ template<typename KeyType, typename ValueType>
 API_CLASS(InBuild) class Dictionary
 {
     friend Dictionary;
-
 public:
 
     /// <summary>
@@ -23,92 +22,71 @@ public:
     {
         friend Dictionary;
 
-    public:
-
         enum State : byte
         {
-            Empty,
-            Deleted,
-            Occupied,
+            Empty = 0,
+            Deleted = 1,
+            Occupied = 2,
         };
 
     public:
-
         /// <summary>The key.</summary>
         KeyType Key;
         /// <summary>The value.</summary>
         ValueType Value;
 
     private:
-
         State _state;
-
-    public:
-
-        Bucket()
-            : _state(Empty)
-        {
-        }
-
-        ~Bucket()
-        {
-        }
-
-    public:
 
         void Free()
         {
+            if (_state == Occupied)
+            {
+                Memory::DestructItem(&Key);
+                Memory::DestructItem(&Value);
+            }
             _state = Empty;
         }
 
         void Delete()
         {
             _state = Deleted;
+            Memory::DestructItem(&Key);
+            Memory::DestructItem(&Value);
         }
 
         template<typename KeyComparableType>
         void Occupy(const KeyComparableType& key)
         {
-            Key = key;
+            Memory::ConstructItems(&Key, &key, 1);
+            Memory::ConstructItem(&Value);
             _state = Occupied;
         }
 
         template<typename KeyComparableType>
         void Occupy(const KeyComparableType& key, const ValueType& value)
         {
-            Key = key;
-            Value = value;
+            Memory::ConstructItems(&Key, &key, 1);
+            Memory::ConstructItems(&Value, &value, 1);
             _state = Occupied;
         }
 
         template<typename KeyComparableType>
         void Occupy(const KeyComparableType& key, ValueType&& value)
         {
-            Key = key;
-            Value = MoveTemp(value);
+            Memory::ConstructItems(&Key, &key, 1);
+            Memory::MoveItems(&Value, &value, 1);
             _state = Occupied;
         }
-
-    public:
 
         FORCE_INLINE bool IsEmpty() const
         {
             return _state == Empty;
         }
 
-        FORCE_INLINE bool IsNotEmpty() const
-        {
-            return _state != Empty;
-        }
-
         FORCE_INLINE bool IsDeleted() const
         {
             return _state == Deleted;
-        }
-
-        FORCE_INLINE bool IsNotDeleted() const
-        {
-            return _state != Deleted;
         }
 
         FORCE_INLINE bool IsOccupied() const
@@ -182,7 +160,6 @@ public:
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
-    /// <returns>The amount of elements in the collection.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _elementsCount;
@@ -191,7 +168,6 @@ public:
     /// <summary>
     /// Gets the amount of the elements that can be contained by the collection.
     /// </summary>
-    /// <returns>The capacity of the collection.</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return _tableSize;
@@ -200,7 +176,6 @@ public:
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _elementsCount == 0;
@@ -209,7 +184,6 @@ public:
     /// <summary>
     /// Returns true if collection has one or more elements.
     /// </summary>
-    /// <returns>True if isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _elementsCount != 0;
@@ -218,12 +192,11 @@ public:
 public:
 
     /// <summary>
-    /// The dictionary collection iterator.
+    /// The Dictionary collection iterator.
     /// </summary>
     struct Iterator
     {
         friend Dictionary;
-
     private:
 
         Dictionary& _collection;
@@ -254,7 +227,6 @@ public:
         /// <summary>
         /// Checks if iterator is in the end of the collection.
         /// </summary>
-        /// <returns>True if is in the end, otherwise false.</returns>
         FORCE_INLINE bool IsEnd() const
         {
             return _index == _collection._tableSize;
@@ -263,7 +235,6 @@ public:
         /// <summary>
         /// Checks if iterator is not in the end of the collection.
         /// </summary>
-        /// <returns>True if is not in the end, otherwise false.</returns>
         FORCE_INLINE bool IsNotEnd() const
         {
             return _index != _collection._tableSize;
@@ -286,7 +257,7 @@ public:
             return _index >= 0 && _index < _collection._tableSize;
         }
 
-        FORCE_INLINE bool operator !() const
+        FORCE_INLINE bool operator!() const
         {
             return !(bool)*this;
         }
@@ -316,7 +287,7 @@ public:
             return *this;
         }
 
-        Iterator operator++(int)
+        Iterator operator++(int) const
         {
             Iterator i = *this;
             ++i;
@@ -335,7 +306,7 @@ public:
             return *this;
         }
 
-        Iterator operator--(int)
+        Iterator operator--(int) const
         {
             Iterator i = *this;
             --i;
@@ -428,7 +399,6 @@ public:
 
         if (pos.ObjectIndex == -1)
             return false;
-
         result = _table[pos.ObjectIndex].Value;
         return true;
     }
@@ -449,7 +419,6 @@ public:
 
         if (pos.ObjectIndex == -1)
             return nullptr;
-
         return &_table[pos.ObjectIndex].Value;
     }
 
@@ -463,11 +432,8 @@ public:
         if (_table)
         {
             // Free all buckets
-            // Note: this will not clear allocated objects space!
             for (int32 i = 0; i < _tableSize; i++)
-            {
                 _table[i].Free();
-            }
             _elementsCount = _deletedCount = 0;
         }
     }
@@ -492,16 +458,14 @@ public:
     /// <param name="preserveContents">Enables preserving collection contents during resizing.</param>
     void SetCapacity(int32 capacity, bool preserveContents = true)
     {
-        // Validate input
-        ASSERT(capacity >= 0);
-
         // Check if capacity won't change
         if (capacity == Capacity())
             return;
 
         // Cache previous state
+        ASSERT(capacity >= 0);
         Bucket* oldTable = _table;
-        int32 oldTableSize = _tableSize;
+        const int32 oldTableSize = _tableSize;
 
         // Clear elements counters
         const int32 oldElementsCount = _elementsCount;
@@ -523,10 +487,10 @@ public:
             }
 
             // Allocate new table
-            _table = NewArray<Bucket>(capacity);
+            _table = (Bucket*)Allocator::Allocate(capacity * sizeof(Bucket));
             _tableSize = capacity;
-
-            // Check if preserve content
+            for (int32 i = 0; i < capacity; i++)
+                _table[i]._state = Bucket::Empty;
             if (oldElementsCount != 0 && preserveContents)
             {
                 // Try to preserve all pairs in the collection
@@ -548,7 +512,9 @@ public:
         // Delete old table
         if (oldTable)
         {
-            DeleteArray(oldTable, oldTableSize);
+            for (int32 i = 0; i < oldTableSize; i++)
+                oldTable[i].Free();
+            Allocator::Free(oldTable);
         }
     }
 
@@ -571,11 +537,10 @@ public:
         if (Capacity() >= minCapacity)
             return;
 
-        // TODO: improve this, better collection growing and shrinking on remove
-        int32 num = Capacity() == 0 ? DICTIONARY_DEFAULT_CAPACITY : Capacity() * 2;
-        if (num < minCapacity)
-            num = minCapacity;
-        SetCapacity(num);
+        int32 capacity = Capacity() == 0 ? DICTIONARY_DEFAULT_CAPACITY : Capacity() * 2;
+        if (capacity < minCapacity)
+            capacity = minCapacity;
+        SetCapacity(capacity);
     }
 
     /// <summary>
@@ -676,7 +641,6 @@ public:
             _deletedCount++;
             return true;
         }
-
         return false;
     }
 
@@ -733,9 +697,7 @@ public:
             for (int32 i = 0; i < _tableSize; i++)
             {
                 if (_table[i].IsOccupied() && _table[i].Key == key)
-                {
                     return Iterator(*this, i);
-                }
             }
         }
         return End();
@@ -754,7 +716,6 @@ public:
 
         FindPositionResult pos;
         FindPosition(key, pos);
-
         return pos.ObjectIndex != -1;
     }
 
@@ -809,12 +770,9 @@ public:
     void Clone(const Dictionary& other)
     {
         Clear();
-
         SetCapacity(other.Capacity(), false);
-
         for (auto i = other.Begin(); i != other.End(); ++i)
             Add(i);
-
         ASSERT(Count() == other.Count());
         ASSERT(Capacity() == other.Capacity());
     }
@@ -909,14 +867,13 @@ protected:
     void FindPosition(const KeyComparableType& key, FindPositionResult& result) const
     {
         ASSERT(_table);
-
         const int32 tableSizeMinusOne = _tableSize - 1;
         int32 bucketIndex = GetHash(key) & tableSizeMinusOne;
         int32 insertPos = -1;
-        int32 numChecks = 0;
+        int32 checksCount = 0;
         result.FreeSlotIndex = -1;
 
-        while (numChecks < _tableSize)
+        while (checksCount < _tableSize)
         {
             // Empty bucket
             if (_table[bucketIndex].IsEmpty())
@@ -941,8 +898,8 @@ protected:
                 return;
             }
 
-            numChecks++;
-            bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_tableSize, numChecks)) & tableSizeMinusOne;
+            checksCount++;
+            bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_tableSize, checksCount)) & tableSizeMinusOne;
         }
 
         result.ObjectIndex = -1;

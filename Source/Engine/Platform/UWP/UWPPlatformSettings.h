@@ -9,15 +9,15 @@
 /// <summary>
 /// Universal Windows Platform settings.
 /// </summary>
-/// <seealso cref="Settings{UWPPlatformSettings}" />
-class UWPPlatformSettings : public Settings<UWPPlatformSettings>
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API UWPPlatformSettings : public SettingsBase
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(UWPPlatformSettings);
 public:
 
     /// <summary>
     /// The preferred launch windowing mode.
     /// </summary>
-    enum class WindowMode
+    API_ENUM() enum class WindowMode
     {
         /// <summary>
         /// The full screen mode
@@ -33,7 +33,7 @@ public:
     /// <summary>
     /// The display orientation modes. Can be combined as flags.
     /// </summary>
-    enum class DisplayOrientations
+    API_ENUM(Attributes="Flags") enum class DisplayOrientations
     {
         /// <summary>
         /// The none.
@@ -71,40 +71,41 @@ public:
     /// <summary>
     /// The preferred launch windowing mode. Always fullscreen on Xbox.
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(WindowMode.FullScreen), EditorDisplay(\"Window\")")
     WindowMode PreferredLaunchWindowingMode = WindowMode::FullScreen;
 
     /// <summary>
     /// The display orientation modes. Can be combined as flags.
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(DisplayOrientations.All), EditorDisplay(\"Window\")")
     DisplayOrientations AutoRotationPreferences = DisplayOrientations::All;
 
     /// <summary>
     /// The location of the package certificate (relative to the project).
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(1010), DefaultValue(\"\"), EditorDisplay(\"Other\")")
     String CertificateLocation;
 
     /// <summary>
     /// Enables support for DirectX 11. Disabling it reduces compiled shaders count.
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), DefaultValue(true), EditorDisplay(\"Graphics\", \"Support DirectX 11\")")
     bool SupportDX11 = true;
 
     /// <summary>
     /// Enables support for DirectX 10 and DirectX 10.1. Disabling it reduces compiled shaders count.
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(2010), DefaultValue(false), EditorDisplay(\"Graphics\", \"Support DirectX 10\")")
     bool SupportDX10 = false;
 
 public:
 
-    // [Settings]
-    void RestoreDefault() final override
-    {
-        PreferredLaunchWindowingMode = WindowMode::FullScreen;
-        AutoRotationPreferences = DisplayOrientations::All;
-        CertificateLocation.Clear();
-        SupportDX11 = true;
-        SupportDX10 = false;
-    }
+    /// <summary>
+    /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
+    /// </summary>
+    static UWPPlatformSettings* Get();
 
+    // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         DESERIALIZE(PreferredLaunchWindowingMode);

@@ -2,6 +2,9 @@
 
 #include "Collider.h"
 #include "Engine/Core/Log.h"
+#if USE_EDITOR
+#include "Engine/Level/Scene/SceneRendering.h"
+#endif
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/PhysicsSettings.h"
@@ -182,6 +185,16 @@ bool Collider::IsAttached() const
     return _shape && _shape->getActor() != nullptr;
 }
 
+bool Collider::CanAttach(RigidBody* rigidBody) const
+{
+    return true;
+}
+
+bool Collider::CanBeTrigger() const
+{
+    return true;
+}
+
 RigidBody* Collider::GetAttachedRigidBody() const
 {
     if (_shape && _staticActor == nullptr)
@@ -192,6 +205,26 @@ RigidBody* Collider::GetAttachedRigidBody() const
     }
     return nullptr;
 }
+
+#if USE_EDITOR
+
+void Collider::OnEnable()
+{
+    GetSceneRendering()->AddPhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
+
+    // Base
+    Actor::OnEnable();
+}
+
+void Collider::OnDisable()
+{
+    // Base
+    Actor::OnDisable();
+
+    GetSceneRendering()->RemovePhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
+}
+
+#endif
 
 void Collider::Attach(RigidBody* rigidBody)
 {
@@ -232,17 +265,20 @@ void Collider::UpdateLayerBits()
     filterData.word0 = GetLayerMask();
 
     // Own layer mask
-    filterData.word1 = PhysicsSettings::Instance()->LayerMasks[GetLayer()];
+    filterData.word1 = Physics::LayerMasks[GetLayer()];
 
     _shape->setSimulationFilterData(filterData);
     _shape->setQueryFilterData(filterData);
 }
 
-void Collider::CreateShapeBase(const PxGeometry& geometry)
+void Collider::CreateShape()
 {
-    ASSERT(_shape == nullptr);
+    // Setup shape geometry
+    _cachedScale = GetScale();
+    PxGeometryHolder geometry;
+    GetGeometry(geometry);
 
-    // Prepare
+    // Create shape
     const bool isTrigger = _isTrigger && CanBeTrigger();
     const PxShapeFlags shapeFlags = GetShapeFlags(isTrigger, IsActiveInHierarchy());
     PxMaterial* material = Physics::GetDefaultMaterial();
@@ -250,15 +286,60 @@ void Collider::CreateShapeBase(const PxGeometry& geometry)
     {
         material = ((PhysicalMaterial*)Material->Instance)->GetPhysXMaterial();
     }
-
-    // Create shape
-    _shape = CPhysX->createShape(geometry, *material, true, shapeFlags);
+    ASSERT(_shape == nullptr);
+    _shape = CPhysX->createShape(geometry.any(), *material, true, shapeFlags);
     ASSERT(_shape);
     _shape->userData = this;
-
-    // Setup properties
     _shape->setContactOffset(Math::Max(_shape->getRestOffset() + ZeroTolerance, _contactOffset));
     UpdateLayerBits();
+}
+
+void Collider::UpdateGeometry()
+{
+    if (_shape == nullptr)
+        return;
+
+    // Setup shape geometry
+    _cachedScale = GetScale();
+    PxGeometryHolder geometry;
+    GetGeometry(geometry);
+
+    // Recreate shape if geometry has different type
+    if (_shape->getGeometryType() != geometry.getType())
+    {
+        // Detach from the actor
+        auto actor = _shape->getActor();
+        if (actor)
+            actor->detachShape(*_shape);
+
+        // Release shape
+        Physics::RemoveCollider(this);
+        _shape->release();
+        _shape = nullptr;
+
+        // Recreate shape
+        CreateShape();
+
+        // Reattach again (only if can, see CanAttach function)
+        if (actor)
+        {
+            const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+            if (_staticActor != nullptr || (rigidBody && CanAttach(rigidBody)))
+            {
+                actor->attachShape(*_shape);
+            }
+            else
+            {
+                // Be static triangle mesh
+                CreateStaticActor();
+            }
+        }
+
+        return;
+    }
+
+    // Update shape
+    _shape->setGeometry(geometry.any());
 }
 
 void Collider::CreateStaticActor()
@@ -284,6 +365,14 @@ void Collider::RemoveStaticActor()
     Physics::RemoveActor(_staticActor);
     _staticActor = nullptr;
 }
+
+#if USE_EDITOR
+
+void Collider::DrawPhysicsDebug(RenderView& view)
+{
+}
+
+#endif
 
 void Collider::OnMaterialChanged()
 {

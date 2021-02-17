@@ -131,11 +131,29 @@ public:
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
 
+    /// <summary>
+    /// Checks if can cast one scripting object type into another type.
+    /// </summary>
+    /// <param name="from">The object type for the cast.</param>
+    /// <param name="to">The destination type to the cast.</param>
+    /// <returns>True if can, otherwise false.</returns>
+    static bool CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to);
+
+    /// <summary>
+    /// Checks if can cast one scripting object type into another type.
+    /// </summary>
+    /// <param name="from">The object class for the cast.</param>
+    /// <param name="to">The destination class to the cast.</param>
+    /// <returns>True if can, otherwise false.</returns>
+    static bool CanCast(MClass* from, MClass* to);
+
     template<typename T>
     static T* Cast(ScriptingObject* obj)
     {
         return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? (T*)obj : nullptr;
     }
+
+    bool Is(const ScriptingTypeHandle& type) const;
 
     bool Is(MClass* type) const
     {
@@ -184,10 +202,6 @@ public:
     /// Unregisters the object (cannot be called when objects has not been already registered).
     /// </summary>
     void UnregisterObject();
-
-private:
-
-    static bool CanCast(MClass* from, MClass* to);
 
 protected:
 

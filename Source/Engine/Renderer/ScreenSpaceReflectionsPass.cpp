@@ -152,16 +152,14 @@ void ScreenSpaceReflectionsPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psRayTracePass);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
     SAFE_DELETE_GPU_RESOURCE(_psTemporalPass);
     SAFE_DELETE_GPU_RESOURCE(_psMixPass);
     _psResolvePass.Delete();
-
-    // Release assets
-    _shader.Unlink();
-    _preIntegratedGF.Unlink();
+    _shader = nullptr;
+    _preIntegratedGF = nullptr;
 }
 
 void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* reflectionsRT, GPUTextureView* lightBuffer)

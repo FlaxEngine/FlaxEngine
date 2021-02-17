@@ -5,11 +5,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
-#include <ThirdParty/PhysX/PxShape.h>
-#include <ThirdParty/PhysX/PxRigidActor.h>
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 
 MeshCollider::MeshCollider(const SpawnParams& params)
     : Collider(params)
@@ -117,26 +112,6 @@ void MeshCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(CollisionData);
 }
 
-#if USE_EDITOR
-
-void MeshCollider::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<MeshCollider, &MeshCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void MeshCollider::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<MeshCollider, &MeshCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
-
 void MeshCollider::UpdateBounds()
 {
     // Cache bounds
@@ -149,11 +124,10 @@ void MeshCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void MeshCollider::CreateShape()
+void MeshCollider::GetGeometry(PxGeometryHolder& geometry)
 {
     // Prepare scale
-    Vector3 scale = GetScale();
-    _cachedScale = scale;
+    Vector3 scale = _cachedScale;
     scale.Absolute();
     const float minSize = 0.001f;
     scale = Vector3::Max(scale, minSize);
@@ -165,100 +139,23 @@ void MeshCollider::CreateShape()
     if (type == CollisionDataType::ConvexMesh)
     {
         // Convex mesh
-        PxConvexMeshGeometry geometry;
-        geometry.scale.scale = C2P(scale);
-        geometry.convexMesh = CollisionData->GetConvex();
-        CreateShapeBase(geometry);
+        PxConvexMeshGeometry convexMesh;
+        convexMesh.scale.scale = C2P(scale);
+        convexMesh.convexMesh = CollisionData->GetConvex();
+        geometry.storeAny(convexMesh);
     }
     else if (type == CollisionDataType::TriangleMesh)
     {
         // Triangle mesh
-        PxTriangleMeshGeometry geometry;
-        geometry.scale.scale = C2P(scale);
-        geometry.triangleMesh = CollisionData->GetTriangle();
-        CreateShapeBase(geometry);
+        PxTriangleMeshGeometry triangleMesh;
+        triangleMesh.scale.scale = C2P(scale);
+        triangleMesh.triangleMesh = CollisionData->GetTriangle();
+        geometry.storeAny(triangleMesh);
     }
     else
     {
         // Dummy geometry
-        const PxSphereGeometry geometry(0.01f);
-        CreateShapeBase(geometry);
-    }
-}
-
-void MeshCollider::UpdateGeometry()
-{
-    // Check if has no shape created
-    if (_shape == nullptr)
-        return;
-
-    // Recreate shape if geometry has different type
-    CollisionDataType type = CollisionDataType::None;
-    if (CollisionData && CollisionData->IsLoaded())
-        type = CollisionData->GetOptions().Type;
-    if ((type == CollisionDataType::ConvexMesh && _shape->getGeometryType() != PxGeometryType::eCONVEXMESH)
-        || (type == CollisionDataType::TriangleMesh && _shape->getGeometryType() != PxGeometryType::eTRIANGLEMESH)
-        || (type == CollisionDataType::None && _shape->getGeometryType() != PxGeometryType::eSPHERE)
-    )
-    {
-        // Detach from the actor
-        auto actor = _shape->getActor();
-        if (actor)
-            actor->detachShape(*_shape);
-
-        // Release shape
-        Physics::RemoveCollider(this);
-        _shape->release();
-        _shape = nullptr;
-
-        // Recreate shape
-        CreateShape();
-
-        // Reattach again (only if can, see CanAttach function)
-        if (actor)
-        {
-            if (_staticActor != nullptr || type != CollisionDataType::TriangleMesh)
-            {
-                actor->attachShape(*_shape);
-            }
-            else
-            {
-                // Be static triangle mesh
-                CreateStaticActor();
-            }
-        }
-
-        return;
-    }
-
-    // Prepare scale
-    Vector3 scale = GetScale();
-    _cachedScale = scale;
-    scale.Absolute();
-    const float minSize = 0.001f;
-    scale = Vector3::Max(scale, minSize);
-
-    // Setup shape (based on type)
-    if (type == CollisionDataType::ConvexMesh)
-    {
-        // Convex mesh
-        PxConvexMeshGeometry geometry;
-        geometry.scale.scale = C2P(scale);
-        geometry.convexMesh = CollisionData->GetConvex();
-        _shape->setGeometry(geometry);
-    }
-    else if (type == CollisionDataType::TriangleMesh)
-    {
-        // Triangle mesh
-        PxTriangleMeshGeometry geometry;
-        geometry.scale.scale = C2P(scale);
-        geometry.triangleMesh = CollisionData->GetTriangle();
-        _shape->setGeometry(geometry);
-    }
-    else
-    {
-        // Dummy geometry
-        const PxSphereGeometry geometry(0.01f);
-        _shape->setGeometry(geometry);
+        const PxSphereGeometry sphere(minSize);
+        geometry.storeAny(sphere);
     }
 }

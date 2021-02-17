@@ -142,7 +142,7 @@ public:
     API_PROPERTY() void SetStepOffset(float value);
 
     /// <summary>
-    /// Gets the minimum move distance of the character controller. The minimum travelled distance to consider. If travelled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
+    /// Gets the minimum move distance of the character controller. The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(230), DefaultValue(0.0f), Limit(0, 1000), EditorDisplay(\"Character Controller\")")
     FORCE_INLINE float GetMinMoveDistance() const
@@ -151,7 +151,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the minimum move distance of the character controller.The minimum travelled distance to consider. If travelled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
+    /// Sets the minimum move distance of the character controller.The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
     API_PROPERTY() void SetMinMoveDistance(float value);
 
@@ -212,12 +212,6 @@ protected:
     /// </summary>
     void UpdateSize() const;
 
-private:
-
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
-
 public:
 
     // [Collider]
@@ -240,12 +234,12 @@ protected:
 
     // [PhysicsActor]
     void UpdateGeometry() override;
+    void GetGeometry(PxGeometryHolder& geometry) override;
     void UpdateLayerBits() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 #if USE_EDITOR
-    void OnEnable() override;
-    void OnDisable() override;
+    void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void OnActiveInTreeChanged() override;
     void OnParentChanged() override;

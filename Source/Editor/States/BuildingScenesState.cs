@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 using FlaxEngine.Utilities;
@@ -16,6 +19,9 @@ namespace FlaxEditor.States
     {
         private sealed class SubStateMachine : StateMachine
         {
+            public int ActionIndex = -1;
+            public readonly List<GeneralOptions.BuildAction> Actions = new List<GeneralOptions.BuildAction>();
+
             protected override void SwitchState(State nextState)
             {
                 if (CurrentState != null && nextState != null)
@@ -27,8 +33,38 @@ namespace FlaxEditor.States
 
         private abstract class SubState : State
         {
+            public virtual bool DirtyScenes => true;
+
+            public virtual bool CanReloadScripts => false;
+
+            public virtual void Before()
+            {
+            }
+
             public virtual void Update()
             {
+            }
+
+            public virtual void Done()
+            {
+                var stateMachine = (SubStateMachine)StateMachine;
+                stateMachine.ActionIndex++;
+                if (stateMachine.ActionIndex < stateMachine.Actions.Count)
+                {
+                    var action = stateMachine.Actions[stateMachine.ActionIndex];
+                    var state = stateMachine.States.FirstOrDefault(x => x is ActionState a && a.Action == action);
+                    if (state != null)
+                    {
+                        StateMachine.GoToState(state);
+                    }
+                    else
+                    {
+                        Editor.LogError($"Missing or invalid build scene action {action}.");
+                    }
+                    return;
+                }
+
+                StateMachine.GoToState<EndState>();
             }
 
             public virtual void Cancel()
@@ -45,18 +81,31 @@ namespace FlaxEditor.States
         {
             public override void OnEnter()
             {
-                var editor = Editor.Instance;
-                foreach (var scene in Level.Scenes)
+                var stateMachine = (SubStateMachine)StateMachine;
+                var scenesDirty = false;
+                foreach (var state in stateMachine.States)
                 {
-                    scene.ClearLightmaps();
-                    editor.Scene.MarkSceneEdited(scene);
+                    ((SubState)state).Before();
+                    scenesDirty |= ((SubState)state).DirtyScenes;
                 }
-                StateMachine.GoToState<CSGState>();
+                if (scenesDirty)
+                {
+                    foreach (var scene in Level.Scenes)
+                        Editor.Instance.Scene.MarkSceneEdited(scene);
+                }
+                Done();
             }
         }
 
-        private sealed class CSGState : SubState
+        private abstract class ActionState : SubState
         {
+            public abstract GeneralOptions.BuildAction Action { get; }
+        }
+
+        private sealed class CSGState : ActionState
+        {
+            public override GeneralOptions.BuildAction Action => GeneralOptions.BuildAction.CSG;
+
             public override void OnEnter()
             {
                 foreach (var scene in Level.Scenes)
@@ -68,13 +117,14 @@ namespace FlaxEditor.States
             public override void Update()
             {
                 if (!Editor.Internal_GetIsCSGActive())
-                    StateMachine.GoToState<EnvProbesNoGIState>();
+                    Done();
             }
         }
 
-
-        private class EnvProbesNoGIState : SubState
+        private class EnvProbesState : ActionState
         {
+            public override GeneralOptions.BuildAction Action => GeneralOptions.BuildAction.EnvProbes;
+
             public override void OnEnter()
             {
                 Editor.Instance.Scene.ExecuteOnGraph(node =>
@@ -94,12 +144,20 @@ namespace FlaxEditor.States
             public override void Update()
             {
                 if (!Editor.Instance.ProgressReporting.BakeEnvProbes.IsActive)
-                    StateMachine.GoToState<StaticLightingState>();
+                    Done();
             }
         }
 
-        private sealed class StaticLightingState : SubState
+        private sealed class StaticLightingState : ActionState
         {
+            public override GeneralOptions.BuildAction Action => GeneralOptions.BuildAction.StaticLighting;
+
+            public override void Before()
+            {
+                foreach (var scene in Level.Scenes)
+                    scene.ClearLightmaps();
+            }
+
             public override void OnEnter()
             {
                 Editor.LightmapsBakeEnd += OnLightmapsBakeEnd;
@@ -110,7 +168,6 @@ namespace FlaxEditor.States
                     OnLightmapsBakeEnd(false);
             }
 
-            /// <inheritdoc />
             public override void Cancel()
             {
                 Editor.Internal_BakeLightmaps(true);
@@ -125,21 +182,14 @@ namespace FlaxEditor.States
 
             private void OnLightmapsBakeEnd(bool failed)
             {
-                StateMachine.GoToState<EnvProbesWithGIState>();
+                Done();
             }
         }
 
-        private sealed class EnvProbesWithGIState : EnvProbesNoGIState
+        private sealed class NavMeshState : ActionState
         {
-            public override void Update()
-            {
-                if (!Editor.Instance.ProgressReporting.BakeEnvProbes.IsActive)
-                    StateMachine.GoToState<NavMeshState>();
-            }
-        }
+            public override GeneralOptions.BuildAction Action => GeneralOptions.BuildAction.NavMesh;
 
-        private sealed class NavMeshState : SubState
-        {
             public override void OnEnter()
             {
                 foreach (var scene in Level.Scenes)
@@ -151,7 +201,58 @@ namespace FlaxEditor.States
             public override void Update()
             {
                 if (!Navigation.IsBuildingNavMesh)
-                    StateMachine.GoToState<EndState>();
+                    Done();
+            }
+        }
+
+        private sealed class CompileScriptsState : ActionState
+        {
+            private bool _compiled, _reloaded;
+
+            public override GeneralOptions.BuildAction Action => GeneralOptions.BuildAction.CompileScripts;
+
+            public override bool DirtyScenes => false;
+
+            public override bool CanReloadScripts => true;
+
+            public override void OnEnter()
+            {
+                _compiled = _reloaded = false;
+                ScriptsBuilder.Compile();
+
+                ScriptsBuilder.CompilationSuccess += OnCompilationSuccess;
+                ScriptsBuilder.CompilationFailed += OnCompilationFailed;
+                ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+            }
+
+            public override void OnExit(State nextState)
+            {
+                ScriptsBuilder.CompilationSuccess -= OnCompilationSuccess;
+                ScriptsBuilder.CompilationFailed -= OnCompilationFailed;
+                ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+
+                base.OnExit(nextState);
+            }
+
+            private void OnCompilationSuccess()
+            {
+                _compiled = true;
+            }
+
+            private void OnCompilationFailed()
+            {
+                Cancel();
+            }
+
+            private void OnScriptsReloadEnd()
+            {
+                _reloaded = true;
+            }
+
+            public override void Update()
+            {
+                if (_compiled && _reloaded)
+                    Done();
             }
         }
 
@@ -173,10 +274,10 @@ namespace FlaxEditor.States
             _stateMachine.AddState(new BeginState());
             _stateMachine.AddState(new SetupState());
             _stateMachine.AddState(new CSGState());
-            _stateMachine.AddState(new EnvProbesNoGIState());
+            _stateMachine.AddState(new EnvProbesState());
             _stateMachine.AddState(new StaticLightingState());
-            _stateMachine.AddState(new EnvProbesWithGIState());
             _stateMachine.AddState(new NavMeshState());
+            _stateMachine.AddState(new CompileScriptsState());
             _stateMachine.AddState(new EndState());
             _stateMachine.GoToState<BeginState>();
         }
@@ -191,6 +292,9 @@ namespace FlaxEditor.States
 
         /// <inheritdoc />
         public override bool CanEditContent => false;
+
+        /// <inheritdoc />
+        public override bool CanReloadScripts => ((SubState)_stateMachine.CurrentState).CanReloadScripts;
 
         /// <inheritdoc />
         public override bool IsPerformanceHeavy => true;
@@ -215,6 +319,11 @@ namespace FlaxEditor.States
         {
             Editor.Log("Starting scenes build...");
             _startTime = DateTime.Now;
+            _stateMachine.ActionIndex = -1;
+            _stateMachine.Actions.Clear();
+            var actions = (GeneralOptions.BuildAction[])Editor.Options.Options.General.BuildActions?.Clone();
+            if (actions != null)
+                _stateMachine.Actions.AddRange(actions);
             _stateMachine.GoToState<SetupState>();
         }
 

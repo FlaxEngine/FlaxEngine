@@ -406,6 +406,11 @@ namespace FlaxEditor.Surface
             return member.IsField && IsValidVisualScriptType(member.ValueType);
         }
 
+        internal static bool IsValidVisualScriptEvent(ScriptMemberInfo member)
+        {
+            return member.IsEvent && member.HasAttribute(typeof(UnmanagedAttribute));
+        }
+
         internal static bool IsValidVisualScriptType(ScriptType scriptType)
         {
             if (scriptType.IsGenericType || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))

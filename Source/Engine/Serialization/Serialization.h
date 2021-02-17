@@ -9,6 +9,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Scripting/SoftObjectReference.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/WeakAssetReference.h"
 
@@ -450,6 +451,27 @@ namespace Serialization
     }
     template<typename T>
     inline void Deserialize(ISerializable::DeserializeStream& stream, ScriptingObjectReference<T>& v, ISerializeModifier* modifier)
+    {
+        Guid id;
+        Deserialize(stream, id, modifier);
+		modifier->IdsMapping.TryGet(id, id);
+        v = id;
+    }
+
+    // Soft Object Reference
+
+    template<typename T>
+    inline bool ShouldSerialize(const SoftObjectReference<T>& v, const void* otherObj)
+    {
+        return !otherObj || v.Get() != ((SoftObjectReference<T>*)otherObj)->Get();
+    }
+    template<typename T>
+    inline void Serialize(ISerializable::SerializeStream& stream, const SoftObjectReference<T>& v, const void* otherObj)
+    {
+        stream.Guid(v.GetID());
+    }
+    template<typename T>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, SoftObjectReference<T>& v, ISerializeModifier* modifier)
     {
         Guid id;
         Deserialize(stream, id, modifier);

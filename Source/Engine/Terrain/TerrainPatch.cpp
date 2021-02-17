@@ -64,12 +64,12 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     {
         Chunks[i].Init(this, i % CHUNKS_COUNT_EDGE, i / CHUNKS_COUNT_EDGE);
     }
-    Heightmap.Unlink();
+    Heightmap = nullptr;
     for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
     {
-        Splatmap[i].Unlink();
+        Splatmap[i] = nullptr;
     }
-    _heightfield.Unlink();
+    _heightfield = nullptr;
 #if TERRAIN_UPDATING
     _cachedHeightMap.Resize(0);
     _cachedHolesMask.Resize(0);

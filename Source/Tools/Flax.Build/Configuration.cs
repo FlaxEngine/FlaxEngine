@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
+
 namespace Flax.Build
 {
     /// <summary>
@@ -134,6 +136,18 @@ namespace Flax.Build
         public static string LogFile = "Cache/Intermediate/Log.txt";
 
         /// <summary>
+        /// The maximum allowed concurrency for a build system (maximum active worker threads count).
+        /// </summary>
+        [CommandLine("maxConcurrency", "<threads>", "The maximum allowed concurrency for a build system (maximum active worker threads count).")]
+        public static int MaxConcurrency = 1410;
+
+        /// <summary>
+        /// The concurrency scale for a build system that specifies how many worker threads allocate per-logical processor.
+        /// </summary>
+        [CommandLine("concurrencyProcessorScale", "<scale>", "The concurrency scale for a build system that specifies how many worker threads allocate per-logical processor.")]
+        public static float ConcurrencyProcessorScale = 1.0f;
+
+        /// <summary>
         /// The output binaries folder path relative to the working directory.
         /// </summary>
         [CommandLine("binaries", "<path>", "The output binaries folder path relative to the working directory.")]
@@ -186,5 +200,16 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("customProjectFormat", "<type>", "Generates code project files for a custom project format type. Valid only with -genproject option.")]
         public static string ProjectFormatCustom = null;
+
+        /// <summary>
+        /// Overrides the compiler to use for building. Eg. v140 overrides the toolset when building for Windows.
+        /// </summary>
+        [CommandLine("compiler", "<name>", "Overrides the compiler to use for building. Eg. v140 overrides the toolset when building for Windows.")]
+        public static string Compiler = null;
+
+        /// <summary>
+        /// Custom configuration defines provided via command line for the build tool.
+        /// </summary>
+        public static List<string> CustomDefines = new List<string>();
     }
 }

@@ -159,7 +159,7 @@ namespace FlaxEditor.Windows.Assets
         public void Duplicate()
         {
             // Peek things that can be copied (copy all actors)
-            var objects = Selection.Where(x => x.CanCopyPaste && x != Graph.Main).ToList().BuildAllNodes().Where(x => x.CanCopyPaste && x is ActorNode).ToList();
+            var objects = Selection.Where(x => x.CanDuplicate && x != Graph.Main).ToList().BuildAllNodes().Where(x => x.CanDuplicate && x is ActorNode).ToList();
             if (objects.Count == 0)
                 return;
 
@@ -194,8 +194,8 @@ namespace FlaxEditor.Windows.Assets
 
         private class CustomDeleteActorsAction : DeleteActorsAction
         {
-            public CustomDeleteActorsAction(List<SceneGraphNode> objects, bool isInverted = false)
-            : base(objects, isInverted)
+            public CustomDeleteActorsAction(List<SceneGraphNode> nodes, bool isInverted = false)
+            : base(nodes, isInverted)
             {
             }
 
@@ -207,7 +207,8 @@ namespace FlaxEditor.Windows.Assets
                 // Unlink nodes from parents (actors spawned for prefab editing are not in a gameplay and may not send some important events)
                 for (int i = 0; i < nodes.Length; i++)
                 {
-                    nodes[i].Actor.Parent = null;
+                    if (nodes[i] is ActorNode actorNode)
+                        actorNode.Actor.Parent = null;
                 }
 
                 base.Delete();

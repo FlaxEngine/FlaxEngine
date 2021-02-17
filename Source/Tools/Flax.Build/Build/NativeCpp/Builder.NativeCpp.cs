@@ -330,7 +330,12 @@ namespace Flax.Build
                 }
 
                 // Collect all files to compile
-                var cppFiles = moduleOptions.SourceFiles.Where(x => x.EndsWith(".cpp")).ToList();
+                var cppFiles = new List<string>(moduleOptions.SourceFiles.Count / 2);
+                for (int i = 0; i < moduleOptions.SourceFiles.Count; i++)
+                {
+                    if (moduleOptions.SourceFiles[i].EndsWith(".cpp", StringComparison.OrdinalIgnoreCase))
+                        cppFiles.Add(moduleOptions.SourceFiles[i]);
+                }
 
                 if (!string.IsNullOrEmpty(module.BinaryModuleName))
                 {

@@ -12,11 +12,30 @@ namespace Flax.Build
     partial class Builder
     {
         private static RulesAssembly _rules;
+        private static Type[] _buildTypes;
 
         /// <summary>
         /// The build configuration files postfix.
         /// </summary>
         public static string BuildFilesPostfix = ".Build.cs";
+
+        /// <summary>
+        /// The cached list of types from Flax.Build assembly. Reused by other build tool utilities to improve performance.
+        /// </summary>
+        internal static Type[] BuildTypes
+        {
+            get
+            {
+                if (_buildTypes == null)
+                {
+                    using (new ProfileEventScope("CacheBuildTypes"))
+                    {
+                        _buildTypes = typeof(Program).Assembly.GetTypes();
+                    }
+                }
+                return _buildTypes;
+            }
+        }
 
         /// <summary>
         /// The rules assembly data.
@@ -128,7 +147,7 @@ namespace Flax.Build
 
             using (new ProfileEventScope("InitInBuildPlugins"))
             {
-                foreach (var type in typeof(Program).Assembly.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Plugin))))
+                foreach (var type in BuildTypes.Where(x => x.IsClass && !x.IsAbstract && x.IsSubclassOf(typeof(Plugin))))
                 {
                     var plugin = (Plugin)Activator.CreateInstance(type);
                     plugin.Init();
@@ -176,67 +195,74 @@ namespace Flax.Build
 
                 // Prepare targets and modules objects
                 Type[] types;
-                Target[] targetObjects;
-                Module[] moduleObjects;
-                Plugin[] pluginObjects;
+                var targetObjects = new List<Target>(16);
+                var moduleObjects = new List<Module>(256);
+                var pluginObjects = new List<Plugin>();
                 using (new ProfileEventScope("GetTypes"))
                 {
                     types = assembly.GetTypes();
-                    targetObjects = types.Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Target))).Select(type =>
+                    for (var i = 0; i < types.Length; i++)
                     {
-                        var target = (Target)Activator.CreateInstance(type);
-
-                        var targetFilename = target.Name + BuildFilesPostfix;
-                        target.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), targetFilename, StringComparison.OrdinalIgnoreCase));
-                        if (target.FilePath == null)
+                        var type = types[i];
+                        if (!type.IsClass || type.IsAbstract)
+                            continue;
+                        if (type.IsSubclassOf(typeof(Target)))
                         {
-                            targetFilename = target.Name + "Target" + BuildFilesPostfix;
+                            var target = (Target)Activator.CreateInstance(type);
+
+                            var targetFilename = target.Name + BuildFilesPostfix;
                             target.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), targetFilename, StringComparison.OrdinalIgnoreCase));
                             if (target.FilePath == null)
                             {
-                                if (target.Name.EndsWith("Target"))
-                                {
-                                    targetFilename = target.Name.Substring(0, target.Name.Length - "Target".Length) + BuildFilesPostfix;
-                                    target.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), targetFilename, StringComparison.OrdinalIgnoreCase));
-                                }
+                                targetFilename = target.Name + "Target" + BuildFilesPostfix;
+                                target.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), targetFilename, StringComparison.OrdinalIgnoreCase));
                                 if (target.FilePath == null)
                                 {
-                                    throw new Exception(string.Format("Failed to find source file path for {0}", target));
+                                    if (target.Name.EndsWith("Target"))
+                                    {
+                                        targetFilename = target.Name.Substring(0, target.Name.Length - "Target".Length) + BuildFilesPostfix;
+                                        target.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), targetFilename, StringComparison.OrdinalIgnoreCase));
+                                    }
+                                    if (target.FilePath == null)
+                                    {
+                                        throw new Exception(string.Format("Failed to find source file path for {0}", target));
+                                    }
                                 }
                             }
+                            target.FolderPath = Path.GetDirectoryName(target.FilePath);
+                            target.Init();
+                            targetObjects.Add(target);
                         }
-                        target.FolderPath = Path.GetDirectoryName(target.FilePath);
-                        target.Init();
-                        return target;
-                    }).ToArray();
-                    moduleObjects = types.Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Module))).Select(type =>
-                    {
-                        var module = (Module)Activator.CreateInstance(type);
-
-                        var moduleFilename = module.Name + BuildFilesPostfix;
-                        module.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), moduleFilename, StringComparison.OrdinalIgnoreCase));
-                        if (module.FilePath == null)
+                        else if (type.IsSubclassOf(typeof(Module)))
                         {
-                            moduleFilename = module.Name + "Module" + BuildFilesPostfix;
+                            var module = (Module)Activator.CreateInstance(type);
+
+                            var moduleFilename = module.Name + BuildFilesPostfix;
                             module.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), moduleFilename, StringComparison.OrdinalIgnoreCase));
                             if (module.FilePath == null)
                             {
-                                throw new Exception(string.Format("Failed to find source file path for {0}", module));
+                                moduleFilename = module.Name + "Module" + BuildFilesPostfix;
+                                module.FilePath = files.FirstOrDefault(path => string.Equals(Path.GetFileName(path), moduleFilename, StringComparison.OrdinalIgnoreCase));
+                                if (module.FilePath == null)
+                                {
+                                    throw new Exception(string.Format("Failed to find source file path for {0}", module));
+                                }
                             }
+                            module.FolderPath = Path.GetDirectoryName(module.FilePath);
+                            module.Init();
+                            moduleObjects.Add(module);
                         }
-                        module.FolderPath = Path.GetDirectoryName(module.FilePath);
-                        module.Init();
-                        return module;
-                    }).ToArray();
-                    pluginObjects = types.Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Plugin))).Select(type =>
-                    {
-                        var plugin = (Plugin)Activator.CreateInstance(type);
-                        plugin.Init();
-                        return plugin;
-                    }).ToArray();
+                        else if (type.IsSubclassOf(typeof(Plugin)))
+                        {
+                            var plugin = (Plugin)Activator.CreateInstance(type);
+
+                            plugin.Init();
+                            pluginObjects.Add(plugin);
+                        }
+                    }
                 }
 
-                _rules = new RulesAssembly(assembly, targetObjects, moduleObjects, pluginObjects);
+                _rules = new RulesAssembly(assembly, targetObjects.ToArray(), moduleObjects.ToArray(), pluginObjects.ToArray());
             }
 
             return _rules;

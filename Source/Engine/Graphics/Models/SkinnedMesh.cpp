@@ -186,22 +186,20 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = *info.World;
-    drawCall.PrevWorld = info.DrawState->PrevWorld;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.GeometrySize = _box.GetSize();
-    drawCall.Lightmap = nullptr;
-    drawCall.LightmapUVsArea = Rectangle::Empty;
-    drawCall.Skinning = info.Skinning;
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.Lightmap = nullptr;
+    drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
+    drawCall.Surface.Skinning = info.Skinning;
+    drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
-    drawCall.LODDitherFactor = lodDitherFactor;
     renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
 }
 

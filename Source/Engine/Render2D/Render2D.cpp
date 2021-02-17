@@ -525,7 +525,7 @@ void Render2DService::Dispose()
     Lines.Resize(0);
     Lines2.Resize(0);
 
-    GUIShader.Unlink();
+    GUIShader = nullptr;
 
     PsoDepth.Dispose();
     PsoNoDepth.Dispose();

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors.Editors
@@ -46,6 +47,15 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = oldSize; i < newSize; i++)
                     {
                         Array.Copy(array, oldSize - 1, newValues, i, 1);
+                    }
+                }
+                else if (newSize > 0)
+                {
+                    // Initialize new entries with default values
+                    var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType));
+                    for (int i = 0; i < newSize; i++)
+                    {
+                        newValues.SetValue(defaultValue, i);
                     }
                 }
 

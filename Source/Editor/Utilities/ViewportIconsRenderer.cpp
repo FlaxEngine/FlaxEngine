@@ -138,7 +138,7 @@ bool ViewportIconsRendererService::Init()
 
 void ViewportIconsRendererService::Dispose()
 {
-    QuadModel.Unlink();
+    QuadModel = nullptr;
     for (int32 i = 0; i < ARRAY_COUNT(InstanceBuffers); i++)
         InstanceBuffers[i].Release();
     ActorTypeToIconType.Clear();

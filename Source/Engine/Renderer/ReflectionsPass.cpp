@@ -324,15 +324,13 @@ void ReflectionsPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psProbeNormal);
     SAFE_DELETE_GPU_RESOURCE(_psProbeInverted);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
-
-    // Release assets
-    _shader.Unlink();
-    _sphereModel.Unlink();
-    _preIntegratedGF.Unlink();
+    _shader = nullptr;
+    _sphereModel = nullptr;
+    _preIntegratedGF = nullptr;
 }
 
 bool sortProbes(EnvironmentProbe* const& p1, EnvironmentProbe* const& p2)

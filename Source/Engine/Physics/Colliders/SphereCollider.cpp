@@ -4,9 +4,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include <PxShape.h>
-#if USE_EDITOR
-#include "Engine/Level/Scene/SceneRendering.h"
-#endif
 
 SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)
@@ -67,26 +64,6 @@ void SphereCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(Radius, _radius);
 }
 
-#if USE_EDITOR
-
-void SphereCollider::OnEnable()
-{
-    GetSceneRendering()->AddPhysicsDebug<SphereCollider, &SphereCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnEnable();
-}
-
-void SphereCollider::OnDisable()
-{
-    GetSceneRendering()->RemovePhysicsDebug<SphereCollider, &SphereCollider::DrawPhysicsDebug>(this);
-
-    // Base
-    Collider::OnDisable();
-}
-
-#endif
-
 void SphereCollider::UpdateBounds()
 {
     // Cache bounds
@@ -95,32 +72,11 @@ void SphereCollider::UpdateBounds()
     _sphere.GetBoundingBox(_box);
 }
 
-void SphereCollider::CreateShape()
+void SphereCollider::GetGeometry(PxGeometryHolder& geometry)
 {
-    // Setup shape geometry
-    _cachedScale = GetScale();
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float radius = Math::Abs(_radius) * scaling;
     const float minSize = 0.001f;
-    const PxSphereGeometry geometry(Math::Max(radius, minSize));
-
-    // Setup shape
-    CreateShapeBase(geometry);
-}
-
-void SphereCollider::UpdateGeometry()
-{
-    // Check if has no shape created
-    if (_shape == nullptr)
-        return;
-
-    // Setup shape geometry
-    _cachedScale = GetScale();
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float radius = Math::Abs(_radius) * scaling;
-    const float minSize = 0.001f;
-    const PxSphereGeometry geometry(Math::Max(radius, minSize));
-
-    // Setup shape
-    _shape->setGeometry(geometry);
+    const PxSphereGeometry sphere(Math::Max(radius, minSize));
+    geometry.storeAny(sphere);
 }

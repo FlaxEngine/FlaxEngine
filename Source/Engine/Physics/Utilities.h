@@ -14,9 +14,6 @@
 #include <ThirdParty/PhysX/foundation/PxBounds3.h>
 #include <ThirdParty/PhysX/characterkinematic/PxExtended.h>
 #include <ThirdParty/PhysX/PxShape.h>
-#include "PhysicsSettings.h"
-
-//////////////////////////// Conversion between PhysX and Flax types
 
 inline PxVec2& C2P(const Vector2& v)
 {
@@ -42,8 +39,6 @@ inline PxBounds3& C2P(const BoundingBox& v)
 {
     return *(PxBounds3*)&v;
 }
-
-////////////////////////////
 
 inline Vector2& P2C(const PxVec2& v)
 {
@@ -79,29 +74,4 @@ inline Vector3 P2C(const PxExtendedVec3& v)
 #endif
 }
 
-////////////////////////////
-
-inline PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
-{
-#if WITH_PVD
-	PxShapeFlags flags = PxShapeFlag::eVISUALIZATION;
-#else
-    PxShapeFlags flags = static_cast<PxShapeFlags>(0);
-#endif
-
-    if (isEnabled)
-    {
-        if (isTrigger)
-        {
-            flags |= PxShapeFlag::eTRIGGER_SHAPE;
-            if (PhysicsSettings::Instance()->QueriesHitTriggers)
-                flags |= PxShapeFlag::eSCENE_QUERY_SHAPE;
-        }
-        else
-        {
-            flags = PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE;
-        }
-    }
-
-    return flags;
-}
+extern PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled);

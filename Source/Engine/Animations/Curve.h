@@ -4,9 +4,7 @@
 
 #include "AnimationUtils.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Types/DataContainer.h"
-#include "Engine/Serialization/ReadStream.h"
-#include "Engine/Serialization/WriteStream.h"
+#include "Engine/Core/Types/Span.h"
 
 // @formatter:off
 
@@ -48,9 +46,19 @@ public:
         result = a.Value;
     }
 
+    FORCE_INLINE static void InterpolateFirstDerivative(const StepCurveKeyframe& a, const StepCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        result = AnimationUtils::GetZero<T>();
+    }
+
     FORCE_INLINE static void InterpolateKey(const StepCurveKeyframe& a, const StepCurveKeyframe& b, float alpha, float length, StepCurveKeyframe& result)
     {
         result = a;
+    }
+    
+    bool operator==(const StepCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -92,10 +100,20 @@ public:
         AnimationUtils::Interpolate(a.Value, b.Value, alpha, result);
     }
 
+    FORCE_INLINE static void InterpolateFirstDerivative(const LinearCurveKeyframe& a, const LinearCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        result = b.Value - a.Value;
+    }
+
     FORCE_INLINE static void InterpolateKey(const LinearCurveKeyframe& a, const LinearCurveKeyframe& b, float alpha, float length, LinearCurveKeyframe& result)
     {
         result.Time = a.Time + (b.Time - a.Time) * alpha;
         AnimationUtils::Interpolate(a.Value, b.Value, alpha, result.Value);
+    }
+
+    bool operator==(const LinearCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -147,22 +165,30 @@ public:
     {
         T leftTangent = a.Value + a.TangentOut * length;
         T rightTangent = b.Value + b.TangentIn * length;
+        AnimationUtils::CubicHermite( a.Value, b.Value, leftTangent, rightTangent, alpha, result);
+    }
 
-        AnimationUtils::CubicHermite(alpha, a.Value, b.Value, leftTangent, rightTangent, result);
+    static void InterpolateFirstDerivative(const HermiteCurveKeyframe& a, const HermiteCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        T leftTangent = a.Value + a.TangentOut * length;
+        T rightTangent = b.Value + b.TangentIn * length;
+        AnimationUtils::CubicHermiteFirstDerivative( a.Value, b.Value, leftTangent, rightTangent, alpha, result);
     }
 
     static void InterpolateKey(const HermiteCurveKeyframe& a, const HermiteCurveKeyframe& b, float alpha, float length, HermiteCurveKeyframe& result)
     {
         result.Time = a.Time + length * alpha;
-
         T leftTangent = a.Value + a.TangentOut * length;
         T rightTangent = b.Value + b.TangentIn * length;
-
-        AnimationUtils::CubicHermite(alpha, a.Value, b.Value, leftTangent, rightTangent, result.Value);
-        AnimationUtils::CubicHermiteD1(alpha, a.Value, b.Value, leftTangent, rightTangent, result.TangentIn);
-
+        AnimationUtils::CubicHermite(a.Value, b.Value, leftTangent, rightTangent, alpha, result.Value);
+        AnimationUtils::CubicHermiteFirstDerivative(a.Value, b.Value, leftTangent, rightTangent, alpha, result.TangentIn);
         result.TangentIn /= length;
         result.TangentOut = result.TangentIn;
+    }
+    
+    bool operator==(const HermiteCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -223,22 +249,31 @@ public:
         T leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
         AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
-
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
+    }
+
+    static void InterpolateFirstDerivative(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
+    {
+        T leftTangent, rightTangent;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        AnimationUtils::BezierFirstDerivative(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
     static void InterpolateKey(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, BezierCurveKeyframe& result)
     {
         result.Time = a.Time + length * alpha;
-
         T leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
         AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
-
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result.Value);
-
         result.TangentIn = a.TangentOut;
         result.TangentOut = b.TangentIn;
+    }
+
+    bool operator==(const BezierCurveKeyframe& other) const
+    {
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -252,7 +287,7 @@ class CurveBase
 {
 public:
 
-    typedef DataContainer<KeyFrame> KeyFrameData;
+    typedef Span<KeyFrame> KeyFrameData;
 
 protected:
 
@@ -344,6 +379,48 @@ public:
 
         // Evaluate the value at the curve
         KeyFrame::Interpolate(leftKey, rightKey, t, length, result);
+    }
+
+    /// <summary>
+    /// Evaluates the first derivative of the animation curve at the specified time (aka velocity).
+    /// </summary>
+    /// <param name="data">The keyframes data container.</param>
+    /// <param name="result">The calculated first derivative from the curve at provided time.</param>
+    /// <param name="time">The time to evaluate the curve at.</param>
+    /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
+    void EvaluateFirstDerivative(const KeyFrameData& data, T& result, float time, bool loop = true) const
+    {
+        const int32 count = data.Length();
+        if (count == 0)
+        {
+            result = _default;
+            return;
+        }
+
+        const float start = 0;
+        const float end = data[count - 1].Time;
+        AnimationUtils::WrapTime(time, start, end, loop);
+
+        int32 leftKeyIdx;
+        int32 rightKeyIdx;
+        FindKeys(data, time, leftKeyIdx, rightKeyIdx);
+
+        const KeyFrame& leftKey = data[leftKeyIdx];
+        const KeyFrame& rightKey = data[rightKeyIdx];
+
+        if (leftKeyIdx == rightKeyIdx)
+        {
+            result = leftKey.Value;
+            return;
+        }
+
+        const float length = rightKey.Time - leftKey.Time;
+
+        // Scale from arbitrary range to [0, 1]
+        float t = Math::NearEqual(length, 0.0f) ? 0.0f : (time - leftKey.Time) / length;
+
+        // Evaluate the derivative at the curve
+        KeyFrame::InterpolateFirstDerivative(leftKey, rightKey, t, length, result);
     }
 
     /// <summary>
@@ -562,8 +639,20 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void Evaluate(T& result, float time, bool loop = true) const
     {
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         Base::Evaluate(data, result, time, loop);
+    }
+
+    /// <summary>
+    /// Evaluates the first derivative of the animation curve at the specified time (aka velocity).
+    /// </summary>
+    /// <param name="result">The calculated first derivative from the curve at provided time.</param>
+    /// <param name="time">The time to evaluate the curve at.</param>
+    /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
+    void EvaluateFirstDerivative(T& result, float time, bool loop = true) const
+    {
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
+        Base::EvaluateFirstDerivative(data, result, time, loop);
     }
 
     /// <summary>
@@ -574,7 +663,7 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void EvaluateKey(KeyFrame& result, float time, bool loop = true) const
     {
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         Base::EvaluateKey(data, result, time, loop);
     }
 
@@ -595,7 +684,7 @@ public:
             return;
         }
 
-        typename Base::KeyFrameData data(_keyframes);
+        typename Base::KeyFrameData data(_keyframes.Get(), _keyframes.Count());
         KeyFrame startValue, endValue;
         Base::EvaluateKey(data, startValue, start, false);
         Base::EvaluateKey(data, endValue, end, false);
@@ -660,53 +749,26 @@ public:
 
 public:
 
-    /// <summary>
-    /// Serializes the curve data to the stream.
-    /// </summary>
-    /// <param name="stream">The output stream.</param>
-    void Serialize(WriteStream& stream) const
+    FORCE_INLINE KeyFrame& operator[](int32 index)
     {
-        // Version
-        if (_keyframes.IsEmpty())
-        {
-            stream.WriteInt32(0);
-            return;
-        }
-        stream.WriteInt32(1);
-
-        // TODO: support compression (serialize compression mode)
-
-        // Raw keyframes data
-        stream.WriteInt32(_keyframes.Count());
-        stream.WriteBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
+        return _keyframes[index];
     }
 
-    /// <summary>
-    /// Deserializes the curve data from the stream.
-    /// </summary>
-    /// <param name="stream">The input stream.</param>
-    bool Deserialize(ReadStream& stream)
+    FORCE_INLINE const KeyFrame& operator[](int32 index) const
     {
-        // Cleanup
-        _keyframes.Resize(0);
+        return _keyframes[index];
+    }
 
-        // Version
-        int32 version;
-        stream.ReadInt32(&version);
-        if (version == 0)
+    bool operator==(const Curve& other) const
+    {
+        if (_keyframes.Count() != other._keyframes.Count())
             return false;
-        if (version != 1)
+        for (int32 i = 0; i < _keyframes.Count(); i++)
         {
-            return true;
+            if (!(_keyframes[i] == other._keyframes[i]))
+                return false;
         }
-
-        // Raw keyframes data
-        int32 keyframesCount;
-        stream.ReadInt32(&keyframesCount);
-        _keyframes.Resize(keyframesCount, false);
-        stream.ReadBytes(_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
-
-        return false;
+        return true;
     }
 };
 

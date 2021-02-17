@@ -32,6 +32,16 @@ namespace Flax.Build
             {
                 // Setup
                 CommandLine.Configure(typeof(Configuration));
+                foreach (var option in CommandLine.GetOptions())
+                {
+                    if (option.Name.Length > 1 && option.Name[0] == 'D')
+                    {
+                        var define = option.Name.Substring(1);
+                        if (!string.IsNullOrEmpty(option.Value))
+                            define += "=" + option.Value;
+                        Configuration.CustomDefines.Add(define);
+                    }
+                }
                 if (Configuration.CurrentDirectory != null)
                     Environment.CurrentDirectory = Configuration.CurrentDirectory;
                 Globals.Root = Directory.GetCurrentDirectory();

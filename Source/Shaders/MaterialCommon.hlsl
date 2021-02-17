@@ -61,9 +61,6 @@
 #ifndef MAX_TESSELLATION_FACTOR
 	#define MAX_TESSELLATION_FACTOR 15
 #endif
-#ifndef IS_MOTION_VECTORS_PASS
-	#define IS_MOTION_VECTORS_PASS 0
-#endif
 #ifndef PER_BONE_MOTION_BLUR
 	#define PER_BONE_MOTION_BLUR 0
 #endif
@@ -164,6 +161,12 @@ float3x3 CalcTangentBasisFromWorldNormal(float3 normal)
 	return float3x3(tangent, bitangent, normal);
 }
 
+float3x3 CalcTangentBasis(float3 normal, float4 tangent)
+{
+	float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
+	return float3x3(tangent.xyz, bitangent, normal);
+}
+
 // [Jimenez et al. 2016, "Practical Realtime Strategies for Accurate Indirect Occlusion"]
 float3 AOMultiBounce(float visibility, float3 albedo)
 {
@@ -172,25 +175,5 @@ float3 AOMultiBounce(float visibility, float3 albedo)
 	float3 c =  2.7552 * albedo + 0.6903;
 	return max(visibility, ((visibility * a + b) * visibility + c) * visibility);
 }
-
-#if CAN_USE_LIGHTMAP
-
-// Evaluates the H-Basis coefficients in the tangent space normal direction
-float3 GetHBasisIrradiance(in float3 n, in float3 h0, in float3 h1, in float3 h2, in float3 h3)
-{
-	float3 color = 0.0f;
-
-	// Band 0
-	color += h0 * (1.0f / sqrt(2.0f * PI));
-
-	// Band 1
-	color += h1 * -sqrt(1.5f / PI) * n.y;
-	color += h2 *  sqrt(1.5f / PI) * (2 * n.z - 1.0f);
-	color += h3 * -sqrt(1.5f / PI) * n.x;
-
-	return color;
-}
-
-#endif
 
 #endif

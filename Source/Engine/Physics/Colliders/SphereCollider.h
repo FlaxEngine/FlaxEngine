@@ -37,12 +37,6 @@ public:
     /// </remarks>
     API_PROPERTY() void SetRadius(float value);
 
-private:
-
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
-
 public:
 
     // [Collider]
@@ -57,10 +51,8 @@ protected:
 
     // [Collider]
 #if USE_EDITOR
-    void OnEnable() override;
-    void OnDisable() override;
+    void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void UpdateBounds() override;
-    void CreateShape() override;
-    void UpdateGeometry() override;
+    void GetGeometry(PxGeometryHolder& geometry) override;
 };

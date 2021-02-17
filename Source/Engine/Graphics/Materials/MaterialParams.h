@@ -309,9 +309,9 @@ public:
         GPUContext* Context;
 
         /// <summary>
-        /// The pointer to the first constants buffer in memory.
+        /// The pointer to the constants buffer in the memory.
         /// </summary>
-        byte* Buffer0;
+        byte* Constants;
 
         /// <summary>
         /// The input scene color. It's optional and used in forward/postFx rendering.

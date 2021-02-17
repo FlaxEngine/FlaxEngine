@@ -37,14 +37,16 @@ void DecalMaterialShader::Bind(BindParameters& params)
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    const auto cb0 = _shader->GetCB(0);
-    const bool hasCb0 = cb0->GetSize() != 0;
+    byte* cb = _cbData.Get();
+    auto materialData = reinterpret_cast<DecalMaterialShaderData*>(cb);
+    cb += sizeof(DecalMaterialShaderData);
+    int32 srv = 0;
     const bool isCameraInside = OrientedBoundingBox(Vector3::Half, params.FirstDrawCall->World).Contains(view.Position) == ContainmentType::Contains;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCb0 ? _cb0Data.Get() + sizeof(DecalMaterialShaderData) : nullptr;
+    bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
     bindMeta.Buffers = nullptr;
     bindMeta.CanSampleDepth = true;
@@ -54,11 +56,8 @@ void DecalMaterialShader::Bind(BindParameters& params)
     // Decals use depth buffer to draw on top of the objects
     context->BindSR(0, GET_TEXTURE_VIEW_SAFE(params.RenderContext.Buffers->DepthBuffer));
 
-    // Setup material constants data
-    if (hasCb0)
+    // Setup material constants
     {
-        const auto materialData = reinterpret_cast<DecalMaterialShaderData*>(_cb0Data.Get());
-
         Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
@@ -85,10 +84,10 @@ void DecalMaterialShader::Bind(BindParameters& params)
     }
 
     // Bind constants
-    if (hasCb0)
+    if (_cb)
     {
-        context->UpdateCB(cb0, _cb0Data.Get());
-        context->BindCB(0, cb0);
+        context->UpdateCB(_cb, _cbData.Get());
+        context->BindCB(0, _cb);
     }
 
     // Bind pipeline

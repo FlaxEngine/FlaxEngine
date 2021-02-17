@@ -150,6 +150,11 @@ public:
         /// </summary>
         Nullable<bool> SkipCompile;
 
+        /// <summary>
+        /// -shaderdebug (enables debugging data generation for shaders and disables shader compiler optimizations)
+        /// </summary>
+        Nullable<bool> ShaderDebug;
+
 #endif
     };
 

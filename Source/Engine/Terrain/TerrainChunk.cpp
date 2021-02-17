@@ -21,7 +21,7 @@ void TerrainChunk::Init(TerrainPatch* patch, uint16 x, uint16 z)
     _yHeight = 1;
     _heightmapUVScaleBias = Vector4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
     _perInstanceRandom = (_patch->_terrain->_id.C ^ _x ^ _z) * (1.0f / MAX_uint32);
-    OverrideMaterial.Unlink();
+    OverrideMaterial = nullptr;
 }
 
 bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
@@ -83,38 +83,34 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, lod))
         return;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = _cachedDrawMaterial;
     drawCall.World = _world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.TerrainData.Patch = _patch;
-    drawCall.TerrainData.HeightmapUVScaleBias = _heightmapUVScaleBias;
-    drawCall.TerrainData.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
-    drawCall.TerrainData.CurrentLOD = (float)lod;
-    drawCall.TerrainData.ChunkSizeNextLOD = (float)(((chunkSize + 1) >> (lod + 1)) - 1);
-    drawCall.TerrainData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
+    drawCall.Terrain.Patch = _patch;
+    drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
+    drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
+    drawCall.Terrain.CurrentLOD = (float)lod;
+    drawCall.Terrain.ChunkSizeNextLOD = (float)(((chunkSize + 1) >> (lod + 1)) - 1);
+    drawCall.Terrain.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
     // TODO: try using SIMD clamping for 4 chunks at once
-    drawCall.TerrainData.NeighborLOD.X = (float)Math::Clamp<int32>(_neighbors[0]->_cachedDrawLOD, lod, minLod);
-    drawCall.TerrainData.NeighborLOD.Y = (float)Math::Clamp<int32>(_neighbors[1]->_cachedDrawLOD, lod, minLod);
-    drawCall.TerrainData.NeighborLOD.Z = (float)Math::Clamp<int32>(_neighbors[2]->_cachedDrawLOD, lod, minLod);
-    drawCall.TerrainData.NeighborLOD.W = (float)Math::Clamp<int32>(_neighbors[3]->_cachedDrawLOD, lod, minLod);
+    drawCall.Terrain.NeighborLOD.X = (float)Math::Clamp<int32>(_neighbors[0]->_cachedDrawLOD, lod, minLod);
+    drawCall.Terrain.NeighborLOD.Y = (float)Math::Clamp<int32>(_neighbors[1]->_cachedDrawLOD, lod, minLod);
+    drawCall.Terrain.NeighborLOD.Z = (float)Math::Clamp<int32>(_neighbors[2]->_cachedDrawLOD, lod, minLod);
+    drawCall.Terrain.NeighborLOD.W = (float)Math::Clamp<int32>(_neighbors[3]->_cachedDrawLOD, lod, minLod);
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
     if (flags & StaticFlags::Lightmap && scene)
     {
-        drawCall.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
-        drawCall.LightmapUVsArea = Lightmap.UVsArea;
+        drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+        drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;
     }
     else
     {
-        drawCall.Lightmap = nullptr;
-        drawCall.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.Lightmap = nullptr;
+        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.Skinning = nullptr;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = _perInstanceRandom;
-    drawCall.LODDitherFactor = 0.0f;
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);
@@ -142,37 +138,33 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, lod))
         return;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = _world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.TerrainData.Patch = _patch;
-    drawCall.TerrainData.HeightmapUVScaleBias = _heightmapUVScaleBias;
-    drawCall.TerrainData.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
-    drawCall.TerrainData.CurrentLOD = (float)lod;
-    drawCall.TerrainData.ChunkSizeNextLOD = (float)(((chunkSize + 1) >> (lod + 1)) - 1);
-    drawCall.TerrainData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
-    drawCall.TerrainData.NeighborLOD.X = (float)lod;
-    drawCall.TerrainData.NeighborLOD.Y = (float)lod;
-    drawCall.TerrainData.NeighborLOD.Z = (float)lod;
-    drawCall.TerrainData.NeighborLOD.W = (float)lod;
+    drawCall.Terrain.Patch = _patch;
+    drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
+    drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
+    drawCall.Terrain.CurrentLOD = (float)lod;
+    drawCall.Terrain.ChunkSizeNextLOD = (float)(((chunkSize + 1) >> (lod + 1)) - 1);
+    drawCall.Terrain.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
+    drawCall.Terrain.NeighborLOD.X = (float)lod;
+    drawCall.Terrain.NeighborLOD.Y = (float)lod;
+    drawCall.Terrain.NeighborLOD.Z = (float)lod;
+    drawCall.Terrain.NeighborLOD.W = (float)lod;
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
     if (flags & StaticFlags::Lightmap && scene)
     {
-        drawCall.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
-        drawCall.LightmapUVsArea = Lightmap.UVsArea;
+        drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+        drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;
     }
     else
     {
-        drawCall.Lightmap = nullptr;
-        drawCall.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.Lightmap = nullptr;
+        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.Skinning = nullptr;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = _perInstanceRandom;
-    drawCall.LODDitherFactor = 0.0f;
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);

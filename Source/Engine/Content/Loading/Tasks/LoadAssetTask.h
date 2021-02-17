@@ -68,7 +68,7 @@ protected:
 
     void OnEnd() override
     {
-        _asset.Unlink();
+        _asset = nullptr;
 
         // Base
         ContentLoadTask::OnEnd();

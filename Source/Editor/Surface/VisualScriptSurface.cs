@@ -2,6 +2,11 @@
 
 //#define DEBUG_INVOKE_METHODS_SEARCHING
 //#define DEBUG_FIELDS_SEARCHING
+//#define DEBUG_EVENTS_SEARCHING
+
+#if DEBUG_INVOKE_METHODS_SEARCHING || DEBUG_FIELDS_SEARCHING || DEBUG_EVENTS_SEARCHING
+#define DEBUG_SEARCH_TIME
+#endif
 
 using System;
 using System.Collections.Generic;
@@ -103,7 +108,7 @@ namespace FlaxEditor.Surface
             private static void OnActiveContextMenuShowAsync()
             {
                 Profiler.BeginEvent("Setup Visual Script Context Menu (async)");
-#if DEBUG_INVOKE_METHODS_SEARCHING || DEBUG_FIELDS_SEARCHING
+#if DEBUG_SEARCH_TIME
                 var searchStartTime = DateTime.Now;
                 var searchHitsCount = 0;
 #endif
@@ -338,13 +343,65 @@ namespace FlaxEditor.Surface
                                 }
                             }
                         }
+                        else if (member.IsEvent)
+                        {
+                            var name = member.Name;
+
+                            // Skip if searching by name doesn't return a match
+                            var members = scriptType.GetMembers(name, MemberTypes.Event, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                            if (!members.Contains(member))
+                                continue;
+
+                            // Check if field is valid for Visual Script usage
+                            if (SurfaceUtils.IsValidVisualScriptEvent(member))
+                            {
+                                var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 16);
+                                if (!_cache.TryGetValue(groupKey, out var group))
+                                {
+                                    group = new GroupArchetype
+                                    {
+                                        GroupID = groupKey.Value,
+                                        Name = groupKey.Key,
+                                        Color = new Color(109, 160, 24),
+                                        Tag = _version,
+                                        Archetypes = new List<NodeArchetype>(),
+                                    };
+                                    _cache.Add(groupKey, group);
+                                }
+
+                                // Add Bind event node
+                                var bindNode = (NodeArchetype)Archetypes.Function.Nodes[8].Clone();
+                                bindNode.DefaultValues[0] = scriptTypeTypeName;
+                                bindNode.DefaultValues[1] = name;
+                                bindNode.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                                bindNode.Title = "Bind " + name;
+                                bindNode.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                                bindNode.SubTitle = string.Format(" (in {0})", scriptTypeName);
+                                ((IList<NodeArchetype>)group.Archetypes).Add(bindNode);
+
+                                // Add Unbind event node
+                                var unbindNode = (NodeArchetype)Archetypes.Function.Nodes[9].Clone();
+                                unbindNode.DefaultValues[0] = scriptTypeTypeName;
+                                unbindNode.DefaultValues[1] = name;
+                                unbindNode.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                                unbindNode.Title = "Unbind " + name;
+                                unbindNode.Description = bindNode.Description;
+                                unbindNode.SubTitle = bindNode.SubTitle;
+                                ((IList<NodeArchetype>)group.Archetypes).Add(unbindNode);
+
+#if DEBUG_EVENTS_SEARCHING
+                                Editor.LogWarning(scriptTypeTypeName + " -> " + member.GetSignature());
+                                searchHitsCount++;
+#endif
+                            }
+                        }
                     }
                 }
 
                 // Add group to context menu (on a main thread)
                 FlaxEngine.Scripting.InvokeOnUpdate(() =>
                 {
-#if DEBUG_INVOKE_METHODS_SEARCHING || DEBUG_FIELDS_SEARCHING
+#if DEBUG_SEARCH_TIME
                     var addStartTime = DateTime.Now;
 #endif
                     lock (_locker)
@@ -352,12 +409,12 @@ namespace FlaxEditor.Surface
                         _taskContextMenu.AddGroups(_cache.Values);
                         _taskContextMenu = null;
                     }
-#if DEBUG_INVOKE_METHODS_SEARCHING || DEBUG_FIELDS_SEARCHING
+#if DEBUG_SEARCH_TIME
                     Editor.LogError($"Added items to VisjectCM in: {(DateTime.Now - addStartTime).TotalMilliseconds} ms");
 #endif
                 });
 
-#if DEBUG_INVOKE_METHODS_SEARCHING || DEBUG_FIELDS_SEARCHING
+#if DEBUG_SEARCH_TIME
                 Editor.LogError($"Collected {searchHitsCount} items in: {(DateTime.Now - searchStartTime).TotalMilliseconds} ms");
 #endif
                 Profiler.EndEvent();

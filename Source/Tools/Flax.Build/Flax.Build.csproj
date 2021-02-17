@@ -64,17 +64,20 @@
   <ItemGroup>
     <Compile Include="Bindings\ApiTypeInfo.cs" />
     <Compile Include="Bindings\BindingsGenerator.Api.cs" />
+    <Compile Include="Bindings\BindingsGenerator.Cache.cs" />
     <Compile Include="Bindings\BindingsGenerator.Cpp.cs" />
     <Compile Include="Bindings\BindingsGenerator.cs" />
     <Compile Include="Bindings\BindingsGenerator.CSharp.cs" />
     <Compile Include="Bindings\BindingsGenerator.Parsing.cs" />
     <Compile Include="Bindings\ClassInfo.cs" />
+    <Compile Include="Bindings\ClassStructInfo.cs" />
     <Compile Include="Bindings\EnumInfo.cs" />
     <Compile Include="Bindings\EventInfo.cs" />
     <Compile Include="Bindings\FieldInfo.cs" />
     <Compile Include="Bindings\FileInfo.cs" />
     <Compile Include="Bindings\InheritanceInfo.cs" />
     <Compile Include="Bindings\InjectCppCodeInfo.cs" />
+    <Compile Include="Bindings\InterfaceInfo.cs" />
     <Compile Include="Bindings\LangType.cs" />
     <Compile Include="Bindings\MemberInfo.cs" />
     <Compile Include="Bindings\FunctionInfo.cs" />

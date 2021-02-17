@@ -79,7 +79,7 @@ public:
     /// <summary>
     /// Gets the object layer (index). Can be used for selective rendering or ignoring raycasts.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-69)")
+    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-69), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorLayerEditor\")")
     FORCE_INLINE int32 GetLayer() const
     {
         return _layer;
@@ -123,7 +123,7 @@ public:
     /// <summary>
     /// Gets the name of the tag.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-68)")
+    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-68), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTagEditor\")")
     const String& GetTag() const;
 
     /// <summary>
@@ -272,14 +272,14 @@ public:
     }
 
     /// <summary>
-    /// Gets the script of the given type.
+    /// Gets the script of the given type from this actor.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The script or null.</returns>
     API_FUNCTION() Script* GetScript(const MClass* type) const;
 
     /// <summary>
-    /// Gets the script of the given type.
+    /// Gets the script of the given type from this actor.
     /// </summary>
     /// <returns>The script or null.</returns>
     template<typename T>
@@ -289,14 +289,14 @@ public:
     }
 
     /// <summary>
-    /// Gets the scripts of the given type.
+    /// Gets the scripts of the given type from this actor.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The scripts.</returns>
     API_FUNCTION() Array<Script*> GetScripts(const MClass* type) const;
 
     /// <summary>
-    /// Gets the scripts of the given type.
+    /// Gets the scripts of the given type from this actor.
     /// </summary>
     /// <returns>The scripts.</returns>
     template<typename T>
@@ -339,7 +339,7 @@ public:
     /// <summary>
     /// Returns true if object is fully static on the scene, otherwise false.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsStatic() const
+    FORCE_INLINE bool IsStatic() const
     {
         return _staticFlags == StaticFlags::FullyStatic;
     }
@@ -347,7 +347,7 @@ public:
     /// <summary>
     /// Returns true if object has static transform.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsTransformStatic() const
+    FORCE_INLINE bool IsTransformStatic() const
     {
         return (_staticFlags & StaticFlags::Transform) != 0;
     }
@@ -355,7 +355,7 @@ public:
     /// <summary>
     /// Gets the actor static fags.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-80)")
+    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-80), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorStaticFlagsEditor\")")
     FORCE_INLINE StaticFlags GetStaticFlags() const
     {
         return _staticFlags;
@@ -368,10 +368,18 @@ public:
     API_PROPERTY() virtual void SetStaticFlags(StaticFlags value);
 
     /// <summary>
+    /// Returns true if object has given flag(s) set.
+    /// </summary>
+    FORCE_INLINE bool HasStaticFlag(StaticFlags flag) const
+    {
+        return (_staticFlags & flag) == (int)flag;
+    }
+
+    /// <summary>
     /// Adds the actor static flags.
     /// </summary>
     /// <param name="flags">The flags to add.</param>
-    API_FUNCTION() FORCE_INLINE void AddStaticFlags(StaticFlags flags)
+    FORCE_INLINE void AddStaticFlags(StaticFlags flags)
     {
         SetStaticFlags(_staticFlags | flags);
     }
@@ -380,7 +388,7 @@ public:
     /// Removes the actor static flags.
     /// </summary>
     /// <param name="flags">The flags to remove.</param>
-    API_FUNCTION() FORCE_INLINE void RemoveStaticFlags(StaticFlags flags)
+    FORCE_INLINE void RemoveStaticFlags(StaticFlags flags)
     {
         SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flags));
     }
@@ -390,7 +398,7 @@ public:
     /// </summary>
     /// <param name="flag">The flag to change.</param>
     /// <param name="value">The target value of the flag.</param>
-    API_FUNCTION() FORCE_INLINE void SetStaticFlag(StaticFlags flag, bool value)
+    FORCE_INLINE void SetStaticFlag(StaticFlags flag, bool value)
     {
         SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flag) | (value ? flag : StaticFlags::None));
     }
@@ -500,10 +508,7 @@ public:
     /// <summary>
     /// Resets the actor local transform.
     /// </summary>
-    FORCE_INLINE void ResetLocalTransform()
-    {
-        SetLocalTransform(Transform::Identity);
-    }
+    void ResetLocalTransform();
 
     /// <summary>
     /// Gets local transform of the actor in parent actor space.
@@ -523,7 +528,7 @@ public:
     /// <summary>
     /// Gets local position of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
     FORCE_INLINE Vector3 GetLocalPosition() const
     {
         return _localTransform.Translation;
@@ -538,7 +543,7 @@ public:
     /// <summary>
     /// Gets local rotation of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+OrientationEditor\")")
     FORCE_INLINE Quaternion GetLocalOrientation() const
     {
         return _localTransform.Orientation;
@@ -553,7 +558,7 @@ public:
     /// <summary>
     /// Gets local scale vector of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Vector3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Vector3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
     FORCE_INLINE Vector3 GetLocalScale() const
     {
         return _localTransform.Scale;
@@ -708,15 +713,10 @@ public:
     /// <returns>The script or null.</returns>
     Script* GetScriptByPrefabObjectId(const Guid& prefabObjectId) const;
 
-public:
-
     /// <summary>
     /// Gets a value indicating whether this actor is a prefab instance root object.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsPrefabRoot() const
-    {
-        return _isPrefabRoot != 0;
-    }
+    API_PROPERTY() bool IsPrefabRoot() const;
 
 public:
 
@@ -918,9 +918,7 @@ public:
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    virtual void OnParentChanged()
-    {
-    }
+    virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.

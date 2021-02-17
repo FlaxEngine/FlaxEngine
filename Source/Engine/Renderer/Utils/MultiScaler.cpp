@@ -81,14 +81,12 @@ void MultiScaler::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psHalfDepth);
     _psBlur5.Delete();
     _psBlur9.Delete();
     _psBlur13.Delete();
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32 width, const int32 height, GPUTextureView* src, GPUTextureView* dst, GPUTextureView* tmp)
@@ -121,7 +119,7 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
         ps = &_psBlur13;
         break;
     default:
-        CRASH;
+    CRASH;
         return;
     }
 
@@ -177,7 +175,7 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
         ps = &_psBlur13;
         break;
     default:
-        CRASH;
+    CRASH;
         return;
     }
 

@@ -177,10 +177,6 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             }
         }
     }
-
-    if (startRegister != registerIndex)
-        writer.WriteLine();
-
     return nullptr;
 }
 

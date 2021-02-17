@@ -155,7 +155,7 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Buffer0 = hasCB ? _cbData.Get() + sizeof(GPUParticlesData) : nullptr;
+    bindMeta.Constants = hasCB ? _cbData.Get() + sizeof(GPUParticlesData) : nullptr;
     bindMeta.Input = nullptr;
     if (viewTask)
     {

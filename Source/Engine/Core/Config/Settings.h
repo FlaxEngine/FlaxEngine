@@ -2,81 +2,46 @@
 
 #pragma once
 
-#include "Engine/Core/Singleton.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Serialization/ISerializable.h"
 
 /// <summary>
-/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to c#.
+/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to engine/game.
 /// </summary>
-class FLAXENGINE_API SettingsBase
+API_CLASS(Abstract) class FLAXENGINE_API SettingsBase : public ISerializable
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(SettingsBase);
 public:
 
     /// <summary>
-    /// The settings containers.
-    /// </summary>
-    static Array<SettingsBase*> Containers;
-
-    /// <summary>
-    /// Restores the default settings for all the registered containers.
-    /// </summary>
-    static void RestoreDefaultAll()
-    {
-        for (int32 i = 0; i < Containers.Count(); i++)
-            Containers[i]->RestoreDefault();
-    }
-
-private:
-
-    // Disable copy/move
-    SettingsBase(const SettingsBase&) = delete;
-    SettingsBase& operator=(const SettingsBase&) = delete;
-
-protected:
-
-    SettingsBase()
-    {
-        Containers.Add(this);
-    }
-
-public:
-
-    virtual ~SettingsBase() = default;
-
-public:
-
-    typedef ISerializable::DeserializeStream DeserializeStream;
-
-    /// <summary>
-    /// Applies the settings to the target services.
+    /// Applies the settings to the target system.
     /// </summary>
     virtual void Apply()
     {
     }
 
-    /// <summary>
-    /// Restores the default settings.
-    /// </summary>
-    virtual void RestoreDefault() = 0;
+public:
 
-    /// <summary>
-    /// Deserializes the settings container.
-    /// </summary>
-    /// <param name="stream">The input data stream.</param>
-    /// <param name="modifier">The deserialization modifier object. Always valid.</param>
-    virtual void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) = 0;
-};
-
-/// <summary>
-/// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to c#.
-/// </summary>
-template<class T>
-class Settings : public SettingsBase, public Singleton<T>
-{
-protected:
-
-    Settings()
+    // [ISerializable]
+    void Serialize(SerializeStream& stream, const void* otherObj) override
     {
+        // Not supported (Editor C# edits settings data)
     }
 };
+
+// Helper utility define for settings getter implementation code
+#define IMPLEMENT_SETTINGS_GETTER(type, field) \
+    type* type::Get() \
+    { \
+        static type DefaultInstance; \
+        type* result = &DefaultInstance; \
+        const auto gameSettings = GameSettings::Get(); \
+        if (gameSettings) \
+        { \
+            const auto asset = Content::Load<JsonAsset>(gameSettings->field); \
+            if (asset && asset->Instance && asset->InstanceType == type::TypeInitializer) \
+            { \
+                result = static_cast<type*>(asset->Instance); \
+            } \
+        } \
+        return result; \
+    }

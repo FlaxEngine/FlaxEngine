@@ -6,6 +6,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/Events.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
@@ -347,7 +348,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
-            value = instanceParams->Value[paramIndex];
+            value = instanceParams->Value.Params[paramIndex];
         }
         else
         {
@@ -371,7 +372,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
-            instanceParams->Value[paramIndex] = tryGetValue(node->GetBox(1), 1, Value::Zero);
+            instanceParams->Value.Params[paramIndex] = tryGetValue(node->GetBox(1), 1, Value::Zero);
         }
         else
         {
@@ -1005,6 +1006,125 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
             eatBox(node, returnedImpulse->FirstConnection());
         break;
     }
+        // Bind/Unbind
+    case 9:
+    case 10:
+    {
+        const bool bind = node->TypeID == 9;
+        auto& stack = ThreadStacks.Get();
+        if (!stack.Stack->Instance)
+        {
+            // TODO: add support for binding to events in static Visual Script
+            LOG(Error, "Cannot bind to event in static Visual Script.");
+            PrintStack(LogType::Error);
+            break;
+        }
+        const auto object = stack.Stack->Instance;
+
+        // Find method to bind
+        VisualScriptGraphNode* methodNode = nullptr;
+        const auto graph = stack.Stack && stack.Stack->Script ? &stack.Stack->Script->Graph : nullptr;
+        if (graph)
+            methodNode = graph->GetNode((uint32)node->Values[2]);
+        if (!methodNode)
+        {
+            LOG(Error, "Missing function handler to bind to the event.");
+            PrintStack(LogType::Error);
+            break;
+        }
+        VisualScript::Method* method = nullptr;
+        for (auto& m : stack.Stack->Script->_methods)
+        {
+            if (m.Node == methodNode)
+            {
+                method = &m;
+                break;
+            }
+        }
+        if (!method)
+        {
+            LOG(Error, "Missing method to bind to the event.");
+            PrintStack(LogType::Error);
+            break;
+        }
+
+        // Find event
+        const StringView eventTypeName(node->Values[0]);
+        const StringView eventName(node->Values[1]);
+        const StringAsANSI<100> eventTypeNameAnsi(eventTypeName.Get(), eventTypeName.Length());
+        const ScriptingTypeHandle eventType = Scripting::FindScriptingType(StringAnsiView(eventTypeNameAnsi.Get(), eventTypeName.Length()));
+
+        // Find event binding callback
+        auto eventBinder = ScriptingEvents::EventsTable.TryGet(Pair<ScriptingTypeHandle, StringView>(eventType, eventName));
+        if (!eventBinder)
+        {
+            LOG(Error, "Cannot bind to missing event {0} from type {1}.", eventName, eventTypeName);
+            PrintStack(LogType::Error);
+            break;
+        }
+
+        // Evaluate object instance
+        const auto box = node->GetBox(1);
+        Variant instance;
+        if (box->HasConnection())
+            instance = eatBox(node, box->FirstConnection());
+        else
+            instance.SetObject(object);
+        if (!instance.AsObject)
+        {
+            LOG(Error, "Cannot bind event to null object.");
+            PrintStack(LogType::Error);
+            break;
+        }
+        // TODO: check if instance is of event type (including inheritance)
+
+        // Add Visual Script method to the event bindings table
+        const auto& type = object->GetType();
+        Guid id;
+        if (Guid::Parse(type.Fullname, id))
+            break;
+        if (const auto visualScript = (VisualScript*)Content::GetAsset(id))
+        {
+            if (auto i = visualScript->GetScriptInstance(object))
+            {
+                VisualScript::EventBinding* eventBinding = nullptr;
+                for (auto& b : i->EventBindings)
+                {
+                    if (b.Type == eventType && b.Name == eventName)
+                    {
+                        eventBinding = &b;
+                        break;
+                    }
+                }
+                if (bind)
+                {
+                    // Bind to the event
+                    if (!eventBinding)
+                    {
+                        eventBinding = &i->EventBindings.AddOne();
+                        eventBinding->Type = eventType;
+                        eventBinding->Name = eventName;
+                    }
+                    eventBinding->BindedMethods.Add(method);
+                    if (eventBinding->BindedMethods.Count() == 1)
+                        (*eventBinder)(instance.AsObject, object, true);
+                }
+                else if (eventBinding)
+                {
+                    // Unbind from the event
+                    if (eventBinding->BindedMethods.Count() == 1)
+                        (*eventBinder)(instance.AsObject, object, false);
+                    eventBinding->BindedMethods.Remove(method);
+                }
+            }
+        }
+
+        // Call graph further
+        const auto returnedImpulse = &node->Boxes[2];
+        if (returnedImpulse && returnedImpulse->HasConnection())
+            eatBox(node, returnedImpulse->FirstConnection());
+        break;
+    }
     default:
         break;
     }
@@ -1290,11 +1410,11 @@ Asset::LoadResult VisualScript::load()
 
             // Hack vtable similarly to VisualScriptObjectSpawn
             ScriptingType& visualScriptType = (ScriptingType&)object->GetType();
-            if (visualScriptType.Class.ScriptVTable)
+            if (visualScriptType.Script.ScriptVTable)
             {
                 // Override object vtable with hacked one that has Visual Script functions calls
-                ASSERT(visualScriptType.Class.VTable);
-                *(void**)object = visualScriptType.Class.VTable;
+                ASSERT(visualScriptType.Script.VTable);
+                *(void**)object = visualScriptType.Script.VTable;
             }
         }
         const int32 oldCount = _oldParamsLayout.Count();
@@ -1304,7 +1424,7 @@ Asset::LoadResult VisualScript::load()
             // Update instanced data from previous format to the current graph parameters scheme
             for (auto& e : _instances)
             {
-                auto& instanceParams = e.Value;
+                auto& instanceParams = e.Value.Params;
                 Array<Variant> valuesCache(MoveTemp(instanceParams));
                 instanceParams.Resize(count);
                 for (int32 i = 0; i < count; i++)
@@ -1319,7 +1439,7 @@ Asset::LoadResult VisualScript::load()
             // Reset instances values to defaults
             for (auto& e : _instances)
             {
-                auto& instanceParams = e.Value;
+                auto& instanceParams = e.Value.Params;
                 instanceParams.Resize(count);
                 for (int32 i = 0; i < count; i++)
                     instanceParams[i] = Graph.Parameters[i].Value;
@@ -1361,10 +1481,10 @@ void VisualScript::unload(bool isReloading)
     if (_scriptingTypeHandle)
     {
         auto& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
-        if (type.Class.DefaultInstance)
+        if (type.Script.DefaultInstance)
         {
-            Delete(type.Class.DefaultInstance);
-            type.Class.DefaultInstance = nullptr;
+            Delete(type.Script.DefaultInstance);
+            type.Script.DefaultInstance = nullptr;
         }
         VisualScriptingModule.TypeNameToTypeIndex.RemoveValue(_scriptingTypeHandle.TypeIndex);
         VisualScriptingModule.Scripts[_scriptingTypeHandle.TypeIndex] = nullptr;
@@ -1389,7 +1509,7 @@ void VisualScript::CacheScriptingType()
     {
         // Find first native base C++ class of this Visual Script class
         ScriptingTypeHandle nativeType = baseType;
-        while (nativeType && nativeType.GetType().Class.ScriptVTable)
+        while (nativeType && nativeType.GetType().Script.ScriptVTable)
         {
             nativeType = nativeType.GetType().GetBaseType();
         }
@@ -1421,13 +1541,17 @@ void VisualScript::CacheScriptingType()
             _scriptingTypeHandle = ScriptingTypeHandle(&binaryModule, typeIndex);
             binaryModule.Scripts.Add(this);
 
-#if USE_EDITOR
-            // When first Visual Script gets loaded register for other modules unload to clear runtime execution cache
+            // Special initialization when the first Visual Script gets loaded
             if (typeIndex == 0)
             {
+#if USE_EDITOR
+                // Register for other modules unload to clear runtime execution cache
                 Scripting::ScriptsReloading.Bind<VisualScriptingBinaryModule, &VisualScriptingBinaryModule::OnScriptsReloading>(&binaryModule);
-            }
 #endif
+
+                // Register for scripting events
+                ScriptingEvents::Event.Bind(VisualScriptingBinaryModule::OnEvent);
+            }
         }
         auto& type = _scriptingTypeHandle.Module->Types[_scriptingTypeHandle.TypeIndex];
         type.ManagedClass = baseType.GetType().ManagedClass;
@@ -1437,14 +1561,14 @@ void VisualScript::CacheScriptingType()
         for (ScriptingTypeHandle e = nativeType; e;)
         {
             const ScriptingType& eType = e.GetType();
-            if (eType.Class.SetupScriptVTable)
+            if (eType.Script.SetupScriptVTable)
             {
                 ASSERT(eType.ManagedClass);
-                eType.Class.SetupScriptVTable(eType.ManagedClass, type.Class.ScriptVTable, type.Class.ScriptVTableBase);
+                eType.Script.SetupScriptVTable(eType.ManagedClass, type.Script.ScriptVTable, type.Script.ScriptVTableBase);
             }
             e = eType.GetBaseType();
         }
-        MMethod** scriptVTable = (MMethod**)type.Class.ScriptVTable;
+        MMethod** scriptVTable = (MMethod**)type.Script.ScriptVTable;
         while (scriptVTable && *scriptVTable)
         {
             const MMethod* referenceMethod = *scriptVTable;
@@ -1498,12 +1622,12 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     ScriptingType& visualScriptType = (ScriptingType&)params.Type.GetType();
     ScriptingTypeHandle baseTypeHandle = visualScriptType.GetBaseType();
     const ScriptingType* baseTypePtr = &baseTypeHandle.GetType();
-    while (baseTypePtr->Class.Spawn == &VisualScriptObjectSpawn)
+    while (baseTypePtr->Script.Spawn == &VisualScriptObjectSpawn)
     {
         baseTypeHandle = baseTypePtr->GetBaseType();
         baseTypePtr = &baseTypeHandle.GetType();
     }
-    ScriptingObject* object = baseTypePtr->Class.Spawn(params);
+    ScriptingObject* object = baseTypePtr->Script.Spawn(params);
     if (!object)
     {
         return nullptr;
@@ -1514,9 +1638,9 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     // We create a custom vtable for the Visual Script objects that use a native class object with virtual functions overrides.
     // To make it easy to use in C++ we inject custom wrapper methods into C++ object vtable to execute Visual Script graph from them.
     // Because virtual member functions calls are C++ ABI and impl-defined this is quite hard. But works.
-    if (visualScriptType.Class.ScriptVTable)
+    if (visualScriptType.Script.ScriptVTable)
     {
-        if (!visualScriptType.Class.VTable)
+        if (!visualScriptType.Script.VTable)
         {
             // Duplicate vtable
             void** vtable = *(void***)object;
@@ -1525,21 +1649,21 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
             while (vtable[entriesCount] && entriesCount < 200)
                 entriesCount++;
             const int32 size = entriesCount * sizeof(void*);
-            visualScriptType.Class.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
-            Platform::MemoryCopy((byte*)visualScriptType.Class.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
+            visualScriptType.Script.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
+            Platform::MemoryCopy((byte*)visualScriptType.Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
 
             // Override vtable entries by the class
             for (ScriptingTypeHandle e = baseTypeHandle; e;)
             {
                 const ScriptingType& eType = e.GetType();
-                if (eType.Class.SetupScriptObjectVTable)
-                    eType.Class.SetupScriptObjectVTable(visualScriptType.Class.ScriptVTable, visualScriptType.Class.ScriptVTableBase, visualScriptType.Class.VTable, entriesCount, 1);
+                if (eType.Script.SetupScriptObjectVTable)
+                    eType.Script.SetupScriptObjectVTable(visualScriptType.Script.ScriptVTable, visualScriptType.Script.ScriptVTableBase, visualScriptType.Script.VTable, entriesCount, 1);
                 e = eType.GetBaseType();
             }
         }
 
         // Override object vtable with hacked one that has Visual Script functions calls
-        *(void**)object = visualScriptType.Class.VTable;
+        *(void**)object = visualScriptType.Script.VTable;
     }
 
     // Mark as custom scripting type
@@ -1550,7 +1674,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     VisualScript* visualScript = VisualScriptingModule.Scripts[params.Type.TypeIndex];
 
     // Initialize instance data
-    auto& instanceParams = visualScript->_instances[object->GetID()];
+    auto& instanceParams = visualScript->_instances[object->GetID()].Params;
     instanceParams.Resize(visualScript->Graph.Parameters.Count());
     for (int32 i = 0; i < instanceParams.Count(); i++)
         instanceParams[i] = visualScript->Graph.Parameters[i].Value;
@@ -1573,10 +1697,10 @@ void VisualScriptingBinaryModule::OnScriptsReloading()
         if (script->_scriptingTypeHandle)
         {
             auto& type = VisualScriptingModule.Types[script->_scriptingTypeHandle.TypeIndex];
-            if (type.Class.DefaultInstance)
+            if (type.Script.DefaultInstance)
             {
-                Delete(type.Class.DefaultInstance);
-                type.Class.DefaultInstance = nullptr;
+                Delete(type.Script.DefaultInstance);
+                type.Script.DefaultInstance = nullptr;
             }
             VisualScriptingModule.TypeNameToTypeIndex.RemoveValue(script->_scriptingTypeHandle.TypeIndex);
             script->_scriptingTypeHandleCached = script->_scriptingTypeHandle;
@@ -1607,6 +1731,56 @@ void VisualScriptingBinaryModule::OnScriptsReloading()
 }
 
 #endif
+
+void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>& parameters, const ScriptingTypeHandle& eventType, const StringView& eventName)
+{
+    if (object)
+    {
+        // Object event
+        const auto& type = object->GetType();
+        Guid id;
+        if (Guid::Parse(type.Fullname, id))
+            return;
+        if (const auto visualScript = (VisualScript*)Content::GetAsset(id))
+        {
+            if (auto instance = visualScript->GetScriptInstance(object))
+            {
+                for (auto& b : instance->EventBindings)
+                {
+                    if (b.Type != eventType || b.Name != eventName)
+                        continue;
+                    for (auto& m : b.BindedMethods)
+                    {
+                        VisualScripting::Invoke(m, object, parameters);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        // Static event
+        for (auto& asset : Content::GetAssetsRaw())
+        {
+            if (const auto visualScript = ScriptingObject::Cast<VisualScript>(asset.Value))
+            {
+                for (auto& e : visualScript->_instances)
+                {
+                    auto instance = &e.Value;
+                    for (auto& b : instance->EventBindings)
+                    {
+                        if (b.Type != eventType || b.Name != eventName)
+                            continue;
+                        for (auto& m : b.BindedMethods)
+                        {
+                            VisualScripting::Invoke(m, object, parameters);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 const StringAnsi& VisualScriptingBinaryModule::GetName() const
 {
@@ -1702,7 +1876,7 @@ bool VisualScriptingBinaryModule::GetFieldValue(void* field, const Variant& inst
         LOG(Error, "Missing parameters for the object instance.");
         return true;
     }
-    result = instanceParams->Value[vsFiled->Index];
+    result = instanceParams->Value.Params[vsFiled->Index];
     return false;
 }
 
@@ -1721,7 +1895,7 @@ bool VisualScriptingBinaryModule::SetFieldValue(void* field, const Variant& inst
         LOG(Error, "Missing parameters for the object instance.");
         return true;
     }
-    instanceParams->Value[vsFiled->Index] = value;
+    instanceParams->Value.Params[vsFiled->Index] = value;
     return false;
 }
 
@@ -1735,7 +1909,7 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
         const auto instanceParams = asset->_instances.Find(object->GetID());
         if (instanceParams)
         {
-            auto& params = instanceParams->Value;
+            auto& params = instanceParams->Value.Params;
             if (otherObj)
             {
                 // Serialize parameters diff
@@ -1746,7 +1920,7 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
                     {
                         auto& param = asset->Graph.Parameters[paramIndex];
                         auto& value = params[paramIndex];
-                        auto& otherValue = otherParams->Value[paramIndex];
+                        auto& otherValue = otherParams->Value.Params[paramIndex];
                         if (value != otherValue)
                         {
                             param.Identifier.ToString(idName, Guid::FormatType::N);
@@ -1798,7 +1972,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
         if (instanceParams)
         {
             // Deserialize all parameters
-            auto& params = instanceParams->Value;
+            auto& params = instanceParams->Value.Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
                 StringAnsiView idNameAnsi(i->name.GetString(), i->name.GetStringLength());
@@ -1862,7 +2036,12 @@ ScriptingTypeHandle VisualScript::GetScriptingType()
 ScriptingObject* VisualScript::CreateInstance()
 {
     const auto scriptingTypeHandle = GetScriptingType();
-    return scriptingTypeHandle ? scriptingTypeHandle.GetType().Class.Spawn(ScriptingObjectSpawnParams(Guid::New(), scriptingTypeHandle)) : nullptr;
+    return scriptingTypeHandle ? scriptingTypeHandle.GetType().Script.Spawn(ScriptingObjectSpawnParams(Guid::New(), scriptingTypeHandle)) : nullptr;
+}
+
+VisualScript::Instance* VisualScript::GetScriptInstance(ScriptingObject* instance) const
+{
+    return instance ? _instances.TryGet(instance->GetID()) : nullptr;
 }
 
 Variant VisualScript::GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const
@@ -1874,7 +2053,7 @@ Variant VisualScript::GetScriptInstanceParameterValue(const StringView& name, Sc
         {
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
-                return instanceParams->Value[paramIndex];
+                return instanceParams->Value.Params[paramIndex];
             LOG(Error, "Failed to access Visual Script parameter {1} for {0}.", instance->ToString(), name);
             return Graph.Parameters[paramIndex].Value;
         }
@@ -1893,7 +2072,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
-                instanceParams->Value[paramIndex] = value;
+                instanceParams->Value.Params[paramIndex] = value;
                 return;
             }
             LOG(Error, "Failed to access Visual Script parameter {1} for {0}.", instance->ToString(), name);
@@ -1913,7 +2092,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
-                instanceParams->Value[paramIndex] = MoveTemp(value);
+                instanceParams->Value.Params[paramIndex] = MoveTemp(value);
                 return;
             }
         }

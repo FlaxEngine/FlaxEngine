@@ -48,7 +48,7 @@ namespace Flax.Build.Plugins
             contents.AppendLine("        if (IsDuringWrapperCall)");
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling base method");
-            contents.AppendLine("            const auto scriptVTableBase = object->GetType().Class.ScriptVTableBase;");
+            contents.AppendLine("            const auto scriptVTableBase = object->GetType().Script.ScriptVTableBase;");
             contents.Append($"            return (object->**({functionInfo.UniqueName}_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
             separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -61,7 +61,7 @@ namespace Flax.Build.Plugins
             }
             contents.AppendLine(");");
             contents.AppendLine("        }");
-            contents.AppendLine("        auto scriptVTable = (VisualScript::Method**)object->GetType().Class.ScriptVTable;");
+            contents.AppendLine("        auto scriptVTable = (VisualScript::Method**)object->GetType().Script.ScriptVTable;");
             contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
 
             if (functionInfo.Parameters.Count != 0)

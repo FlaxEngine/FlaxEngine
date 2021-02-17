@@ -163,27 +163,4 @@ void MaterialGenerator::linearizeSceneDepth(Node* caller, const Value& depth, Va
     value = writeLocal(VariantType::Float, String::Format(TEXT("ViewInfo.w / ({0}.x - ViewInfo.z)"), depth.Value), caller);
 }
 
-byte MaterialGenerator::getStartSrvRegister(MaterialLayer* baseLayer)
-{
-    // Note: this must match material templates
-    switch (baseLayer->Domain)
-    {
-    case MaterialDomain::Surface:
-        return baseLayer->BlendMode == MaterialBlendMode::Transparent ? 3 : 3;
-    case MaterialDomain::PostProcess:
-        return 0;
-    case MaterialDomain::Decal:
-        return 1;
-    case MaterialDomain::GUI:
-        return 0;
-    case MaterialDomain::Terrain:
-        return 6;
-    case MaterialDomain::Particle:
-        return 5;
-    default:
-    CRASH;
-        return 0;
-    }
-}
-
 #endif

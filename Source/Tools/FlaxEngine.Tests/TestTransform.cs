@@ -143,7 +143,29 @@ namespace FlaxEngine.Tests
                 Transform ab = a.LocalToWorld(b);
                 Transform ba = a.WorldToLocal(ab);
 
-                Assert.IsTrue(Transform.NearEqual(ref b, ref ba, 0.00001f));
+                Assert.IsTrue(Transform.NearEqual(ref b, ref ba, 0.00001f), $"Got: {b} but expected {ba}");
+            }
+        }
+
+        /// <summary>
+        /// Test conversions between transform local/world space
+        /// </summary>
+        [Test]
+        public void TestAddSubtract()
+        {
+            var rand = new Random(10);
+            for (int i = 0; i < 10; i++)
+            {
+                Transform a = new Transform(rand.NextVector3(), Quaternion.Euler(i * 10, 0, i), rand.NextVector3() * 10.0f);
+                Transform b = new Transform(rand.NextVector3(), Quaternion.Euler(i, 1, 22), rand.NextVector3() * 0.3f);
+
+                Transform ab = a + b;
+                Transform newA = ab - b;
+                Assert.IsTrue(Transform.NearEqual(ref a, ref newA, 0.00001f), $"Got: {newA} but expected {a}");
+
+                Transform ba = b + a;
+                Transform newB = ba - a;
+                Assert.IsTrue(Transform.NearEqual(ref b, ref newB, 0.00001f), $"Got: {newB} but expected {b}");
             }
         }
     }

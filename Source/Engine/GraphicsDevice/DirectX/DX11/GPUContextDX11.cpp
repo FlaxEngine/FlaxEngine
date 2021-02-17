@@ -1,16 +1,16 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "GPUShaderDX11.h"
 #if GRAPHICS_API_DIRECTX11
 
 #include "GPUContextDX11.h"
-#include "Engine/Core/Math/Viewport.h"
-#include "Engine/Core/Math/Rectangle.h"
+#include "GPUShaderDX11.h"
 #include "GPUShaderProgramDX11.h"
 #include "GPUPipelineStateDX11.h"
 #include "GPUTextureDX11.h"
 #include "GPUBufferDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Core/Math/Viewport.h"
+#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Profiler/RenderStats.h"
 
 #define DX11_CLEAR_SR_ON_STAGE_DISABLE 0

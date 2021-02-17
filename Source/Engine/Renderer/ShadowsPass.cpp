@@ -193,11 +193,12 @@ void ShadowsPass::Dispose()
     // Base
     RendererPass::Dispose();
 
+    // Cleanup
     _psShadowDir.Delete();
     _psShadowPoint.Delete();
     _psShadowSpot.Delete();
-    _shader.Unlink();
-    _sphereModel.Unlink();
+    _shader = nullptr;
+    _sphereModel = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_shadowMapCSM);
     SAFE_DELETE_GPU_RESOURCE(_shadowMapCube);
 }

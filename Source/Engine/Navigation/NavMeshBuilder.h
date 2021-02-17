@@ -4,9 +4,14 @@
 
 #if COMPILE_WITH_NAV_MESH_BUILDER
 
+#include "Engine/Core/Compiler.h"
+
 class Scene;
 
-class NavMeshBuilder
+/// <summary>
+/// The navigation mesh building utility.
+/// </summary>
+class FLAXENGINE_API NavMeshBuilder
 {
 public:
 

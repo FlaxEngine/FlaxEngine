@@ -331,12 +331,13 @@ namespace FlaxEditor.Surface
         /// <param name="typeID">The node archetype ID.</param>
         /// <param name="location">The location.</param>
         /// <param name="customValues">The custom values array. Must match node archetype <see cref="NodeArchetype.DefaultValues"/> size. Pass null to use default values.</param>
+        /// <param name="beforeSpawned">The custom callback action to call after node creation but just before invoking spawn event. Can be used to initialize custom node data.</param>
         /// <returns>Created node.</returns>
-        public SurfaceNode SpawnNode(ushort groupID, ushort typeID, Vector2 location, object[] customValues = null)
+        public SurfaceNode SpawnNode(ushort groupID, ushort typeID, Vector2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
         {
             if (NodeFactory.GetArchetype(_surface.NodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
             {
-                return SpawnNode(groupArchetype, nodeArchetype, location, customValues);
+                return SpawnNode(groupArchetype, nodeArchetype, location, customValues, beforeSpawned);
             }
             return null;
         }
@@ -348,8 +349,9 @@ namespace FlaxEditor.Surface
         /// <param name="nodeArchetype">The node archetype.</param>
         /// <param name="location">The location.</param>
         /// <param name="customValues">The custom values array. Must match node archetype <see cref="NodeArchetype.DefaultValues"/> size. Pass null to use default values.</param>
+        /// <param name="beforeSpawned">The custom callback action to call after node creation but just before invoking spawn event. Can be used to initialize custom node data.</param>
         /// <returns>Created node.</returns>
-        public SurfaceNode SpawnNode(GroupArchetype groupArchetype, NodeArchetype nodeArchetype, Vector2 location, object[] customValues = null)
+        public SurfaceNode SpawnNode(GroupArchetype groupArchetype, NodeArchetype nodeArchetype, Vector2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
         {
             if (groupArchetype == null || nodeArchetype == null)
                 throw new ArgumentNullException();
@@ -387,6 +389,7 @@ namespace FlaxEditor.Surface
             }
             node.Location = location;
             OnControlLoaded(node);
+            beforeSpawned?.Invoke(node);
             node.OnSurfaceLoaded();
             OnControlSpawned(node);
 

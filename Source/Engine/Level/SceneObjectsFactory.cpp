@@ -79,7 +79,7 @@ SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream
             if (type)
             {
                 const ScriptingObjectSpawnParams params(id, type);
-                obj = (SceneObject*)type.GetType().Class.Spawn(params);
+                obj = (SceneObject*)type.GetType().Script.Spawn(params);
                 if (obj == nullptr)
                 {
                     LOG(Warning, "Failed to spawn object of type {0}.", type.ToString(true));
@@ -109,7 +109,7 @@ SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream
                 if (type)
                 {
                     const ScriptingObjectSpawnParams params(id, type);
-                    obj = (SceneObject*)type.GetType().Class.Spawn(params);
+                    obj = (SceneObject*)type.GetType().Script.Spawn(params);
                     if (obj == nullptr)
                     {
                         LOG(Warning, "Failed to spawn object of type {0}.", type.ToString(true));
@@ -384,7 +384,7 @@ Actor* SceneObjectsFactory::CreateActor(int32 typeId, const Guid& id)
     if (type)
     {
         const ScriptingObjectSpawnParams params(id, type);
-        const auto result = dynamic_cast<Actor*>(type.GetType().Class.Spawn(params));
+        const auto result = dynamic_cast<Actor*>(type.GetType().Script.Spawn(params));
         if (result == nullptr)
         {
             LOG(Warning, "Failed to spawn object of type {0}.", type.ToString(true));

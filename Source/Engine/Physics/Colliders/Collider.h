@@ -160,19 +160,13 @@ public:
     /// </summary>
     /// <param name="rigidBody">The rigid body.</param>
     /// <returns><c>true</c> if this collider can be attached the specified rigid body; otherwise, <c>false</c>.</returns>
-    virtual bool CanAttach(RigidBody* rigidBody) const
-    {
-        return true;
-    }
+    virtual bool CanAttach(RigidBody* rigidBody) const;
 
     /// <summary>
     /// Determines whether this collider can be a trigger shape.
     /// </summary>
     /// <returns><c>true</c> if this collider can be trigger; otherwise, <c>false</c>.</returns>
-    virtual bool CanBeTrigger() const
-    {
-        return true;
-    }
+    virtual bool CanBeTrigger() const;
 
     /// <summary>
     /// Attaches collider to the specified rigid body.
@@ -198,20 +192,20 @@ protected:
     virtual void UpdateBounds() = 0;
 
     /// <summary>
-    /// Creates the collider shape.
+    /// Gets the collider shape geometry.
     /// </summary>
-    virtual void CreateShape() = 0;
+    /// <param name="geometry">The output geometry.</param>
+    virtual void GetGeometry(PxGeometryHolder& geometry) = 0;
 
     /// <summary>
-    /// Creates the collider shape from the given geometry.
+    /// Creates the collider shape.
     /// </summary>
-    /// <param name="geometry">The geometry.</param>
-    void CreateShapeBase(const PxGeometry& geometry);
+    virtual void CreateShape();
 
     /// <summary>
     /// Updates the shape geometry.
     /// </summary>
-    virtual void UpdateGeometry() = 0;
+    virtual void UpdateGeometry();
 
     /// <summary>
     /// Creates the static actor.
@@ -222,6 +216,10 @@ protected:
     /// Removes the static actor.
     /// </summary>
     void RemoveStaticActor();
+
+#if USE_EDITOR
+    virtual void DrawPhysicsDebug(RenderView& view);
+#endif
 
 private:
 
@@ -237,6 +235,10 @@ public:
 protected:
 
     // [PhysicsColliderActor]
+#if USE_EDITOR
+    void OnEnable() override;
+    void OnDisable() override;
+#endif
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnActiveInTreeChanged() override;

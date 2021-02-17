@@ -37,8 +37,8 @@ public:
         drawCall.Geometry.VertexBuffersOffsets[0] = 0;
         drawCall.Geometry.VertexBuffersOffsets[1] = 0;
         drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-        drawCall.Geometry.StartIndex = 0;
-        drawCall.Geometry.IndicesCount = IndicesCount;
+        drawCall.Draw.StartIndex = 0;
+        drawCall.Draw.IndicesCount = IndicesCount;
     }
 };
 

@@ -21,7 +21,6 @@ class InputDevice;
 API_CLASS(Static) class FLAXENGINE_API Input
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Input);
-public:
 
     /// <summary>
     /// Gets the mouse (null if platform does not support mouse or it is not connected).

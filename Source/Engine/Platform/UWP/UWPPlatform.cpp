@@ -111,6 +111,7 @@ void UWPPlatform::BeforeExit()
 
 void UWPPlatform::Exit()
 {
+    Win32Platform::Exit();
 }
 
 int32 UWPPlatform::GetDpi()

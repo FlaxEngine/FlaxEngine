@@ -102,8 +102,9 @@ void HistogramPass::Dispose()
     // Base
     RendererPass::Dispose();
 
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_histogramBuffer);
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 bool HistogramPass::setupResources()

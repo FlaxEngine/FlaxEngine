@@ -391,7 +391,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool operator==(const Quaternion& other) const
     {
-        return Dot(*this, other) > 0.99999999f;
+        return Dot(*this, other) > 0.9999999f;
     }
 
     /// <summary>
@@ -414,7 +414,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> structures are equal; otherwise, <c>false</c>.</returns>
     static bool NearEqual(const Quaternion& a, const Quaternion& b)
     {
-        return Dot(a, b) > 0.99999999f;
+        return Dot(a, b) > 0.9999999f;
     }
 
     /// <summary>
@@ -474,7 +474,7 @@ public:
     static float AngleBetween(const Quaternion& a, const Quaternion& b)
     {
         const float dot = Dot(a, b);
-        return dot > 0.99999999f ? 0 : Math::Acos(Math::Min(Math::Abs(dot), 1.0f)) * 2.0f * 57.29578f;
+        return dot > 0.9999999f ? 0 : Math::Acos(Math::Min(Math::Abs(dot), 1.0f)) * 2.0f * 57.29578f;
     }
 
     // Adds two quaternions

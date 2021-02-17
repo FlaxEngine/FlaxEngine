@@ -39,6 +39,11 @@ API_ENUM() enum class MaterialDomain : byte
     /// The particle shader. Can be used only with particles geometry (sprites, trails and ribbons). Supports reading particle data on a GPU.
     /// </summary>
     Particle = 5,
+
+    /// <summary>
+    /// The deformable shader. Can be used only with objects that can be deformed (spline models).
+    /// </summary>
+    Deformable = 6,
 };
 
 /// <summary>

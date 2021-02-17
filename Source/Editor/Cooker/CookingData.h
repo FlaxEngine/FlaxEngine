@@ -175,6 +175,11 @@ struct FLAXENGINE_API CookingData
     BuildOptions Options;
 
     /// <summary>
+    /// The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).
+    /// </summary>
+    Array<String> CustomDefines;
+
+    /// <summary>
     /// The original output path (actual OutputPath could be modified by the Platform Tools or a plugin for additional layout customizations or packaging). This path is preserved.
     /// </summary>
     String OriginalOutputPath;

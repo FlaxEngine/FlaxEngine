@@ -73,6 +73,9 @@ namespace FlaxEditor.Windows
                 [EditorOrder(20), Tooltip("Configuration build mode")]
                 public BuildConfiguration ConfigurationMode = BuildConfiguration.Development;
 
+                [EditorOrder(90), Tooltip("The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).")]
+                public string[] CustomDefines;
+
                 protected abstract BuildPlatform BuildPlatform { get; }
 
                 protected virtual BuildOptions Options
@@ -126,7 +129,7 @@ namespace FlaxEditor.Windows
                 public virtual void Build()
                 {
                     var output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(Output));
-                    GameCooker.Build(BuildPlatform, ConfigurationMode, output, Options);
+                    GameCooker.Build(BuildPlatform, ConfigurationMode, output, Options, CustomDefines);
                 }
             }
 
@@ -793,7 +796,7 @@ namespace FlaxEditor.Windows
                     _preBuildAction = target.PreBuildAction;
                     _postBuildAction = target.PostBuildAction;
 
-                    GameCooker.Build(target.Platform, target.Mode, target.Output, target.Options);
+                    GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines);
                 }
                 else if (_exitOnBuildEnd)
                 {

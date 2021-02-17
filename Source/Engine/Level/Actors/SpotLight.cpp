@@ -198,8 +198,8 @@ void SpotLight::OnDebugDrawSelected()
     Vector3 up = _transform.GetUp();
     Vector3 forward = GetDirection();
     float radius = GetScaledRadius();
-    float discRadius = radius * tan(_outerConeAngle * DegreesToRadians);
-    float falloffDiscRadius = radius * tan(_innerConeAngle * DegreesToRadians);
+    float discRadius = radius * Math::Tan(_outerConeAngle * DegreesToRadians);
+    float falloffDiscRadius = radius * Math::Tan(_innerConeAngle * DegreesToRadians);
     Vector3 position = GetPosition();
 
     DEBUG_DRAW_LINE(position, position + forward * radius + up * discRadius, color, 0, true);

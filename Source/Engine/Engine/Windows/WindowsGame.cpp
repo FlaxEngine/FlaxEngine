@@ -11,7 +11,7 @@ void WindowsGame::InitMainWindowSettings(CreateWindowSettings& settings)
 {
     // TODO: restore window size and fullscreen mode from the cached local settings saved after previous session
 
-    const auto platformSettings = WindowsPlatformSettings::Instance();
+    const auto platformSettings = WindowsPlatformSettings::Get();
     auto windowMode = platformSettings->WindowMode;
 
     // Use command line switches
@@ -45,7 +45,7 @@ void WindowsGame::InitMainWindowSettings(CreateWindowSettings& settings)
 
 bool WindowsGame::Init()
 {
-    const auto platformSettings = WindowsPlatformSettings::Instance();
+    const auto platformSettings = WindowsPlatformSettings::Get();
 
     // Create mutex if need to
     if (platformSettings->ForceSingleInstance)

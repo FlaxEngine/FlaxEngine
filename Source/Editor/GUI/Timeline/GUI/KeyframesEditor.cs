@@ -14,6 +14,7 @@ namespace FlaxEditor.GUI
     /// The generic keyframes animation editor control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class KeyframesEditor : ContainerControl
     {
         /// <summary>

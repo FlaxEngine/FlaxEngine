@@ -2,19 +2,13 @@
 // Version: @0
 
 #define MATERIAL 1
-#define MAX_LOCAL_LIGHTS 4
 @3
+// Ribbons don't use sorted indices so overlap the segment distances buffer on the slot
+#define HAS_SORTED_INDICES (!defined(_VS_Ribbon))
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
-#include "./Flax/LightingCommon.hlsl"
-#if USE_REFLECTIONS
-#include "./Flax/ReflectionsCommon.hlsl"
-#endif
-#include "./Flax/Lighting.hlsl"
-#include "./Flax/ShadowsSampling.hlsl"
-#include "./Flax/ExponentialHeightFog.hlsl"
 #include "./Flax/Matrix.hlsl"
 @7
 struct SpriteInput
@@ -55,44 +49,19 @@ uint RibbonSegmentCount;
 float4x4 WorldMatrixInverseTransposed;
 @1META_CB_END
 
-// Secondary constantant buffer (for lighting)
-META_CB_BEGIN(1, LightingData)
-LightData DirectionalLight;
-LightShadowData DirectionalLightShadow;
-LightData SkyLight;
-ProbeData EnvironmentProbe;
-ExponentialHeightFogData ExponentialHeightFog;
-float3 Dummy1;
-uint LocalLightsCount;
-LightData LocalLights[MAX_LOCAL_LIGHTS];
-META_CB_END
-
-DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
-
 // Particles attributes buffer
 ByteAddressBuffer ParticlesData : register(t0);
 
-// Ribbons don't use sorted indices so overlap the segment distances buffer on the slot
-#define HAS_SORTED_INDICES (!defined(_VS_Ribbon))
-
 #if HAS_SORTED_INDICES
-
 // Sorted particles indices
 Buffer<uint> SortedIndices : register(t1);
-
 #else
-
 // Ribbon particles segments distances buffer
 Buffer<float> SegmentDistances : register(t1);
-
 #endif
 
 // Shader resources
-TextureCube EnvProbe : register(t2);
-TextureCube SkyLightTexture : register(t3);
-Texture2DArray DirectionalLightShadowMap : register(t4);
 @2
-
 // Interpolants passed from the vertex shader
 struct VertexOutput
 {
@@ -172,14 +141,11 @@ MaterialInput GetMaterialInput(PixelInput input)
 }
 
 // Gets the local to world transform matrix (supports instancing)
-float4x4 GetInstanceTransform(ModelInput input)
-{
-	return WorldMatrix;
-}
-float4x4 GetInstanceTransform(MaterialInput input)
-{
-	return WorldMatrix;
-}
+#if USE_INSTANCING
+#define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
+#else
+#define GetInstanceTransform(input) WorldMatrix;
+#endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
@@ -312,6 +278,8 @@ float3 TransformParticleVector(float3 input)
 	return mul(float4(input, 0.0f), WorldMatrixInverseTransposed).xyz;
 }
 
+@8
+
 // Get material properties function (for vertex shader)
 Material GetMaterialVS(MaterialInput input)
 {
@@ -329,9 +297,6 @@ Material GetMaterialPS(MaterialInput input)
 {
 @4
 }
-
-// Fix line for errors/warnings for shader code from template
-#line 1000
 
 // Calculates the transform matrix from mesh tangent space to local space
 half3x3 CalcTangentToLocal(ModelInput input)
@@ -712,142 +677,9 @@ VertexOutput VS_Ribbon(uint vertexIndex : SV_VertexID)
 	return output;
 }
 
-// Pixel Shader function for Forward Pass
-META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
-float4 PS_Forward(PixelInput input) : SV_Target0
-{
-	float4 output = 0;
-
-	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
-	Material material = GetMaterialPS(materialInput);
-
-	// Masking
-#if MATERIAL_MASKED
-	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
-#endif
-
-	// Add emissive light
-	output = float4(material.Emissive, material.Opacity);
-
-#if MATERIAL_SHADING_MODEL != SHADING_MODEL_UNLIT
-
-	// Setup GBuffer data as proxy for lighting
-	GBufferSample gBuffer;
-	gBuffer.Normal = material.WorldNormal;
-	gBuffer.Roughness = material.Roughness;
-	gBuffer.Metalness = material.Metalness;
-	gBuffer.Color = material.Color;
-	gBuffer.Specular = material.Specular;
-	gBuffer.AO = material.AO;
-	gBuffer.ViewPos = mul(float4(materialInput.WorldPosition, 1), ViewMatrix).xyz;
-#if MATERIAL_SHADING_MODEL == SHADING_MODEL_SUBSURFACE
-	gBuffer.CustomData = float4(material.SubsurfaceColor, material.Opacity);
-#elif MATERIAL_SHADING_MODEL == SHADING_MODEL_FOLIAGE
-	gBuffer.CustomData = float4(material.SubsurfaceColor, material.Opacity);
-#else
-	gBuffer.CustomData = float4(0, 0, 0, 0);
-#endif
-	gBuffer.WorldPos = materialInput.WorldPosition;
-	gBuffer.ShadingModel = MATERIAL_SHADING_MODEL;
-
-	// Calculate lighting from a single directional light
-	float4 shadowMask = 1.0f;
-	if (DirectionalLight.CastShadows > 0)
-	{
-		LightShadowData directionalLightShadowData = GetDirectionalLightShadowData();
-		shadowMask.r = SampleShadow(DirectionalLight, directionalLightShadowData, DirectionalLightShadowMap, gBuffer, shadowMask.g);
-	}
-	float4 light = GetLighting(ViewPos, DirectionalLight, gBuffer, shadowMask, false, false);
-
-	// Calculate lighting from sky light
-	light += GetSkyLightLighting(SkyLight, gBuffer, SkyLightTexture);
-
-	// Calculate lighting from local lights
-	LOOP
-	for (uint localLightIndex = 0; localLightIndex < LocalLightsCount; localLightIndex++)
-	{
-		const LightData localLight = LocalLights[localLightIndex];
-		bool isSpotLight = localLight.SpotAngles.x > -2.0f;
-		shadowMask = 1.0f;
-		light += GetLighting(ViewPos, localLight, gBuffer, shadowMask, true, isSpotLight);
-	}
-
-#if USE_REFLECTIONS
-	// Calculate reflections
-	light.rgb += GetEnvProbeLighting(ViewPos, EnvProbe, EnvironmentProbe, gBuffer) * light.a;	
-#endif
-
-	// Add lighting (apply ambient occlusion)
-	output.rgb += light.rgb * gBuffer.AO;
-
-#if USE_FOG
-	// Calculate exponential height fog
-	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0);
-
-	// Apply fog to the output color
-#if MATERIAL_BLEND == MATERIAL_BLEND_OPAQUE
-	output = float4(output.rgb * fog.a + fog.rgb, output.a);
-#elif MATERIAL_BLEND == MATERIAL_BLEND_TRANSPARENT
-	output = float4(output.rgb * fog.a + fog.rgb, output.a);
-#elif MATERIAL_BLEND == MATERIAL_BLEND_ADDITIVE
-	output = float4(output.rgb * fog.a + fog.rgb, output.a * fog.a);
-#elif MATERIAL_BLEND == MATERIAL_BLEND_MULTIPLY
-	output = float4(lerp(float3(1, 1, 1), output.rgb, fog.aaa * fog.aaa), output.a);
-#endif
-
-#endif
-
-#endif
-
-	return output;
-}
-
-#if USE_DISTORTION
-
-// Pixel Shader function for Distortion Pass
-META_PS(USE_DISTORTION, FEATURE_LEVEL_ES2)
-float4 PS_Distortion(PixelInput input) : SV_Target0
-{
-	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
-	Material material = GetMaterialPS(materialInput);
-
-	// Masking
-#if MATERIAL_MASKED
-	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
-#endif
-
-	float3 viewNormal = normalize(TransformWorldVectorToView(materialInput, material.WorldNormal));
-	float airIOR = 1.0f;
-#if USE_PIXEL_NORMAL_OFFSET_REFRACTION
-	float3 viewVertexNormal = TransformWorldVectorToView(materialInput, TransformTangentVectorToWorld(materialInput, float3(0, 0, 1)));
-	float2 distortion = (viewVertexNormal.xy - viewNormal.xy) * (material.Refraction - airIOR);
-#else
-	float2 distortion = viewNormal.xy * (material.Refraction - airIOR);
-#endif
-
-	// Clip if the distortion distance (squared) is too small to be noticed
-	clip(dot(distortion, distortion) - 0.00001);
-
-	// Scale up for better precision in low/subtle refractions at the expense of artefacts at higher refraction
-	distortion *= 4.0f;
-
-	// Use separate storage for positive and negative offsets
-	float2 addOffset = max(distortion, 0);
-	float2 subOffset = abs(min(distortion, 0));
-	return float4(addOffset.x, addOffset.y, subOffset.x, subOffset.y);
-}
-
-#endif
-
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-void PS_Depth(PixelInput input
-#if GLSL
-	, out float4 OutColor : SV_Target0
-#endif
-	)
+void PS_Depth(PixelInput input)
 {
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
@@ -860,8 +692,6 @@ void PS_Depth(PixelInput input
 #if MATERIAL_BLEND == MATERIAL_BLEND_TRANSPARENT
 	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
 #endif
-
-#if GLSL
-	OutColor = 0;
-#endif
 }
+
+@9

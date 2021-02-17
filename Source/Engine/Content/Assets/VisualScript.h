@@ -125,9 +125,22 @@ public:
         StringAnsi Name;
     };
 
+    struct EventBinding
+    {
+        ScriptingTypeHandle Type;
+        String Name;
+        Array<Method*, InlinedAllocation<4>> BindedMethods;
+    };
+
+    struct Instance
+    {
+        Array<Variant> Params;
+        Array<EventBinding> EventBindings;
+    };
+
 private:
 
-    Dictionary<Guid, Array<Variant>> _instances;
+    Dictionary<Guid, Instance> _instances;
     ScriptingTypeHandle _scriptingTypeHandle;
     ScriptingTypeHandle _scriptingTypeHandleCached;
     StringAnsiView _typename;
@@ -178,6 +191,13 @@ public:
     /// </summary>
     /// <returns>The created instance or null if failed.</returns>
     API_FUNCTION() ScriptingObject* CreateInstance();
+
+    /// <summary>
+    /// Gets the Visual Script instance data.
+    /// </summary>
+    /// <param name="instance">The object instance.</param>
+    /// <returns>The data or invalid instance (not VS or missing).</returns>
+    Instance* GetScriptInstance(ScriptingObject* instance) const;
 
     /// <summary>
     /// Gets the value of the Visual Script parameter of the given instance.
@@ -307,6 +327,7 @@ private:
 #if USE_EDITOR
     void OnScriptsReloading();
 #endif
+    static void OnEvent(ScriptingObject* object, Span<Variant>& parameters, const ScriptingTypeHandle& eventType, const StringView& eventName);
 
 public:
 

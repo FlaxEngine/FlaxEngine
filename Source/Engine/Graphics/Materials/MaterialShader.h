@@ -9,10 +9,11 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 146
+#define MATERIAL_GRAPH_VERSION 148
 
 class Material;
 class GPUShader;
+class GPUConstantBuffer;
 class MemoryReadStream;
 
 /// <summary>
@@ -37,7 +38,16 @@ protected:
             Desc = desc;
         }
 
-        GPUPipelineState* GetPS(CullMode mode, bool wireframe);
+        GPUPipelineState* GetPS(CullMode mode, bool wireframe)
+        {
+            const int32 index = static_cast<int32>(mode) + (wireframe ? 3 : 0);
+            auto ps = PS[index];
+            if (!ps)
+                PS[index] = ps = InitPS(mode, wireframe);
+            return ps;
+        }
+
+        GPUPipelineState* InitPS(CullMode mode, bool wireframe);
 
         void Release()
         {
@@ -52,8 +62,8 @@ protected:
 
     bool _isLoaded;
     GPUShader* _shader;
-    Array<byte> _cb0Data;
-    Array<byte> _cb1Data;
+    GPUConstantBuffer* _cb;
+    Array<byte> _cbData;
     MaterialInfo _info;
 
 protected:
@@ -90,10 +100,8 @@ public:
     /// <returns>The created and loaded material or null if failed.</returns>
     static MaterialShader* CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
-public:
-
     /// <summary>
-    /// Clear loaded data
+    /// Clears the loaded data.
     /// </summary>
     virtual void Unload();
 

@@ -716,7 +716,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Converts the color to HSV color space (returned as vector).
+        /// Gets Hue[0-360], Saturation[0-1] and Value[0-1] from RGB color.
         /// </summary>
         /// <returns>The HSV color.</returns>
         public Vector3 ToHSV()
@@ -741,51 +741,6 @@ namespace FlaxEngine
             float value = rgbMax;
 
             return new Vector3(hue, saturation, value);
-        }
-
-        /// <summary>
-        /// Convert color from the RGB color space to HSV color space.
-        /// </summary>
-        /// <param name="rgbColor">Color of the RGB.</param>
-        /// <param name="h">The output Hue.</param>
-        /// <param name="s">The output Saturation.</param>
-        /// <param name="v">The output Value.</param>
-        public static void RGBToHSV(Color rgbColor, out float h, out float s, out float v)
-        {
-            if ((rgbColor.B > rgbColor.G) && (rgbColor.B > rgbColor.R))
-                RGBToHSVHelper(4f, rgbColor.B, rgbColor.R, rgbColor.G, out h, out s, out v);
-            else if (rgbColor.G <= rgbColor.R)
-                RGBToHSVHelper(0f, rgbColor.R, rgbColor.G, rgbColor.B, out h, out s, out v);
-            else
-                RGBToHSVHelper(2f, rgbColor.G, rgbColor.B, rgbColor.R, out h, out s, out v);
-        }
-
-        private static void RGBToHSVHelper(float offset, float dominantcolor, float colorone, float colortwo, out float h, out float s, out float v)
-        {
-            v = dominantcolor;
-            if (Mathf.IsZero(v))
-            {
-                s = 0f;
-                h = 0f;
-            }
-            else
-            {
-                var single = colorone <= colortwo ? colorone : colortwo;
-                float vv = v - single;
-                if (Mathf.IsZero(vv))
-                {
-                    s = 0f;
-                    h = offset + (colorone - colortwo);
-                }
-                else
-                {
-                    s = vv / v;
-                    h = offset + (colorone - colortwo) / vv;
-                }
-                h = h / 6f;
-                if (h < 0f)
-                    h = h + 1f;
-            }
         }
 
         /// <summary>

@@ -51,6 +51,9 @@ namespace FlaxEditor.Content
         public bool IsMethod => false;
 
         /// <inheritdoc />
+        public bool IsEvent => false;
+
+        /// <inheritdoc />
         public bool HasGet => true;
 
         /// <inheritdoc />
@@ -173,6 +176,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public bool IsMethod => true;
+
+        /// <inheritdoc />
+        public bool IsEvent => false;
 
         /// <inheritdoc />
         public bool HasGet => false;
