@@ -223,8 +223,6 @@ namespace FlaxEngine.GUI
                               TextAlignment.Center,
                               TextWrapping.WrapWords
                              );
-
-            base.Draw();
         }
 
         /// <inheritdoc />
