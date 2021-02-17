@@ -593,7 +593,9 @@ namespace FlaxEditor.CustomEditors
                         JsonSerializer.Deserialize(obj, text);
                     }
                 }
+#pragma warning disable 618
                 else if (Newtonsoft.Json.Schema.JsonSchema.Parse(text) == null)
+#pragma warning restore 618
                 {
                     return false;
                 }
