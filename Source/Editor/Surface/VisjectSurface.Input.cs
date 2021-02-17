@@ -527,6 +527,101 @@ namespace FlaxEditor.Surface
                     }
                     return true;
                 }
+
+                if (key == KeyboardKeys.ArrowUp)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    Box toSelect = selectedBox?.ParentNode.GetPreviousBox(selectedBox);
+
+                    if (toSelect != null)
+                    {
+                        if (toSelect.Connections.Count > 1)
+                        {
+                            // Box has multiple connections
+                        }
+
+                        if (toSelect.IsOutput != selectedBox.IsOutput)
+                        {
+                            // Jump up (nodes)
+                        }
+                        else
+                        {
+                            Select(toSelect.ParentNode);
+                            toSelect.ParentNode.SelectBox(toSelect);
+                        }
+                    }
+
+                    return true;
+                }
+                if (key == KeyboardKeys.ArrowDown)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
+
+                    if (toSelect != null)
+                    {
+                        if (toSelect.Connections.Count > 1)
+                        {
+                            // Box has multiple connections
+                        }
+
+                        if (toSelect.IsOutput != selectedBox.IsOutput)
+                        {
+                            // Jump down (nodes)
+                        }
+                        else
+                        {
+                            Select(toSelect.ParentNode);
+                            toSelect.ParentNode.SelectBox(toSelect);
+                        }
+                    }
+
+                    return true;
+                }
+
+                if (key == KeyboardKeys.ArrowRight || key == KeyboardKeys.ArrowLeft)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox == null) return false;
+
+                    Box toSelect = null;
+
+                    if (key == KeyboardKeys.ArrowRight && selectedBox.IsOutput || key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput)
+                    {
+                        if (selectedBox.Connections.Count > 1)
+                        {
+                            // Box has multiple connections
+                        }
+                        else if (selectedBox.Connections.Count == 1)
+                        {
+                            toSelect = selectedBox.Connections[0];
+                        }
+                    }
+                    else
+                    {
+                        // Use the node with the closest Y-level
+                        // Since there are cases like 3 nodes on one side and only 1 node on the other side
+
+                        var elements = selectedBox?.ParentNode.Elements;
+                        float distance = float.PositiveInfinity;
+                        for (int i = 0; i < elements.Count; i++)
+                        {
+                            if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < distance)
+                            {
+                                toSelect = box;
+                                distance = Mathf.Abs(box.Y - selectedBox.Y);
+                            }
+                        }
+                    }
+
+                    if (toSelect != null)
+                    {
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
+
+                    }
+                    return true;
+                }
             }
 
             return false;

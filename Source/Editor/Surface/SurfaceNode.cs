@@ -553,19 +553,22 @@ namespace FlaxEditor.Surface
 
         internal Box GetNextBox(Box box)
         {
-            int i = 0;
-            for (; i < Elements.Count; i++)
+            // Get the one after it
+            for (int i = box.IndexInParent + 1; i < Elements.Count; i++)
             {
-                if (Elements[i] == box)
+                if (Elements[i] is Box b)
                 {
-                    // We found the box
-                    break;
+                    return b;
                 }
             }
 
-            // Get the one after it
-            i++;
-            for (; i < Elements.Count; i++)
+            return null;
+        }
+
+        internal Box GetPreviousBox(Box box)
+        {
+            // Get the one before it
+            for (int i = box.IndexInParent - 1; i >= 0; i--)
             {
                 if (Elements[i] is Box b)
                 {
