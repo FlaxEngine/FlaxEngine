@@ -20,7 +20,7 @@ float4 ScreenSize;
 float4 TemporalAAJitter;
 @1META_CB_END
 
-// Material shader resources
+// Shader resources
 @2
 // Interpolants passed to the pixel shader
 struct PixelInput
@@ -128,14 +128,13 @@ float4 GetVertexColor(MaterialInput input)
 	return 1;
 }
 
+@8
+
 // Get material properties function (for pixel shader)
 Material GetMaterialPS(MaterialInput input)
 {
 @4
 }
-
-// Fix line for errors/warnings for shader code from template
-#line 1000
 
 // Pixel Shader function for PostFx materials rendering
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -147,3 +146,5 @@ float4 PS_PostFx(PixelInput input) : SV_Target0
 
 	return float4(material.Emissive, material.Opacity);
 }
+
+@9

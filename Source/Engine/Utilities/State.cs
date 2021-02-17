@@ -12,9 +12,6 @@ namespace FlaxEngine.Utilities
         /// <summary>
         /// Gets the state machine.
         /// </summary>
-        /// <value>
-        /// The state machine.
-        /// </value>
         public StateMachine StateMachine => owner;
 
         /// <summary>

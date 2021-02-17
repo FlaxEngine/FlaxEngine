@@ -24,7 +24,7 @@
 #include "Engine/ContentImporters/ImportAudio.h"
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/ContentImporters/CreateJson.h"
-#include "Engine/Core/Config/LayersTagsSettings.h"
+#include "Engine/Level/Level.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/CSG/CSGBuilder.h"
@@ -302,22 +302,20 @@ namespace CustomEditorsUtilInternal
     }
 }
 
-namespace LayersAndTagsSettingsInternal
+namespace LayersAndTagsSettingsInternal1
 {
     MonoArray* GetCurrentTags()
     {
-        auto settings = LayersAndTagsSettings::Instance();
-        return MUtils::ToArray(settings->Tags);
+        return MUtils::ToArray(Level::Tags);
     }
 
     MonoArray* GetCurrentLayers()
     {
-        const auto settings = LayersAndTagsSettings::Instance();
-        return MUtils::ToArray(Span<String>(settings->Layers, Math::Max(1, settings->GetNonEmptyLayerNamesCount())));
+        return MUtils::ToArray(Span<String>(Level::Layers, Math::Max(1, Level::GetNonEmptyLayerNamesCount())));
     }
 }
 
-namespace GameSettingsInternal
+namespace GameSettingsInternal1
 {
     void Apply()
     {
@@ -1054,9 +1052,9 @@ public:
         ADD_INTERNAL_CALL("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", &GetTextureImportOptions);
         ADD_INTERNAL_CALL("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", &GetModelImportOptions);
         ADD_INTERNAL_CALL("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", &GetAudioImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentTags", &LayersAndTagsSettingsInternal::GetCurrentTags);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", &LayersAndTagsSettingsInternal::GetCurrentLayers);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.GameSettings::Apply", &GameSettingsInternal::Apply);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentTags", &LayersAndTagsSettingsInternal1::GetCurrentTags);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", &LayersAndTagsSettingsInternal1::GetCurrentLayers);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.GameSettings::Apply", &GameSettingsInternal1::Apply);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloseSplashScreen", &CloseSplashScreen);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateAsset", &CreateAsset);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateVisualScript", &CreateVisualScript);

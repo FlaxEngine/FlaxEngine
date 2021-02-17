@@ -201,7 +201,7 @@ void Foliage::RemoveFoliageType(int32 index)
         FoliageTypes[i].Index--;
     }
     auto& item = FoliageTypes[index];
-    item.Model.Unlink();
+    item.Model = nullptr;
     item.Entries.Release();
     FoliageTypes.RemoveAtKeepOrder(index);
 

@@ -217,6 +217,11 @@ bool CompileScriptsStep::Perform(CookingData& data)
         args += TEXT(" -SkipTargets=FlaxGame");
     }
 #endif
+    for (auto& define : data.CustomDefines)
+    {
+        args += TEXT(" -D");
+        args += define;
+    }
     if (ScriptsBuilder::RunBuildTool(args))
     {
         data.Error(TEXT("Failed to compile game scripts."));

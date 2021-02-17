@@ -244,15 +244,13 @@ void EyeAdaptationPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psManual);
     SAFE_DELETE_GPU_RESOURCE(_psLuminanceMap);
     SAFE_DELETE_GPU_RESOURCE(_psBlendLuminance);
     SAFE_DELETE_GPU_RESOURCE(_psApplyLuminance);
     SAFE_DELETE_GPU_RESOURCE(_psHistogram);
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 bool EyeAdaptationPass::setupResources()

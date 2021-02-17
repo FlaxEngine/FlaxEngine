@@ -166,7 +166,7 @@ public:
     /// Creates RGB color from Hue[0-360], Saturation[0-1] and Value[0-1] packed to XYZ vector.
     /// </summary>
     /// <param name="hsv">The HSV color.</param>
-        /// <param name="alpha">The alpha value. Default is 1.</param>
+    /// <param name="alpha">The alpha value. Default is 1.</param>
     /// <returns>The RGB color.</returns>
     static Color FromHSV(const Vector3& hsv, float alpha = 1.0f);
 
@@ -264,28 +264,15 @@ public:
     }
 
     // Returns true if color is fully transparent (all components are equal zero).
-    bool IsTransparent() const
-    {
-        return Math::IsZero(R + G + B + A);
-    }
+    bool IsTransparent() const;
 
     // Returns true if color has opacity channel in use (different from 1).
-    bool HasOpacity() const
-    {
-        return !Math::IsOne(A);
-    }
+    bool HasOpacity() const;
 
 public:
 
-    static bool NearEqual(const Color& a, const Color& b)
-    {
-        return Math::NearEqual(a.R, b.R) && Math::NearEqual(a.G, b.G) & Math::NearEqual(a.B, b.B) && Math::NearEqual(a.A, b.A);
-    }
-
-    static bool NearEqual(const Color& a, const Color& b, float epsilon)
-    {
-        return Math::NearEqual(a.R, b.R, epsilon) && Math::NearEqual(a.G, b.G, epsilon) & Math::NearEqual(a.B, b.B, epsilon) && Math::NearEqual(a.A, b.A, epsilon);
-    }
+    static bool NearEqual(const Color& a, const Color& b);
+    static bool NearEqual(const Color& a, const Color& b, float epsilon);
 
 public:
 
@@ -296,7 +283,7 @@ public:
     Vector4 ToVector4() const;
 
     /// <summary>
-    /// Gets Hue[0-1], Saturation[0-1] and Value[0-360] from RGB color.
+    /// Gets Hue[0-360], Saturation[0-1] and Value[0-1] from RGB color.
     /// </summary>
     /// <returns>HSV color</returns>
     Vector3 ToHSV() const;
@@ -308,13 +295,7 @@ public:
     /// <param name="end">The end color.</param>
     /// <param name="amount">The value between 0 and 1 indicating the weight of interpolation.</param>
     /// <param name="result">When the method completes, contains the linear interpolation of the two colors.</param>
-    static void Lerp(const Color& start, const Color& end, float amount, Color& result)
-    {
-        result.R = Math::Lerp(start.R, end.R, amount);
-        result.G = Math::Lerp(start.G, end.G, amount);
-        result.B = Math::Lerp(start.B, end.B, amount);
-        result.A = Math::Lerp(start.A, end.A, amount);
-    }
+    static void Lerp(const Color& start, const Color& end, float amount, Color& result);
 
     /// <summary>
     /// Performs a linear interpolation between two colors.
@@ -323,12 +304,7 @@ public:
     /// <param name="end">The end color.</param>
     /// <param name="amount">The value between 0 and 1 indicating the weight of interpolation.</param>
     /// <returns>The linear interpolation of the two colors.</returns>
-    static Color Lerp(const Color& start, const Color& end, float amount)
-    {
-        Color result;
-        Lerp(start, end, amount, result);
-        return result;
-    }
+    static Color Lerp(const Color& start, const Color& end, float amount);
 
     // Converts a [0.0, 1.0] linear value into a [0.0, 1.0] sRGB value.
     static Color LinearToSrgb(const Color& linear);
@@ -528,6 +504,14 @@ inline Color operator+(float a, const Color& b)
 inline Color operator*(float a, const Color& b)
 {
     return b * a;
+}
+
+namespace Math
+{
+    FORCE_INLINE static bool NearEqual(const Color& a, const Color& b)
+    {
+        return Color::NearEqual(a, b);
+    }
 }
 
 template<>

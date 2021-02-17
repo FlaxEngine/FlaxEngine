@@ -71,6 +71,12 @@ ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
     return ptr;
 }
 
+bool ScriptingObject::Is(const ScriptingTypeHandle& type) const
+{
+    CHECK_RETURN(type, false);
+    return _type == type || CanCast(GetClass(), type.GetType().ManagedClass);
+}
+
 void ScriptingObject::ChangeID(const Guid& newId)
 {
     ASSERT(newId.IsValid() && newId != _id);
@@ -203,6 +209,14 @@ void ScriptingObject::UnregisterObject()
 
     Flags &= ~ObjectFlags::IsRegistered;
     Scripting::UnregisterObject(this);
+}
+
+bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to)
+{
+    if (!from && !to)
+        return true;
+    CHECK_RETURN(from && to, false);
+    return CanCast(from.GetType().ManagedClass, to.GetType().ManagedClass);
 }
 
 bool ScriptingObject::CanCast(MClass* from, MClass* to)
@@ -356,7 +370,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
@@ -399,7 +413,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), type);
-        ScriptingObject* obj = type.GetType().Class.Spawn(params);
+        ScriptingObject* obj = type.GetType().Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeName));
@@ -453,7 +467,7 @@ public:
 
         // Create unmanaged object
         const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
-        ScriptingObject* obj = scriptingType.Class.Spawn(params);
+        ScriptingObject* obj = scriptingType.Script.Spawn(params);
         if (obj == nullptr)
         {
             LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));

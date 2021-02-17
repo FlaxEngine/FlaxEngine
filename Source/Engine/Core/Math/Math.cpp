@@ -5,8 +5,8 @@
 
 void Math::SinCos(float angle, float& sine, float& cosine)
 {
-    sine = sin(angle);
-    cosine = cos(angle);
+    sine = Math::Sin(angle);
+    cosine = Math::Cos(angle);
 }
 
 uint32 Math::FloorLog2(uint32 value)

@@ -91,7 +91,7 @@ GPUDevice* GPUDeviceDX11::Create()
     else if (CommandLine::Options.D3D11)
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #if !USE_EDITOR && PLATFORM_WINDOWS
-	auto winSettings = WindowsPlatformSettings::Instance();
+	auto winSettings = WindowsPlatformSettings::Get();
 	if (!winSettings->SupportDX11 && !winSettings->SupportDX10)
 	{
 		// Skip if there is no support

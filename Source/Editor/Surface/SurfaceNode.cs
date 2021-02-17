@@ -187,7 +187,10 @@ namespace FlaxEditor.Surface
             var titleLabelFont = Style.Current.FontLarge;
             for (int i = 0; i < Children.Count; i++)
             {
-                if (Children[i] is InputBox inputBox)
+                var child = Children[i];
+                if (!child.Visible)
+                    continue;
+                if (child is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
@@ -195,12 +198,12 @@ namespace FlaxEditor.Surface
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
                     leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Children[i] is OutputBox outputBox)
+                else if (child is OutputBox outputBox)
                 {
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
-                else if (Children[i] is Control control)
+                else if (child is Control control)
                 {
                     if (control.AnchorPreset == AnchorPresets.TopLeft)
                     {
@@ -1004,7 +1007,7 @@ namespace FlaxEditor.Surface
             }
 
             // Secondary Context Menu
-            if (button == MouseButton.Right)
+            if (button == MouseButton.Right && false)
             {
                 if (!IsSelected)
                     Surface.Select(this);

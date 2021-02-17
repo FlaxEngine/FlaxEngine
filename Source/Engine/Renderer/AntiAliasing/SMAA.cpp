@@ -82,15 +82,13 @@ void SMAA::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     _psEdge.Delete();
     _psBlend.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psNeighbor);
-
-    // Release assets
-    _shader.Unlink();
-    _areaTex.Unlink();
-    _searchTex.Unlink();
+    _shader = nullptr;
+    _areaTex = nullptr;
+    _searchTex = nullptr;
 }
 
 void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)

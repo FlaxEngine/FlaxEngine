@@ -377,7 +377,7 @@ public:
     /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
     /// </summary>
     /// <param name="drawCall">The draw call.</param>
-    void GetDrawCallGeometry(DrawCall& drawCall);
+    void GetDrawCallGeometry(DrawCall& drawCall) const;
 
     /// <summary>
     /// Model instance drawing packed data.

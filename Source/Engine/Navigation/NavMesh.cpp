@@ -1,340 +1,169 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "NavMesh.h"
-#include "Engine/Core/Log.h"
-#include "NavigationScene.h"
-#include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Threading/Threading.h"
-#include <ThirdParty/recastnavigation/DetourNavMesh.h>
-#include <ThirdParty/recastnavigation/DetourNavMeshQuery.h>
-
-#define MAX_NODES 2048
-#define USE_DATA_LINK 0
-#define USE_NAV_MESH_ALLOC 1
-
-NavMesh::NavMesh()
-{
-    _navMesh = nullptr;
-    _navMeshQuery = dtAllocNavMeshQuery();
-    _tileSize = 0;
-}
-
-NavMesh::~NavMesh()
-{
-    dtFreeNavMesh(_navMesh);
-    dtFreeNavMeshQuery(_navMeshQuery);
-}
-
-int32 NavMesh::GetTilesCapacity() const
-{
-    return _navMesh ? _navMesh->getMaxTiles() : 0;
-}
-
-void NavMesh::SetTileSize(float tileSize)
-{
-    ScopeLock lock(Locker);
-
-    // Skip if the same or invalid
-    if (Math::NearEqual(_tileSize, tileSize) || tileSize < 1)
-        return;
-
-    // Dispose the existing mesh (its invalid)
-    if (_navMesh)
-    {
-        dtFreeNavMesh(_navMesh);
-        _navMesh = nullptr;
-        _tiles.Clear();
-    }
-
-    _tileSize = tileSize;
-}
-
-void NavMesh::EnsureCapacity(int32 tilesToAddCount)
-{
-    ScopeLock lock(Locker);
-
-    const int32 newTilesCount = _tiles.Count() + tilesToAddCount;
-    const int32 capacity = GetTilesCapacity();
-    if (newTilesCount <= capacity)
-        return;
-
-    PROFILE_CPU_NAMED("NavMesh.EnsureCapacity");
-
-    // Navmesh tiles capacity growing rule
-    int32 newCapacity = 0;
-    if (capacity)
-    {
-        while (newCapacity < newTilesCount)
-        {
-            newCapacity = Math::RoundUpToPowerOf2(newCapacity);
-        }
-    }
-    else
-    {
-        newCapacity = 32;
-    }
-
-    LOG(Info, "Resizing navmesh from {0} to {1} tiles capacity", capacity, newCapacity);
-
-    // Ensure to have size assigned
-    ASSERT(_tileSize != 0);
-
-    // Free previous data (if any)
-    if (_navMesh)
-    {
-        dtFreeNavMesh(_navMesh);
-    }
-
-    // Allocate new navmesh
-    _navMesh = dtAllocNavMesh();
-    if (dtStatusFailed(_navMeshQuery->init(_navMesh, MAX_NODES)))
-    {
-        LOG(Fatal, "Failed to initialize nav mesh.");
-    }
-
-    // Prepare parameters
-    dtNavMeshParams params;
-    params.orig[0] = 0.0f;
-    params.orig[1] = 0.0f;
-    params.orig[2] = 0.0f;
-    params.tileWidth = _tileSize;
-    params.tileHeight = _tileSize;
-    params.maxTiles = newCapacity;
-    const int32 tilesBits = (int32)Math::Log2((float)Math::RoundUpToPowerOf2(params.maxTiles));
-    params.maxPolys = 1 << (22 - tilesBits);
-
-    // Initialize nav mesh
-    if (dtStatusFailed(_navMesh->init(&params)))
-    {
-        LOG(Fatal, "Navmesh init failed.");
-        return;
-    }
-
-    // Prepare tiles container
-    _tiles.EnsureCapacity(newCapacity);
-
-    // Restore previous tiles
-    for (auto& tile : _tiles)
-    {
-        const int32 dataSize = tile.Data.Length();
-#if USE_NAV_MESH_ALLOC
-        const auto flags = DT_TILE_FREE_DATA;
-        const auto data = (byte*)dtAlloc(dataSize, DT_ALLOC_PERM);
-        Platform::MemoryCopy(data, tile.Data.Get(), dataSize);
-#else
-		const auto flags = 0;
-		const auto data = tile.Data.Get();
+#include "NavMeshRuntime.h"
+#include "Engine/Level/Scene/Scene.h"
+#include "Engine/Serialization/Serialization.h"
+#if COMPILE_WITH_ASSETS_IMPORTER
+#include "Engine/ContentImporters/AssetsImportingManager.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
 #endif
-        if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
-        {
-            LOG(Warning, "Could not add tile to navmesh.");
-        }
-    }
-}
-
-void NavMesh::AddTiles(NavigationScene* scene)
-{
-    // Skip if no data
-    ASSERT(scene);
-    if (scene->Data.Tiles.IsEmpty())
-        return;
-    auto& data = scene->Data;
-
-    PROFILE_CPU_NAMED("NavMesh.AddTiles");
-
-    ScopeLock lock(Locker);
-
-    // Validate data (must match navmesh) or init navmesh to match the tiles options
-    if (_navMesh)
-    {
-        if (Math::NotNearEqual(data.TileSize, _tileSize))
-        {
-            LOG(Warning, "Cannot add navigation scene tiles to the navmesh. Navmesh tile size: {0}, input tiles size: {1}", _tileSize, data.TileSize);
-            return;
-        }
-    }
-    else
-    {
-        _tileSize = data.TileSize;
-    }
-
-    // Ensure to have space for new tiles
-    EnsureCapacity(data.Tiles.Count());
-
-    // Add new tiles
-    for (auto& tileData : data.Tiles)
-    {
-        AddTileInternal(scene, tileData);
-    }
-}
-
-void NavMesh::AddTile(NavigationScene* scene, NavMeshTileData& tileData)
-{
-    ASSERT(scene);
-    auto& data = scene->Data;
-
-    PROFILE_CPU_NAMED("NavMesh.AddTile");
-
-    ScopeLock lock(Locker);
-
-    // Validate data (must match navmesh) or init navmesh to match the tiles options
-    if (_navMesh)
-    {
-        if (Math::NotNearEqual(data.TileSize, _tileSize))
-        {
-            LOG(Warning, "Cannot add navigation scene tile to the navmesh. Navmesh tile size: {0}, input tile size: {1}", _tileSize, data.TileSize);
-            return;
-        }
-    }
-    else
-    {
-        _tileSize = data.TileSize;
-    }
-
-    // Ensure to have space for new tile
-    EnsureCapacity(1);
-
-    // Add new tile
-    AddTileInternal(scene, tileData);
-}
-
-bool IsTileFromScene(const NavMesh* navMesh, const NavMeshTile& tile, void* customData)
-{
-    return tile.Scene == (NavigationScene*)customData;
-}
-
-void NavMesh::RemoveTiles(NavigationScene* scene)
-{
-    RemoveTiles(IsTileFromScene, scene);
-}
-
-void NavMesh::RemoveTile(int32 x, int32 y, int32 layer)
-{
-    ScopeLock lock(Locker);
-
-    // Skip if no data
-    if (!_navMesh)
-        return;
-
-    PROFILE_CPU_NAMED("NavMesh.RemoveTile");
-
-    const auto tileRef = _navMesh->getTileRefAt(x, y, layer);
-    if (tileRef == 0)
-    {
-        return;
-    }
-
-    if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
-    {
-        LOG(Warning, "Failed to remove tile from navmesh.");
-    }
-
-    for (int32 i = 0; i < _tiles.Count(); i++)
-    {
-        auto& tile = _tiles[i];
-        if (tile.X == x && tile.Y == y && tile.Layer == layer)
-        {
-            _tiles.RemoveAt(i);
-            break;
-        }
-    }
-}
-
-void NavMesh::RemoveTiles(bool (* prediction)(const NavMesh* navMesh, const NavMeshTile& tile, void* customData), void* userData)
-{
-    ScopeLock lock(Locker);
-
-    // Skip if no data
-    ASSERT(prediction);
-    if (!_navMesh)
-        return;
-
-    PROFILE_CPU_NAMED("NavMesh.RemoveTiles");
-
-    for (int32 i = 0; i < _tiles.Count(); i++)
-    {
-        auto& tile = _tiles[i];
-        if (prediction(this, tile, userData))
-        {
-            const auto tileRef = _navMesh->getTileRefAt(tile.X, tile.Y, tile.Layer);
-            if (tileRef == 0)
-            {
-                LOG(Warning, "Missing navmesh tile at {0}x{1}, layer: {2}", tile.X, tile.Y, tile.Layer);
-            }
-            else
-            {
-                if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
-                {
-                    LOG(Warning, "Failed to remove tile from navmesh.");
-                }
-            }
-
-            _tiles.RemoveAt(i--);
-        }
-    }
-}
-
-void NavMesh::Dispose()
-{
-    if (_navMesh)
-    {
-        dtFreeNavMesh(_navMesh);
-        _navMesh = nullptr;
-    }
-    _tiles.Resize(0);
-}
-
-void NavMesh::AddTileInternal(NavigationScene* scene, NavMeshTileData& tileData)
-{
-    // Check if that tile has been added to navmesh
-    NavMeshTile* tile = nullptr;
-    const auto tileRef = _navMesh->getTileRefAt(tileData.PosX, tileData.PosY, tileData.Layer);
-    if (tileRef)
-    {
-        // Remove any existing tile at that location
-        _navMesh->removeTile(tileRef, nullptr, nullptr);
-
-        // Reuse tile data container
-        for (int32 i = 0; i < _tiles.Count(); i++)
-        {
-            auto& e = _tiles[i];
-            if (e.X == tileData.PosX && e.Y == tileData.PosY && e.Layer == tileData.Layer)
-            {
-                tile = &e;
-                break;
-            }
-        }
-    }
-    else
-    {
-        // Add tile
-        tile = &_tiles.AddOne();
-    }
-    ASSERT(tile);
-
-    // Copy tile properties
-    tile->Scene = scene;
-    tile->X = tileData.PosX;
-    tile->Y = tileData.PosY;
-    tile->Layer = tileData.Layer;
-#if USE_DATA_LINK
-	tile->Data.Link(tileData.Data);
-#else
-    tile->Data.Copy(tileData.Data);
 #endif
 
-    // Add tile to navmesh
-    const int32 dataSize = tile->Data.Length();
-#if USE_NAV_MESH_ALLOC
-    const auto flags = DT_TILE_FREE_DATA;
-    const auto data = (byte*)dtAlloc(dataSize, DT_ALLOC_PERM);
-    Platform::MemoryCopy(data, tile->Data.Get(), dataSize);
-#else
-	const auto flags = 0;
-	const auto data = tile->Data.Get();
+NavMesh::NavMesh(const SpawnParams& params)
+    : Actor(params)
+    , IsDataDirty(false)
+{
+    DataAsset.Loaded.Bind<NavMesh, &NavMesh::OnDataAssetLoaded>(this);
+}
+
+void NavMesh::SaveNavMesh()
+{
+#if COMPILE_WITH_ASSETS_IMPORTER
+
+    // Skip if scene is missing
+    const auto scene = GetScene();
+    if (!scene)
+        return;
+
+#if USE_EDITOR
+    // Skip if game is running in editor (eg. game scripts update dynamic navmesh)
+    if (Editor::IsPlayMode)
+        return;
 #endif
-    if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
+
+    // Clear flag
+    IsDataDirty = false;
+
+    // Check if has no navmesh data generated (someone could just remove navmesh volumes or generate for empty scene)
+    if (Data.Tiles.IsEmpty())
     {
-        LOG(Warning, "Could not add tile to navmesh.");
+        DataAsset = nullptr;
+        return;
     }
+
+    // Prepare
+    Guid assetId = DataAsset.GetID();
+    if (!assetId.IsValid())
+        assetId = Guid::New();
+    const String assetPath = scene->GetDataFolderPath() / TEXT("NavMesh") + Properties.Name + ASSET_FILES_EXTENSION_WITH_DOT;
+
+    // Generate navmesh tiles data
+    const int32 streamInitialCapacity = Math::RoundUpToPowerOf2((Data.Tiles.Count() + 1) * 1024);
+    MemoryWriteStream stream(streamInitialCapacity);
+    Data.Save(stream);
+    BytesContainer bytesContainer;
+    bytesContainer.Link(stream.GetHandle(), stream.GetPosition());
+
+    // Save asset to file
+    if (AssetsImportingManager::Create(AssetsImportingManager::CreateRawDataTag, assetPath, assetId, (void*)&bytesContainer))
+    {
+        LOG(Warning, "Failed to save navmesh tiles data to file.");
+        return;
+    }
+
+    // Link the created asset
+    DataAsset = assetId;
+
+#endif
+}
+
+void NavMesh::ClearData()
+{
+    if (Data.Tiles.HasItems())
+    {
+        IsDataDirty = true;
+        Data.TileSize = 0.0f;
+        Data.Tiles.Resize(0);
+    }
+}
+
+NavMeshRuntime* NavMesh::GetRuntime(bool createIfMissing) const
+{
+    return NavMeshRuntime::Get(Properties, createIfMissing);
+}
+
+void NavMesh::AddTiles()
+{
+    auto navMesh = NavMeshRuntime::Get(Properties, true);
+    navMesh->AddTiles(this);
+}
+
+void NavMesh::RemoveTiles()
+{
+    auto navMesh = NavMeshRuntime::Get(Properties, false);
+    if (navMesh)
+        navMesh->RemoveTiles(this);
+}
+
+void NavMesh::OnDataAssetLoaded()
+{
+    // Skip if already has data (prevent reloading navmesh on saving)
+    if (Data.Tiles.HasItems())
+        return;
+
+    const bool isEnabled = IsDuringPlay() && IsActiveInHierarchy();
+
+    // Remove added tiles
+    if (isEnabled)
+    {
+        RemoveTiles();
+    }
+
+    // Load navmesh tiles
+    BytesContainer data;
+    data.Link(DataAsset->Data);
+    Data.Load(data, false);
+    IsDataDirty = false;
+
+    // Add loaded tiles
+    if (isEnabled)
+    {
+        AddTiles();
+    }
+}
+
+void NavMesh::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    // Base
+    Actor::Serialize(stream, otherObj);
+
+#if USE_EDITOR
+    // Save navmesh tiles to asset (if modified)
+    if (IsDataDirty)
+        SaveNavMesh();
+#endif
+
+    SERIALIZE_GET_OTHER_OBJ(NavMesh);
+    SERIALIZE(DataAsset);
+    SERIALIZE(Properties);
+}
+
+void NavMesh::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    // Base
+    Actor::Deserialize(stream, modifier);
+
+    DESERIALIZE(DataAsset);
+    DESERIALIZE(Properties);
+}
+
+void NavMesh::OnEnable()
+{
+    // Base
+    Actor::OnEnable();
+
+    GetScene()->NavigationMeshes.Add(this);
+    AddTiles();
+}
+
+void NavMesh::OnDisable()
+{
+    RemoveTiles();
+    GetScene()->NavigationMeshes.Remove(this);
+
+    // Base
+    Actor::OnDisable();
 }

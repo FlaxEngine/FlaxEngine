@@ -42,8 +42,9 @@ void TAA::Dispose()
     // Base
     RendererPass::Dispose();
 
+    // Cleanup
     _psTAA = nullptr;
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 bool TAA::NeedMotionVectors(RenderContext& renderContext)

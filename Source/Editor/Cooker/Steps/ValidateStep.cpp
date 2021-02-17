@@ -38,18 +38,23 @@ bool ValidateStep::Perform(CookingData& data)
 #endif
 
     // Load game settings (may be modified via editor)
-    GameSettings::Load();
+    if (GameSettings::Load())
+    {
+        data.Error(TEXT("Failed to load game settings."));
+        return true;
+    }
     data.AddRootAsset(Globals::ProjectContentFolder / TEXT("GameSettings.json"));
 
     // Validate game settings
+    auto gameSettings = GameSettings::Get();
     {
-        if (GameSettings::ProductName.IsEmpty())
+        if (gameSettings->ProductName.IsEmpty())
         {
             data.Error(TEXT("Missing product name."));
             return true;
         }
 
-        if (GameSettings::CompanyName.IsEmpty())
+        if (gameSettings->CompanyName.IsEmpty())
         {
             data.Error(TEXT("Missing company name."));
             return true;
@@ -58,7 +63,7 @@ bool ValidateStep::Perform(CookingData& data)
         // TODO: validate version
 
         AssetInfo info;
-        if (!Content::GetAssetInfo(GameSettings::FirstScene, info))
+        if (!Content::GetAssetInfo(gameSettings->FirstScene, info))
         {
             data.Error(TEXT("Missing first scene. Set it in the game settings."));
             return true;

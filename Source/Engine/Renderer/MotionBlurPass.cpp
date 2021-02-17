@@ -134,16 +134,14 @@ void MotionBlurPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psCameraMotionVectors);
     SAFE_DELETE_GPU_RESOURCE(_psMotionVectorsDebug);
     SAFE_DELETE_GPU_RESOURCE(_psTileMax);
     SAFE_DELETE_GPU_RESOURCE(_psTileMaxVariable);
     SAFE_DELETE_GPU_RESOURCE(_psNeighborMax);
     SAFE_DELETE_GPU_RESOURCE(_psMotionBlur);
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)

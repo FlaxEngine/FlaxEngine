@@ -2,6 +2,7 @@
 
 #include "ModelData.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Serialization/WriteStream.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
@@ -753,7 +754,7 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
             stream->Write(&sphere);
 
             // TODO: calculate Sphere and Box at once - make it faster using SSE
-            
+
             // Blend Shapes
             const int32 blendShapes = mesh.BlendShapes.Count();
             stream->WriteUint16(blendShapes);
@@ -830,9 +831,9 @@ bool ModelData::Pack2AnimationHeader(WriteStream* stream) const
         auto& anim = Animation.Channels[i];
 
         stream->WriteString(anim.NodeName, 172);
-        anim.Position.Serialize(*stream);
-        anim.Rotation.Serialize(*stream);
-        anim.Scale.Serialize(*stream);
+        Serialization::Serialize(*stream, anim.Position);
+        Serialization::Serialize(*stream, anim.Rotation);
+        Serialization::Serialize(*stream, anim.Scale);
     }
 
     return false;

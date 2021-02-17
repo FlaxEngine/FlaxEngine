@@ -312,7 +312,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // Get the source
-            //CloneGitRepoSingleBranch(root, "https://github.com/NVIDIAGameWorks/PhysX.git", "4.1");
+            CloneGitRepoSingleBranch(root, "https://github.com/NVIDIAGameWorks/PhysX.git", "4.1");
 
             foreach (var platform in options.Platforms)
             {

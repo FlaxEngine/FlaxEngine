@@ -15,6 +15,16 @@ namespace Flax.Build
     public static class Utilities
     {
         /// <summary>
+        /// Gets the empty array of the given type (shared one).
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <returns>The empty array object.</returns>
+        public static T[] GetEmptyArray<T>()
+        {
+            return Enumerable.Empty<T>() as T[];
+        }
+
+        /// <summary>
         /// Gets the size of the file as a readable string.
         /// </summary>
         /// <param name="path">The path.</param>

@@ -121,11 +121,9 @@ void ColorGradingPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     _psLut.Delete();
-
-    // Release assets
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)

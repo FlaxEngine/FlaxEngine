@@ -5,14 +5,13 @@
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "VirtualInput.h"
-#include "Input.h"
 
 /// <summary>
 /// Input settings container.
 /// </summary>
-/// <seealso cref="Settings{InputSettings}" />
-class InputSettings : public Settings<InputSettings>
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API InputSettings : public SettingsBase
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(InputSettings);
 public:
 
     /// <summary>
@@ -27,19 +26,14 @@ public:
 
 public:
 
-    // [Settings]
-    void Apply() override
-    {
-        Input::ActionMappings = ActionMappings;
-        Input::AxisMappings = AxisMappings;
-    }
+    /// <summary>
+    /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
+    /// </summary>
+    static InputSettings* Get();
 
-    void RestoreDefault() override
-    {
-        ActionMappings.Resize(0);
-        AxisMappings.Resize(0);
-    }
-    
+    // [SettingsBase]
+    void Apply() override;
+
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         const auto actionMappings = stream.FindMember("ActionMappings");

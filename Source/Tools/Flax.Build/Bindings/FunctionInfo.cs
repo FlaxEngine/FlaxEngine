@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build.Bindings
 {
@@ -9,7 +10,7 @@ namespace Flax.Build.Bindings
     /// </summary>
     public class FunctionInfo : MemberInfo
     {
-        public struct ParameterInfo
+        public struct ParameterInfo : IBindingsCache
         {
             public string Name;
             public TypeInfo Type;
@@ -23,6 +24,28 @@ namespace Flax.Build.Bindings
             public bool HasAttribute(string name)
             {
                 return Attributes != null && Attributes.Contains(name);
+            }
+
+            public void Write(BinaryWriter writer)
+            {
+                writer.Write(Name);
+                BindingsGenerator.Write(writer, Type);
+                BindingsGenerator.Write(writer, DefaultValue);
+                BindingsGenerator.Write(writer, Attributes);
+                // TODO: convert into flags
+                writer.Write(IsRef);
+                writer.Write(IsOut);
+            }
+
+            public void Read(BinaryReader reader)
+            {
+                Name = reader.ReadString();
+                Type = BindingsGenerator.Read(reader, Type);
+                DefaultValue = BindingsGenerator.Read(reader, DefaultValue);
+                Attributes = BindingsGenerator.Read(reader, Attributes);
+                // TODO: convert into flags
+                IsRef = reader.ReadBoolean();
+                IsOut = reader.ReadBoolean();
             }
 
             public override string ToString()
@@ -42,11 +65,35 @@ namespace Flax.Build.Bindings
 
         public string UniqueName;
         public TypeInfo ReturnType;
-        public List<ParameterInfo> Parameters;
+        public List<ParameterInfo> Parameters = new List<ParameterInfo>();
         public bool IsVirtual;
         public bool IsConst;
         public bool NoProxy;
         public GlueInfo Glue;
+
+        public override void Write(BinaryWriter writer)
+        {
+            BindingsGenerator.Write(writer, ReturnType);
+            BindingsGenerator.Write(writer, Parameters);
+            // TODO: convert into flags
+            writer.Write(IsVirtual);
+            writer.Write(IsConst);
+            writer.Write(NoProxy);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            ReturnType = BindingsGenerator.Read(reader, ReturnType);
+            Parameters = BindingsGenerator.Read(reader, Parameters);
+            // TODO: convert into flags
+            IsVirtual = reader.ReadBoolean();
+            IsConst = reader.ReadBoolean();
+            NoProxy = reader.ReadBoolean();
+
+            base.Read(reader);
+        }
 
         public override string ToString()
         {

@@ -183,11 +183,8 @@ namespace FlaxEditor.Tools.Foliage
             actor.StaticFlags = StaticFlags.FullyStatic;
             actor.Name = "Foliage";
 
-            // Spawn
+            // Spawn and select
             Editor.SceneEditing.Spawn(actor);
-
-            // Select
-            Editor.SceneEditing.Select(actor);
         }
 
         private void OnSelectionChanged()

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 namespace Flax.Build
 {
@@ -12,7 +13,7 @@ namespace Flax.Build
     /// </summary>
     public class ProfileEventScope : IDisposable
     {
-        private int _id;
+        private readonly int _id;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProfileEventScope"/> class.
@@ -61,6 +62,11 @@ namespace Flax.Build
             /// The event call depth (for parent-children events evaluation).
             /// </summary>
             public int Depth;
+
+            /// <summary>
+            /// The calling thread id.
+            /// </summary>
+            public int ThreadId;
         }
 
         private static int _depth;
@@ -78,6 +84,7 @@ namespace Flax.Build
             e.StartTime = DateTime.Now;
             e.Duration = TimeSpan.Zero;
             e.Depth = _depth++;
+            e.ThreadId = Thread.CurrentThread.ManagedThreadId;
             _events.Add(e);
             return _events.Count - 1;
         }
@@ -147,8 +154,8 @@ namespace Flax.Build
             for (int i = 0; i < _events.Count; i++)
             {
                 var e = _events[i];
-                
-                contents.Append($"{{ \"pid\":1, \"tid\":1, \"ts\":{(int)((e.StartTime - startTime).TotalMilliseconds * 1000.0)}, \"dur\":{(int)(e.Duration.TotalMilliseconds * 1000.0)}, \"ph\":\"X\", \"name\":\"{e.Name}\", \"args\":{{ \"startTime\":\"{e.StartTime.ToShortTimeString()}\" }} }}\n");
+
+                contents.Append($"{{ \"pid\":{e.ThreadId}, \"tid\":1, \"ts\":{(int)((e.StartTime - startTime).TotalMilliseconds * 1000.0)}, \"dur\":{(int)(e.Duration.TotalMilliseconds * 1000.0)}, \"ph\":\"X\", \"name\":\"{e.Name}\", \"args\":{{ \"startTime\":\"{e.StartTime.ToShortTimeString()}\" }} }}\n");
 
                 if (i + 1 != _events.Count)
                     contents.Append(",");

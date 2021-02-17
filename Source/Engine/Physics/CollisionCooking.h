@@ -24,13 +24,13 @@ public:
 
     struct CookingInput
     {
-        int32 VertexCount;
-        Vector3* VertexData;
-        int32 IndexCount;
-        void* IndexData;
-        bool Is16bitIndexData;
-        ConvexMeshGenerationFlags ConvexFlags;
-        int32 ConvexVertexLimit;
+        int32 VertexCount = 0;
+        Vector3* VertexData = nullptr;
+        int32 IndexCount = 0;
+        void* IndexData = nullptr;
+        bool Is16bitIndexData = false;
+        ConvexMeshGenerationFlags ConvexFlags = ConvexMeshGenerationFlags::None;
+        int32 ConvexVertexLimit = 255;
     };
 
     /// <summary>
@@ -38,21 +38,12 @@ public:
     /// </summary>
     struct Argument
     {
-        CollisionDataType Type;
-        ModelData* OverrideModelData;
+        CollisionDataType Type = CollisionDataType::None;
+        ModelData* OverrideModelData = nullptr;
         AssetReference<Model> Model;
-        int32 ModelLodIndex;
-        ConvexMeshGenerationFlags ConvexFlags;
-        int32 ConvexVertexLimit;
-
-        Argument()
-        {
-            Type = CollisionDataType::None;
-            OverrideModelData = nullptr;
-            ModelLodIndex = 0;
-            ConvexFlags = ConvexMeshGenerationFlags::None;
-            ConvexVertexLimit = 255;
-        }
+        int32 ModelLodIndex = 0;
+        ConvexMeshGenerationFlags ConvexFlags = ConvexMeshGenerationFlags::None;
+        int32 ConvexVertexLimit = 255;
     };
 
     /// <summary>

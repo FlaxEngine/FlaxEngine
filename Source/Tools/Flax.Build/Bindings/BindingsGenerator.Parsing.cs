@@ -17,6 +17,7 @@ namespace Flax.Build.Bindings
             public Stack<ApiTypeInfo> ScopeTypeStack;
             public Stack<AccessLevel> ScopeAccessStack;
             public Dictionary<string, string> PreprocessorDefines;
+            public List<string> StringCache;
 
             public ApiTypeInfo ValidScopeInfoFromStack
             {
@@ -46,14 +47,12 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static List<string> _commentCache;
-
         private static string[] ParseComment(ref ParsingContext context)
         {
-            if (_commentCache == null)
-                _commentCache = new List<string>();
+            if (context.StringCache == null)
+                context.StringCache = new List<string>();
             else
-                _commentCache.Clear();
+                context.StringCache.Clear();
 
             int tokensCount = 0;
             bool isValid = true;
@@ -77,7 +76,7 @@ namespace Flax.Build.Bindings
                     if (commentLine.StartsWith("// "))
                         commentLine = "/// " + commentLine.Substring(3);
 
-                    _commentCache.Insert(0, commentLine);
+                    context.StringCache.Insert(0, commentLine);
                     break;
                 }
                 default:
@@ -90,14 +89,14 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < tokensCount; i++)
                 context.Tokenizer.NextToken(true, true);
 
-            if (_commentCache.Count == 1)
+            if (context.StringCache.Count == 1)
             {
                 // Ensure to have summary begin/end pair
-                _commentCache.Insert(0, "/// <summary>");
-                _commentCache.Add("/// </summary>");
+                context.StringCache.Insert(0, "/// <summary>");
+                context.StringCache.Add("/// </summary>");
             }
 
-            return _commentCache.ToArray();
+            return context.StringCache.ToArray();
         }
 
         private struct TagParameter
@@ -383,17 +382,101 @@ namespace Flax.Build.Bindings
             return name;
         }
 
+        private static void ParseInheritance(ref ParsingContext context, ClassStructInfo desc, out bool isFinal)
+        {
+            desc.BaseType = null;
+            desc.BaseTypeInheritance = AccessLevel.Private;
+
+            var token = context.Tokenizer.NextToken();
+            isFinal = token.Value == "final";
+            if (isFinal)
+                token = context.Tokenizer.NextToken();
+
+            if (token.Type == TokenType.Colon)
+            {
+                while (token.Type != TokenType.LeftCurlyBrace)
+                {
+                    var accessToken = context.Tokenizer.ExpectToken(TokenType.Identifier);
+                    switch (accessToken.Value)
+                    {
+                    case "public":
+                        desc.BaseTypeInheritance = AccessLevel.Public;
+                        token = context.Tokenizer.ExpectToken(TokenType.Identifier);
+                        break;
+                    case "protected":
+                        desc.BaseTypeInheritance = AccessLevel.Protected;
+                        token = context.Tokenizer.ExpectToken(TokenType.Identifier);
+                        break;
+                    case "private":
+                        token = context.Tokenizer.ExpectToken(TokenType.Identifier);
+                        break;
+                    default:
+                        token = accessToken;
+                        break;
+                    }
+
+                    var baseTypeInfo = new TypeInfo
+                    {
+                        Type = token.Value,
+                    };
+                    if (token.Value.Length > 2 && token.Value[0] == 'I' && char.IsUpper(token.Value[1]))
+                    {
+                        // Interface
+                        if (desc.InterfaceNames == null)
+                            desc.InterfaceNames = new List<TypeInfo>();
+                        desc.InterfaceNames.Add(baseTypeInfo);
+                        token = context.Tokenizer.NextToken();
+                        continue;
+                    }
+
+                    if (desc.BaseType != null)
+                    {
+                        // Allow for multiple base classes, just the first one needs to be a valid base type
+                        break;
+                        throw new Exception($"Invalid '{desc.Name}' inheritance (only single base class is allowed for scripting types, excluding interfaces).");
+                    }
+                    desc.BaseType = baseTypeInfo;
+                    token = context.Tokenizer.NextToken();
+                    if (token.Type == TokenType.LeftCurlyBrace)
+                    {
+                        break;
+                    }
+                    if (token.Type == TokenType.LeftAngleBracket)
+                    {
+                        var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
+                        token = context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
+                        desc.BaseType.GenericArgs = new List<TypeInfo>
+                        {
+                            new TypeInfo
+                            {
+                                Type = genericType.Value,
+                            }
+                        };
+
+                        // TODO: find better way to resolve this (custom base type attribute?)
+                        if (desc.BaseType.Type == "ShaderAssetTypeBase")
+                        {
+                            desc.BaseType = desc.BaseType.GenericArgs[0];
+                        }
+
+                        token = context.Tokenizer.NextToken();
+                    }
+                }
+                token = context.Tokenizer.PreviousToken();
+            }
+            else
+            {
+                // No base type
+                token = context.Tokenizer.PreviousToken();
+            }
+        }
+
         private static ClassInfo ParseClass(ref ParsingContext context)
         {
             var desc = new ClassInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
                 BaseTypeInheritance = AccessLevel.Private,
-                Functions = new List<FunctionInfo>(),
-                Properties = new List<PropertyInfo>(),
-                Fields = new List<FieldInfo>(),
-                Events = new List<EventInfo>(),
             };
 
             // Read the documentation comment
@@ -410,64 +493,8 @@ namespace Flax.Build.Bindings
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
-            // Read class inheritance
-            token = context.Tokenizer.NextToken();
-            var isFinal = token.Value == "final";
-            if (isFinal)
-                token = context.Tokenizer.NextToken();
-            if (token.Type == TokenType.Colon)
-            {
-                // Current class does have inheritance defined
-                var accessToken = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                switch (accessToken.Value)
-                {
-                case "public":
-                    desc.BaseTypeInheritance = AccessLevel.Public;
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                case "protected":
-                    desc.BaseTypeInheritance = AccessLevel.Protected;
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                case "private":
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                }
-
-                desc.BaseType = new TypeInfo
-                {
-                    Type = token.Value,
-                };
-                token = context.Tokenizer.NextToken();
-                if (token.Type == TokenType.LeftAngleBracket)
-                {
-                    var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
-                    desc.BaseType.GenericArgs = new List<TypeInfo>
-                    {
-                        new TypeInfo
-                        {
-                            Type = genericType.Value,
-                        }
-                    };
-
-                    // TODO: find better way to resolve this (custom base type attribute?)
-                    if (desc.BaseType.Type == "ShaderAssetTypeBase")
-                    {
-                        desc.BaseType = desc.BaseType.GenericArgs[0];
-                    }
-                }
-                else
-                {
-                    token = context.Tokenizer.PreviousToken();
-                }
-            }
-            else
-            {
-                // No base type
-                token = context.Tokenizer.PreviousToken();
-                desc.BaseType = null;
-            }
+            // Read inheritance
+            ParseInheritance(ref context, desc, out var isFinal);
 
             // Process tag parameters
             foreach (var tag in tagParams)
@@ -523,12 +550,72 @@ namespace Flax.Build.Bindings
             return desc;
         }
 
+        private static InterfaceInfo ParseInterface(ref ParsingContext context)
+        {
+            var desc = new InterfaceInfo
+            {
+                Access = context.CurrentAccessLevel,
+            };
+
+            // Read the documentation comment
+            desc.Comment = ParseComment(ref context);
+
+            // Read parameters from the tag
+            var tagParams = ParseTagParameters(ref context);
+
+            // Read 'class' keyword
+            var token = context.Tokenizer.NextToken();
+            if (token.Value != "class")
+                throw new Exception($"Invalid API_INTERFACE usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+
+            // Read name
+            desc.Name = desc.NativeName = ParseName(ref context);
+            if (desc.Name.Length < 2 || desc.Name[0] != 'I' || !char.IsUpper(desc.Name[1]))
+                throw new Exception($"Invalid API_INTERFACE name '{desc.Name}' (it must start with 'I' character followed by the uppercase character).");
+
+            // Read inheritance
+            ParseInheritance(ref context, desc, out _);
+
+            // Process tag parameters
+            foreach (var tag in tagParams)
+            {
+                switch (tag.Tag.ToLower())
+                {
+                case "public":
+                    desc.Access = AccessLevel.Public;
+                    break;
+                case "protected":
+                    desc.Access = AccessLevel.Protected;
+                    break;
+                case "private":
+                    desc.Access = AccessLevel.Private;
+                    break;
+                case "inbuild":
+                    desc.IsInBuild = true;
+                    break;
+                case "attributes":
+                    desc.Attributes = tag.Value;
+                    break;
+                case "name":
+                    desc.Name = tag.Value;
+                    break;
+                case "namespace":
+                    desc.Namespace = tag.Value;
+                    break;
+                default:
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on interface {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    break;
+                }
+            }
+
+            return desc;
+        }
+
         private static FunctionInfo ParseFunction(ref ParsingContext context)
         {
             var desc = new FunctionInfo
             {
                 Access = context.CurrentAccessLevel,
-                Parameters = new List<FunctionInfo.ParameterInfo>(),
             };
 
             // Read the documentation comment
@@ -727,9 +814,7 @@ namespace Flax.Build.Bindings
         {
             var desc = new EnumInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
-                Entries = new List<EnumInfo.EntryInfo>(),
             };
 
             // Read the documentation comment
@@ -884,10 +969,7 @@ namespace Flax.Build.Bindings
         {
             var desc = new StructureInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Access = context.CurrentAccessLevel,
-                Fields = new List<FieldInfo>(),
-                Functions = new List<FunctionInfo>(),
             };
 
             // Read the documentation comment
@@ -904,55 +986,8 @@ namespace Flax.Build.Bindings
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
-            // Read structure inheritance
-            token = context.Tokenizer.NextToken();
-            if (token.Type == TokenType.Colon)
-            {
-                // Current class does have inheritance defined
-                var accessToken = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                switch (accessToken.Value)
-                {
-                case "public":
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                case "protected":
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                case "private":
-                    token = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    break;
-                default:
-                    token = accessToken;
-                    break;
-                }
-
-                desc.BaseType = new TypeInfo
-                {
-                    Type = token.Value,
-                };
-                token = context.Tokenizer.NextToken();
-                if (token.Type == TokenType.LeftAngleBracket)
-                {
-                    var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                    context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
-                    desc.BaseType.GenericArgs = new List<TypeInfo>
-                    {
-                        new TypeInfo
-                        {
-                            Type = genericType.Value,
-                        }
-                    };
-                }
-                else
-                {
-                    token = context.Tokenizer.PreviousToken();
-                }
-            }
-            else
-            {
-                // No base type
-                token = context.Tokenizer.PreviousToken();
-            }
+            // Read inheritance
+            ParseInheritance(ref context, desc, out _);
 
             // Process tag parameters
             foreach (var tag in tagParams)
@@ -1003,11 +1038,30 @@ namespace Flax.Build.Bindings
 
             // Read parameters from the tag
             var tagParams = ParseTagParameters(ref context);
+            context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' keyword
-            desc.IsStatic = context.Tokenizer.NextToken().Value == "static";
-            if (!desc.IsStatic)
-                context.Tokenizer.PreviousToken();
+            // Read 'static' or 'mutable'
+            Token token;
+            var isMutable = false;
+            while (true)
+            {
+                token = context.Tokenizer.CurrentToken;
+                if (!desc.IsStatic && token.Value == "static")
+                {
+                    desc.IsStatic = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!isMutable && token.Value == "mutable")
+                {
+                    isMutable = true;
+                    context.Tokenizer.NextToken();
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
 
             // Read type
             desc.Type = ParseType(ref context);
@@ -1016,11 +1070,10 @@ namespace Flax.Build.Bindings
             desc.Name = ParseName(ref context);
 
             // Read ';' or default value or array size or bit-field size
-            var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
+            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
             if (token.Type == TokenType.Equal)
             {
-                //context.Tokenizer.SkipUntil(TokenType.SemiColon, out var defaultValue);
-                context.Tokenizer.SkipUntil(TokenType.SemiColon);
+                context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
             }
             else if (token.Type == TokenType.LeftBracket)
             {
@@ -1135,7 +1188,6 @@ namespace Flax.Build.Bindings
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
             var desc = new InjectCppCodeInfo
             {
-                Children = new List<ApiTypeInfo>(),
                 Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\""),
             };
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);

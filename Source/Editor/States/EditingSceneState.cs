@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.States
 {
@@ -38,6 +39,27 @@ namespace FlaxEditor.States
         : base(editor)
         {
             UpdateFPS();
+        }
+
+        /// <inheritdoc />
+        public override void OnEnter()
+        {
+            base.OnEnter();
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        /// <inheritdoc />
+        public override void OnExit(State nextState)
+        {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
+            base.OnExit(nextState);
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            StateMachine.GoToState<ReloadingScriptsState>();
         }
     }
 }

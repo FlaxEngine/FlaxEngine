@@ -499,7 +499,7 @@ void ShadowsOfMordor::Builder::releaseResources()
     SAFE_DELETE_GPU_RESOURCE(_psRenderCacheModel);
     SAFE_DELETE_GPU_RESOURCE(_psRenderCacheTerrain);
     SAFE_DELETE_GPU_RESOURCE(_psBlurCache);
-    _shader.Unlink();
+    _shader = nullptr;
 
     SAFE_DELETE_GPU_RESOURCE(_irradianceReduction);
 

@@ -69,7 +69,7 @@ void BitonicSort::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_dispatchArgsBuffer);
     _cb = nullptr;
     _indirectArgsCS = nullptr;
@@ -77,9 +77,7 @@ void BitonicSort::Dispose()
     _innerSortCS = nullptr;
     _outerSortCS = nullptr;
     _copyIndicesCS = nullptr;
-
-    // Release asset
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer)

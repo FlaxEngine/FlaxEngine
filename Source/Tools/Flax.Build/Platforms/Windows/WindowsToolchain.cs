@@ -20,7 +20,7 @@ namespace Flax.Build.Platforms
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The target architecture.</param>
         public WindowsToolchain(WindowsPlatform platform, TargetArchitecture architecture)
-        : base(platform, architecture, WindowsPlatformToolset.v140, WindowsPlatformSDK.Latest)
+        : base(platform, architecture, WindowsPlatformToolset.Latest, WindowsPlatformSDK.Latest)
         {
         }
 

@@ -14,6 +14,7 @@ namespace Flax.Build.Bindings
             public const string Enum = "API_ENUM";
             public const string Class = "API_CLASS";
             public const string Struct = "API_STRUCT";
+            public const string Interface = "API_INTERFACE";
             public const string Function = "API_FUNCTION";
             public const string Property = "API_PROPERTY";
             public const string Field = "API_FIELD";
@@ -27,6 +28,7 @@ namespace Flax.Build.Bindings
                 Enum,
                 Class,
                 Struct,
+                Interface,
             };
         }
 

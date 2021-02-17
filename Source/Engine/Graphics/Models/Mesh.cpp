@@ -350,7 +350,7 @@ bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vect
 #endif
 }
 
-void Mesh::GetDrawCallGeometry(DrawCall& drawCall)
+void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
 {
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -359,8 +359,8 @@ void Mesh::GetDrawCallGeometry(DrawCall& drawCall)
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
 }
 
 void Mesh::Render(GPUContext* context) const
@@ -386,22 +386,20 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = world;
-    drawCall.PrevWorld = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.GeometrySize = _box.GetSize();
-    drawCall.Lightmap = nullptr;
-    drawCall.LightmapUVsArea = Rectangle::Empty;
-    drawCall.Skinning = nullptr;
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.Surface.Lightmap = nullptr;
+    drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
+    drawCall.Surface.Skinning = nullptr;
+    drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = 0.0f;
-    drawCall.LODDitherFactor = 0.0f;
     renderContext.List->AddDrawCall(DrawPass::Default, flags, drawCall, receiveDecals);
 }
 
@@ -449,22 +447,20 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
     }
-    drawCall.Geometry.StartIndex = 0;
-    drawCall.Geometry.IndicesCount = _triangles * 3;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
-    drawCall.IndirectArgsBuffer = nullptr;
-    drawCall.IndirectArgsOffset = 0;
     drawCall.Material = material;
     drawCall.World = *info.World;
-    drawCall.PrevWorld = info.DrawState->PrevWorld;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.GeometrySize = _box.GetSize();
-    drawCall.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
-    drawCall.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Skinning = nullptr;
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
+    drawCall.Surface.Skinning = nullptr;
+    drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
-    drawCall.LODDitherFactor = lodDitherFactor;
     renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 

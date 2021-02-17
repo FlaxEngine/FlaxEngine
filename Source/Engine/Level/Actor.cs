@@ -4,8 +4,68 @@ using System;
 
 namespace FlaxEngine
 {
-    partial class Actor : ITransformable, ISceneObject
+    partial class Actor
     {
+        /// <summary>
+        /// Returns true if object is fully static on the scene, otherwise false.
+        /// </summary>
+        [Unmanaged]
+        [Tooltip("Returns true if object is fully static on the scene, otherwise false.")]
+        public bool IsStatic => StaticFlags == FlaxEngine.StaticFlags.FullyStatic;
+
+        /// <summary>
+        /// Returns true if object has static transform.
+        /// </summary>
+        [Unmanaged]
+        [Tooltip("Returns true if object has static transform.")]
+        public bool IsTransformStatic => (StaticFlags & StaticFlags.Transform) == StaticFlags.Transform;
+
+        /// <summary>
+        /// Adds the actor static flags.
+        /// </summary>
+        /// <param name="flags">The flags to add.</param>
+        [Unmanaged]
+        [Tooltip("Adds the actor static flags.")]
+        public void AddStaticFlags(StaticFlags flags)
+        {
+            StaticFlags |= flags;
+        }
+
+        /// <summary>
+        /// Removes the actor static flags.
+        /// </summary>
+        /// <param name="flags">The flags to remove.</param>
+        [Unmanaged]
+        [Tooltip("Removes the actor static flags.")]
+        public void RemoveStaticFlags(StaticFlags flags)
+        {
+            StaticFlags &= ~flags;
+        }
+
+        /// <summary>
+        /// Sets a single static flag to the desire value.
+        /// </summary>
+        /// <param name="flag">The flag to change.</param>
+        /// <param name="value">The target value of the flag.</param>
+        [Unmanaged]
+        [Tooltip("Sets a single static flag to the desire value.")]
+        public void SetStaticFlag(StaticFlags flag, bool value)
+        {
+            StaticFlags = StaticFlags & ~flag | (value ? flag : StaticFlags.None);
+        }
+
+        /// <summary>
+        /// Returns true if object has given flag(s) set.
+        /// </summary>
+        /// <param name="flag">The flag(s) to check.</param>
+        /// <returns>True if has flag(s) set, otherwise false.</returns>
+        [Unmanaged]
+        [Tooltip("Returns true if object has given flag(s) set..")]
+        public bool HasStaticFlag(StaticFlags flag)
+        {
+            return (StaticFlags & flag) == flag;
+        }
+
         /// <summary>
         /// The rotation as Euler angles in degrees.
         /// </summary>
@@ -143,7 +203,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Finds the script of the given type.
+        /// Finds the script of the given type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>The script or null if failed to find.</returns>
@@ -153,7 +213,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Tries to find the script of the given type.
+        /// Tries to find the script of the given type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <param name="script">The returned script, valid only if method returns true.</param>
@@ -180,7 +240,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Searches for all scripts of a specific type.
+        /// Searches for all scripts of a specific type from this actor.
         /// </summary>
         /// <typeparam name="T">Type of the scripts to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>All scripts matching the specified type.</returns>

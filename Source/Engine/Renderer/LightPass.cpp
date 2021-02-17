@@ -164,7 +164,7 @@ void LightPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     _psLightDir.Delete();
     _psLightPointNormal.Delete();
     _psLightPointInverted.Delete();
@@ -172,9 +172,7 @@ void LightPass::Dispose()
     _psLightSpotInverted.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyNormal);
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyInverted);
-
-    // Release assets
-    _sphereModel.Unlink();
+    _sphereModel = nullptr;
 }
 
 void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightBuffer)

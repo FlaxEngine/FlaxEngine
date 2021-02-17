@@ -62,5 +62,15 @@ public class Platform : EngineModule
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
+        if (options.Target.IsEditor)
+        {
+            // Include platform settings headers
+            options.SourceFiles.Add(Path.Combine(FolderPath, "Windows", "WindowsPlatformSettings.h"));
+            options.SourceFiles.Add(Path.Combine(FolderPath, "UWP", "UWPPlatformSettings.h"));
+            options.SourceFiles.Add(Path.Combine(FolderPath, "Linux", "LinuxPlatformSettings.h"));
+            options.SourceFiles.Add(Path.Combine(FolderPath, "Android", "AndroidPlatformSettings.h"));
+            AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform", "XboxScarlettPlatformSettings.h"));
+            AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform", "PS4PlatformSettings.h"));
+        }
     }
 }

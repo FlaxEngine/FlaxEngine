@@ -167,19 +167,17 @@ void PostProcessingPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psThreshold);
     SAFE_DELETE_GPU_RESOURCE(_psScale);
     SAFE_DELETE_GPU_RESOURCE(_psBlurH);
     SAFE_DELETE_GPU_RESOURCE(_psBlurV);
     SAFE_DELETE_GPU_RESOURCE(_psGenGhosts);
     _psComposite.Delete();
-
-    // Release assets
-    _shader.Unlink();
-    _defaultLensColor.Unlink();
-    _defaultLensDirt.Unlink();
-    _defaultLensStar.Unlink();
+    _shader = nullptr;
+    _defaultLensColor = nullptr;
+    _defaultLensDirt = nullptr;
+    _defaultLensStar = nullptr;
 }
 
 void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)

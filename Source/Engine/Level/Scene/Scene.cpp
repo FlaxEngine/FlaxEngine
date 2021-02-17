@@ -8,7 +8,10 @@
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/ActorsCache.h"
-#include "Engine/Navigation/NavigationScene.h"
+#include "Engine/Navigation/NavigationSettings.h"
+#include "Engine/Navigation/NavMeshBoundsVolume.h"
+#include "Engine/Navigation/NavMesh.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
 
 REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset");
@@ -27,7 +30,6 @@ Scene::Scene(const SpawnParams& params)
     , Ticking(this)
     , LightmapsData(this)
     , CSGData(this)
-    , Navigation(::New<NavigationScene>(this))
 {
     // Default name
     _name = TEXT("Scene");
@@ -42,7 +44,6 @@ Scene::Scene(const SpawnParams& params)
 
 Scene::~Scene()
 {
-    Delete(Navigation);
 }
 
 LightmapSettings Scene::GetLightmapSettings() const
@@ -53,6 +54,31 @@ LightmapSettings Scene::GetLightmapSettings() const
 void Scene::SetLightmapSettings(const LightmapSettings& value)
 {
     Info.LightmapSettings = value;
+}
+
+BoundingBox Scene::GetNavigationBounds()
+{
+    if (NavigationVolumes.IsEmpty())
+        return BoundingBox::Empty;
+    PROFILE_CPU_NAMED("GetNavigationBounds");
+    auto box = NavigationVolumes[0]->GetBox();
+    for (int32 i = 1; i < NavigationVolumes.Count(); i++)
+        BoundingBox::Merge(box, NavigationVolumes[i]->GetBox(), box);
+    return box;
+}
+
+NavMeshBoundsVolume* Scene::FindNavigationBoundsOverlap(const BoundingBox& bounds)
+{
+    NavMeshBoundsVolume* result = nullptr;
+    for (int32 i = 0; i < NavigationVolumes.Count(); i++)
+    {
+        if (NavigationVolumes[i]->GetBox().Intersects(bounds))
+        {
+            result = NavigationVolumes[i];
+            break;
+        }
+    }
+    return result;
 }
 
 void Scene::ClearLightmaps()
@@ -216,12 +242,6 @@ void Scene::Serialize(SerializeStream& stream, const void* otherObj)
     // Update scene info object
     SaveTime = DateTime::NowUTC();
 
-#if USE_EDITOR
-    // Save navmesh tiles to asset (if modified)
-    if (Navigation->IsDataDirty)
-        Navigation->SaveNavMesh();
-#endif
-
     LightmapsData.SaveLightmaps(Info.Lightmaps);
     Info.Serialize(stream, other ? &other->Info : nullptr);
 
@@ -230,8 +250,6 @@ void Scene::Serialize(SerializeStream& stream, const void* otherObj)
         stream.JKEY("CSG");
         stream.Object(&CSGData, other ? &other->CSGData : nullptr);
     }
-
-    SERIALIZE_MEMBER(NavMesh, Navigation->DataAsset);
 }
 
 void Scene::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -243,15 +261,45 @@ void Scene::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     LightmapsData.LoadLightmaps(Info.Lightmaps);
     CSGData.DeserializeIfExists(stream, "CSG", modifier);
 
-    DESERIALIZE_MEMBER(NavMesh, Navigation->DataAsset);
+    // [Deprecated on 13.01.2021, expires on 13.01.2023]
+    if (modifier->EngineBuild <= 6215 && NavigationMeshes.IsEmpty())
+    {
+        const auto e = SERIALIZE_FIND_MEMBER(stream, "NavMesh");
+        if (e != stream.MemberEnd())
+        {
+            // Upgrade from old single hidden navmesh data into NavMesh actors on a scene
+            AssetReference<RawDataAsset> dataAsset;
+            Serialization::Deserialize(e->value, dataAsset, modifier);
+            const auto settings = NavigationSettings::Get();
+            if (dataAsset && settings->NavMeshes.HasItems())
+            {
+                auto navMesh = New<NavMesh>();
+                navMesh->SetStaticFlags(StaticFlags::FullyStatic);
+                navMesh->SetName(TEXT("NavMesh.") + settings->NavMeshes[0].Name);
+                navMesh->DataAsset = dataAsset;
+                navMesh->Properties = settings->NavMeshes[0];
+                if (IsDuringPlay())
+                {
+                    navMesh->SetParent(this, false);
+                }
+                else
+                {
+                    navMesh->_parent = this;
+                    navMesh->_scene = this;
+                    Children.Add(navMesh);
+                    navMesh->CreateManaged();
+                }
+            }
+        }
+    }
 }
 
 void Scene::OnDeleteObject()
 {
     // Cleanup
     LightmapsData.UnloadLightmaps();
-    CSGData.Model.Unlink();
-    CSGData.CollisionData.Unlink();
+    CSGData.Model = nullptr;
+    CSGData.CollisionData = nullptr;
 
     // Base
     Actor::OnDeleteObject();
@@ -307,22 +355,6 @@ void Scene::EndPlay()
 
     // Base
     Actor::EndPlay();
-}
-
-void Scene::OnEnable()
-{
-    // Base
-    Actor::OnEnable();
-
-    Navigation->OnEnable();
-}
-
-void Scene::OnDisable()
-{
-    Navigation->OnDisable();
-
-    // Base
-    Actor::OnDisable();
 }
 
 void Scene::OnTransformChanged()

@@ -517,22 +517,21 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (item.Header != null)
                     itemLayout.Header(item.Header.Text);
 
-                // Peek values
-                ValueContainer itemValues;
                 try
                 {
-                    itemValues = item.GetValues(Values);
+                    // Peek values
+                    ValueContainer itemValues = item.GetValues(Values);
+
+                    // Spawn property editor
+                    SpawnProperty(itemLayout, itemValues, item);
                 }
                 catch (Exception ex)
                 {
-                    Editor.LogWarning("Failed to get object values for item " + item);
+                    Editor.LogWarning("Failed to setup values and UI for item " + item);
                     Editor.LogWarning(ex.Message);
                     Editor.LogWarning(ex.StackTrace);
                     return;
                 }
-
-                // Spawn property editor
-                SpawnProperty(itemLayout, itemValues, item);
 
                 // Expand all parent groups if need to
                 if (item.ExpandGroups)

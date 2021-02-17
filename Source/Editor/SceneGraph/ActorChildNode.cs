@@ -20,6 +20,11 @@ namespace FlaxEditor.SceneGraph
         public readonly int Index;
 
         /// <summary>
+        /// Gets a value indicating whether this node can be selected directly without selecting parent actor node first.
+        /// </summary>
+        public virtual bool CanBeSelectedDirectly => false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ActorChildNode"/> class.
         /// </summary>
         /// <param name="id">The child id.</param>
@@ -59,6 +64,9 @@ namespace FlaxEditor.SceneGraph
         public override bool CanCopyPaste => false;
 
         /// <inheritdoc />
+        public override bool CanDuplicate => false;
+
+        /// <inheritdoc />
         public override bool CanDrag => false;
 
         /// <inheritdoc />
@@ -66,6 +74,18 @@ namespace FlaxEditor.SceneGraph
 
         /// <inheritdoc />
         public override object UndoRecordObject => ParentNode.UndoRecordObject;
+
+        /// <inheritdoc />
+        public override void Dispose()
+        {
+            // Unlink from the parent
+            if (parentNode is ActorNode parentActorNode && parentActorNode.ActorChildNodes != null)
+            {
+                parentActorNode.ActorChildNodes.Remove(this);
+            }
+
+            base.Dispose();
+        }
     }
 
     /// <summary>
@@ -77,20 +97,28 @@ namespace FlaxEditor.SceneGraph
     public abstract class ActorChildNode<T> : ActorChildNode where T : ActorNode
     {
         /// <summary>
-        /// The actor.
+        /// The actor node.
         /// </summary>
-        protected readonly T _actor;
+        protected T _node;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActorChildNode{T}"/> class.
         /// </summary>
-        /// <param name="actor">The parent actor.</param>
+        /// <param name="node">The parent actor node.</param>
         /// <param name="id">The child id.</param>
         /// <param name="index">The child index.</param>
-        protected ActorChildNode(T actor, Guid id, int index)
+        protected ActorChildNode(T node, Guid id, int index)
         : base(id, index)
         {
-            _actor = actor;
+            _node = node;
+        }
+
+        /// <inheritdoc />
+        public override void OnDispose()
+        {
+            _node = null;
+
+            base.OnDispose();
         }
     }
 }

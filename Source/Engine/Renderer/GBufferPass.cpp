@@ -77,14 +77,11 @@ void GBufferPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline state
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
-
-    // Release assets
-    _gBufferShader.Unlink();
-    _skyModel.Unlink();
-    _boxModel.Unlink();
-
+    _gBufferShader = nullptr;
+    _skyModel = nullptr;
+    _boxModel = nullptr;
 #if USE_EDITOR
     SAFE_DELETE(_lightmapUVsDensityMaterialShader);
     SAFE_DELETE(_vertexColorsMaterialShader);
@@ -145,7 +142,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
                     drawCall.Material = _lightmapUVsDensityMaterialShader;
                 }
             }
-            if (!_lightmapUVsDensityMaterialShader->CanUseInstancing())
+            IMaterial::InstancingHandler handler;
+            if (!_lightmapUVsDensityMaterialShader->CanUseInstancing(handler))
             {
                 drawCallsList.CanUseInstancing = false;
             }
@@ -166,7 +164,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
                     drawCall.Material = _vertexColorsMaterialShader;
                 }
             }
-            if (!_vertexColorsMaterialShader->CanUseInstancing())
+            IMaterial::InstancingHandler handler;
+            if (!_vertexColorsMaterialShader->CanUseInstancing(handler))
             {
                 drawCallsList.CanUseInstancing = false;
             }
@@ -311,8 +310,6 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     DrawCall drawCall;
     MaterialBase::BindParameters bindParams(gpuContext, renderContext, drawCall);
     drawCall.Material = nullptr;
-    drawCall.Lightmap = nullptr;
-    drawCall.Skinning = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 
     // Draw all decals

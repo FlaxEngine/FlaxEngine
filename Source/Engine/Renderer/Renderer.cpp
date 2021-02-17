@@ -31,9 +31,6 @@
 #include "Editor/Editor.h"
 #endif
 
-// It must use less or the same amount of memory
-static_assert(sizeof(DrawCall::TerrainData) <= sizeof(DrawCall::PrevWorld), "Invalid size of the terrain data in the draw call.");
-
 #if USE_EDITOR
 // Additional options used in editor for lightmaps baking
 bool IsRunningRadiancePass = false;

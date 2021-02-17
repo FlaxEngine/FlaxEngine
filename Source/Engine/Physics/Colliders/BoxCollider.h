@@ -47,12 +47,6 @@ public:
         return _bounds;
     }
 
-private:
-
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
-
 public:
 
     // [Collider]
@@ -67,11 +61,9 @@ public:
 protected:
 
     // [Collider]
-#if USE_EDITOR
-    void OnEnable() override;
-    void OnDisable() override;
-#endif
     void UpdateBounds() override;
-    void CreateShape() override;
-    void UpdateGeometry() override;
+    void GetGeometry(PxGeometryHolder& geometry) override;
+#if USE_EDITOR
+    void DrawPhysicsDebug(RenderView& view) override;
+#endif
 };

@@ -491,7 +491,7 @@ protected:
     void OnEnd() override
     {
         _dataLock.Release();
-        _asset.Unlink();
+        _asset = nullptr;
 
         // Base
         ContentLoadTask::OnEnd();

@@ -78,13 +78,20 @@ protected:
 API_CLASS(NoSpawn) class FLAXENGINE_API JsonAsset : public JsonAssetBase
 {
 DECLARE_ASSET_HEADER(JsonAsset);
+private:
+    ScriptingType::Dtor _dtor;
 
 public:
 
     /// <summary>
+    /// The scripting type of the deserialized unmanaged object instance (e.g. PhysicalMaterial).
+    /// </summary>
+    ScriptingTypeHandle InstanceType;
+
+    /// <summary>
     /// The deserialized unmanaged object instance (e.g. PhysicalMaterial).
     /// </summary>
-    ISerializable* Instance;
+    void* Instance;
 
 protected:
 

@@ -3,9 +3,20 @@
 #if COMPILE_WITH_NAV_MESH_BUILDER
 
 #include "NavMeshBuilder.h"
+#include "NavMesh.h"
+#include "NavigationSettings.h"
+#include "NavMeshBoundsVolume.h"
+#include "NavLink.h"
+#include "NavModifierVolume.h"
+#include "NavMeshRuntime.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/Int3.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
+#include "Engine/Physics/Colliders/SphereCollider.h"
+#include "Engine/Physics/Colliders/CapsuleCollider.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
+#include "Engine/Physics/Colliders/SplineCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
@@ -13,14 +24,6 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/SceneQuery.h"
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Int3.h"
-#include "NavigationScene.h"
-#include "NavigationSettings.h"
-#include "NavMeshBoundsVolume.h"
-#include "NavMesh.h"
-#include "NavLink.h"
-#include "Navigation.h"
 #include <ThirdParty/recastnavigation/Recast.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshBuilder.h>
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
@@ -54,9 +57,17 @@ struct OffMeshLink
     int32 Id;
 };
 
+struct Modifier
+{
+    BoundingBox Bounds;
+    NavAreaProperties* NavArea;
+};
+
 struct NavigationSceneRasterization
 {
-    BoundingBox TileBounds;
+    NavMesh* NavMesh;
+    BoundingBox TileBoundsNavMesh;
+    Matrix WorldToNavMesh;
     rcContext* Context;
     rcConfig* Config;
     rcHeightfield* Heightfield;
@@ -64,15 +75,21 @@ struct NavigationSceneRasterization
     Array<Vector3> VertexBuffer;
     Array<int32> IndexBuffer;
     Array<OffMeshLink>* OffMeshLinks;
+    Array<Modifier>* Modifiers;
+    const bool IsWorldToNavMeshIdentity;
 
-    NavigationSceneRasterization(const BoundingBox& tileBounds, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks)
-        : TileBounds(tileBounds)
+    NavigationSceneRasterization(::NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
+        : TileBoundsNavMesh(tileBoundsNavMesh)
+        , WorldToNavMesh(worldToNavMesh)
+        , IsWorldToNavMeshIdentity(worldToNavMesh.IsIdentity())
     {
+        NavMesh = navMesh;
         Context = context;
         Config = config;
         Heightfield = heightfield;
         WalkableThreshold = Math::Cos(config->walkableSlopeAngle * DegreesToRadians);
         OffMeshLinks = offMeshLinks;
+        Modifiers = modifiers;
     }
 
     void RasterizeTriangles()
@@ -83,23 +100,118 @@ struct NavigationSceneRasterization
             return;
 
         // Rasterize triangles
-        for (int32 i0 = 0; i0 < ib.Count();)
+        if (IsWorldToNavMeshIdentity)
         {
-            auto v0 = vb[ib[i0++]];
-            auto v1 = vb[ib[i0++]];
-            auto v2 = vb[ib[i0++]];
+            // Faster path
+            for (int32 i0 = 0; i0 < ib.Count();)
+            {
+                auto v0 = vb[ib[i0++]];
+                auto v1 = vb[ib[i0++]];
+                auto v2 = vb[ib[i0++]];
 
-            auto n = Vector3::Cross(v0 - v1, v0 - v2);
-            n.Normalize();
-            const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : 0;
-            rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
+                auto n = Vector3::Cross(v0 - v1, v0 - v2);
+                n.Normalize();
+                const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : 0;
+                rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
+            }
+        }
+        else
+        {
+            // Transform vertices from world space into the navmesh space
+            const Matrix worldToNavMesh = WorldToNavMesh;
+            for (int32 i0 = 0; i0 < ib.Count();)
+            {
+                auto v0 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
+                auto v1 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
+                auto v2 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
+
+                auto n = Vector3::Cross(v0 - v1, v0 - v2);
+                n.Normalize();
+                const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : RC_NULL_AREA;
+                rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
+            }
+        }
+    }
+
+    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const OrientedBoundingBox& box)
+    {
+        vb.Resize(8);
+        box.GetCorners(vb.Get());
+        ib.Add(BoxTrianglesIndicesCache, 36);
+    }
+
+    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const BoundingBox& box)
+    {
+        vb.Resize(8);
+        box.GetCorners(vb.Get());
+        ib.Add(BoxTrianglesIndicesCache, 36);
+    }
+
+    static void TriangulateSphere(Array<Vector3>& vb, Array<int32>& ib, const BoundingSphere& sphere)
+    {
+        const int32 sphereResolution = 12;
+        const int32 verticalSegments = sphereResolution;
+        const int32 horizontalSegments = sphereResolution * 2;
+
+        // Generate vertices for unit sphere
+        Vector3 vertices[(verticalSegments + 1) * (horizontalSegments + 1)];
+        int32 vertexCount = 0;
+        for (int32 j = 0; j <= horizontalSegments; j++)
+            vertices[vertexCount++] = Vector3(0, -1, 0);
+        for (int32 i = 1; i < verticalSegments; i++)
+        {
+            const float latitude = (float)i * PI / verticalSegments - PI / 2.0f;
+            const float dy = Math::Sin(latitude);
+            const float dxz = Math::Cos(latitude);
+            auto& firstHorizontalVertex = vertices[vertexCount++];
+            firstHorizontalVertex = Vector3(0, dy, dxz);
+            for (int32 j = 1; j < horizontalSegments; j++)
+            {
+                const float longitude = (float)j * 2.0f * PI / horizontalSegments;
+                const float dx = Math::Sin(longitude) * dxz;
+                const float dz = Math::Cos(longitude) * dxz;
+                vertices[vertexCount++] = Vector3(dx, dy, dz);
+            }
+            vertices[vertexCount++] = firstHorizontalVertex;
+        }
+        for (int32 j = 0; j <= horizontalSegments; j++)
+            vertices[vertexCount++] = Vector3(0, 1, 0);
+
+        // Transform vertices into world space vertex buffer
+        vb.Resize(vertexCount);
+        for (int32 i = 0; i < vertexCount; i++)
+            vb[i] = sphere.Center + vertices[i] * sphere.Radius;
+
+        // Generate index buffer
+        const int32 stride = horizontalSegments + 1;
+        int32 indexCount = 0;
+        ib.Resize(verticalSegments * (horizontalSegments + 1) * 6);
+        for (int32 i = 0; i < verticalSegments; i++)
+        {
+            const int32 nextI = i + 1;
+            for (int32 j = 0; j <= horizontalSegments; j++)
+            {
+                const int32 nextJ = (j + 1) % stride;
+
+                ib[indexCount++] = i * stride + j;
+                ib[indexCount++] = nextI * stride + j;
+                ib[indexCount++] = i * stride + nextJ;
+
+                ib[indexCount++] = i * stride + nextJ;
+                ib[indexCount++] = nextI * stride + j;
+                ib[indexCount++] = nextI * stride + nextJ;
+            }
         }
     }
 
     static bool Walk(Actor* actor, NavigationSceneRasterization& e)
     {
         // Early out if object is not intersecting with the tile bounds or is not using navigation
-        if (!actor->GetIsActive() || !(actor->GetStaticFlags() & StaticFlags::Navigation) || !actor->GetBox().Intersects(e.TileBounds))
+        if (!actor->GetIsActive() || !(actor->GetStaticFlags() & StaticFlags::Navigation))
+            return true;
+        BoundingBox actorBoxNavMesh;
+        BoundingBox::Transform(actor->GetBox(), e.WorldToNavMesh, actorBoxNavMesh);
+        if (!actorBoxNavMesh.Intersects(e.TileBoundsNavMesh))
             return true;
 
         // Prepare buffers (for triangles)
@@ -113,12 +225,26 @@ struct NavigationSceneRasterization
         {
             PROFILE_CPU_NAMED("BoxCollider");
 
-            OrientedBoundingBox box = boxCollider->GetOrientedBox();
+            const OrientedBoundingBox box = boxCollider->GetOrientedBox();
+            TriangulateBox(vb, ib, box);
 
-            vb.Resize(8);
-            box.GetCorners(vb.Get());
+            e.RasterizeTriangles();
+        }
+        else if (const auto* sphereCollider = dynamic_cast<SphereCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("SphereCollider");
 
-            ib.Add(BoxTrianglesIndicesCache, 36);
+            const BoundingSphere sphere = sphereCollider->GetSphere();
+            TriangulateSphere(vb, ib, sphere);
+
+            e.RasterizeTriangles();
+        }
+        else if (const auto* capsuleCollider = dynamic_cast<CapsuleCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("CapsuleCollider");
+
+            const BoundingBox box = capsuleCollider->GetBox();
+            TriangulateBox(vb, ib, box);
 
             e.RasterizeTriangles();
         }
@@ -127,10 +253,22 @@ struct NavigationSceneRasterization
             PROFILE_CPU_NAMED("MeshCollider");
 
             auto collisionData = meshCollider->CollisionData.Get();
-            if (!collisionData || collisionData->WaitForLoaded(1000.0f))
+            if (!collisionData || collisionData->WaitForLoaded())
                 return true;
 
             collisionData->ExtractGeometry(vb, ib);
+
+            e.RasterizeTriangles();
+        }
+        else if (const auto* splineCollider = dynamic_cast<SplineCollider*>(actor))
+        {
+            PROFILE_CPU_NAMED("SplineCollider");
+
+            auto collisionData = splineCollider->CollisionData.Get();
+            if (!collisionData || collisionData->WaitForLoaded())
+                return true;
+
+            splineCollider->ExtractGeometry(vb, ib);
 
             e.RasterizeTriangles();
         }
@@ -141,7 +279,9 @@ struct NavigationSceneRasterization
             for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
             {
                 const auto patch = terrain->GetPatch(patchIndex);
-                if (!patch->GetBounds().Intersects(e.TileBounds))
+                BoundingBox patchBoundsNavMesh;
+                BoundingBox::Transform(patch->GetBounds(), e.WorldToNavMesh, patchBoundsNavMesh);
+                if (!patchBoundsNavMesh.Intersects(e.TileBoundsNavMesh))
                     continue;
 
                 patch->ExtractCollisionGeometry(vb, ib);
@@ -155,60 +295,78 @@ struct NavigationSceneRasterization
 
             OffMeshLink link;
             link.Start = navLink->GetTransform().LocalToWorld(navLink->Start);
+            Vector3::Transform(link.Start, e.WorldToNavMesh, link.Start);
             link.End = navLink->GetTransform().LocalToWorld(navLink->End);
+            Vector3::Transform(link.End, e.WorldToNavMesh, link.End);
             link.Radius = navLink->Radius;
             link.BiDir = navLink->BiDirectional;
             link.Id = GetHash(navLink->GetID());
 
             e.OffMeshLinks->Add(link);
         }
+        else if (const auto* navModifierVolume = dynamic_cast<NavModifierVolume*>(actor))
+        {
+            if (navModifierVolume->AgentsMask.IsNavMeshSupported(e.NavMesh->Properties))
+            {
+                PROFILE_CPU_NAMED("NavModifierVolume");
 
-        // TODO: nav mesh for capsule collider
-        // TODO: nav mesh for sphere collider
+                Modifier modifier;
+                OrientedBoundingBox bounds = navModifierVolume->GetOrientedBox();
+                bounds.Transform(e.WorldToNavMesh);
+                bounds.GetBoundingBox(modifier.Bounds);
+                modifier.NavArea = navModifierVolume->GetNavArea();
+
+                e.Modifiers->Add(modifier);
+            }
+        }
 
         return true;
     }
 };
 
-void RasterizeGeometry(const BoundingBox& tileBounds, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks)
+void RasterizeGeometry(NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
 {
     PROFILE_CPU_NAMED("RasterizeGeometry");
 
-    NavigationSceneRasterization rasterization(tileBounds, context, config, heightfield, offMeshLinks);
+    NavigationSceneRasterization rasterization(navMesh, tileBoundsNavMesh, worldToNavMesh, context, config, heightfield, offMeshLinks, modifiers);
     Function<bool(Actor*, NavigationSceneRasterization&)> treeWalkFunction(NavigationSceneRasterization::Walk);
     SceneQuery::TreeExecute<NavigationSceneRasterization&>(treeWalkFunction, rasterization);
 }
 
 // Builds navmesh tile bounds and check if there are any valid navmesh volumes at that tile location
 // Returns true if tile is intersecting with any navmesh bounds volume actor - which means tile is in use
-bool GetNavMeshTileBounds(NavigationScene* scene, int32 x, int32 y, float tileSize, BoundingBox& tileBounds)
+bool GetNavMeshTileBounds(Scene* scene, NavMesh* navMesh, int32 x, int32 y, float tileSize, BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh)
 {
     // Build initial tile bounds (with infinite extent)
-    tileBounds.Minimum.X = x * tileSize;
-    tileBounds.Minimum.Y = -NAV_MESH_TILE_MAX_EXTENT;
-    tileBounds.Minimum.Z = y * tileSize;
-    tileBounds.Maximum.X = tileBounds.Minimum.X + tileSize;
-    tileBounds.Maximum.Y = NAV_MESH_TILE_MAX_EXTENT;
-    tileBounds.Maximum.Z = tileBounds.Minimum.Z + tileSize;
+    tileBoundsNavMesh.Minimum.X = (float)x * tileSize;
+    tileBoundsNavMesh.Minimum.Y = -NAV_MESH_TILE_MAX_EXTENT;
+    tileBoundsNavMesh.Minimum.Z = (float)y * tileSize;
+    tileBoundsNavMesh.Maximum.X = tileBoundsNavMesh.Minimum.X + tileSize;
+    tileBoundsNavMesh.Maximum.Y = NAV_MESH_TILE_MAX_EXTENT;
+    tileBoundsNavMesh.Maximum.Z = tileBoundsNavMesh.Minimum.Z + tileSize;
 
     // Check if any navmesh volume intersects with the tile
     bool foundAnyVolume = false;
     Vector2 rangeY;
-    for (int32 i = 0; i < scene->Volumes.Count(); i++)
+    for (int32 i = 0; i < scene->NavigationVolumes.Count(); i++)
     {
-        const auto volume = scene->Volumes[i];
+        const auto volume = scene->NavigationVolumes[i];
+        if (!volume->AgentsMask.IsNavMeshSupported(navMesh->Properties))
+            continue;
         const auto& volumeBounds = volume->GetBox();
-        if (volumeBounds.Intersects(tileBounds))
+        BoundingBox volumeBoundsNavMesh;
+        BoundingBox::Transform(volumeBounds, worldToNavMesh, volumeBoundsNavMesh);
+        if (volumeBoundsNavMesh.Intersects(tileBoundsNavMesh))
         {
             if (foundAnyVolume)
             {
-                rangeY.X = Math::Min(rangeY.X, volumeBounds.Minimum.Y);
-                rangeY.Y = Math::Max(rangeY.Y, volumeBounds.Maximum.Y);
+                rangeY.X = Math::Min(rangeY.X, volumeBoundsNavMesh.Minimum.Y);
+                rangeY.Y = Math::Max(rangeY.Y, volumeBoundsNavMesh.Maximum.Y);
             }
             else
             {
-                rangeY.X = volumeBounds.Minimum.Y;
-                rangeY.Y = volumeBounds.Maximum.Y;
+                rangeY.X = volumeBoundsNavMesh.Minimum.Y;
+                rangeY.Y = volumeBoundsNavMesh.Maximum.Y;
             }
             foundAnyVolume = true;
         }
@@ -217,45 +375,45 @@ bool GetNavMeshTileBounds(NavigationScene* scene, int32 x, int32 y, float tileSi
     if (foundAnyVolume)
     {
         // Build proper tile bounds
-        tileBounds.Minimum.Y = rangeY.X;
-        tileBounds.Maximum.Y = rangeY.Y;
+        tileBoundsNavMesh.Minimum.Y = rangeY.X;
+        tileBoundsNavMesh.Maximum.Y = rangeY.Y;
     }
 
     return foundAnyVolume;
 }
 
-void RemoveTile(NavMesh* navMesh, NavigationScene* scene, int32 x, int32 y, int32 layer)
+void RemoveTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, int32 layer)
 {
-    ScopeLock lock(navMesh->Locker);
+    ScopeLock lock(runtime->Locker);
 
     // Find tile data and remove it
-    for (int32 i = 0; i < scene->Data.Tiles.Count(); i++)
+    for (int32 i = 0; i < navMesh->Data.Tiles.Count(); i++)
     {
-        auto& tile = scene->Data.Tiles[i];
+        auto& tile = navMesh->Data.Tiles[i];
         if (tile.PosX == x && tile.PosY == y && tile.Layer == layer)
         {
-            scene->Data.Tiles.RemoveAt(i);
-            scene->IsDataDirty = true;
+            navMesh->Data.Tiles.RemoveAt(i);
+            navMesh->IsDataDirty = true;
             break;
         }
     }
 
     // Remove tile from navmesh
-    navMesh->RemoveTile(x, y, layer);
+    runtime->RemoveTile(x, y, layer);
 }
 
-bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBounds, float tileSize, rcConfig& config)
+bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, float tileSize, rcConfig& config)
 {
     rcContext context;
     int32 layer = 0;
 
     // Expand tile bounds by a certain margin
-    const float tileBorderSize = (1 + config.borderSize) * config.cs;
-    tileBounds.Minimum -= tileBorderSize;
-    tileBounds.Maximum += tileBorderSize;
+    const float tileBorderSize = (1.0f + (float)config.borderSize) * config.cs;
+    tileBoundsNavMesh.Minimum -= tileBorderSize;
+    tileBoundsNavMesh.Maximum += tileBorderSize;
 
-    rcVcopy(config.bmin, &tileBounds.Minimum.X);
-    rcVcopy(config.bmax, &tileBounds.Maximum.X);
+    rcVcopy(config.bmin, &tileBoundsNavMesh.Minimum.X);
+    rcVcopy(config.bmax, &tileBoundsNavMesh.Maximum.X);
 
     rcHeightfield* heightfield = rcAllocHeightfield();
     if (!heightfield)
@@ -270,7 +428,8 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     }
 
     Array<OffMeshLink> offMeshLinks;
-    RasterizeGeometry(tileBounds, &context, &config, heightfield, &offMeshLinks);
+    Array<Modifier> modifiers;
+    RasterizeGeometry(navMesh, tileBoundsNavMesh, worldToNavMesh, &context, &config, heightfield, &offMeshLinks, &modifiers);
 
     rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *heightfield);
     rcFilterLedgeSpans(&context, config.walkableHeight, config.walkableClimb, *heightfield);
@@ -294,6 +453,13 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     {
         LOG(Warning, "Could not generate navmesh: Could not erode.");
         return true;
+    }
+
+    // Mark areas
+    for (auto& modifier : modifiers)
+    {
+        const unsigned char areaId = modifier.NavArea ? modifier.NavArea->Id : RC_NULL_AREA;
+        rcMarkBoxArea(&context, &modifier.Bounds.Minimum.X, &modifier.Bounds.Maximum.X, areaId, *compactHeightfield);
     }
 
     if (!rcBuildDistanceField(&context, *compactHeightfield))
@@ -347,15 +513,15 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     rcFreeCompactHeightfield(compactHeightfield);
     rcFreeContourSet(contourSet);
 
-    for (int i = 0; i < polyMesh->npolys; ++i)
+    for (int i = 0; i < polyMesh->npolys; i++)
     {
-        polyMesh->flags[i] = polyMesh->areas[i] == RC_WALKABLE_AREA ? 1 : 0;
+        polyMesh->flags[i] = polyMesh->areas[i] != RC_NULL_AREA ? 1 : 0;
     }
 
     if (polyMesh->nverts == 0)
     {
         // Empty tile
-        RemoveTile(Navigation::GetNavMesh(), scene, x, y, layer);
+        RemoveTile(navMesh, runtime, x, y, layer);
         return false;
     }
 
@@ -373,9 +539,9 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     params.detailVertsCount = detailMesh->nverts;
     params.detailTris = detailMesh->tris;
     params.detailTriCount = detailMesh->ntris;
-    params.walkableHeight = config.walkableHeight * config.ch;
-    params.walkableRadius = config.walkableRadius * config.cs;
-    params.walkableClimb = config.walkableClimb * config.ch;
+    params.walkableHeight = (float)config.walkableHeight * config.ch;
+    params.walkableRadius = (float)config.walkableRadius * config.cs;
+    params.walkableClimb = (float)config.walkableClimb * config.ch;
     params.tileX = x;
     params.tileY = y;
     params.tileLayer = layer;
@@ -414,7 +580,7 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
             offMeshArea[i] = RC_WALKABLE_AREA;
             offMeshFlags[i] = 1;
 
-            // TODO: support navigation areas, navigation area type for off mesh links
+            // TODO: support navigation area type for off mesh links
         }
 
         params.offMeshConCount = linksCount;
@@ -438,20 +604,33 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
     {
         PROFILE_CPU_NAMED("Navigation.CreateTile");
 
-        ScopeLock lock(Navigation::GetNavMesh()->Locker);
+        ScopeLock lock(runtime->Locker);
 
-        // Add tile data
-        scene->IsDataDirty = true;
-        auto& tile = scene->Data.Tiles.AddOne();
-        tile.PosX = x;
-        tile.PosY = y;
-        tile.Layer = layer;
+        navMesh->IsDataDirty = true;
+        NavMeshTileData* tile = nullptr;
+        for (int32 i = 0; i < navMesh->Data.Tiles.Count(); i++)
+        {
+            auto& e = navMesh->Data.Tiles[i];
+            if (e.PosX == x && e.PosY == y && e.Layer == layer)
+            {
+                tile = &e;
+                break;
+            }
+        }
+        if (!tile)
+        {
+            // Add new tile
+            tile = &navMesh->Data.Tiles.AddOne();
+            tile->PosX = x;
+            tile->PosY = y;
+            tile->Layer = layer;
+        }
 
-        // Copy data
-        tile.Data.Copy(navData, navDataSize);
+        // Copy data to the tile
+        tile->Data.Copy(navData, navDataSize);
 
         // Add tile to navmesh
-        Navigation::GetNavMesh()->AddTile(scene, tile);
+        runtime->AddTile(navMesh, *tile);
     }
 
     dtFree(navData);
@@ -461,20 +640,21 @@ bool GenerateTile(NavigationScene* scene, int32 x, int32 y, BoundingBox& tileBou
 
 float GetTileSize()
 {
-    auto& settings = *NavigationSettings::Instance();
+    auto& settings = *NavigationSettings::Get();
     return settings.CellSize * settings.TileSize;
 }
 
-void InitConfig(rcConfig& config)
+void InitConfig(rcConfig& config, NavMesh* navMesh)
 {
-    auto& settings = *NavigationSettings::Instance();
+    auto& settings = *NavigationSettings::Get();
+    auto& navMeshProperties = navMesh->Properties;
 
     config.cs = settings.CellSize;
     config.ch = settings.CellHeight;
-    config.walkableSlopeAngle = settings.WalkableMaxSlopeAngle;
-    config.walkableHeight = (int)(settings.WalkableHeight / config.ch + 0.99f);
-    config.walkableClimb = (int)(settings.WalkableMaxClimb / config.ch);
-    config.walkableRadius = (int)(settings.WalkableRadius / config.cs + 0.99f);
+    config.walkableSlopeAngle = navMeshProperties.Agent.MaxSlopeAngle;
+    config.walkableHeight = (int)(navMeshProperties.Agent.Height / config.ch + 0.99f);
+    config.walkableClimb = (int)(navMeshProperties.Agent.StepHeight / config.ch);
+    config.walkableRadius = (int)(navMeshProperties.Agent.Radius / config.cs + 0.99f);
     config.maxEdgeLen = (int)(settings.MaxEdgeLen / config.cs);
     config.maxSimplificationError = settings.MaxEdgeError;
     config.minRegionArea = rcSqr(settings.MinRegionArea);
@@ -506,8 +686,11 @@ class NavMeshTileBuildTask : public ThreadPoolTask
 {
 public:
 
-    NavigationScene* Scene;
-    BoundingBox TileBounds;
+    Scene* Scene;
+    ScriptingObjectReference<NavMesh> NavMesh;
+    NavMeshRuntime* Runtime;
+    BoundingBox TileBoundsNavMesh;
+    Matrix WorldToNavMesh;
     int32 X;
     int32 Y;
     float TileSize;
@@ -520,7 +703,12 @@ public:
     {
         PROFILE_CPU_NAMED("BuildNavMeshTile");
 
-        if (GenerateTile(Scene, X, Y, TileBounds, TileSize, Config))
+        const auto navMesh = NavMesh.Get();
+        if (!navMesh)
+        {
+            return false;
+        }
+        if (GenerateTile(NavMesh, Runtime, X, Y, TileBoundsNavMesh, WorldToNavMesh, TileSize, Config))
         {
             LOG(Warning, "Failed to generate navmesh tile at {0}x{1}.", X, Y);
         }
@@ -557,7 +745,7 @@ void OnSceneUnloading(Scene* scene, const Guid& sceneId)
     for (int32 i = 0; i < NavBuildTasks.Count(); i++)
     {
         auto task = NavBuildTasks[i];
-        if (task->Scene == scene->Navigation)
+        if (task->Scene == scene)
         {
             NavBuildTasksLocker.Unlock();
 
@@ -600,15 +788,16 @@ float NavMeshBuilder::GetNavMeshBuildingProgress()
     return result;
 }
 
-void BuildTileAsync(NavigationScene* scene, int32 x, int32 y, rcConfig& config, const BoundingBox& tileBounds, float tileSize)
+void BuildTileAsync(NavMesh* navMesh, int32 x, int32 y, rcConfig& config, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, float tileSize)
 {
+    NavMeshRuntime* runtime = navMesh->GetRuntime();
     NavBuildTasksLocker.Lock();
 
     // Skip if this tile is already during cooking
     for (int32 i = 0; i < NavBuildTasks.Count(); i++)
     {
         const auto task = NavBuildTasks[i];
-        if (task->X == x && task->Y == y)
+        if (task->X == x && task->Y == y && task->Runtime == runtime)
         {
             NavBuildTasksLocker.Unlock();
             return;
@@ -617,10 +806,13 @@ void BuildTileAsync(NavigationScene* scene, int32 x, int32 y, rcConfig& config, 
 
     // Create task
     auto task = New<NavMeshTileBuildTask>();
-    task->Scene = scene;
+    task->Scene = navMesh->GetScene();
+    task->NavMesh = navMesh;
+    task->Runtime = runtime;
     task->X = x;
     task->Y = y;
-    task->TileBounds = tileBounds;
+    task->TileBoundsNavMesh = tileBoundsNavMesh;
+    task->WorldToNavMesh = worldToNavMesh;
     task->TileSize = tileSize;
     task->Config = config;
     NavBuildTasks.Add(task);
@@ -632,79 +824,23 @@ void BuildTileAsync(NavigationScene* scene, int32 x, int32 y, rcConfig& config, 
     task->Start();
 }
 
-void BuildWholeScene(NavigationScene* scene)
+void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBounds, bool rebuild)
 {
     const float tileSize = GetTileSize();
-    const auto navMesh = Navigation::GetNavMesh();
-
-    // Compute total navigation area bounds
-    const BoundingBox worldBounds = scene->GetNavigationBounds();
-
-    // Align total bounds to tile size
-    BoundingBox worldBoundsAligned;
-    worldBoundsAligned.Minimum = Vector3::Floor(worldBounds.Minimum / tileSize) * tileSize;
-    worldBoundsAligned.Maximum = Vector3::Ceil(worldBounds.Maximum / tileSize) * tileSize;
-
-    // Calculate tiles range for the given navigation world bounds (aligned to tiles size)
-    const Int3 tilesMin = Int3(worldBoundsAligned.Minimum / tileSize);
-    const Int3 tilesMax = Int3(worldBoundsAligned.Maximum / tileSize);
-    const int32 tilesX = tilesMax.X - tilesMin.X;
-    const int32 tilesY = tilesMax.Z - tilesMin.Z;
-
-    {
-        PROFILE_CPU_NAMED("Prepare");
-
-        // Prepare navmesh
-        navMesh->RemoveTiles(scene);
-        navMesh->SetTileSize(tileSize);
-        navMesh->EnsureCapacity(tilesX * tilesY);
-
-        // Prepare scene data
-        scene->Data.TileSize = tileSize;
-        scene->Data.Tiles.Clear();
-        scene->Data.Tiles.EnsureCapacity(tilesX * tilesX);
-        scene->IsDataDirty = true;
-    }
-
-    // Initialize nav mesh configuration
-    rcConfig config;
-    InitConfig(config);
-
-    // Generate all tiles that intersect with the navigation volume bounds
-    {
-        PROFILE_CPU_NAMED("StartBuildingTiles");
-
-        for (int32 y = tilesMin.Z; y < tilesMax.Z; y ++)
-        {
-            for (int32 x = tilesMin.X; x < tilesMax.X; x ++)
-            {
-                BoundingBox tileBounds;
-                if (GetNavMeshTileBounds(scene, x, y, tileSize, tileBounds))
-                {
-                    BuildTileAsync(scene, x, y, config, tileBounds, tileSize);
-                }
-                else
-                {
-                    RemoveTile(navMesh, scene, x, y, 0);
-                }
-            }
-        }
-    }
-}
-
-void BuildDirtyBounds(NavigationScene* scene, const BoundingBox& dirtyBounds)
-{
-    const float tileSize = GetTileSize();
-    const auto navMesh = Navigation::GetNavMesh();
+    NavMeshRuntime* runtime = navMesh->GetRuntime();
+    Matrix worldToNavMesh;
+    Matrix::RotationQuaternion(runtime->Properties.Rotation, worldToNavMesh);
 
     // Align dirty bounds to tile size
+    BoundingBox dirtyBoundsNavMesh;
+    BoundingBox::Transform(dirtyBounds, worldToNavMesh, dirtyBoundsNavMesh);
     BoundingBox dirtyBoundsAligned;
-    dirtyBoundsAligned.Minimum = Vector3::Floor(dirtyBounds.Minimum / tileSize) * tileSize;
-    dirtyBoundsAligned.Maximum = Vector3::Ceil(dirtyBounds.Maximum / tileSize) * tileSize;
+    dirtyBoundsAligned.Minimum = Vector3::Floor(dirtyBoundsNavMesh.Minimum / tileSize) * tileSize;
+    dirtyBoundsAligned.Maximum = Vector3::Ceil(dirtyBoundsNavMesh.Maximum / tileSize) * tileSize;
 
     // Calculate tiles range for the given navigation dirty bounds (aligned to tiles size)
-    const Int3 tilesMin = Int3(dirtyBoundsAligned.Minimum / tileSize);
-    const Int3 tilesMax = Int3(dirtyBoundsAligned.Maximum / tileSize);
+    const Int3 tilesMin(dirtyBoundsAligned.Minimum / tileSize);
+    const Int3 tilesMax(dirtyBoundsAligned.Maximum / tileSize);
     const int32 tilesX = tilesMax.X - tilesMin.X;
     const int32 tilesY = tilesMax.Z - tilesMin.Z;
 
@@ -712,48 +848,158 @@ void BuildDirtyBounds(NavigationScene* scene, const BoundingBox& dirtyBounds)
         PROFILE_CPU_NAMED("Prepare");
 
         // Prepare scene data and navmesh
-        if (Math::NotNearEqual(scene->Data.TileSize, tileSize))
+        rebuild |= Math::NotNearEqual(navMesh->Data.TileSize, tileSize);
+        if (rebuild)
         {
-            navMesh->RemoveTiles(scene);
-            navMesh->SetTileSize(tileSize);
-            navMesh->EnsureCapacity(tilesX * tilesY);
+            // Remove all tiles from navmesh runtime
+            runtime->RemoveTiles(navMesh);
+            runtime->SetTileSize(tileSize);
+            runtime->EnsureCapacity(tilesX * tilesY);
 
-            scene->Data.TileSize = tileSize;
-            scene->Data.Tiles.Clear();
-            scene->Data.Tiles.EnsureCapacity(tilesX * tilesX);
-            scene->IsDataDirty = true;
+            // Remove all tiles from navmesh data
+            navMesh->Data.TileSize = tileSize;
+            navMesh->Data.Tiles.Clear();
+            navMesh->Data.Tiles.EnsureCapacity(tilesX * tilesX);
+            navMesh->IsDataDirty = true;
         }
         else
         {
-            // Prepare navmesh
-            navMesh->SetTileSize(tileSize);
-            navMesh->EnsureCapacity(tilesX * tilesY);
+            // Ensure to have enough memory for tiles
+            runtime->SetTileSize(tileSize);
+            runtime->EnsureCapacity(tilesX * tilesY);
         }
     }
 
     // Initialize nav mesh configuration
     rcConfig config;
-    InitConfig(config);
+    InitConfig(config, navMesh);
 
     // Generate all tiles that intersect with the navigation volume bounds
     {
         PROFILE_CPU_NAMED("StartBuildingTiles");
 
-        for (int32 y = tilesMin.Z; y < tilesMax.Z; y ++)
+        for (int32 y = tilesMin.Z; y < tilesMax.Z; y++)
         {
-            for (int32 x = tilesMin.X; x < tilesMax.X; x ++)
+            for (int32 x = tilesMin.X; x < tilesMax.X; x++)
             {
-                BoundingBox tileBounds;
-                if (GetNavMeshTileBounds(scene, x, y, tileSize, tileBounds))
+                BoundingBox tileBoundsNavMesh;
+                if (GetNavMeshTileBounds(scene, navMesh, x, y, tileSize, tileBoundsNavMesh, worldToNavMesh))
                 {
-                    BuildTileAsync(scene, x, y, config, tileBounds, tileSize);
+                    BuildTileAsync(navMesh, x, y, config, tileBoundsNavMesh, worldToNavMesh, tileSize);
                 }
                 else
                 {
-                    RemoveTile(navMesh, scene, x, y, 0);
+                    RemoveTile(navMesh, runtime, x, y, 0);
                 }
             }
         }
+    }
+}
+
+void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild)
+{
+    auto settings = NavigationSettings::Get();
+
+    // Validate nav areas ids to be unique and in valid range
+    for (int32 i = 0; i < settings->NavAreas.Count(); i++)
+    {
+        auto& a = settings->NavAreas[i];
+        if (a.Id > RC_WALKABLE_AREA)
+        {
+            LOG(Error, "Nav Area {0} uses invalid Id. Valid values are in range 0-63 only.", a.Name);
+            return;
+        }
+
+        for (int32 j = i + 1; j < settings->NavAreas.Count(); j++)
+        {
+            auto& b = settings->NavAreas[j];
+            if (a.Id == b.Id)
+            {
+                LOG(Error, "Nav Area {0} uses the same Id={1} as Nav Area {2}. Each area hast to have unique Id.", a.Name, a.Id, b.Name);
+                return;
+            }
+        }
+    }
+
+    // Sync navmeshes
+    for (auto& navMeshProperties : settings->NavMeshes)
+    {
+        NavMesh* navMesh = nullptr;
+        for (auto e : scene->NavigationMeshes)
+        {
+            if (e->Properties.Name == navMeshProperties.Name)
+            {
+                navMesh = e;
+                break;
+            }
+        }
+        if (navMesh)
+        {
+            // Sync settings
+            auto runtime = navMesh->GetRuntime(false);
+            navMesh->Properties = navMeshProperties;
+            if (runtime)
+                runtime->Properties = navMeshProperties;
+        }
+        else if (settings->AutoAddMissingNavMeshes)
+        {
+            // Spawn missing navmesh
+            navMesh = New<NavMesh>();
+            navMesh->SetStaticFlags(StaticFlags::FullyStatic);
+            navMesh->SetName(TEXT("NavMesh.") + navMeshProperties.Name);
+            navMesh->Properties = navMeshProperties;
+            navMesh->SetParent(scene, false);
+        }
+    }
+
+    // Build all navmeshes on the scene
+    for (NavMesh* navMesh : scene->NavigationMeshes)
+    {
+        BuildDirtyBounds(scene, navMesh, dirtyBounds, rebuild);
+    }
+
+    // Remove unused navmeshes
+    if (settings->AutoRemoveMissingNavMeshes)
+    {
+        for (NavMesh* navMesh : scene->NavigationMeshes)
+        {
+            // Skip used navmeshes
+            if (navMesh->Data.Tiles.HasItems())
+                continue;
+
+            // Skip navmeshes during async building
+            int32 usageCount = 0;
+            NavBuildTasksLocker.Lock();
+            for (int32 i = 0; i < NavBuildTasks.Count(); i++)
+            {
+                if (NavBuildTasks[i]->NavMesh == navMesh)
+                    usageCount++;
+            }
+            NavBuildTasksLocker.Unlock();
+            if (usageCount != 0)
+                continue;
+
+            navMesh->DeleteObject();
+        }
+    }
+}
+
+void BuildWholeScene(Scene* scene)
+{
+    // Compute total navigation area bounds
+    const BoundingBox worldBounds = scene->GetNavigationBounds();
+
+    BuildDirtyBounds(scene, worldBounds, true);
+}
+
+void ClearNavigation(Scene* scene)
+{
+    const bool autoRemoveMissingNavMeshes = NavigationSettings::Get()->AutoRemoveMissingNavMeshes;
+    for (NavMesh* navMesh : scene->NavigationMeshes)
+    {
+        navMesh->ClearData();
+        if (autoRemoveMissingNavMeshes)
+            navMesh->DeleteObject();
     }
 }
 
@@ -769,15 +1015,12 @@ void NavMeshBuilder::Update()
         if (now - req.Time >= 0)
         {
             NavBuildQueue.RemoveAt(i--);
-            auto scene = req.Scene->Navigation;
+            const auto scene = req.Scene.Get();
 
             // Early out if scene has no bounds volumes to define nav mesh area
-            if (scene->Volumes.IsEmpty())
+            if (scene->NavigationVolumes.IsEmpty())
             {
-                // Cleanup if no navigation to use
-                scene->Data.TileSize = 0;
-                scene->Data.Tiles.Resize(0);
-                scene->IsDataDirty = true;
+                ClearNavigation(scene);
                 continue;
             }
 
@@ -788,7 +1031,7 @@ void NavMeshBuilder::Update()
             }
             else
             {
-                BuildDirtyBounds(scene, req.DirtyBounds);
+                BuildDirtyBounds(scene, req.DirtyBounds, false);
             }
         }
     }
@@ -797,9 +1040,9 @@ void NavMeshBuilder::Update()
 void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 {
     // Early out if scene is not using navigation
-    if (scene->Navigation->Volumes.IsEmpty())
+    if (scene->NavigationVolumes.IsEmpty())
     {
-        scene->Navigation->ClearData();
+        ClearNavigation(scene);
         return;
     }
 
@@ -828,9 +1071,9 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
 {
     // Early out if scene is not using navigation
-    if (scene->Navigation->Volumes.IsEmpty())
+    if (scene->NavigationVolumes.IsEmpty())
     {
-        scene->Navigation->ClearData();
+        ClearNavigation(scene);
         return;
     }
 

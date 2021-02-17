@@ -108,7 +108,5 @@ class Dictionary;
     inline T& operator&= (T& a, T b) { return (T&)((int&)a &= (int)b); } \
     inline T& operator^= (T& a, T b) { return (T&)((int&)a ^= (int)b); }
 
-#define DECLARE_SCRIPTING_TYPE_MINIMAL(type) \
-    public: \
-    friend class type##Internal; \
-    static struct ScriptingTypeInitializer TypeInitializer;
+// Returns byte offset from the object pointer in vtable to the begin of the given inherited type implementation
+#define VTABLE_OFFSET(type, baseType) (((intptr)static_cast<baseType*>((type*)1))-1)

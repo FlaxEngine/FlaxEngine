@@ -8,6 +8,10 @@
 #include "Engine/Core/Config/GameSettings.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/JsonAsset.h"
+
+IMPLEMENT_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
 
 const Char* WindowsPlatformTools::GetDisplayName() const
 {
@@ -31,7 +35,7 @@ ArchitectureType WindowsPlatformTools::GetArchitecture() const
 
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 {
-    const auto platformSettings = WindowsPlatformSettings::Instance();
+    const auto platformSettings = WindowsPlatformSettings::Get();
     const auto& outputPath = data.OutputPath;
 
     // Apply executable icon

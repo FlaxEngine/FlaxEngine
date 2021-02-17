@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using Flax.Build.Graph;
 
@@ -27,12 +28,12 @@ namespace Flax.Build.BuildSystem.Graph
         /// <summary>
         /// The maximum amount of threads to be used for the parallel execution.
         /// </summary>
-        public int ThreadCountMax = 1410;
+        public int ThreadCountMax = Configuration.MaxConcurrency;
 
         /// <summary>
         /// The amount of threads to allocate per processor. Use it to allocate more threads for faster execution or use less to keep reduce CPU usage during build.
         /// </summary>
-        public float ProcessorCountScale = 1.0f;
+        public float ProcessorCountScale = Configuration.ConcurrencyProcessorScale;
 
         /// <inheritdoc />
         public override int Execute(List<Task> tasks)
@@ -178,7 +179,12 @@ namespace Flax.Build.BuildSystem.Graph
 
         private int ExecuteTask(Task task)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            string name = "Task";
+            if (task.ProducedFiles != null && task.ProducedFiles.Count != 0)
+                name = Path.GetFileName(task.ProducedFiles[0]);
+            var profilerEvent = Profiling.Begin(name);
+
+            var startInfo = new ProcessStartInfo
             {
                 WorkingDirectory = task.WorkingDirectory,
                 FileName = task.CommandPath,
@@ -230,10 +236,13 @@ namespace Flax.Build.BuildSystem.Graph
                 // Hang until process end
                 process.WaitForExit();
 
+                Profiling.End(profilerEvent);
                 return process.ExitCode;
             }
             finally
             {
+                Profiling.End(profilerEvent);
+
                 // Ensure to cleanup data
                 process?.Close();
             }

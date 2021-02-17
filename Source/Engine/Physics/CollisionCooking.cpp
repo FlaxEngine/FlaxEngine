@@ -10,10 +10,12 @@
 #include <ThirdParty/PhysX/cooking/PxCooking.h>
 #include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
 
+#define CONVEX_VERTEX_MIN 8
+#define CONVEX_VERTEX_MAX 255
 #define ENSURE_CAN_COOK \
 	if (Physics::GetCooking() == nullptr) \
 	{ \
-		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use terrain generation at runtime."); \
+		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use collision generation at runtime."); \
 		return true; \
 	}
 
@@ -27,7 +29,10 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
     desc.points.stride = sizeof(Vector3);
     desc.points.data = input.VertexData;
     desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-    desc.vertexLimit = input.ConvexVertexLimit;
+    if (input.ConvexVertexLimit == 0)
+        desc.vertexLimit = CONVEX_VERTEX_MAX;
+    else
+        desc.vertexLimit = (PxU16)Math::Clamp(input.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
     if (input.ConvexFlags & ConvexMeshGenerationFlags::SkipValidation)
         desc.flags |= PxConvexFlag::Enum::eDISABLE_MESH_VALIDATION;
     if (input.ConvexFlags & ConvexMeshGenerationFlags::UsePlaneShifting)
@@ -83,9 +88,9 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
 
 bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::SerializedOptions& outputOptions, BytesContainer& outputData)
 {
-    int32 convexVertexLimit = Math::Clamp(arg.ConvexVertexLimit, 8, 255);
+    int32 convexVertexLimit = Math::Clamp(arg.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
     if (arg.ConvexVertexLimit == 0)
-        convexVertexLimit = 255;
+        convexVertexLimit = CONVEX_VERTEX_MAX;
 
     DataContainer<Vector3> finalVertexData;
     DataContainer<uint32> finalIndexData;
@@ -106,19 +111,19 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         auto lod = &arg.OverrideModelData->LODs[lodIndex];
         const int32 meshesCount = lod->Meshes.Count();
 
-            // Count vertex/index buffer sizes
-            int32 vCount = 0;
-            int32 iCount = 0;
-            for (int32 i = 0; i < meshesCount; i++)
-            {
-                const auto mesh = lod->Meshes[i];
-                vCount += mesh->Positions.Count();
+        // Count vertex/index buffer sizes
+        int32 vCount = 0;
+        int32 iCount = 0;
+        for (int32 i = 0; i < meshesCount; i++)
+        {
+            const auto mesh = lod->Meshes[i];
+            vCount += mesh->Positions.Count();
 
-                if (needIndexBuffer)
-                {
-                    iCount += mesh->Indices.Count() * 3;
-                }
+            if (needIndexBuffer)
+            {
+                iCount += mesh->Indices.Count() * 3;
             }
+        }
 
         if (meshesCount == 1)
         {

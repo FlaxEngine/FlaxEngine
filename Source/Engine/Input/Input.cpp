@@ -98,6 +98,12 @@ Delegate<StringView> Input::ActionTriggered;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
+void InputSettings::Apply()
+{
+    Input::ActionMappings = ActionMappings;
+    Input::AxisMappings = AxisMappings;
+}
+
 void Mouse::OnMouseMoved(const Vector2& newPosition)
 {
     _prevState.MousePosition = newPosition;

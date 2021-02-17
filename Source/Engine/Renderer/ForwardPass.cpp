@@ -62,11 +62,9 @@ void ForwardPass::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Delete pipeline states
+    // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psApplyDistortion);
-
-    // Release assets
-    _shader.Unlink();
+    _shader = nullptr;
 }
 
 void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output)

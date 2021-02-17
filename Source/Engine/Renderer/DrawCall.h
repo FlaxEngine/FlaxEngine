@@ -113,6 +113,11 @@ public:
 /// </summary>
 struct DrawCall
 {
+    /// <summary>
+    /// The material to use for rendering.
+    /// </summary>
+    IMaterial* Material;
+
     struct
     {
         /// <summary>
@@ -129,16 +134,6 @@ struct DrawCall
         /// The geometry vertex buffers byte offsets.
         /// </summary>
         uint32 VertexBuffersOffsets[3];
-
-        /// <summary>
-        /// The location of the first index read by the GPU from the index buffer.
-        /// </summary>
-        int32 StartIndex;
-
-        /// <summary>
-        /// The indices count.
-        /// </summary>
-        int32 IndicesCount;
     } Geometry;
 
     /// <summary>
@@ -146,66 +141,58 @@ struct DrawCall
     /// </summary>
     int32 InstanceCount;
 
-    /// <summary>
-    /// The indirect draw arguments offset.
-    /// </summary>
-    uint32 IndirectArgsOffset;
-
-    /// <summary>
-    /// The indirect draw arguments buffer.
-    /// </summary>
-    GPUBuffer* IndirectArgsBuffer;
-
-    /// <summary>
-    /// The target material to use.
-    /// </summary>
-    IMaterial* Material;
-
-    // Particles don't use skinning nor lightmaps so pack those stuff together
     union
     {
         struct
         {
             /// <summary>
-            /// Pointer to lightmap for static object with prebaked lighting.
+            /// The location of the first index read by the GPU from the index buffer.
             /// </summary>
+            int32 StartIndex;
+
+            /// <summary>
+            /// The indices count.
+            /// </summary>
+            int32 IndicesCount;
+        };
+
+        struct
+        {
+            /// <summary>
+            /// The indirect draw arguments offset.
+            /// </summary>
+            uint32 IndirectArgsOffset;
+
+            /// <summary>
+            /// The indirect draw arguments buffer.
+            /// </summary>
+            GPUBuffer* IndirectArgsBuffer;
+        };
+    } Draw;
+
+    // Per-material shader data packed into union
+    union
+    {
+        struct
+        {
             const Lightmap* Lightmap;
+            Rectangle LightmapUVsArea;
+        } Features;
 
-            /// <summary>
-            /// The skinning data. If set then material should use GPU skinning during rendering.
-            /// </summary>
+        struct
+        {
+            const Lightmap* Lightmap;
+            Rectangle LightmapUVsArea;
             SkinnedMeshDrawData* Skinning;
-        };
+            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            float LODDitherFactor; // The model LOD transition dither progress.
+            Matrix PrevWorld;
+        } Surface;
 
         struct
         {
-            /// <summary>
-            /// The particles data. Used only by the particles shaders.
-            /// </summary>
-            class ParticleBuffer* Particles;
-
-            /// <summary>
-            /// The particle module to draw.
-            /// </summary>
-            class ParticleEmitterGraphCPUNode* Module;
-        };
-    };
-
-    /// <summary>
-    /// Object world transformation matrix.
-    /// </summary>
-    Matrix World;
-
-    // Terrain and particles don't use previous world matrix so pack those stuff together
-    union
-    {
-        /// <summary>
-        /// Object world transformation matrix using during previous frame.
-        /// </summary>
-        Matrix PrevWorld;
-
-        struct
-        {
+            const Lightmap* Lightmap;
+            Rectangle LightmapUVsArea;
             Vector4 HeightmapUVScaleBias;
             Vector4 NeighborLOD;
             Vector2 OffsetUV;
@@ -213,25 +200,47 @@ struct DrawCall
             float ChunkSizeNextLOD;
             float TerrainChunkSizeLOD0;
             const class TerrainPatch* Patch;
-        } TerrainData;
+        } Terrain;
 
         struct
         {
-            int32 RibbonOrderOffset;
-            float UVTilingDistance;
-            float UVScaleX;
-            float UVScaleY;
-            float UVOffsetX;
-            float UVOffsetY;
-            uint32 SegmentCount;
-            GPUBuffer* SegmentDistances;
-        } Ribbon;
+            class ParticleBuffer* Particles;
+            class ParticleEmitterGraphCPUNode* Module;
+
+            struct
+            {
+                int32 OrderOffset;
+                float UVTilingDistance;
+                float UVScaleX;
+                float UVScaleY;
+                float UVOffsetX;
+                float UVOffsetY;
+                uint32 SegmentCount;
+                GPUBuffer* SegmentDistances;
+            } Ribbon;
+        } Particle;
+
+        struct
+        {
+            GPUBuffer* SplineDeformation;
+            Matrix LocalMatrix; // Geometry transformation applied before deformation.
+            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            float Segment;
+            float ChunksPerSegment;
+            float MeshMinZ;
+            float MeshMaxZ;
+        } Deformable;
+
+        struct
+        {
+            byte Raw[96];
+        } Custom;
     };
 
     /// <summary>
-    /// Lightmap UVs area that entry occupies.
+    /// Object world transformation matrix.
     /// </summary>
-    Rectangle LightmapUVsArea;
+    Matrix World;
 
     /// <summary>
     /// Object location in the world used for draw calls sorting.
@@ -244,34 +253,15 @@ struct DrawCall
     float WorldDeterminantSign;
 
     /// <summary>
-    /// Object geometry size in the world (unscaled).
-    /// </summary>
-    Vector3 GeometrySize;
-
-    /// <summary>
     /// The random per-instance value (normalized to range 0-1).
     /// </summary>
     float PerInstanceRandom;
-
-    /// <summary>
-    /// The model LOD transition dither factor.
-    /// </summary>
-    float LODDitherFactor;
 
     /// <summary>
     /// Does nothing.
     /// </summary>
     DrawCall()
     {
-    }
-
-    /// <summary>
-    /// Determines whether world transform matrix is performing negative scale (then model culling should be inverted).
-    /// </summary>
-    /// <returns><c>true</c> if world matrix contains negative scale; otherwise, <c>false</c>.</returns>
-    FORCE_INLINE bool IsNegativeScale() const
-    {
-        return WorldDeterminantSign < 0;
     }
 };
 
@@ -333,6 +323,6 @@ struct TIsPODType<GeometryDrawStateData>
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
 	if (drawState.PrevFrame != frame) \
 	{ \
-		drawState.PrevWorld = _world; \
+		drawState.PrevWorld = worldMatrix; \
 		drawState.PrevFrame = frame; \
 	}

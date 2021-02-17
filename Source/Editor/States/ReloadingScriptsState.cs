@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.States
 {
@@ -17,6 +18,27 @@ namespace FlaxEditor.States
         internal ReloadingScriptsState(Editor editor)
         : base(editor)
         {
+        }
+
+        /// <inheritdoc />
+        public override void OnEnter()
+        {
+            base.OnEnter();
+
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+        }
+
+        /// <inheritdoc />
+        public override void OnExit(State nextState)
+        {
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+
+            base.OnExit(nextState);
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            StateMachine.GoToState<EditingSceneState>();
         }
     }
 }

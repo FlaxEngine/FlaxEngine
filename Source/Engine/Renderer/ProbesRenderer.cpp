@@ -333,7 +333,7 @@ void ProbesRenderer::Release()
     SAFE_DELETE_GPU_RESOURCE(_psAccDiffuseIrradiance);
     SAFE_DELETE_GPU_RESOURCE(_psAccumulateCubeFaces);
     SAFE_DELETE_GPU_RESOURCE(_psCopyFrameLHB);
-    _shader.Unlink();
+    _shader = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_output);
     SAFE_DELETE(_task);
     SAFE_DELETE_GPU_RESOURCE(_probe);

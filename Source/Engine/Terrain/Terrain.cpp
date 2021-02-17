@@ -71,7 +71,7 @@ void Terrain::UpdateLayerBits()
     filterData.word0 = GetLayerMask();
 
     // Own layer mask
-    filterData.word1 = PhysicsSettings::Instance()->LayerMasks[GetLayer()];
+    filterData.word1 = Physics::LayerMasks[GetLayer()];
 
     // Update the shapes layer bits
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)

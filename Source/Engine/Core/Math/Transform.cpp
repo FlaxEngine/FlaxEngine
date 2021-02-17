@@ -43,37 +43,42 @@ void Transform::GetWorld(Matrix& result) const
 Transform Transform::Add(const Vector3& translation) const
 {
     Transform result;
-
     result.Orientation = Orientation;
     result.Scale = Scale;
     Vector3::Add(Translation, translation, result.Translation);
-
     return result;
 }
 
 Transform Transform::Add(const Transform& other) const
 {
     Transform result;
-
     Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
     Vector3::Multiply(Scale, other.Scale, result.Scale);
     Vector3::Add(Translation, other.Translation, result.Translation);
+    return result;
+}
 
+Transform Transform::Subtract(const Transform& other) const
+{
+    Transform result;
+    Vector3::Subtract(Translation, other.Translation, result.Translation);
+    const Quaternion invRotation = other.Orientation.Conjugated();
+    Quaternion::Multiply(Orientation, invRotation, result.Orientation);
+    result.Orientation.Normalize();
+    Vector3::Divide(Scale, other.Scale, result.Scale);
     return result;
 }
 
 Transform Transform::LocalToWorld(const Transform& other) const
 {
     Transform result;
-
     Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
     Vector3::Multiply(Scale, other.Scale, result.Scale);
     Vector3 tmp = other.Translation * Scale;
     Vector3::Transform(tmp, Orientation, tmp);
     Vector3::Add(tmp, Translation, result.Translation);
-
     return result;
 }
 
@@ -92,6 +97,13 @@ Vector3 Transform::LocalToWorld(const Vector3& point) const
     Vector3 result = point * Scale;
     Vector3::Transform(result, Orientation, result);
     return result + Translation;
+}
+
+Vector3 Transform::LocalToWorldVector(const Vector3& vector) const
+{
+    Vector3 result = vector * Scale;
+    Vector3::Transform(result, Orientation, result);
+    return result;
 }
 
 void Transform::LocalToWorld(const Vector3& point, Vector3& result) const
@@ -167,6 +179,24 @@ Vector3 Transform::WorldToLocal(const Vector3& point) const
 
     Vector3 result = point - Translation;
     Vector3::Transform(result, invRotation, result);
+
+    return result * invScale;
+}
+
+Vector3 Transform::WorldToLocalVector(const Vector3& vector) const
+{
+    Vector3 invScale = Scale;
+    if (invScale.X != 0.0f)
+        invScale.X = 1.0f / invScale.X;
+    if (invScale.Y != 0.0f)
+        invScale.Y = 1.0f / invScale.Y;
+    if (invScale.Z != 0.0f)
+        invScale.Z = 1.0f / invScale.Z;
+
+    const Quaternion invRotation = Orientation.Conjugated();
+
+    Vector3 result;
+    Vector3::Transform(vector, invRotation, result);
 
     return result * invScale;
 }

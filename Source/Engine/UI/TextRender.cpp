@@ -319,15 +319,15 @@ void TextRender::Draw(RenderContext& renderContext)
         // Setup draw call
         DrawCall drawCall;
         drawCall.World = _world;
-        drawCall.PrevWorld = _drawState.PrevWorld;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.GeometrySize = _localBox.GetSize();
-        drawCall.Lightmap = nullptr;
-        drawCall.LightmapUVsArea = Rectangle::Empty;
-        drawCall.Skinning = nullptr;
+        drawCall.Surface.GeometrySize = _localBox.GetSize();
+        drawCall.Surface.PrevWorld = _drawState.PrevWorld;
+        drawCall.Surface.Lightmap = nullptr;
+        drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Surface.Skinning = nullptr;
+        drawCall.Surface.LODDitherFactor = 0.0f;
         drawCall.WorldDeterminantSign = Math::FloatSelect(_world.RotDeterminant(), 1, -1);
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
-        drawCall.LODDitherFactor = 0.0f;
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
         drawCall.Geometry.VertexBuffers[0] = _vb0.GetBuffer();
         drawCall.Geometry.VertexBuffers[1] = _vb1.GetBuffer();
@@ -336,14 +336,12 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.Geometry.VertexBuffersOffsets[1] = 0;
         drawCall.Geometry.VertexBuffersOffsets[2] = 0;
         drawCall.InstanceCount = 1;
-        drawCall.IndirectArgsBuffer = nullptr;
-        drawCall.IndirectArgsOffset = 0;
 
         // Submit draw calls
         for (const auto& e : _drawChunks)
         {
-            drawCall.Geometry.IndicesCount = e.IndicesCount;
-            drawCall.Geometry.StartIndex = e.StartIndex;
+            drawCall.Draw.IndicesCount = e.IndicesCount;
+            drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
             renderContext.List->AddDrawCall(drawModes, GetStaticFlags(), drawCall, true);
         }

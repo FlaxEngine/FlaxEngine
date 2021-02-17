@@ -155,6 +155,11 @@ public:
     /// </summary>
     API_PROPERTY() static void SetBounceThresholdVelocity(float value);
 
+    /// <summary>
+    /// The collision layers masks. Used to define layer-based collision detection.
+    /// </summary>
+    static uint32 LayerMasks[32];
+
 public:
 
     /// <summary>

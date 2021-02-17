@@ -3,61 +3,53 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "Engine/Serialization/Serialization.h"
 
 /// <summary>
 /// Time and game simulation settings container.
 /// </summary>
-/// <seealso cref="Settings{TimeSettings}" />
-class TimeSettings : public Settings<TimeSettings>
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API TimeSettings : public SettingsBase
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(TimeSettings);
 public:
 
     /// <summary>
     /// The target amount of the game logic updates per second (script updates frequency).
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(1), DefaultValue(30.0f), Limit(0, 1000), EditorDisplay(\"General\", \"Update FPS\")")
     float UpdateFPS = 30.0f;
 
     /// <summary>
     /// The target amount of the physics simulation updates per second (also fixed updates frequency).
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(2), DefaultValue(60.0f), Limit(0, 1000), EditorDisplay(\"General\", \"Physics FPS\")")
     float PhysicsFPS = 60.0f;
 
     /// <summary>
     /// The target amount of the frames rendered per second (actual game FPS).
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(3), DefaultValue(60.0f), Limit(0, 1000), EditorDisplay(\"General\", \"Draw FPS\")")
     float DrawFPS = 60.0f;
 
     /// <summary>
     /// The game time scale factor. Default is 1.
     /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(1.0f), Limit(0, 1000.0f, 0.1f), EditorDisplay(\"General\")")
     float TimeScale = 1.0f;
 
     /// <summary>
     /// The maximum allowed delta time (in seconds) for the game logic update step.
     /// </summary>
-    float MaxUpdateDeltaTime = (1.0f / 10.0f);
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(0.1f), Limit(0.1f, 1000.0f, 0.01f), EditorDisplay(\"General\")")
+    float MaxUpdateDeltaTime = 0.1f;
 
 public:
 
-    // [Settings]
+    /// <summary>
+    /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
+    /// </summary>
+    static TimeSettings* Get();
+
+    // [SettingsBase]
     void Apply() override;
-
-    void RestoreDefault() override
-    {
-        UpdateFPS = 30.0f;
-        PhysicsFPS = 60.0f;
-        DrawFPS = 60.0f;
-        TimeScale = 1.0f;
-        MaxUpdateDeltaTime = 1.0f / 10.0f;
-    }
-
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(UpdateFPS);
-        DESERIALIZE(PhysicsFPS);
-        DESERIALIZE(DrawFPS);
-        DESERIALIZE(TimeScale);
-        DESERIALIZE(MaxUpdateDeltaTime);
-    }
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

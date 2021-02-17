@@ -9,6 +9,7 @@
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/ObjectsRemovalService.h"
+#include "Engine/Core/Config/LayersTagsSettings.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
@@ -97,6 +98,7 @@ public:
     {
     }
 
+    bool Init() override;
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
@@ -124,6 +126,8 @@ Delegate<Scene*, const Guid&> Level::SceneUnloaded;
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
 Action Level::ScriptsReloadEnd;
+Array<String> Level::Tags;
+String Level::Layers[32];
 
 bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
 {
@@ -155,6 +159,15 @@ bool LevelImpl::deleteActor(Actor* actor)
 
     actor->DeleteObject();
 
+    return false;
+}
+
+bool LevelService::Init()
+{
+    auto& settings = *LayersAndTagsSettings::Get();
+    Level::Tags = settings.Tags;
+    for (int32 i = 0; i < ARRAY_COUNT(Level::Layers); i++)
+        Level::Layers[i] = settings.Layers[i];
     return false;
 }
 
@@ -640,6 +653,25 @@ void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid scen
         Level::SceneUnloaded(scene, sceneId);
         break;
     }
+}
+
+int32 Level::GetOrAddTag(const StringView& tag)
+{
+    int32 index = Tags.Find(tag);
+    if (index == INVALID_INDEX)
+    {
+        index = Tags.Count();
+        Tags.AddOne() = tag;
+    }
+    return index;
+}
+
+int32 Level::GetNonEmptyLayerNamesCount()
+{
+    int32 result = 31;
+    while (result >= 0 && Layers[result].IsEmpty())
+        result--;
+    return result + 1;
 }
 
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)

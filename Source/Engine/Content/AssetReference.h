@@ -79,14 +79,6 @@ public:
     }
 
     /// <summary>
-    /// Clears the asset reference.
-    /// </summary>
-    FORCE_INLINE void Unlink()
-    {
-        OnSet(nullptr);
-    }
-
-    /// <summary>
     /// Gets the asset property value as string.
     /// </summary>
     /// <returns>The string.</returns>
@@ -135,7 +127,7 @@ protected:
         if (_asset == asset)
         {
             Unload();
-            Unlink();
+            OnSet(nullptr);
         }
     }
 };

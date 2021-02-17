@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -553,11 +554,30 @@ namespace FlaxEditor.CustomEditors
                 var group = Group(name, true);
                 group.Panel.Close(false);
                 group.Panel.TooltipText = tooltip;
+                group.Panel.Tag = editor;
+                group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                 return group.Object(values, editor);
             }
 
             var property = AddPropertyItem(name, tooltip);
             return property.Object(values, editor);
+        }
+
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        {
+            var linkedEditor = (CustomEditor)groupPanel.Tag;
+            var menu = new ContextMenu();
+
+            var revertToPrefab = menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue);
+            revertToPrefab.Enabled = linkedEditor.CanRevertReferenceValue;
+            var resetToDefault = menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue);
+            resetToDefault.Enabled = linkedEditor.CanRevertDefaultValue;
+            menu.AddSeparator();
+            menu.AddButton("Copy", linkedEditor.Copy);
+            var paste = menu.AddButton("Paste", linkedEditor.Paste);
+            paste.Enabled = linkedEditor.CanPaste;
+
+            menu.Show(groupPanel, location);
         }
 
         /// <summary>
