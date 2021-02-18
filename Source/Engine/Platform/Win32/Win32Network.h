@@ -8,9 +8,6 @@
 
 class FLAXENGINE_API Win32Network : public NetworkBase
 {
-    friend NetworkEndPoint;
-    friend NetworkSocket;
-
 public:
     // [NetworkBase]
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv);

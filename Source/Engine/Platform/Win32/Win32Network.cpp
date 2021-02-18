@@ -18,6 +18,8 @@ static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0
 // @formatter:on
 
 /*
+ * Todo :
+ *  Return precise errors so user can understand what's happening ( disconnected, ect ... )
  * Known issues :
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
@@ -418,7 +420,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
 int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
 {
     uint32 size;
-    if (endPoint == nullptr) // TCP
+    if (endPoint == nullptr)
     {
         if ((size = recv(*(SOCKET*)socket.Data, (char*)buffer, bufferSize, 0)) == SOCKET_ERROR)
         {
@@ -429,7 +431,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
             return -1;
         }
     }
-    else // UDP
+    else
     {
         int32 addrsize = sizeof sockaddr_in6;
         sockaddr_in6 addr;
