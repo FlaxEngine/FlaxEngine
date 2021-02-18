@@ -81,10 +81,8 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         LOG(Error, "Unable to extract address from sockaddr! Error : {0}", GetLastErrorMessage());
         return true;
     }
-    endPoint.Address = String(ip);
     char strPort[6];
     _itoa(port, strPort, 10);
-    endPoint.Port = String(strPort);
     endPoint.IPVersion = GetIPVersionFromAddr(*addr);
     memcpy(endPoint.Data, addr, size);
     return false;
@@ -225,7 +223,7 @@ bool Win32Network::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoin
         int error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetErrorMessage(error));
+        LOG(Error, "Unable to connect socket to address! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error));
         return true;
     }
     return false;
@@ -242,7 +240,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     const uint16 size = endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetLastErrorMessage());
+        LOG(Error, "Unable to bind socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -385,7 +383,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, GetLastErrorMessage());
+            LOG(Error, "Unable to send data! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, GetLastErrorMessage());
             return -1;
         }
     }
@@ -427,7 +425,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     return size;
 }
 
-bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
+bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     int status;
     addrinfoW hints;
@@ -440,15 +438,15 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
         hints.ai_flags = AI_PASSIVE;
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
-    if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
+    if ((status = GetAddrInfoW(address.Address == String::Empty ? nullptr : address.Address.Get(), address.Address == String::Empty ? nullptr : address.Port.Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address ? address->Get() : String("ANY"), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? address.Address.Get() : String("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address ? address->Get() : String("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? address.Address.Get() : String("ANY"));
         return true;
     }
 
@@ -483,7 +481,6 @@ NetworkEndPoint Win32Network::RemapEndPointToIPv6(NetworkEndPoint endPoint)
     addr6->sin6_port = addr4->sin_port;
     memcpy(&addr6->sin6_addr.u.Byte[12], &addr4->sin_addr, 4); // :::::FFFF:XXXX:XXXX    X=IPv4
     pv6.IPVersion = NetworkIPVersion::IPv6;
-    pv6.Port = endPoint.Port;
 
     return pv6;
 }

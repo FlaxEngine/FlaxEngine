@@ -36,11 +36,15 @@ struct FLAXENGINE_API NetworkSocket
     byte Data[8] = {};
 };
 
+struct FLAXENGINE_API NetworkAddress
+{
+    String Address;
+    String Port;
+};
+
 struct FLAXENGINE_API NetworkEndPoint
 {
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
-    String Address;
-    String Port;
     byte Data[28] = {};
 };
 
@@ -250,13 +254,12 @@ public:
     /// <summary>
     /// Creates an end point.
     /// </summary>
-    /// <param name="address">The address (hostname, IPv4 or IPv6).</param>
-    /// <param name="port">The port.</param>
+    /// <param name="address">The address.</param>
     /// <param name="ipv">The ip version.</param>
     /// <param name="endPoint">The created end point.</param>
     /// <param name="bindable">True if the end point will be connected or binded.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
+    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
 
     /// <summary>
     /// Remaps an ipv4 end point to an ipv6 one.
