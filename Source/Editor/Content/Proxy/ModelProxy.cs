@@ -45,11 +45,11 @@ namespace FlaxEditor.Content
         {
             base.OnContentWindowContextMenu(menu, item);
 
-            menu.AddButton("Generate collision data", () =>
+            menu.AddButton("Create collision data", () =>
             {
                 var model = FlaxEngine.Content.LoadAsync<Model>(((ModelAssetItem)item).ID);
-                var cdProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
-                cdProxy.CreateCollisionDataFromModel(model);
+                var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
+                collisionDataProxy.CreateCollisionDataFromModel(model);
             });
         }
 
