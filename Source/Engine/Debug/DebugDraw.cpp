@@ -20,6 +20,8 @@
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Debug/DebugLog.h"
+#include "Engine/Render2D/Render2D.h"
+#include "Engine/Render2D/FontAsset.h"
 
 // Debug draw service configuration
 #define DEBUG_DRAW_INITIAL_VB_CAPACITY (4 * 1024)
@@ -51,6 +53,15 @@ struct DebugTriangle
     Vector3 V1;
     Vector3 V2;
     Color32 Color;
+    float TimeLeft;
+};
+
+struct DebugText2D
+{
+    Array<Char, InlinedAllocation<64>> Text;
+    Vector2 Position;
+    int32 Size;
+    Color Color;
     float TimeLeft;
 };
 
@@ -133,10 +144,12 @@ struct DebugDrawData
     Array<DebugTriangle> OneFrameTriangles;
     Array<DebugTriangle> DefaultWireTriangles;
     Array<DebugTriangle> OneFrameWireTriangles;
+    Array<DebugText2D> DefaultText2D;
+    Array<DebugText2D> OneFrameText2D;
 
     inline int32 Count() const
     {
-        return LinesCount() + TrianglesCount();
+        return LinesCount() + TrianglesCount() + Text2DCount();
     }
 
     inline int32 LinesCount() const
@@ -147,6 +160,11 @@ struct DebugDrawData
     inline int32 TrianglesCount() const
     {
         return DefaultTriangles.Count() + OneFrameTriangles.Count() + DefaultWireTriangles.Count() + OneFrameWireTriangles.Count();
+    }
+
+    inline int32 Text2DCount() const
+    {
+        return DefaultText2D.Count() + OneFrameText2D.Count();
     }
 
     inline void Add(const DebugLine& l)
@@ -178,10 +196,12 @@ struct DebugDrawData
         UpdateList(deltaTime, DefaultLines);
         UpdateList(deltaTime, DefaultTriangles);
         UpdateList(deltaTime, DefaultWireTriangles);
+        UpdateList(deltaTime, DefaultText2D);
 
         OneFrameLines.Clear();
         OneFrameTriangles.Clear();
         OneFrameWireTriangles.Clear();
+        OneFrameText2D.Clear();
     }
 
     inline void Clear()
@@ -192,6 +212,8 @@ struct DebugDrawData
         OneFrameTriangles.Clear();
         DefaultWireTriangles.Clear();
         OneFrameWireTriangles.Clear();
+        DefaultText2D.Clear();
+        OneFrameText2D.Clear();
     }
 
     inline void Release()
@@ -202,6 +224,8 @@ struct DebugDrawData
         OneFrameTriangles.Resize(0);
         DefaultWireTriangles.Resize(0);
         OneFrameWireTriangles.Resize(0);
+        DefaultText2D.Resize(0);
+        OneFrameText2D.Resize(0);
     }
 };
 
@@ -216,6 +240,7 @@ namespace
     DebugDrawContext GlobalContext;
     DebugDrawContext* Context;
     AssetReference<Shader> DebugDrawShader;
+    AssetReference<FontAsset> DebugDrawFont;
     PsData DebugDrawPsLinesDefault;
     PsData DebugDrawPsLinesDepthTest;
     PsData DebugDrawPsWireTrianglesDefault;
@@ -601,8 +626,6 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     context->BindCB(0, cb);
     auto vb = DebugDrawVB->GetBuffer();
 
-#define DRAW(drawCall) if (drawCall.VertexCount)
-
     // Draw with depth test
     if (depthTestLines.VertexCount + depthTestTriangles.VertexCount + depthTestWireTriangles.VertexCount > 0)
     {
@@ -673,7 +696,30 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         }
     }
 
-#undef DRAW
+    // Text 2D
+    if (Context->DebugDrawDefault.TrianglesCount())
+    {
+        PROFILE_GPU_CPU_NAMED("2D");
+
+        if (!DebugDrawFont)
+        {
+            DebugDrawFont = Content::LoadAsyncInternal<FontAsset>(TEXT("Editor/Fonts/Roboto-Regular"));
+        }
+        if (DebugDrawFont && DebugDrawFont->IsLoaded())
+        {
+            Viewport viewport = renderContext.Task->GetViewport();
+            Render2D::Begin(context, target, nullptr, viewport);
+            for (auto& t : Context->DebugDrawDefault.DefaultText2D)
+            {
+            }
+            for (auto& t : Context->DebugDrawDefault.OneFrameText2D)
+            {
+                const StringView text(t.Text.Get(), t.Text.Count() - 1);
+                Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+            }
+            Render2D::End();
+        }
+    }
 }
 
 void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes)
@@ -1274,6 +1320,21 @@ void DebugDraw::DrawBox(const OrientedBoundingBox& box, const Color& color, floa
 
         list->Add(t);
     }
+}
+
+void DebugDraw::DrawText(const StringView& text, const Vector2& position, const Color& color, int32 size, float duration)
+{
+    if (text.Length() == 0 || size < 4)
+        return;
+    Array<DebugText2D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText2D : &Context->DebugDrawDefault.OneFrameText2D;
+    auto& t = list->AddOne();
+    t.Text.Resize(text.Length() + 1);
+    Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
+    t.Text[text.Length()] = 0;
+    t.Position = position;
+    t.Size = size;
+    t.Color = color;
+    t.TimeLeft = duration;
 }
 
 #endif

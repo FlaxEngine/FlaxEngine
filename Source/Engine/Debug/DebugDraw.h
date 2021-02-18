@@ -307,6 +307,16 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawBox(const OrientedBoundingBox& box, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the text on a screen (2D).
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="position">The position of the text on the screen (in screen-space coordinates).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Vector2& position, const Color& color, int32 size = 20, float duration = 0.0f);
 };
 
 #define DEBUG_DRAW_LINE(start, end, color, duration, depthTest) DebugDraw::DrawLine(start, end, color, duration, depthTest)
@@ -326,7 +336,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_SPHERE(sphere, color, duration, depthTest) DebugDraw::DrawWireSphere(sphere, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, radius, height, color, duration, depthTest)
-#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireArrow(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_TEXT(text, position, color, size, duration) DebugDraw::DrawText(text, position, color, size, duration)
 
 #else
 
@@ -348,5 +359,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_TEXT(text, position, color, size, duration)
 
 #endif
