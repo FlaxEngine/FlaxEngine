@@ -253,7 +253,7 @@ bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
 {
     if (listen(*(SOCKET*)socket.Data, (int32)queueSize) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", GetLastErrorMessage());
+        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -493,15 +493,15 @@ bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv,
         hints.ai_flags = AI_PASSIVE;
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
-    if ((status = GetAddrInfoW(address.Address == String::Empty ? nullptr : address.Address.Get(), address.Address == String::Empty ? nullptr : address.Port.Get(), &hints, &info)) != 0)
+    if ((status = GetAddrInfoW(address.Address == String::Empty ? nullptr : address.Address.Get(), address.Port == String::Empty ? nullptr : address.Port.Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? address.Address.Get() : String("ANY"), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? address.Address : String("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? address.Address.Get() : String("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? address.Address : String("ANY"));
         return true;
     }
 
