@@ -195,6 +195,55 @@ namespace FlaxEditor.Modules
             OnSelectionChanged();
         }
 
+        private void OnDirty(Actor actor)
+        {
+            var options = Editor.Options.Options;
+            var isPlayMode = Editor.StateMachine.IsPlayMode;
+
+            // Auto CSG mesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildCSG)
+            {
+                if (actor is BoxBrush && actor.Scene)
+                    actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
+            }
+
+            // Auto NavMesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && (actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+            {
+                var bounds = actor.BoxWithChildren;
+                Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+            }
+        }
+
+        private void OnDirty(IEnumerable<SceneGraphNode> objects)
+        {
+            var options = Editor.Options.Options;
+            var isPlayMode = Editor.StateMachine.IsPlayMode;
+
+            // Auto CSG mesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildCSG)
+            {
+                foreach (var obj in objects)
+                {
+                    if (obj is ActorNode node && node.Actor is BoxBrush)
+                        node.Actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
+                }
+            }
+
+            // Auto NavMesh rebuild
+            if (!isPlayMode && options.General.AutoRebuildNavMesh)
+            {
+                foreach (var obj in objects)
+                {
+                    if (obj is ActorNode node && node.Actor.Scene && (node.Actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+                    {
+                        var bounds = node.Actor.BoxWithChildren;
+                        Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Spawns the specified actor to the game (with undo).
         /// </summary>
@@ -242,21 +291,7 @@ namespace FlaxEditor.Modules
 
             SpawnEnd?.Invoke();
 
-            var options = Editor.Options.Options;
-
-            // Auto CSG mesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildCSG)
-            {
-                if (actor is BoxBrush && actor.Scene)
-                    actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
-            }
-
-            // Auto NavMesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && (actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
-            {
-                var bounds = actor.BoxWithChildren;
-                Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
-            }
+            OnDirty(actor);
         }
 
         /// <summary>
@@ -271,35 +306,45 @@ namespace FlaxEditor.Modules
             if (Level.IsAnySceneLoaded == false)
                 throw new InvalidOperationException("Cannot spawn actor when no scene is loaded.");
 
-            var actionList = new List<IUndoAction>();
-            
+            var actionList = new IUndoAction[4];
             Actor old = ((ActorNode)Editor.SceneEditing.Selection[0]).Actor;
             Actor actor = (Actor)FlaxEngine.Object.New(to);
+            var parent = old.Parent;
+            var orderInParent = old.OrderInParent;
 
-            actionList.Add(new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[0], OnSelectionUndo));
+            SelectionDeleteBegin?.Invoke();
+
+            actionList[0] = new SelectionChangeAction(Selection.ToArray(), new SceneGraphNode[0], OnSelectionUndo);
             actionList[0].Do();
-            actionList.Add(new DeleteActorsAction(new List<SceneGraphNode>
+
+            actionList[1] = new DeleteActorsAction(new List<SceneGraphNode>
             {
                 Editor.Instance.Scene.GetActorNode(old)
-            }));
-            SelectionDeleteBegin?.Invoke();
+            });
             actionList[1].Do();
+
             SelectionDeleteEnd?.Invoke();
 
-            bool isPlayMode = Editor.StateMachine.IsPlayMode;
-            
             SpawnBegin?.Invoke();
-            
+
+            // Copy properties
             actor.Transform = old.Transform;
-            if (old.Parent != null)
-                actor.Parent = old.Parent;
             actor.StaticFlags = old.StaticFlags;
             actor.HideFlags = old.HideFlags;
             actor.Layer = old.Layer;
             actor.Tag = old.Tag;
             actor.Name = old.Name;
             actor.IsActive = old.IsActive;
-            for (var i = old.ScriptsCount - 1; i >=0; i--)
+
+            // Spawn actor
+            Level.SpawnActor(actor, parent);
+            if (parent != null)
+                actor.OrderInParent = orderInParent;
+            if (Editor.StateMachine.IsPlayMode)
+                actor.StaticFlags = StaticFlags.None;
+
+            // Move children
+            for (var i = old.ScriptsCount - 1; i >= 0; i--)
             {
                 var script = old.Scripts[i];
                 script.Actor = actor;
@@ -310,46 +355,30 @@ namespace FlaxEditor.Modules
             {
                 old.Children[i].Parent = actor;
             }
-            
-            Level.SpawnActor(actor, actor.Parent);
-            
-            if (isPlayMode)
-                actor.StaticFlags = StaticFlags.None;
-            
+
             var actorNode = Editor.Instance.Scene.GetActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
 
             actorNode.PostSpawn();
             Editor.Scene.MarkSceneEdited(actor.Scene);
-            
-            actionList.Add(new DeleteActorsAction(new List<SceneGraphNode>
+
+            actionList[2] = new DeleteActorsAction(new List<SceneGraphNode>
             {
                 actorNode
-            }, true));
-            actionList.Add(new SelectionChangeAction(new SceneGraphNode[0], new SceneGraphNode[]{actorNode}, OnSelectionUndo));
+            }, true);
+
+            actionList[3] = new SelectionChangeAction(new SceneGraphNode[0], new SceneGraphNode[] { actorNode }, OnSelectionUndo);
             actionList[3].Do();
+
             var actions = new MultiUndoAction(actionList);
             Undo.AddAction(actions);
+
             SpawnEnd?.Invoke();
 
-            var options = Editor.Options.Options;
-
-            // Auto CSG mesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildCSG)
-            {
-                if (actor is BoxBrush && actor.Scene)
-                    actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
-            }
-
-            // Auto NavMesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && (actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
-            {
-                var bounds = actor.BoxWithChildren;
-                Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
-            }
+            OnDirty(actor);
         }
-        
+
         /// <summary>
         /// Deletes the selected objects. Supports undo/redo.
         /// </summary>
@@ -359,8 +388,6 @@ namespace FlaxEditor.Modules
             var objects = Selection.Where(x => x.CanDelete).ToList().BuildAllNodes().Where(x => x.CanDelete).ToList();
             if (objects.Count == 0)
                 return;
-
-            bool isPlayMode = Editor.StateMachine.IsPlayMode;
 
             SelectionDeleteBegin?.Invoke();
 
@@ -381,30 +408,7 @@ namespace FlaxEditor.Modules
 
             SelectionDeleteEnd?.Invoke();
 
-            var options = Editor.Options.Options;
-
-            // Auto CSG mesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildCSG)
-            {
-                foreach (var obj in objects)
-                {
-                    if (obj is ActorNode node && node.Actor is BoxBrush)
-                        node.Actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
-                }
-            }
-
-            // Auto NavMesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildNavMesh)
-            {
-                foreach (var obj in objects)
-                {
-                    if (obj is ActorNode node && node.Actor.Scene && (node.Actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
-                    {
-                        var bounds = node.Actor.BoxWithChildren;
-                        Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
-                    }
-                }
-            }
+            OnDirty(objects);
         }
 
         /// <summary>
