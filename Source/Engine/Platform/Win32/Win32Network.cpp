@@ -325,7 +325,7 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
 
 bool Win32Network::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
 {
-    if (!(group.Data = (byte*)malloc(capacity * SOCKGROUP_ITEMSIZE)))
+    if (!(group.Data = (byte*)Platform::Allocate(capacity * SOCKGROUP_ITEMSIZE, 16)))
     {
         LOG(Error, "Unable to malloc NetworkSocketGroup::Data ! Size : {0}", capacity * SOCKGROUP_ITEMSIZE);
         return true;
@@ -341,7 +341,7 @@ bool Win32Network::DestroySocketGroup(NetworkSocketGroup& group)
 {
     if (!group.Data)
         return true;
-    free(group.Data);
+    Platform::Free(group.Data);
     return false;
 }
 
@@ -381,7 +381,7 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
 
-    for(int i = 0; i < group.Capacity; i++)
+    for(int i = 0; i < (int)group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == -1)
         {
@@ -422,7 +422,7 @@ void Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index
 
 bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    for(int i = 0; i < group.Capacity; i++)
+    for(int i = 0; i < (int)group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == *(SOCKET*)&socket.Data)
         {
@@ -436,7 +436,7 @@ bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocke
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
-    for(int i = 0; i < group.Capacity; i++)
+    for(int i = 0; i < (int)group.Capacity; i++)
         ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
     group.Count = 0;
 }
