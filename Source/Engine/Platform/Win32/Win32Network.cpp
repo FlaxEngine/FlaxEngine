@@ -355,7 +355,7 @@ int32 Win32Network::Poll(NetworkSocketGroup& group)
 
 bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
 {
-    if (index >= SOCKGROUP_MAXCOUNT)
+    if (index >= group.Capacity)
         return true;
     pollfd* pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
     memset(&state, 0, sizeof state);
@@ -374,14 +374,14 @@ bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, Netwo
 
 int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    if (group.Count >= SOCKGROUP_MAXCOUNT)
+    if (group.Count >= group.Capacity)
         return -1;
     
     pollfd pollinfo;
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
 
-    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+    for(int i = 0; i < group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == -1)
         {
@@ -395,7 +395,7 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
 
 bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
 {
-    if (index >= SOCKGROUP_MAXCOUNT)
+    if (index >= group.Capacity)
         return true;
     SOCKET s = ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd;
     memcpy(socket->Data, &s, sizeof s);
@@ -422,7 +422,7 @@ void Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index
 
 bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+    for(int i = 0; i < group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == *(SOCKET*)&socket.Data)
         {
@@ -436,7 +436,7 @@ bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocke
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
-    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+    for(int i = 0; i < group.Capacity; i++)
         ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
     group.Count = 0;
 }
