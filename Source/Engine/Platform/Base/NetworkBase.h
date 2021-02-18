@@ -81,7 +81,9 @@ enum class FLAXENGINE_API NetworkSocketOption
     /// <summary>Enables IPv6/Ipv4 dual-stacking, UDP/TCP.</summary>
     IPv6Only,
     /// <summary>Retrieve the current path MTU, the socket must be connected UDP/TCP.</summary>
-    Mtu
+    Mtu,
+    // <summary>Socket type, DGRAM, STREAM ..</summary>
+    Type
 };
 
 struct FLAXENGINE_API NetworkSocketState

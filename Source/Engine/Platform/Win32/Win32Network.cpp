@@ -131,6 +131,7 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
     SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
     SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     SOCKOPT(NetworkSocketOption::Mtu, IPPROTO_IP , IP_MTU)
+    SOCKOPT(NetworkSocketOption::Type, SOL_SOCKET, SO_TYPE)
     }
 }
 
