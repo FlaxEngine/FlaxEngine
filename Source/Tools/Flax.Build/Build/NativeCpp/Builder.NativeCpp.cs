@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Flax.Build.Bindings;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
@@ -1135,8 +1136,11 @@ namespace Flax.Build
 
                     if (!entry.IsFolder)
                     {
-                        if (!ShouldCreateNewCopy(new System.IO.FileInfo(src), new System.IO.FileInfo(dstPath)))
-                            return;
+                        var srcFileInfo = new System.IO.FileInfo(src);
+                        var dstFileInfo = new System.IO.FileInfo(dstPath);
+
+                        if (!ShouldCreateNewCopy(srcFileInfo, dstFileInfo))
+                            continue;
 
                         Directory.CreateDirectory(Path.GetDirectoryName(dstPath));
                         File.Copy(src, dstPath, true);
@@ -1150,7 +1154,10 @@ namespace Flax.Build
                             var fileName = Path.GetFileName(file);
                             var dstFilePath = Path.Combine(dstPath, fileName);
 
-                            if (!ShouldCreateNewCopy(new System.IO.FileInfo(file), new System.IO.FileInfo(dstFilePath)))
+                            var srcFileInfo = new System.IO.FileInfo(file);
+                            var dstFileInfo = new System.IO.FileInfo(dstFilePath);
+
+                            if (!ShouldCreateNewCopy(srcFileInfo, dstFileInfo))
                                 continue;
 
                             File.Copy(file, dstFilePath, true);
