@@ -2,5 +2,9 @@
   {
     "Key": "T_CM_FILE",
     "Value": "File"
+  },
+  {
+    "Key": "T_CM_SAVEALL",
+    "Value": "Save All"
   }
 ]

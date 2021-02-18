@@ -221,7 +221,7 @@ namespace FlaxEditor.Surface
 
             _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () =>
             {
-                //FormatGraph(SelectedNodes);
+                FormatGraph(SelectedNodes);
             });
             _cmFormatNodesConnectionButton.Enabled = HasNodesSelection;
 

@@ -399,7 +399,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Exit", "Alt+F4", () => Editor.Windows.MainWindow.Close(ClosingReason.User));
 
             // Edit
-            MenuEdit = MainMenu.AddButton("Edit");
+            MenuEdit = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_EDIT"));
             cm = MenuEdit.ContextMenu;
             cm.VisibleChanged += OnMenuEditShowHide;
             _menuEditUndo = cm.AddButton(string.Empty, "Ctrl+Z", Editor.PerformUndo);
@@ -416,7 +416,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Find", "Ctrl+F", Editor.Windows.SceneWin.Search);
 
             // Scene
-            MenuScene = MainMenu.AddButton("Scene");
+            MenuScene = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_SCENE"));
             cm = MenuScene.ContextMenu;
             cm.VisibleChanged += OnMenuSceneShowHide;
             _menuSceneMoveActorToViewport = cm.AddButton("Move actor to viewport", MoveActorToViewport);
@@ -427,14 +427,14 @@ namespace FlaxEditor.Modules
             _menuSceneCreateTerrain = cm.AddButton("Create terrain", CreateTerrain);
 
             // Game
-            MenuGame = MainMenu.AddButton("Game");
+            MenuGame = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_GAME"));
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
             _menuGamePlay = cm.AddButton("Play", "F5", Editor.Simulation.RequestStartPlay);
             _menuGamePause = cm.AddButton("Pause", "F6", Editor.Simulation.RequestPausePlay);
 
             // Tools
-            MenuTools = MainMenu.AddButton("Tools");
+            MenuTools = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_TOOLS"));
             cm = MenuTools.ContextMenu;
             cm.VisibleChanged += OnMenuToolsShowHide;
             _menuToolsBuildScenes = cm.AddButton("Build scenes data", "Ctrl+F10", Editor.BuildScenesOrCancel);
@@ -457,7 +457,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Options", () => Editor.Windows.EditorOptionsWin.Show());
 
             // Window
-            MenuWindow = MainMenu.AddButton("Window");
+            MenuWindow = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_WINDOW"));
             cm = MenuWindow.ContextMenu;
             cm.VisibleChanged += OnMenuWindowVisibleChanged;
             cm.AddButton("Content", Editor.Windows.ContentWin.FocusOrShow);
@@ -478,7 +478,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Restore default layout", Editor.Windows.LoadDefaultLayout);
 
             // Help
-            MenuHelp = MainMenu.AddButton("Help");
+            MenuHelp = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_HELP"));
             cm = MenuHelp.ContextMenu;
             cm.AddButton("Discord", () => Platform.OpenUrl(Constants.DiscordUrl));
             cm.AddButton("Documentation", () => Platform.OpenUrl(Constants.DocsUrl));
