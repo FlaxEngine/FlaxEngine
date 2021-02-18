@@ -353,12 +353,21 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
 {
     if (group.Count >= SOCKGROUP_MAXCOUNT)
         return -1;
+    
     pollfd pollinfo;
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
-    *(pollfd*)&group.Data[group.Count * SOCKGROUP_ITEMSIZE] = pollinfo;
-    group.Count++;
-    return group.Count - 1;
+
+    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+    {
+        if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == -1)
+        {
+            *(pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE] = pollinfo;
+            group.Count++;
+            return i;
+        }
+    }
+    return -1;
 }
 
 bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
@@ -377,6 +386,29 @@ bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, N
     else
         socket->Protocol = NetworkProtocol::Undefined;
     return false;
+}
+
+void Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index)
+{
+    if (((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd != -1)
+    {
+        ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd = -1;
+        group.Count--;
+    }
+}
+
+bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+    {
+        if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == *(SOCKET*)&socket.Data)
+        {
+            ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
+            group.Count--;
+            return false;
+        }
+    }
+    return true;
 }
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)

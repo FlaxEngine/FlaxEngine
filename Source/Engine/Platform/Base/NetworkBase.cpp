@@ -82,6 +82,16 @@ bool NetworkBase::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, Ne
     return true;
 }
 
+void NetworkBase::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index)
+{
+    
+}
+
+bool NetworkBase::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    return true;
+}
+
 void NetworkBase::ClearGroup(NetworkSocketGroup& group)
 {
     group.Count = 0;

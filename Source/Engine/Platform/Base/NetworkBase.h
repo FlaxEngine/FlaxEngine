@@ -236,6 +236,21 @@ public:
     /// <param name="socket">The returned socket.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
     static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
+
+    /// <summary>
+    /// Removes the socket at the specified index.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="index">The index.</param>
+    static void RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index);
+
+    /// <summary>
+    /// Removes the socket if present.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Returns true if the socket is not found, otherwise false.</returns>
+    static bool RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket);
     
     /// <summary>
     /// Clears the socket group.
