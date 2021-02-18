@@ -44,14 +44,14 @@ public class FlaxEditor : EngineTarget
     {
         base.PreBuild(graph, buildOptions);
 
-        // Build localization
-        string locDir = Path.Combine(Globals.EngineRoot, "Source", "Editor", "Localizations");
+        // Register localization dependency
+        string locDir = Path.Combine(Globals.EngineRoot, "Source", "Editor", "Localization", "Languages");
         buildOptions.AdvancedDependencies.Add(new BuildOptions.DependencyFileEntry()
         {
             IsFolder = true,
             DestinationNames = new[]
             {
-                "Localizations"
+                Path.Combine("Localization")
             },
             SourcePaths = new[]
             {

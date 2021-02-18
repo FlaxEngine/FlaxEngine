@@ -14,6 +14,7 @@ using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Utilities;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Windows;
+using FlaxEditor.Localization;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -382,7 +383,7 @@ namespace FlaxEditor.Modules
             MainMenu.Parent = mainWindow;
 
             // File
-            MenuFile = MainMenu.AddButton(Localization.Manager.GetValue("T_CM_FILE"));
+            MenuFile = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_FILE"));
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
             cm.AddButton("Save All", "Ctrl+S", Editor.SaveAll);
