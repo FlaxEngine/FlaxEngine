@@ -413,6 +413,8 @@ bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocke
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
+    for(int i = 0; i < SOCKGROUP_MAXCOUNT; i++)
+        ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
     group.Count = 0;
 }
 
