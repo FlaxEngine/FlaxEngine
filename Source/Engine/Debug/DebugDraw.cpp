@@ -65,6 +65,16 @@ struct DebugText2D
     float TimeLeft;
 };
 
+struct DebugText3D
+{
+    Array<Char, InlinedAllocation<64>> Text;
+    Transform Transform;
+    bool FaceCamera;
+    int32 Size;
+    Color Color;
+    float TimeLeft;
+};
+
 PACK_STRUCT(struct Vertex {
     Vector3 Position;
     Color32 Color;
@@ -146,10 +156,12 @@ struct DebugDrawData
     Array<DebugTriangle> OneFrameWireTriangles;
     Array<DebugText2D> DefaultText2D;
     Array<DebugText2D> OneFrameText2D;
+    Array<DebugText3D> DefaultText3D;
+    Array<DebugText3D> OneFrameText3D;
 
     inline int32 Count() const
     {
-        return LinesCount() + TrianglesCount() + Text2DCount();
+        return LinesCount() + TrianglesCount() + TextCount();
     }
 
     inline int32 LinesCount() const
@@ -162,9 +174,9 @@ struct DebugDrawData
         return DefaultTriangles.Count() + OneFrameTriangles.Count() + DefaultWireTriangles.Count() + OneFrameWireTriangles.Count();
     }
 
-    inline int32 Text2DCount() const
+    inline int32 TextCount() const
     {
-        return DefaultText2D.Count() + OneFrameText2D.Count();
+        return DefaultText2D.Count() + OneFrameText2D.Count() + DefaultText3D.Count() + OneFrameText3D.Count();
     }
 
     inline void Add(const DebugLine& l)
@@ -197,11 +209,13 @@ struct DebugDrawData
         UpdateList(deltaTime, DefaultTriangles);
         UpdateList(deltaTime, DefaultWireTriangles);
         UpdateList(deltaTime, DefaultText2D);
+        UpdateList(deltaTime, DefaultText3D);
 
         OneFrameLines.Clear();
         OneFrameTriangles.Clear();
         OneFrameWireTriangles.Clear();
         OneFrameText2D.Clear();
+        OneFrameText3D.Clear();
     }
 
     inline void Clear()
@@ -214,6 +228,8 @@ struct DebugDrawData
         OneFrameWireTriangles.Clear();
         DefaultText2D.Clear();
         OneFrameText2D.Clear();
+        DefaultText3D.Clear();
+        OneFrameText3D.Clear();
     }
 
     inline void Release()
@@ -226,6 +242,8 @@ struct DebugDrawData
         OneFrameWireTriangles.Resize(0);
         DefaultText2D.Resize(0);
         OneFrameText2D.Resize(0);
+        DefaultText3D.Resize(0);
+        OneFrameText3D.Resize(0);
     }
 };
 
@@ -322,6 +340,21 @@ DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Arra
     drawCall.StartVertex = drawCallA.StartVertex;
     drawCall.VertexCount = drawCallA.VertexCount + drawCallB.VertexCount;
     return drawCall;
+}
+
+inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext, const Vector3& viewUp, const Matrix& f, const Matrix& vp, const Viewport& viewport, GPUContext* context, GPUTextureView* target, GPUTextureView* depthBuffer)
+{
+    Matrix w, fw, m;
+    if (t.FaceCamera)
+        Matrix::CreateWorld(t.Transform.Translation, renderContext.View.Direction, viewUp, w);
+    else
+        t.Transform.GetWorld(w);
+    Matrix::Multiply(f, w, fw);
+    Matrix::Multiply(fw, vp, m);
+    Render2D::Begin(context, target, depthBuffer, viewport, m);
+    const StringView text(t.Text.Get(), t.Text.Count() - 1);
+    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, Vector2::Zero);
+    Render2D::End();
 }
 
 class DebugDrawService : public EngineService
@@ -594,7 +627,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         return;
     auto context = GPUDevice::Instance->GetMainContext();
 
-    // Fallback to task backbuffer
+    // Fallback to task buffers
     if (target == nullptr && renderContext.Task)
         target = renderContext.Task->GetOutputView();
 
@@ -696,29 +729,49 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         }
     }
 
-    // Text 2D
-    if (Context->DebugDrawDefault.TrianglesCount())
+    // Text
+    if (Context->DebugDrawDefault.TextCount() + Context->DebugDrawDepthTest.TextCount())
     {
-        PROFILE_GPU_CPU_NAMED("2D");
+        PROFILE_GPU_CPU_NAMED("Text");
+        auto features = Render2D::Features;
+        Render2D::Features = (Render2D::RenderingFeatures)((uint32)features & ~(uint32)Render2D::RenderingFeatures::VertexSnapping);
 
         if (!DebugDrawFont)
-        {
             DebugDrawFont = Content::LoadAsyncInternal<FontAsset>(TEXT("Editor/Fonts/Roboto-Regular"));
-        }
         if (DebugDrawFont && DebugDrawFont->IsLoaded())
         {
             Viewport viewport = renderContext.Task->GetViewport();
-            Render2D::Begin(context, target, nullptr, viewport);
-            for (auto& t : Context->DebugDrawDefault.DefaultText2D)
+
+            if (Context->DebugDrawDefault.DefaultText2D.Count() + Context->DebugDrawDefault.OneFrameText2D.Count())
             {
+                Render2D::Begin(context, target, nullptr, viewport);
+                for (auto& t : Context->DebugDrawDefault.DefaultText2D)
+                {
+                    const StringView text(t.Text.Get(), t.Text.Count() - 1);
+                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                }
+                for (auto& t : Context->DebugDrawDefault.OneFrameText2D)
+                {
+                    const StringView text(t.Text.Get(), t.Text.Count() - 1);
+                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                }
+                Render2D::End();
             }
-            for (auto& t : Context->DebugDrawDefault.OneFrameText2D)
+
+            if (Context->DebugDrawDefault.DefaultText3D.Count() + Context->DebugDrawDefault.OneFrameText3D.Count())
             {
-                const StringView text(t.Text.Get(), t.Text.Count() - 1);
-                Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                Matrix f;
+                Matrix::RotationZ(PI, f);
+                Vector3 viewUp;
+                Vector3::Transform(Vector3::Up, Quaternion::LookRotation(renderContext.View.Direction, Vector3::Up), viewUp);
+                for (auto& t : Context->DebugDrawDefault.DefaultText3D)
+                    DrawText3D(t, renderContext, viewUp, f, vp, viewport, context, target, nullptr);
+                for (auto& t : Context->DebugDrawDefault.OneFrameText3D)
+                    DrawText3D(t, renderContext, viewUp, f, vp, viewport, context, target, nullptr);
             }
-            Render2D::End();
         }
+
+        Render2D::Features = features;
     }
 }
 
@@ -1332,6 +1385,38 @@ void DebugDraw::DrawText(const StringView& text, const Vector2& position, const 
     Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
     t.Text[text.Length()] = 0;
     t.Position = position;
+    t.Size = size;
+    t.Color = color;
+    t.TimeLeft = duration;
+}
+
+void DebugDraw::DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size, float duration)
+{
+    if (text.Length() == 0 || size < 4)
+        return;
+    Array<DebugText3D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText3D : &Context->DebugDrawDefault.OneFrameText3D;
+    auto& t = list->AddOne();
+    t.Text.Resize(text.Length() + 1);
+    Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
+    t.Text[text.Length()] = 0;
+    t.Transform = position;
+    t.FaceCamera = true;
+    t.Size = size;
+    t.Color = color;
+    t.TimeLeft = duration;
+}
+
+void DebugDraw::DrawText(const StringView& text, const Transform& transform, const Color& color, int32 size, float duration)
+{
+    if (text.Length() == 0 || size < 4)
+        return;
+    Array<DebugText3D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText3D : &Context->DebugDrawDefault.OneFrameText3D;
+    auto& t = list->AddOne();
+    t.Text.Resize(text.Length() + 1);
+    Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
+    t.Text[text.Length()] = 0;
+    t.Transform = transform;
+    t.FaceCamera = false;
     t.Size = size;
     t.Color = color;
     t.TimeLeft = duration;

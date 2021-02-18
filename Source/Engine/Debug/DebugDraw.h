@@ -15,6 +15,7 @@ class GPUContext;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
+struct Transform;
 
 /// <summary>
 /// The debug shapes rendering service. Not available in final game. For use only in the editor.
@@ -317,6 +318,26 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// <param name="size">The font size.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     API_FUNCTION() static void DrawText(const StringView& text, const Vector2& position, const Color& color, int32 size = 20, float duration = 0.0f);
+
+    /// <summary>
+    /// Draws the text (3D) that automatically faces the camera.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="position">The position of the text (world-space).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size = 32, float duration = 0.0f);
+
+    /// <summary>
+    /// Draws the text (3D).
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="transform">The transformation of the text (world-space).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color, int32 size = 32, float duration = 0.0f);
 };
 
 #define DEBUG_DRAW_LINE(start, end, color, duration, depthTest) DebugDraw::DrawLine(start, end, color, duration, depthTest)
