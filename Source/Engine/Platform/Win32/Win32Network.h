@@ -22,6 +22,8 @@ public:
     static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
     static bool IsWriteable(NetworkSocket& socket);
+    static bool CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group);
+    static bool DestroySocketGroup(NetworkSocketGroup& group);
     static int32 Poll(NetworkSocketGroup& group);
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);

@@ -11,6 +11,7 @@
 
 static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
 static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
+static_assert(SOCKGROUP_ITEMSIZE >= sizeof(pollfd), "SOCKGROUP_ITEMSIZE macro is not big enough to contains pollfd !");
 
 // @formatter:off
 static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -319,6 +320,28 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
     }
     if (entry.revents & POLLWRNORM)
         return true;
+    return false;
+}
+
+bool Win32Network::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
+{
+    if (!(group.Data = (byte*)malloc(capacity * SOCKGROUP_ITEMSIZE)))
+    {
+        LOG(Error, "Unable to malloc NetworkSocketGroup::Data ! Size : {0}", capacity * SOCKGROUP_ITEMSIZE);
+        return true;
+    }
+    group.Capacity = capacity;
+    for(int i = 0; i < (int)group.Capacity; i++)
+        ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
+    
+    return false;
+}
+
+bool Win32Network::DestroySocketGroup(NetworkSocketGroup& group)
+{
+    if (!group.Data)
+        return true;
+    free(group.Data);
     return false;
 }
 

@@ -62,6 +62,16 @@ bool NetworkBase::IsWriteable(NetworkSocket& socket)
     return true;
 }
 
+bool NetworkBase::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
+{
+    return false;
+}
+
+bool NetworkBase::DestroySocketGroup(NetworkSocketGroup& group)
+{
+    return true;
+}
+
 int32 NetworkBase::Poll(NetworkSocketGroup& group)
 {
     return -1;

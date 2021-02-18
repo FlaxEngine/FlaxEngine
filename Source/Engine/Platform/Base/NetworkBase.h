@@ -6,7 +6,6 @@
 #include "Engine/Core/Types/String.h"
 API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
 
-#define SOCKGROUP_MAXCOUNT 64
 #define SOCKGROUP_ITEMSIZE 16
 
 enum class FLAXENGINE_API NetworkProtocol
@@ -98,7 +97,8 @@ struct FLAXENGINE_API NetworkSocketState
 struct FLAXENGINE_API NetworkSocketGroup
 {
     uint32 Count = 0;
-    byte Data[SOCKGROUP_MAXCOUNT * SOCKGROUP_ITEMSIZE] = {};
+    uint32 Capacity = 0;
+    byte *Data;
 };
 
 class FLAXENGINE_API NetworkBase
@@ -203,6 +203,21 @@ public:
     /// <returns>Returns true when data can be written. Otherwise false.</returns>
     static bool IsWriteable(NetworkSocket& socket);
 
+    /// <summary>
+    /// Creates a socket group. It allocate memory based on the desired capacity.
+    /// </summary>
+    /// <param name="capacity">The group capacity (fixed).</param>
+    /// <param name="group">The group.</param>
+    /// <returns>Returns true on error, otherwise false.</returns>
+    static bool CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group);
+
+    /// <summary>
+    /// Destroy the socket group, and free the allocated memory. 
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <returns>Returns true if the group is already destroyed, otherwise false.</returns>
+    static bool DestroySocketGroup(NetworkSocketGroup& group);
+    
     /// <summary>
     /// Updates sockets states.
     /// </summary>
