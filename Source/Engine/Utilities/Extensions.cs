@@ -70,15 +70,9 @@ namespace FlaxEngine.Utilities
         public static void AddRange<T>(this ICollection<T> destination, IEnumerable<T> collection)
         {
             if (destination == null)
-            {
                 throw new ArgumentNullException(nameof(destination));
-            }
-
             if (collection == null)
-            {
                 throw new ArgumentNullException(nameof(collection));
-            }
-
             foreach (var item in collection)
             {
                 destination.Add(item);
@@ -95,15 +89,9 @@ namespace FlaxEngine.Utilities
         public static void EnqueueRange<T>(this Queue<T> queue, IEnumerable<T> collection)
         {
             if (queue == null)
-            {
                 throw new ArgumentNullException(nameof(queue));
-            }
-
             if (collection == null)
-            {
                 throw new ArgumentNullException(nameof(collection));
-            }
-
             foreach (var item in collection)
             {
                 queue.Enqueue(item);
@@ -120,15 +108,9 @@ namespace FlaxEngine.Utilities
         public static void PushRange<T>(this Stack<T> stack, IEnumerable<T> collection)
         {
             if (stack == null)
-            {
                 throw new ArgumentNullException(nameof(stack));
-            }
-
             if (collection == null)
-            {
                 throw new ArgumentNullException(nameof(collection));
-            }
-
             foreach (var item in collection)
             {
                 stack.Push(item);
@@ -145,15 +127,9 @@ namespace FlaxEngine.Utilities
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
             if (source == null)
-            {
                 throw new ArgumentNullException(nameof(source));
-            }
-
             if (action == null)
-            {
                 throw new ArgumentNullException(nameof(action));
-            }
-
             foreach (var item in source)
             {
                 action(item);
@@ -172,15 +148,9 @@ namespace FlaxEngine.Utilities
         public static T Choose<T>(this Random random, IList<T> collection)
         {
             if (random == null)
-            {
                 throw new ArgumentNullException(nameof(random));
-            }
-
             if (collection == null)
-            {
                 throw new ArgumentNullException(nameof(collection));
-            }
-
             return collection[random.Next(collection.Count)];
         }
 
@@ -196,15 +166,9 @@ namespace FlaxEngine.Utilities
         public static T Choose<T>(this Random random, params T[] collection)
         {
             if (random == null)
-            {
                 throw new ArgumentNullException(nameof(random));
-            }
-
             if (collection == null)
-            {
                 throw new ArgumentNullException(nameof(collection));
-            }
-
             return collection[random.Next(collection.Length)];
         }
 
@@ -290,10 +254,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Quaternion"/>.</returns>
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
-            return Quaternion.Euler(
-                NextFloat(random, -180.0f, 180.0f),
-                NextFloat(random, -180.0f, 180.0f),
-                randomRoll ? NextFloat(random, -180.0f, 180.0f) : 0.0f);
+            return Quaternion.Euler(NextFloat(random, -180.0f, 180.0f), NextFloat(random, -180.0f, 180.0f), randomRoll ? NextFloat(random, -180.0f, 180.0f) : 0.0f);
         }
 
         /// <summary>
@@ -305,12 +266,7 @@ namespace FlaxEngine.Utilities
         public static Vector2 NextUnitVector2(this Random random, float radius = 1.0f)
         {
             var randomRadius = (float)random.NextDouble() * radius;
-
-            return new Vector2
-            {
-                X = (float)Math.Cos(random.NextDouble()) * randomRadius,
-                Y = (float)Math.Sin(random.NextDouble()) * randomRadius,
-            };
+            return new Vector2((float)Math.Cos(random.NextDouble()) * randomRadius, (float)Math.Sin(random.NextDouble()) * randomRadius);
         }
 
         /// <summary>
@@ -331,7 +287,6 @@ namespace FlaxEngine.Utilities
                 output.Z = NextFloat(random) * 2.0f - 1.0f;
 
                 l = output.LengthSquared;
-
             } while (l > 1 || l < Mathf.Epsilon);
 
             output.Normalize();
@@ -348,11 +303,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector2"/>.</returns>
         public static Vector2 NextVector2(this Random random, float min = 0.0f, float max = 1.0f)
         {
-            return new Vector2 
-            {
-                X = NextFloat(random, min, max), 
-                Y = NextFloat(random, min, max)
-            };
+            return new Vector2(NextFloat(random, min, max), NextFloat(random, min, max));
         }
 
         /// <summary>
@@ -364,12 +315,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector3"/>.</returns>
         public static Vector3 NextVector3(this Random random, float min = 0.0f, float max = 1.0f)
         {
-            return new Vector3
-            {
-                X = NextFloat(random, min, max),
-                Y = NextFloat(random, min, max),
-                Z = NextFloat(random, min, max)
-            };
+            return new Vector3(NextFloat(random, min, max), NextFloat(random, min, max), NextFloat(random, min, max));
         }
 
         /// <summary>
@@ -381,13 +327,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector4"/>.</returns>
         public static Vector4 NextVector4(this Random random, float min = 0.0f, float max = 1.0f)
         {
-            return new Vector4
-            {
-                X = NextFloat(random, min, max),
-                Y = NextFloat(random, min, max),
-                Z = NextFloat(random, min, max),
-                W = NextFloat(random, min, max)
-            };
+            return new Vector4(NextFloat(random, min, max), NextFloat(random, min, max), NextFloat(random, min, max), NextFloat(random, min, max));
         }
 
         /// <summary>
@@ -398,13 +338,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A nice random <see cref="Color"/>.</returns>
         public static Color NextColor(this Random random, bool randomAlpha = false)
         {
-            return new Color
-            {
-                R = NextFloat(random),
-                G = NextFloat(random),
-                B = NextFloat(random),
-                A = randomAlpha ? NextFloat(random) : 1.0f
-            };
+            return new Color(NextFloat(random), NextFloat(random), NextFloat(random), randomAlpha ? NextFloat(random) : 1.0f);
         }
 
         /// <summary>
@@ -415,13 +349,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A nice random <see cref="ColorHSV"/>.</returns>
         public static ColorHSV NextColorHSV(this Random random, bool randomAlpha = false)
         {
-            return new ColorHSV 
-            {
-                H = NextFloat(random, 0.0f, 360.0f),
-                S = 1.0f,
-                V = 1.0f,
-                A = randomAlpha ? NextFloat(random) : 1.0f
-            };
+            return new ColorHSV(NextFloat(random, 0.0f, 360.0f), 1.0f, 1.0f, randomAlpha ? NextFloat(random) : 1.0f);
         }
 
         /// <summary>
