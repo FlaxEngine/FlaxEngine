@@ -359,6 +359,24 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
     return group.Count - 1;
 }
 
+bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
+{
+    if (index >= SOCKGROUP_MAXCOUNT)
+        return true;
+    SOCKET s = ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd;
+    memcpy(socket->Data, &s, sizeof s);
+    int32 value;
+    if (GetSocketOption(*socket, NetworkSocketOption::Type, &value))
+        return true;
+    if (value == SOCK_DGRAM)
+        socket->Protocol = NetworkProtocol::Udp;
+    else if (value == SOCK_STREAM)
+        socket->Protocol = NetworkProtocol::Tcp;
+    else
+        socket->Protocol = NetworkProtocol::Undefined;
+    return false;
+}
+
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
     group.Count = 0;

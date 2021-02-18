@@ -228,6 +228,16 @@ public:
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
 
     /// <summary>
+    /// Gets a socket by index.
+    /// Some data like socket IPVersion might be undefined.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="index">The index.</param>
+    /// <param name="socket">The returned socket.</param>
+    /// <returns>Returns true on error, otherwise false.</returns>
+    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
+    
+    /// <summary>
     /// Clears the socket group.
     /// </summary>
     /// <param name="group">The group.</param>

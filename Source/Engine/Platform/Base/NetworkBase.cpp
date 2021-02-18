@@ -77,6 +77,11 @@ int32 NetworkBase::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& so
     return -1;
 }
 
+bool NetworkBase::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
+{
+    return true;
+}
+
 void NetworkBase::ClearGroup(NetworkSocketGroup& group)
 {
     group.Count = 0;

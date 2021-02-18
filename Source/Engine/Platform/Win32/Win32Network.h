@@ -28,6 +28,7 @@ public:
     static int32 Poll(NetworkSocketGroup& group);
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
+    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
     static void ClearGroup(NetworkSocketGroup& group);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
