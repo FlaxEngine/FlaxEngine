@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Core/Types/Span.h"
 
 struct SpriteHandle;
 struct TextLayoutOptions;
@@ -339,4 +340,29 @@ public:
     /// <param name="rect">The target rectangle to draw (blurs its background).</param>
     /// <param name="blurStrength">The blur strength defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.</param>
     API_FUNCTION() static void DrawBlur(const Rectangle& rect, float blurStrength);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="t">The texture.</param>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="uvs">The uvs array.</param>
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs);
+    
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="colors">The colors array.</param>
+    /// <param name="useAlpha">If true alpha blending will be enabled.</param>
+    API_FUNCTION() static void FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha);
+
+    /// <summary>
+    /// Fills a triangular area.
+    /// </summary>
+    /// <param name="p0">The first point.</param>
+    /// <param name="p1">The second point.</param>
+    /// <param name="p2">The third point.</param>
+    /// <param name="color">The color.</param>
+    API_FUNCTION() static void FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color);
 };
