@@ -2,6 +2,7 @@
 
 using System.IO;
 using Flax.Build;
+using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
 /// <summary>
@@ -39,25 +40,46 @@ public class FlaxEditor : EngineTarget
     }
 
     /// <inheritdoc />
+    public override void PreBuild(TaskGraph graph, BuildOptions buildOptions)
+    {
+        base.PreBuild(graph, buildOptions);
+
+        // Build localization
+        string locDir = Path.Combine(Globals.EngineRoot, "Source", "Editor", "Localizations");
+        buildOptions.AdvancedDependencies.Add(new BuildOptions.DependencyFileEntry()
+        {
+            IsFolder = true,
+            DestinationNames = new[]
+            {
+                "Localizations"
+            },
+            SourcePaths = new[]
+            {
+                locDir
+            }
+        });
+    }
+
+    /// <inheritdoc />
     public override void SetupTargetEnvironment(BuildOptions options)
     {
         base.SetupTargetEnvironment(options);
 
         switch (options.Platform.Target)
         {
-        case TargetPlatform.Windows:
-            switch (options.Architecture)
-            {
-            case TargetArchitecture.x64:
-                options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win64", options.Configuration.ToString());
+            case TargetPlatform.Windows:
+                switch (options.Architecture)
+                {
+                    case TargetArchitecture.x64:
+                        options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win64", options.Configuration.ToString());
+                        break;
+                    case TargetArchitecture.x86:
+                        options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win32", options.Configuration.ToString());
+                        break;
+                    default: throw new InvalidArchitectureException(options.Architecture, "Not supported Editor architecture.");
+                }
                 break;
-            case TargetArchitecture.x86:
-                options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win32", options.Configuration.ToString());
-                break;
-            default: throw new InvalidArchitectureException(options.Architecture, "Not supported Editor architecture.");
-            }
-            break;
-        default: throw new InvalidPlatformException(options.Platform.Target, "Not supported Editor platform.");
+            default: throw new InvalidPlatformException(options.Platform.Target, "Not supported Editor platform.");
         }
     }
 }

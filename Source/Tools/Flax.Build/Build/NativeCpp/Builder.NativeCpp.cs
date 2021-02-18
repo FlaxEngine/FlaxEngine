@@ -234,13 +234,13 @@ namespace Flax.Build
             var modules = new List<Module>();
             switch (target.LinkType)
             {
-            case TargetLinkType.Monolithic:
-                modules.AddRange(buildModules.Keys);
-                break;
-            case TargetLinkType.Modular:
-                modules.AddRange(target.Modules.Select(rules.GetModule));
-                break;
-            default: throw new ArgumentOutOfRangeException();
+                case TargetLinkType.Monolithic:
+                    modules.AddRange(buildModules.Keys);
+                    break;
+                case TargetLinkType.Modular:
+                    modules.AddRange(target.Modules.Select(rules.GetModule));
+                    break;
+                default: throw new ArgumentOutOfRangeException();
             }
             modules.RemoveAll(x => x == null || string.IsNullOrEmpty(x.BinaryModuleName));
             return modules.GroupBy(x => x.BinaryModuleName).ToArray();
@@ -754,12 +754,12 @@ namespace Flax.Build
             var outputPath = Path.GetDirectoryName(outputTargetFilePath);
             switch (target.LinkType)
             {
-            case TargetLinkType.Monolithic:
-            {
-                if (!buildData.Target.IsPreBuilt)
-                    LinkNativeBinary(buildData, targetBuildOptions, outputTargetFilePath);
-                break;
-            }
+                case TargetLinkType.Monolithic:
+                    {
+                        if (!buildData.Target.IsPreBuilt)
+                            LinkNativeBinary(buildData, targetBuildOptions, outputTargetFilePath);
+                        break;
+                    }
             }
 
             // Generate target build output info
@@ -786,40 +786,40 @@ namespace Flax.Build
                     };
                     switch (target.LinkType)
                     {
-                    case TargetLinkType.Monolithic:
-                    {
-                        if (binaryModule.Any(x => x.BuildNativeCode))
-                        {
-                            // Target merges all modules into a one native binary
-                            binaryModuleInfo.NativePath = outputTargetFilePath;
-                        }
-                        else
-                        {
-                            // C#-only binary module
-                            binaryModuleInfo.NativePath = string.Empty;
-                        }
-                        break;
-                    }
-                    case TargetLinkType.Modular:
-                    {
-                        // Every module produces own set of binaries
-                        if (binaryModule.Count() != 1)
-                            throw new Exception("Cannot output binary if it uses multiple modules.");
-                        var module = binaryModule.First();
-                        if (module.BuildNativeCode)
-                        {
-                            var moduleOptions = buildData.Modules[module];
-                            var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
-                            binaryModuleInfo.NativePath = outputLib;
-                        }
-                        else
-                        {
-                            // C#-only binary module
-                            binaryModuleInfo.NativePath = string.Empty;
-                        }
-                        break;
-                    }
-                    default: throw new ArgumentOutOfRangeException();
+                        case TargetLinkType.Monolithic:
+                            {
+                                if (binaryModule.Any(x => x.BuildNativeCode))
+                                {
+                                    // Target merges all modules into a one native binary
+                                    binaryModuleInfo.NativePath = outputTargetFilePath;
+                                }
+                                else
+                                {
+                                    // C#-only binary module
+                                    binaryModuleInfo.NativePath = string.Empty;
+                                }
+                                break;
+                            }
+                        case TargetLinkType.Modular:
+                            {
+                                // Every module produces own set of binaries
+                                if (binaryModule.Count() != 1)
+                                    throw new Exception("Cannot output binary if it uses multiple modules.");
+                                var module = binaryModule.First();
+                                if (module.BuildNativeCode)
+                                {
+                                    var moduleOptions = buildData.Modules[module];
+                                    var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
+                                    binaryModuleInfo.NativePath = outputLib;
+                                }
+                                else
+                                {
+                                    // C#-only binary module
+                                    binaryModuleInfo.NativePath = string.Empty;
+                                }
+                                break;
+                            }
+                        default: throw new ArgumentOutOfRangeException();
                     }
 
                     binaryModuleInfo.NativePathProcessed = BuildTargetInfo.ProcessPath(binaryModuleInfo.NativePath, project.ProjectFolderPath);
@@ -853,11 +853,7 @@ namespace Flax.Build
             {
                 using (new ProfileEventScope("DeployFiles"))
                 {
-                    foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
-                    {
-                        var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
-                        graph.AddCopyFile(dstFile, srcFile);
-                    }
+                    DeployDependencies(targetBuildOptions, outputPath, graph);
                 }
             }
 
@@ -1083,11 +1079,7 @@ namespace Flax.Build
             {
                 using (new ProfileEventScope("DeployFiles"))
                 {
-                    foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
-                    {
-                        var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
-                        graph.AddCopyFile(dstFile, srcFile);
-                    }
+                    DeployDependencies(targetBuildOptions, outputPath, graph);
                 }
             }
 
@@ -1098,6 +1090,89 @@ namespace Flax.Build
             }
 
             return buildData;
+        }
+
+        /// <summary>
+        /// Deploy all dependencies
+        /// </summary>
+        /// <param name="buildOptions">build options</param>
+        /// <param name="outputPath">output path</param>
+        /// <param name="graph">graph</param>
+        private static void DeployDependencies(BuildOptions buildOptions, string outputPath, TaskGraph graph)
+        {
+            foreach (var srcFile in buildOptions.OptionalDependencyFiles)
+            {
+                if (!File.Exists(srcFile))
+                    continue;
+
+                var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                graph.AddCopyFile(dstFile, srcFile);
+            }
+
+            foreach (var srcFile in buildOptions.DependencyFiles)
+            {
+                if (!File.Exists(srcFile))
+                    continue;
+
+                var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                graph.AddCopyFile(dstFile, srcFile);
+            }
+
+            foreach (var entry in buildOptions.AdvancedDependencies)
+            {
+                if (entry.SourcePaths == null || entry.DestinationNames == null || entry.SourcePaths.Length != entry.DestinationNames.Length)
+                {
+                    Log.Error("Advanced dependency entry contains invalid data!");
+                    continue;
+                }
+
+                for (int i = 0; i < entry.SourcePaths.Length; i++)
+                {
+                    var src = entry.SourcePaths[i];
+                    var dstName = entry.DestinationNames[i];
+
+                    var dstPath = Path.Combine(outputPath, dstName);
+
+                    if (!entry.IsFolder)
+                    {
+                        if (!ShouldCreateNewCopy(new System.IO.FileInfo(src), new System.IO.FileInfo(dstPath)))
+                            return;
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(dstPath));
+                        File.Copy(src, dstPath, true);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(dstPath);
+
+                        foreach (var file in Directory.GetFiles(src))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            var dstFilePath = Path.Combine(dstPath, fileName);
+
+                            if (!ShouldCreateNewCopy(new System.IO.FileInfo(file), new System.IO.FileInfo(dstFilePath)))
+                                continue;
+
+                            File.Copy(file, dstFilePath, true);
+                        }
+                    }
+                }
+            }
+
+            bool ShouldCreateNewCopy(System.IO.FileInfo src, System.IO.FileInfo dst)
+            {
+                if (!src.Exists)
+                    return false;
+
+                if (!dst.Exists)
+                    return true;
+
+                if (src.LastWriteTimeUtc > dst.LastWriteTimeUtc
+                    || src.CreationTimeUtc > dst.CreationTimeUtc)
+                    return true;
+
+                return false;
+            }
         }
     }
 }

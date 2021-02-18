@@ -13,6 +13,7 @@ using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
 using FlaxEditor.States;
+using FlaxEditor.Utilities;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
@@ -297,8 +298,14 @@ namespace FlaxEditor
             _modules.Sort((a, b) => a.InitOrder - b.InitOrder);
             _isAfterInit = true;
 
+            // Options module has to init first for localization.
+            _modules[0].OnInit();
+
+            Log("Launching localization service...");
+            Localization.Manager.SelectLanguage(Options.Options.Interface.Language);
+
             // Initialize modules (from front to back)
-            for (int i = 0; i < _modules.Count; i++)
+            for (int i = 1; i < _modules.Count; i++)
             {
                 _modules[i].OnInit();
             }

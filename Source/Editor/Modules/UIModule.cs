@@ -382,7 +382,7 @@ namespace FlaxEditor.Modules
             MainMenu.Parent = mainWindow;
 
             // File
-            MenuFile = MainMenu.AddButton("File");
+            MenuFile = MainMenu.AddButton(Localization.Manager.GetValue("T_CM_FILE"));
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
             cm.AddButton("Save All", "Ctrl+S", Editor.SaveAll);
