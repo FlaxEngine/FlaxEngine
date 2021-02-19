@@ -183,10 +183,10 @@ namespace FlaxEditor.Viewport
             _editor = editor;
 
             // Prepare rendering task
-            Task.ActorsSource = ActorsSources.ScenesAndCustomActors;
+            Task.ActorsSource = ActorsSources.Scenes;
             Task.ViewFlags = ViewFlags.DefaultEditor;
-            Task.Begin += RenderTaskOnBegin;
-            Task.CollectDrawCalls += RenderTaskOnCollectDrawCalls;
+            Task.Begin += OnBegin;
+            Task.CollectDrawCalls += OnCollectDrawCalls;
             Task.PostRender += OnPostRender;
 
             // Render task after the main game task so streaming and render state data will use main game task instead of editor preview
@@ -390,7 +390,7 @@ namespace FlaxEditor.Viewport
             Editor.Instance.SceneEditing.Spawn(actor);
         }
 
-        private void RenderTaskOnBegin(RenderTask task, GPUContext context)
+        private void OnBegin(RenderTask task, GPUContext context)
         {
             _debugDrawData.Clear();
 
@@ -406,7 +406,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void RenderTaskOnCollectDrawCalls(RenderContext renderContext)
+        private void OnCollectDrawCalls(RenderContext renderContext)
         {
             if (_previewStaticModel)
             {

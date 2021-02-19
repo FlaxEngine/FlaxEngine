@@ -236,10 +236,7 @@ public:
     /// <summary>
     /// Marks the next rendered frame as camera cut. Used to clear the temporal effects history and prevent visual artifacts blended from the previous frames.
     /// </summary>
-    API_FUNCTION() void CameraCut()
-    {
-        IsCameraCut = true;
-    }
+    API_FUNCTION() void CameraCut();
 
     /// <summary>
     /// The output texture (can be null if using rendering to window swap chain). Can be sued to redirect the default scene rendering output to a texture.

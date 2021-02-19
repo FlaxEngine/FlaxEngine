@@ -245,7 +245,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                 _emitter = emitter;
                 _effect = effect;
                 _deltaTime = 0.0f;
-                _viewTask = PARTICLE_EMITTER_GET_VIEW_TASK(effect);
+                _viewTask = effect->GetRenderTask();
                 _callStack.Clear();
 
                 // Find the maximum radius of the particle light
@@ -351,7 +351,7 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
     _emitter = emitter;
     _effect = effect;
     _deltaTime = 0.0f;
-    _viewTask = PARTICLE_EMITTER_GET_VIEW_TASK(effect);
+    _viewTask = effect->GetRenderTask();
     _callStack.Clear();
 
     // Draw lights
@@ -411,7 +411,7 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     _effect = effect;
     _particleIndex = 0;
     _deltaTime = dt;
-    _viewTask = PARTICLE_EMITTER_GET_VIEW_TASK(effect);
+    _viewTask = effect->GetRenderTask();
     _callStack.Clear();
     auto& cpu = data.Buffer->CPU;
 
@@ -557,7 +557,7 @@ int32 ParticleEmitterGraphCPUExecutor::UpdateSpawn(ParticleEmitter* emitter, Par
     _effect = effect;
     _particleIndex = 0;
     _deltaTime = dt;
-    _viewTask = PARTICLE_EMITTER_GET_VIEW_TASK(effect);
+    _viewTask = effect->GetRenderTask();
     _callStack.Clear();
 
     // Spawn particles

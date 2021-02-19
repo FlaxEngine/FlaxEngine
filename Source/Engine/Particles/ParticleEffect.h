@@ -356,6 +356,11 @@ public:
     /// </summary>
     void Sync();
 
+    /// <summary>
+    /// Gets the render task to use for particles simulation (eg. depth buffer collisions or view information).
+    /// </summary>
+    SceneRenderTask* GetRenderTask() const;
+
 #if USE_EDITOR
 protected:
     // Exposed parameters overrides for Editor Undo.
