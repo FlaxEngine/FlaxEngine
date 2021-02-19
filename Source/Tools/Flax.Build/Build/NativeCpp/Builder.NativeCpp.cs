@@ -751,7 +751,9 @@ namespace Flax.Build
             using (new ProfileEventScope("BuildBindings"))
             {
                 if (!buildData.Target.IsPreBuilt)
+                {
                     BuildTargetBindings(rules, graph, buildData);
+                }
             }
 
             // Link modules into a target

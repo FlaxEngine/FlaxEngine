@@ -164,6 +164,8 @@ namespace Flax.Build.Bindings
 
         private static void SaveCache(ModuleInfo moduleInfo, BuildOptions moduleOptions, List<string> headerFiles)
         {
+            if (!Directory.Exists(moduleOptions.IntermediateFolder))
+                return;
             var path = GetCachePath(moduleInfo.Module, moduleOptions);
             using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
