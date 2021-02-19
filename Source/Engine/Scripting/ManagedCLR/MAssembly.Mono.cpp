@@ -184,16 +184,8 @@ MClass* MAssembly::GetClass(const StringAnsiView& fullname) const
 
 MClass* MAssembly::GetClass(MonoClass* monoClass) const
 {
-    // Check input
-    if (monoClass == nullptr)
+    if (monoClass == nullptr || !IsLoaded() || mono_class_get_image(monoClass) != _monoImage)
         return nullptr;
-
-    // Check state
-    if (!IsLoaded())
-    {
-        LOG(Fatal, "Trying to use unloaded assembly {0}! Source: {1}", String(_name), TEXT("MAssembly::GetClass()"));
-        return nullptr;
-    }
 
     // Find class by native pointer
     const auto& classes = GetClasses();
