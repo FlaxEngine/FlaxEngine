@@ -458,6 +458,22 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
         break;
     }
+        // HSVToRGB
+    case 36:
+    {
+        const auto hsv = tryGetValue(node->GetBox(0), node->Values[0]).AsVector3();
+
+        // Normalize
+        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}.x / 360, {0}.y, {0}.z)"), hsv.Value), node);
+
+        auto x1 = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp(abs(fmod({0}.x * 6.0 + float3(0.0f, 4.0f, 2.0f), 6.0f) - 3.0f) - 1.0f, 0.0f, 1.0f)"), color.Value), node);
+        
+        // Smooth out
+        auto x2 = writeLocal(ValueType::Vector3, String::Format(TEXT("{0} * {0} * (3.0 - 2.0 * {0})"), x1.Value), node);
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1}.z * lerp(float3(1.0, 1.0, 1.0), {0}, {1}.y)"), x2.Value, color.Value), node);
+
+        break;
+    }
     default:
         break;
     }
