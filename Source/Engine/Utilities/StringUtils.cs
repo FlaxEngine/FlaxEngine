@@ -232,16 +232,26 @@ namespace FlaxEngine
             return result;
         }
 
+        private static IEnumerable<string> GraphemeClusters(this string s)
+        {
+            var enumerator = System.Globalization.StringInfo.GetTextElementEnumerator(s);
+            while (enumerator.MoveNext())
+            {
+                yield return (string)enumerator.Current;
+            }
+        }
+
         /// <summary>
         /// Reverses the specified input string.
         /// </summary>
+        /// <remarks>Correctly handles all UTF-16 strings</remarks>
         /// <param name="s">The string to reverse.</param>
         /// <returns>The reversed string.</returns>
         public static string Reverse(this string s)
         {
-            char[] charArray = s.ToCharArray();
-            Array.Reverse(charArray);
-            return new string(charArray);
+            string[] graphemes = s.GraphemeClusters().ToArray();
+            Array.Reverse(graphemes);
+            return string.Concat(graphemes);
         }
 
         private static readonly Regex IncNameRegex1 = new Regex("(\\d+)$");
