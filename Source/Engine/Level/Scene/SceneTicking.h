@@ -17,15 +17,9 @@ public:
     /// <summary>
     /// Tick function type.
     /// </summary>
-    class Tick
+    struct Tick
     {
-    public:
-
-        /// <summary>
-        /// Signature of the function to call
-        /// </summary>
         typedef void (*Signature)();
-
         typedef void (*SignatureObj)(void*);
 
         template<class T, void(T::*Method)()>
@@ -51,8 +45,7 @@ public:
         /// <summary>
         /// Calls the binded function.
         /// </summary>
-        /// <returns>Function result</returns>
-        void Call() const
+        FORCE_INLINE void Call() const
         {
             (*FunctionObj)(Callee);
         }
@@ -63,10 +56,11 @@ public:
     public:
 
         Array<Script*> Scripts;
+        Array<Tick> Ticks;
 #if USE_EDITOR
         Array<Script*> ScriptsExecuteInEditor;
+        Array<Tick> TicksExecuteInEditor;
 #endif
-        Array<Tick> Ticks;
 
         TickData(int32 capacity)
             : Scripts(capacity)
@@ -81,18 +75,17 @@ public:
             TickScripts(Scripts);
 
             for (int32 i = 0; i < Ticks.Count(); i++)
-            {
                 Ticks[i].Call();
-            }
         }
 
 #if USE_EDITOR
-
-        void TickEditorScripts()
+        void TickExecuteInEditor()
         {
             TickScripts(ScriptsExecuteInEditor);
-        }
 
+            for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
+                TicksExecuteInEditor[i].Call();
+        }
 #endif
 
         void AddScript(Script* script);
@@ -118,12 +111,35 @@ public:
             }
         }
 
+#if USE_EDITOR
+        template<class T, void(T::*Method)()>
+        void AddTickExecuteInEditor(T* callee)
+        {
+            SceneTicking::Tick tick;
+            tick.Bind<T, Method>(callee);
+            TicksExecuteInEditor.Add(tick);
+        }
+
+        void RemoveTickExecuteInEditor(void* callee)
+        {
+            for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
+            {
+                if (TicksExecuteInEditor[i].Callee == callee)
+                {
+                    TicksExecuteInEditor.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+#endif
+
         void Clear()
         {
             Scripts.Clear();
             Ticks.Clear();
 #if USE_EDITOR
             ScriptsExecuteInEditor.Clear();
+            TicksExecuteInEditor.Clear();
 #endif
         }
     };

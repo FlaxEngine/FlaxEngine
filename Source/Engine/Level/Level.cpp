@@ -194,7 +194,7 @@ void LevelService::Update()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.TickEditorScripts();
+                scenes[i]->Ticking.Update.TickExecuteInEditor();
         }
     }
 #endif
@@ -223,7 +223,7 @@ void LevelService::LateUpdate()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.TickEditorScripts();
+                scenes[i]->Ticking.LateUpdate.TickExecuteInEditor();
         }
     }
 #endif
@@ -255,7 +255,7 @@ void LevelService::FixedUpdate()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.TickEditorScripts();
+                scenes[i]->Ticking.FixedUpdate.TickExecuteInEditor();
         }
     }
 #endif

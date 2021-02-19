@@ -373,6 +373,18 @@ void ParticleEffect::Update()
     UpdateSimulation();
 }
 
+#if USE_EDITOR
+
+#include "Editor/Editor.h"
+
+void ParticleEffect::UpdateExecuteInEditor()
+{
+    if (!Editor::IsPlayMode)
+        Update();
+}
+
+#endif
+
 void ParticleEffect::CacheModifiedParameters()
 {
     if (_parameters.IsEmpty())
@@ -649,6 +661,7 @@ void ParticleEffect::OnEnable()
     GetSceneRendering()->AddGeometry(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
+    GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
 #endif
 
     // Base
@@ -658,6 +671,7 @@ void ParticleEffect::OnEnable()
 void ParticleEffect::OnDisable()
 {
 #if USE_EDITOR
+    GetScene()->Ticking.Update.RemoveTickExecuteInEditor(this);
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
     GetSceneRendering()->RemoveGeometry(this);

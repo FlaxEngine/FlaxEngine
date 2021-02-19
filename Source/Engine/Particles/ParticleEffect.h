@@ -366,6 +366,9 @@ protected:
 private:
 
     void Update();
+#if USE_EDITOR
+    void UpdateExecuteInEditor();
+#endif
     void CacheModifiedParameters();
     void ApplyModifiedParameters();
     void OnParticleSystemModified();
