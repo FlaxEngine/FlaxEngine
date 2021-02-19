@@ -207,7 +207,7 @@ namespace FlaxEditor.Tools.Terrain
                 // Auto NavMesh rebuild
                 if (!isPlayMode && editorOptions.General.AutoRebuildNavMesh)
                 {
-                    if (terrain.Scene && (terrain.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+                    if (terrain.Scene && terrain.HasStaticFlag(StaticFlags.Navigation))
                     {
                         Navigation.BuildNavMesh(terrain.Scene, patchBounds, editorOptions.General.AutoRebuildNavMeshTimeoutMs);
                     }

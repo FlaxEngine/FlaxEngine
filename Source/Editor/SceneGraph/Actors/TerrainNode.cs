@@ -15,5 +15,8 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(actor)
         {
         }
+
+        /// <inheritdoc />
+        public override bool AffectsNavigation => true;
     }
 }

@@ -77,6 +77,29 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Gets a value indicating whether this actor affects navigation.
+        /// </summary>
+        public virtual bool AffectsNavigation => false;
+
+        /// <summary>
+        /// Gets a value indicating whether this actor affects navigation or any of its children (recursive).
+        /// </summary>
+        public bool AffectsNavigationWithChildren
+        {
+            get
+            {
+                if (_actor.HasStaticFlag(StaticFlags.Navigation) && AffectsNavigation)
+                    return true;
+                for (var i = 0; i < ChildNodes.Count; i++)
+                {
+                    if (ChildNodes[i] is ActorNode actorChild && actorChild.AffectsNavigationWithChildren)
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Tries to find the tree node for the specified actor.
         /// </summary>
         /// <param name="actor">The actor.</param>

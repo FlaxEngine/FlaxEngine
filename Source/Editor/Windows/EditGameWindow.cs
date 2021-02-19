@@ -210,10 +210,11 @@ namespace FlaxEditor.Windows
 
             if (Editor.Undo.Enabled)
             {
-                bool navigationDirty = (_pilotActor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation;
+                ActorNode node = Editor.Scene.GetActorNode(_pilotActor);
+                bool navigationDirty = node.AffectsNavigationWithChildren;
                 var action = new TransformObjectsAction
                 (
-                 new List<SceneGraphNode> { Editor.Scene.GetActorNode(_pilotActor) },
+                 new List<SceneGraphNode> { node },
                  new List<Transform> { _pilotStart },
                  ref _pilotBounds,
                  navigationDirty

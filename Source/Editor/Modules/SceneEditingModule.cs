@@ -195,10 +195,11 @@ namespace FlaxEditor.Modules
             OnSelectionChanged();
         }
 
-        private void OnDirty(Actor actor)
+        private void OnDirty(ActorNode node)
         {
             var options = Editor.Options.Options;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
+            var actor = node.Actor;
 
             // Auto CSG mesh rebuild
             if (!isPlayMode && options.General.AutoRebuildCSG)
@@ -208,7 +209,7 @@ namespace FlaxEditor.Modules
             }
 
             // Auto NavMesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && (actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+            if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && node.AffectsNavigationWithChildren)
             {
                 var bounds = actor.BoxWithChildren;
                 Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
@@ -235,7 +236,7 @@ namespace FlaxEditor.Modules
             {
                 foreach (var obj in objects)
                 {
-                    if (obj is ActorNode node && node.Actor.Scene && (node.Actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation)
+                    if (obj is ActorNode node && node.Actor.Scene && node.AffectsNavigationWithChildren)
                     {
                         var bounds = node.Actor.BoxWithChildren;
                         Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
@@ -291,7 +292,7 @@ namespace FlaxEditor.Modules
 
             SpawnEnd?.Invoke();
 
-            OnDirty(actor);
+            OnDirty(actorNode);
         }
 
         /// <summary>
@@ -376,7 +377,7 @@ namespace FlaxEditor.Modules
 
             SpawnEnd?.Invoke();
 
-            OnDirty(actor);
+            OnDirty(actorNode);
         }
 
         /// <summary>
