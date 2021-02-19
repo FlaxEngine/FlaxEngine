@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Config/LayersMask.h"
 #include "Engine/Level/Types.h"
 #include "Enums.h"
 
@@ -140,6 +141,11 @@ public:
     /// The Temporal Anti-Aliasing jitter frame index.
     /// </summary>
     API_FIELD() int32 TaaFrameIndex = 0;
+
+    /// <summary>
+    /// The rendering mask for layers. Used to exclude objects from rendering.
+    /// </summary>
+    API_FIELD() LayersMask RenderLayersMask;
 
 public:
 

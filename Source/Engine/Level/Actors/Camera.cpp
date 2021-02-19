@@ -330,6 +330,7 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Near, _near);
     SERIALIZE_MEMBER(Far, _far);
     SERIALIZE_MEMBER(OrthoScale, _orthoScale);
+    SERIALIZE(RenderLayersMask);
 }
 
 void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -343,6 +344,7 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_MEMBER(Near, _near);
     DESERIALIZE_MEMBER(Far, _far);
     DESERIALIZE_MEMBER(OrthoScale, _orthoScale);
+    DESERIALIZE(RenderLayersMask);
 }
 
 void Camera::OnEnable()

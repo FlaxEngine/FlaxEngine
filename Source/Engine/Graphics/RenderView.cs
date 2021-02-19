@@ -89,6 +89,7 @@ namespace FlaxEngine
             Projection = camera.Projection;
             NonJitteredProjection = Projection;
             TemporalAAJitter = Vector4.Zero;
+            RenderLayersMask = camera.RenderLayersMask;
 
             UpdateCachedData();
         }
@@ -107,6 +108,7 @@ namespace FlaxEngine
             camera.GetMatrices(out View, out Projection, ref customViewport);
             NonJitteredProjection = Projection;
             TemporalAAJitter = Vector4.Zero;
+            RenderLayersMask = camera.RenderLayersMask;
 
             UpdateCachedData();
         }

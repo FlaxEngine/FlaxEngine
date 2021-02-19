@@ -3,13 +3,16 @@
 #pragma once
 
 #include "../Actor.h"
-#include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Config/LayersMask.h"
+#if USE_EDITOR
+#include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Model.h"
+#endif
 
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
@@ -21,6 +24,7 @@ DECLARE_SCENE_OBJECT(Camera);
     // List with all created cameras actors on the scene
     static Array<Camera*> Cameras;
 
+    // The current cut-scene camera. Set by the Scene Animation Player to the current shot camera.
     static Camera* CutSceneCamera;
 
     // The overriden main camera.
@@ -160,6 +164,12 @@ public:
     /// Sets the orthographic projection scale.
     /// </summary>
     API_PROPERTY() void SetOrthographicScale(float value);
+
+    /// <summary>
+    /// The layers mask used for rendering using this camera. Can be used to include or exclude specific actor layers from the drawing.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Camera\")")
+    LayersMask RenderLayersMask;
 
 public:
 

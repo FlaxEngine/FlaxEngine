@@ -37,6 +37,21 @@
 #include "Engine/Engine/CommandLine.h"
 #endif
 
+bool LayersMask::HasLayer(const StringView& layerName) const
+{
+    return HasLayer(Level::GetLayerIndex(layerName));
+}
+
+bool LayersMask::operator==(const LayersMask& other) const
+{
+    return Mask == other.Mask;
+}
+
+bool LayersMask::operator!=(const LayersMask& other) const
+{
+    return Mask != other.Mask;
+}
+
 enum class SceneEventType
 {
     OnSceneSaving = 0,
@@ -672,6 +687,20 @@ int32 Level::GetNonEmptyLayerNamesCount()
     while (result >= 0 && Layers[result].IsEmpty())
         result--;
     return result + 1;
+}
+
+int32 Level::GetLayerIndex(const StringView& layer)
+{
+    int32 result = -1;
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (Layers[i] == layer)
+        {
+            result = i;
+            break;
+        }
+    }
+    return result;
 }
 
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)

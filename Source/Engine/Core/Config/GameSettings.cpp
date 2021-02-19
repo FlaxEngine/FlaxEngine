@@ -200,3 +200,44 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
 }
+
+void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    const auto tags = stream.FindMember("Tags");
+    if (tags != stream.MemberEnd())
+    {
+        auto& tagsArray = tags->value;
+        ASSERT(tagsArray.IsArray());
+        Tags.EnsureCapacity(tagsArray.Size());
+
+        // Note: we cannot remove tags at runtime so this should deserialize them in additive mode
+        // Tags are stored as tagIndex in actors so collection change would break the linkage
+
+        for (uint32 i = 0; i < tagsArray.Size(); i++)
+        {
+            auto& v = tagsArray[i];
+            if (v.IsString())
+            {
+                const String tag = v.GetText();
+                if (!Tags.Contains(tag))
+                    Tags.Add(tag);
+            }
+        }
+    }
+
+    const auto layers = stream.FindMember("Layers");
+    if (layers != stream.MemberEnd())
+    {
+        auto& layersArray = layers->value;
+        ASSERT(layersArray.IsArray());
+
+        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        {
+            auto& v = layersArray[i];
+            if (v.IsString())
+                Layers[i] = v.GetText();
+            else
+                Layers[i].Clear();
+        }
+    }
+}

@@ -28,8 +28,8 @@ SceneRendering::SceneRendering(::Scene* scene)
 
 void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, const Array<Actor*>& actors)
 {
-#if SCENE_RENDERING_USE_SIMD
     auto& view = renderContext.View;
+#if SCENE_RENDERING_USE_SIMD
 	CullDataSIMD cullData;
 	{
 		// Near
@@ -126,7 +126,7 @@ void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, c
     for (int32 i = 0; i < actors.Count(); i++)
     {
         auto actor = actors[i];
-        if (frustum.Intersects(actor->GetSphere()))
+        if (view.RenderLayersMask.HasLayer(actor->GetLayer()) && frustum.Intersects(actor->GetSphere()))
             actor->Draw(renderContext);
     }
 #endif
@@ -134,8 +134,8 @@ void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, c
 
 void CullAndDrawOffline(const BoundingFrustum& frustum, RenderContext& renderContext, const Array<Actor*>& actors)
 {
-#if SCENE_RENDERING_USE_SIMD
     auto& view = renderContext.View;
+#if SCENE_RENDERING_USE_SIMD
 	CullDataSIMD cullData;
 	{
 		// Near
@@ -233,7 +233,7 @@ void CullAndDrawOffline(const BoundingFrustum& frustum, RenderContext& renderCon
     for (int32 i = 0; i < actors.Count(); i++)
     {
         auto actor = actors[i];
-        if (actor->GetStaticFlags() & renderContext.View.StaticFlagsMask && frustum.Intersects(actor->GetSphere()))
+        if (actor->GetStaticFlags() & view.StaticFlagsMask && view.RenderLayersMask.HasLayer(actor->GetLayer()) && frustum.Intersects(actor->GetSphere()))
             actor->Draw(renderContext);
     }
 #endif
@@ -257,7 +257,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
             for (int32 i = 0; i < CommonNoCulling.Count(); i++)
             {
                 auto actor = CommonNoCulling[i];
-                if (actor->GetStaticFlags() & view.StaticFlagsMask)
+                if (actor->GetStaticFlags() & view.StaticFlagsMask && view.RenderLayersMask.HasLayer(actor->GetLayer()))
                     actor->Draw(renderContext);
             }
         }
@@ -271,7 +271,8 @@ void SceneRendering::Draw(RenderContext& renderContext)
             for (int32 i = 0; i < CommonNoCulling.Count(); i++)
             {
                 auto actor = CommonNoCulling[i];
-                actor->Draw(renderContext);
+                if (view.RenderLayersMask.HasLayer(actor->GetLayer()))
+                    actor->Draw(renderContext);
             }
         }
     }

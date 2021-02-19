@@ -406,7 +406,7 @@ const String& Actor::GetTag() const
 
 void Actor::SetLayer(int32 layerIndex)
 {
-    layerIndex = Math::Min<int32>(layerIndex, 31);
+    layerIndex = Math::Clamp(layerIndex, 0, 31);
     if (layerIndex == _layer)
         return;
 
