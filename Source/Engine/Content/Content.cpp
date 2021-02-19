@@ -22,6 +22,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #endif
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"

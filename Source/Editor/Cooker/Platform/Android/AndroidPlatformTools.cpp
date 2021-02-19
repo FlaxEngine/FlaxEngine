@@ -4,6 +4,7 @@
 
 #include "AndroidPlatformTools.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"

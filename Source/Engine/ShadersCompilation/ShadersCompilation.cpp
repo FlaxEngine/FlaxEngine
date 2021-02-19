@@ -21,6 +21,7 @@
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #endif
 
 #if COMPILE_WITH_D3D_SHADER_COMPILER

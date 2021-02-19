@@ -3,10 +3,10 @@
 #pragma once
 
 #include "Engine/Engine/Base/ApplicationBase.h"
-#include "Editor/ProjectInfo.h"
 
 class Actor;
 class SplashScreen;
+class ProjectInfo;
 class ManagedEditor;
 
 static_assert(USE_EDITOR, "Don't include Editor in non-editor builds.");

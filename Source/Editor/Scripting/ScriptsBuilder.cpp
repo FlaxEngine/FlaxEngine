@@ -3,6 +3,7 @@
 #include "ScriptsBuilder.h"
 #include "CodeEditor.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include "Editor/Managed/ManagedEditor.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringBuilder.h"

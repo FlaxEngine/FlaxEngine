@@ -11,6 +11,7 @@
 #include "Engine/Serialization/JsonWriters.h"
 #include "Editor/Cooker/PlatformTools.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 
 bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, const String& projectFolderPath)
 {

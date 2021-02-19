@@ -6,6 +6,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"

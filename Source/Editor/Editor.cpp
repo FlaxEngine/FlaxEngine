@@ -3,6 +3,7 @@
 #if USE_EDITOR
 
 #include "Editor.h"
+#include "ProjectInfo.h"
 #include "Engine/Core/Log.h"
 #include "Scripting/ScriptsBuilder.h"
 #include "Windows/SplashScreen.h"
