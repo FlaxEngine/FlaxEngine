@@ -11,12 +11,12 @@
 #include "Engine/Core/Math/Math.h"
 #include "IncludeWindowsHeaders.h"
 #include "Engine/Core/Collections/HashFunctions.h"
-
 #include <Psapi.h>
 #include <WinSock2.h>
 #include <IPHlpApi.h>
 #include <oleauto.h>
 #include <WinBase.h>
+#include <xmmintrin.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace
@@ -297,6 +297,24 @@ void Win32Platform::AtomicStore(int32 volatile* dst, int32 value)
 void Win32Platform::AtomicStore(int64 volatile* dst, int64 value)
 {
     InterlockedExchange64(dst, value);
+}
+
+void Win32Platform::Prefetch(void const* ptr)
+{
+    _mm_prefetch((char const*)ptr, _MM_HINT_T0);
+}
+
+void* Win32Platform::Allocate(uint64 size, uint64 alignment)
+{
+#if COMPILE_WITH_PROFILER
+    TrackAllocation(size);
+#endif
+    return _aligned_malloc((size_t)size, (size_t)alignment);
+}
+
+void Win32Platform::Free(void* ptr)
+{
+    _aligned_free(ptr);
 }
 
 bool Win32Platform::Is64BitPlatform()
