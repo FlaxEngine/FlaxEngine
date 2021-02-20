@@ -983,7 +983,41 @@ namespace FlaxEngine
             value.Normalize();
             return value;
         }
-
+        
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above 0.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="max">Max Length</param>
+        public static Vector3 ClampLength(Vector3 vector, float max)
+        {
+            return ClampLength(vector, 0, max); 
+        }
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        public static Vector3 ClampLength(Vector3 vector, float min, float max)
+        {
+            Vector3 retVect = new Vector3(vector.X, vector.Y, vector.Z);
+            if (retVect.LengthSquared > max * max)
+            {
+                float scaleFactor = max / (float)Math.Sqrt(retVect.LengthSquared);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
+            }
+            if (retVect.LengthSquared < min * min)
+            {
+                float scaleFactor = min / (float)Math.Sqrt(retVect.LengthSquared);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
+            }
+            return retVect;
+        }
         /// <summary>
         /// Performs a linear interpolation between two vectors.
         /// </summary>
