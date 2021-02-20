@@ -290,6 +290,10 @@ namespace FlaxEditor.GUI.Docking
                 }
                 OnSelectedTabChanged();
             }
+            else if (autoFocus && _selectedTab != null && !_selectedTab.ContainsFocus)
+            {
+                _selectedTab.Focus();
+            }
         }
 
         /// <summary>
