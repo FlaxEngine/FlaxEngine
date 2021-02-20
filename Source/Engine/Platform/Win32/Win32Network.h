@@ -33,7 +33,7 @@ public:
     static void ClearGroup(NetworkSocketGroup& group);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
-    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
+    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = true);
     static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint endPoint);
 };
 

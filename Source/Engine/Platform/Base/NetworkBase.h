@@ -301,7 +301,7 @@ public:
     /// <param name="endPoint">The created end point.</param>
     /// <param name="bindable">True if the end point will be connected or binded.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
+    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = true);
 
     /// <summary>
     /// Remaps an ipv4 end point to an ipv6 one.
