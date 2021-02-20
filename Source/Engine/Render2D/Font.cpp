@@ -307,13 +307,14 @@ int32 Font::HitTestText(const StringView& text, const Vector2& location, const T
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
+    float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
     Vector2 rootOffset = layout.Bounds.Location + lines.First().Location;
     Vector2 testPoint = location - rootOffset;
 
     // Get line which may intersect with the position (it's possible because lines have fixed height)
-    int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.Y / GetHeight()), 0, lines.Count() - 1);
+    int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.Y / baseLinesDistance), 0, lines.Count() - 1);
     const FontLineCache& line = lines[lineIndex];
     float x = line.Location.X;
 
@@ -380,6 +381,7 @@ Vector2 Font::GetCharPosition(const StringView& text, int32 index, const TextLay
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
+    float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
     Vector2 rootOffset = layout.Bounds.Location + lines.First().Location;
 
     // Find line with that position
@@ -414,12 +416,12 @@ Vector2 Font::GetCharPosition(const StringView& text, int32 index, const TextLay
             }
 
             // Upper left corner of the character
-            return rootOffset + Vector2(x, static_cast<float>(lineIndex * GetHeight()));
+            return rootOffset + Vector2(x, static_cast<float>(lineIndex * baseLinesDistance));
         }
     }
 
     // Position after last character in the last line
-    return rootOffset + Vector2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * GetHeight()));
+    return rootOffset + Vector2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
 }
 
 void Font::FlushFaceSize() const
