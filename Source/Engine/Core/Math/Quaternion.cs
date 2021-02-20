@@ -1041,10 +1041,8 @@ namespace FlaxEngine
         /// <param name="forward">The forward direction. Direction to orient towards.</param>
         /// <param name="up">Up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
         /// <returns>The calculated quaternion.</returns>
-        public static Quaternion LookRotation(Vector3 forward, Vector3 up = null)
+        public static Quaternion LookRotation(Vector3 forward, Vector3 up)
         {
-            if(up == null)
-                up = Vector3.Up;
             LookRotation(ref forward, ref up, out var result);
             return result;
         }
