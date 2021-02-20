@@ -819,7 +819,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 36,
                 Title = "HSVToRGB",
-                Description = "Converts a HSV value to linear RGB",
+                Description = "Converts a HSV value to linear RGB [X = 0/360, Y = 0/1, Z = 0/1]",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(160, 25),
                 DefaultValues = new object[]
@@ -830,6 +830,23 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, "HSV", true, typeof(Vector3), 0, 0),
                     NodeElementArchetype.Factory.Output(0, "RGB", typeof(Vector3), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 37,
+                Title = "RGBToHSV",
+                Description = "Converts a linear RGB value to HSV [X = 0/360, Y = 0/1, Z = 0/1]",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(160, 25),
+                DefaultValues = new object[]
+                {
+                    new Vector3(0, 1, 0),
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "RGB", true, typeof(Vector3), 0, 0),
+                    NodeElementArchetype.Factory.Output(0, "HSV", typeof(Vector3), 1),
                 }
             }
         };
