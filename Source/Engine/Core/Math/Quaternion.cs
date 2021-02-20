@@ -975,8 +975,10 @@ namespace FlaxEngine
         /// <param name="target">The camera look-at target.</param>
         /// <param name="up">The camera's up vector.</param>
         /// <returns>The created look-at quaternion.</returns>
-        public static Quaternion LookAt(Vector3 eye, Vector3 target, Vector3 up  = Vector3.Up)
+        public static Quaternion LookAt(Vector3 eye, Vector3 target, Vector3 up  = null)
         {
+            if(up == null)
+                up = Vector3.Up;
             LookAt(ref eye, ref target, ref up, out var result);
             return result;
         }
@@ -999,8 +1001,10 @@ namespace FlaxEngine
         /// <param name="forward">The camera's forward direction.</param>
         /// <param name="up">The camera's up vector.</param>
         /// <returns>The created look-at quaternion.</returns>
-        public static Quaternion RotationLookAt(Vector3 forward, Vector3 up = Vector3.Up)
+        public static Quaternion RotationLookAt(Vector3 forward, Vector3 up = null)
         {
+            if(up == null)
+                up = Vector3.Up;
             RotationLookAt(ref forward, ref up, out var result);
             return result;
         }
@@ -1011,8 +1015,10 @@ namespace FlaxEngine
         /// <param name="forward">The forward direction. Direction to orient towards.</param>
         /// <param name="up">Up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
         /// <returns>The calculated quaternion.</returns>
-        public static Quaternion LookRotation(Vector3 forward, Vector3 up = Vector3.Up)
+        public static Quaternion LookRotation(Vector3 forward, Vector3 up = null)
         {
+            if(up == null)
+                up = Vector3.Up;
             LookRotation(ref forward, ref up, out var result);
             return result;
         }
