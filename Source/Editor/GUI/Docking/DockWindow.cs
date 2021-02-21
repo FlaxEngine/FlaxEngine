@@ -89,6 +89,11 @@ namespace FlaxEditor.GUI.Docking
         }
 
         /// <summary>
+        /// Gets or sets the window icon
+        /// </summary>
+        public SpriteHandle Icon { get; set; }
+
+        /// <summary>
         /// Gets the size of the title.
         /// </summary>
         public Vector2 TitleSize => _titleSize;
