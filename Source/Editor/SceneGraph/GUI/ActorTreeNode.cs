@@ -385,20 +385,14 @@ namespace FlaxEditor.SceneGraph.GUI
 
             public ReparentAction(List<Actor> actors)
             {
-                var allActors = new List<Actor>
-                {
-                    Capacity = Mathf.NextPowerOfTwo(actors.Count)
-                };
+                var allActors = new List<Actor>(Mathf.NextPowerOfTwo(actors.Count));
 
                 for (int i = 0; i < actors.Count; i++)
                 {
                     GetAllActors(allActors, actors[i]);
                 }
 
-                var allScripts = new List<Script>
-                {
-                    Capacity = allActors.Capacity
-                };
+                var allScripts = new List<Script>(allActors.Capacity);
                 GetAllScripts(allActors, allScripts);
 
                 int allCount = allActors.Count + allScripts.Count;
@@ -413,6 +407,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     _prefabIds[i] = allActors[i].PrefabID;
                     _prefabObjectIds[i] = allActors[i].PrefabObjectID;
                 }
+
                 for (int i = 0; i < allScripts.Count; i++)
                 {
                     int j = _actorsCount + i;
@@ -746,20 +741,28 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             if (assetItem.IsOfType<SkinnedModel>())
                 return true;
+
             if (assetItem.IsOfType<Model>())
                 return true;
+
             if (assetItem.IsOfType<AudioClip>())
                 return true;
+
             if (assetItem.IsOfType<Prefab>())
                 return true;
+
             if (assetItem.IsOfType<CollisionData>())
                 return true;
+
             if (assetItem.IsOfType<ParticleSystem>())
                 return true;
+
             if (assetItem.IsOfType<SceneAnimation>())
                 return true;
+
             if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
                 return true;
+
             return false;
         }
 

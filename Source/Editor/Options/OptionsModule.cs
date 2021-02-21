@@ -229,6 +229,7 @@ namespace FlaxEditor.Options
                 BorderNormal = Color.FromBgra(0xFF54545C),
                 TextBoxBackground = Color.FromBgra(0xFF333337),
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
+                ProgressNormal = Color.FromBgra(0xFF0ad328),
 
                 // Fonts
                 FontTitle = options.Interface.TitleFont.GetFont(),
@@ -247,12 +248,11 @@ namespace FlaxEditor.Options
                 StatusBarSizeGrip = Editor.Icons.StatusBarSizeGrip12,
                 Translate = Editor.Icons.Translate16,
                 Rotate = Editor.Icons.Rotate16,
-                Scale = Editor.Icons.Scale16
+                Scale = Editor.Icons.Scale16,
+
+                SharedTooltip = new Tooltip()
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
-            style.ProgressNormal = Color.FromBgra(0xFF0ad328);
-
-            style.SharedTooltip = new Tooltip();
 
             return style;
         }

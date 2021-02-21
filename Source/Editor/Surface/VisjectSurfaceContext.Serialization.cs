@@ -623,7 +623,7 @@ namespace FlaxEditor.Surface
                     for (int j = 0; j < boxesCount; j++)
                     {
                         var id = stream.ReadByte();
-                        uint type = stream.ReadUInt32();
+                        stream.ReadUInt32(); // Skip type
                         ushort connectionsCnt = stream.ReadUInt16();
 
                         ConnectionHint hint;
