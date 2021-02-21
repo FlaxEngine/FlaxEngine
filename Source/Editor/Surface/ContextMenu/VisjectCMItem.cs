@@ -159,6 +159,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     var start = font.GetCharPosition(_archetype.Title, 0);
                     var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
                     _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+                    _isFullMatch = true;
                     Visible = true;
                 }
                 else if (NodeArchetype.TryParseText != null && NodeArchetype.TryParseText(filterText, out var data))
