@@ -1432,8 +1432,11 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void LoadSignature()
             {
-                _signature = new Signature();
-                _signature.Node = this;
+                _signature = new Signature
+                {
+                    Node = this
+                };
+
                 if (Values[0] is byte[] data && data.Length != 0)
                 {
                     using (var stream = new MemoryStream(data))

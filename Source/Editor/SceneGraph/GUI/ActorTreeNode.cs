@@ -386,15 +386,20 @@ namespace FlaxEditor.SceneGraph.GUI
 
             public ReparentAction(List<Actor> actors)
             {
-                var allActors = new List<Actor>();
-                allActors.Capacity = Mathf.NextPowerOfTwo(actors.Count);
+                var allActors = new List<Actor>
+                {
+                    Capacity = Mathf.NextPowerOfTwo(actors.Count)
+                };
+
                 for (int i = 0; i < actors.Count; i++)
                 {
                     GetAllActors(allActors, actors[i]);
                 }
 
-                var allScripts = new List<Script>();
-                allScripts.Capacity = allActors.Capacity;
+                var allScripts = new List<Script>
+                {
+                    Capacity = allActors.Capacity
+                };
                 GetAllScripts(allActors, allScripts);
 
                 int allCount = allActors.Count + allScripts.Count;
@@ -570,11 +575,14 @@ namespace FlaxEditor.SceneGraph.GUI
                     {
                         // Create actor
                         var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(assetItem.ID);
-                        var actor = new AnimatedModel();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.SkinnedModel = model;
-                        actor.Transform = Actor.Transform;
+
+                        var actor = new AnimatedModel
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            SkinnedModel = model,
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);
@@ -583,11 +591,14 @@ namespace FlaxEditor.SceneGraph.GUI
                     {
                         // Create actor
                         var model = FlaxEngine.Content.LoadAsync<Model>(assetItem.ID);
-                        var actor = new StaticModel();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.Model = model;
-                        actor.Transform = Actor.Transform;
+
+                        var actor = new StaticModel
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            Model = model,
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);
@@ -595,11 +606,13 @@ namespace FlaxEditor.SceneGraph.GUI
                     else if (assetItem.IsOfType<CollisionData>())
                     {
                         // Create actor
-                        var actor = new MeshCollider();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.CollisionData = FlaxEngine.Content.LoadAsync<CollisionData>(assetItem.ID);
-                        actor.Transform = Actor.Transform;
+                        var actor = new MeshCollider
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            CollisionData = FlaxEngine.Content.LoadAsync<CollisionData>(assetItem.ID),
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);
@@ -607,11 +620,13 @@ namespace FlaxEditor.SceneGraph.GUI
                     else if (assetItem.IsOfType<ParticleSystem>())
                     {
                         // Create actor
-                        var actor = new ParticleEffect();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.ParticleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(assetItem.ID);
-                        actor.Transform = Actor.Transform;
+                        var actor = new ParticleEffect
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            ParticleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(assetItem.ID),
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);
@@ -619,11 +634,13 @@ namespace FlaxEditor.SceneGraph.GUI
                     else if (assetItem.IsOfType<SceneAnimation>())
                     {
                         // Create actor
-                        var actor = new SceneAnimationPlayer();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.Animation = FlaxEngine.Content.LoadAsync<SceneAnimation>(assetItem.ID);
-                        actor.Transform = Actor.Transform;
+                        var actor = new SceneAnimationPlayer
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            Animation = FlaxEngine.Content.LoadAsync<SceneAnimation>(assetItem.ID),
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);
@@ -631,11 +648,13 @@ namespace FlaxEditor.SceneGraph.GUI
                     else if (assetItem.IsOfType<AudioClip>())
                     {
                         // Create actor
-                        var actor = new AudioSource();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.Clip = FlaxEngine.Content.LoadAsync<AudioClip>(assetItem.ID);
-                        actor.Transform = Actor.Transform;
+                        var actor = new AudioSource
+                        {
+                            StaticFlags = Actor.StaticFlags,
+                            Name = assetItem.ShortName,
+                            Clip = FlaxEngine.Content.LoadAsync<AudioClip>(assetItem.ID),
+                            Transform = Actor.Transform
+                        };
 
                         // Spawn
                         ActorNode.Root.Spawn(actor, Actor);

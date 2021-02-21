@@ -81,9 +81,11 @@ namespace FlaxEditor.Surface.Archetypes
                 var marginX = FlaxEditor.Surface.Constants.NodeMarginX;
                 var uiStartPosY = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize;
 
-                var editButton = new Button(marginX, uiStartPosY, 246, 20);
-                editButton.Text = "Edit";
-                editButton.Parent = this;
+                var editButton = new Button(marginX, uiStartPosY, 246, 20)
+                {
+                    Text = "Edit",
+                    Parent = this
+                };
                 editButton.Clicked += Edit;
 
                 var maxTransitionsPerUpdateLabel = new Label(marginX, editButton.Bottom + 4, 153, TextBox.DefaultHeight)
