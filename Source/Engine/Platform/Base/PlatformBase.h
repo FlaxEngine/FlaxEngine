@@ -317,11 +317,6 @@ public:
     static void Free(void* ptr) = delete;
 
     /// <summary>
-    /// Returns the OS's default page size that can be used with AllocatePages.
-    /// </summary>
-    static uint64 GetDefaultPageSize() = delete;
-
-    /// <summary>
     /// Allocates pages memory block.
     /// </summary>
     /// <param name="numPages">The number of pages to allocate.</param>

@@ -16,7 +16,6 @@ public:
     // [PlatformBase]
     static void* Allocate(uint64 size, uint64 alignment);
     static void Free(void* ptr);
-    static uint64 GetDefaultPageSize();
     static void* AllocatePages(uint64 numPages, uint64 pageSize);
     static void FreePages(void* ptr);
     static uint64 GetCurrentProcessId();

@@ -51,11 +51,6 @@ void UnixPlatform::Free(void* ptr)
     }
 }
 
-uint64 Win32Platform::GetDefaultPageSize()
-{
-    return 16;
-}
-
 void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
