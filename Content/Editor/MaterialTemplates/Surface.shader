@@ -142,9 +142,7 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 {
 	GeometryData output = (GeometryData)0;
 	output.TexCoord = p0.TexCoord * w0 + p1.TexCoord * w1 + p2.TexCoord * w2;
-#if USE_LIGHTMAP
 	output.LightmapUV = p0.LightmapUV * w0 + p1.LightmapUV * w1 + p2.LightmapUV * w2;
-#endif
 #if USE_VERTEX_COLOR
 	output.VertexColor = p0.VertexColor * w0 + p1.VertexColor * w1 + p2.VertexColor * w2;
 #endif
