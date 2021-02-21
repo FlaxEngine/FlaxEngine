@@ -581,7 +581,7 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 
 void ClipLODTransition(PixelInput input)
 {
-	float ditherFactor = input.InstanceParams.y;
+	float ditherFactor = input.Geometry.InstanceParams.y;
 	if (abs(ditherFactor) > 0.001)
 	{
 		float randGrid = cos(dot(floor(input.Position.xy), float2(347.83452793, 3343.28371863)));
