@@ -496,8 +496,10 @@ namespace FlaxEditor.GUI.Docking
 
         private void ShowContextMenu(DockWindow tab, ref Vector2 location)
         {
-            var menu = new ContextMenu.ContextMenu();
-            menu.Tag = tab;
+            var menu = new ContextMenu.ContextMenu
+            {
+                Tag = tab
+            };
             tab.OnShowContextMenu(menu);
             menu.AddButton("Close", OnTabMenuCloseClicked);
             menu.AddButton("Close All", OnTabMenuCloseAllClicked);

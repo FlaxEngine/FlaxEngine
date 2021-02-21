@@ -72,8 +72,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 var time = stream.ReadSingle();
 
-                var key = new EventKey();
-                key.Parameters = new object[paramsCount];
+                var key = new EventKey
+                {
+                    Parameters = new object[paramsCount]
+                };
+
                 for (int j = 0; j < paramsCount; j++)
                 {
                     stream.Read(dataBuffer, 0, e.EventParamsSizes[j]);
@@ -316,8 +319,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             // Build default value
-            var defaultValue = new EventKey();
-            defaultValue.Parameters = new object[EventParamsTypes.Length];
+            var defaultValue = new EventKey
+            {
+                Parameters = new object[EventParamsTypes.Length]
+            };
+
             for (int i = 0; i < EventParamsTypes.Length; i++)
                 defaultValue.Parameters[i] = Activator.CreateInstance(EventParamsTypes[i]);
             Events.DefaultValue = defaultValue;

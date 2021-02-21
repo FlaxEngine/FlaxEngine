@@ -78,8 +78,10 @@ namespace FlaxEditor.Content
             if (actor == null)
             {
                 // Create default prefab root object
-                actor = new EmptyActor();
-                actor.Name = "Root";
+                actor = new EmptyActor
+                {
+                    Name = "Root"
+                };
 
                 // Cleanup it after usage
                 Object.Destroy(actor, 20.0f);
