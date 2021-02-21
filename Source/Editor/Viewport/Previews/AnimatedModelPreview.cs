@@ -64,15 +64,20 @@ namespace FlaxEditor.Viewport.Previews
             Task.Begin += OnBegin;
 
             // Setup preview scene
-            _previewModel = new AnimatedModel();
-            _previewModel.UseTimeScale = false;
-            _previewModel.UpdateWhenOffscreen = true;
-            //_previewModel.BoundsScale = 1000.0f;
-            _previewModel.UpdateMode = AnimatedModel.AnimationUpdateMode.Manual;
+            _previewModel = new AnimatedModel
+            {
+                UseTimeScale = false,
+                UpdateWhenOffscreen = true,
+                //_previewModel.BoundsScale = 1000.0f;
+                UpdateMode = AnimatedModel.AnimationUpdateMode.Manual
+            };
+
             _previewNodesModel = FlaxEngine.Content.CreateVirtualAsset<Model>();
             _previewNodesModel.SetupLODs(new[] { 1 });
-            _previewNodesActor = new StaticModel();
-            _previewNodesActor.Model = _previewNodesModel;
+            _previewNodesActor = new StaticModel
+            {
+                Model = _previewNodesModel
+            };
             _previewNodesActor.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.WiresDebugMaterial));
 
             // Link actors for rendering
@@ -84,8 +89,10 @@ namespace FlaxEditor.Viewport.Previews
                 // Preview LOD
                 {
                     var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
-                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f);
-                    previewLODValue.Parent = previewLOD;
+                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
+                    {
+                        Parent = previewLOD
+                    };
                     previewLODValue.ValueChanged += () => _previewModel.ForcedLOD = previewLODValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => previewLODValue.Value = _previewModel.ForcedLOD;
                 }

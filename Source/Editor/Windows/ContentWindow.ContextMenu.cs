@@ -40,8 +40,11 @@ namespace FlaxEditor.Windows
             // Create context menu
             ContextMenuButton b;
             ContextMenuChildMenu c;
-            ContextMenu cm = new ContextMenu();
-            cm.Tag = item;
+            ContextMenu cm = new ContextMenu
+            {
+                Tag = item
+            };
+
             if (isTreeNode)
             {
                 b = cm.AddButton("Expand All", OnExpandAllClicked);
@@ -52,6 +55,7 @@ namespace FlaxEditor.Windows
 
                 cm.AddSeparator();
             }
+
             if (item is ContentFolder contentFolder && contentFolder.Node is ProjectTreeNode)
             {
                 cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));

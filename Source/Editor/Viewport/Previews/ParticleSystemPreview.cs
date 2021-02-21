@@ -56,8 +56,10 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     if (!_boundsModel)
                     {
-                        _boundsModel = new StaticModel();
-                        _boundsModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/WireBox");
+                        _boundsModel = new StaticModel
+                        {
+                            Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Gizmo/WireBox")
+                        };
                         _boundsModel.Model.WaitForLoaded();
                         _boundsModel.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>("Editor/Gizmo/MaterialWireFocus"));
                         Task.AddCustomActor(_boundsModel);
@@ -96,12 +98,14 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     if (!_originModel)
                     {
-                        _originModel = new StaticModel();
-                        _originModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/Sphere");
+                        _originModel = new StaticModel
+                        {
+                            Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/Sphere"),
+                            Position = _previewEffect.Position,
+                            Scale = new Vector3(0.1f)
+                        };
                         _originModel.Model.WaitForLoaded();
                         _originModel.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>("Editor/Gizmo/MaterialAxisFocus"));
-                        _originModel.Position = _previewEffect.Position;
-                        _originModel.Scale = new Vector3(0.1f);
                         Task.AddCustomActor(_originModel);
                     }
                     else if (!_originModel.IsActive)
@@ -147,10 +151,12 @@ namespace FlaxEditor.Viewport.Previews
         : base(useWidgets, new FPSCamera())
         {
             // Setup preview scene
-            _previewEffect = new ParticleEffect();
-            _previewEffect.UseTimeScale = false;
-            _previewEffect.IsLooping = true;
-            _previewEffect.CustomViewRenderTask = Task;
+            _previewEffect = new ParticleEffect
+            {
+                UseTimeScale = false,
+                IsLooping = true,
+                CustomViewRenderTask = Task
+            };
 
             // Link actors for rendering
             Task.AddCustomActor(_previewEffect);

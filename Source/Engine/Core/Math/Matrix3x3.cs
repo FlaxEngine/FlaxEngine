@@ -697,8 +697,7 @@ namespace FlaxEngine
         /// <returns>The sum of the two matrices.</returns>
         public static Matrix3x3 Add(Matrix3x3 left, Matrix3x3 right)
         {
-            Matrix3x3 result;
-            Add(ref left, ref right, out result);
+            Add(ref left, ref right, out Matrix3x3 result);
             return result;
         }
 
@@ -729,8 +728,7 @@ namespace FlaxEngine
         /// <returns>The difference between the two matrices.</returns>
         public static Matrix3x3 Subtract(Matrix3x3 left, Matrix3x3 right)
         {
-            Matrix3x3 result;
-            Subtract(ref left, ref right, out result);
+            Subtract(ref left, ref right, out Matrix3x3 result);
             return result;
         }
 
@@ -761,8 +759,7 @@ namespace FlaxEngine
         /// <returns>The scaled Matrix3x3.</returns>
         public static Matrix3x3 Multiply(Matrix3x3 left, float right)
         {
-            Matrix3x3 result;
-            Multiply(ref left, right, out result);
+            Multiply(ref left, right, out Matrix3x3 result);
             return result;
         }
 
@@ -797,8 +794,7 @@ namespace FlaxEngine
         /// <returns>The product of the two matrices.</returns>
         public static Matrix3x3 Multiply(Matrix3x3 left, Matrix3x3 right)
         {
-            Matrix3x3 result;
-            Multiply(ref left, ref right, out result);
+            Multiply(ref left, ref right, out Matrix3x3 result);
             return result;
         }
 
@@ -831,8 +827,7 @@ namespace FlaxEngine
         /// <returns>The scaled Matrix3x3.</returns>
         public static Matrix3x3 Divide(Matrix3x3 left, float right)
         {
-            Matrix3x3 result;
-            Divide(ref left, right, out result);
+            Divide(ref left, right, out Matrix3x3 result);
             return result;
         }
 
@@ -863,8 +858,7 @@ namespace FlaxEngine
         /// <returns>The quotient of the two matrices.</returns>
         public static Matrix3x3 Divide(Matrix3x3 left, Matrix3x3 right)
         {
-            Matrix3x3 result;
-            Divide(ref left, ref right, out result);
+            Divide(ref left, ref right, out Matrix3x3 result);
             return result;
         }
 
@@ -923,8 +917,7 @@ namespace FlaxEngine
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="exponent"/> is negative.</exception>
         public static Matrix3x3 Exponent(Matrix3x3 value, int exponent)
         {
-            Matrix3x3 result;
-            Exponent(ref value, exponent, out result);
+            Exponent(ref value, exponent, out Matrix3x3 result);
             return result;
         }
 
@@ -953,8 +946,7 @@ namespace FlaxEngine
         /// <returns>The negated Matrix3x3.</returns>
         public static Matrix3x3 Negate(Matrix3x3 value)
         {
-            Matrix3x3 result;
-            Negate(ref value, out result);
+            Negate(ref value, out Matrix3x3 result);
             return result;
         }
 
@@ -993,8 +985,7 @@ namespace FlaxEngine
         /// </remarks>
         public static Matrix3x3 Lerp(Matrix3x3 start, Matrix3x3 end, float amount)
         {
-            Matrix3x3 result;
-            Lerp(ref start, ref end, amount, out result);
+            Lerp(ref start, ref end, amount, out Matrix3x3 result);
             return result;
         }
 
@@ -1020,8 +1011,7 @@ namespace FlaxEngine
         /// <returns>The cubic interpolation of the two matrices.</returns>
         public static Matrix3x3 SmoothStep(Matrix3x3 start, Matrix3x3 end, float amount)
         {
-            Matrix3x3 result;
-            SmoothStep(ref start, ref end, amount, out result);
+            SmoothStep(ref start, ref end, amount, out Matrix3x3 result);
             return result;
         }
 

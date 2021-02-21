@@ -255,16 +255,20 @@ namespace FlaxEditor.Windows
             // Viewport Brightness
             {
                 var brightness = menu.AddButton("Viewport Brightness");
-                var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f);
-                brightnessValue.Parent = brightness;
+                var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f)
+                {
+                    Parent = brightness
+                };
                 brightnessValue.ValueChanged += () => _viewport.Brightness = brightnessValue.Value;
             }
 
             // Viewport Resolution
             {
                 var resolution = menu.AddButton("Viewport Resolution");
-                var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f);
-                resolutionValue.Parent = resolution;
+                var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f)
+                {
+                    Parent = resolution
+                };
                 resolutionValue.ValueChanged += () => _viewport.ResolutionScale = resolutionValue.Value;
             }
 
