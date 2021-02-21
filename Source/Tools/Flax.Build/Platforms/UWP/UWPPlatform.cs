@@ -31,9 +31,12 @@ namespace Flax.Build.Platforms
             if (sdk10 == null)
                 _hasRequiredSDKsInstalled = false;
 
-            // Need v141 toolset
-            if (!GetToolsets().ContainsKey(WindowsPlatformToolset.v141))
+            // Need v141+ toolset
+            if (!GetToolsets().ContainsKey(WindowsPlatformToolset.v141) &&
+                !GetToolsets().ContainsKey(WindowsPlatformToolset.v142))
+            {
                 _hasRequiredSDKsInstalled = false;
+            }
         }
 
         /// <inheritdoc />
