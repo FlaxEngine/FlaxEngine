@@ -688,8 +688,7 @@ namespace FlaxEngine
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Int3 Max(Int3 left, Int3 right)
         {
-            Int3 result;
-            Max(ref left, ref right, out result);
+            Max(ref left, ref right, out Int3 result);
             return result;
         }
 
