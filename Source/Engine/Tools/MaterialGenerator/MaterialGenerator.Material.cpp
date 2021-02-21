@@ -458,6 +458,35 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
         break;
     }
+        // HSVToRGB
+    case 36:
+    {
+        const auto hsv = tryGetValue(node->GetBox(0), node->Values[0]).AsVector3();
+
+        // Normalize from 360
+        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}.x / 360.0f, {0}.y, {0}.z)"), hsv.Value), node);
+
+        auto x1 = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp(abs(fmod({0}.x * 6.0 + float3(0.0f, 4.0f, 2.0f), 6.0f) - 3.0f) - 1.0f, 0.0f, 1.0f)"), color.Value), node);
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1}.z * lerp(float3(1.0, 1.0, 1.0), {0}, {1}.y)"), x1.Value, color.Value), node);
+        break;
+    }
+        // RGBToHSV
+    case 37:
+    {
+        // Reference: Ian Taylor, https://www.chilliant.com/rgb2hsv.html
+
+        const auto rgb = tryGetValue(node->GetBox(0), node->Values[0]).AsVector3();
+        const auto epsilon = writeLocal(ValueType::Float, TEXT("1e-10"), node);
+
+        auto p = writeLocal(ValueType::Vector4, String::Format(TEXT("({0}.g < {0}.b) ? float4({0}.bg, -1.0f, 2.0f/3.0f) : float4({0}.gb, 0.0f, -1.0f/3.0f)"), rgb.Value), node);
+        auto q = writeLocal(ValueType::Vector4, String::Format(TEXT("({0}.r < {1}.x) ? float4({1}.xyw, {0}.r) : float4({0}.r, {1}.yzx)"), rgb.Value, p.Value), node);
+        auto c = writeLocal(ValueType::Float, String::Format(TEXT("{0}.x - min({0}.w, {0}.y)"), q.Value), node);
+        auto h = writeLocal(ValueType::Float , String::Format(TEXT("abs(({0}.w - {0}.y) / (6 * {1} + {2}) + {0}.z)"), q.Value, c.Value, epsilon.Value), node);
+        
+        auto hcv = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2}.x)"), h.Value, c.Value, q.Value), node);
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}.x * 360.0f, {0}.y / ({0}.z + {1}), {0}.z)"), hcv.Value, epsilon.Value), node);
+        break;
+    }
     default:
         break;
     }
