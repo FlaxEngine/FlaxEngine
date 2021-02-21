@@ -555,17 +555,17 @@ public:
     API_PROPERTY() static BatteryInfo GetBatteryInfo();
 
     /// <summary>
-    /// Gets the screen DPI setting.
+    /// Gets the primary monitor's DPI setting.
     /// </summary>
     API_PROPERTY() static int32 GetDpi();
 
     /// <summary>
-    /// Gets the screen DPI setting scale factor (1 is default). Includes custom DPI scale.
+    /// Gets the primary monitor's DPI setting scale factor (1 is default). Includes custom DPI scale.
     /// </summary>
     API_PROPERTY() static float GetDpiScale();
 
     /// <summary>
-    /// The custom screen DPI scale factor to apply globally. Can be used to adjust the User Interface scale (resolution).
+    /// The custom DPI scale factor to apply globally. Can be used to adjust the User Interface scale (resolution).
     /// </summary>
     API_FIELD() static float CustomDpiScale;
 
