@@ -124,7 +124,7 @@ namespace FlaxEngine.GUI
                 var font = textBlock.Style.Font.GetFont();
                 if (font)
                 {
-                    height = font.Height;
+                    height = font.Height / Platform.DpiScale;
                     return textBlock.Bounds.UpperLeft;
                 }
             }
@@ -136,7 +136,7 @@ namespace FlaxEngine.GUI
                 var font = textBlock.Style.Font.GetFont();
                 if (font)
                 {
-                    height = font.Height;
+                    height = font.Height / Platform.DpiScale;
                     return textBlock.Bounds.UpperRight;
                 }
             }
@@ -151,7 +151,7 @@ namespace FlaxEngine.GUI
                     var font = textBlock.Style.Font.GetFont();
                     if (!font)
                         break;
-                    height = font.Height;
+                    height = font.Height / Platform.DpiScale;
                     return textBlock.Bounds.Location + font.GetCharPosition(_text, ref textBlock.Range, index - textBlock.Range.StartIndex);
                 }
             }
@@ -166,7 +166,7 @@ namespace FlaxEngine.GUI
                     var font = textBlock.Style.Font.GetFont();
                     if (!font)
                         break;
-                    height = font.Height;
+                    height = font.Height / Platform.DpiScale;
                     return textBlock.Bounds.UpperRight;
                 }
             }
