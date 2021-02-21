@@ -12,7 +12,7 @@ namespace FlaxEditor.Gizmo
     /// </summary>
     /// <seealso cref="TransformGizmoBase" />
     [HideInEditor]
-    public class TransformGizmo : TransformGizmoBase
+    public class TransformGizmoBase : TransformGizmoBase
     {
         /// <summary>
         /// Applies scale to the selected objects pool.
@@ -42,10 +42,10 @@ namespace FlaxEditor.Gizmo
         public List<SceneGraphNode> SelectedParents => _selectionParents;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TransformGizmo" /> class.
+        /// Initializes a new instance of the <see cref="TransformGizmoBase" /> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>
-        public TransformGizmo(IGizmoOwner owner)
+        public TransformGizmoBase(IGizmoOwner owner)
         : base(owner)
         {
         }

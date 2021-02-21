@@ -557,12 +557,12 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
-
-            if (float.TryParse(node.GetAttribute("Split1"), out value1))
+            if (float.TryParse(node.GetAttribute("Split1"), out float value1))
                 _split1.SplitterValue = value1;
+
             if (float.TryParse(node.GetAttribute("Split2"), out value1))
                 _split2.SplitterValue = value1;
+
             if (float.TryParse(node.GetAttribute("Split3"), out value1))
                 _timeline.Splitter.SplitterValue = value1;
         }

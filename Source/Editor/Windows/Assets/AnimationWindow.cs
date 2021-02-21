@@ -260,15 +260,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
-            Timeline.TimeShowModes value2;
-            bool value3;
-
-            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out value1))
+            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out float value1))
                 _timeline.Splitter.SplitterValue = value1;
-            if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out value2))
+
+            if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out Timeline.TimeShowModes value2))
                 _timeline.TimeShowMode = value2;
-            if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out value3))
+
+            if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out bool value3))
                 _timeline.ShowPreviewValues = value3;
         }
 

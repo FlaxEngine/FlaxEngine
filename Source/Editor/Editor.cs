@@ -173,7 +173,7 @@ namespace FlaxEditor
         /// <summary>
         /// Gets the main transform gizmo used by the <see cref="SceneEditorWindow"/>.
         /// </summary>
-        public Gizmo.TransformGizmo MainTransformGizmo => Windows.EditWin.Viewport.TransformGizmo;
+        public Gizmo.TransformGizmoBase MainTransformGizmo => Windows.EditWin.Viewport.TransformGizmo;
 
         /// <summary>
         /// Gets a value indicating whether this Editor is running in `headless` mode. No windows or popups should be shown. Used in CL environment (without a graphical user interface).

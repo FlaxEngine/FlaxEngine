@@ -79,8 +79,7 @@ namespace FlaxEditor.Windows
 
                     if (item is BinaryAssetItem binaryAsset)
                     {
-                        string importPath;
-                        if (!binaryAsset.GetImportPath(out importPath))
+                        if (!binaryAsset.GetImportPath(out string importPath))
                         {
                             string importLocation = System.IO.Path.GetDirectoryName(importPath);
                             if (!string.IsNullOrEmpty(importLocation) && System.IO.Directory.Exists(importLocation))

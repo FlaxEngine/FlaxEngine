@@ -862,15 +862,15 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
-            bool value2;
-
-            if (float.TryParse(node.GetAttribute("Split"), out value1))
+            if (float.TryParse(node.GetAttribute("Split"), out float value1))
                 _split.SplitterValue = value1;
+
             if (float.TryParse(node.GetAttribute("Scale"), out value1))
                 _view.ViewScale = value1;
-            if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out value2))
+
+            if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out bool value2))
                 _view.ShowFileExtensions = value2;
+
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
         }

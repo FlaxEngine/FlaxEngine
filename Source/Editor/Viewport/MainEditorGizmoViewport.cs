@@ -134,7 +134,7 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// The transform gizmo.
         /// </summary>
-        public readonly TransformGizmo TransformGizmo;
+        public readonly TransformGizmoBase TransformGizmo;
 
         /// <summary>
         /// The grid gizmo.
@@ -196,7 +196,7 @@ namespace FlaxEditor.Viewport
             Task.CustomPostFx.Add(_editorSpritesRenderer);
 
             // Add transformation gizmo
-            TransformGizmo = new TransformGizmo(this);
+            TransformGizmo = new TransformGizmoBase(this);
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.ModeChanged += OnGizmoModeChanged;
             TransformGizmo.Duplicate += Editor.Instance.SceneEditing.Duplicate;
@@ -833,8 +833,7 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            BoundingBox box;
-            Editor.GetActorEditorBox(actor, out box);
+            Editor.GetActorEditorBox(actor, out BoundingBox box);
 
             // Place the object
             //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;

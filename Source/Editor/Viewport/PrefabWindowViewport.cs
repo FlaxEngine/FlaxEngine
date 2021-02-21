@@ -44,7 +44,7 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// The transform gizmo.
         /// </summary>
-        public readonly TransformGizmo TransformGizmo;
+        public readonly TransformGizmoBase TransformGizmo;
 
         /// <summary>
         /// The selection outline postFx.
@@ -82,7 +82,7 @@ namespace FlaxEditor.Viewport
             Task.CustomPostFx.Add(EditorPrimitives);
 
             // Add transformation gizmo
-            TransformGizmo = new TransformGizmo(this);
+            TransformGizmo = new TransformGizmoBase(this);
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.ModeChanged += OnGizmoModeChanged;
             TransformGizmo.Duplicate += _window.Duplicate;
@@ -92,7 +92,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.World16, null, true)
             {
-                Checked = TransformGizmo.ActiveTransformSpace == TransformGizmo.TransformSpace.World,
+                Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
                 Parent = transformSpaceWidget
             };
@@ -184,7 +184,7 @@ namespace FlaxEditor.Viewport
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate16, null, true)
             {
-                Tag = TransformGizmo.Mode.Translate,
+                Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
                 Checked = true,
                 Parent = gizmoMode
@@ -192,14 +192,14 @@ namespace FlaxEditor.Viewport
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
             _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate16, null, true)
             {
-                Tag = TransformGizmo.Mode.Rotate,
+                Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
             _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale16, null, true)
             {
-                Tag = TransformGizmo.Mode.Scale,
+                Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",
                 Parent = gizmoMode
             };
@@ -300,7 +300,7 @@ namespace FlaxEditor.Viewport
 
         private void OnGizmoModeToggle(ViewportWidgetButton button)
         {
-            TransformGizmo.ActiveMode = (TransformGizmo.Mode)(int)button.Tag;
+            TransformGizmo.ActiveMode = (TransformGizmoBase.Mode)(int)button.Tag;
         }
 
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
@@ -327,9 +327,9 @@ namespace FlaxEditor.Viewport
         {
             // Update all viewport widgets status
             var mode = TransformGizmo.ActiveMode;
-            _gizmoModeTranslate.Checked = mode == TransformGizmo.Mode.Translate;
-            _gizmoModeRotate.Checked = mode == TransformGizmo.Mode.Rotate;
-            _gizmoModeScale.Checked = mode == TransformGizmo.Mode.Scale;
+            _gizmoModeTranslate.Checked = mode == TransformGizmoBase.Mode.Translate;
+            _gizmoModeRotate.Checked = mode == TransformGizmoBase.Mode.Rotate;
+            _gizmoModeScale.Checked = mode == TransformGizmoBase.Mode.Scale;
         }
 
         private static readonly float[] EditorViewportScaleSnapValues =
@@ -458,7 +458,7 @@ namespace FlaxEditor.Viewport
         public void ApplyTransform(List<SceneGraphNode> selection, ref Vector3 translationDelta, ref Quaternion rotationDelta, ref Vector3 scaleDelta)
         {
             bool applyRotation = !rotationDelta.IsIdentity;
-            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmo.PivotType.ObjectCenter;
+            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
             Vector3 gizmoPosition = TransformGizmo.Position;
 
             // Transform selected objects
@@ -524,7 +524,7 @@ namespace FlaxEditor.Viewport
             if (TransformGizmo.IsActive)
             {
                 // Ensure player is not moving objects
-                if (TransformGizmo.ActiveAxis != TransformGizmo.Axis.None)
+                if (TransformGizmo.ActiveAxis != TransformGizmoBase.Axis.None)
                     return;
             }
             else
@@ -645,8 +645,7 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            BoundingBox box;
-            Editor.GetActorEditorBox(actor, out box);
+            Editor.GetActorEditorBox(actor, out BoundingBox box);
 
             // Place the object
             var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
