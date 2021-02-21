@@ -26,8 +26,7 @@ namespace FlaxEditor.Content
         {
             if (reader.TokenType == JsonToken.String)
             {
-                Guid id;
-                FlaxEngine.Json.JsonSerializer.ParseID((string)reader.Value, out id);
+                FlaxEngine.Json.JsonSerializer.ParseID((string)reader.Value, out Guid id);
                 return Editor.Instance.ContentDatabase.Find(id);
             }
 

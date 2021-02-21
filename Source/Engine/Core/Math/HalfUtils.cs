@@ -52,8 +52,10 @@ namespace FlaxEngine
         /// <returns>The float value</returns>
         public static float Unpack(ushort h)
         {
-            var conv = new FloatToUint();
-            conv.uintValue = HalfToFloatMantissaTable[HalfToFloatOffsetTable[h >> 10] + (((uint)h) & 0x3ff)] + HalfToFloatExponentTable[h >> 10];
+            var conv = new FloatToUint
+            {
+                uintValue = HalfToFloatMantissaTable[HalfToFloatOffsetTable[h >> 10] + (((uint)h) & 0x3ff)] + HalfToFloatExponentTable[h >> 10]
+            };
             return conv.floatValue;
         }
 
@@ -64,8 +66,10 @@ namespace FlaxEngine
         /// <returns>The half value</returns>
         public static ushort Pack(float f)
         {
-            FloatToUint conv = new FloatToUint();
-            conv.floatValue = f;
+            FloatToUint conv = new FloatToUint
+            {
+                floatValue = f
+            };
             return (ushort)(FloatToHalfBaseTable[(conv.uintValue >> 23) & 0x1ff] + ((conv.uintValue & 0x007fffff) >> FloatToHalfShiftTable[(conv.uintValue >> 23) & 0x1ff]));
         }
 

@@ -64,8 +64,10 @@ namespace FlaxEngine.GUI
                         VScrollBar = GetChild<VScrollBar>();
                     if (VScrollBar == null)
                     {
-                        VScrollBar = new VScrollBar(this, Width - ScrollBar.DefaultSize, Height);
-                        VScrollBar.AnchorPreset = AnchorPresets.TopLeft;
+                        VScrollBar = new VScrollBar(this, Width - ScrollBar.DefaultSize, Height)
+                        {
+                            AnchorPreset = AnchorPresets.TopLeft
+                        };
                         //VScrollBar.X += VScrollBar.Width;
                         VScrollBar.ValueChanged += () => SetViewOffset(Orientation.Vertical, VScrollBar.Value);
                     }
@@ -82,8 +84,10 @@ namespace FlaxEngine.GUI
                         HScrollBar = GetChild<HScrollBar>();
                     if (HScrollBar == null)
                     {
-                        HScrollBar = new HScrollBar(this, Height - ScrollBar.DefaultSize, Width);
-                        HScrollBar.AnchorPreset = AnchorPresets.TopLeft;
+                        HScrollBar = new HScrollBar(this, Height - ScrollBar.DefaultSize, Width)
+                        {
+                            AnchorPreset = AnchorPresets.TopLeft
+                        };
                         //HScrollBar.Y += HScrollBar.Height;
                         //HScrollBar.Offsets += new Margin(0, 0, HScrollBar.Height * 0.5f, 0);
                         HScrollBar.ValueChanged += () => SetViewOffset(Orientation.Horizontal, HScrollBar.Value);

@@ -402,8 +402,7 @@ namespace FlaxEditor.GUI.Docking
                 else if (MouseDownWindow != null && _panel.TabsCount > 1)
                 {
                     // Check if mouse left current tab rect
-                    Rectangle currWinRect;
-                    GetTabRect(MouseDownWindow, out currWinRect);
+                    GetTabRect(MouseDownWindow, out Rectangle currWinRect);
                     if (!currWinRect.Contains(location))
                     {
                         int index = _panel.GetTabIndex(MouseDownWindow);

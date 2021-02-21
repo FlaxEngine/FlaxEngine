@@ -46,8 +46,7 @@ namespace FlaxEditor.Gizmo
 
             // Transform ray into local space of the gizmo
             Ray localRay;
-            Matrix invGizmoWorld;
-            Matrix.Invert(ref _gizmoWorld, out invGizmoWorld);
+            Matrix.Invert(ref _gizmoWorld, out Matrix invGizmoWorld);
             Vector3.TransformNormal(ref ray.Direction, ref invGizmoWorld, out localRay.Direction);
             Vector3.Transform(ref ray.Position, ref invGizmoWorld, out localRay.Position);
 

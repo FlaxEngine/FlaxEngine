@@ -251,8 +251,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
-            Color color;
-            if (Color.TryParseHex(_cHex.Text, out color))
+            if (Color.TryParseHex(_cHex.Text, out Color color))
                 SelectedColor = color;
         }
 

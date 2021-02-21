@@ -85,8 +85,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="actor">The actor to preview.</param>
         public void ShowActor(Actor actor)
         {
-            BoundingSphere sphere;
-            Editor.GetActorEditorSphere(actor, out sphere);
+            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
             ShowSphere(ref sphere);
         }
 
@@ -104,8 +103,7 @@ namespace FlaxEditor.Viewport.Cameras
             {
                 if (actors[i] is ActorNode actor)
                 {
-                    BoundingSphere sphere;
-                    Editor.GetActorEditorSphere(actor.Actor, out sphere);
+                    Editor.GetActorEditorSphere(actor.Actor, out BoundingSphere sphere);
                     BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
                 }
             }

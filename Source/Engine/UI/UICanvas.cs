@@ -234,8 +234,10 @@ namespace FlaxEngine
         /// </summary>
         public UICanvas()
         {
-            _guiRoot = new CanvasRootControl(this);
-            _guiRoot.IsLayoutLocked = false;
+            _guiRoot = new CanvasRootControl(this)
+            {
+                IsLayoutLocked = false
+            };
         }
 
         /// <summary>
@@ -245,12 +247,12 @@ namespace FlaxEngine
         {
             get
             {
-                OrientedBoundingBox bounds = new OrientedBoundingBox();
-                bounds.Extents = new Vector3(_guiRoot.Size * 0.5f, Mathf.Epsilon);
-                Matrix world;
-                GetWorldMatrix(out world);
-                Matrix offset;
-                Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out offset);
+                OrientedBoundingBox bounds = new OrientedBoundingBox
+                {
+                    Extents = new Vector3(_guiRoot.Size * 0.5f, Mathf.Epsilon)
+                };
+                GetWorldMatrix(out Matrix world);
+                Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
                 return bounds;
             }

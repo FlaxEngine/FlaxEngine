@@ -161,9 +161,11 @@ namespace FlaxEngine
             if (!(_control is ContainerControl))
                 throw new InvalidOperationException("To add child to the control it has to be ContainerControl.");
 
-            var child = new UIControl();
-            child.Parent = this;
-            child.Control = (Control)Activator.CreateInstance(typeof(T));
+            var child = new UIControl
+            {
+                Parent = this,
+                Control = (Control)Activator.CreateInstance(typeof(T))
+            };
             return child;
         }
 
