@@ -709,8 +709,9 @@ namespace FlaxEditor.Modules
             var dpiScale = Platform.DpiScale;
             var settings = CreateWindowSettings.Default;
             settings.Title = "Flax Editor";
-            settings.Size = new Vector2(1300 * dpiScale, 900 * dpiScale); // TODO: Place the window on the correct screen (and use that screen's size)
+            settings.Size = Platform.DesktopSize;
             settings.StartPosition = WindowStartPosition.CenterScreen;
+            settings.ShowAfterFirstPaint = true;
 
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
             {
