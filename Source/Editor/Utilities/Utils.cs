@@ -84,7 +84,7 @@ namespace FlaxEditor.Utilities
             while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
             {
                 order++;
-                bytes = bytes / 1024;
+                bytes /= 1024;
             }
 
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
@@ -101,7 +101,7 @@ namespace FlaxEditor.Utilities
             while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
             {
                 order++;
-                bytes = bytes / 1024;
+                bytes /= 1024;
             }
 
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
@@ -1691,8 +1691,7 @@ namespace FlaxEditor.Utilities
                 orientation = Quaternion.LookRotation(dir, Vector3.Cross(Vector3.Cross(dir, Vector3.Up), dir));
             Vector3 up = Vector3.Up * orientation;
             box.Transformation = Matrix.CreateWorld(min + vec * 0.5f, dir, up);
-            Matrix inv;
-            Matrix.Invert(ref box.Transformation, out inv);
+            Matrix.Invert(ref box.Transformation, out Matrix inv);
             Vector3 vecLocal = Vector3.TransformNormal(vec * 0.5f, inv);
             box.Extents.X = margin;
             box.Extents.Y = margin;

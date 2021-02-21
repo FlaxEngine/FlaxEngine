@@ -154,7 +154,7 @@ namespace FlaxEngine
         {
             float t = Repeat(target - current, 360f);
             if (t > 180f)
-                t = t - 360f;
+                t -= 360f;
             return t;
         }
 
@@ -222,7 +222,7 @@ namespace FlaxEngine
         {
             float c = Repeat(b - a, 360f);
             if (c > 180f)
-                c = c - 360f;
+                c -= 360f;
             return a + c * Saturate(t);
         }
 

@@ -29,7 +29,6 @@ namespace FlaxEditor.Gizmo
         
         private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out float distance)
         {
-            distance = float.MaxValue;
             var plane = new Plane(Vector3.Zero, normal);
 
             if (!plane.Intersects(ref ray, out distance))
@@ -47,8 +46,7 @@ namespace FlaxEditor.Gizmo
 
             // Transform ray into local space of the gizmo
             Ray localRay;
-            Matrix invGizmoWorld;
-            Matrix.Invert(ref _gizmoWorld, out invGizmoWorld);
+            Matrix.Invert(ref _gizmoWorld, out Matrix invGizmoWorld);
             Vector3.TransformNormal(ref ray.Direction, ref invGizmoWorld, out localRay.Direction);
             Vector3.Transform(ref ray.Position, ref invGizmoWorld, out localRay.Position);
 
@@ -66,11 +64,13 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.X;
                     closestintersection = intersection;
                 }
+
                 if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
                 {
                     _activeAxis = Axis.Y;
                     closestintersection = intersection;
                 }
+
                 if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
                 {
                     _activeAxis = Axis.Z;
@@ -85,6 +85,7 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.XY;
                     closestintersection = intersection;
                 }
+
                 if (XZBox.Intersects(ref localRay, out intersection) && intersection > closestintersection)
                 {
                     _activeAxis = Axis.ZX;

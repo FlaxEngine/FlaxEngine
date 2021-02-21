@@ -361,11 +361,9 @@ namespace FlaxEngine
         public ContainmentType Contains(ref Vector3 point)
         {
             // Transform the point into the obb coordinates
-            Matrix invTrans;
-            Matrix.Invert(ref Transformation, out invTrans);
+            Matrix.Invert(ref Transformation, out Matrix invTrans);
 
-            Vector3 locPoint;
-            Vector3.TransformCoordinate(ref point, ref invTrans, out locPoint);
+            Vector3.TransformCoordinate(ref point, ref invTrans, out Vector3 locPoint);
 
             locPoint.X = Math.Abs(locPoint.X);
             locPoint.Y = Math.Abs(locPoint.Y);
@@ -396,16 +394,14 @@ namespace FlaxEngine
         /// <returns>The type of containment.</returns>
         public ContainmentType Contains(Vector3[] points)
         {
-            Matrix invTrans;
-            Matrix.Invert(ref Transformation, out invTrans);
+            Matrix.Invert(ref Transformation, out Matrix invTrans);
 
             var containsAll = true;
             var containsAny = false;
 
             for (var i = 0; i < points.Length; i++)
             {
-                Vector3 locPoint;
-                Vector3.TransformCoordinate(ref points[i], ref invTrans, out locPoint);
+                Vector3.TransformCoordinate(ref points[i], ref invTrans, out Vector3 locPoint);
 
                 locPoint.X = Math.Abs(locPoint.X);
                 locPoint.Y = Math.Abs(locPoint.Y);
@@ -416,6 +412,7 @@ namespace FlaxEngine
                     Mathf.NearEqual(locPoint.Y, Extents.Y) &&
                     Mathf.NearEqual(locPoint.Z, Extents.Z))
                     containsAny = true;
+
                 if ((locPoint.X < Extents.X) && (locPoint.Y < Extents.Y) && (locPoint.Z < Extents.Z))
                     containsAny = true;
                 else
@@ -424,8 +421,10 @@ namespace FlaxEngine
 
             if (containsAll)
                 return ContainmentType.Contains;
+
             if (containsAny)
                 return ContainmentType.Intersects;
+
             return ContainmentType.Disjoint;
         }
 
@@ -445,12 +444,10 @@ namespace FlaxEngine
         /// </remarks>
         public ContainmentType Contains(BoundingSphere sphere, bool ignoreScale = false)
         {
-            Matrix invTrans;
-            Matrix.Invert(ref Transformation, out invTrans);
+            Matrix.Invert(ref Transformation, out Matrix invTrans);
 
             // Transform sphere center into the obb coordinates
-            Vector3 locCenter;
-            Vector3.TransformCoordinate(ref sphere.Center, ref invTrans, out locCenter);
+            Vector3.TransformCoordinate(ref sphere.Center, ref invTrans, out Vector3 locCenter);
 
             float locRadius;
             if (ignoreScale)
@@ -465,8 +462,7 @@ namespace FlaxEngine
 
             //Perform regular BoundingBox to BoundingSphere containment check
             Vector3 minusExtens = -Extents;
-            Vector3 vector;
-            Vector3.Clamp(ref locCenter, ref minusExtens, ref Extents, out vector);
+            Vector3.Clamp(ref locCenter, ref minusExtens, ref Extents, out Vector3 vector);
             float distance = Vector3.DistanceSquared(ref locCenter, ref vector);
 
             if (distance > locRadius * locRadius)
@@ -591,13 +587,10 @@ namespace FlaxEngine
 
             //http://www.3dkingdoms.com/weekly/bbox.cpp
             // Put line in box space
-            Matrix invTrans;
-            Matrix.Invert(ref Transformation, out invTrans);
+            Matrix.Invert(ref Transformation, out Matrix invTrans);
 
-            Vector3 LB1;
-            Vector3.TransformCoordinate(ref L1, ref invTrans, out LB1);
-            Vector3 LB2;
-            Vector3.TransformCoordinate(ref L1, ref invTrans, out LB2);
+            Vector3.TransformCoordinate(ref L1, ref invTrans, out Vector3 LB1);
+            Vector3.TransformCoordinate(ref L1, ref invTrans, out Vector3 LB2);
 
             // Get line midpoint and extent
             Vector3 LMid = (LB1 + LB2) * 0.5f;
@@ -608,17 +601,23 @@ namespace FlaxEngine
             // Separation vector from box center to line center is LMid, since the line is in box space
             if (Math.Abs(LMid.X) > Extents.X + LExt.X)
                 return ContainmentType.Disjoint;
+
             if (Math.Abs(LMid.Y) > Extents.Y + LExt.Y)
                 return ContainmentType.Disjoint;
+
             if (Math.Abs(LMid.Z) > Extents.Z + LExt.Z)
                 return ContainmentType.Disjoint;
+
             // Cross products of line and each axis
             if (Math.Abs(LMid.Y * L.Z - LMid.Z * L.Y) > Extents.Y * LExt.Z + Extents.Z * LExt.Y)
                 return ContainmentType.Disjoint;
+
             if (Math.Abs(LMid.X * L.Z - LMid.Z * L.X) > Extents.X * LExt.Z + Extents.Z * LExt.X)
                 return ContainmentType.Disjoint;
+
             if (Math.Abs(LMid.X * L.Y - LMid.Y * L.X) > Extents.X * LExt.Y + Extents.Y * LExt.X)
                 return ContainmentType.Disjoint;
+
             // No separating axis, the line intersects
             return ContainmentType.Intersects;
         }
@@ -649,8 +648,8 @@ namespace FlaxEngine
             float ExtentA, ExtentB, Separation;
             int i, k;
 
-            Matrix R; // Rotation from B to A
-            Matrix.Invert(ref Transformation, out R);
+            // Rotation from B to A
+            Matrix.Invert(ref Transformation, out Matrix R);
             var AR = new Matrix(); // absolute values of R matrix, to use with box extents
 
             for (i = 0; i < 3; i++)
@@ -713,8 +712,7 @@ namespace FlaxEngine
         public bool Intersects(ref Ray ray, out Vector3 point)
         {
             // Put ray in box space
-            Matrix invTrans;
-            Matrix.Invert(ref Transformation, out invTrans);
+            Matrix.Invert(ref Transformation, out Matrix invTrans);
 
             Ray bRay;
             Vector3.TransformNormal(ref ray.Direction, ref invTrans, out bRay.Direction);
@@ -742,8 +740,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out float distance)
         {
-            Vector3 point;
-            if (Intersects(ref ray, out point))
+            if (Intersects(ref ray, out Vector3 point))
             {
                 Vector3.Distance(ref ray.Position, ref point, out distance);
                 return true;
@@ -759,8 +756,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            Vector3 point;
-            return Intersects(ref ray, out point);
+            return Intersects(ref ray, out Vector3 _);
         }
 
         private Vector3[] GetLocalCorners()
@@ -824,8 +820,7 @@ namespace FlaxEngine
             }
             else
             {
-                Matrix AInvMat;
-                Matrix.Invert(ref A.Transformation, out AInvMat);
+                Matrix.Invert(ref A.Transformation, out Matrix AInvMat);
                 AtoB_Matrix = B.Transformation * AInvMat;
             }
 
@@ -861,8 +856,7 @@ namespace FlaxEngine
             BoundingBox B_LocalBB = BoundingBox.FromPoints(bCorners);
 
             //Merger A and B local Bounding Boxes
-            BoundingBox mergedBB;
-            BoundingBox.Merge(ref B_LocalBB, ref A_LocalBB, out mergedBB);
+            BoundingBox.Merge(ref B_LocalBB, ref A_LocalBB, out BoundingBox mergedBB);
 
             //Find the new Extents and Center, Transform Center back to world
             Vector3 newCenter = mergedBB.Minimum + (mergedBB.Maximum - mergedBB.Minimum) / 2f;

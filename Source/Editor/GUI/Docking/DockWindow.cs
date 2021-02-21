@@ -134,7 +134,7 @@ namespace FlaxEditor.GUI.Docking
             });
 
             // Link to the master panel
-            _masterPanel?.linkWindow(this);
+            _masterPanel?.LinkWindow(this);
         }
 
         /// <summary>
@@ -409,7 +409,7 @@ namespace FlaxEditor.GUI.Docking
                 Undock();
 
             // Unlink from the master panel
-            _masterPanel?.unlinkWindow(this);
+            _masterPanel?.UnlinkWindow(this);
 
             base.OnDestroy();
         }

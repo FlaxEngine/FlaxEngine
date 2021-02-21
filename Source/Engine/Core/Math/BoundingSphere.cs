@@ -81,8 +81,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            float distance;
-            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out distance);
+            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -259,8 +258,7 @@ namespace FlaxEngine
             {
                 //We are doing a relative distance comparison to find the maximum distance
                 //from the center of our sphere.
-                float distance;
-                Vector3.DistanceSquared(ref center, ref points[i], out distance);
+                Vector3.DistanceSquared(ref center, ref points[i], out float distance);
 
                 if (distance > radius)
                     radius = distance;
@@ -294,8 +292,7 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromPoints(Vector3[] points)
         {
-            BoundingSphere result;
-            FromPoints(points, out result);
+            FromPoints(points, out BoundingSphere result);
             return result;
         }
 
@@ -323,8 +320,7 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromBox(BoundingBox box)
         {
-            BoundingSphere result;
-            FromBox(ref box, out result);
+            FromBox(ref box, out BoundingSphere result);
             return result;
         }
 
@@ -387,8 +383,7 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere Merge(BoundingSphere value1, BoundingSphere value2)
         {
-            BoundingSphere result;
-            Merge(ref value1, ref value2, out result);
+            Merge(ref value1, ref value2, out BoundingSphere result);
             return result;
         }
 

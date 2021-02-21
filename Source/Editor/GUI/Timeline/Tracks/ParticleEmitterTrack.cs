@@ -68,7 +68,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             var e = (ParticleEmitterTrack)track;
             Guid id = new Guid(stream.ReadBytes(16));
             e.Asset = FlaxEngine.Content.LoadAsync<ParticleEmitter>(id);
-            var emitterIndex = stream.ReadInt32();
+            stream.ReadInt32(); // Skip emitterIndex
             var m = e.TrackMedia;
             m.StartFrame = stream.ReadInt32();
             m.DurationFrames = stream.ReadInt32();

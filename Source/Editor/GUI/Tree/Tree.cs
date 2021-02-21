@@ -297,7 +297,7 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
-        private void walkSelectExpandedTree(List<TreeNode> selection, TreeNode node)
+        private void WalkSelectExpandedTree(List<TreeNode> selection, TreeNode node)
         {
             for (int i = 0; i < node.ChildrenCount; i++)
             {
@@ -305,7 +305,7 @@ namespace FlaxEditor.GUI.Tree
                 {
                     selection.Add(child);
                     if (child.IsExpanded)
-                        walkSelectExpandedTree(selection, child);
+                        WalkSelectExpandedTree(selection, child);
                 }
             }
         }
@@ -322,7 +322,7 @@ namespace FlaxEditor.GUI.Tree
 
                 // Update selection
                 Selection.Clear();
-                walkSelectExpandedTree(Selection, _children[0] as TreeNode);
+                WalkSelectExpandedTree(Selection, _children[0] as TreeNode);
 
                 // Check if changed
                 if (Selection.Count != prev.Count || !Selection.SequenceEqual(prev))

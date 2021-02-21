@@ -329,10 +329,9 @@ namespace FlaxEditor.Tools.Terrain
                 throw new InvalidOperationException("Cannot set cursor then no terrain is selected.");
             var brushBounds = CursorBrushBounds;
             var patchesCount = terrain.PatchesCount;
-            BoundingBox tmp;
             for (int patchIndex = 0; patchIndex < patchesCount; patchIndex++)
             {
-                terrain.GetPatchBounds(patchIndex, out tmp);
+                terrain.GetPatchBounds(patchIndex, out BoundingBox tmp);
                 if (!tmp.Intersects(ref brushBounds))
                     continue;
 

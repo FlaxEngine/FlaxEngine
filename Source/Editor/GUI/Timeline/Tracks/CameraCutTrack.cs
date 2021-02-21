@@ -96,17 +96,17 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <param name="req">The request data.</param>
         public void OnThumbnailRenderingBegin(SceneRenderTask task, GPUContext context, ref CameraCutThumbnailRenderer.Request req)
         {
-            var view = new RenderView();
+            RenderView view = new RenderView();
             var track = (CameraCutTrack)Track;
-            var cam = track.Camera;
+            Camera cam = track.Camera;
             var viewport = new FlaxEngine.Viewport(Vector2.Zero, task.Buffers.Size);
-            var orientation = Quaternion.Identity;
+            Quaternion orientation = Quaternion.Identity;
             view.Near = 10.0f;
             view.Far = 20000.0f;
-            var usePerspective = true;
-            var orthoScale = 1.0f;
-            var fov = 60.0f;
-            var customAspectRatio = 0.0f;
+            bool usePerspective = true;
+            float orthoScale = 1.0f;
+            float fov = 60.0f;
+            float customAspectRatio = 0.0f;
 
             // Try to evaluate camera properties based on the initial camera state
             if (cam)
@@ -122,7 +122,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             // Try to evaluate camera properties based on the animated tracks
-            var time = req.ThumbnailIndex == 0 ? Start : Start + Duration;
+            float time = req.ThumbnailIndex == 0 ? Start : Start + Duration;
             foreach (var subTrack in track.SubTracks)
             {
                 if (subTrack is MemberTrack memberTrack)
@@ -133,18 +133,25 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                         // TODO: try to make it better
                         if (memberTrack.MemberName == "Position" && value is Vector3 asPosition)
                             view.Position = asPosition;
+
                         else if (memberTrack.MemberName == "Orientation" && value is Quaternion asRotation)
                             orientation = asRotation;
+
                         else if (memberTrack.MemberName == "NearPlane" && value is float asNearPlane)
                             view.Near = asNearPlane;
+
                         else if (memberTrack.MemberName == "FarPlane" && value is float asFarPlane)
                             view.Far = asFarPlane;
+
                         else if (memberTrack.MemberName == "UsePerspective" && value is bool asUsePerspective)
                             usePerspective = asUsePerspective;
+
                         else if (memberTrack.MemberName == "FieldOfView" && value is float asFieldOfView)
                             fov = asFieldOfView;
+
                         else if (memberTrack.MemberName == "CustomAspectRatio" && value is float asCustomAspectRatio)
                             customAspectRatio = asCustomAspectRatio;
+
                         else if (memberTrack.MemberName == "OrthographicScale" && value is float asOrthographicScale)
                             orthoScale = asOrthographicScale;
                     }
@@ -162,6 +169,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 view.Projection = Matrix.Ortho(viewport.Width * orthoScale, viewport.Height * orthoScale, view.Near, view.Far);
             }
+
             Vector3 target = view.Position + view.Direction;
             var up = Vector3.Transform(Vector3.Up, orientation);
             view.View = Matrix.LookAt(view.Position, target, up);
@@ -186,19 +194,23 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (image == null)
             {
                 if (req.ThumbnailIndex == 0)
+                {
                     image = new Image
                     {
                         AnchorPreset = AnchorPresets.MiddleLeft,
                         Parent = this,
                         Bounds = new Rectangle(2, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
+                }
                 else
+                {
                     image = new Image
                     {
                         AnchorPreset = AnchorPresets.MiddleRight,
                         Parent = this,
                         Bounds = new Rectangle(Width - 2 - CameraCutThumbnailRenderer.Width, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
+                }
                 image.UnlockChildrenRecursive();
                 _thumbnails[req.ThumbnailIndex] = image;
                 UpdateUI();

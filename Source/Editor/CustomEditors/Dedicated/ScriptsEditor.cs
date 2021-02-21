@@ -493,8 +493,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var index = (int)image.Tag;
 
-            var cm = new ContextMenu();
-            cm.Tag = index;
+            var cm = new ContextMenu
+            {
+                Tag = index
+            };
             cm.AddButton("Remove", OnClickMissingRemove);
             cm.Show(image, image.Size);
         }
@@ -746,8 +748,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var scriptType = TypeUtils.GetType(script.TypeName);
             var item = scriptType.ContentItem;
 
-            var cm = new ContextMenu();
-            cm.Tag = script;
+            var cm = new ContextMenu
+            {
+                Tag = script
+            };
             cm.AddButton("Remove", OnClickRemove).Icon = Editor.Instance.Icons.Cross12;
             cm.AddButton("Move up", OnClickMoveUp).Enabled = script.OrderInParent > 0;
             cm.AddButton("Move down", OnClickMoveDown).Enabled = script.OrderInParent < script.Actor.Scripts.Length - 1;

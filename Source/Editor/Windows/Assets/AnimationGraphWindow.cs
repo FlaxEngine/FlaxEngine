@@ -62,10 +62,12 @@ namespace FlaxEditor.Windows.Assets
                 _showFloorButton.IndexInParent = 1;
 
                 // Floor model
-                _floorModel = new StaticModel();
-                _floorModel.Position = new Vector3(0, -25, 0);
-                _floorModel.Scale = new Vector3(5, 0.5f, 5);
-                _floorModel.Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax"));
+                _floorModel = new StaticModel
+                {
+                    Position = new Vector3(0, -25, 0),
+                    Scale = new Vector3(5, 0.5f, 5),
+                    Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax"))
+                };
                 Task.AddCustomActor(_floorModel);
 
                 // Enable shadows

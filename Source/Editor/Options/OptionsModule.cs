@@ -212,46 +212,47 @@ namespace FlaxEditor.Options
         /// <returns>The style object.</returns>
         public Style CreateDefaultStyle()
         {
-            var style = new Style();
-
             // Metro Style colors
-            style.Background = Color.FromBgra(0xFF1C1C1C);
-            style.LightBackground = Color.FromBgra(0xFF2D2D30);
-            style.Foreground = Color.FromBgra(0xFFFFFFFF);
-            style.ForegroundGrey = Color.FromBgra(0xFFA9A9B3);
-            style.ForegroundDisabled = Color.FromBgra(0xFF787883);
-            style.BackgroundHighlighted = Color.FromBgra(0xFF54545C);
-            style.BorderHighlighted = Color.FromBgra(0xFF6A6A75);
-            style.BackgroundSelected = Color.FromBgra(0xFF007ACC);
-            style.BorderSelected = Color.FromBgra(0xFF1C97EA);
-            style.BackgroundNormal = Color.FromBgra(0xFF3F3F46);
-            style.BorderNormal = Color.FromBgra(0xFF54545C);
-            style.TextBoxBackground = Color.FromBgra(0xFF333337);
-            style.TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46);
-            style.DragWindow = style.BackgroundSelected * 0.7f;
-            style.ProgressNormal = Color.FromBgra(0xFF0ad328);
-
-            // Fonts
             var options = Options;
-            style.FontTitle = options.Interface.TitleFont.GetFont();
-            style.FontLarge = options.Interface.LargeFont.GetFont();
-            style.FontMedium = options.Interface.MediumFont.GetFont();
-            style.FontSmall = options.Interface.SmallFont.GetFont();
+            var style = new Style
+            {
+                Background = Color.FromBgra(0xFF1C1C1C),
+                LightBackground = Color.FromBgra(0xFF2D2D30),
+                Foreground = Color.FromBgra(0xFFFFFFFF),
+                ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
+                ForegroundDisabled = Color.FromBgra(0xFF787883),
+                BackgroundHighlighted = Color.FromBgra(0xFF54545C),
+                BorderHighlighted = Color.FromBgra(0xFF6A6A75),
+                BackgroundSelected = Color.FromBgra(0xFF007ACC),
+                BorderSelected = Color.FromBgra(0xFF1C97EA),
+                BackgroundNormal = Color.FromBgra(0xFF3F3F46),
+                BorderNormal = Color.FromBgra(0xFF54545C),
+                TextBoxBackground = Color.FromBgra(0xFF333337),
+                TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
+                ProgressNormal = Color.FromBgra(0xFF0ad328),
 
-            // Icons
-            style.ArrowDown = Editor.Icons.ArrowDown12;
-            style.ArrowRight = Editor.Icons.ArrowRight12;
-            style.Search = Editor.Icons.Search12;
-            style.Settings = Editor.Icons.Settings12;
-            style.Cross = Editor.Icons.Cross12;
-            style.CheckBoxIntermediate = Editor.Icons.CheckBoxIntermediate12;
-            style.CheckBoxTick = Editor.Icons.CheckBoxTick12;
-            style.StatusBarSizeGrip = Editor.Icons.StatusBarSizeGrip12;
-            style.Translate = Editor.Icons.Translate16;
-            style.Rotate = Editor.Icons.Rotate16;
-            style.Scale = Editor.Icons.Scale16;
+                // Fonts
+                FontTitle = options.Interface.TitleFont.GetFont(),
+                FontLarge = options.Interface.LargeFont.GetFont(),
+                FontMedium = options.Interface.MediumFont.GetFont(),
+                FontSmall = options.Interface.SmallFont.GetFont(),
 
-            style.SharedTooltip = new Tooltip();
+                // Icons
+                ArrowDown = Editor.Icons.ArrowDown12,
+                ArrowRight = Editor.Icons.ArrowRight12,
+                Search = Editor.Icons.Search12,
+                Settings = Editor.Icons.Settings12,
+                Cross = Editor.Icons.Cross12,
+                CheckBoxIntermediate = Editor.Icons.CheckBoxIntermediate12,
+                CheckBoxTick = Editor.Icons.CheckBoxTick12,
+                StatusBarSizeGrip = Editor.Icons.StatusBarSizeGrip12,
+                Translate = Editor.Icons.Translate16,
+                Rotate = Editor.Icons.Rotate16,
+                Scale = Editor.Icons.Scale16,
+
+                SharedTooltip = new Tooltip()
+            };
+            style.DragWindow = style.BackgroundSelected * 0.7f;
 
             return style;
         }

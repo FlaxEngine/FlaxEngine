@@ -254,8 +254,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 126
 
-            float dot;
-            Vector3.Dot(ref plane.Normal, ref point, out dot);
+            Vector3.Dot(ref plane.Normal, ref point, out float dot);
             float t = dot - plane.D;
 
             result = point - t * plane.Normal;
@@ -272,8 +271,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 130
 
-            Vector3 temp;
-            Vector3.Max(ref point, ref box.Minimum, out temp);
+            Vector3.Max(ref point, ref box.Minimum, out Vector3 temp);
             Vector3.Min(ref temp, ref box.Maximum, out result);
         }
 
@@ -285,9 +283,8 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
         public static void ClosestPointRectanglePoint(ref Rectangle rect, ref Vector2 point, out Vector2 result)
         {
-            Vector2 temp;
             Vector2 end = rect.Location + rect.Size;
-            Vector2.Max(ref point, ref rect.Location, out temp);
+            Vector2.Max(ref point, ref rect.Location, out Vector2 temp);
             Vector2.Min(ref temp, ref end, out result);
         }
 
@@ -359,8 +356,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 127
 
-            float dot;
-            Vector3.Dot(ref plane.Normal, ref point, out dot);
+            Vector3.Dot(ref plane.Normal, ref point, out float dot);
             return dot - plane.D;
         }
 
@@ -458,8 +454,7 @@ namespace FlaxEngine
             //Source: Jorgy343
             //Reference: None
 
-            float distance;
-            Vector3.Distance(ref sphere.Center, ref point, out distance);
+            Vector3.Distance(ref sphere.Center, ref point, out float distance);
             distance -= sphere.Radius;
 
             return Math.Max(distance, 0f);
@@ -476,8 +471,7 @@ namespace FlaxEngine
             //Source: Jorgy343
             //Reference: None
 
-            float distance;
-            Vector3.Distance(ref sphere1.Center, ref sphere2.Center, out distance);
+            Vector3.Distance(ref sphere1.Center, ref sphere2.Center, out float distance);
             distance -= sphere1.Radius + sphere2.Radius;
 
             return Math.Max(distance, 0f);
@@ -494,8 +488,7 @@ namespace FlaxEngine
             //Source: RayIntersectsSphere
             //Reference: None
 
-            Vector3 m;
-            Vector3.Subtract(ref ray.Position, ref point, out m);
+            Vector3.Subtract(ref ray.Position, ref point, out Vector3 m);
 
             //Same thing as RayIntersectsSphere except that the radius of the sphere (point)
             //is the epsilon for zero.
@@ -538,9 +531,7 @@ namespace FlaxEngine
             //Source: Real-Time Rendering, Third Edition
             //Reference: Page 780
 
-            Vector3 cross;
-
-            Vector3.Cross(ref ray1.Direction, ref ray2.Direction, out cross);
+            Vector3.Cross(ref ray1.Direction, ref ray2.Direction, out Vector3 cross);
             float denominator = cross.Length;
 
             //Lines are parallel.
@@ -553,7 +544,7 @@ namespace FlaxEngine
                     return true;
                 }
 
-            denominator = denominator * denominator;
+            denominator *= denominator;
 
             //3x3 matrix for the first ray.
             float m11 = ray2.Position.X - ray1.Position.X;
@@ -625,8 +616,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 175
 
-            float direction;
-            Vector3.Dot(ref plane.Normal, ref ray.Direction, out direction);
+            Vector3.Dot(ref plane.Normal, ref ray.Direction, out float direction);
 
             if (Mathf.IsZero(direction))
             {
@@ -634,8 +624,7 @@ namespace FlaxEngine
                 return false;
             }
 
-            float position;
-            Vector3.Dot(ref plane.Normal, ref ray.Position, out position);
+            Vector3.Dot(ref plane.Normal, ref ray.Position, out float position);
             distance = (-plane.D - position) / direction;
 
             if (distance < 0f)
@@ -662,8 +651,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 175
 
-            float distance;
-            if (!RayIntersectsPlane(ref ray, ref plane, out distance))
+            if (!RayIntersectsPlane(ref ray, ref plane, out float distance))
             {
                 point = Vector3.Zero;
                 return false;
@@ -796,8 +784,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsTriangle(ref Ray ray, ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3, out Vector3 point)
         {
-            float distance;
-            if (!RayIntersectsTriangle(ref ray, ref vertex1, ref vertex2, ref vertex3, out distance))
+            if (!RayIntersectsTriangle(ref ray, ref vertex1, ref vertex2, ref vertex3, out float distance))
             {
                 point = Vector3.Zero;
                 return false;
@@ -933,8 +920,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsBox(ref Ray ray, ref BoundingBox box, out Vector3 point)
         {
-            float distance;
-            if (!RayIntersectsBox(ref ray, ref box, out distance))
+            if (!RayIntersectsBox(ref ray, ref box, out float distance))
             {
                 point = Vector3.Zero;
                 return false;
@@ -959,8 +945,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 177
 
-            Vector3 m;
-            Vector3.Subtract(ref ray.Position, ref sphere.Center, out m);
+            Vector3.Subtract(ref ray.Position, ref sphere.Center, out Vector3 m);
 
             float b = Vector3.Dot(m, ray.Direction);
             float c = Vector3.Dot(m, m) - sphere.Radius * sphere.Radius;
@@ -999,8 +984,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsSphere(ref Ray ray, ref BoundingSphere sphere, out Vector3 point)
         {
-            float distance;
-            if (!RayIntersectsSphere(ref ray, ref sphere, out distance))
+            if (!RayIntersectsSphere(ref ray, ref sphere, out float distance))
             {
                 point = Vector3.Zero;
                 return false;
@@ -1018,8 +1002,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public static PlaneIntersectionType PlaneIntersectsPoint(ref Plane plane, ref Vector3 point)
         {
-            float distance;
-            Vector3.Dot(ref plane.Normal, ref point, out distance);
+            Vector3.Dot(ref plane.Normal, ref point, out float distance);
             distance += plane.D;
 
             if (distance > 0f)
@@ -1039,13 +1022,11 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public static bool PlaneIntersectsPlane(ref Plane plane1, ref Plane plane2)
         {
-            Vector3 direction;
-            Vector3.Cross(ref plane1.Normal, ref plane2.Normal, out direction);
+            Vector3.Cross(ref plane1.Normal, ref plane2.Normal, out Vector3 direction);
 
             //If direction is the zero vector, the planes are parallel and possibly
             //coincident. It is not an intersection. The dot product will tell us.
-            float denominator;
-            Vector3.Dot(ref direction, ref direction, out denominator);
+            Vector3.Dot(ref direction, ref direction, out float denominator);
 
             if (Mathf.IsZero(denominator))
                 return false;
@@ -1073,13 +1054,11 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 207
 
-            Vector3 direction;
-            Vector3.Cross(ref plane1.Normal, ref plane2.Normal, out direction);
+            Vector3.Cross(ref plane1.Normal, ref plane2.Normal, out Vector3 direction);
 
             //If direction is the zero vector, the planes are parallel and possibly
             //coincident. It is not an intersection. The dot product will tell us.
-            float denominator;
-            Vector3.Dot(ref direction, ref direction, out denominator);
+            Vector3.Dot(ref direction, ref direction, out float denominator);
 
             //We assume the planes are normalized, therefore the denominator
             //only serves as a parallel and coincident check. Otherwise we need
@@ -1090,9 +1069,8 @@ namespace FlaxEngine
                 return false;
             }
 
-            Vector3 point;
             Vector3 temp = plane1.D * plane2.Normal - plane2.D * plane1.Normal;
-            Vector3.Cross(ref temp, ref direction, out point);
+            Vector3.Cross(ref temp, ref direction, out Vector3 point);
 
             line.Position = point;
             line.Direction = direction;
@@ -1148,8 +1126,7 @@ namespace FlaxEngine
             min.Y = plane.Normal.Y >= 0.0f ? box.Maximum.Y : box.Minimum.Y;
             min.Z = plane.Normal.Z >= 0.0f ? box.Maximum.Z : box.Minimum.Z;
 
-            float distance;
-            Vector3.Dot(ref plane.Normal, ref max, out distance);
+            Vector3.Dot(ref plane.Normal, ref max, out float distance);
 
             if (distance + plane.D > 0.0f)
                 return PlaneIntersectionType.Front;
@@ -1173,8 +1150,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 160
 
-            float distance;
-            Vector3.Dot(ref plane.Normal, ref sphere.Center, out distance);
+            Vector3.Dot(ref plane.Normal, ref sphere.Center, out float distance);
             distance += plane.D;
 
             if (distance > sphere.Radius)
@@ -1241,8 +1217,7 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 166
 
-            Vector3 vector;
-            Vector3.Clamp(ref sphere.Center, ref box.Minimum, ref box.Maximum, out vector);
+            Vector3.Clamp(ref sphere.Center, ref box.Minimum, ref box.Maximum, out Vector3 vector);
             float distance = Vector3.DistanceSquared(ref sphere.Center, ref vector);
             return distance <= sphere.Radius * sphere.Radius;
         }
@@ -1260,12 +1235,10 @@ namespace FlaxEngine
             //Source: Real-Time Collision Detection by Christer Ericson
             //Reference: Page 167
 
-            Vector3 point;
-            ClosestPointPointTriangle(ref sphere.Center, ref vertex1, ref vertex2, ref vertex3, out point);
+            ClosestPointPointTriangle(ref sphere.Center, ref vertex1, ref vertex2, ref vertex3, out Vector3 point);
             Vector3 v = point - sphere.Center;
 
-            float dot;
-            Vector3.Dot(ref v, ref v, out dot);
+            Vector3.Dot(ref v, ref v, out float dot);
 
             return dot <= sphere.Radius * sphere.Radius;
         }
@@ -1355,8 +1328,7 @@ namespace FlaxEngine
         /// <returns>The type of containment the two objects have.</returns>
         public static ContainmentType BoxContainsSphere(ref BoundingBox box, ref BoundingSphere sphere)
         {
-            Vector3 vector;
-            Vector3.Clamp(ref sphere.Center, ref box.Minimum, ref box.Maximum, out vector);
+            Vector3.Clamp(ref sphere.Center, ref box.Minimum, ref box.Maximum, out Vector3 vector);
             float distance = Vector3.DistanceSquared(ref sphere.Center, ref vector);
 
             if (distance > sphere.Radius * sphere.Radius)

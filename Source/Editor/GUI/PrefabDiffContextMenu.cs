@@ -41,13 +41,19 @@ namespace FlaxEditor.GUI
             // Buttons
             float buttonsWidth = (width - 6.0f) * 0.5f;
             float buttonsHeight = 20.0f;
-            var revertAll = new Button(2.0f, 2.0f, buttonsWidth, buttonsHeight);
-            revertAll.Text = "Revert All";
-            revertAll.Parent = this;
+
+            var revertAll = new Button(2.0f, 2.0f, buttonsWidth, buttonsHeight)
+            {
+                Text = "Revert All",
+                Parent = this
+            };
             revertAll.Clicked += OnRevertAllClicked;
-            var applyAll = new Button(revertAll.Right + 2.0f, 2.0f, buttonsWidth, buttonsHeight);
-            applyAll.Text = "Apply All";
-            applyAll.Parent = this;
+
+            var applyAll = new Button(revertAll.Right + 2.0f, 2.0f, buttonsWidth, buttonsHeight)
+            {
+                Text = "Apply All",
+                Parent = this
+            };
             applyAll.Clicked += OnApplyAllClicked;
 
             // Actual panel
@@ -56,6 +62,7 @@ namespace FlaxEditor.GUI
                 Bounds = new Rectangle(0, applyAll.Bottom + 2.0f, Width, Height - applyAll.Bottom - 2.0f),
                 Parent = this
             };
+
             Tree = new Tree.Tree
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
