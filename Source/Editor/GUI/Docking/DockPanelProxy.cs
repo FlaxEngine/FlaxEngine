@@ -194,11 +194,22 @@ namespace FlaxEditor.GUI.Docking
                 bool isMouseOver = IsMouseOver && headerRect.Contains(MousePosition);
                 Render2D.FillRectangle(headerRect, containsFocus ? style.BackgroundSelected : isMouseOver ? style.BackgroundHighlighted : style.LightBackground);
 
+                float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+
+                if (tab.Icon.IsValid)
+                {
+                    Render2D.DrawSprite(
+                        tab.Icon,
+                        new Rectangle(DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
+                        style.Foreground);
+
+                }
+
                 // Draw text
                 Render2D.DrawText(
                     style.FontMedium,
                     tab.Title,
-                    new Rectangle(DockPanel.DefaultLeftTextMargin, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, DockPanel.DefaultHeaderHeight),
+                    new Rectangle(DockPanel.DefaultLeftTextMargin + iconWidth, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, DockPanel.DefaultHeaderHeight),
                     style.Foreground,
                     TextAlignment.Near,
                     TextAlignment.Center);
@@ -223,7 +234,8 @@ namespace FlaxEditor.GUI.Docking
                     var tab = _panel.GetTab(i);
                     Color tabColor = Color.Black;
                     var titleSize = tab.TitleSize;
-                    float width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin;
+                    float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                    float width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
                     var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
                     bool isMouseOver = IsMouseOver && tabRect.Contains(MousePosition);
                     bool isSelected = _panel.SelectedTab == tab;
@@ -241,11 +253,20 @@ namespace FlaxEditor.GUI.Docking
                         Render2D.FillRectangle(tabRect, tabColor);
                     }
 
+                    if (tab.Icon.IsValid)
+                    {
+                        Render2D.DrawSprite(
+                            tab.Icon,
+                            new Rectangle(x + DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
+                            style.Foreground);
+
+                    }
+
                     // Draw text
                     Render2D.DrawText(
                         style.FontMedium,
                         tab.Title,
-                        new Rectangle(x + DockPanel.DefaultLeftTextMargin, 0, 10000, DockPanel.DefaultHeaderHeight),
+                        new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth, 0, 10000, DockPanel.DefaultHeaderHeight),
                         style.Foreground,
                         TextAlignment.Near,
                         TextAlignment.Center);
