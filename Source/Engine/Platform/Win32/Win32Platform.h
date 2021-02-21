@@ -43,6 +43,8 @@ public:
     {
         _aligned_free(ptr);
     }
+    static void* AllocatePages(uint64 numPages, uint64 pageSize);
+    static void FreePages(void* ptr);
     static bool Is64BitPlatform();
     static BatteryInfo GetBatteryInfo();
     static CPUInfo GetCPUInfo();
