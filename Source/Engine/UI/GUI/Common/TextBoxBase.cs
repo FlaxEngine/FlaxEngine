@@ -28,6 +28,10 @@ namespace FlaxEngine.GUI
             '\"',
             ')',
             '(',
+            '/',
+            '\\',
+            '>',
+            '<',
         };
 
         /// <summary>
