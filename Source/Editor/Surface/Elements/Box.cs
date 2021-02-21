@@ -686,9 +686,10 @@ namespace FlaxEditor.Surface.Elements
         public bool CanConnectWith(IConnectionInstigator other)
         {
             var start = this;
+            var end = other as Box;
 
             // Allow only box with box connection
-            if (!(other is Box end))
+            if (end == null)
             {
                 // Cannot
                 return false;

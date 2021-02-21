@@ -744,7 +744,8 @@ namespace FlaxEditor.Surface
             if (!CanEdit)
                 return;
 
-            if (!(control is SurfaceNode node))
+            var node = control as SurfaceNode;
+            if (node == null)
             {
                 Context.OnControlDeleted(control);
                 MarkAsEdited();

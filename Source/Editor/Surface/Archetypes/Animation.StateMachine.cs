@@ -547,10 +547,12 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var context = _context.Get(_surface);
 
-                    if (!(context.FindNode(_srcStateId) is StateMachineState src))
+                    var src = context.FindNode(_srcStateId) as StateMachineState;
+                    if (src == null)
                         throw new Exception("Missing source state.");
 
-                    if (!(context.FindNode(_dstStateId) is StateMachineState dst))
+                    var dst = context.FindNode(_dstStateId) as StateMachineState;
+                    if (dst == null)
                         throw new Exception("Missing destination state.");
 
                     var transition = new StateMachineTransition(src, dst, ref _data);
@@ -870,7 +872,8 @@ namespace FlaxEditor.Surface.Archetypes
                             if (ruleSize != 0)
                                 rule = reader.ReadBytes(ruleSize);
 
-                            if (!(Context.FindNode(data.Destination) is StateMachineState destination))
+                            var destination = Context.FindNode(data.Destination) as StateMachineState;
+                            if (destination == null)
                             {
                                 Editor.LogWarning("Missing state machine state destination node.");
                                 continue;

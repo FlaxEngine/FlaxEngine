@@ -690,7 +690,8 @@ namespace FlaxEditor.SceneGraph.GUI
                     var item = _dragActorType.Objects[i];
 
                     // Create actor
-                    if (!(item.CreateInstance() is Actor actor))
+                    var actor = item.CreateInstance() as Actor;
+                    if (actor == null)
                     {
                         Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
                         continue;

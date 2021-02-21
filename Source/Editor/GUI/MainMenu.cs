@@ -242,11 +242,11 @@ namespace FlaxEditor.GUI
             MainMenuButton b = null;
             foreach (var control in Children)
             {
-                if (b == null && control is MainMenuButton button)
-                    b = button;
+                if (b == null && control is MainMenuButton)
+                    b = (MainMenuButton)control;
 
-                if (control is MainMenuButton button1 && control.Right > b.Right)
-                    b = button1;
+                if (control is MainMenuButton && control.Right > b.Right)
+                    b = (MainMenuButton)control;
             }
             return b;
         }

@@ -1236,7 +1236,8 @@ namespace FlaxEditor
             result = IntPtr.Zero;
             if (Windows.GameWin != null && (forceGet || Windows.GameWin.ContainsFocus))
             {
-                if (Windows.GameWin.Root is WindowRootControl win)
+                var win = Windows.GameWin.Root as WindowRootControl;
+                if (win != null)
                     result = FlaxEngine.Object.GetUnmanagedPtr(win.Window);
             }
         }

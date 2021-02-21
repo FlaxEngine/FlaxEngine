@@ -766,7 +766,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var signature = new SignatureInfo();
 
-                if (!(Values[4] is byte[] data) || data.Length == 0)
+                var data = Values[4] as byte[];
+                if (data == null || data.Length == 0)
                     return signature;
 
                 if (data[0] == 4)
