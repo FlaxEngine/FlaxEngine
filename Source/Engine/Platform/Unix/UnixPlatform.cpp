@@ -51,7 +51,7 @@ void UnixPlatform::Free(void* ptr)
     }
 }
 
-void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
+void* UnixPlatform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
 
@@ -59,7 +59,7 @@ void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
     return malloc(numBytes);
 }
 
-void Win32Platform::FreePages(void* ptr)
+void UnixPlatform::FreePages(void* ptr)
 {
     // Fallback to free
     free(ptr);
