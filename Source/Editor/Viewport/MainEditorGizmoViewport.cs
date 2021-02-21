@@ -833,7 +833,7 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            Editor.GetActorEditorBox(actor, out BoundingBox box);
+            Editor.GetActorEditorBox(actor, out _);
 
             // Place the object
             //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
@@ -968,8 +968,7 @@ namespace FlaxEditor.Viewport
 
         private void Spawn(ScriptType item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
         {
-            var actor = item.CreateInstance() as Actor;
-            if (actor == null)
+            if (!(item.CreateInstance() is Actor actor))
             {
                 Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
                 return;

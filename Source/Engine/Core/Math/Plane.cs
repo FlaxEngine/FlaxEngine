@@ -254,7 +254,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out float distance);
+            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -488,7 +488,6 @@ namespace FlaxEngine
             float x = -plane.Normal.X;
             float y = -plane.Normal.Y;
             float z = -plane.Normal.Z;
-            float d = -plane.D;
 
             result.M11 = x * light.X + dot;
             result.M21 = y * light.X;
@@ -802,7 +801,7 @@ namespace FlaxEngine
             if (planes == null)
                 throw new ArgumentNullException(nameof(planes));
 
-            Matrix.Invert(ref transformation, out Matrix inverse);
+            Matrix.Invert(ref transformation, out _);
 
             for (var i = 0; i < planes.Length; ++i)
                 Transform(ref planes[i], ref transformation, out planes[i]);

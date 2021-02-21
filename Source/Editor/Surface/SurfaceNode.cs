@@ -156,7 +156,6 @@ namespace FlaxEditor.Surface
         /// <param name="height">The height.</param>
         protected void Resize(float width, float height)
         {
-            var prevSize = Size;
             Size = CalculateNodeSize(width, height);
 
             // Update boxes on width change
@@ -791,7 +790,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
         {
-            var result = base.OnShowTooltip(out text, out location, out area);
+            var result = base.OnShowTooltip(out text, out _, out area);
 
             // Change the position
             location = new Vector2(_headerRect.Width * 0.5f, _headerRect.Bottom);

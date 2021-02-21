@@ -255,8 +255,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void OnSurfaceLoaded(VisjectSurfaceContext context)
             {
                 // Ensure that loaded surface has entry node for state machine
-                var entryNode = context.FindNode(9, 19);
-                if (entryNode == null)
+                if (context.FindNode(9, 19) == null)
                 {
                     var wasEnabled = true;
                     if (Surface.Undo != null)
@@ -265,7 +264,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Surface.Undo.Enabled = false;
                     }
 
-                    entryNode = context.SpawnNode(9, 19, new Vector2(100.0f));
+                    context.SpawnNode(9, 19, new Vector2(100.0f));
 
                     if (Surface.Undo != null)
                     {
@@ -547,11 +546,11 @@ namespace FlaxEditor.Surface.Archetypes
                 private void Add()
                 {
                     var context = _context.Get(_surface);
-                    var src = context.FindNode(_srcStateId) as StateMachineState;
-                    if (src == null)
+
+                    if (!(context.FindNode(_srcStateId) is StateMachineState src))
                         throw new Exception("Missing source state.");
-                    var dst = context.FindNode(_dstStateId) as StateMachineState;
-                    if (dst == null)
+
+                    if (!(context.FindNode(_dstStateId) is StateMachineState dst))
                         throw new Exception("Missing destination state.");
 
                     var transition = new StateMachineTransition(src, dst, ref _data);
@@ -567,12 +566,13 @@ namespace FlaxEditor.Surface.Archetypes
                 private void Remove()
                 {
                     var context = _context.Get(_surface);
-                    var src = context.FindNode(_srcStateId) as StateMachineState;
-                    if (src == null)
+
+                    if (!(context.FindNode(_srcStateId) is StateMachineState src))
                         throw new Exception("Missing source state.");
-                    var dst = context.FindNode(_dstStateId) as StateMachineState;
-                    if (dst == null)
+
+                    if (!(context.FindNode(_dstStateId) is StateMachineState dst))
                         throw new Exception("Missing destination state.");
+
                     var transition = src.Transitions.Find(x => x.DestinationState == dst);
                     if (transition == null)
                         throw new Exception("Missing transition.");
@@ -870,8 +870,7 @@ namespace FlaxEditor.Surface.Archetypes
                             if (ruleSize != 0)
                                 rule = reader.ReadBytes(ruleSize);
 
-                            var destination = Context.FindNode(data.Destination) as StateMachineState;
-                            if (destination == null)
+                            if (!(Context.FindNode(data.Destination) is StateMachineState destination))
                             {
                                 Editor.LogWarning("Missing state machine state destination node.");
                                 continue;
@@ -1310,8 +1309,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void OnSurfaceLoaded(VisjectSurfaceContext context)
             {
                 // Ensure that loaded surface has output node for state
-                var entryNode = context.FindNode(9, 21);
-                if (entryNode == null)
+                if (context.FindNode(9, 21) == null)
                 {
                     var wasEnabled = true;
                     if (Surface.Undo != null)
@@ -1320,7 +1318,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Surface.Undo.Enabled = false;
                     }
 
-                    entryNode = context.SpawnNode(9, 21, new Vector2(100.0f));
+                    context.SpawnNode(9, 21, new Vector2(100.0f));
 
                     if (Surface.Undo != null)
                     {
@@ -1678,8 +1676,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void OnSurfaceLoaded(VisjectSurfaceContext context)
             {
                 // Ensure that loaded surface has rule output node
-                var ruleOutputNode = context.FindNode(9, 22);
-                if (ruleOutputNode == null)
+                if (context.FindNode(9, 22) == null)
                 {
                     var wasEnabled = true;
                     var undo = SourceState.Surface.Undo;
@@ -1689,7 +1686,7 @@ namespace FlaxEditor.Surface.Archetypes
                         undo.Enabled = false;
                     }
 
-                    ruleOutputNode = context.SpawnNode(9, 22, new Vector2(100.0f));
+                    context.SpawnNode(9, 22, new Vector2(100.0f));
 
                     // TODO: add default rule nodes for easier usage
 

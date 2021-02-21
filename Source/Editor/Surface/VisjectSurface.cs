@@ -743,13 +743,14 @@ namespace FlaxEditor.Surface
         {
             if (!CanEdit)
                 return;
-            var node = control as SurfaceNode;
-            if (node == null)
+
+            if (!(control is SurfaceNode node))
             {
                 Context.OnControlDeleted(control);
                 MarkAsEdited();
                 return;
             }
+
             if ((node.Archetype.Flags & NodeFlags.NoRemove) != 0)
                 return;
 

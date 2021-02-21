@@ -599,7 +599,7 @@ namespace FlaxEditor.Content
         public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
         {
             UpdateTooltipText();
-            var result = base.OnShowTooltip(out text, out location, out area);
+            var result = base.OnShowTooltip(out text, out _, out area);
             location = Size * new Vector2(0.9f, 0.5f);
             return result;
         }

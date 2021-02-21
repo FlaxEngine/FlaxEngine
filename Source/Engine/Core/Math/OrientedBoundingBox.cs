@@ -756,7 +756,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return Intersects(ref ray, out Vector3 point);
+            return Intersects(ref ray, out Vector3 _);
         }
 
         private Vector3[] GetLocalCorners()

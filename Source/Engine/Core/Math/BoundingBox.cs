@@ -149,7 +149,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float distance);
+            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float _);
         }
 
         /// <summary>

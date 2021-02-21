@@ -59,13 +59,11 @@ namespace FlaxEditor.Content.Thumbnails
             }
 
             // We cache previews only for items with 'ID', for now we support only AssetItems
-            var assetItem = item as AssetItem;
-            if (assetItem == null)
+            if (!(item is AssetItem assetItem))
                 return;
 
             // Ensure that there is valid proxy for that item
-            var proxy = Editor.ContentDatabase.GetProxy(item) as AssetProxy;
-            if (proxy == null)
+            if (!(Editor.ContentDatabase.GetProxy(item) is AssetProxy proxy))
             {
                 Editor.LogWarning($"Cannot generate preview for item {item.Path}. Cannot find proxy for it.");
                 return;
@@ -105,8 +103,7 @@ namespace FlaxEditor.Content.Thumbnails
                 throw new ArgumentNullException();
 
             // We cache previews only for items with 'ID', for now we support only AssetItems
-            var assetItem = item as AssetItem;
-            if (assetItem == null)
+            if (!(item is AssetItem assetItem))
                 return;
 
             lock (_requests)
