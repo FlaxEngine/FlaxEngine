@@ -62,12 +62,9 @@ namespace FlaxEngine
             Profiler.BeginEventGPU("UI Canvas");
 
             // Calculate rendering matrix (world*view*projection)
-            Matrix viewProjectionMatrix;
-            Matrix worldMatrix;
-            Canvas.GetWorldMatrix(out worldMatrix);
-            Matrix viewMatrix;
-            Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out viewMatrix);
-            Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out viewProjectionMatrix);
+            Canvas.GetWorldMatrix(out Matrix worldMatrix);
+            Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
+            Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out Matrix viewProjectionMatrix);
 
             // Pick a depth buffer
             GPUTexture depthBuffer = Canvas.IgnoreDepth ? null : renderContext.Buffers.DepthBuffer;

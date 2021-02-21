@@ -97,11 +97,11 @@ namespace FlaxEngine
                     return new OrientedBoundingBox();
 
                 // Find control bounds limit points in canvas-space
-                var p1 = Vector2.Zero;
-                var p2 = new Vector2(0, Control.Height);
-                var p3 = new Vector2(Control.Width, 0);
-                var p4 = Control.Size;
-                var c = Control;
+                Vector2 p1 = Vector2.Zero;
+                Vector2 p2 = new Vector2(0, Control.Height);
+                Vector2 p3 = new Vector2(Control.Width, 0);
+                Vector2 p4 = Control.Size;
+                Control c = Control;
                 while (c != canvasRoot)
                 {
                     p1 = c.PointToParent(ref p1);
@@ -111,9 +111,9 @@ namespace FlaxEngine
 
                     c = c.Parent;
                 }
-                var min = Vector2.Min(Vector2.Min(p1, p2), Vector2.Min(p3, p4));
-                var max = Vector2.Max(Vector2.Max(p1, p2), Vector2.Max(p3, p4));
-                var size = max - min;
+                Vector2 min = Vector2.Min(Vector2.Min(p1, p2), Vector2.Min(p3, p4));
+                Vector2 max = Vector2.Max(Vector2.Max(p1, p2), Vector2.Max(p3, p4));
+                Vector2 size = max - min;
 
                 // Calculate bounds
                 OrientedBoundingBox bounds = new OrientedBoundingBox
