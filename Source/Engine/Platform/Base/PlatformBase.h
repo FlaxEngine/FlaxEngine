@@ -320,7 +320,7 @@ public:
     /// Allocates pages memory block.
     /// </summary>
     /// <param name="numPages">The number of pages to allocate.</param>
-    /// <param name="pageSize">The size of single page. Use GetDefaultPageSize() or provide compatible, custom size.</param>
+    /// <param name="pageSize">The size of single page. Use Platform::GetCPUInfo().PageSize or provide compatible, custom size.</param>
     /// <returns>The pointer to the allocated pages in memory.</returns>
     static void* AllocatePages(uint64 numPages, uint64 pageSize) = delete;
 
