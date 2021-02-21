@@ -134,7 +134,7 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// The transform gizmo.
         /// </summary>
-        public readonly TransformGizmoBase TransformGizmo;
+        public readonly TransformGizmo TransformGizmo;
 
         /// <summary>
         /// The grid gizmo.
@@ -196,7 +196,7 @@ namespace FlaxEditor.Viewport
             Task.CustomPostFx.Add(_editorSpritesRenderer);
 
             // Add transformation gizmo
-            TransformGizmo = new TransformGizmoBase(this);
+            TransformGizmo = new TransformGizmo(this);
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.ModeChanged += OnGizmoModeChanged;
             TransformGizmo.Duplicate += Editor.Instance.SceneEditing.Duplicate;
