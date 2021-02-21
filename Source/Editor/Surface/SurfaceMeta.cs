@@ -146,9 +146,10 @@ namespace FlaxEditor.Surface
 
                 for (int i = 0; i < entries; i++)
                 {
-                    Entry e = new Entry();
-
-                    e.TypeID = stream.ReadInt32();
+                    Entry e = new Entry
+                    {
+                        TypeID = stream.ReadInt32()
+                    };
                     stream.ReadInt64(); // don't use CreationTime
 
                     uint dataSize = stream.ReadUInt32();

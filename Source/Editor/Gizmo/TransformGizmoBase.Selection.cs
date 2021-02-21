@@ -29,7 +29,6 @@ namespace FlaxEditor.Gizmo
         
         private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out float distance)
         {
-            distance = float.MaxValue;
             var plane = new Plane(Vector3.Zero, normal);
 
             if (!plane.Intersects(ref ray, out distance))

@@ -84,7 +84,7 @@ namespace FlaxEditor.Utilities
             while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
             {
                 order++;
-                bytes = bytes / 1024;
+                bytes /= 1024;
             }
 
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
@@ -101,7 +101,7 @@ namespace FlaxEditor.Utilities
             while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
             {
                 order++;
-                bytes = bytes / 1024;
+                bytes /= 1024;
             }
 
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);

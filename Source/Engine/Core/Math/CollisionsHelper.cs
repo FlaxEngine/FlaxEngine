@@ -553,7 +553,7 @@ namespace FlaxEngine
                     return true;
                 }
 
-            denominator = denominator * denominator;
+            denominator *= denominator;
 
             //3x3 matrix for the first ray.
             float m11 = ray2.Position.X - ray1.Position.X;

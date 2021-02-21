@@ -901,7 +901,7 @@ namespace FlaxEngine
             while (true)
             {
                 if ((exponent & 1) != 0)
-                    identity = identity * temp;
+                    identity *= temp;
 
                 exponent /= 2;
 
@@ -1154,10 +1154,10 @@ namespace FlaxEngine
             //By separating the above algorithm into multiple lines, we actually increase accuracy.
             result = value;
 
-            result.Row2 = result.Row2 - (Vector3.Dot(result.Row1, result.Row2) / Vector3.Dot(result.Row1, result.Row1)) * result.Row1;
+            result.Row2 -= (Vector3.Dot(result.Row1, result.Row2) / Vector3.Dot(result.Row1, result.Row1)) * result.Row1;
 
-            result.Row3 = result.Row3 - (Vector3.Dot(result.Row1, result.Row3) / Vector3.Dot(result.Row1, result.Row1)) * result.Row1;
-            result.Row3 = result.Row3 - (Vector3.Dot(result.Row2, result.Row3) / Vector3.Dot(result.Row2, result.Row2)) * result.Row2;
+            result.Row3 -= (Vector3.Dot(result.Row1, result.Row3) / Vector3.Dot(result.Row1, result.Row1)) * result.Row1;
+            result.Row3 -= (Vector3.Dot(result.Row2, result.Row3) / Vector3.Dot(result.Row2, result.Row2)) * result.Row2;
         }
 
         /// <summary>
@@ -1215,11 +1215,11 @@ namespace FlaxEngine
 
             result.Row1 = Vector3.Normalize(result.Row1);
 
-            result.Row2 = result.Row2 - Vector3.Dot(result.Row1, result.Row2) * result.Row1;
+            result.Row2 -= Vector3.Dot(result.Row1, result.Row2) * result.Row1;
             result.Row2 = Vector3.Normalize(result.Row2);
 
-            result.Row3 = result.Row3 - Vector3.Dot(result.Row1, result.Row3) * result.Row1;
-            result.Row3 = result.Row3 - Vector3.Dot(result.Row2, result.Row3) * result.Row2;
+            result.Row3 -= Vector3.Dot(result.Row1, result.Row3) * result.Row1;
+            result.Row3 -= Vector3.Dot(result.Row2, result.Row3) * result.Row2;
             result.Row3 = Vector3.Normalize(result.Row3);
         }
 

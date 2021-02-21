@@ -281,7 +281,7 @@ namespace FlaxEngine.GUI
                     Vector2 leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
                     Vector2 rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
-                    alpha = alpha * alpha;
+                    alpha *= alpha;
                     Color selectionColor = Color.White * alpha;
                     Rectangle selectionRect = new Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, font.Height);
                     textBlock.Style.BackgroundSelectedBrush.Draw(selectionRect, selectionColor);

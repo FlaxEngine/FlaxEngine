@@ -116,12 +116,13 @@ namespace FlaxEngine
                 var size = max - min;
 
                 // Calculate bounds
-                OrientedBoundingBox bounds = new OrientedBoundingBox();
-                bounds.Extents = new Vector3(size * 0.5f, Mathf.Epsilon);
-                Matrix world;
-                canvasRoot.Canvas.GetWorldMatrix(out world);
-                Matrix offset;
-                Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out offset);
+                OrientedBoundingBox bounds = new OrientedBoundingBox
+                {
+                    Extents = new Vector3(size * 0.5f, Mathf.Epsilon)
+                };
+
+                canvasRoot.Canvas.GetWorldMatrix(out Matrix world);
+                Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
                 return bounds;
             }

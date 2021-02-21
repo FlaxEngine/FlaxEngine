@@ -782,9 +782,9 @@ namespace FlaxEngine
                     s = vv / v;
                     h = offset + (colorone - colortwo) / vv;
                 }
-                h = h / 6f;
+                h /= 6f;
                 if (h < 0f)
-                    h = h + 1f;
+                    h++;
             }
         }
 

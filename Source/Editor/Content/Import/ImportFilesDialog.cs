@@ -32,7 +32,7 @@ namespace FlaxEditor.Content.Import
                 var result = 0;
                 for (int i = 0; i < _rootNode.ChildrenCount; i++)
                 {
-                    if (_rootNode.Children[i].Tag is ImportFileEntry fileEntry)
+                    if (_rootNode.Children[i].Tag is ImportFileEntry)
                         result++;
                 }
                 return result;
