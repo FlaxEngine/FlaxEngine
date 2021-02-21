@@ -26,8 +26,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnEditEnd()
         {
-            Guid value;
-            if (Guid.TryParse(_element.Text, out value))
+            if (Guid.TryParse(_element.Text, out Guid value))
             {
                 SetValue(value);
             }

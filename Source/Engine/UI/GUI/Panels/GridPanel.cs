@@ -40,9 +40,7 @@ namespace FlaxEngine.GUI
             get => _cellsV;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException();
-                _cellsV = value;
+                _cellsV = value ?? throw new ArgumentNullException();
                 PerformLayout();
             }
         }
@@ -56,9 +54,7 @@ namespace FlaxEngine.GUI
             get => _cellsH;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException();
-                _cellsH = value;
+                _cellsH = value ?? throw new ArgumentNullException();
                 PerformLayout();
             }
         }

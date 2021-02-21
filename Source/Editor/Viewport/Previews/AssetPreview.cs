@@ -95,26 +95,36 @@ namespace FlaxEditor.Viewport.Previews
             }
 
             // Setup preview scene
-            PreviewLight = new DirectionalLight();
-            PreviewLight.Brightness = 8.0f;
-            PreviewLight.ShadowsMode = ShadowsCastingMode.None;
-            PreviewLight.Orientation = Quaternion.Euler(new Vector3(52.1477f, -109.109f, -111.739f));
+            PreviewLight = new DirectionalLight
+            {
+                Brightness = 8.0f,
+                ShadowsMode = ShadowsCastingMode.None,
+                Orientation = Quaternion.Euler(new Vector3(52.1477f, -109.109f, -111.739f))
+            };
             //
-            EnvProbe = new EnvironmentProbe();
-            EnvProbe.AutoUpdate = false;
-            EnvProbe.CustomProbe = FlaxEngine.Content.LoadAsyncInternal<CubeTexture>(EditorAssets.DefaultSkyCubeTexture);
+            EnvProbe = new EnvironmentProbe
+            {
+                AutoUpdate = false,
+                CustomProbe = FlaxEngine.Content.LoadAsyncInternal<CubeTexture>(EditorAssets.DefaultSkyCubeTexture)
+            };
             //
-            Sky = new Sky();
-            Sky.SunLight = PreviewLight;
-            Sky.SunPower = 9.0f;
+            Sky = new Sky
+            {
+                SunLight = PreviewLight,
+                SunPower = 9.0f
+            };
             //
-            SkyLight = new SkyLight();
-            SkyLight.Mode = SkyLight.Modes.CustomTexture;
-            SkyLight.Brightness = 2.1f;
-            SkyLight.CustomTexture = EnvProbe.CustomProbe;
+            SkyLight = new SkyLight()
+            {
+                Mode = SkyLight.Modes.CustomTexture,
+                Brightness = 2.1f,
+                CustomTexture = EnvProbe.CustomProbe
+            };
             //
-            PostFxVolume = new PostFxVolume();
-            PostFxVolume.IsBounded = false;
+            PostFxVolume = new PostFxVolume
+            {
+                IsBounded = false
+            };
 
             // Link actors for rendering
             Task.ActorsSource = ActorsSources.CustomActors;

@@ -3,7 +3,7 @@
 namespace FlaxEditor.Viewport.Modes
 {
     /// <summary>
-    /// The default editor mode that uses <see cref="FlaxEditor.Gizmo.TransformGizmo"/> for objects transforming.
+    /// The default editor mode that uses <see cref="FlaxEditor.Gizmo.TransformGizmoBase"/> for objects transforming.
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.Modes.EditorGizmoMode" />
     public class TransformGizmoMode : EditorGizmoMode

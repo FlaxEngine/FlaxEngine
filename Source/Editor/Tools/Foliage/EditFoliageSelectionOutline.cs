@@ -56,8 +56,10 @@ namespace FlaxEditor.Tools.Foliage
 
                 if (!_staticModel)
                 {
-                    _staticModel = new StaticModel();
-                    _staticModel.StaticFlags = StaticFlags.None;
+                    _staticModel = new StaticModel
+                    {
+                        StaticFlags = StaticFlags.None
+                    };
                 }
 
                 _staticModel.Model = model;

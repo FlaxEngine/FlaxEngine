@@ -765,9 +765,11 @@ namespace FlaxEditor.Surface.Archetypes
             private SignatureInfo LoadSignature()
             {
                 var signature = new SignatureInfo();
+
                 var data = Values[4] as byte[];
                 if (data == null || data.Length == 0)
                     return signature;
+
                 if (data[0] == 4)
                 {
                     using (var stream = new MemoryStream(data))
@@ -1432,8 +1434,11 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void LoadSignature()
             {
-                _signature = new Signature();
-                _signature.Node = this;
+                _signature = new Signature
+                {
+                    Node = this
+                };
+
                 if (Values[0] is byte[] data && data.Length != 0)
                 {
                     using (var stream = new MemoryStream(data))

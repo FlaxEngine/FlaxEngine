@@ -162,9 +162,7 @@ namespace FlaxEngine.GUI
 
                 if (_timeToPopupLeft <= 0.0f)
                 {
-                    Vector2 location;
-                    Rectangle area;
-                    if (_lastTarget.OnShowTooltip(out _currentText, out location, out area))
+                    if (_lastTarget.OnShowTooltip(out _currentText, out Vector2 location, out Rectangle area))
                     {
                         Show(_lastTarget, location, area);
                     }

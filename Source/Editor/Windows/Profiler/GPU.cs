@@ -157,7 +157,7 @@ namespace FlaxEditor.Windows.Profiler
             float width = (float)(e.Time * scale);
             string name = new string(e.Name);
 
-            var control = new Timeline.Event(x, e.Depth, width)
+            new Timeline.Event(x, e.Depth, width)
             {
                 Name = name,
                 TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f)),

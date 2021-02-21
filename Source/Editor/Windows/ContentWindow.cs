@@ -177,8 +177,10 @@ namespace FlaxEditor.Windows
             showFileExtensionsButton.AutoCheck = true;
 
             var viewScale = menu.AddButton("View Scale");
-            var scaleValue = new FloatValueBox(1, 75, 2, 50.0f, 0.3f, 3.0f, 0.01f);
-            scaleValue.Parent = viewScale;
+            var scaleValue = new FloatValueBox(1, 75, 2, 50.0f, 0.3f, 3.0f, 0.01f)
+            {
+                Parent = viewScale
+            };
             scaleValue.ValueChanged += () => View.ViewScale = scaleValue.Value;
             menu.VisibleChanged += control => { scaleValue.Value = View.ViewScale; };
 
@@ -742,11 +744,15 @@ namespace FlaxEditor.Windows
         public override void OnInit()
         {
             // Setup content root node
-            _root = new RootContentTreeNode();
-            _root.ChildrenIndent = 0;
+            _root = new RootContentTreeNode
+            {
+                ChildrenIndent = 0
+            };
             _root.Expand(true);
+
             foreach (var project in Editor.ContentDatabase.Projects)
                 AddFolder2Root(project);
+
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
             _tree.AddChild(_root);
@@ -856,15 +862,15 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
-            bool value2;
-
-            if (float.TryParse(node.GetAttribute("Split"), out value1))
+            if (float.TryParse(node.GetAttribute("Split"), out float value1))
                 _split.SplitterValue = value1;
+
             if (float.TryParse(node.GetAttribute("Scale"), out value1))
                 _view.ViewScale = value1;
-            if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out value2))
+
+            if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out bool value2))
                 _view.ShowFileExtensions = value2;
+
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
         }

@@ -577,7 +577,7 @@ namespace FlaxEditor.Surface
                         // Store node typename in values container
                         node.Values[0] = typeName;
                     }
-                    if (node is MissingNode missingNode)
+                    if (node is MissingNode)
                     {
                         // Read all values
                         Array.Resize(ref node.Values, valuesCnt);
@@ -623,7 +623,7 @@ namespace FlaxEditor.Surface
                     for (int j = 0; j < boxesCount; j++)
                     {
                         var id = stream.ReadByte();
-                        uint type = stream.ReadUInt32();
+                        stream.ReadUInt32(); // Skip type
                         ushort connectionsCnt = stream.ReadUInt16();
 
                         ConnectionHint hint;
@@ -749,7 +749,7 @@ namespace FlaxEditor.Surface
                         // Store node typename in values container
                         node.Values[0] = typeName;
                     }
-                    if (node is MissingNode missingNode)
+                    if (node is MissingNode)
                     {
                         // Read all values
                         Array.Resize(ref node.Values, valuesCnt);
@@ -769,7 +769,7 @@ namespace FlaxEditor.Surface
                     {
                         Editor.LogWarning(string.Format("Invalid node values. Loaded: {0}, expected: {1}. Type: {2}, {3}", valuesCnt, nodeValuesCnt, node.Archetype.Title, node.Archetype.TypeID));
 
-                        object dummy = null;
+                        object dummy;
                         for (int j = firstValueReadIdx; j < valuesCnt; j++)
                         {
                             dummy = stream.ReadVariant();
@@ -789,7 +789,7 @@ namespace FlaxEditor.Surface
                     for (int j = 0; j < boxesCount; j++)
                     {
                         var id = stream.ReadByte();
-                        var type = stream.ReadVariantType();
+                        stream.ReadVariantType(); // Skip type
                         var connectionsCnt = stream.ReadUInt16();
 
                         ConnectionHint hint;

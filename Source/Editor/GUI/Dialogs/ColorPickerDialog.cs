@@ -113,53 +113,71 @@ namespace FlaxEditor.GUI.Dialogs
             _onClosed = pickerClosed;
 
             // Selector
-            _cSelector = new ColorSelectorWithSliders(180, 18);
-            _cSelector.Location = new Vector2(PickerMargin, PickerMargin);
+            _cSelector = new ColorSelectorWithSliders(180, 18)
+            {
+                Location = new Vector2(PickerMargin, PickerMargin),
+                Parent = this
+            };
             _cSelector.ColorChanged += x => SelectedColor = x;
-            _cSelector.Parent = this;
 
             // Red
-            _cRed = new FloatValueBox(0, _cSelector.Right + PickerMargin + RGBAMargin + ChannelTextWidth, PickerMargin, 100, 0, float.MaxValue, 0.001f);
+            _cRed = new FloatValueBox(0, _cSelector.Right + PickerMargin + RGBAMargin + ChannelTextWidth, PickerMargin, 100, 0, float.MaxValue, 0.001f)
+            {
+                Parent = this
+            };
             _cRed.ValueChanged += OnRGBAChanged;
-            _cRed.Parent = this;
 
             // Green
-            _cGreen = new FloatValueBox(0, _cRed.X, _cRed.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f);
+            _cGreen = new FloatValueBox(0, _cRed.X, _cRed.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
+            {
+                Parent = this
+            };
             _cGreen.ValueChanged += OnRGBAChanged;
-            _cGreen.Parent = this;
 
             // Blue
-            _cBlue = new FloatValueBox(0, _cRed.X, _cGreen.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f);
+            _cBlue = new FloatValueBox(0, _cRed.X, _cGreen.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
+            {
+                Parent = this
+            };
             _cBlue.ValueChanged += OnRGBAChanged;
-            _cBlue.Parent = this;
 
             // Alpha
-            _cAlpha = new FloatValueBox(0, _cRed.X, _cBlue.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f);
+            _cAlpha = new FloatValueBox(0, _cRed.X, _cBlue.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f) 
+            {
+                Parent = this
+            };
             _cAlpha.ValueChanged += OnRGBAChanged;
-            _cAlpha.Parent = this;
 
             // Hue
-            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360);
+            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360)
+            {
+                Parent = this
+            };
             _cHue.ValueChanged += OnHSVChanged;
-            _cHue.Parent = this;
 
             // Saturation
-            _cSaturation = new FloatValueBox(0, _cHue.X, _cHue.Bottom + ChannelsMargin, _cHue.Width, 0, 100.0f, 0.1f);
+            _cSaturation = new FloatValueBox(0, _cHue.X, _cHue.Bottom + ChannelsMargin, _cHue.Width, 0, 100.0f, 0.1f)
+            {
+                Parent = this
+            };
             _cSaturation.ValueChanged += OnHSVChanged;
-            _cSaturation.Parent = this;
 
             // Value
-            _cValue = new FloatValueBox(0, _cHue.X, _cSaturation.Bottom + ChannelsMargin, _cHue.Width, 0, float.MaxValue, 0.1f);
+            _cValue = new FloatValueBox(0, _cHue.X, _cSaturation.Bottom + ChannelsMargin, _cHue.Width, 0, float.MaxValue, 0.1f)
+            {
+                Parent = this
+            };
             _cValue.ValueChanged += OnHSVChanged;
-            _cValue.Parent = this;
 
             // Set valid dialog size based on UI content
             _dialogSize = Size = new Vector2(_cRed.Right + PickerMargin, 300);
 
             // Hex
             const float hexTextBoxWidth = 80;
-            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cSelector.Bottom + PickerMargin, hexTextBoxWidth);
-            _cHex.Parent = this;
+            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cSelector.Bottom + PickerMargin, hexTextBoxWidth)
+            {
+                Parent = this
+            };
             _cHex.EditEnd += OnHexChanged;
 
             // Cancel
@@ -233,8 +251,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
-            Color color;
-            if (Color.TryParseHex(_cHex.Text, out color))
+            if (Color.TryParseHex(_cHex.Text, out Color color))
                 SelectedColor = color;
         }
 

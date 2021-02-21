@@ -124,8 +124,7 @@ namespace FlaxEditor.Modules
         /// <param name="skipSettingsDialog">True if skip any popup dialogs showing for import options adjusting. Can be used when importing files from code.</param>
         public void Reimport(BinaryAssetItem item, object settings = null, bool skipSettingsDialog = false)
         {
-            string importPath;
-            if (item != null && !item.GetImportPath(out importPath))
+            if (item != null && !item.GetImportPath(out string importPath))
             {
                 // Check if input file is missing
                 if (!System.IO.File.Exists(importPath))
