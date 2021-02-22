@@ -30,5 +30,6 @@ public:
     static LayersAndTagsSettings* Get();
 
     // [SettingsBase]
+    void Apply() override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

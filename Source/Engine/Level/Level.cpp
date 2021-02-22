@@ -113,7 +113,6 @@ public:
     {
     }
 
-    bool Init() override;
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
@@ -177,13 +176,22 @@ bool LevelImpl::deleteActor(Actor* actor)
     return false;
 }
 
-bool LevelService::Init()
+void LayersAndTagsSettings::Apply()
 {
-    auto& settings = *LayersAndTagsSettings::Get();
-    Level::Tags = settings.Tags;
+    // Note: we cannot remove tags/layers at runtime so this should deserialize them in additive mode
+    // Tags/Layers are stored as index in actors so collection change would break the linkage
+    for (auto& tag : Tags)
+    {
+        if (!Level::Tags.Contains(tag))
+            Level::Tags.Add(tag);
+    }
     for (int32 i = 0; i < ARRAY_COUNT(Level::Layers); i++)
-        Level::Layers[i] = settings.Layers[i];
-    return false;
+    {
+        const auto& src = Layers[i];
+        auto& dst = Level::Layers[i];
+        if (dst.IsEmpty() || !src.IsEmpty())
+            dst = src;
+    }
 }
 
 void LevelService::Update()
