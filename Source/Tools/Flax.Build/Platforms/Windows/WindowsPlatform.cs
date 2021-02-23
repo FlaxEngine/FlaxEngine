@@ -34,10 +34,12 @@ namespace Flax.Build.Platforms
                 return;
             }
 
-            // Need v140 toolset
-            if (!GetToolsets().ContainsKey(WindowsPlatformToolset.v140))
+            // Need v140+ toolset
+            if (!GetToolsets().ContainsKey(WindowsPlatformToolset.v140) &&
+                !GetToolsets().ContainsKey(WindowsPlatformToolset.v141) &&
+                !GetToolsets().ContainsKey(WindowsPlatformToolset.v142))
             {
-                Log.Warning("Missing MSVC toolset v140 (VS 2015 C++ build tools). Cannot build for Windows platform.");
+                Log.Warning("Missing MSVC toolset v140 or later (VS 2015 or later C++ build tools). Cannot build for Windows platform.");
                 _hasRequiredSDKsInstalled = false;
             }
         }

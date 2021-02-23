@@ -516,6 +516,7 @@ namespace
                 Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
                 a.InstanceCount != 0 &&
                 b.InstanceCount != 0 &&
+                handler.CanBatch(a, b) &&
                 a.WorldDeterminantSign == b.WorldDeterminantSign;
     }
 }

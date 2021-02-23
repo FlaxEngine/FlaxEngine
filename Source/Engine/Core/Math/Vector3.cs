@@ -251,6 +251,16 @@ namespace FlaxEngine
         public float ValuesSum => X + Y + Z;
 
         /// <summary>
+        /// Gets a vector with values being absolute values of that vector.
+        /// </summary>
+        public Vector3 Absolute => new Vector3(Mathf.Abs(X), Mathf.Abs(Y), Mathf.Abs(Z));
+
+        /// <summary>
+        /// Gets a vector with values being opposite to values of that vector.
+        /// </summary>
+        public Vector3 Negative => new Vector3(-X, -Y, -Z);
+
+        /// <summary>
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, or Z component, depending on the index.</value>
@@ -294,8 +304,7 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>The length of the vector.</returns>
         /// <remarks>
-        /// <see cref="Vector3.LengthSquared" /> may be preferred when only the relative length is needed
-        /// and speed is of the essence.
+        /// <see cref="Vector3.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.
         /// </remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 
@@ -304,8 +313,7 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
         /// <remarks>
-        /// This method may be preferred to <see cref="Vector3.Length" /> when only a relative length is needed
-        /// and speed is of the essence.
+        /// This method may be preferred to <see cref="Vector3.Length" /> when only a relative length is needed and speed is of the essence.
         /// </remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z;
 

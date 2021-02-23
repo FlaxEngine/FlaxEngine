@@ -39,6 +39,38 @@ namespace FlaxEditor.CustomEditors
         /// Adds new group element.
         /// </summary>
         /// <param name="title">The title.</param>
+        /// <param name="linkedEditor">The custom editor to be linked for a group. Used to provide more utility functions for a drop panel UI via context menu.</param>
+        /// <param name="useTransparentHeader">True if use drop down icon and transparent group header, otherwise use normal style.</param>
+        /// <returns>The created element.</returns>
+        public GroupElement Group(string title, CustomEditor linkedEditor, bool useTransparentHeader = false)
+        {
+            var element = Group(title, useTransparentHeader);
+            element.Panel.Tag = linkedEditor;
+            element.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+            return element;
+        }
+
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        {
+            var linkedEditor = (CustomEditor)groupPanel.Tag;
+            var menu = new ContextMenu();
+
+            var revertToPrefab = menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue);
+            revertToPrefab.Enabled = linkedEditor.CanRevertReferenceValue;
+            var resetToDefault = menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue);
+            resetToDefault.Enabled = linkedEditor.CanRevertDefaultValue;
+            menu.AddSeparator();
+            menu.AddButton("Copy", linkedEditor.Copy);
+            var paste = menu.AddButton("Paste", linkedEditor.Paste);
+            paste.Enabled = linkedEditor.CanPaste;
+
+            menu.Show(groupPanel, location);
+        }
+
+        /// <summary>
+        /// Adds new group element.
+        /// </summary>
+        /// <param name="title">The title.</param>
         /// <param name="useTransparentHeader">True if use drop down icon and transparent group header, otherwise use normal style.</param>
         /// <returns>The created element.</returns>
         public GroupElement Group(string title, bool useTransparentHeader = false)
@@ -551,33 +583,14 @@ namespace FlaxEditor.CustomEditors
 
             if (style == DisplayStyle.Group)
             {
-                var group = Group(name, true);
+                var group = Group(name, editor, true);
                 group.Panel.Close(false);
                 group.Panel.TooltipText = tooltip;
-                group.Panel.Tag = editor;
-                group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                 return group.Object(values, editor);
             }
 
             var property = AddPropertyItem(name, tooltip);
             return property.Object(values, editor);
-        }
-
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
-        {
-            var linkedEditor = (CustomEditor)groupPanel.Tag;
-            var menu = new ContextMenu();
-
-            var revertToPrefab = menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue);
-            revertToPrefab.Enabled = linkedEditor.CanRevertReferenceValue;
-            var resetToDefault = menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue);
-            resetToDefault.Enabled = linkedEditor.CanRevertDefaultValue;
-            menu.AddSeparator();
-            menu.AddButton("Copy", linkedEditor.Copy);
-            var paste = menu.AddButton("Paste", linkedEditor.Paste);
-            paste.Enabled = linkedEditor.CanPaste;
-
-            menu.Show(groupPanel, location);
         }
 
         /// <summary>
@@ -600,8 +613,9 @@ namespace FlaxEditor.CustomEditors
 
             if (style == DisplayStyle.Group)
             {
-                var group = Group(label.Text, true);
+                var group = Group(label.Text, editor, true);
                 group.Panel.Close(false);
+                group.Panel.TooltipText = tooltip;
                 return group.Object(values, editor);
             }
 

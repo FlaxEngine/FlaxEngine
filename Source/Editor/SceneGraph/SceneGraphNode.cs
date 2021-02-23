@@ -197,12 +197,12 @@ namespace FlaxEditor.SceneGraph
             }
 
             /// <summary>
-            /// The ray.
+            /// The ray (for intersection raycasting).
             /// </summary>
             public Ray Ray;
 
             /// <summary>
-            /// The camera view ray.
+            /// The camera view ray (camera position and direction).
             /// </summary>
             public Ray View;
 

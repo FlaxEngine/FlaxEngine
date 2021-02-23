@@ -51,6 +51,20 @@ void UnixPlatform::Free(void* ptr)
     }
 }
 
+void* UnixPlatform::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    const uint64 numBytes = numPages * pageSize;
+
+    // Fallback to malloc
+    return malloc(numBytes);
+}
+
+void UnixPlatform::FreePages(void* ptr)
+{
+    // Fallback to free
+    free(ptr);
+}
+
 uint64 UnixPlatform::GetCurrentProcessId()
 {
     return getpid();

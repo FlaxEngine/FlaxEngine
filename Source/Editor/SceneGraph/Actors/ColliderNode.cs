@@ -19,6 +19,9 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <inheritdoc />
+        public override bool AffectsNavigation => true;
+
+        /// <inheritdoc />
         public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
         {
             // Check if skip raycasts

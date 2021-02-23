@@ -165,7 +165,10 @@ namespace FlaxEditor.Gizmo
                 if (_selectionParents[i] is ActorNode actorNode)
                 {
                     bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoxWithChildren);
-                    navigationDirty |= (actorNode.Actor.StaticFlags & StaticFlags.Navigation) == StaticFlags.Navigation;
+                    if (actorNode.AffectsNavigationWithChildren)
+                    {
+                        navigationDirty |= actorNode.Actor.HasStaticFlag(StaticFlags.Navigation);
+                    }
                 }
             }
         }

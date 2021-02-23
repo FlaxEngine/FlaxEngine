@@ -14,6 +14,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #endif
 
 namespace IncludedFiles

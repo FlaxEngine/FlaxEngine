@@ -372,7 +372,7 @@ void Mesh::Render(GPUContext* context) const
     context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
 }
 
-void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals) const
+void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom) const
 {
     if (!material || !material->IsSurface())
         return;
@@ -399,8 +399,8 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
-    drawCall.PerInstanceRandom = 0.0f;
-    renderContext.List->AddDrawCall(DrawPass::Default, flags, drawCall, receiveDecals);
+    drawCall.PerInstanceRandom = perInstanceRandom;
+    renderContext.List->AddDrawCall(drawModes, flags, drawCall, receiveDecals);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const

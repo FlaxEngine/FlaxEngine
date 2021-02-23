@@ -79,6 +79,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
+        public override bool AffectsNavigation => true;
+
+        /// <inheritdoc />
         public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
         {
             normal = Vector3.Up;

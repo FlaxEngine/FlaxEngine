@@ -2,6 +2,7 @@
 
 #include "BoundingSphere.h"
 #include "BoundingBox.h"
+#include "Matrix.h"
 #include "Ray.h"
 #include "../Types/String.h"
 
@@ -193,4 +194,10 @@ void BoundingSphere::Merge(const BoundingSphere& value1, const Vector3& value2, 
 
     result.Center = value1.Center + vector * (max + min);
     result.Radius = max;
+}
+
+void BoundingSphere::Transform(const BoundingSphere& sphere, const Matrix& matrix, BoundingSphere& result)
+{
+    Vector3::Transform(sphere.Center, matrix, result.Center);
+    result.Radius = sphere.Radius * matrix.GetScaleVector().GetAbsolute().MaxValue();
 }

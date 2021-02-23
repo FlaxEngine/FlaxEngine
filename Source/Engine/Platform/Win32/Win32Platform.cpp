@@ -316,6 +316,20 @@ void Win32Platform::Free(void* ptr)
     _aligned_free(ptr);
 }
 
+void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    const uint64 numBytes = numPages * pageSize;
+
+    // Use VirtualAlloc to allocate page-aligned memory
+    return VirtualAlloc(nullptr, numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+}
+
+void Win32Platform::FreePages(void* ptr)
+{
+    // Free page-aligned memory
+    VirtualFree(ptr, 0, MEM_RELEASE);
+}
+
 bool Win32Platform::Is64BitPlatform()
 {
 #ifdef PLATFORM_64BITS

@@ -200,3 +200,38 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
 }
+
+void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    const auto tags = stream.FindMember("Tags");
+    if (tags != stream.MemberEnd() && tags->value.IsArray())
+    {
+        auto& tagsArray = tags->value;
+        Tags.Clear();
+        Tags.EnsureCapacity(tagsArray.Size());
+        for (uint32 i = 0; i < tagsArray.Size(); i++)
+        {
+            auto& v = tagsArray[i];
+            if (v.IsString())
+                Tags.Add(v.GetText());
+        }
+    }
+
+    const auto layers = stream.FindMember("Layers");
+    if (layers != stream.MemberEnd() && layers->value.IsArray())
+    {
+        auto& layersArray = layers->value;
+        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        {
+            auto& v = layersArray[i];
+            if (v.IsString())
+                Layers[i] = v.GetText();
+            else
+                Layers[i].Clear();
+        }
+        for (uint32 i = layersArray.Size(); i < 32; i++)
+        {
+            Layers[i].Clear();
+        }
+    }
+}

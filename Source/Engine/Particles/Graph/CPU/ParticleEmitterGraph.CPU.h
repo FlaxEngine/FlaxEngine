@@ -27,11 +27,6 @@ class ParticleEmitterGraphCPUExecutor;
 
 #define PARTICLE_EMITTER_MAX_CALL_STACK 100
 
-// Gets the render task for the given effect update
-#define PARTICLE_EMITTER_GET_VIEW_TASK(effect) \
-	(SceneRenderTask*)((effect)->CustomViewRenderTask && (effect)->CustomViewRenderTask->LastUsedFrame != 0 ? (effect)->CustomViewRenderTask.Get() : \
-	(MainRenderTask::Instance && MainRenderTask::Instance->LastUsedFrame != 0 ? MainRenderTask::Instance : nullptr))
-
 class ParticleEmitterGraphCPUBox : public VisjectGraphBox
 {
 public:

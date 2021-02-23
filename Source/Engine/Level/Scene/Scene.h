@@ -19,7 +19,7 @@ class NavMesh;
 /// <summary>
 /// The scene root object that contains a hierarchy of actors.
 /// </summary>
-API_CLASS() class FLAXENGINE_API Scene final : public Actor
+API_CLASS() class FLAXENGINE_API Scene : public Actor
 {
 DECLARE_SCENE_OBJECT(Scene);
     friend Level;

@@ -168,6 +168,7 @@ MClass* MAssembly::GetClass(const StringAnsiView& fullname) const
     const auto& classes = GetClasses();
     MClass* result = nullptr;
     classes.TryGet(key, result);
+
 #if 0
     if (!result)
     {
@@ -183,25 +184,30 @@ MClass* MAssembly::GetClass(const StringAnsiView& fullname) const
 
 MClass* MAssembly::GetClass(MonoClass* monoClass) const
 {
-    // Check input
-    if (monoClass == nullptr)
+    if (monoClass == nullptr || !IsLoaded() || mono_class_get_image(monoClass) != _monoImage)
         return nullptr;
-
-    // Check state
-    if (!IsLoaded())
-    {
-        LOG(Fatal, "Trying to use unloaded assembly {0}! Source: {1}", String(_name), TEXT("MAssembly::GetClass()"));
-        return nullptr;
-    }
 
     // Find class by native pointer
     const auto& classes = GetClasses();
+    const auto typeToken = mono_class_get_type_token(monoClass);
     for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value->GetNative() == monoClass)
+        MonoClass* e = i->Value->GetNative();
+        if (e == monoClass || mono_class_get_type_token(e) == typeToken)
+        {
             return i->Value;
+        }
     }
 
+#if 0
+    {
+        LOG(Warning, "Failed to find class {0}.{1} in assembly {2}. Classes:", String(mono_class_get_namespace(monoClass)), String(mono_class_get_name(monoClass)), ToString());
+        for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
+        {
+            LOG(Warning, " - {0}", String(i->Key));
+        }
+    }
+#endif
     return nullptr;
 }
 

@@ -36,6 +36,7 @@
 #include "Engine/Profiler/Profiler.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include "Editor/Managed/ManagedEditor.h"
 #else
 #include "Engine/Utilities/Encryption.h"

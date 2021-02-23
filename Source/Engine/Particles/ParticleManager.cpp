@@ -17,6 +17,9 @@
 #include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Renderer/Utils/BitonicSort.h"
 #endif
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#endif
 
 struct SpriteParticleVertex
 {
@@ -1155,6 +1158,13 @@ void ParticleManagerService::Update()
         // Simulation delta time can be based on a time since last update or the current delta time
         float dt = effect->UseTimeScale ? deltaTime : deltaTimeUnscaled;
         float t = effect->UseTimeScale ? time : timeUnscaled;
+#if USE_EDITOR
+        if (!Editor::IsPlayMode)
+        {
+            dt = deltaTimeUnscaled;
+            t = timeUnscaled;
+        }
+#endif
         const float lastUpdateTime = instance.LastUpdateTime;
         if (lastUpdateTime > 0 && t > lastUpdateTime)
         {

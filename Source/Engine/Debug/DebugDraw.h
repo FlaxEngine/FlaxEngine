@@ -15,6 +15,7 @@ class GPUContext;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
+struct Transform;
 
 /// <summary>
 /// The debug shapes rendering service. Not available in final game. For use only in the editor.
@@ -22,6 +23,35 @@ class Actor;
 API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
+
+#if USE_EDITOR
+
+    /// <summary>
+    /// Allocates the context for Debug Drawing. Can be use to redirect debug shapes collecting to a separate container (instead of global state).
+    /// </summary>
+    /// <returns>The context object. Release it wil FreeContext. Returns null if failed.</returns>
+    API_FUNCTION() static void* AllocateContext();
+
+    /// <summary>
+    /// Frees the context for Debug Drawing.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    API_FUNCTION() static void FreeContext(void* context);
+
+    /// <summary>
+    /// Updates the context for Debug Drawing.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="deltaTime">The update delta time (in seconds).</param>
+    API_FUNCTION() static void UpdateContext(void* context, float deltaTime);
+
+    /// <summary>
+    /// Sets the context for Debug Drawing to a custom or null to use global default.
+    /// </summary>
+    /// <param name="context">The context or null.</param>
+    API_FUNCTION() static void SetContext(void* context);
+
+#endif
 
     /// <summary>
     /// Draws the collected debug shapes to the output.
@@ -37,7 +67,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// </summary>
     /// <param name="selectedActors">The list of actors to draw.</param>
     /// <param name="selectedActorsCount">The size of the list of actors.</param>
-    API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount);
+    /// <param name="drawScenes">True if draw all debug shapes from scenes too or false if draw just from specified actor list.</param>
+    API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes);
 
     /// <summary>
     /// Draws the line.
@@ -277,6 +308,36 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawBox(const OrientedBoundingBox& box, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the text on a screen (2D).
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="position">The position of the text on the screen (in screen-space coordinates).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Vector2& position, const Color& color, int32 size = 20, float duration = 0.0f);
+
+    /// <summary>
+    /// Draws the text (3D) that automatically faces the camera.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="position">The position of the text (world-space).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size = 32, float duration = 0.0f);
+
+    /// <summary>
+    /// Draws the text (3D).
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="transform">The transformation of the text (world-space).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="size">The font size.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color, int32 size = 32, float duration = 0.0f);
 };
 
 #define DEBUG_DRAW_LINE(start, end, color, duration, depthTest) DebugDraw::DrawLine(start, end, color, duration, depthTest)
@@ -296,7 +357,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_SPHERE(sphere, color, duration, depthTest) DebugDraw::DrawWireSphere(sphere, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, radius, height, color, duration, depthTest)
-#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireArrow(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_TEXT(text, position, color, size, duration) DebugDraw::DrawText(text, position, color, size, duration)
 
 #else
 
@@ -318,5 +380,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_TEXT(text, position, color, size, duration)
 
 #endif

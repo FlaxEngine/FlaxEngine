@@ -37,6 +37,21 @@
 #include "Engine/Engine/CommandLine.h"
 #endif
 
+bool LayersMask::HasLayer(const StringView& layerName) const
+{
+    return HasLayer(Level::GetLayerIndex(layerName));
+}
+
+bool LayersMask::operator==(const LayersMask& other) const
+{
+    return Mask == other.Mask;
+}
+
+bool LayersMask::operator!=(const LayersMask& other) const
+{
+    return Mask != other.Mask;
+}
+
 enum class SceneEventType
 {
     OnSceneSaving = 0,
@@ -98,7 +113,6 @@ public:
     {
     }
 
-    bool Init() override;
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
@@ -162,13 +176,22 @@ bool LevelImpl::deleteActor(Actor* actor)
     return false;
 }
 
-bool LevelService::Init()
+void LayersAndTagsSettings::Apply()
 {
-    auto& settings = *LayersAndTagsSettings::Get();
-    Level::Tags = settings.Tags;
+    // Note: we cannot remove tags/layers at runtime so this should deserialize them in additive mode
+    // Tags/Layers are stored as index in actors so collection change would break the linkage
+    for (auto& tag : Tags)
+    {
+        if (!Level::Tags.Contains(tag))
+            Level::Tags.Add(tag);
+    }
     for (int32 i = 0; i < ARRAY_COUNT(Level::Layers); i++)
-        Level::Layers[i] = settings.Layers[i];
-    return false;
+    {
+        const auto& src = Layers[i];
+        auto& dst = Level::Layers[i];
+        if (dst.IsEmpty() || !src.IsEmpty())
+            dst = src;
+    }
 }
 
 void LevelService::Update()
@@ -194,7 +217,7 @@ void LevelService::Update()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.TickEditorScripts();
+                scenes[i]->Ticking.Update.TickExecuteInEditor();
         }
     }
 #endif
@@ -223,7 +246,7 @@ void LevelService::LateUpdate()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.TickEditorScripts();
+                scenes[i]->Ticking.LateUpdate.TickExecuteInEditor();
         }
     }
 #endif
@@ -255,7 +278,7 @@ void LevelService::FixedUpdate()
         for (int32 i = 0; i < scenes.Count(); i++)
         {
             if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.TickEditorScripts();
+                scenes[i]->Ticking.FixedUpdate.TickExecuteInEditor();
         }
     }
 #endif
@@ -672,6 +695,20 @@ int32 Level::GetNonEmptyLayerNamesCount()
     while (result >= 0 && Layers[result].IsEmpty())
         result--;
     return result + 1;
+}
+
+int32 Level::GetLayerIndex(const StringView& layer)
+{
+    int32 result = -1;
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (Layers[i] == layer)
+        {
+            result = i;
+            break;
+        }
+    }
+    return result;
 }
 
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)

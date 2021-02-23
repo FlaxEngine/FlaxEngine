@@ -57,30 +57,46 @@ public:
 
 ViewportIconsRendererService ViewportIconsRendererServiceInstance;
 
-void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Scene* scene)
+namespace
 {
-    auto& view = renderContext.View;
-    if ((view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
-        return;
-
-    const BoundingFrustum frustum = view.Frustum;
-    auto& icons = scene->GetSceneRendering()->ViewportIcons;
-    Matrix m1, m2, world;
-    Mesh::DrawInfo draw;
-    draw.Lightmap = nullptr;
-    draw.LightmapUVs = nullptr;
-    draw.Flags = StaticFlags::Transform;
-    draw.DrawModes = DrawPass::Forward;
-    draw.PerInstanceRandom = 0;
-    draw.LODBias = 0;
-    draw.ForcedLOD = -1;
-    draw.VertexColors = nullptr;
-
-    for (Actor* icon : icons)
+    void DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw)
     {
-        BoundingSphere sphere(icon->GetPosition(), ICON_RADIUS);
+        auto& view = renderContext.View;
+        const BoundingFrustum frustum = view.Frustum;
+        auto& icons = scene->GetSceneRendering()->ViewportIcons;
+        Matrix m1, m2, world;
+        for (Actor* icon : icons)
+        {
+            BoundingSphere sphere(icon->GetPosition(), ICON_RADIUS);
+            IconTypes iconType;
+            if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
+            {
+                // Create world matrix
+                Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
+                Matrix::RotationY(PI, world);
+                Matrix::Multiply(m2, world, m1);
+                Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
+                Matrix::Multiply(m1, m2, world);
+
+                // Draw icon
+                GeometryDrawStateData drawState;
+                draw.DrawState = &drawState;
+                draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+                draw.World = &world;
+                draw.Bounds = sphere;
+                QuadModel->Draw(renderContext, draw);
+            }
+        }
+    }
+
+    void DrawIcons(RenderContext& renderContext, Actor* actor, Mesh::DrawInfo& draw)
+    {
+        auto& view = renderContext.View;
+        const BoundingFrustum frustum = view.Frustum;
+        Matrix m1, m2, world;
+        BoundingSphere sphere(actor->GetPosition(), ICON_RADIUS);
         IconTypes iconType;
-        if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
+        if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
         {
             // Create world matrix
             Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
@@ -97,6 +113,35 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Scene* scene
             draw.Bounds = sphere;
             QuadModel->Draw(renderContext, draw);
         }
+
+        for (auto child : actor->Children)
+            DrawIcons(renderContext, child, draw);
+    }
+}
+
+void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor)
+{
+    auto& view = renderContext.View;
+    if ((view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
+        return;
+
+    Mesh::DrawInfo draw;
+    draw.Lightmap = nullptr;
+    draw.LightmapUVs = nullptr;
+    draw.Flags = StaticFlags::Transform;
+    draw.DrawModes = DrawPass::Forward;
+    draw.PerInstanceRandom = 0;
+    draw.LODBias = 0;
+    draw.ForcedLOD = -1;
+    draw.VertexColors = nullptr;
+
+    if (const auto scene = SceneObject::Cast<Scene>(actor))
+    {
+        ::DrawIcons(renderContext, scene, draw);
+    }
+    else
+    {
+        ::DrawIcons(renderContext, actor, draw);
     }
 }
 

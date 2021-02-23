@@ -28,6 +28,10 @@ namespace FlaxEngine.GUI
             '\"',
             ')',
             '(',
+            '/',
+            '\\',
+            '>',
+            '<',
         };
 
         /// <summary>
@@ -422,7 +426,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Clears all text from the text box control. 
         /// </summary>
-        public void Clear()
+        public virtual void Clear()
         {
             Text = string.Empty;
         }
@@ -430,7 +434,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Clear selection range
         /// </summary>
-        public void ClearSelection()
+        public virtual void ClearSelection()
         {
             OnSelectingEnd();
             SetSelection(-1);
@@ -439,7 +443,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Resets the view offset (text scroll view).
         /// </summary>
-        public void ResetViewOffset()
+        public virtual void ResetViewOffset()
         {
             TargetViewOffset = Vector2.Zero;
         }
@@ -455,7 +459,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Copies the current selection in the text box to the Clipboard. 
         /// </summary>
-        public void Copy()
+        public virtual void Copy()
         {
             var selectedText = SelectedText;
             if (selectedText.Length > 0)
@@ -468,7 +472,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Moves the current selection in the text box to the Clipboard. 
         /// </summary>
-        public void Cut()
+        public virtual void Cut()
         {
             var selectedText = SelectedText;
             if (selectedText.Length > 0)
@@ -490,7 +494,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Replaces the current selection in the text box with the contents of the Clipboard.
         /// </summary>
-        public void Paste()
+        public virtual void Paste()
         {
             if (IsReadOnly)
                 return;
@@ -508,7 +512,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Duplicates the current selection in the text box.
         /// </summary>
-        public void Duplicate()
+        public virtual void Duplicate()
         {
             if (IsReadOnly)
                 return;
@@ -526,7 +530,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Ensures that the caret is visible in the TextBox window, by scrolling the TextBox control surface if necessary.
         /// </summary>
-        public void ScrollToCaret()
+        public virtual void ScrollToCaret()
         {
             // If it's empty
             if (_text.Length == 0)
@@ -547,7 +551,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Selects all text in the text box.
         /// </summary>
-        public void SelectAll()
+        public virtual void SelectAll()
         {
             if (TextLength > 0)
             {
@@ -558,7 +562,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Sets the selection to empty value.
         /// </summary>
-        public void Deselect()
+        public virtual void Deselect()
         {
             SetSelection(-1);
         }
@@ -568,7 +572,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="location">The location (in control-space).</param>
         /// <returns>The character index under the location</returns>
-        public int CharIndexAtPoint(ref Vector2 location)
+        public virtual int CharIndexAtPoint(ref Vector2 location)
         {
             return HitTestText(location + _viewOffset);
         }
@@ -577,7 +581,7 @@ namespace FlaxEngine.GUI
         /// Inserts the specified character (at the current selection).
         /// </summary>
         /// <param name="c">The character.</param>
-        public void Insert(char c)
+        public virtual void Insert(char c)
         {
             Insert(c.ToString());
         }
@@ -586,7 +590,7 @@ namespace FlaxEngine.GUI
         /// Inserts the specified text (at the current selection).
         /// </summary>
         /// <param name="str">The string.</param>
-        public void Insert(string str)
+        public virtual void Insert(string str)
         {
             if (IsReadOnly)
                 return;
@@ -622,7 +626,12 @@ namespace FlaxEngine.GUI
             OnTextChanged();
         }
 
-        private void MoveRight(bool shift, bool ctrl)
+        /// <summary>
+        /// Moves the caret right.
+        /// </summary>
+        /// <param name="shift">Shift is held.</param>
+        /// <param name="ctrl">Control is held.</param>
+        protected virtual void MoveRight(bool shift, bool ctrl)
         {
             if (HasSelection && !shift)
             {
@@ -647,7 +656,12 @@ namespace FlaxEngine.GUI
             }
         }
 
-        private void MoveLeft(bool shift, bool ctrl)
+        /// <summary>
+        /// Moves the caret left.
+        /// </summary>
+        /// <param name="shift">Shift is held.</param>
+        /// <param name="ctrl">Control is held.</param>
+        protected virtual void MoveLeft(bool shift, bool ctrl)
         {
             if (HasSelection && !shift)
             {
@@ -672,7 +686,12 @@ namespace FlaxEngine.GUI
             }
         }
 
-        private void MoveDown(bool shift, bool ctrl)
+        /// <summary>
+        /// Moves the caret down.
+        /// </summary>
+        /// <param name="shift">Shift is held.</param>
+        /// <param name="ctrl">Control is held.</param>
+        protected virtual void MoveDown(bool shift, bool ctrl)
         {
             if (HasSelection && !shift)
             {
@@ -693,7 +712,12 @@ namespace FlaxEngine.GUI
             }
         }
 
-        private void MoveUp(bool shift, bool ctrl)
+        /// <summary>
+        /// Moves the caret up.
+        /// </summary>
+        /// <param name="shift">Shift is held.</param>
+        /// <param name="ctrl">Control is held.</param>
+        protected virtual void MoveUp(bool shift, bool ctrl)
         {
             if (HasSelection && !shift)
             {
@@ -719,7 +743,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="caret">The caret position.</param>
         /// <param name="withScroll">If set to <c>true</c> with auto-scroll.</param>
-        protected void SetSelection(int caret, bool withScroll = true)
+        protected virtual void SetSelection(int caret, bool withScroll = true)
         {
             SetSelection(caret, caret);
         }
@@ -730,7 +754,7 @@ namespace FlaxEngine.GUI
         /// <param name="start">The selection start character.</param>
         /// <param name="end">The selection end character.</param>
         /// <param name="withScroll">If set to <c>true</c> with auto-scroll.</param>
-        protected void SetSelection(int start, int end, bool withScroll = true)
+        protected virtual void SetSelection(int start, int end, bool withScroll = true)
         {
             // Update parameters
             int textLength = _text.Length;

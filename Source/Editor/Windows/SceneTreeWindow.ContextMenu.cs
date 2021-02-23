@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
@@ -58,6 +57,30 @@ namespace FlaxEditor.Windows
             b = contextMenu.AddButton("Duplicate", Editor.SceneEditing.Duplicate);
             b.Enabled = hasSthSelected;
 
+            if (Editor.SceneEditing.SelectionCount == 1)
+            {
+                var convertMenu = contextMenu.AddChildMenu("Convert");
+                var convertActorCm = convertMenu.ContextMenu;
+                for (int i = 0; i < SpawnActorsGroups.Length; i++)
+                {
+                    var group = SpawnActorsGroups[i];
+
+                    if (group.Types.Length == 1)
+                    {
+                        var type = group.Types[0].Value;
+                        convertActorCm.AddButton(group.Types[0].Key, () => Editor.SceneEditing.Convert(type));
+                    }
+                    else
+                    {
+                        var groupCm = convertActorCm.AddChildMenu(group.Name).ContextMenu;
+                        for (int j = 0; j < group.Types.Length; j++)
+                        {
+                            var type = group.Types[j].Value;
+                            groupCm.AddButton(group.Types[j].Key, () => Editor.SceneEditing.Convert(type));
+                        }
+                    }
+                }
+            }
             b = contextMenu.AddButton("Delete", Editor.SceneEditing.Delete);
             b.Enabled = hasSthSelected;
 

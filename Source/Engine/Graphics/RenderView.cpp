@@ -115,6 +115,7 @@ void RenderView::CopyFrom(Camera* camera)
     Matrix::Invert(Projection, IP);
     Frustum.GetInvMatrix(IVP);
     CullingFrustum = Frustum;
+    RenderLayersMask = camera->RenderLayersMask;
 }
 
 void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
@@ -131,6 +132,7 @@ void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
     Matrix::Invert(Projection, IP);
     Frustum.GetInvMatrix(IVP);
     CullingFrustum = Frustum;
+    RenderLayersMask = camera->RenderLayersMask;
 }
 
 DrawPass RenderView::GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const

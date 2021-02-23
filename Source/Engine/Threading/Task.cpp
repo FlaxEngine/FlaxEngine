@@ -10,7 +10,8 @@
 
 void Task::Start()
 {
-    ASSERT(GetState() == TaskState::Created);
+    if (_state != TaskState::Created)
+        return;
 
     OnStart();
 

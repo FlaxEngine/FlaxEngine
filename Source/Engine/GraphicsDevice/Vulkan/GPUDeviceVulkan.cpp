@@ -1825,7 +1825,9 @@ bool GPUDeviceVulkan::Init()
 #endif
 #undef INIT_FUNC
         VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
         allocatorInfo.physicalDevice = gpu;
+        allocatorInfo.instance = Instance;
         allocatorInfo.device = Device;
         allocatorInfo.pVulkanFunctions = &vulkanFunctions;
         VALIDATE_VULKAN_RESULT(vmaCreateAllocator(&allocatorInfo, &Allocator));

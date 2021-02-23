@@ -2,6 +2,7 @@
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"

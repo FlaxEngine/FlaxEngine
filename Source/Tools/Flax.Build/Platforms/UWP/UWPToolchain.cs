@@ -26,7 +26,7 @@ namespace Flax.Build.Platforms
         /// <param name="architecture">The target architecture.</param>
         /// <param name="toolsetVer">The target platform toolset version.</param>
         /// <param name="sdkVer">The target platform SDK version.</param>
-        public UWPToolchain(UWPPlatform platform, TargetArchitecture architecture, WindowsPlatformToolset toolsetVer = WindowsPlatformToolset.v141, WindowsPlatformSDK sdkVer = WindowsPlatformSDK.Latest)
+        public UWPToolchain(UWPPlatform platform, TargetArchitecture architecture, WindowsPlatformToolset toolsetVer = WindowsPlatformToolset.Latest, WindowsPlatformSDK sdkVer = WindowsPlatformSDK.Latest)
         : base(platform, architecture, toolsetVer, sdkVer)
         {
             var visualStudio = VisualStudioInstance.GetInstances().FirstOrDefault(x => x.Version == VisualStudioVersion.VisualStudio2017 || x.Version == VisualStudioVersion.VisualStudio2019);

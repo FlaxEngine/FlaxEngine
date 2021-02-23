@@ -520,15 +520,46 @@ namespace FlaxEditor.CustomEditors
             try
             {
                 string text;
-                if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+                if (ParentEditor is Dedicated.ScriptsEditor)
                 {
+                    // Script
+                    text = JsonSerializer.Serialize(Values[0]);
+
+                    // Remove properties that should be ignored when copy/pasting data
+                    if (text == null)
+                        text = string.Empty;
+                    int idx = text.IndexOf("\"Actor\":");
+                    if (idx != -1)
+                    {
+                        int endIdx = text.IndexOf("\n", idx);
+                        if (endIdx != -1)
+                            text = text.Remove(idx, endIdx - idx);
+                    }
+                    idx = text.IndexOf("\"Parent\":");
+                    if (idx != -1)
+                    {
+                        int endIdx = text.IndexOf("\n", idx);
+                        if (endIdx != -1)
+                            text = text.Remove(idx, endIdx - idx);
+                    }
+                    idx = text.IndexOf("\"OrderInParent\":");
+                    if (idx != -1)
+                    {
+                        int endIdx = text.IndexOf("\n", idx);
+                        if (endIdx != -1)
+                            text = text.Remove(idx, endIdx - idx);
+                    }
+                }
+                else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+                {
+                    // Object reference
                     text = JsonSerializer.GetStringID(Values[0] as FlaxEngine.Object);
                 }
                 else
                 {
+                    // Default
                     text = JsonSerializer.Serialize(Values[0]);
                 }
-
                 Clipboard.Text = text;
             }
             catch (Exception ex)
@@ -538,7 +569,7 @@ namespace FlaxEditor.CustomEditors
             }
         }
 
-        private bool GetClipboardObject(out object result)
+        private bool GetClipboardObject(out object result, bool deserialize)
         {
             result = null;
             var text = Clipboard.Text;
@@ -546,8 +577,32 @@ namespace FlaxEditor.CustomEditors
                 return false;
 
             object obj;
-            if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+            if (ParentEditor is Dedicated.ScriptsEditor)
             {
+                // Script
+                obj = Values[0];
+                if (deserialize)
+                {
+                    if (Presenter.Undo != null && Presenter.Undo.Enabled)
+                    {
+                        using (new UndoBlock(Presenter.Undo, obj, "Paste values"))
+                            JsonSerializer.Deserialize(obj, text);
+                    }
+                    else
+                    {
+                        JsonSerializer.Deserialize(obj, text);
+                    }
+                }
+#pragma warning disable 618
+                else if (Newtonsoft.Json.Schema.JsonSchema.Parse(text) == null)
+#pragma warning restore 618
+                {
+                    return false;
+                }
+            }
+            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+            {
+                // Object reference
                 if (text.Length != 32)
                     return false;
                 JsonSerializer.ParseID(text, out var id);
@@ -555,6 +610,7 @@ namespace FlaxEditor.CustomEditors
             }
             else
             {
+                // Default
                 obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
             }
 
@@ -576,7 +632,7 @@ namespace FlaxEditor.CustomEditors
             {
                 try
                 {
-                    return GetClipboardObject(out _);
+                    return GetClipboardObject(out _, false);
                 }
                 catch
                 {
@@ -594,7 +650,7 @@ namespace FlaxEditor.CustomEditors
 
             try
             {
-                if (GetClipboardObject(out var obj))
+                if (GetClipboardObject(out var obj, true))
                 {
                     SetValue(obj);
                 }

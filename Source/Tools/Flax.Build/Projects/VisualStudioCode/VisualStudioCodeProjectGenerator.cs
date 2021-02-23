@@ -198,6 +198,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                             json.AddUnnamedField(string.Format("-configuration={0}", configuration.ConfigurationName));
                                             json.AddUnnamedField(string.Format("-platform={0}", configuration.PlatformName));
                                             json.AddUnnamedField(string.Format("-buildTargets={0}", target.Name));
+                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                                json.AddUnnamedField(string.Format("-compiler={0}", Configuration.Compiler));
                                         }
                                         json.EndArray();
 
@@ -224,6 +226,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                             json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
                                             json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
                                             json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
+                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                                json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
                                         }
                                         json.EndArray();
 

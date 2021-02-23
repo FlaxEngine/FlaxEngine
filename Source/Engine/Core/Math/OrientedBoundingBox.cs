@@ -53,9 +53,7 @@ namespace FlaxEngine
         /// Creates an <see cref="OrientedBoundingBox" /> from a BoundingBox.
         /// </summary>
         /// <param name="bb">The BoundingBox to create from.</param>
-        /// <remarks>
-        /// Initially, the OBB is axis-aligned box, but it can be rotated and transformed later.
-        /// </remarks>
+        /// <remarks>Initially, the OBB is axis-aligned box, but it can be rotated and transformed later.</remarks>
         public OrientedBoundingBox(BoundingBox bb)
         {
             Vector3 center = bb.Minimum + (bb.Maximum - bb.Minimum) / 2f;
@@ -79,9 +77,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="minimum">The minimum vertex of the bounding box.</param>
         /// <param name="maximum">The maximum vertex of the bounding box.</param>
-        /// <remarks>
-        /// Initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.
-        /// </remarks>
+        /// <remarks>Initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.</remarks>
         public OrientedBoundingBox(Vector3 minimum, Vector3 maximum)
         {
             Vector3 center = minimum + (maximum - minimum) / 2f;
@@ -93,10 +89,7 @@ namespace FlaxEngine
         /// Creates an <see cref="OrientedBoundingBox" /> that fully contains the given points.
         /// </summary>
         /// <param name="points">The points that will be contained by the box.</param>
-        /// <remarks>
-        /// This method is not for computing the best tight-fitting OrientedBoundingBox.
-        /// And initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.
-        /// </remarks>
+        /// <remarks>This method is not for computing the best tight-fitting OrientedBoundingBox. And initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.</remarks>
         public OrientedBoundingBox(Vector3[] points)
         {
             if ((points == null) || (points.Length == 0))
@@ -231,8 +224,7 @@ namespace FlaxEngine
         /// <param name="mat">The transformation matrix.</param>
         /// <remarks>
         /// While any kind of transformation can be applied, it is recommended to apply scaling using scale method instead, which
-        /// scales the Extents and keeps the Transformation matrix for rotation only, and that preserves collision detection
-        /// accuracy.
+        /// scales the Extents and keeps the Transformation matrix for rotation only, and that preserves collision detection accuracy.
         /// </remarks>
         public void Transform(ref Matrix mat)
         {
@@ -245,8 +237,7 @@ namespace FlaxEngine
         /// <param name="mat">The transformation matrix.</param>
         /// <remarks>
         /// While any kind of transformation can be applied, it is recommended to apply scaling using scale method instead, which
-        /// scales the Extents and keeps the Transformation matrix for rotation only, and that preserves collision detection
-        /// accuracy.
+        /// scales the Extents and keeps the Transformation matrix for rotation only, and that preserves collision detection accuracy.
         /// </remarks>
         public void Transform(Matrix mat)
         {
@@ -304,21 +295,15 @@ namespace FlaxEngine
         /// <summary>
         /// The size of the <see cref="OrientedBoundingBox" /> if no scaling is applied to the transformation matrix.
         /// </summary>
-        /// <remarks>
-        /// The property will return the actual size even if the scaling is applied using Scale method,
-        /// but if the scaling is applied to transformation matrix, use GetSize Function instead.
+        /// <remarks>The property will return the actual size even if the scaling is applied using Scale method, but if the scaling is applied to transformation matrix, use GetSize Function instead.
         /// </remarks>
         public Vector3 Size => Extents * 2;
 
         /// <summary>
-        /// Returns the size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to the
-        /// transformation matrix.
+        /// Returns the size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to the transformation matrix.
         /// </summary>
         /// <returns>The size of the consideration</returns>
-        /// <remarks>
-        /// This method is computationally expensive, so if no scale is applied to the transformation matrix
-        /// use <see cref="OrientedBoundingBox.Size" /> property instead.
-        /// </remarks>
+        /// <remarks>This method is computationally expensive, so if no scale is applied to the transformation matrix use <see cref="OrientedBoundingBox.Size" /> property instead.</remarks>
         public Vector3 GetSize()
         {
             var xv = new Vector3(Extents.X * 2, 0, 0);
@@ -332,8 +317,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns the square size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to
-        /// the transformation matrix.
+        /// Returns the square size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to the transformation matrix.
         /// </summary>
         /// <returns>The size of the consideration</returns>
         public Vector3 GetSizeSquared()
@@ -432,16 +416,9 @@ namespace FlaxEngine
         /// Determines whether a <see cref="OrientedBoundingBox" /> contains a <see cref="BoundingSphere" />.
         /// </summary>
         /// <param name="sphere">The sphere to test.</param>
-        /// <param name="ignoreScale">
-        /// Optimize the check operation by assuming that <see cref="OrientedBoundingBox" /> has no
-        /// scaling applied
-        /// </param>
+        /// <param name="ignoreScale">Optimize the check operation by assuming that <see cref="OrientedBoundingBox" /> has no scaling applied.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        /// <remarks>
-        /// This method is not designed for <see cref="OrientedBoundingBox" /> which has a non-uniform scaling applied to its
-        /// transformation matrix.
-        /// But any type of scaling applied using Scale method will keep this method accurate.
-        /// </remarks>
+        /// <remarks>This method is not designed for <see cref="OrientedBoundingBox" /> which has a non-uniform scaling applied to its transformation matrix. But any type of scaling applied using Scale method will keep this method accurate.</remarks>
         public ContainmentType Contains(BoundingSphere sphere, bool ignoreScale = false)
         {
             Matrix.Invert(ref Transformation, out Matrix invTrans);
@@ -489,11 +466,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="obb">The OrientedBoundingBox to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        /// <remarks>
-        /// For accuracy, The transformation matrix for both <see cref="OrientedBoundingBox" /> must not have any scaling applied
-        /// to it.
-        /// Anyway, scaling using Scale method will keep this method accurate.
-        /// </remarks>
+        /// <remarks>For accuracy, The transformation matrix for both <see cref="OrientedBoundingBox" /> must not have any scaling applied to it. Anyway, scaling using Scale method will keep this method accurate.</remarks>
         public ContainmentType Contains(ref OrientedBoundingBox obb)
         {
             ContainmentType cornersCheck = Contains(obb.GetCorners());
@@ -570,11 +543,7 @@ namespace FlaxEngine
         /// <param name="L1">The first point in the line.</param>
         /// <param name="L2">The second point in the line.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        /// <remarks>
-        /// For accuracy, The transformation matrix for the <see cref="OrientedBoundingBox" /> must not have any scaling applied
-        /// to it.
-        /// Anyway, scaling using Scale method will keep this method accurate.
-        /// </remarks>
+        /// <remarks>For accuracy, The transformation matrix for the <see cref="OrientedBoundingBox" /> must not have any scaling applied to it. Anyway, scaling using Scale method will keep this method accurate.</remarks>
         public ContainmentType ContainsLine(ref Vector3 L1, ref Vector3 L2)
         {
             ContainmentType cornersCheck = Contains(new[]
@@ -627,11 +596,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="box">The BoundingBox to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        /// <remarks>
-        /// For accuracy, The transformation matrix for the <see cref="OrientedBoundingBox" /> must not have any scaling applied
-        /// to it.
-        /// Anyway, scaling using Scale method will keep this method accurate.
-        /// </remarks>
+        /// <remarks>For accuracy, The transformation matrix for the <see cref="OrientedBoundingBox" /> must not have any scaling applied to it. Anyway, scaling using Scale method will keep this method accurate.</remarks>
         public ContainmentType Contains(ref BoundingBox box)
         {
             ContainmentType cornersCheck = Contains(box.GetCorners());
@@ -704,10 +669,7 @@ namespace FlaxEngine
         /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="OrientedBoundingBox" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">
-        /// When the method completes, contains the point of intersection,
-        /// or <see cref="Vector3.Zero" /> if there was no intersection.
-        /// </param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out Vector3 point)
         {
@@ -718,11 +680,11 @@ namespace FlaxEngine
             Vector3.TransformNormal(ref ray.Direction, ref invTrans, out bRay.Direction);
             Vector3.TransformCoordinate(ref ray.Position, ref invTrans, out bRay.Position);
 
-            //Perform a regular ray to BoundingBox check
+            // Perform a regular ray to BoundingBox check
             var bb = new BoundingBox(-Extents, Extents);
             bool intersects = CollisionsHelper.RayIntersectsBox(ref bRay, ref bb, out point);
 
-            //Put the result intersection back to world
+            // Put the result intersection back to world
             if (intersects)
                 Vector3.TransformCoordinate(ref point, ref Transformation, out point);
 
@@ -733,10 +695,7 @@ namespace FlaxEngine
         /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="OrientedBoundingBox" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">
-        /// When the method completes, contains the distance of intersection from the ray start,
-        /// or 0 if there was no intersection.
-        /// </param>
+        /// <param name="distance">When the method completes, contains the distance of intersection from the ray start, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out float distance)
         {
@@ -788,16 +747,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Calculates the matrix required to transfer any point from one <see cref="OrientedBoundingBox" /> local coordinates to
-        /// another.
+        /// Calculates the matrix required to transfer any point from one <see cref="OrientedBoundingBox" /> local coordinates to another.
         /// </summary>
         /// <param name="A">The source OrientedBoundingBox.</param>
         /// <param name="B">The target OrientedBoundingBox.</param>
-        /// <param name="NoMatrixScaleApplied">
-        /// If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation
-        /// matrix of the OrientedBoundingBox.
-        /// </param>
-        /// <returns></returns>
+        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        /// <returns>The matrix.</returns>
         public static Matrix GetBoxToBoxMatrix(ref OrientedBoundingBox A, ref OrientedBoundingBox B, bool NoMatrixScaleApplied = false)
         {
             Matrix AtoB_Matrix;
@@ -828,19 +783,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Merge an OrientedBoundingBox B into another OrientedBoundingBox A, by expanding A to contain B and keeping A
-        /// orientation.
+        /// Merge an OrientedBoundingBox B into another OrientedBoundingBox A, by expanding A to contain B and keeping A orientation.
         /// </summary>
         /// <param name="A">The <see cref="OrientedBoundingBox" /> to merge into it.</param>
         /// <param name="B">The <see cref="OrientedBoundingBox" /> to be merged</param>
-        /// <param name="NoMatrixScaleApplied">
-        /// If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation
-        /// matrix of the OrientedBoundingBox.
-        /// </param>
-        /// <remarks>
-        /// Unlike merging axis aligned boxes, The operation is not interchangeable, because it keeps A orientation and merge B
-        /// into it.
-        /// </remarks>
+        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        /// <remarks>Unlike merging axis aligned boxes, The operation is not interchangeable, because it keeps A orientation and merge B into it.</remarks>
         public static void Merge(ref OrientedBoundingBox A, ref OrientedBoundingBox B, bool NoMatrixScaleApplied = false)
         {
             Matrix AtoB_Matrix = GetBoxToBoxMatrix(ref A, ref B, NoMatrixScaleApplied);
@@ -869,10 +817,7 @@ namespace FlaxEngine
         /// Merge this OrientedBoundingBox into another OrientedBoundingBox, keeping the other OrientedBoundingBox orientation.
         /// </summary>
         /// <param name="OBB">The other <see cref="OrientedBoundingBox" /> to merge into.</param>
-        /// <param name="NoMatrixScaleApplied">
-        /// If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation
-        /// matrix of the OrientedBoundingBox.
-        /// </param>
+        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
         public void MergeInto(ref OrientedBoundingBox OBB, bool NoMatrixScaleApplied = false)
         {
             Merge(ref OBB, ref this, NoMatrixScaleApplied);
@@ -882,10 +827,7 @@ namespace FlaxEngine
         /// Merge another OrientedBoundingBox into this OrientedBoundingBox.
         /// </summary>
         /// <param name="OBB">The other <see cref="OrientedBoundingBox" /> to merge into this OrientedBoundingBox.</param>
-        /// <param name="NoMatrixScaleApplied">
-        /// If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation
-        /// matrix of the OrientedBoundingBox.
-        /// </param>
+        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
         public void Add(ref OrientedBoundingBox OBB, bool NoMatrixScaleApplied = false)
         {
             Merge(ref this, ref OBB, NoMatrixScaleApplied);
@@ -895,9 +837,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref OrientedBoundingBox value)
         {
@@ -908,9 +848,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(OrientedBoundingBox value)
         {
@@ -921,9 +859,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is OrientedBoundingBox))
@@ -952,10 +888,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(OrientedBoundingBox left, OrientedBoundingBox right)
         {
@@ -967,10 +900,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(OrientedBoundingBox left, OrientedBoundingBox right)
         {
@@ -980,9 +910,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             return Extents.GetHashCode() + Transformation.GetHashCode();
@@ -991,9 +919,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "Center: {0}, Extents: {1}", Center, Extents);
@@ -1003,9 +929,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
@@ -1019,9 +943,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider, "Center: {0}, Extents: {1}", Center.ToString(), Extents.ToString());
@@ -1032,9 +954,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)

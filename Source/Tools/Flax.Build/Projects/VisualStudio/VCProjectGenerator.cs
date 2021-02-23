@@ -160,6 +160,8 @@ namespace Flax.Build.Projects.VisualStudio
                                             configuration.Configuration,
                                             configuration.Platform,
                                             target.Name);
+                if (!string.IsNullOrEmpty(Configuration.Compiler))
+                    cmdLine += " -compiler=" + Configuration.Compiler;
 
                 vcProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='{0}'\">", configuration.Name));
                 if (platform is IVisualStudioProjectCustomizer customizer)

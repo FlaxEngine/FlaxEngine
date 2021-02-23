@@ -222,6 +222,11 @@ SceneRenderTask::~SceneRenderTask()
         Buffers->DeleteObjectNow();
 }
 
+void SceneRenderTask::CameraCut()
+{
+    IsCameraCut = true;
+}
+
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
     if ((ActorsSource & ActorsSources::Scenes) != 0)

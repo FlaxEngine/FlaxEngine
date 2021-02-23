@@ -5,6 +5,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.GUI;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -114,6 +115,10 @@ namespace FlaxEditor.Windows.Assets
         private readonly SplitPanel _split;
         private readonly AudioClipPreview _preview;
         private readonly CustomEditorPresenter _propertiesEditor;
+        private readonly ToolStripButton _playButton;
+        private readonly ToolStripButton _pauseButton;
+        private EditorScene _previewScene;
+        private AudioSource _previewSource;
 
         private readonly PropertiesProxy _properties;
         private bool _isWaitingForLoad;
@@ -131,7 +136,7 @@ namespace FlaxEditor.Windows.Assets
                 Parent = this
             };
 
-            // AudioClip preview
+            // Preview
             _preview = new AudioClipPreview
             {
                 DrawMode = AudioClipPreview.DrawModes.Fill,
@@ -140,7 +145,7 @@ namespace FlaxEditor.Windows.Assets
                 Parent = _split.Panel1
             };
 
-            // AudioClip properties editor
+            // Properties editor
             _propertiesEditor = new CustomEditorPresenter(null);
             _propertiesEditor.Panel.Parent = _split.Panel2;
             _properties = new PropertiesProxy();
@@ -149,7 +154,38 @@ namespace FlaxEditor.Windows.Assets
             // Toolstrip
             _toolstrip.AddButton(Editor.Icons.Import32, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
+            _playButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Play32, OnPlay).LinkTooltip("Play/stop audio");
+            _pauseButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Pause32, OnPause).LinkTooltip("Pause audio");
+            _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/audio/audio-clip.html")).LinkTooltip("See documentation to learn more");
+        }
+
+        private void OnPlay()
+        {
+            if (!_previewScene)
+            {
+                _previewScene = new EditorScene();
+            }
+            if (!_previewSource)
+            {
+                _previewSource = new AudioSource
+                {
+                    Parent = _previewScene,
+                    Clip = _asset,
+                };
+            }
+            if (_previewSource.State == AudioSource.States.Playing)
+                _previewSource.Stop();
+            else
+                _previewSource.Play();
+            UpdateToolstrip();
+        }
+
+        private void OnPause()
+        {
+            if (_previewSource)
+                _previewSource.Pause();
+            UpdateToolstrip();
         }
 
         /// <inheritdoc />
@@ -157,6 +193,8 @@ namespace FlaxEditor.Windows.Assets
         {
             _properties.OnClean();
             _preview.Asset = null;
+            if (_previewSource)
+                _previewSource.Clip = null;
             _isWaitingForLoad = false;
 
             base.UnlinkItem();
@@ -188,6 +226,29 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_previewSource)
+            {
+                _previewSource.Stop();
+                Object.Destroy(_previewSource);
+                _previewSource = null;
+            }
+            Object.Destroy(ref _previewScene);
+
+            base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        protected override void UpdateToolstrip()
+        {
+            base.UpdateToolstrip();
+
+            _playButton.Icon = _previewSource && _previewSource.State == AudioSource.States.Playing ? Editor.Icons.Stop32 : Editor.Icons.Play32;
+            _pauseButton.Enabled = _previewSource && _previewSource.State == AudioSource.States.Playing;
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
@@ -195,16 +256,21 @@ namespace FlaxEditor.Windows.Assets
             // Check if need to load
             if (_isWaitingForLoad && _asset.IsLoaded)
             {
-                // Clear flag
                 _isWaitingForLoad = false;
 
                 // Init properties and parameters proxy
                 _properties.OnLoad(this);
                 _propertiesEditor.BuildLayout();
+                if (_previewSource)
+                    _previewSource.Stop();
 
                 // Setup
                 ClearEditedFlag();
             }
+
+            // Tick scene
+            if (_previewScene)
+                _previewScene.Update();
         }
 
         /// <inheritdoc />

@@ -88,10 +88,7 @@ namespace FlaxEngine
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">
-        /// When the method completes, contains the distance of the intersection,
-        /// or 0 if there was no intersection.
-        /// </param>
+        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out float distance)
         {
@@ -102,10 +99,7 @@ namespace FlaxEngine
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">
-        /// When the method completes, contains the point of intersection,
-        /// or <see cref="Vector3.Zero" /> if there was no intersection.
-        /// </param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out Vector3 point)
         {
@@ -224,11 +218,7 @@ namespace FlaxEngine
         /// <param name="count">The count of points to process to compute the bounding sphere.</param>
         /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
         /// <exception cref="System.ArgumentNullException">points</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// start
-        /// or
-        /// count
-        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">start or count</exception>
         public static void FromPoints(Vector3[] points, int start, int count, out BoundingSphere result)
         {
             if (points == null)
@@ -244,30 +234,30 @@ namespace FlaxEngine
 
             int upperEnd = start + count;
 
-            //Find the center of all points.
+            // Find the center of all points
             Vector3 center = Vector3.Zero;
             for (int i = start; i < upperEnd; ++i)
                 Vector3.Add(ref points[i], ref center, out center);
 
-            //This is the center of our sphere.
+            // This is the center of our sphere
             center /= (float)count;
 
             //Find the radius of the sphere
             var radius = 0f;
             for (int i = start; i < upperEnd; ++i)
             {
-                //We are doing a relative distance comparison to find the maximum distance
-                //from the center of our sphere.
+                // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
+                float distance;
                 Vector3.DistanceSquared(ref center, ref points[i], out float distance);
 
                 if (distance > radius)
                     radius = distance;
             }
 
-            //Find the real distance from the DistanceSquared.
+            // Find the real distance from the DistanceSquared
             radius = (float)Math.Sqrt(radius);
 
-            //Construct the sphere.
+            // Construct the sphere
             result.Center = center;
             result.Radius = radius;
         }
@@ -281,7 +271,6 @@ namespace FlaxEngine
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-
             FromPoints(points, 0, points.Length, out result);
         }
 
@@ -292,7 +281,7 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromPoints(Vector3[] points)
         {
-            FromPoints(points, out BoundingSphere result);
+            FromPoints(points, out var result);
             return result;
         }
 
@@ -320,7 +309,7 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromBox(BoundingBox box)
         {
-            FromBox(ref box, out BoundingSphere result);
+            FromBox(ref box, out var result);
             return result;
         }
 
@@ -383,8 +372,32 @@ namespace FlaxEngine
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere Merge(BoundingSphere value1, BoundingSphere value2)
         {
-            Merge(ref value1, ref value2, out BoundingSphere result);
+            Merge(ref value1, ref value2, out var result);
             return result;
+        }
+
+        /// <summary>
+        /// Transforms the bounding sphere using the specified matrix.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="matrix">The matrix.</param>
+        /// <remarks>The result transformed sphere.</remarks>
+        public static BoundingSphere Transform(BoundingSphere sphere, Matrix matrix)
+        {
+            Transform(ref sphere, ref matrix, out var result);
+            return result;
+        }
+
+        /// <summary>
+        /// Transforms the bounding sphere using the specified matrix.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="matrix">The matrix.</param>
+        /// <param name="result">The result transformed sphere.</param>
+        public static void Transform(ref BoundingSphere sphere, ref Matrix matrix, out BoundingSphere result)
+        {
+            Vector3.Transform(ref sphere.Center, ref matrix, out result.Center);
+            result.Radius = sphere.Radius * matrix.ScaleVector.Absolute.MaxValue;
         }
 
         /// <summary>
@@ -392,10 +405,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BoundingSphere left, BoundingSphere right)
         {
@@ -407,10 +417,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BoundingSphere left, BoundingSphere right)
         {
@@ -420,9 +427,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture,
@@ -435,9 +440,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
@@ -453,9 +456,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider,
@@ -469,9 +470,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
@@ -486,9 +485,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -501,9 +498,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingSphere value)
         {
@@ -514,9 +509,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingSphere value)
         {
@@ -527,14 +520,11 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is BoundingSphere))
                 return false;
-
             var strongValue = (BoundingSphere)value;
             return Equals(ref strongValue);
         }

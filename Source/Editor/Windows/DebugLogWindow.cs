@@ -72,7 +72,7 @@ namespace FlaxEditor.Windows
             /// <summary>
             /// The default height of the entries.
             /// </summary>
-            public const float DefaultHeight = 48.0f;
+            public const float DefaultHeight = 32.0f;
 
             private DebugLogWindow _window;
             public LogGroup Group;
@@ -128,10 +128,11 @@ namespace FlaxEditor.Windows
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
 
                 // Icon
-                Render2D.DrawSprite(Icon, new Rectangle(5, 8, 32, 32), style.Foreground);
+                var iconColor = Group == LogGroup.Error ? Color.Red : (Group == LogGroup.Warning ? Color.Yellow : style.Foreground);
+                Render2D.DrawSprite(Icon, new Rectangle(5, 0, 32, 32), iconColor);
 
                 // Title
-                var textRect = new Rectangle(38, 6, clientRect.Width - 40, clientRect.Height - 10);
+                var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
                 Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
                 Render2D.PopClip();
@@ -267,6 +268,8 @@ namespace FlaxEditor.Windows
         private readonly ToolStripButton _pauseOnErrorButton;
         private readonly ToolStripButton[] _groupButtons = new ToolStripButton[3];
 
+        private LogType _iconType = LogType.Info;
+
         internal SpriteHandle IconInfo;
         internal SpriteHandle IconWarning;
         internal SpriteHandle IconError;
@@ -279,6 +282,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Debug Log";
+            Icon = IconInfo;
             OnEditorOptionsChanged(Editor.Options.Options);
 
             // Toolstrip
@@ -333,6 +337,7 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
+
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -381,6 +386,18 @@ namespace FlaxEditor.Windows
                 _pendingEntries.Add(newEntry);
             }
 
+            if (newEntry.Group == LogGroup.Warning && _iconType < LogType.Warning)
+            {
+                _iconType = LogType.Warning;
+                UpdateIcon();
+            }
+
+            if (newEntry.Group == LogGroup.Error && _iconType < LogType.Error)
+            {
+                _iconType = LogType.Error;
+                UpdateIcon();
+            }
+
             // Pause on Error (we should do it as fast as possible)
             if (newEntry.Group == LogGroup.Error && _pauseOnErrorButton.Checked && Editor.StateMachine.CurrentState == Editor.StateMachine.PlayingState)
             {
@@ -426,6 +443,12 @@ namespace FlaxEditor.Windows
             UpdateCount((int)LogGroup.Error, " Error");
             UpdateCount((int)LogGroup.Warning, " Warning");
             UpdateCount((int)LogGroup.Info, " Message");
+
+            if (_logCountPerGroup[(int)LogGroup.Error] == 0)
+            {
+                _iconType = _logCountPerGroup[(int)LogGroup.Warning] == 0 ? LogType.Info : LogType.Warning;
+                UpdateIcon();
+            }
         }
 
         private void UpdateCount(int group, string msg)
@@ -433,6 +456,22 @@ namespace FlaxEditor.Windows
             if (_logCountPerGroup[group] != 1)
                 msg += 's';
             _groupButtons[group].Text = _logCountPerGroup[group] + msg;
+        }
+
+        private void UpdateIcon()
+        {
+            if (_iconType == LogType.Warning)
+            {
+                Icon = IconWarning;
+            }
+            else if (_iconType == LogType.Error)
+            {
+                Icon = IconError;
+            }
+            else
+            {
+                Icon = IconInfo;
+            }
         }
 
         private void LogHandlerOnSendLog(LogType level, string msg, Object o, string stackTrace)
@@ -564,6 +603,14 @@ namespace FlaxEditor.Windows
             {
                 Clear();
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnStartContainsFocus()
+        {
+            _iconType = LogType.Info;
+            UpdateIcon();
+            base.OnStartContainsFocus();
         }
 
         /// <inheritdoc />

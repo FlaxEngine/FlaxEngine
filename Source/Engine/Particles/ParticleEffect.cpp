@@ -339,6 +339,39 @@ void ParticleEffect::Sync()
     }
 }
 
+SceneRenderTask* ParticleEffect::GetRenderTask() const
+{
+    const uint64 minFrame = Engine::FrameCount - 2;
+
+    // Custom task
+    const auto customViewRenderTask = CustomViewRenderTask.Get();
+    if (customViewRenderTask && customViewRenderTask->Enabled && customViewRenderTask->LastUsedFrame >= minFrame)
+        return customViewRenderTask;
+
+    // Main task
+    const auto mainRenderTask = MainRenderTask::Instance;
+    if (mainRenderTask && mainRenderTask->Enabled && mainRenderTask->LastUsedFrame >= minFrame)
+        return mainRenderTask;
+
+    // Editor viewport
+#if USE_EDITOR
+    for (auto task : RenderTask::Tasks)
+    {
+        if (task->LastUsedFrame >= minFrame && task->Enabled)
+        {
+            if (const auto sceneRenderTask = Cast<SceneRenderTask>(task))
+            {
+                if (sceneRenderTask->ActorsSource == ActorsSources::Scenes)
+                {
+                    return sceneRenderTask;
+                }
+            }
+        }
+    }
+#endif
+    return nullptr;
+}
+
 #if USE_EDITOR
 
 Array<ParticleEffect::ParameterOverride> ParticleEffect::GetParametersOverrides()
@@ -372,6 +405,18 @@ void ParticleEffect::Update()
 
     UpdateSimulation();
 }
+
+#if USE_EDITOR
+
+#include "Editor/Editor.h"
+
+void ParticleEffect::UpdateExecuteInEditor()
+{
+    if (!Editor::IsPlayMode)
+        Update();
+}
+
+#endif
 
 void ParticleEffect::CacheModifiedParameters()
 {
@@ -649,6 +694,7 @@ void ParticleEffect::OnEnable()
     GetSceneRendering()->AddGeometry(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
+    GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
 #endif
 
     // Base
@@ -658,6 +704,7 @@ void ParticleEffect::OnEnable()
 void ParticleEffect::OnDisable()
 {
 #if USE_EDITOR
+    GetScene()->Ticking.Update.RemoveTickExecuteInEditor(this);
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
     GetSceneRendering()->RemoveGeometry(this);

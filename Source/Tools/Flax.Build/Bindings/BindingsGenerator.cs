@@ -153,7 +153,15 @@ namespace Flax.Build.Bindings
             // Save cache
             using (new ProfileEventScope("SaveCache"))
             {
-                SaveCache(moduleInfo, moduleOptions, headerFiles);
+                try
+                {
+                    SaveCache(moduleInfo, moduleOptions, headerFiles);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to save API cache for module {moduleInfo.Module.Name}");
+                    Log.Exception(ex);
+                }
             }
 
             // Initialize API

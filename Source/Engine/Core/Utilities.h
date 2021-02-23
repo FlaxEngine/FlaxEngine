@@ -11,21 +11,21 @@ namespace Utilities
     template<typename T>
     FORCE_INLINE T RoundTo1DecimalPlace(T value)
     {
-        return round(value * 10) / 10;
+        return (T)round((double)value * 10) / (T)10;
     }
 
     // Round floating point value up to 2 decimal places
     template<typename T>
     FORCE_INLINE T RoundTo2DecimalPlaces(T value)
     {
-        return round(value * 100) / 100;
+        return (T)round((double)value * 100.0) / (T)100;
     }
 
     // Round floating point value up to 3 decimal places
     template<typename T>
     FORCE_INLINE T RoundTo3DecimalPlaces(T value)
     {
-        return round(value * 1000) / 1000;
+        return (T)round((double)value * 1000.0) / (T)1000;
     }
 
     // Converts size of the file (in bytes) to the best fitting string

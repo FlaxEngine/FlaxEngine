@@ -42,6 +42,34 @@ namespace Flax.Build.Bindings
             }
         }
 
+        internal static void Write(BinaryWriter writer, HashSet<string> list)
+        {
+            if (list != null)
+            {
+                writer.Write(list.Count());
+                foreach (var e in list)
+                    writer.Write(e);
+            }
+            else
+            {
+                writer.Write(0);
+            }
+        }
+
+        internal static void Write(BinaryWriter writer, List<string> list)
+        {
+            if (list != null)
+            {
+                writer.Write(list.Count());
+                foreach (var e in list)
+                    writer.Write(e);
+            }
+            else
+            {
+                writer.Write(0);
+            }
+        }
+
         internal static void Write(BinaryWriter writer, IEnumerable<string> list)
         {
             if (list != null)
@@ -69,11 +97,30 @@ namespace Flax.Build.Bindings
             }
         }
 
-        internal static void Write<T>(BinaryWriter writer, IList<T> list) where T : IBindingsCache
+        internal static void Write<T>(BinaryWriter writer, List<T> list) where T : IBindingsCache
         {
             if (list != null)
             {
                 var count = list.Count;
+                writer.Write(count);
+                for (int i = 0; i < count; i++)
+                {
+                    var e = list[i];
+                    writer.Write(e.GetType().FullName);
+                    e.Write(writer);
+                }
+            }
+            else
+            {
+                writer.Write(0);
+            }
+        }
+
+        internal static void Write<T>(BinaryWriter writer, T[] list) where T : IBindingsCache
+        {
+            if (list != null)
+            {
+                var count = list.Length;
                 writer.Write(count);
                 for (int i = 0; i < count; i++)
                 {
@@ -164,6 +211,8 @@ namespace Flax.Build.Bindings
 
         private static void SaveCache(ModuleInfo moduleInfo, BuildOptions moduleOptions, List<string> headerFiles)
         {
+            if (!Directory.Exists(moduleOptions.IntermediateFolder))
+                return;
             var path = GetCachePath(moduleInfo.Module, moduleOptions);
             using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))

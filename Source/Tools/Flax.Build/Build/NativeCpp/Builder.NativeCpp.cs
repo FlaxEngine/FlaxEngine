@@ -246,17 +246,26 @@ namespace Flax.Build
             }
         }
 
-        private static IGrouping<string, Module>[] GetBinaryModules(RulesAssembly rules, Target target, Dictionary<Module, BuildOptions> buildModules)
+        private static IGrouping<string, Module>[] GetBinaryModules(ProjectInfo project, Target target, Dictionary<Module, BuildOptions> buildModules)
         {
             var modules = new List<Module>();
             switch (target.LinkType)
             {
             case TargetLinkType.Monolithic:
+                // Include all modules
                 modules.AddRange(buildModules.Keys);
                 break;
             case TargetLinkType.Modular:
-                modules.AddRange(target.Modules.Select(rules.GetModule));
+            {
+                // Include all modules from the project that contains this target
+                var sourcePath = Path.Combine(project.ProjectFolderPath, "Source");
+                foreach (var module in buildModules.Keys)
+                {
+                    if (module.FolderPath.StartsWith(sourcePath))
+                        modules.Add(module);
+                }
                 break;
+            }
             default: throw new ArgumentOutOfRangeException();
             }
             modules.RemoveAll(x => x == null || string.IsNullOrEmpty(x.BinaryModuleName));
@@ -672,7 +681,7 @@ namespace Flax.Build
             using (new ProfileEventScope("SetupBinaryModules"))
             {
                 // Collect all binary modules to include into target
-                buildData.BinaryModules = GetBinaryModules(rules, target, buildData.Modules);
+                buildData.BinaryModules = GetBinaryModules(project, target, buildData.Modules);
 
                 // Inject binary modules symbols import/export defines
                 for (int i = 0; i < buildData.BinaryModules.Length; i++)
@@ -1005,7 +1014,7 @@ namespace Flax.Build
             using (new ProfileEventScope("SetupBinaryModules"))
             {
                 // Collect all binary modules to include into target
-                buildData.BinaryModules = GetBinaryModules(rules, target, buildData.Modules);
+                buildData.BinaryModules = GetBinaryModules(project, target, buildData.Modules);
             }
 
             // Generate code for binary modules included in the target

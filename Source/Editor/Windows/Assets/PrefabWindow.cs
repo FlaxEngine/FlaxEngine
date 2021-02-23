@@ -10,6 +10,7 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -22,7 +23,7 @@ namespace FlaxEditor.Windows.Assets
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
-        private TextBox _searchBox;
+        private readonly TextBox _searchBox;
         private readonly PrefabTree _tree;
         private readonly PrefabWindowViewport _viewport;
         private readonly CustomEditorPresenter _propertiesEditor;

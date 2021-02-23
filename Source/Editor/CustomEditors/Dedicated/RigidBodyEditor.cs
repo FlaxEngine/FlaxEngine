@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -15,6 +16,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private readonly List<CheckablePropertyNameLabel> _labels = new List<CheckablePropertyNameLabel>(64);
         private const int MassOrder = 110;
+        private Label _infoLabel;
 
         /// <inheritdoc />
         protected override void SpawnProperty(LayoutElementsContainer itemLayout, ValueContainer itemValues, ItemInfo item)
@@ -63,6 +65,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     check = value.OverrideMass;
                 _labels[i].CheckBox.Checked = check;
             }
+            if (_infoLabel != null)
+            {
+                string text = string.Empty;
+                if (Editor.IsPlayMode)
+                {
+                    var linearVelocity = value.LinearVelocity;
+                    var centerOfMass = value.CenterOfMass;
+                    text = $"Speed: {linearVelocity.Length}\n" +
+                           $"Linear Velocity: {linearVelocity}\n" +
+                           $"Angular Velocity: {value.AngularVelocity}\n" +
+                           $"Center of Mass (local): {centerOfMass}\n" +
+                           $"Center Of Mass (world): {value.Transform.LocalToWorld(centerOfMass)}\n" +
+                           $"Is Sleeping: {value.IsSleeping}";
+                }
+                _infoLabel.Text = text;
+            }
         }
 
         /// <inheritdoc />
@@ -71,6 +89,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _labels.Clear();
 
             base.Initialize(layout);
+
+            // Add info box
+            if (IsSingleObject && Values[0] is RigidBody && Editor.IsPlayMode)
+            {
+                _infoLabel = layout.Label(string.Empty).Label;
+                _infoLabel.AutoHeight = true;
+            }
         }
     }
 }

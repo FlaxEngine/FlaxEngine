@@ -445,7 +445,7 @@ public:
     /// The layers names.
     /// </summary>
     static String Layers[32];
-    
+
     /// <summary>
     /// Gets or adds the tag (returns the tag index).
     /// </summary>
@@ -458,6 +458,11 @@ public:
     /// </summary>
     /// <returns>The layers count.</returns>
     static int32 GetNonEmptyLayerNamesCount();
+
+    /// <summary>
+    /// Gets the zero-based index of the layer.
+    /// </summary>
+    static int32 GetLayerIndex(const StringView& layer);
 
 private:
 
