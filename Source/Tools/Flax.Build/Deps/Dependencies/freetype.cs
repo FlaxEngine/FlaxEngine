@@ -153,7 +153,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     SetupDirectory(buildDir, true);
                     var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.None, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));

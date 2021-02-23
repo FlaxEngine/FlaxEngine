@@ -104,7 +104,7 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build for Linux
-                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.None, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None, envVars);
                     var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
                     foreach (var file in binariesToCopy)
