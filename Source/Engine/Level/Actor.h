@@ -484,7 +484,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE float GetPerInstanceRandom() const
     {
-        return _id.C * (1.0f / MAX_uint32);
+        return _id.C * (1.0f / (float)MAX_uint32);
     }
 
     /// <summary>
