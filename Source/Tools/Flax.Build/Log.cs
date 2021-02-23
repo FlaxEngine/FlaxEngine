@@ -124,6 +124,58 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Logs the verbose message.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="flag">The flag used to indicate whether this log was already sent.</param>
+        public static void VerboseOnce(string message, ref bool flag)
+        {
+            if (flag)
+                return;
+            flag = true;
+            Write(message, _defaultColor, Configuration.ConsoleLog && Configuration.Verbose);
+        }
+
+        /// <summary>
+        /// Logs the information.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="flag">The flag used to indicate whether this log was already sent.</param>
+        public static void InfoOnce(string message, ref bool flag)
+        {
+            if (flag)
+                return;
+            flag = true;
+            Write(message, _defaultColor, Configuration.ConsoleLog);
+        }
+
+        /// <summary>
+        /// Logs the warning message.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="flag">The flag used to indicate whether this log was already sent.</param>
+        public static void WarningOnce(string message, ref bool flag)
+        {
+            if (flag)
+                return;
+            flag = true;
+            Write(message, ConsoleColor.Yellow, true);
+        }
+
+        /// <summary>
+        /// Logs the error message.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="flag">The flag used to indicate whether this log was already sent.</param>
+        public static void ErrorOnce(string message, ref bool flag)
+        {
+            if (flag)
+                return;
+            flag = true;
+            Write(message, ConsoleColor.Red, true);
+        }
+
+        /// <summary>
         /// Logs the exception.
         /// </summary>
         /// <param name="ex">The exception.</param>
