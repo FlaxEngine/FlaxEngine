@@ -16,6 +16,7 @@
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
+#include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -1023,7 +1024,7 @@ int parse_size(const char* str, uintmax_t* res, int* power)
     }
 
     p = str;
-    while (isspace((unsigned char)*p))
+    while (StringUtils::IsWhitespace((char)*p))
         p++;
     if (*p == '-')
     {
@@ -1062,7 +1063,7 @@ check_suffix:
             for (p = fstr; *p == '0'; p++)
                 frac_zeros++;
             fstr = p;
-            if (isdigit(*fstr))
+            if (StringUtils::IsDigit(*fstr))
             {
                 errno = 0, end = NULL;
                 frac = strtoumax(fstr, &end, 0);
