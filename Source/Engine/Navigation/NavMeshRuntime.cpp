@@ -51,7 +51,7 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
     ScopeLock lock(Locker);
 
     const auto query = GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh)
     {
         return false;
     }
@@ -89,7 +89,7 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
     ScopeLock lock(Locker);
 
     const auto query = GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh)
     {
         return false;
     }
@@ -158,7 +158,7 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
     ScopeLock lock(Locker);
 
     const auto query = GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh)
     {
         return false;
     }
@@ -205,7 +205,7 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
     ScopeLock lock(Locker);
 
     const auto query = GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh)
     {
         return false;
     }
@@ -236,7 +236,7 @@ bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPos
     ScopeLock lock(Locker);
 
     const auto query = GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh)
     {
         return false;
     }

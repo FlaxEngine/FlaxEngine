@@ -92,7 +92,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.World16, null, true)
             {
-                Checked = TransformGizmo.ActiveTransformSpace == TransformGizmo.TransformSpace.World,
+                Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
                 Parent = transformSpaceWidget
             };
@@ -108,9 +108,13 @@ namespace FlaxEditor.Viewport
                 Parent = scaleSnappingWidget
             };
             enableScaleSnapping.Toggled += OnScaleSnappingToggle;
+
             var scaleSnappingCM = new ContextMenu();
-            _scaleSnapping = new ViewportWidgetButton(TransformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM);
-            _scaleSnapping.TooltipText = "Scale snapping values";
+            _scaleSnapping = new ViewportWidgetButton(TransformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM)
+            {
+                TooltipText = "Scale snapping values"
+            };
+
             for (int i = 0; i < EditorViewportScaleSnapValues.Length; i++)
             {
                 var v = EditorViewportScaleSnapValues[i];
@@ -131,9 +135,13 @@ namespace FlaxEditor.Viewport
                 Parent = rotateSnappingWidget
             };
             enableRotateSnapping.Toggled += OnRotateSnappingToggle;
+
             var rotateSnappingCM = new ContextMenu();
-            _rotateSnapping = new ViewportWidgetButton(TransformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM);
-            _rotateSnapping.TooltipText = "Rotation snapping values";
+            _rotateSnapping = new ViewportWidgetButton(TransformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM)
+            {
+                TooltipText = "Rotation snapping values"
+            };
+
             for (int i = 0; i < EditorViewportRotateSnapValues.Length; i++)
             {
                 var v = EditorViewportRotateSnapValues[i];
@@ -154,9 +162,13 @@ namespace FlaxEditor.Viewport
                 Parent = translateSnappingWidget
             };
             enableTranslateSnapping.Toggled += OnTranslateSnappingToggle;
+
             var translateSnappingCM = new ContextMenu();
-            _translateSnappng = new ViewportWidgetButton(TransformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM);
-            _translateSnappng.TooltipText = "Position snapping values";
+            _translateSnappng = new ViewportWidgetButton(TransformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM)
+            {
+                TooltipText = "Position snapping values"
+            };
+
             for (int i = 0; i < EditorViewportTranslateSnapValues.Length; i++)
             {
                 var v = EditorViewportTranslateSnapValues[i];
@@ -172,7 +184,7 @@ namespace FlaxEditor.Viewport
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate16, null, true)
             {
-                Tag = TransformGizmo.Mode.Translate,
+                Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
                 Checked = true,
                 Parent = gizmoMode
@@ -180,14 +192,14 @@ namespace FlaxEditor.Viewport
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
             _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate16, null, true)
             {
-                Tag = TransformGizmo.Mode.Rotate,
+                Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
             _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale16, null, true)
             {
-                Tag = TransformGizmo.Mode.Scale,
+                Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",
                 Parent = gizmoMode
             };
@@ -288,7 +300,7 @@ namespace FlaxEditor.Viewport
 
         private void OnGizmoModeToggle(ViewportWidgetButton button)
         {
-            TransformGizmo.ActiveMode = (TransformGizmo.Mode)(int)button.Tag;
+            TransformGizmo.ActiveMode = (TransformGizmoBase.Mode)(int)button.Tag;
         }
 
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
@@ -315,9 +327,9 @@ namespace FlaxEditor.Viewport
         {
             // Update all viewport widgets status
             var mode = TransformGizmo.ActiveMode;
-            _gizmoModeTranslate.Checked = mode == TransformGizmo.Mode.Translate;
-            _gizmoModeRotate.Checked = mode == TransformGizmo.Mode.Rotate;
-            _gizmoModeScale.Checked = mode == TransformGizmo.Mode.Scale;
+            _gizmoModeTranslate.Checked = mode == TransformGizmoBase.Mode.Translate;
+            _gizmoModeRotate.Checked = mode == TransformGizmoBase.Mode.Rotate;
+            _gizmoModeScale.Checked = mode == TransformGizmoBase.Mode.Scale;
         }
 
         private static readonly float[] EditorViewportScaleSnapValues =
@@ -446,7 +458,7 @@ namespace FlaxEditor.Viewport
         public void ApplyTransform(List<SceneGraphNode> selection, ref Vector3 translationDelta, ref Quaternion rotationDelta, ref Vector3 scaleDelta)
         {
             bool applyRotation = !rotationDelta.IsIdentity;
-            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmo.PivotType.ObjectCenter;
+            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
             Vector3 gizmoPosition = TransformGizmo.Position;
 
             // Transform selected objects
@@ -512,7 +524,7 @@ namespace FlaxEditor.Viewport
             if (TransformGizmo.IsActive)
             {
                 // Ensure player is not moving objects
-                if (TransformGizmo.ActiveAxis != TransformGizmo.Axis.None)
+                if (TransformGizmo.ActiveAxis != TransformGizmoBase.Axis.None)
                     return;
             }
             else
@@ -633,8 +645,7 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            BoundingBox box;
-            Editor.GetActorEditorBox(actor, out box);
+            Editor.GetActorEditorBox(actor, out BoundingBox box);
 
             // Place the object
             var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
@@ -659,9 +670,11 @@ namespace FlaxEditor.Viewport
                 if (binaryAssetItem.Type == typeof(ParticleSystem))
                 {
                     var particleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect();
-                    actor.Name = item.ShortName;
-                    actor.ParticleSystem = particleSystem;
+                    var actor = new ParticleEffect
+                    {
+                        Name = item.ShortName,
+                        ParticleSystem = particleSystem
+                    };
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Spawn(actor);
                     return;
@@ -684,9 +697,11 @@ namespace FlaxEditor.Viewport
                 if (typeof(SkinnedModel).IsAssignableFrom(binaryAssetItem.Type))
                 {
                     var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel();
-                    actor.Name = item.ShortName;
-                    actor.SkinnedModel = model;
+                    var actor = new AnimatedModel
+                    {
+                        Name = item.ShortName,
+                        SkinnedModel = model
+                    };
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Spawn(actor);
                     return;
@@ -694,9 +709,11 @@ namespace FlaxEditor.Viewport
                 if (typeof(Model).IsAssignableFrom(binaryAssetItem.Type))
                 {
                     var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel();
-                    actor.Name = item.ShortName;
-                    actor.Model = model;
+                    var actor = new StaticModel
+                    {
+                        Name = item.ShortName,
+                        Model = model
+                    };
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Spawn(actor);
                     return;
@@ -704,9 +721,11 @@ namespace FlaxEditor.Viewport
                 if (typeof(AudioClip).IsAssignableFrom(binaryAssetItem.Type))
                 {
                     var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource();
-                    actor.Name = item.ShortName;
-                    actor.Clip = clip;
+                    var actor = new AudioSource
+                    {
+                        Name = item.ShortName,
+                        Clip = clip
+                    };
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Spawn(actor);
                     return;

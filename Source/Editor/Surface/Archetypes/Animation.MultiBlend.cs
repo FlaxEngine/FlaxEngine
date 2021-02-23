@@ -396,34 +396,45 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var layoutOffsetY = FlaxEditor.Surface.Constants.LayoutOffsetY;
 
-                _selectedAnimationLabel = new Label(300, 3 * layoutOffsetY, 120.0f, layoutOffsetY);
-                _selectedAnimationLabel.HorizontalAlignment = TextAlignment.Near;
-                _selectedAnimationLabel.Text = "Selected Animation:";
-                _selectedAnimationLabel.Parent = this;
+                _selectedAnimationLabel = new Label(300, 3 * layoutOffsetY, 120.0f, layoutOffsetY)
+                {
+                    HorizontalAlignment = TextAlignment.Near,
+                    Text = "Selected Animation:",
+                    Parent = this
+                };
 
-                _selectedAnimation = new ComboBox(_selectedAnimationLabel.X, 4 * layoutOffsetY, _selectedAnimationLabel.Width);
+                _selectedAnimation = new ComboBox(_selectedAnimationLabel.X, 4 * layoutOffsetY, _selectedAnimationLabel.Width)
+                {
+                    Parent = this
+                };
+
                 _selectedAnimation.PopupShowing += OnSelectedAnimationPopupShowing;
                 _selectedAnimation.SelectedIndexChanged += OnSelectedAnimationChanged;
-                _selectedAnimation.Parent = this;
 
                 var items = new List<string>(MaxAnimationsCount);
                 while (items.Count < MaxAnimationsCount)
                     items.Add(string.Empty);
                 _selectedAnimation.Items = items;
 
-                _animationPicker = new AssetPicker(new ScriptType(typeof(FlaxEngine.Animation)), new Vector2(_selectedAnimation.Left, _selectedAnimation.Bottom + 4));
+                _animationPicker = new AssetPicker(new ScriptType(typeof(FlaxEngine.Animation)), new Vector2(_selectedAnimation.Left, _selectedAnimation.Bottom + 4))
+                {
+                    Parent = this
+                };
                 _animationPicker.SelectedItemChanged += OnAnimationPickerItemChanged;
-                _animationPicker.Parent = this;
 
-                _animationSpeedLabel = new Label(_animationPicker.Left, _animationPicker.Bottom + 4, 40, TextBox.DefaultHeight);
-                _animationSpeedLabel.HorizontalAlignment = TextAlignment.Near;
-                _animationSpeedLabel.Text = "Speed:";
-                _animationSpeedLabel.Parent = this;
+                _animationSpeedLabel = new Label(_animationPicker.Left, _animationPicker.Bottom + 4, 40, TextBox.DefaultHeight)
+                {
+                    HorizontalAlignment = TextAlignment.Near,
+                    Text = "Speed:",
+                    Parent = this
+                };
 
-                _animationSpeed = new FloatValueBox(1.0f, _animationSpeedLabel.Right + 4, _animationSpeedLabel.Y, _selectedAnimation.Right - _animationSpeedLabel.Right - 4);
-                _animationSpeed.SlideSpeed = 0.01f;
+                _animationSpeed = new FloatValueBox(1.0f, _animationSpeedLabel.Right + 4, _animationSpeedLabel.Y, _selectedAnimation.Right - _animationSpeedLabel.Right - 4)
+                {
+                    SlideSpeed = 0.01f,
+                    Parent = this
+                };
                 _animationSpeed.ValueChanged += OnAnimationSpeedValueChanged;
-                _animationSpeed.Parent = this;
             }
 
             private void OnSelectedAnimationPopupShowing(ComboBox comboBox)
@@ -619,15 +630,19 @@ namespace FlaxEditor.Surface.Archetypes
             public MultiBlend1D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                _animationXLabel = new Label(_animationSpeedLabel.Left, _animationSpeedLabel.Bottom + 4, 40, TextBox.DefaultHeight);
-                _animationXLabel.HorizontalAlignment = TextAlignment.Near;
-                _animationXLabel.Text = "X:";
-                _animationXLabel.Parent = this;
+                _animationXLabel = new Label(_animationSpeedLabel.Left, _animationSpeedLabel.Bottom + 4, 40, TextBoxBase.DefaultHeight)
+                {
+                    HorizontalAlignment = TextAlignment.Near,
+                    Text = "X:",
+                    Parent = this
+                };
 
-                _animationX = new FloatValueBox(0.0f, _animationXLabel.Right + 4, _animationXLabel.Y, _selectedAnimation.Right - _animationXLabel.Right - 4);
-                _animationX.SlideSpeed = 0.01f;
+                _animationX = new FloatValueBox(0.0f, _animationXLabel.Right + 4, _animationXLabel.Y, _selectedAnimation.Right - _animationXLabel.Right - 4)
+                {
+                    SlideSpeed = 0.01f,
+                    Parent = this
+                };
                 _animationX.ValueChanged += OnAnimationXChanged;
-                _animationX.Parent = this;
 
                 _editor = new Editor(this,
                                      FlaxEditor.Surface.Constants.NodeMarginX,
@@ -745,25 +760,33 @@ namespace FlaxEditor.Surface.Archetypes
             public MultiBlend2D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                _animationXLabel = new Label(_animationSpeedLabel.Left, _animationSpeedLabel.Bottom + 4, 40, TextBox.DefaultHeight);
-                _animationXLabel.HorizontalAlignment = TextAlignment.Near;
-                _animationXLabel.Text = "X:";
-                _animationXLabel.Parent = this;
+                _animationXLabel = new Label(_animationSpeedLabel.Left, _animationSpeedLabel.Bottom + 4, 40, TextBox.DefaultHeight)
+                {
+                    HorizontalAlignment = TextAlignment.Near,
+                    Text = "X:",
+                    Parent = this
+                };
 
-                _animationX = new FloatValueBox(0.0f, _animationXLabel.Right + 4, _animationXLabel.Y, _selectedAnimation.Right - _animationXLabel.Right - 4);
-                _animationX.SlideSpeed = 0.01f;
+                _animationX = new FloatValueBox(0.0f, _animationXLabel.Right + 4, _animationXLabel.Y, _selectedAnimation.Right - _animationXLabel.Right - 4)
+                {
+                    SlideSpeed = 0.01f,
+                    Parent = this
+                };
                 _animationX.ValueChanged += OnAnimationXChanged;
-                _animationX.Parent = this;
 
-                _animationYLabel = new Label(_animationXLabel.Left, _animationXLabel.Bottom + 4, 40, TextBox.DefaultHeight);
-                _animationYLabel.HorizontalAlignment = TextAlignment.Near;
-                _animationYLabel.Text = "Y:";
-                _animationYLabel.Parent = this;
+                _animationYLabel = new Label(_animationXLabel.Left, _animationXLabel.Bottom + 4, 40, TextBox.DefaultHeight)
+                {
+                    HorizontalAlignment = TextAlignment.Near,
+                    Text = "Y:",
+                    Parent = this
+                };
 
-                _animationY = new FloatValueBox(0.0f, _animationYLabel.Right + 4, _animationYLabel.Y, _selectedAnimation.Right - _animationYLabel.Right - 4);
-                _animationY.SlideSpeed = 0.01f;
+                _animationY = new FloatValueBox(0.0f, _animationYLabel.Right + 4, _animationYLabel.Y, _selectedAnimation.Right - _animationYLabel.Right - 4)
+                {
+                    SlideSpeed = 0.01f,
+                    Parent = this
+                };
                 _animationY.ValueChanged += OnAnimationYChanged;
-                _animationY.Parent = this;
 
                 _editor = new Editor(this,
                                      FlaxEditor.Surface.Constants.NodeMarginX,

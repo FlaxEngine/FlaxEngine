@@ -267,8 +267,7 @@ namespace FlaxEngine
         /// <returns>The color.</returns>
         public static Color ParseHex(string hexString)
         {
-            Color value;
-            if (TryParseHex(hexString, out value))
+            if (TryParseHex(hexString, out Color value))
             {
                 return value;
             }
@@ -744,6 +743,51 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Convert color from the RGB color space to HSV color space.
+        /// </summary>
+        /// <param name="rgbColor">Color of the RGB.</param>
+        /// <param name="h">The output Hue.</param>
+        /// <param name="s">The output Saturation.</param>
+        /// <param name="v">The output Value.</param>
+        public static void RGBToHSV(Color rgbColor, out float h, out float s, out float v)
+        {
+            if ((rgbColor.B > rgbColor.G) && (rgbColor.B > rgbColor.R))
+                RGBToHSVHelper(4f, rgbColor.B, rgbColor.R, rgbColor.G, out h, out s, out v);
+            else if (rgbColor.G <= rgbColor.R)
+                RGBToHSVHelper(0f, rgbColor.R, rgbColor.G, rgbColor.B, out h, out s, out v);
+            else
+                RGBToHSVHelper(2f, rgbColor.G, rgbColor.B, rgbColor.R, out h, out s, out v);
+        }
+
+        private static void RGBToHSVHelper(float offset, float dominantcolor, float colorone, float colortwo, out float h, out float s, out float v)
+        {
+            v = dominantcolor;
+            if (Mathf.IsZero(v))
+            {
+                s = 0f;
+                h = 0f;
+            }
+            else
+            {
+                var single = colorone <= colortwo ? colorone : colortwo;
+                float vv = v - single;
+                if (Mathf.IsZero(vv))
+                {
+                    s = 0f;
+                    h = offset + (colorone - colortwo);
+                }
+                else
+                {
+                    s = vv / v;
+                    h = offset + (colorone - colortwo) / vv;
+                }
+                h /= 6f;
+                if (h < 0f)
+                    h++;
+            }
+        }
+
+        /// <summary>1
         /// Adjusts the contrast of a color.
         /// </summary>
         /// <param name="value">The color whose contrast is to be adjusted.</param>
@@ -901,8 +945,7 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Color Clamp(Color value, Color min, Color max)
         {
-            Color result;
-            Clamp(ref value, ref min, ref max, out result);
+            Clamp(ref value, ref min, ref max, out Color result);
             return result;
         }
 

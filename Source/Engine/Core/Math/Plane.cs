@@ -254,8 +254,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            float distance;
-            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out distance);
+            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -379,8 +378,7 @@ namespace FlaxEngine
         /// <returns>The reflection matrix.</returns>
         public Matrix Reflection()
         {
-            Matrix result;
-            Reflection(out result);
+            Reflection(out Matrix result);
             return result;
         }
 
@@ -432,8 +430,7 @@ namespace FlaxEngine
         /// <returns>The shadow matrix.</returns>
         public Matrix Shadow(Vector4 light)
         {
-            Matrix result;
-            Shadow(ref light, out result);
+            Shadow(ref light, out Matrix result);
             return result;
         }
 
@@ -469,8 +466,7 @@ namespace FlaxEngine
         /// <returns>The reflection Matrix3x3.</returns>
         public Matrix3x3 Reflection3x3()
         {
-            Matrix3x3 result;
-            Reflection(out result);
+            Reflection(out Matrix3x3 result);
             return result;
         }
 
@@ -492,7 +488,6 @@ namespace FlaxEngine
             float x = -plane.Normal.X;
             float y = -plane.Normal.Y;
             float z = -plane.Normal.Z;
-            float d = -plane.D;
 
             result.M11 = x * light.X + dot;
             result.M21 = y * light.X;
@@ -519,8 +514,7 @@ namespace FlaxEngine
         /// <returns>The shadow Matrix3x3.</returns>
         public static Matrix3x3 Shadow(Vector4 light, Plane plane)
         {
-            Matrix3x3 result;
-            Shadow(ref light, ref plane, out result);
+            Shadow(ref light, ref plane, out Matrix3x3 result);
             return result;
         }
 
@@ -765,8 +759,7 @@ namespace FlaxEngine
             float z = plane.Normal.Z;
             float d = plane.D;
 
-            Matrix inverse;
-            Matrix.Invert(ref transformation, out inverse);
+            Matrix.Invert(ref transformation, out Matrix inverse);
 
             result.Normal.X = x * inverse.M11 + y * inverse.M12 + z * inverse.M13 + d * inverse.M14;
             result.Normal.Y = x * inverse.M21 + y * inverse.M22 + z * inverse.M23 + d * inverse.M24;
@@ -808,8 +801,7 @@ namespace FlaxEngine
             if (planes == null)
                 throw new ArgumentNullException(nameof(planes));
 
-            Matrix inverse;
-            Matrix.Invert(ref transformation, out inverse);
+            Matrix.Invert(ref transformation, out _);
 
             for (var i = 0; i < planes.Length; ++i)
                 Transform(ref planes[i], ref transformation, out planes[i]);

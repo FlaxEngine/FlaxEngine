@@ -434,29 +434,34 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            bool value1;
-            float value2;
-            long value3;
-
-            if (bool.TryParse(node.GetAttribute("GridEnabled"), out value1))
+            if (bool.TryParse(node.GetAttribute("GridEnabled"), out bool value1))
                 Viewport.Grid.Enabled = value1;
+
             if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
                 Viewport.ShowFpsCounter = value1;
+
             if (bool.TryParse(node.GetAttribute("ShowNavigation"), out value1))
                 Viewport.ShowNavigation = value1;
-            if (float.TryParse(node.GetAttribute("NearPlane"), out value2))
+
+            if (float.TryParse(node.GetAttribute("NearPlane"), out float value2))
                 Viewport.NearPlane = value2;
+
             if (float.TryParse(node.GetAttribute("FarPlane"), out value2))
                 Viewport.FarPlane = value2;
+
             if (float.TryParse(node.GetAttribute("FieldOfView"), out value2))
                 Viewport.FieldOfView = value2;
+
             if (float.TryParse(node.GetAttribute("MovementSpeed"), out value2))
                 Viewport.MovementSpeed = value2;
+
             if (float.TryParse(node.GetAttribute("OrthographicScale"), out value2))
                 Viewport.OrthographicScale = value2;
+
             if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
                 Viewport.UseOrthographicProjection = value1;
-            if (long.TryParse(node.GetAttribute("ViewFlags"), out value3))
+
+            if (long.TryParse(node.GetAttribute("ViewFlags"), out long value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
 
             // Reset view flags if opening with different engine version (ViewFlags enum could be modified)

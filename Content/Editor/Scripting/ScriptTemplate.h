@@ -5,6 +5,7 @@
 
 API_CLASS() class %module%%class% : public Script
 {
+API_AUTO_SERIALIZATION();
 DECLARE_SCRIPTING_TYPE(%class%);
 
     // [Script]

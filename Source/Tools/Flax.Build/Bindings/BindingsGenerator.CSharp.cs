@@ -437,6 +437,7 @@ namespace Flax.Build.Bindings
                 // Write documentation comment as tooltip
                 if (comment.Length >= 3 &&
                     comment[0] == "/// <summary>" &&
+                    comment[1].StartsWith("/// ") &&
                     comment[2] == "/// </summary>")
                 {
                     var tooltip = comment[1].Substring(4);

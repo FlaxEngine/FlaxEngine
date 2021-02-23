@@ -32,7 +32,7 @@ namespace FlaxEditor.Content.Import
                 var result = 0;
                 for (int i = 0; i < _rootNode.ChildrenCount; i++)
                 {
-                    if (_rootNode.Children[i].Tag is ImportFileEntry fileEntry)
+                    if (_rootNode.Children[i].Tag is ImportFileEntry)
                         result++;
                 }
                 return result;
@@ -215,8 +215,7 @@ namespace FlaxEditor.Content.Import
             var entries = new List<ImportFileEntry>(_rootNode.ChildrenCount);
             for (int i = 0; i < _rootNode.ChildrenCount; i++)
             {
-                var fileEntry = _rootNode.Children[i].Tag as ImportFileEntry;
-                if (fileEntry != null)
+                if (_rootNode.Children[i].Tag is ImportFileEntry fileEntry)
                     entries.Add(fileEntry);
             }
             Editor.Instance.ContentImporting.LetThemBeImportedxD(entries);

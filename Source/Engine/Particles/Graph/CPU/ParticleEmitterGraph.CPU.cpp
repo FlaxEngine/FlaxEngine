@@ -505,7 +505,7 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
             // Initialize particles data
             //Platform::MemoryClear(data.Buffer->GetParticleCPU(countBefore), spawnCount * data.Buffer->Stride);
             for (int32 i = 0; i < spawnCount; i++)
-                Platform::MemoryCopy(data.Buffer->GetParticleCPU(countBefore), _graph._defaultParticleData.Get(), data.Buffer->Stride);
+                Platform::MemoryCopy(data.Buffer->GetParticleCPU(countBefore + i), _graph._defaultParticleData.Get(), data.Buffer->Stride);
 
             // Initialize particles
             for (int32 i = 0; i < _graph.InitModules.Count(); i++)

@@ -117,8 +117,7 @@ namespace FlaxEditor.GUI.Input
         protected override void TryGetValue()
         {
             // Try to parse long
-            long value;
-            if (long.TryParse(Text, out value))
+            if (long.TryParse(Text, out long value))
             {
                 // Set value
                 Value = value;

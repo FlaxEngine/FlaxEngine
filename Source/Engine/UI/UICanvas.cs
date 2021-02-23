@@ -62,12 +62,9 @@ namespace FlaxEngine
             Profiler.BeginEventGPU("UI Canvas");
 
             // Calculate rendering matrix (world*view*projection)
-            Matrix viewProjectionMatrix;
-            Matrix worldMatrix;
-            Canvas.GetWorldMatrix(out worldMatrix);
-            Matrix viewMatrix;
-            Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out viewMatrix);
-            Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out viewProjectionMatrix);
+            Canvas.GetWorldMatrix(out Matrix worldMatrix);
+            Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
+            Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out Matrix viewProjectionMatrix);
 
             // Pick a depth buffer
             GPUTexture depthBuffer = Canvas.IgnoreDepth ? null : renderContext.Buffers.DepthBuffer;
@@ -234,8 +231,10 @@ namespace FlaxEngine
         /// </summary>
         public UICanvas()
         {
-            _guiRoot = new CanvasRootControl(this);
-            _guiRoot.IsLayoutLocked = false;
+            _guiRoot = new CanvasRootControl(this)
+            {
+                IsLayoutLocked = false
+            };
         }
 
         /// <summary>
@@ -245,12 +244,12 @@ namespace FlaxEngine
         {
             get
             {
-                OrientedBoundingBox bounds = new OrientedBoundingBox();
-                bounds.Extents = new Vector3(_guiRoot.Size * 0.5f, Mathf.Epsilon);
-                Matrix world;
-                GetWorldMatrix(out world);
-                Matrix offset;
-                Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out offset);
+                OrientedBoundingBox bounds = new OrientedBoundingBox
+                {
+                    Extents = new Vector3(_guiRoot.Size * 0.5f, Mathf.Epsilon)
+                };
+                GetWorldMatrix(out Matrix world);
+                Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
                 return bounds;
             }

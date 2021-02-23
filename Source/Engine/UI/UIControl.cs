@@ -97,11 +97,11 @@ namespace FlaxEngine
                     return new OrientedBoundingBox();
 
                 // Find control bounds limit points in canvas-space
-                var p1 = Vector2.Zero;
-                var p2 = new Vector2(0, Control.Height);
-                var p3 = new Vector2(Control.Width, 0);
-                var p4 = Control.Size;
-                var c = Control;
+                Vector2 p1 = Vector2.Zero;
+                Vector2 p2 = new Vector2(0, Control.Height);
+                Vector2 p3 = new Vector2(Control.Width, 0);
+                Vector2 p4 = Control.Size;
+                Control c = Control;
                 while (c != canvasRoot)
                 {
                     p1 = c.PointToParent(ref p1);
@@ -111,17 +111,18 @@ namespace FlaxEngine
 
                     c = c.Parent;
                 }
-                var min = Vector2.Min(Vector2.Min(p1, p2), Vector2.Min(p3, p4));
-                var max = Vector2.Max(Vector2.Max(p1, p2), Vector2.Max(p3, p4));
-                var size = max - min;
+                Vector2 min = Vector2.Min(Vector2.Min(p1, p2), Vector2.Min(p3, p4));
+                Vector2 max = Vector2.Max(Vector2.Max(p1, p2), Vector2.Max(p3, p4));
+                Vector2 size = max - min;
 
                 // Calculate bounds
-                OrientedBoundingBox bounds = new OrientedBoundingBox();
-                bounds.Extents = new Vector3(size * 0.5f, Mathf.Epsilon);
-                Matrix world;
-                canvasRoot.Canvas.GetWorldMatrix(out world);
-                Matrix offset;
-                Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out offset);
+                OrientedBoundingBox bounds = new OrientedBoundingBox
+                {
+                    Extents = new Vector3(size * 0.5f, Mathf.Epsilon)
+                };
+
+                canvasRoot.Canvas.GetWorldMatrix(out Matrix world);
+                Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
                 return bounds;
             }
@@ -160,9 +161,11 @@ namespace FlaxEngine
             if (!(_control is ContainerControl))
                 throw new InvalidOperationException("To add child to the control it has to be ContainerControl.");
 
-            var child = new UIControl();
-            child.Parent = this;
-            child.Control = (Control)Activator.CreateInstance(typeof(T));
+            var child = new UIControl
+            {
+                Parent = this,
+                Control = (Control)Activator.CreateInstance(typeof(T))
+            };
             return child;
         }
 
