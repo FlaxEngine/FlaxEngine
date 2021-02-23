@@ -23,6 +23,8 @@
 #define VMA_MIN(v1, v2) (Math::Min((v1), (v2)))
 #define VMA_MAX(v1, v2) (Math::Max((v1), (v2)))
 #define VMA_SWAP(v1, v2) (::Swap((v1), (v2)))
+#define VMA_NULLABLE
+#define VMA_NOT_NULL
 #include <ThirdParty/VulkanMemoryAllocator/vk_mem_alloc.h>
 
 #endif

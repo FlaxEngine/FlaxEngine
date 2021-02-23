@@ -804,15 +804,7 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
 
     if (drawScenes)
     {
-        Function<bool(Actor*)> function = [](Actor* actor)-> bool
-        {
-            if (actor->IsActiveInHierarchy())
-            {
-                actor->OnDebugDraw();
-                return true;
-            }
-            return false;
-        };
+        Function<bool(Actor*)> function = &DrawActorsTreeWalk;
         SceneQuery::TreeExecute(function);
     }
 }

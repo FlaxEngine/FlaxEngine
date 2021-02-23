@@ -223,13 +223,9 @@ namespace FlaxEngine
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-
-            // Check that start is in the correct range
-            if ((start < 0) || (start >= points.Length))
+            if (start < 0 || start >= points.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), start, string.Format("Must be in the range [0, {0}]", points.Length - 1));
-
-            // Check that count is in the correct range
-            if ((count <= 0) || (start + count > points.Length))
+            if (count <= 0 || start + count > points.Length)
                 throw new ArgumentOutOfRangeException(nameof(count), count, string.Format("Must be in the range <= {0}", points.Length));
 
             int upperEnd = start + count;
@@ -247,15 +243,13 @@ namespace FlaxEngine
             for (int i = start; i < upperEnd; ++i)
             {
                 // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
-                float distance;
                 Vector3.DistanceSquared(ref center, ref points[i], out float distance);
-
                 if (distance > radius)
                     radius = distance;
             }
 
             // Find the real distance from the DistanceSquared
-            radius = (float)Math.Sqrt(radius);
+            radius = Mathf.Sqrt(radius);
 
             // Construct the sphere
             result.Center = center;
