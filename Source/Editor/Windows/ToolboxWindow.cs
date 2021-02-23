@@ -173,6 +173,7 @@ namespace FlaxEditor.Windows
             groupGui.AddChild(CreateActorItem("UI Control", typeof(UIControl)));
             groupGui.AddChild(CreateActorItem("UI Canvas", typeof(UICanvas)));
             groupGui.AddChild(CreateActorItem("Text Render", typeof(TextRender)));
+            groupGui.AddChild(CreateActorItem("Sprite Render", typeof(SpriteRender)));
 
             actorGroups.SelectedTabIndex = 1;
         }

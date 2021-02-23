@@ -98,6 +98,11 @@ namespace FlaxEditor
         public static string DefaultSkyCubeTexture = "Editor/SimplySky";
 
         /// <summary>
+        /// The default sprite material.
+        /// </summary>
+        public static string DefaultSpriteMaterial = "Editor/SpriteMaterial";
+
+        /// <summary>
         /// The IES Profile assets preview material.
         /// </summary>
         public static string IesProfilePreviewMaterial = "Editor/IesProfilePreviewMaterial";
@@ -111,6 +116,16 @@ namespace FlaxEditor
         /// The model vertex colors preview material.
         /// </summary>
         public static string VertexColorsPreviewMaterial = "Editor/Gizmo/VertexColorsPreviewMaterial";
+
+        /// <summary>
+        /// The Flax icon texture.
+        /// </summary>
+        public static string FlaxIconTexture = "Engine/Textures/FlaxIcon";
+
+        /// <summary>
+        /// The Flax icon (blue) texture.
+        /// </summary>
+        public static string FlaxIconBlueTexture = "Engine/Textures/FlaxIconBlue";
 
         /// <summary>
         /// The icon lists used by editor from the SegMDL2 font.

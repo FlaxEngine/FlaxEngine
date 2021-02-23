@@ -110,6 +110,7 @@ namespace FlaxEditor.Windows
                     new KeyValuePair<string, Type>("UI Control", typeof(UIControl)),
                     new KeyValuePair<string, Type>("UI Canvas", typeof(UICanvas)),
                     new KeyValuePair<string, Type>("Text Render", typeof(TextRender)),
+                    new KeyValuePair<string, Type>("Sprite Render", typeof(SpriteRender)),
                 }
             },
         };
