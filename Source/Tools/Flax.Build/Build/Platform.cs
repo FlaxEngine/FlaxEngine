@@ -67,11 +67,6 @@ namespace Flax.Build
         public abstract bool HasRequiredSDKsInstalled { get; }
 
         /// <summary>
-        /// Gets a value indicating whether precompiled headers are supported on that platform.
-        /// </summary>
-        public abstract bool HasPrecompiledHeaderSupport { get; }
-
-        /// <summary>
         /// Gets a value indicating whether that platform supports shared libraries (dynamic link libraries).
         /// </summary>
         public abstract bool HasSharedLibrarySupport { get; }
@@ -80,6 +75,11 @@ namespace Flax.Build
         /// Gets a value indicating whether that platform supports building target into modular libraries (otherwise will force monolithic linking).
         /// </summary>
         public virtual bool HasModularBuildSupport => true;
+
+        /// <summary>
+        /// Gets a value indicating whether that platform supports using executable file as a reference when linking shared library. Otherwise, platform enforces monolithic linking or separate shared libraries usage.
+        /// </summary>
+        public virtual bool HasExecutableFileReferenceSupport => false;
 
         /// <summary>
         /// Gets the executable file extension (including leading dot).
@@ -102,9 +102,19 @@ namespace Flax.Build
         public abstract string ProgramDatabaseFileExtension { get; }
 
         /// <summary>
-        /// Gets the executable and library files prefix.
+        /// Gets the executable files prefix.
         /// </summary>
-        public virtual string BinaryFilePrefix => string.Empty;
+        public virtual string ExecutableFilePrefix => string.Empty;
+
+        /// <summary>
+        /// Gets the shared library files prefix.
+        /// </summary>
+        public virtual string SharedLibraryFilePrefix => string.Empty;
+
+        /// <summary>
+        /// Gets the statuc library files prefix.
+        /// </summary>
+        public virtual string StaticLibraryFilePrefix => string.Empty;
 
         /// <summary>
         /// Gets the default project format used by the given platform.
@@ -138,10 +148,10 @@ namespace Flax.Build
         {
             switch (output)
             {
-            case LinkerOutput.Executable: return BinaryFilePrefix + name + ExecutableFileExtension;
-            case LinkerOutput.SharedLibrary: return BinaryFilePrefix + name + SharedLibraryFileExtension;
+            case LinkerOutput.Executable: return ExecutableFilePrefix + name + ExecutableFileExtension;
+            case LinkerOutput.SharedLibrary: return SharedLibraryFilePrefix + name + SharedLibraryFileExtension;
             case LinkerOutput.StaticLibrary:
-            case LinkerOutput.ImportLibrary: return BinaryFilePrefix + name + StaticLibraryFileExtension;
+            case LinkerOutput.ImportLibrary: return StaticLibraryFilePrefix + name + StaticLibraryFileExtension;
             default: throw new ArgumentOutOfRangeException(nameof(output), output, null);
             }
         }

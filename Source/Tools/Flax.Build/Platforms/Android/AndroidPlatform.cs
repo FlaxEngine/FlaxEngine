@@ -20,12 +20,15 @@ namespace Flax.Build.Platforms
 
         /// <inheritdoc />
         public override bool HasSharedLibrarySupport => true;
+    
+        /// <inheritdoc />
+        public override bool HasExecutableFileReferenceSupport => true;
 
         /// <inheritdoc />
         public override string ExecutableFileExtension => ".so";
 
         /// <inheritdoc />
-        public override string BinaryFilePrefix => "lib";
+        public override string ExecutableFilePrefix => "lib";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AndroidPlatform"/> class.

@@ -55,7 +55,7 @@ namespace Flax.Build.Platforms
                 args.Add("-mssse3");
             }
 
-            if (options.Target.OutputType == TargetOutputType.Library)
+            if (options.LinkEnv.Output == LinkerOutput.SharedLibrary)
             {
                 args.Add("-fPIC");
             }

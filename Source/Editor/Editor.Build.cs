@@ -37,7 +37,6 @@ public class Editor : EditorModule
         base.Setup(options);
 
         options.PublicDependencies.Add("Engine");
-        options.PrivateDependencies.Add("Main");
         options.PrivateDependencies.Add("pugixml");
         options.PrivateDependencies.Add("UniversalAnalytics");
         options.PrivateDependencies.Add("ContentImporters");

@@ -51,7 +51,6 @@ public class FlaxGame : EngineTarget
         // Build engine as DLL to be linked in the game UWP project
         if (options.Platform.Target == TargetPlatform.XboxOne || options.Platform.Target == TargetPlatform.UWP)
         {
-            OutputType = TargetOutputType.Library;
             options.LinkEnv.Output = LinkerOutput.SharedLibrary;
             options.LinkEnv.GenerateWindowsMetadata = true;
             options.LinkEnv.GenerateDocumentation = true;

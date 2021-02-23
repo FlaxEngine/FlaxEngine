@@ -123,10 +123,10 @@ namespace Flax.Build.Platforms
         public override bool HasRequiredSDKsInstalled => _hasRequiredSDKsInstalled;
 
         /// <inheritdoc />
-        public override bool HasPrecompiledHeaderSupport => true;
-
-        /// <inheritdoc />
         public override bool HasSharedLibrarySupport => true;
+    
+        /// <inheritdoc />
+        public override bool HasExecutableFileReferenceSupport => true;
 
         /// <inheritdoc />
         public override string ExecutableFileExtension => ".exe";

@@ -46,7 +46,6 @@ namespace Flax.Build
             Architectures = new[]
             {
                 TargetArchitecture.x64,
-                TargetArchitecture.x86,
             };
             ConfigurationName = "Editor";
             GlobalDefinitions.Add("USE_EDITOR");

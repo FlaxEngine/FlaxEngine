@@ -181,6 +181,23 @@ namespace Flax.Build
         /// <returns>The list of modules to use for build (unique items).</returns>
         public static Dictionary<Module, BuildOptions> CollectModules(RulesAssembly rules, Platform platform, Target target, BuildOptions targetBuildOptions, Toolchain toolchain, TargetArchitecture architecture, TargetConfiguration configuration)
         {
+            return CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration, target.Modules);
+        }
+
+        /// <summary>
+        /// Collects the modules required to build (includes dependencies).
+        /// </summary>
+        /// <param name="rules">The rules.</param>
+        /// <param name="target">The target.</param>
+        /// <param name="targetBuildOptions">The target build options.</param>
+        /// <param name="platform">The platform.</param>
+        /// <param name="toolchain">The toolchain.</param>
+        /// <param name="architecture">The architecture.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="moduleNames">The list of root modules to start collection.</param>
+        /// <returns>The list of modules to use for build (unique items).</returns>
+        public static Dictionary<Module, BuildOptions> CollectModules(RulesAssembly rules, Platform platform, Target target, BuildOptions targetBuildOptions, Toolchain toolchain, TargetArchitecture architecture, TargetConfiguration configuration, IEnumerable<string> moduleNames)
+        {
             var buildData = new BuildData
             {
                 Rules = rules,
@@ -193,7 +210,7 @@ namespace Flax.Build
             };
 
             // Collect all modules
-            foreach (var moduleName in target.Modules)
+            foreach (var moduleName in moduleNames)
             {
                 var module = rules.GetModule(moduleName);
                 if (module != null)
@@ -259,7 +276,7 @@ namespace Flax.Build
             return moduleOptions;
         }
 
-        private static void BuildModuleInner(BuildData buildData, Module module, BuildOptions moduleOptions)
+        internal static void BuildModuleInner(BuildData buildData, Module module, BuildOptions moduleOptions, bool withApi = true)
         {
             // Inherit build environment from dependent modules
             foreach (var moduleName in moduleOptions.PrivateDependencies)
@@ -337,7 +354,7 @@ namespace Flax.Build
                         cppFiles.Add(moduleOptions.SourceFiles[i]);
                 }
 
-                if (!string.IsNullOrEmpty(module.BinaryModuleName))
+                if (!string.IsNullOrEmpty(module.BinaryModuleName) && withApi)
                 {
                     // Generate scripting bindings
                     using (new ProfileEventScope("GenerateBindings"))
@@ -396,7 +413,7 @@ namespace Flax.Build
             }
         }
 
-        private static void BuildModuleInnerBindingsOnly(BuildData buildData, Module module, BuildOptions moduleOptions)
+        internal static void BuildModuleInnerBindingsOnly(BuildData buildData, Module module, BuildOptions moduleOptions)
         {
             // Inherit build environment from dependent modules
             foreach (var moduleName in moduleOptions.PrivateDependencies)
@@ -751,7 +768,9 @@ namespace Flax.Build
             using (new ProfileEventScope("BuildBindings"))
             {
                 if (!buildData.Target.IsPreBuilt)
+                {
                     BuildTargetBindings(rules, graph, buildData);
+                }
             }
 
             // Link modules into a target

@@ -12,9 +12,6 @@ namespace Flax.Build.Platforms
     public abstract class UnixPlatform : Platform
     {
         /// <inheritdoc />
-        public override bool HasPrecompiledHeaderSupport => false;
-
-        /// <inheritdoc />
         public override string ExecutableFileExtension => string.Empty;
 
         /// <inheritdoc />
@@ -25,6 +22,12 @@ namespace Flax.Build.Platforms
 
         /// <inheritdoc />
         public override string ProgramDatabaseFileExtension => string.Empty;
+
+        /// <inheritdoc />
+        public override string SharedLibraryFilePrefix => "lib";
+
+        /// <inheritdoc />
+        public override string StaticLibraryFilePrefix => "lib";
 
         /// <inheritdoc />
         public override ProjectFormat DefaultProjectFormat => ProjectFormat.VisualStudioCode;
