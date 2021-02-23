@@ -146,7 +146,7 @@ namespace Flax.Build
                     task.WorkingDirectory = workspaceRoot;
                     task.CommandPath = exePath;
                     task.CommandArguments = $"\"{cscPath}\" /noconfig @\"{responseFile}\"";
-                    task.InfoMessage = "Compiling C# API for " + binaryModuleName;
+                    task.InfoMessage = "Compiling " + outputFile;
                     task.Cost = task.PrerequisiteFiles.Count;
 
                     // Copy referenced assemblies
