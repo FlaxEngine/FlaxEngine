@@ -27,23 +27,40 @@ namespace Flax.Build.Platforms
         public readonly string ToolchainRoot;
 
         /// <summary>
-        /// True if use platform native system compiler instead of external package.
+        /// The compiler name.
         /// </summary>
-        public readonly bool UseSystemCompiler;
+        public readonly string Compiler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LinuxPlatform"/> class.
         /// </summary>
         public LinuxPlatform()
         {
-            // Check if use system compiler
-            if (Environment.OSVersion.Platform == PlatformID.Unix && Which("clang++-7") != null)
+            // Try to use system compiler
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                // Build toolchain root path
+                // Pick the newest compiler (overriden by specified in command line)
+                if (Which(Compiler) != null)
+                    Compiler = Configuration.Compiler;
+                else if (Which("clang++-10") != null)
+                    Compiler = "clang++-10";
+                else if (Which("clang++-9") != null)
+                    Compiler = "clang++-9";
+                else if (Which("clang++-8") != null)
+                    Compiler = "clang++-8";
+                else if (Which("clang++-7") != null)
+                    Compiler = "clang++-7";
+                else if (Which("clang++-6") != null)
+                    Compiler = "clang++-6";
+                else if (Which("clang++") != null)
+                    Compiler = "clang++";
+            }
+            if (Compiler != null)
+            {
+                // System compiler
                 ToolchainRoot = string.Empty;
-                Log.Verbose("Using native Linux toolchain (system compiler)");
+                Log.Verbose($"Using native Linux toolchain (compiler {Compiler})");
                 HasRequiredSDKsInstalled = true;
-                UseSystemCompiler = true;
             }
             else
             {
@@ -60,11 +77,10 @@ namespace Flax.Build.Platforms
                     return;
                 }
 
-                // Build toolchain root path
+                // Installed toolchain
                 ToolchainRoot = Path.Combine(toolchainsRoot, toolchainName).Replace('\\', '/');
                 Log.Verbose(string.Format("Found Linux Toolchain at {0}", ToolchainRoot));
                 HasRequiredSDKsInstalled = true;
-                UseSystemCompiler = false;
             }
         }
 

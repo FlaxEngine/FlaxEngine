@@ -33,7 +33,7 @@ namespace Flax.Build.Platforms
         /// <param name="architecture">The target architecture.</param>
         /// <param name="toolchainRoot">The toolchain root path.</param>
         public AndroidToolchain(AndroidPlatform platform, TargetArchitecture architecture, string toolchainRoot)
-        : base(platform, architecture, toolchainRoot, false, string.Empty)
+        : base(platform, architecture, toolchainRoot, null, string.Empty)
         {
             var toolchain = ToolsetRoot.Replace('\\', '/');
             SystemIncludePaths.Add(Path.Combine(toolchain, "sources/usr/include/c++/v1").Replace('\\', '/'));

@@ -20,12 +20,12 @@ namespace Flax.Build.Platforms
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The target architecture.</param>
         public LinuxToolchain(LinuxPlatform platform, TargetArchitecture architecture)
-        : base(platform, architecture, platform.ToolchainRoot, platform.UseSystemCompiler)
+        : base(platform, architecture, platform.ToolchainRoot, platform.Compiler)
         {
             // Setup system paths
             SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "usr", "include"));
             SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "include", "c++", "5.2.0"));
-            SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "lib", "clang", "7.0.1", "include"));
+            SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "lib", "clang", ClangVersion.Major.ToString(), "include"));
         }
 
         /// <inheritdoc />

@@ -46,6 +46,9 @@ namespace Flax.Build.Platforms
         /// <returns>The full path or null if not found anything valid.</returns>
         public static string Which(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             Process proc = new Process
             {
                 StartInfo =

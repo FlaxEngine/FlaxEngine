@@ -72,18 +72,18 @@ namespace Flax.Build.Platforms
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The target architecture.</param>
         /// <param name="toolchainRoots">The root folder for the toolchains installation.</param>
-        /// <param name="useSystemCompiler">True if use system compiler instead of toolchain.</param>
+        /// <param name="systemCompiler">The system compiler to use. Null if use toolset root.</param>
         /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be sued.</param>
-        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots, bool useSystemCompiler, string toolchainSubDir = null)
+        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots, string systemCompiler, string toolchainSubDir = null)
         : base(platform, architecture)
         {
             ArchitectureName = GetToolchainName(platform.Target, architecture);
 
             // Build paths
-            if (useSystemCompiler)
+            if (systemCompiler != null)
             {
                 ToolsetRoot = toolchainRoots;
-                ClangPath = UnixPlatform.Which("clang++-7");
+                ClangPath = UnixPlatform.Which(systemCompiler);
                 ArPath = UnixPlatform.Which("ar");
                 LlvmArPath = UnixPlatform.Which("llvm-ar");
                 RanlibPath = UnixPlatform.Which("ranlib");
