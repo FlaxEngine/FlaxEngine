@@ -103,7 +103,7 @@ namespace FlaxEditor.Surface
                 {
                     for (int j = 0; j < node.Elements.Count; j++)
                     {
-                        if (node.Elements[j] is Box box)
+                        if (node.Elements[j] is Box box && box.Connections.Count > 0)
                         {
                             var dataModelBox = new DataModelBox
                             {
