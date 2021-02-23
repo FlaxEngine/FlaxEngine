@@ -16,7 +16,6 @@
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) AllocatorExt::Realloc(p, oldsz, newsz)
 #define STBI_FREE(p) Allocator::Free(p)
 
-#define STBI_WRITE_NO_STDIO
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <ThirdParty/stb/stb_image_write.h>
 

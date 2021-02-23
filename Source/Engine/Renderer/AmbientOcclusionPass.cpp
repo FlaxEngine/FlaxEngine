@@ -8,6 +8,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Utilities/StringConverter.h"
 #include "RenderList.h"
 #include "GBufferPass.h"
 
@@ -86,8 +87,6 @@ bool AmbientOcclusionPass::Init()
 
 bool AmbientOcclusionPass::setupResources()
 {
-    char nameBuffer[40];
-
     // Check shader
     if (!_shader->IsLoaded())
     {
@@ -122,8 +121,9 @@ bool AmbientOcclusionPass::setupResources()
     {
         if (!_psPrepareDepthMip[i]->IsValid())
         {
-            sprintf(nameBuffer, "PS_PrepareDepthMip%d", i + 1);
-            psDesc.PS = shader->GetPS(nameBuffer);
+            const auto str = String::Format(TEXT("PS_PrepareDepthMip{0}"), i + 1);
+            const StringAsANSI<50> strAnsi(*str, str.Length());
+            psDesc.PS = shader->GetPS(strAnsi.Get());
             if (_psPrepareDepthMip[i]->Init(psDesc))
                 return true;
         }
@@ -133,8 +133,9 @@ bool AmbientOcclusionPass::setupResources()
     {
         if (!_psGenerate[i]->IsValid())
         {
-            sprintf(nameBuffer, "PS_GenerateQ%d", i);
-            psDesc.PS = shader->GetPS(nameBuffer);
+            const auto str = String::Format(TEXT("PS_GenerateQ{0}"), i);
+            const StringAsANSI<50> strAnsi(*str, str.Length());
+            psDesc.PS = shader->GetPS(strAnsi.Get());
             if (_psGenerate[i]->Init(psDesc))
                 return true;
         }

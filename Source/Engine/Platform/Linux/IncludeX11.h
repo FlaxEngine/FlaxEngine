@@ -5,6 +5,10 @@
 // Hide warning from old headers
 #define register
 
+// Pre-include X11 required headers
+#include <stdio.h>
+
+// Include X11
 namespace X11
 {
 #include <X11/Xlib.h>
