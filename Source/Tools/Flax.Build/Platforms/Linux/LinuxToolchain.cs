@@ -74,7 +74,10 @@ namespace Flax.Build.Platforms
             if (options.LinkEnv.Output == LinkerOutput.SharedLibrary)
             {
                 args.Add("-shared");
-                args.Add(string.Format("-Wl,-soname=\"{0}\"", Path.GetFileNameWithoutExtension(outputFilePath)));
+                var soname = Path.GetFileNameWithoutExtension(outputFilePath);
+                if (soname.StartsWith("lib"))
+                    soname = soname.Substring(3);
+                //args.Add(string.Format("-Wl,-soname=\"{0}\"", soname));
             }
 
             args.Add(string.Format("-target {0}", ArchitectureName));
