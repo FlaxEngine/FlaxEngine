@@ -5,6 +5,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Assets/Texture.h"
+#include "Engine/Render2D/SpriteAtlas.h"
 
 /// <summary>
 /// Sprite rendering object.
@@ -16,8 +17,10 @@ private:
 
     Color _color;
     Vector2 _size;
+    SpriteHandle _sprite;
     MaterialInstance* _materialInstance = nullptr;
     MaterialParameter* _paramImage = nullptr;
+    MaterialParameter* _paramImageMAD = nullptr;
     MaterialParameter* _paramColor = nullptr;
     AssetReference<Asset> _quadModel;
 
@@ -52,27 +55,39 @@ public:
     AssetReference<Texture> Image;
 
     /// <summary>
-    /// The material used for the sprite rendering. It should contain texture parameter named Image and color parameter named Color.
+    /// Gets the sprite to draw. Used only if Image is unset.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(null), EditorDisplay(\"Sprite\")")
+    API_PROPERTY(Attributes="EditorOrder(25), EditorDisplay(\"Sprite\")")
+    SpriteHandle GetSprite() const;
+
+    /// <summary>
+    /// Sets the sprite to draw. Used only if Image is unset.
+    /// </summary>
+    API_PROPERTY()
+    void SetSprite(const SpriteHandle& value);
+
+    /// <summary>
+    /// The material used for the sprite rendering. It should contain texture parameter named Image and color parameter named Color. For showing sprites from sprite atlas ensure to add Vector4 param ImageMAD for UVs transformation.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(30), DefaultValue(null), EditorDisplay(\"Sprite\")")
     AssetReference<MaterialBase> Material;
 
     /// <summary>
     /// If checked, the sprite will automatically face the view camera, otherwise it will be oriented as an actor.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Sprite\")")
+    API_FIELD(Attributes="EditorOrder(40), EditorDisplay(\"Sprite\")")
     bool FaceCamera = true;
 
     /// <summary>
     /// The draw passes to use for rendering this object. Uncheck `Depth` to disable sprite casting shadows.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(40), DefaultValue(DrawPass.Default), EditorDisplay(\"Sprite\")")
+    API_FIELD(Attributes="EditorOrder(50), DefaultValue(DrawPass.Default), EditorDisplay(\"Sprite\")")
     DrawPass DrawModes = DrawPass::Default;
 
 private:
 
     void OnMaterialLoaded();
-    void OnImageChanged();
+    void SetImage();
 
 public:
 

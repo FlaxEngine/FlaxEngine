@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Content/BinaryAsset.h"
+#include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Textures/TextureBase.h"
 
 class SpriteAtlas;
@@ -31,8 +33,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Sprite);
 /// <summary>
 /// Handle to sprite atlas slot with a single sprite texture.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API SpriteHandle
+API_STRUCT() struct FLAXENGINE_API SpriteHandle : ISerializable
 {
+API_AUTO_SERIALIZATION();
 DECLARE_SCRIPTING_TYPE_MINIMAL(SpriteHandle);
 
     /// <summary>
@@ -43,7 +46,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(SpriteHandle);
     /// <summary>
     /// The parent atlas.
     /// </summary>
-    API_FIELD() SpriteAtlas* Atlas;
+    API_FIELD() AssetReference<SpriteAtlas> Atlas;
 
     /// <summary>
     /// The atlas sprites array index.
@@ -55,7 +58,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(SpriteHandle);
     /// </summary>
     SpriteHandle()
     {
-        Atlas = nullptr;
         Index = -1;
     }
 
@@ -65,8 +67,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(SpriteHandle);
     /// <param name="atlas">The sprite atlas.</param>
     /// <param name="index">The sprite slot index.</param>
     SpriteHandle(SpriteAtlas* atlas, int32 index)
+        : Atlas(atlas)
     {
-        Atlas = atlas;
         Index = index;
     }
 

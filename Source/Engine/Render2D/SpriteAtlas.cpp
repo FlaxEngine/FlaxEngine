@@ -21,13 +21,12 @@ bool SpriteHandle::GetSprite(Sprite* result) const
         *result = Atlas->Sprites[Index];
         return true;
     }
-
     return false;
 }
 
 bool SpriteHandle::IsValid() const
 {
-    return Atlas && Index != INVALID_INDEX && Atlas->Sprites.Count() > Index;
+    return Atlas && Index >= 0 && Atlas->Sprites.Count() > Index;
 }
 
 GPUTexture* SpriteHandle::GetAtlasTexture() const

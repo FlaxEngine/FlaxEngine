@@ -17,7 +17,7 @@ SpriteRender::SpriteRender(const SpawnParams& params)
 {
     _quadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
     Material.Loaded.Bind<SpriteRender, &SpriteRender::OnMaterialLoaded>(this);
-    Image.Changed.Bind<SpriteRender, &SpriteRender::OnImageChanged>(this);
+    Image.Changed.Bind<SpriteRender, &SpriteRender::SetImage>(this);
 }
 
 Vector2 SpriteRender::GetSize() const
@@ -45,6 +45,17 @@ void SpriteRender::SetColor(const Color& value)
         _paramColor->SetValue(value);
 }
 
+SpriteHandle SpriteRender::GetSprite() const
+{
+    return _sprite;
+}
+
+void SpriteRender::SetSprite(const SpriteHandle& value)
+{
+    _sprite = value;
+    SetImage();
+}
+
 void SpriteRender::OnMaterialLoaded()
 {
     // Setup material instance
@@ -56,11 +67,14 @@ void SpriteRender::OnMaterialLoaded()
     _materialInstance->SetBaseMaterial(Material);
 
     // Cache parameters
+    _paramImageMAD = _materialInstance->GetParameter(TEXT("ImageMAD"));
+    if (_paramImageMAD && _paramImageMAD->GetParameterType() != MaterialParameterType::Vector4)
+        _paramImageMAD = nullptr;
     _paramImage = _materialInstance->GetParameter(TEXT("Image"));
     if (_paramImage && _paramImage->GetParameterType() != MaterialParameterType::Texture)
         _paramImage = nullptr;
     else if (_paramImage)
-        _paramImage->SetValue(Image.Get());
+        SetImage();
     _paramColor = _materialInstance->GetParameter(TEXT("Color"));
     if (_paramColor && _paramColor->GetParameterType() != MaterialParameterType::Color && _paramColor->GetParameterType() != MaterialParameterType::Vector4 && _paramColor->GetParameterType() != MaterialParameterType::Vector3)
         _paramColor = nullptr;
@@ -68,10 +82,20 @@ void SpriteRender::OnMaterialLoaded()
         _paramColor->SetValue(_color);
 }
 
-void SpriteRender::OnImageChanged()
+void SpriteRender::SetImage()
 {
+    TextureBase* image = Image.Get();
+    Vector4 imageMAD(Vector2::One, Vector2::Zero);
+    if (!image && _sprite.IsValid())
+    {
+        image = _sprite.Atlas.Get();
+        Sprite* sprite = &_sprite.Atlas->Sprites.At(_sprite.Index);
+        imageMAD = Vector4(sprite->Area.Size, sprite->Area.Location);
+    }
     if (_paramImage)
-        _paramImage->SetValue(Image.Get());
+        _paramImage->SetValue(image);
+    if (_paramImageMAD)
+        _paramImageMAD->SetValue(imageMAD);
 }
 
 bool SpriteRender::HasContentLoaded() const
@@ -120,6 +144,7 @@ void SpriteRender::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_MEMBER(Size, _size);
     SERIALIZE_MEMBER(Color, _color);
+    SERIALIZE_MEMBER(Sprite, _sprite);
     SERIALIZE(Image);
     SERIALIZE(Material);
     SERIALIZE(FaceCamera);
@@ -133,13 +158,13 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
 
     DESERIALIZE_MEMBER(Size, _size);
     DESERIALIZE_MEMBER(Color, _color);
+    DESERIALIZE_MEMBER(Sprite, _sprite);
     DESERIALIZE(Image);
     DESERIALIZE(Material);
     DESERIALIZE(FaceCamera);
     DESERIALIZE(DrawModes);
 
-    if (_paramImage)
-        _paramImage->SetValue(Image.Get());
+    SetImage();
     if (_paramColor)
         _paramColor->SetValue(_color);
 }
