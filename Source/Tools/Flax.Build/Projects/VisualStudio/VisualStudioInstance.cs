@@ -48,6 +48,9 @@ namespace Flax.Build.Projects.VisualStudio
 
         private static bool FindFlaxVS(string path)
         {
+            if (!Directory.Exists(path))
+                return false;
+
             var files = Directory.GetFiles(path);
             for (int i = 0; i < files.Length; i++)
             {

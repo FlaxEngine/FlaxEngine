@@ -305,9 +305,20 @@ namespace Flax.Build.Projects.VisualStudioCode
                                                 }
                                                 json.EndArray();
                                             }
+                                            else
+                                            {
+                                                json.AddField("program", outputTargetFilePath);
+                                            }
                                             break;
                                         case TargetPlatform.Linux:
-                                            json.AddField("program", outputTargetFilePath);
+                                            if (configuration.Platform == TargetPlatform.Linux && (outputType != TargetOutputType.Executable || project.Name == "Flax") && configuration.Name.StartsWith("Editor."))
+                                            {
+                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Linux", configuration.ConfigurationName, "FlaxEditor"));
+                                            }
+                                            else
+                                            {
+                                                json.AddField("program", outputTargetFilePath);
+                                            }
                                             if (configuration.Platform == TargetPlatform.Linux)
                                             {
                                                 json.AddField("MIMode", "gdb");
