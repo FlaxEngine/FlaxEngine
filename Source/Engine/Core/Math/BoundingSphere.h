@@ -218,6 +218,14 @@ public:
     /// <param name="value2">The point to merge.</param>
     /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
     static void Merge(const BoundingSphere& value1, const Vector3& value2, BoundingSphere& result);
+
+    /// <summary>
+    /// Transforms the bounding sphere using the specified matrix.
+    /// </summary>
+    /// <param name="sphere">The sphere.</param>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="result">The result transformed sphere.</param>
+    static void Transform(const BoundingSphere& sphere, const Matrix& matrix, BoundingSphere& result);
 };
 
 template<>
