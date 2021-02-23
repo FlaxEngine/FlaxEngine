@@ -534,6 +534,12 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Vector2(v.Y, v.Z);
         break;
     }
+    case 47:
+    {
+        const Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
+        value = Vector2(v.Z, v.W);
+        break;
+    }
         // Mask XYZ
     case 70:
     {

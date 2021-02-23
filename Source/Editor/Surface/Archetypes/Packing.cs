@@ -579,6 +579,20 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "YZ", typeof(Vector2), 1)
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 47,
+                Title = "Mask ZW",
+                Description = "Unpack ZW components from Vector",
+                Flags = NodeFlags.AllGraphs,
+                ConnectionsHints = ConnectionsHint.Vector,
+                Size = new Vector2(110, 30),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, "ZW", typeof(Vector2), 1)
+                }
+            },
 
             // Mask XYZ
             new NodeArchetype

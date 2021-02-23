@@ -535,6 +535,12 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Value(ValueType::Vector2, v.Value + TEXT(".yz"));
         break;
     }
+    case 47:
+    {
+        Value v = tryGetValue(node->GetBox(0), Vector4::Zero).AsVector4();
+        value = Value(ValueType::Vector2, v.Value + TEXT(".zw"));
+        break;
+    }
         // Mask XYZ
     case 70:
     {
