@@ -1001,7 +1001,7 @@ namespace FlaxEngine
         /// <param name="max">Max Length</param>
         public static Vector3 ClampLength(Vector3 vector, float min, float max)
         {
-            ClampLength(vector, min, max, out Vector3 retVect);
+            ClampLength(ref vector, min, max, out Vector3 retVect);
             return retVect;
         }
         /// <summary>
@@ -1011,24 +1011,27 @@ namespace FlaxEngine
         /// <param name="min">Min Length</param>
         /// <param name="max">Max Length</param>
         /// <param name="retVect">The Return Vector</param>
-        public static void ClampLength(Vector3 vector, float min, float max, out Vector3 retVect)
+        public static void ClampLength(ref Vector3 vector, float min, float max, out Vector3 retVect)
         {
-            float lenSq = vector.LengthSquared;
+            retVect.X = vector.X;
+            retVect.Y = vector.Y;
+            retVect.Z = vector.Z;
+            
+            float lenSq = retVect.LengthSquared;
             if (lenSq > max * max)
             {
                 float scaleFactor = max / (float)Math.Sqrt(lenSq);
-                retVect.X = vector.X * scaleFactor;
-                retVect.Y = vector.Y * scaleFactor;
-                retVect.Z = vector.Z * scaleFactor;
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
             }
             if (lenSq < min * min)
             {
                 float scaleFactor = min / (float)Math.Sqrt(lenSq);
-                retVect.X = vector.X * scaleFactor;
-                retVect.Y = vector.Y * scaleFactor;
-                retVect.Z = vector.Z * scaleFactor;
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
             }
-            return retVect;
         }
         /// <summary>
         /// Performs a linear interpolation between two vectors.
