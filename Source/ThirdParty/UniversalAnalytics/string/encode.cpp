@@ -169,7 +169,7 @@ char* urlencode(const char* mb_input){
 
 
 /* For compatibility with our former encoding model... */
-unsigned int encodeURIComponent(char input[], char output[], const unsigned int input_len, const unsigned int output_max){
+unsigned int encodeURIComponent(const char input[], char output[], const unsigned int input_len, const unsigned int output_max){
 	return (unsigned int)urlencode_put(output, output_max, input, input_len);
 }
 

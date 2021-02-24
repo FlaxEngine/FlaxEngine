@@ -136,8 +136,8 @@ typedef enum trackingField {
 typedef struct UAParameter_t {
   trackingField_t field;
   unsigned int slot_id;
-  char* name;
-  char* value;
+  const char* name;
+  const char* value;
 } UAParameter_t;
 
 /* Flag to specify which level of tracker state to update */
@@ -173,12 +173,12 @@ typedef struct UATracker_t {
   /* Standard parameter names (e.g. cid, tid, ea, ec...)
    * These are populated in stack space by |populateParameterNames|
    * during tracker initialization */
-  char* map_parameters[ UA_MAX_PARAMETERS ];
+  const char* map_parameters[ UA_MAX_PARAMETERS ];
 
   /* Standard tracking type names (e.g. pageview, event, etc) 
    * These are populated in stack space by |populateTypeNames|
    * during tracker initialization */
-  char* map_types[ UA_MAX_TYPES ];
+  const char* map_types[ UA_MAX_TYPES ];
 
   /* Placeholder for HTTP "User-Agent" header */
   const char* user_agent;
@@ -197,7 +197,7 @@ typedef struct UATracker_t {
 typedef struct UAOptionNode_t {
   trackingField_t field; 
   unsigned int slot_id;
-  char* value;
+  const char* value;
 } UAOptionNode_t;
 
 /* List of options (field/value pairs with slot ID */
@@ -215,10 +215,10 @@ typedef UAOptions_t UAOptions;
 
 
 /* Creates Google Analytics tracker state objects */
-UATracker createTracker(char* trackingId, char* clientId, char* userId);
+UATracker createTracker(const char* trackingId, const char* clientId, const char* userId);
 
 /* Initialize tracker state */
-void initTracker(UATracker tracker, char* trackingId, char* clientId, char* userId);
+void initTracker(UATracker tracker, const char* trackingId, const char* clientId, const char* userId);
 
 /* Set flags to tune the funcionality of the tracker */
 void setTrackerOption(UATracker tracker, UATrackerOption_t option, int value);
@@ -227,7 +227,7 @@ void setTrackerOption(UATracker tracker, UATrackerOption_t option, int value);
 void setParameters(UATracker tracker, UAOptions_t* opts);
 
 /* Store a single option-value pair */
-void setParameter(UATracker tracker, trackingField_t type, unsigned int slot_id, char* value);
+void setParameter(UATracker tracker, trackingField_t type, unsigned int slot_id, const char* value);
 
 /* Processes tracker state with a tracking type and ephemeral options
  * Dispatches resulting query to Google Analytics */

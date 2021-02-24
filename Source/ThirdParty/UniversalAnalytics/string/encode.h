@@ -20,7 +20,7 @@ char* urlencode(const char* input);
 size_t urlencode_put(char* result, size_t result_max, const char *mb_input, size_t input_len);
 
 // For compatibility..
-unsigned int encodeURIComponent(char input[], char output[], const unsigned int input_len, const unsigned int output_max);
+unsigned int encodeURIComponent(const char input[], char output[], const unsigned int input_len, const unsigned int output_max);
 
 unsigned int hexdigest(char* hex_output, unsigned char* md5_binary, unsigned int binary_len);
 
