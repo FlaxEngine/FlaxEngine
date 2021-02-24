@@ -19,8 +19,10 @@
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/WindowsManager.h"
+#include "Engine/Platform/Clipboard.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
@@ -62,6 +64,7 @@ X11::Atom xAtomWmStateMaxVert;
 X11::Atom xAtomWmStateMaxHorz;
 X11::Atom xAtomWmWindowOpacity;
 X11::Atom xAtomWmName;
+X11::Atom xAtomClipboard;
 int32 SystemDpi = 96;
 X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
@@ -357,9 +360,7 @@ static int X11_MessageBoxCreateWindow(MessageBoxData* data)
 		data->screen = X11_DefaultScreen(display);
 	}
 
-	data->event_mask = ExposureMask |
-			ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask |
-			StructureNotifyMask | FocusChangeMask | PointerMotionMask;
+	data->event_mask = ExposureMask | ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask | FocusChangeMask | PointerMotionMask;
 	wnd_attr.event_mask = data->event_mask;
 
 	data->window = X11::XCreateWindow(
@@ -1172,6 +1173,110 @@ namespace Impl
 {
 	LinuxKeyboard Keyboard;
 	LinuxMouse Mouse;
+    StringAnsi ClipboardText;
+
+    void ClipboardGetText(String& result, X11::Atom source, X11::Atom atom, X11::Window window)
+    {
+        X11::Window selectionOwner = X11::XGetSelectionOwner(xDisplay, source);
+        if (selectionOwner == 0)
+        {
+            // No copy owner
+            return;
+        }
+        if (selectionOwner == window)
+        {
+            // Copy/paste from self
+            result.Set(ClipboardText.Get(), ClipboardText.Length());
+            return;
+        }
+
+        // Send event to get data from the owner
+        int format;
+        unsigned long N, size;
+        char* data;
+        X11::Atom target;
+        X11::Atom CLIPBOARD = X11::XInternAtom(xDisplay, "CLIPBOARD", 0);
+        X11::Atom XSEL_DATA = X11::XInternAtom(xDisplay, "XSEL_DATA", 0);
+        X11::Atom UTF8 = X11::XInternAtom(xDisplay, "UTF8_STRING", 1);
+        X11::XEvent event;
+        X11::XConvertSelection(xDisplay, CLIPBOARD, atom, XSEL_DATA, window, CurrentTime);
+        X11::XSync(xDisplay, 0);
+        X11::XNextEvent(xDisplay, &event);
+        switch(event.type)
+        {
+        case SelectionNotify:
+            if (event.xselection.selection != CLIPBOARD)
+                break;
+            if (event.xselection.property)
+            {
+                X11::XGetWindowProperty(event.xselection.display, event.xselection.requestor, event.xselection.property, 0L,(~0L), 0, AnyPropertyType, &target, &format, &size, &N,(unsigned char**)&data);
+                if (target == UTF8 || target == (X11::Atom)31)
+                {
+                    // Got text to paste
+                    result.Set(data , size);
+                    X11::XFree(data);
+                }
+                X11::XDeleteProperty(event.xselection.display, event.xselection.requestor, event.xselection.property);
+            }
+        }
+    }
+}
+
+void LinuxClipboard::Clear()
+{
+    SetText(StringView::Empty);
+}
+
+void LinuxClipboard::SetText(const StringView& text)
+{
+    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    if (!mainWindow)
+        return;
+    X11::Window window = (X11::Window)mainWindow->GetNativePtr();
+
+    Impl::ClipboardText.Set(text.GetText(), text.Length());
+    X11::XSetSelectionOwner(xDisplay, xAtomClipboard, window, CurrentTime); // CLIPBOARD
+    X11::XSetSelectionOwner(xDisplay, (X11::Atom)1, window, CurrentTime); // XA_PRIMARY
+}
+
+void LinuxClipboard::SetRawData(const Span<byte>& data)
+{
+}
+
+void LinuxClipboard::SetFiles(const Array<String>& files)
+{
+}
+
+String LinuxClipboard::GetText()
+{
+    String result;
+    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    if (!mainWindow)
+        return result;
+    X11::Window window = (X11::Window)mainWindow->GetNativePtr();
+
+    X11::Atom UTF8 = X11::XInternAtom(xDisplay, "UTF8_STRING", 1);
+    Impl::ClipboardGetText(result, xAtomClipboard, UTF8, window);
+    if (result.HasChars())
+        return result;
+    Impl::ClipboardGetText(result, xAtomClipboard, (X11::Atom)31, window);
+    if (result.HasChars())
+        return result;
+    Impl::ClipboardGetText(result, (X11::Atom)1, UTF8, window);
+    if (result.HasChars())
+        return result;
+    Impl::ClipboardGetText(result, (X11::Atom)1, (X11::Atom)31, window);
+    return result;
+}
+
+Array<byte> LinuxClipboard::GetRawData()
+{
+    return Array<byte>();
+}
+
+Array<String> LinuxClipboard::GetFiles()
+{
+    return Array<String>();
 }
 
 void* LinuxPlatform::GetXDisplay()
@@ -1550,6 +1655,7 @@ bool LinuxPlatform::Init()
 	xAtomWmStateMaxVert = X11::XInternAtom(xDisplay, "_NET_WM_STATE_MAXIMIZED_VERT", 0);
 	xAtomWmWindowOpacity = X11::XInternAtom(xDisplay, "_NET_WM_WINDOW_OPACITY", 0);
 	xAtomWmName = X11::XInternAtom(xDisplay, "_NET_WM_NAME", 0);
+	xAtomClipboard = X11::XInternAtom(xDisplay, "CLIPBOARD", 0);
 
 	SystemDpi = CalculateDpi();
 
@@ -1841,6 +1947,37 @@ void LinuxPlatform::Tick()
 				if (window)
 					window->OnLeaveNotify(&event.xcrossing);
 				break;
+            case SelectionRequest:
+            {
+                if (event.xselectionrequest.selection != xAtomClipboard)
+                    break;
+                X11::Atom targets_atom = X11::XInternAtom(xDisplay, "TARGETS", 0);
+                X11::Atom text_atom = X11::XInternAtom(xDisplay, "TEXT", 0);
+                X11::Atom UTF8 = X11::XInternAtom(xDisplay, "UTF8_STRING", 1);
+                if (UTF8 == 0)
+                    UTF8 = (X11::Atom)31;
+                X11::XSelectionRequestEvent* xsr = &event.xselectionrequest;
+                int result = 0;
+                X11::XSelectionEvent ev = { 0 };
+                ev.type = SelectionNotify;
+                ev.display = xsr->display;
+                ev.requestor = xsr->requestor;
+                ev.selection = xsr->selection;
+                ev.time = xsr->time;
+                ev.target = xsr->target;
+                ev.property = xsr->property;
+                if (ev.target == targets_atom)
+                    result = X11::XChangeProperty(ev.display, ev.requestor, ev.property, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&UTF8, 1);
+                else if (ev.target == (X11::Atom)31 || ev.target == text_atom) 
+                    result = X11::XChangeProperty(ev.display, ev.requestor, ev.property, (X11::Atom)31, 8, PropModeReplace, (unsigned char*)Impl::ClipboardText.Get(), Impl::ClipboardText.Length());
+                else if (ev.target == UTF8)
+                    result = X11::XChangeProperty(ev.display, ev.requestor, ev.property, UTF8, 8, PropModeReplace, (unsigned char*)Impl::ClipboardText.Get(), Impl::ClipboardText.Length());
+                else
+                    ev.property = 0;
+                if ((result & 2) == 0)
+                    X11::XSendEvent(xDisplay, ev.requestor, 0, 0, (X11::XEvent*)&ev);
+                break;
+            }
 			default:
 				break;
 		}

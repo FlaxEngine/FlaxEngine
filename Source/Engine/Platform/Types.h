@@ -50,8 +50,8 @@ typedef NetworkBase Network;
 
 #elif PLATFORM_LINUX
 
-class ClipboardBase;
-typedef ClipboardBase Clipboard;
+class LinuxClipboard;
+typedef LinuxClipboard Clipboard;
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
 class UnixConditionVariable;

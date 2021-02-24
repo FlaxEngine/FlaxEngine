@@ -7,7 +7,7 @@
 #elif PLATFORM_UWP
 #include "Base/ClipboardBase.h"
 #elif PLATFORM_LINUX
-#include "Base/ClipboardBase.h"
+#include "Linux/LinuxClipboard.h"
 #elif PLATFORM_PS4
 #include "Base/ClipboardBase.h"
 #elif PLATFORM_XBOX_SCARLETT

@@ -2,14 +2,14 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_LINUX
 
 #include "Engine/Platform/Base/ClipboardBase.h"
 
 /// <summary>
-/// Windows platform implementation of the clipboard service.
+/// Linux platform implementation of the clipboard service.
 /// </summary>
-class FLAXENGINE_API WindowsClipboard : public ClipboardBase
+class FLAXENGINE_API LinuxClipboard : public ClipboardBase
 {
 public:
 
