@@ -1001,20 +1001,32 @@ namespace FlaxEngine
         /// <param name="max">Max Length</param>
         public static Vector3 ClampLength(Vector3 vector, float min, float max)
         {
-            Vector3 retVect = new Vector3(vector.X, vector.Y, vector.Z);
-            if (retVect.LengthSquared > max * max)
+            ClampLength(vector, min, max, out Vector3 retVect);
+            return retVect;
+        }
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        /// <param name="retVect">The Return Vector</param>
+        public static void ClampLength(Vector3 vector, float min, float max, out Vector3 retVect)
+        {
+            float lenSq = vector.LengthSquared;
+            if (lenSq > max * max)
             {
-                float scaleFactor = max / (float)Math.Sqrt(retVect.LengthSquared);
-                retVect.X = retVect.X * scaleFactor;
-                retVect.Y = retVect.Y * scaleFactor;
-                retVect.Z = retVect.Z * scaleFactor;
+                float scaleFactor = max / (float)Math.Sqrt(lenSq);
+                retVect.X = vector.X * scaleFactor;
+                retVect.Y = vector.Y * scaleFactor;
+                retVect.Z = vector.Z * scaleFactor;
             }
-            if (retVect.LengthSquared < min * min)
+            if (lenSq < min * min)
             {
-                float scaleFactor = min / (float)Math.Sqrt(retVect.LengthSquared);
-                retVect.X = retVect.X * scaleFactor;
-                retVect.Y = retVect.Y * scaleFactor;
-                retVect.Z = retVect.Z * scaleFactor;
+                float scaleFactor = min / (float)Math.Sqrt(lenSq);
+                retVect.X = vector.X * scaleFactor;
+                retVect.Y = vector.Y * scaleFactor;
+                retVect.Z = vector.Z * scaleFactor;
             }
             return retVect;
         }
