@@ -15,6 +15,12 @@ namespace FlaxEditor.LocalizationServices
     /// </summary>
     public static class Localization
     {
+        // Key - Language
+        // Value - Namespace, (Key, Value)
+        private static Dictionary<Languages, Dictionary<string, Dictionary<string, string>>> m_Languages = new Dictionary<Languages, Dictionary<string, Dictionary<string, string>>>();
+
+        private static Languages m_SelectedLanguage;
+
         /// <summary>
         /// Selects and loads the given language.
         /// </summary>
@@ -49,12 +55,17 @@ namespace FlaxEditor.LocalizationServices
                     var asset = json.Deserialize<LocalizationAsset>(reader);
 
                     // Add the values to that language
-                    foreach (var _namespace in asset.Namespaces)
-                        foreach (var _entry in _namespace.Entries)
+                    for (int i = 0; i < asset.Namespaces.Length; i++)
+                    {
+                        var _namespace = asset.Namespaces[i];
+
+                        for (int j = 0; j < _namespace.Entries.Length; j++)
                         {
+                            var _entry = _namespace.Entries[j];
+
                             SetValue(_namespace.Namespace, _entry.Key, _entry.Value);
                         }
-
+                    }
                 }
                 catch (Exception e)
                 {
@@ -67,7 +78,8 @@ namespace FlaxEditor.LocalizationServices
         /// <summary>
         /// Get the localized <see cref="string"/> from a given key for the current language.
         /// </summary>
-        /// <param name="key">They key to identify the <see cref="string"/>.</param>
+        /// <param name="inNamespace">The namespace from which to get the key</param>
+        /// <param name="key">The key to identify the <see cref="string"/>.</param>
         /// <returns>A localized string.</returns>
         public static string GetValue(string inNamespace, string key)
         {
@@ -78,8 +90,13 @@ namespace FlaxEditor.LocalizationServices
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or empty", nameof(key));
 
             // Get language, get namespace then finally get the key's value
-            if (m_Languages.TryGetValue(m_SelectedLanguage, out var map) && map.TryGetValue(inNamespace, out var Namespace) && Namespace.TryGetValue(key, out string value))
-                return value;
+            if (m_Languages.TryGetValue(m_SelectedLanguage, out var map))
+            {
+                if (map.TryGetValue(inNamespace, out var namespaceMap) && namespaceMap.TryGetValue(key, out string value))
+                {
+                    return value;
+                }
+            }
 
             // Use fallback if no value.
             Editor.LogWarning($"Specified key `{key}` or namespace `{inNamespace}` was not found.");
@@ -90,7 +107,7 @@ namespace FlaxEditor.LocalizationServices
         /// Set the localized <see cref="string"/> to a given key for the current language.
         /// If key is not valid, a new key with the value will be created instead.
         /// </summary>
-        /// <param name="inNamespace"> The name space</param>
+        /// <param name="inNamespace">The name space</param>
         /// <param name="key">The key to identify the <see cref="string"/>.</param>
         /// <param name="value">They value associated with this key.</param>
         /// <returns>Whether the value for the key was updated/created.</returns>
@@ -108,22 +125,22 @@ namespace FlaxEditor.LocalizationServices
             // Get the language
             if (m_Languages.TryGetValue(m_SelectedLanguage, out var map))
             {
-                if (map.ContainsKey(inNamespace))
+                // Update key if namespace does exist
+                if (map.TryGetValue(inNamespace, out var namespaceMap))
                 {
-                    // Update key
-                    if (map[inNamespace].ContainsKey(key))
-                        map[inNamespace][key] = value;
-
-                    // Add key
+                    if (namespaceMap.ContainsKey(key))
+                        namespaceMap[key] = value;
                     else
-                        map[inNamespace].Add(key, value);
+                        namespaceMap.Add(key, value);
 
                     return true;
                 }
-                // If no namespace, add it.
+
+                // Add namespace
                 map.Add(inNamespace, new Dictionary<string, string> { { key, value } });
                 return true;
             }
+
             return false;
         }
 
@@ -136,8 +153,5 @@ namespace FlaxEditor.LocalizationServices
 
             set => SelectLanguage(value);
         }
-
-        private static Dictionary<Languages, Dictionary<string, Dictionary<string, string>>> m_Languages = new Dictionary<Languages, Dictionary<string, Dictionary<string, string>>>();
-        private static Languages m_SelectedLanguage;
     }
 }

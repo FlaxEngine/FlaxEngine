@@ -1,24 +1,35 @@
 {
-  "Namespaces": 
-  [
+  "Namespaces": [
     {
-      "Namespace": "N_1",
-      "Entries": 
-      [
+      "Namespace": "T_CM",
+      "Entries": [
         {
-          "Key": "T_CM_FILE",
-          "Value": "File :D"
-        }
-      ]
-    },
-
-    {
-      "Namespace": "N_2",
-      "Entries": 
-      [
+          "Key": "FILE",
+          "Value": "File"
+        },
         {
-          "Key": "T_CM_FILE",
-          "Value": "File D:"
+          "Key": "EDIT",
+          "Value": "Edit"
+        },
+        {
+          "Key": "SCENE",
+          "Value": "Scene"
+        },
+        {
+          "Key": "GAME",
+          "Value": "Game"
+        },
+        {
+          "Key": "TOOLS",
+          "Value": "Tools"
+        },
+        {
+          "Key": "WINDOW",
+          "Value": "Window"
+        },
+        {
+          "Key": "HELP",
+          "Value": "Help"
         }
       ]
     }

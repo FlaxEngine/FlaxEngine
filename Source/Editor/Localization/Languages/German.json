@@ -1,6 +1,37 @@
-[
-  {
-    "Key": "T_CM_FILE",
-    "Value": "Datei"
-  }
-]
+{
+  "Namespaces": [
+    {
+      "Namespace": "T_CM",
+      "Entries": [
+        {
+          "Key": "FILE",
+          "Value": "Datei"
+        },
+        {
+          "Key": "EDIT",
+          "Value": "Bearbeiten"
+        },
+        {
+          "Key": "SCENE",
+          "Value": "Szene"
+        },
+        {
+          "Key": "GAME",
+          "Value": "Spiel"
+        },
+        {
+          "Key": "TOOLS",
+          "Value": "Extras"
+        },
+        {
+          "Key": "WINDOW",
+          "Value": "Fenster"
+        },
+        {
+          "Key": "HELP",
+          "Value": "Hilfe"
+        }
+      ]
+    }
+  ]
+}
