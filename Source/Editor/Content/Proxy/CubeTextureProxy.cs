@@ -47,6 +47,7 @@ namespace FlaxEditor.Content
                 _preview = new CubeTexturePreview(false)
                 {
                     RenderOnlyWithWindow = false,
+                    UseAutomaticTaskManagement = false,
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
                 };

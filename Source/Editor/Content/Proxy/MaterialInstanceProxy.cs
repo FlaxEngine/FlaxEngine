@@ -54,6 +54,7 @@ namespace FlaxEditor.Content
                 _preview = new MaterialPreview(false)
                 {
                     RenderOnlyWithWindow = false,
+                    UseAutomaticTaskManagement = false,
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
                 };

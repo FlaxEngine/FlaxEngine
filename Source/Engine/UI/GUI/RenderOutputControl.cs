@@ -42,9 +42,14 @@ namespace FlaxEngine.GUI
         public SceneRenderTask Task => _task;
 
         /// <summary>
-        /// Gets a value indicating whether render to that output only if parent window exists, otherwise false.
+        /// Gets or sets a value indicating whether render to that output only if parent window exists, otherwise false.
         /// </summary>
         public bool RenderOnlyWithWindow { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether use automatic task rendering skipping if output is too small or window is missing. Disable it to manually control <see cref="RenderTask.Enabled"/>.
+        /// </summary>
+        public bool UseAutomaticTaskManagement { get; set; } = true;
 
         /// <summary>
         /// Gets a value indicating whether keep aspect ratio of the backbuffer image, otherwise false.
@@ -153,7 +158,7 @@ namespace FlaxEngine.GUI
 
         private void OnUpdate()
         {
-            if (_task == null)
+            if (_task == null || !UseAutomaticTaskManagement)
                 return;
             var deltaTime = Time.UnscaledDeltaTime;
 
@@ -168,7 +173,7 @@ namespace FlaxEngine.GUI
             // Check if skip rendering
             var wasEnabled = _task.Enabled;
             _task.Enabled = !CanSkipRendering();
-            if (wasEnabled != _task.Enabled)
+            if (!wasEnabled && _task.Enabled)
             {
                 SyncBackbufferSize();
             }
@@ -263,6 +268,7 @@ namespace FlaxEngine.GUI
             if (_task != null)
             {
                 _task.Enabled = false;
+                _task.ClearCustomActors();
                 //_task.CustomPostFx.Clear();
             }
             Object.Destroy(ref _backBuffer);

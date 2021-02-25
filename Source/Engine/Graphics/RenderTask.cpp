@@ -227,6 +227,21 @@ void SceneRenderTask::CameraCut()
     IsCameraCut = true;
 }
 
+void SceneRenderTask::AddCustomActor(Actor* actor)
+{
+    CustomActors.Add(actor);
+}
+
+void SceneRenderTask::RemoveCustomActor(Actor* actor)
+{
+    CustomActors.Remove(actor);
+}
+
+void SceneRenderTask::ClearCustomActors()
+{
+    CustomActors.Clear();
+}
+
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
     if ((ActorsSource & ActorsSources::Scenes) != 0)

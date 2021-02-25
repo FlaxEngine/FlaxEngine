@@ -97,6 +97,7 @@ namespace FlaxEditor.Content
                 _preview = new PrefabPreview(false)
                 {
                     RenderOnlyWithWindow = false,
+                    UseAutomaticTaskManagement = false,
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
                 };
