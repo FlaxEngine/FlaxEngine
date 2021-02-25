@@ -633,7 +633,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 
     // Cache types for managed-only types that can be used in the engine
     _firstManagedTypeIndex = Types.Count();
-    NativeBinaryModule* flaxEngine = GetBinaryModuleFlaxEngine();
+    NativeBinaryModule* flaxEngine = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
     if (flaxEngine->Assembly->IsLoaded())
     {
         // TODO: check only assemblies that references FlaxEngine.CSharp.dll
@@ -1028,6 +1028,37 @@ NativeBinaryModule::NativeBinaryModule(MAssembly* assembly)
 void NativeBinaryModule::Destroy(bool isReloading)
 {
     ManagedBinaryModule::Destroy(isReloading);
+
+    // Release native library
+    const auto library = Library;
+    if (library)
+    {
+        Library = nullptr;
+        Platform::FreeLibrary(library);
+        // Don't do anything after FreeLibrary (this pointer might be invalid)
+    }
+}
+
+NativeOnlyBinaryModule::NativeOnlyBinaryModule(const StringAnsiView& name)
+    : BinaryModule()
+    , _name(name)
+    , Library(nullptr)
+{
+}
+
+const StringAnsi& NativeOnlyBinaryModule::GetName() const
+{
+    return _name;
+}
+
+bool NativeOnlyBinaryModule::IsLoaded() const
+{
+    return true;
+}
+
+void NativeOnlyBinaryModule::Destroy(bool isReloading)
+{
+    BinaryModule::Destroy(isReloading);
 
     // Release native library
     const auto library = Library;

@@ -73,7 +73,7 @@ MonoReflectionType* CustomEditorsUtil::GetCustomEditor(MonoReflectionType* refTy
 
 bool CustomEditorsUtilService::Init()
 {
-    TRACK_ASSEMBLY(GetBinaryModuleFlaxEngine()->Assembly);
+    TRACK_ASSEMBLY(((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly);
     Scripting::BinaryModuleLoaded.Bind(&OnBinaryModuleLoaded);
 
     return false;
@@ -84,7 +84,7 @@ void OnAssemblyLoaded(MAssembly* assembly)
     const auto startTime = DateTime::NowUTC();
 
     // Prepare FlaxEngine
-    auto engineAssembly = GetBinaryModuleFlaxEngine()->Assembly;
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     if (!engineAssembly->IsLoaded())
     {
         LOG(Warning, "Cannot load custom editors meta for assembly {0} because FlaxEngine is not loaded.", assembly->ToString());
@@ -173,7 +173,7 @@ void OnAssemblyLoaded(MAssembly* assembly)
 void OnAssemblyUnloading(MAssembly* assembly)
 {
     // Fast clear for editor unloading
-    if (assembly == GetBinaryModuleFlaxEngine()->Assembly)
+    if (assembly == ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly)
     {
         Cache.Clear();
         return;

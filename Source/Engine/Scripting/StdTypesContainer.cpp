@@ -48,7 +48,7 @@ void StdTypesContainer::Clear()
 bool StdTypesContainer::Gather()
 {
 #define GET_CLASS(assembly, type, typeName) \
-    type = CONCAT_MACROS(GetBinaryModule, assembly)()->Assembly->GetClass(typeName); \
+    type = ((ManagedBinaryModule*)CONCAT_MACROS(GetBinaryModule, assembly)())->Assembly->GetClass(typeName); \
     if (type == nullptr) \
     { \
         LOG(Error, "Missing managed type: \'{0}\'", String(typeName)); \

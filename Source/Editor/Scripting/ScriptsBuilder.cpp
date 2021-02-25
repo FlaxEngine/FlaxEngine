@@ -524,7 +524,7 @@ bool ScriptsBuilderService::Init()
     _isInited = true;
 
     // Link for Editor assembly unload event to clear cached Internal_OnCompilationEnd to prevent errors
-    auto editorAssembly = GetBinaryModuleFlaxEngine()->Assembly;
+    auto editorAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editorAssembly->Unloading.Bind(onEditorAssemblyUnloading);
 
     // Listen to scripts reloading events and forward them to c#

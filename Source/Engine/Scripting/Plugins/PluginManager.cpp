@@ -66,7 +66,7 @@ void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
     PROFILE_CPU_NAMED("Load Assembly Plugins");
 
     // Prepare FlaxEngine
-    auto engineAssembly = GetBinaryModuleFlaxEngine()->Assembly;
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     if (!engineAssembly->IsLoaded())
     {
         LOG(Warning, "Cannot find plugin class types for assembly {0} because FlaxEngine is not loaded.", assembly->ToString());

@@ -23,6 +23,8 @@ namespace Flax.Build
             var buildOptions = buildData.TargetOptions;
             foreach (var binaryModule in buildData.BinaryModules)
             {
+                if (binaryModule.All(x => !x.BuildCSharp))
+                    continue;
                 var binaryModuleName = binaryModule.Key;
                 using (new ProfileEventScope(binaryModuleName))
                 {
@@ -71,6 +73,7 @@ namespace Flax.Build
                             var dependencyModule = buildData.Rules.GetModule(dependencyName);
                             if (dependencyModule != null &&
                                 !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) &&
+                                dependencyModule.BuildCSharp &&
                                 dependencyModule.BinaryModuleName != binaryModuleName &&
                                 buildData.Modules.TryGetValue(dependencyModule, out var dependencyModuleOptions))
                             {

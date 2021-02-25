@@ -1991,6 +1991,7 @@ namespace Flax.Build.Bindings
             // Skip generating C++ bindings code for C#-only modules
             if (binaryModule.Any(x => !x.BuildNativeCode))
                 return;
+            var useCSharp = binaryModule.Any(x => x.BuildCSharp);
 
             var contents = new StringBuilder();
             var binaryModuleName = binaryModule.Key;
@@ -2018,8 +2019,8 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"#define {binaryModuleNameUpper}_COMPANY \"{project.Company}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COPYRIGHT \"{project.Copyright}\"");
             contents.AppendLine();
-            contents.AppendLine("class NativeBinaryModule;");
-            contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API NativeBinaryModule* GetBinaryModule{binaryModuleName}();");
+            contents.AppendLine("class BinaryModule;");
+            contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API BinaryModule* GetBinaryModule{binaryModuleName}();");
             GenerateCppBinaryModuleHeader?.Invoke(buildData, binaryModule, contents);
             Utilities.WriteFileIfChanged(binaryModuleHeaderPath, contents.ToString());
 
@@ -2033,9 +2034,16 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine($"StaticallyLinkedBinaryModuleInitializer StaticallyLinkedBinaryModule{binaryModuleName}(GetBinaryModule{binaryModuleName});");
             contents.AppendLine();
-            contents.AppendLine($"extern \"C\" NativeBinaryModule* GetBinaryModule{binaryModuleName}()");
+            contents.AppendLine($"extern \"C\" BinaryModule* GetBinaryModule{binaryModuleName}()");
             contents.AppendLine("{");
-            contents.AppendLine($"    static NativeBinaryModule module(\"{binaryModuleName}\", MAssemblyOptions());");
+            if (useCSharp)
+            {
+                contents.AppendLine($"    static NativeBinaryModule module(\"{binaryModuleName}\", MAssemblyOptions());");
+            }
+            else
+            {
+                contents.AppendLine($"    static NativeOnlyBinaryModule module(\"{binaryModuleName}\");");
+            }
             contents.AppendLine("    return &module;");
             contents.AppendLine("}");
             GenerateCppBinaryModuleSource?.Invoke(buildData, binaryModule, contents);

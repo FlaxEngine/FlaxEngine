@@ -218,7 +218,7 @@ namespace Flax.Build.Bindings
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 // Version
-                writer.Write(4);
+                writer.Write(5);
                 writer.Write(File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks);
 
                 // Build options
@@ -254,7 +254,7 @@ namespace Flax.Build.Bindings
             {
                 // Version
                 var version = reader.ReadInt32();
-                if (version != 4)
+                if (version != 5)
                     return false;
                 if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
                     return false;

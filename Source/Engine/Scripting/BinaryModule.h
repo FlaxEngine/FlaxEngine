@@ -355,7 +355,39 @@ public:
     void Destroy(bool isReloading) override;
 };
 
-typedef NativeBinaryModule* (*GetBinaryModuleFunc)();
+/// <summary>
+/// The C++ scripting assembly container.
+/// </summary>
+class FLAXENGINE_API NativeOnlyBinaryModule : public BinaryModule
+{
+private:
+
+    StringAnsi _name;
+
+public:
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NativeOnlyBinaryModule" /> class.
+    /// </summary>
+    /// <param name="name">The module name.</param>
+    NativeOnlyBinaryModule(const StringAnsiView& name);
+
+public:
+
+    /// <summary>
+    /// The native library (C++ DLL).
+    /// </summary>
+    void* Library;
+    
+public:
+
+    // [BinaryModule]
+    const StringAnsi& GetName() const override;
+    bool IsLoaded() const override;
+    void Destroy(bool isReloading) override;
+};
+
+typedef BinaryModule* (*GetBinaryModuleFunc)();
 
 // Helper utility for registering native binary modules that are statically linked.
 class FLAXENGINE_API StaticallyLinkedBinaryModuleInitializer

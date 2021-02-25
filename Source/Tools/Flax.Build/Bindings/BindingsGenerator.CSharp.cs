@@ -1091,6 +1091,10 @@ namespace Flax.Build.Bindings
 
         private static unsafe void GenerateCSharp(BuildData buildData, IGrouping<string, Module> binaryModule)
         {
+            // Skip generating C# bindings code for native-only modules
+            if (binaryModule.Any(x => !x.BuildCSharp))
+                return;
+
             var contents = new StringBuilder();
             var binaryModuleName = binaryModule.Key;
             var project = Builder.GetModuleProject(binaryModule.First(), buildData);

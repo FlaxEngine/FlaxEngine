@@ -104,7 +104,7 @@ bool CacheMethods()
     if (Internal_SendLog && Internal_SendLogException && Internal_GetStackTrace)
         return false;
 
-    auto engine = GetBinaryModuleFlaxEngine()->Assembly;
+    auto engine = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     if (engine == nullptr || !engine->IsLoaded())
         return true;
     auto debugLogHandlerClass = engine->GetClass("FlaxEngine.DebugLogHandler");

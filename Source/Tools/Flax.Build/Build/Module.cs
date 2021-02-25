@@ -38,6 +38,11 @@ namespace Flax.Build
         public bool BuildNativeCode = true;
 
         /// <summary>
+        /// True if module has C# code to build. Can be used for native modules without C# bindings nor code.
+        /// </summary>
+        public bool BuildCSharp = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         public Module()

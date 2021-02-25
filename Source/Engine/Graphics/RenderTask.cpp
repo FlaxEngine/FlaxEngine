@@ -163,7 +163,7 @@ void ManagedPostProcessEffect::FetchInfo()
     static MMethod* FetchInfoManaged = nullptr;
     if (FetchInfoManaged == nullptr)
     {
-        auto klass = GetBinaryModuleFlaxEngine()->Assembly->GetClass("FlaxEngine.PostProcessEffect");
+        auto klass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEngine.PostProcessEffect");
         ASSERT(klass);
         FetchInfoManaged = klass->GetMethod("FetchInfo", 3);
         ASSERT(FetchInfoManaged);

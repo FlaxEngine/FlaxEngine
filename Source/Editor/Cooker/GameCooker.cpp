@@ -456,7 +456,7 @@ int32 GameCookerImpl::ThreadFunction()
 
 bool GameCookerService::Init()
 {
-    auto editorAssembly = GetBinaryModuleFlaxEngine()->Assembly;
+    auto editorAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editorAssembly->Unloading.Bind(OnEditorAssemblyUnloading);
 
     return false;

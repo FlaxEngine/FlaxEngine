@@ -175,7 +175,7 @@ ManagedEditor::ManagedEditor()
     : PersistentScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
 {
     // Link events
-    auto editor = GetBinaryModuleFlaxEngine()->Assembly;
+    auto editor = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editor->Loaded.Bind<ManagedEditor, &ManagedEditor::OnEditorAssemblyLoaded>(this);
     ProbesRenderer::OnRegisterBake.Bind<OnRegisterBake>();
     ProbesRenderer::OnFinishBake.Bind<OnFinishBake>();
@@ -192,7 +192,7 @@ ManagedEditor::ManagedEditor()
 ManagedEditor::~ManagedEditor()
 {
     // Unlink events
-    auto editor = GetBinaryModuleFlaxEngine()->Assembly;
+    auto editor = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editor->Loaded.Unbind<ManagedEditor, &ManagedEditor::OnEditorAssemblyLoaded>(this);
     ProbesRenderer::OnRegisterBake.Unbind<OnRegisterBake>();
     ProbesRenderer::OnFinishBake.Unbind<OnFinishBake>();

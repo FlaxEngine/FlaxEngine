@@ -831,6 +831,11 @@ namespace Flax.Build
                             // C#-only binary module
                             binaryModuleInfo.NativePath = string.Empty;
                         }
+                        if (!binaryModule.Any(x => x.BuildCSharp))
+                        {
+                            // Skip C#
+                            binaryModuleInfo.ManagedPath = string.Empty;
+                        }
                         break;
                     }
                     case TargetLinkType.Modular:
@@ -849,6 +854,11 @@ namespace Flax.Build
                         {
                             // C#-only binary module
                             binaryModuleInfo.NativePath = string.Empty;
+                        }
+                        if (!module.BuildCSharp)
+                        {
+                            // Skip C#
+                            binaryModuleInfo.ManagedPath = string.Empty;
                         }
                         break;
                     }

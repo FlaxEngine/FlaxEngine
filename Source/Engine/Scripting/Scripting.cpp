@@ -124,7 +124,7 @@ bool ScriptingService::Init()
     const auto startTime = DateTime::NowUTC();
 
     // Link for assemblies events
-    auto engineAssembly = GetBinaryModuleFlaxEngine()->Assembly;
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     engineAssembly->Loaded.Bind(onEngineLoaded);
     engineAssembly->Unloading.Bind(onEngineUnloading);
 
@@ -424,7 +424,7 @@ bool Scripting::Load()
 
     // Load FlaxEngine
     const String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
-    if (GetBinaryModuleFlaxEngine()->Assembly->Load(flaxEnginePath))
+    if (((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->Load(flaxEnginePath))
     {
         LOG(Error, "Failed to load FlaxEngine C# assembly.");
         return true;

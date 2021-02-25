@@ -900,7 +900,7 @@ public:
         if (stack && stack->Scope)
         {
             const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
-            const auto mclass = GetBinaryModuleFlaxEngine()->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
+            const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
             ASSERT(mclass);
             result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
             VisualScriptLocalManaged local;
@@ -954,7 +954,7 @@ public:
                 s = s->PreviousFrame;
                 count++;
             }
-            const auto mclass = GetBinaryModuleFlaxEngine()->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
+            const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
             ASSERT(mclass);
             result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
             s = stack;
