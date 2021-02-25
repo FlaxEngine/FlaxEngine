@@ -306,7 +306,7 @@ namespace FlaxEditor.Viewport.Previews
             }
             if (_splineModel != null)
             {
-                _particleEffect.IsActive = deformableMaterial != null;
+                _splineModel.IsActive = deformableMaterial != null;
                 _splineModel.Model = _previewModel.Model;
                 _splineModel.SetMaterial(0, deformableMaterial);
             }
