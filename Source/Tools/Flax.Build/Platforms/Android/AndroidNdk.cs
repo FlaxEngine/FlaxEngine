@@ -42,7 +42,19 @@ namespace Flax.Build.Platforms
                     var subdirs = Directory.GetDirectories(Path.Combine(AndroidSdk.Instance.RootPath, "ndk"));
                     if (subdirs.Length != 0)
                     {
-                        Array.Sort(subdirs, (a, b) => Version.Parse(Path.GetFileName(a)).CompareTo(Version.Parse(Path.GetFileName(b))));
+                        Array.Sort(subdirs, (a, b) =>
+                        {
+                            Version va, vb;
+                            if (Version.TryParse(a, out va))
+                            {
+                                if (Version.TryParse(b, out vb))
+                                    return va.CompareTo(vb);
+                                return 1;
+                            }
+                            if (Version.TryParse(b, out vb))
+                                return -1;
+                            return 0;
+                        });
                         sdkPath = subdirs.Last();
                     }
                 }
@@ -56,11 +68,14 @@ namespace Flax.Build.Platforms
                 var lines = File.ReadAllLines(Path.Combine(sdkPath, "source.properties"));
                 if (lines.Length > 1)
                 {
-                    RootPath = sdkPath;
                     var ver = lines[1].Substring(lines[1].IndexOf(" = ", StringComparison.Ordinal) + 2);
-                    Version = Version.Parse(ver);
-                    IsValid = true;
-                    Log.Info(string.Format("Found Android NDK {1} at {0}", RootPath, Version));
+                    if (Version.TryParse(ver, out var v))
+                    {
+                        RootPath = sdkPath;
+                        Version = v;
+                        IsValid = true;
+                        Log.Info(string.Format("Found Android NDK {1} at {0}", RootPath, Version));
+                    }
                 }
             }
         }

@@ -158,9 +158,9 @@ namespace FlaxEditor.Windows.Assets
             _toolStripUndo = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo32, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _toolStripRedo = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo32, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
-            _toolStripTranslate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Translate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmo.Mode.Translate).LinkTooltip("Change Gizmo tool mode to Translate (1)");
-            _toolStripRotate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Rotate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmo.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate (2)");
-            _toolStripScale = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Scale32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmo.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale (3)");
+            _toolStripTranslate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Translate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip("Change Gizmo tool mode to Translate (1)");
+            _toolStripRotate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Rotate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate (2)");
+            _toolStripScale = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Scale32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale (3)");
             _toolstrip.AddSeparator();
             _toolStripLiveReload = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Reload32, () => LiveReload = !LiveReload).SetChecked(true).SetAutoCheck(true).LinkTooltip("Live changes preview (applies prefab changes on modification by auto)");
 
@@ -311,9 +311,9 @@ namespace FlaxEditor.Windows.Assets
             _toolStripRedo.Enabled = undoRedo.CanRedo;
             //
             var gizmoMode = gizmo.ActiveMode;
-            _toolStripTranslate.Checked = gizmoMode == TransformGizmo.Mode.Translate;
-            _toolStripRotate.Checked = gizmoMode == TransformGizmo.Mode.Rotate;
-            _toolStripScale.Checked = gizmoMode == TransformGizmo.Mode.Scale;
+            _toolStripTranslate.Checked = gizmoMode == TransformGizmoBase.Mode.Translate;
+            _toolStripRotate.Checked = gizmoMode == TransformGizmoBase.Mode.Rotate;
+            _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
             _toolStripLiveReload.Checked = _liveReload;
 
@@ -401,8 +401,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 _focusCamera = false;
 
-                BoundingSphere bounds;
-                Editor.GetActorEditorSphere(_viewport.Instance, out bounds);
+                Editor.GetActorEditorSphere(_viewport.Instance, out BoundingSphere bounds);
                 _viewport.ViewPosition = bounds.Center - _viewport.ViewDirection * (bounds.Radius * 1.2f);
             }
 
@@ -428,20 +427,17 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
 
-            if (float.TryParse(node.GetAttribute("Split1"), out value1))
+            if (float.TryParse(node.GetAttribute("Split1"), out float value1))
                 _split1.SplitterValue = value1;
+
             if (float.TryParse(node.GetAttribute("Split2"), out value1))
                 _split2.SplitterValue = value1;
 
-            bool value2;
-
-            if (bool.TryParse(node.GetAttribute("LiveReload"), out value2))
+            if (bool.TryParse(node.GetAttribute("LiveReload"), out bool value2))
                 LiveReload = value2;
 
-            TransformGizmo.Mode value3;
-            if (Enum.TryParse(node.GetAttribute("GizmoMode"), out value3))
+            if (Enum.TryParse(node.GetAttribute("GizmoMode"), out TransformGizmoBase.Mode value3))
                 Viewport.TransformGizmo.ActiveMode = value3;
         }
 

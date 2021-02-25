@@ -193,8 +193,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text)
         {
-            var item = new ContextMenuButton(this, text);
-            item.Parent = _panel;
+            var item = new ContextMenuButton(this, text)
+            {
+                Parent = _panel
+            };
             SortButtons();
             return item;
         }
@@ -207,8 +209,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text, string shortKeys)
         {
-            var item = new ContextMenuButton(this, text, shortKeys);
-            item.Parent = _panel;
+            var item = new ContextMenuButton(this, text, shortKeys)
+            {
+                Parent = _panel
+            };
             SortButtons();
             return item;
         }
@@ -221,8 +225,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text, Action clicked)
         {
-            var item = new ContextMenuButton(this, text);
-            item.Parent = _panel;
+            var item = new ContextMenuButton(this, text)
+            {
+                Parent = _panel
+            };
             item.Clicked += clicked;
             SortButtons();
             return item;
@@ -236,8 +242,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text, Action<ContextMenuButton> clicked)
         {
-            var item = new ContextMenuButton(this, text);
-            item.Parent = _panel;
+            var item = new ContextMenuButton(this, text)
+            {
+                Parent = _panel
+            };
             item.ButtonClicked += clicked;
             SortButtons();
             return item;
@@ -252,8 +260,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text, string shortKeys, Action clicked)
         {
-            var item = new ContextMenuButton(this, text, shortKeys);
-            item.Parent = _panel;
+            var item = new ContextMenuButton(this, text, shortKeys)
+            {
+                Parent = _panel
+            };
             item.Clicked += clicked;
             SortButtons();
             return item;
@@ -285,8 +295,10 @@ namespace FlaxEditor.GUI.ContextMenu
             var item = GetChildMenu(text);
             if (item == null)
             {
-                item = new ContextMenuChildMenu(this, text);
-                item.Parent = _panel;
+                item = new ContextMenuChildMenu(this, text)
+                {
+                    Parent = _panel
+                };
             }
 
             return item;
@@ -299,8 +311,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuChildMenu AddChildMenu(string text)
         {
-            var item = new ContextMenuChildMenu(this, text);
-            item.Parent = _panel;
+            var item = new ContextMenuChildMenu(this, text)
+            {
+                Parent = _panel
+            };
             return item;
         }
 
@@ -310,8 +324,10 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuSeparator AddSeparator()
         {
-            var item = new ContextMenuSeparator(this);
-            item.Parent = _panel;
+            var item = new ContextMenuSeparator(this)
+            {
+                Parent = _panel
+            };
             return item;
         }
 

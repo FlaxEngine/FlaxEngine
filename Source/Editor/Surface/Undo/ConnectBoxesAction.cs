@@ -76,9 +76,11 @@ namespace FlaxEditor.Surface.Undo
             var iB = _input.Get(context);
             var oB = _output.Get(context);
 
-            var toUpdate = new HashSet<Box>();
-            toUpdate.Add(iB);
-            toUpdate.Add(oB);
+            var toUpdate = new HashSet<Box>
+            {
+                iB,
+                oB
+            };
             toUpdate.AddRange(iB.Connections);
             toUpdate.AddRange(oB.Connections);
 

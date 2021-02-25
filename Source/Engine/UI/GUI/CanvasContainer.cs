@@ -32,8 +32,11 @@ namespace FlaxEngine.GUI
         private bool IntersectsChildContent(CanvasRootControl child, ref Ray ray, out Vector2 childSpaceLocation)
         {
             // Inline bounds calculations (it will reuse world matrix)
-            OrientedBoundingBox bounds = new OrientedBoundingBox();
-            bounds.Extents = new Vector3(child.Size * 0.5f, Mathf.Epsilon);
+            OrientedBoundingBox bounds = new OrientedBoundingBox
+            {
+                Extents = new Vector3(child.Size * 0.5f, Mathf.Epsilon)
+            };
+
             child.Canvas.GetWorldMatrix(out var world);
             Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out var offset);
             Matrix.Multiply(ref offset, ref world, out bounds.Transformation);

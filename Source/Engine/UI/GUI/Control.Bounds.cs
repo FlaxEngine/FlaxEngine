@@ -368,9 +368,8 @@ namespace FlaxEngine.GUI
         public void UpdateTransform()
         {
             // Actual pivot and negative pivot
-            Vector2 v1, v2;
-            Vector2.Multiply(ref _pivot, ref _bounds.Size, out v1);
-            Vector2.Negate(ref v1, out v2);
+            Vector2.Multiply(ref _pivot, ref _bounds.Size, out Vector2 v1);
+            Vector2.Negate(ref v1, out Vector2 v2);
             Vector2.Add(ref v1, ref _bounds.Location, out v1);
 
             // ------ Matrix3x3 based version:
@@ -400,16 +399,14 @@ namespace FlaxEngine.GUI
             // ------ Matrix2x2 based version:
 
             // 2D transformation
-            Matrix2x2 m1, m2;
-            Matrix2x2.Scale(ref _scale, out m1);
-            Matrix2x2.Shear(ref _shear, out m2);
+            Matrix2x2.Scale(ref _scale, out Matrix2x2 m1);
+            Matrix2x2.Shear(ref _shear, out Matrix2x2 m2);
             Matrix2x2.Multiply(ref m1, ref m2, out m1);
             Matrix2x2.Rotation(Mathf.DegreesToRadians * _rotation, out m2);
             Matrix2x2.Multiply(ref m1, ref m2, out m1);
 
             // Mix all the stuff
-            Matrix3x3 m3;
-            Matrix3x3.Translation2D(ref v2, out m3);
+            Matrix3x3.Translation2D(ref v2, out Matrix3x3 m3);
             Matrix3x3 m4 = (Matrix3x3)m1;
             Matrix3x3.Multiply(ref m3, ref m4, out m3);
             Matrix3x3.Translation2D(ref v1, out m4);

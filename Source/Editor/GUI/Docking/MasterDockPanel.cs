@@ -97,13 +97,13 @@ namespace FlaxEditor.GUI.Docking
             return base.HitTest(ref position);
         }
 
-        internal void linkWindow(DockWindow window)
+        internal void LinkWindow(DockWindow window)
         {
             // Add to the windows list
             Windows.Add(window);
         }
 
-        internal void unlinkWindow(DockWindow window)
+        internal void UnlinkWindow(DockWindow window)
         {
             // Call event to the window
             window.OnUnlinkInternal();

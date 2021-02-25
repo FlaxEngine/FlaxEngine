@@ -21,8 +21,10 @@ namespace FlaxEditor.CustomEditors.Elements
         /// </summary>
         public LabelElement()
         {
-            Label = new Label(0, 0, 100, 18);
-            Label.HorizontalAlignment = TextAlignment.Near;
+            Label = new Label(0, 0, 100, 18)
+            {
+                HorizontalAlignment = TextAlignment.Near
+            };
             // TODO: auto height for label
         }
 

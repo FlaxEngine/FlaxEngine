@@ -366,72 +366,17 @@ private:
 
 public:
 
-    MaterialParameter* Get(const Guid& id)
-    {
-        MaterialParameter* result = nullptr;
-        for (int32 i = 0; i < Count(); i++)
-        {
-            if (At(i).GetParameterID() == id)
-            {
-                result = &At(i);
-                break;
-            }
-        }
-        return result;
-    }
-
-    MaterialParameter* Get(const StringView& name)
-    {
-        MaterialParameter* result = nullptr;
-        for (int32 i = 0; i < Count(); i++)
-        {
-            if (At(i).GetName() == name)
-            {
-                result = &At(i);
-                break;
-            }
-        }
-        return result;
-    }
-
-    int32 Find(const Guid& id)
-    {
-        int32 result = -1;
-        for (int32 i = 0; i < Count(); i++)
-        {
-            if (At(i).GetParameterID() == id)
-            {
-                result = i;
-                break;
-            }
-        }
-        return result;
-    }
-
-    int32 Find(const StringView& name)
-    {
-        int32 result = -1;
-        for (int32 i = 0; i < Count(); i++)
-        {
-            if (At(i).GetName() == name)
-            {
-                result = i;
-                break;
-            }
-        }
-        return result;
-    }
+    MaterialParameter* Get(const Guid& id);
+    MaterialParameter* Get(const StringView& name);
+    int32 Find(const Guid& id);
+    int32 Find(const StringView& name);
 
 public:
 
     /// <summary>
     /// Gets the parameters version hash. Every time the parameters are modified (loaded, edited, etc.) the hash changes. Can be used to sync instanced parameters collection.
     /// </summary>
-    /// <returns>The hash.</returns>
-    FORCE_INLINE int32 GetVersionHash() const
-    {
-        return _versionHash;
-    }
+    int32 GetVersionHash() const;
 
 public:
 

@@ -453,9 +453,11 @@ namespace FlaxEditor.Viewport
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
-                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.ArrowRightBorder16, camSpeedCM);
-                camSpeedButton.Tag = this;
-                camSpeedButton.TooltipText = "Camera speed scale";
+                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.ArrowRightBorder16, camSpeedCM)
+                {
+                    Tag = this,
+                    TooltipText = "Camera speed scale"
+                };
                 _speedWidget = camSpeedButton;
                 for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
                 {
@@ -471,9 +473,11 @@ namespace FlaxEditor.Viewport
                 // View mode widget
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
                 ViewWidgetButtonMenu = new ContextMenu();
-                var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu);
-                viewModeButton.TooltipText = "View properties";
-                viewModeButton.Parent = viewMode;
+                var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
+                {
+                    TooltipText = "View properties",
+                    Parent = viewMode
+                };
                 viewMode.Parent = this;
 
                 // Show
@@ -524,8 +528,10 @@ namespace FlaxEditor.Viewport
                 // Orthographic
                 {
                     var ortho = ViewWidgetButtonMenu.AddButton("Orthographic");
-                    var orthoValue = new CheckBox(90, 2, _isOrtho);
-                    orthoValue.Parent = ortho;
+                    var orthoValue = new CheckBox(90, 2, _isOrtho)
+                    {
+                        Parent = ortho
+                    };
                     orthoValue.StateChanged += checkBox =>
                     {
                         if (checkBox.Checked != _isOrtho)
@@ -552,8 +558,11 @@ namespace FlaxEditor.Viewport
                 // Field of View
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
-                    var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f);
-                    fovValue.Parent = fov;
+                    var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f)
+                    {
+                        Parent = fov
+                    };
+
                     fovValue.ValueChanged += () => _fieldOfView = fovValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control =>
                     {
@@ -565,8 +574,11 @@ namespace FlaxEditor.Viewport
                 // Ortho Scale
                 {
                     var orthoSize = ViewWidgetButtonMenu.AddButton("Ortho Scale");
-                    var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f);
-                    orthoSizeValue.Parent = orthoSize;
+                    var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
+                    {
+                        Parent = orthoSize
+                    };
+
                     orthoSizeValue.ValueChanged += () => _orthoSize = orthoSizeValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control =>
                     {
@@ -578,8 +590,10 @@ namespace FlaxEditor.Viewport
                 // Near Plane
                 {
                     var nearPlane = ViewWidgetButtonMenu.AddButton("Near Plane");
-                    var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f);
-                    nearPlaneValue.Parent = nearPlane;
+                    var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f)
+                    {
+                        Parent = nearPlane
+                    };
                     nearPlaneValue.ValueChanged += () => _nearPlane = nearPlaneValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => nearPlaneValue.Value = _nearPlane;
                 }
@@ -587,8 +601,10 @@ namespace FlaxEditor.Viewport
                 // Far Plane
                 {
                     var farPlane = ViewWidgetButtonMenu.AddButton("Far Plane");
-                    var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f);
-                    farPlaneValue.Parent = farPlane;
+                    var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f)
+                    {
+                        Parent = farPlane
+                    };
                     farPlaneValue.ValueChanged += () => _farPlane = farPlaneValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => farPlaneValue.Value = _farPlane;
                 }
@@ -596,8 +612,10 @@ namespace FlaxEditor.Viewport
                 // Brightness
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
-                    var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f);
-                    brightnessValue.Parent = brightness;
+                    var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f)
+                    {
+                        Parent = brightness
+                    };
                     brightnessValue.ValueChanged += () => Brightness = brightnessValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => brightnessValue.Value = Brightness;
                 }
@@ -605,8 +623,10 @@ namespace FlaxEditor.Viewport
                 // Resolution
                 {
                     var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
-                    var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f);
-                    resolutionValue.Parent = resolution;
+                    var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f)
+                    {
+                        Parent = resolution
+                    };
                     resolutionValue.ValueChanged += () => ResolutionScale = resolutionValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
                 }
@@ -614,8 +634,11 @@ namespace FlaxEditor.Viewport
                 // Invert Panning
                 {
                     var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
-                    var invertValue = new CheckBox(90, 2, _invertPanning);
-                    invertValue.Parent = invert;
+                    var invertValue = new CheckBox(90, 2, _invertPanning)
+                    {
+                        Parent = invert
+                    };
+
                     invertValue.StateChanged += checkBox =>
                     {
                         if (checkBox.Checked != _invertPanning)
@@ -690,10 +713,12 @@ namespace FlaxEditor.Viewport
 
         private void InitFpsCounter()
         {
-            _fpsCounter = new FpsCounter(10, ViewportWidgetsContainer.WidgetsHeight + 14);
-            _fpsCounter.Visible = false;
-            _fpsCounter.Enabled = false;
-            _fpsCounter.Parent = this;
+            _fpsCounter = new FpsCounter(10, ViewportWidgetsContainer.WidgetsHeight + 14)
+            {
+                Visible = false,
+                Enabled = false,
+                Parent = this
+            };
         }
 
         #endregion
@@ -1085,7 +1110,7 @@ namespace FlaxEditor.Viewport
                 {
                     // Accelerate the delta
                     var currentDelta = mouseDelta;
-                    mouseDelta = mouseDelta + _mouseDeltaRightLast * _mouseAccelerationScale;
+                    mouseDelta += _mouseDeltaRightLast * _mouseAccelerationScale;
                     _mouseDeltaRightLast = currentDelta;
                 }
 

@@ -267,8 +267,7 @@ namespace FlaxEngine
         /// <returns>The color.</returns>
         public static Color ParseHex(string hexString)
         {
-            Color value;
-            if (TryParseHex(hexString, out value))
+            if (TryParseHex(hexString, out Color value))
             {
                 return value;
             }
@@ -782,9 +781,9 @@ namespace FlaxEngine
                     s = vv / v;
                     h = offset + (colorone - colortwo) / vv;
                 }
-                h = h / 6f;
+                h /= 6f;
                 if (h < 0f)
-                    h = h + 1f;
+                    h++;
             }
         }
 
@@ -946,8 +945,7 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Color Clamp(Color value, Color min, Color max)
         {
-            Color result;
-            Clamp(ref value, ref min, ref max, out result);
+            Clamp(ref value, ref min, ref max, out Color result);
             return result;
         }
 

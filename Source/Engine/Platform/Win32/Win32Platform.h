@@ -5,7 +5,6 @@
 #if PLATFORM_WIN32
 
 #include "Engine/Platform/Base/PlatformBase.h"
-#include <xmmintrin.h>
 
 /// <summary>
 /// The Win32 platform implementation and application management utilities.
@@ -27,21 +26,9 @@ public:
     static int64 AtomicRead(int64 volatile* dst);
     static void AtomicStore(int32 volatile* dst, int32 value);
     static void AtomicStore(int64 volatile* dst, int64 value);
-    FORCE_INLINE static void Prefetch(void const* ptr)
-    {
-        _mm_prefetch((char const*)ptr, _MM_HINT_T0);
-    }
-    FORCE_INLINE static void* Allocate(uint64 size, uint64 alignment)
-    {
-#if COMPILE_WITH_PROFILER
-        TrackAllocation(size);
-#endif
-        return _aligned_malloc((size_t)size, (size_t)alignment);
-    }
-    FORCE_INLINE static void Free(void* ptr)
-    {
-        _aligned_free(ptr);
-    }
+    static void Prefetch(void const* ptr);
+    static void* Allocate(uint64 size, uint64 alignment);
+    static void Free(void* ptr);
     static bool Is64BitPlatform();
     static BatteryInfo GetBatteryInfo();
     static CPUInfo GetCPUInfo();

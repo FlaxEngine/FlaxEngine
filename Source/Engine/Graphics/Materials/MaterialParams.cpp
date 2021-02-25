@@ -440,6 +440,67 @@ String MaterialParameter::ToString() const
     return String::Format(TEXT("\'{0}\' ({1}:{2}:{3})"), _name, ::ToString(_type), _paramId, _isPublic);
 }
 
+MaterialParameter* MaterialParams::Get(const Guid& id)
+{
+    MaterialParameter* result = nullptr;
+    for (int32 i = 0; i < Count(); i++)
+    {
+        if (At(i).GetParameterID() == id)
+        {
+            result = &At(i);
+            break;
+        }
+    }
+    return result;
+}
+
+MaterialParameter* MaterialParams::Get(const StringView& name)
+{
+    MaterialParameter* result = nullptr;
+    for (int32 i = 0; i < Count(); i++)
+    {
+        if (At(i).GetName() == name)
+        {
+            result = &At(i);
+            break;
+        }
+    }
+    return result;
+}
+
+int32 MaterialParams::Find(const Guid& id)
+{
+    int32 result = -1;
+    for (int32 i = 0; i < Count(); i++)
+    {
+        if (At(i).GetParameterID() == id)
+        {
+            result = i;
+            break;
+        }
+    }
+    return result;
+}
+
+int32 MaterialParams::Find(const StringView& name)
+{
+    int32 result = -1;
+    for (int32 i = 0; i < Count(); i++)
+    {
+        if (At(i).GetName() == name)
+        {
+            result = i;
+            break;
+        }
+    }
+    return result;
+}
+
+int32 MaterialParams::GetVersionHash() const
+{
+    return _versionHash;
+}
+
 void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta)
 {
     ASSERT(link && link->This);

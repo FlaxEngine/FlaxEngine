@@ -149,8 +149,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            float distance;
-            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out distance);
+            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -423,8 +422,7 @@ namespace FlaxEngine
         /// <returns>The result of the transformation.</returns>
         public static BoundingBox Transform(BoundingBox box, Matrix transform)
         {
-            BoundingBox result;
-            Transform(ref box, ref transform, out result);
+            Transform(ref box, ref transform, out BoundingBox result);
             return result;
         }
 
@@ -480,8 +478,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BoundingBox operator *(BoundingBox box, Matrix transform)
         {
-            BoundingBox result;
-            Transform(ref box, ref transform, out result);
+            Transform(ref box, ref transform, out BoundingBox result);
             return result;
         }
 

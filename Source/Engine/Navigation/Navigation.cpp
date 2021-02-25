@@ -87,7 +87,7 @@ bool Navigation::FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hi
     ScopeLock lock(_navMesh->Locker);
 
     const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh->GetNavMesh())
     {
         return false;
     }
@@ -102,7 +102,7 @@ bool Navigation::FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hi
         return false;
     }
 
-    return dtStatusSucceed(_navMesh->GetNavMeshQuery()->findDistanceToWall(startPoly, &startPosition.X, maxDistance, &filter, &hitInfo.Distance, &hitInfo.Position.X, &hitInfo.Normal.X));
+    return dtStatusSucceed(query->findDistanceToWall(startPoly, &startPosition.X, maxDistance, &filter, &hitInfo.Distance, &hitInfo.Position.X, &hitInfo.Normal.X));
 }
 
 bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath)
@@ -111,7 +111,7 @@ bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPositi
     ScopeLock lock(_navMesh->Locker);
 
     const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh->GetNavMesh())
     {
         return false;
     }
@@ -134,7 +134,7 @@ bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPositi
 
     dtPolyRef path[NAV_MESH_PATH_MAX_SIZE];
     int32 pathSize;
-    const auto findPathStatus = _navMesh->GetNavMeshQuery()->findPath(startPoly, endPoly, &startPosition.X, &endPosition.X, &filter, path, &pathSize, NAV_MESH_PATH_MAX_SIZE);
+    const auto findPathStatus = query->findPath(startPoly, endPoly, &startPosition.X, &endPosition.X, &filter, path, &pathSize, NAV_MESH_PATH_MAX_SIZE);
     if (dtStatusFailed(findPathStatus))
     {
         return false;
@@ -147,13 +147,13 @@ bool Navigation::FindPath(const Vector3& startPosition, const Vector3& endPositi
         resultPath.Resize(2);
         resultPath[0] = startPosition;
         resultPath[1] = startPosition;
-        _navMesh->GetNavMeshQuery()->closestPointOnPolyBoundary(startPoly, &endPosition.X, &resultPath[1].X);
+        query->closestPointOnPolyBoundary(startPoly, &endPosition.X, &resultPath[1].X);
     }
     else
     {
         int straightPathCount = 0;
         resultPath.EnsureCapacity(NAV_MESH_PATH_MAX_SIZE);
-        const auto findStraightPathStatus = _navMesh->GetNavMeshQuery()->findStraightPath(&startPosition.X, &endPosition.X, path, pathSize, (float*)resultPath.Get(), nullptr, nullptr, &straightPathCount, resultPath.Capacity(), DT_STRAIGHTPATH_AREA_CROSSINGS);
+        const auto findStraightPathStatus = query->findStraightPath(&startPosition.X, &endPosition.X, path, pathSize, (float*)resultPath.Get(), nullptr, nullptr, &straightPathCount, resultPath.Capacity(), DT_STRAIGHTPATH_AREA_CROSSINGS);
         if (dtStatusFailed(findStraightPathStatus))
         {
             return false;
@@ -169,7 +169,7 @@ bool Navigation::ProjectPoint(const Vector3& point, Vector3& result)
     ScopeLock lock(_navMesh->Locker);
 
     const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh->GetNavMesh())
     {
         return false;
     }
@@ -192,7 +192,7 @@ bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPositio
     ScopeLock lock(_navMesh->Locker);
 
     const auto query = _navMesh->GetNavMeshQuery();
-    if (!query)
+    if (!query || !_navMesh->GetNavMesh())
     {
         return false;
     }
@@ -210,7 +210,7 @@ bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPositio
     dtRaycastHit hit;
     hit.path = nullptr;
     hit.maxPath = 0;
-    const bool result = dtStatusSucceed(_navMesh->GetNavMeshQuery()->raycast(startPoly, &startPosition.X, &endPosition.X, &filter, 0, &hit));
+    const bool result = dtStatusSucceed(query->raycast(startPoly, &startPosition.X, &endPosition.X, &filter, 0, &hit));
     if (hit.t >= MAX_float)
     {
         hitInfo.Position = endPosition;

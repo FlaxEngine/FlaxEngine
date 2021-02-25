@@ -481,7 +481,7 @@ void WindowsWindow::StartTrackingMouse(bool useMouseScreenOffset)
 
         int32 x = 0 , y = 0, width = 0, height = 0;
         GetScreenInfo(x, y, width, height);
-        _mouseOffsetScreenSize = Rectangle(x, y, width, height);
+        _mouseOffsetScreenSize = Rectangle((float)x, (float)y, (float)width, (float)height);
 
         SetCapture(_handle);
     }

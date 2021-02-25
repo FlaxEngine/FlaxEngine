@@ -307,7 +307,7 @@ namespace FlaxEngine.Collections
                 return true;
             }
 
-            value = default(TValue);
+            value = default;
             return false;
         }
 

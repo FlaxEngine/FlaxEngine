@@ -890,19 +890,18 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            float value1;
-            Guid value2;
-            Timeline.TimeShowModes value3;
-            bool value4;
-
-            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out value1))
+            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out float value1))
                 _timeline.Splitter.SplitterValue = value1;
-            if (Guid.TryParse(node.GetAttribute("SelectedPlayer"), out value2))
+
+            if (Guid.TryParse(node.GetAttribute("SelectedPlayer"), out Guid value2))
                 _cachedPlayerId = value2;
-            if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out value3))
+
+            if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out Timeline.TimeShowModes value3))
                 _timeline.TimeShowMode = value3;
-            if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out value4))
+
+            if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out bool value4))
                 _timeline.ShowPreviewValues = value4;
+
             if (bool.TryParse(node.GetAttribute("ShowSelected3dTrack"), out value4))
                 _timeline.ShowSelected3dTrack = value4;
         }

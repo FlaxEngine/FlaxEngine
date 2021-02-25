@@ -261,13 +261,17 @@ namespace FlaxEditor.CustomEditors.Editors
             // Ensure to have valid drag helpers (uses lazy init)
             if (_dragActors == null)
                 _dragActors = new DragActors(x => IsValid(TypeUtils.GetObjectType(x.Actor)));
+
             if (_dragScripts == null)
                 _dragScripts = new DragScripts(x => IsValid(TypeUtils.GetObjectType(x)));
+
             if (_dragHandlers == null)
             {
-                _dragHandlers = new DragHandlers();
-                _dragHandlers.Add(_dragActors);
-                _dragHandlers.Add(_dragScripts);
+                _dragHandlers = new DragHandlers
+                {
+                    _dragActors,
+                    _dragScripts
+                };
             }
 
             _hasValidDragOver = _dragHandlers.OnDragEnter(data) != DragDropEffect.None;

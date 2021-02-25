@@ -597,8 +597,10 @@ namespace FlaxEditor.GUI.Docking
             if (_tabsProxy == null)
             {
                 // Create proxy and make set simple full dock
-                _tabsProxy = new DockPanelProxy(this);
-                _tabsProxy.Parent = this;
+                _tabsProxy = new DockPanelProxy(this)
+                {
+                    Parent = this
+                };
                 _tabsProxy.UnlockChildrenRecursive();
             }
         }
