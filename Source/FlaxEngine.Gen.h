@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Compiler.h"
-
 #define FLAXENGINE_NAME "FlaxEngine"
 #define FLAXENGINE_VERSION Version(1, 0, 6216)
 #define FLAXENGINE_VERSION_TEXT "1.0.6216"

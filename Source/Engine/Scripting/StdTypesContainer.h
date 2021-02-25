@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Singleton.h"
-#include "Engine/Core/Compiler.h"
 
 class MClass;
 class MMethod;

@@ -2005,8 +2005,6 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine("#pragma once");
             contents.AppendLine();
-            contents.AppendLine("#include \"Engine/Core/Compiler.h\"");
-            contents.AppendLine();
             contents.AppendLine($"#define {binaryModuleNameUpper}_NAME \"{binaryModuleName}\"");
             if (version.Build == -1)
                 contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor})");

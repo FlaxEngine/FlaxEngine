@@ -695,14 +695,14 @@ namespace Flax.Build
                             if (buildData.Target.LinkType == TargetLinkType.Modular)
                             {
                                 // Export symbols from binary module
-                                moduleOptions.CompileEnv.PreprocessorDefinitions.Add(binaryModuleNameUpper + (target.UseSymbolsExports ? "_API=DLLEXPORT" : "_API="));
+                                moduleOptions.CompileEnv.PreprocessorDefinitions.Add(binaryModuleNameUpper + (target.UseSymbolsExports ? "_API=" + toolchain.DllExport : "_API="));
                             }
                             else
                             {
                                 // Export symbols from all binary modules in the build
                                 foreach (var q in buildData.BinaryModules)
                                 {
-                                    moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Key.ToUpperInvariant() + (target.UseSymbolsExports ? "_API=DLLEXPORT" : "_API="));
+                                    moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Key.ToUpperInvariant() + (target.UseSymbolsExports ? "_API=" + toolchain.DllExport : "_API="));
                                 }
                             }
 
@@ -715,7 +715,7 @@ namespace Flax.Build
                                         if (buildData.Target.LinkType == TargetLinkType.Modular)
                                         {
                                             // Import symbols from referenced binary module
-                                            moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Name.ToUpperInvariant() + "_API=DLLIMPORT");
+                                            moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Name.ToUpperInvariant() + "_API=" + toolchain.DllImport);
 
                                             // Link against the referenced binary module
                                             if (toolchain.UseImportLibraryWhenLinking)
@@ -726,7 +726,7 @@ namespace Flax.Build
                                         else if (target.UseSymbolsExports)
                                         {
                                             // Export symbols from referenced binary module to be visible further
-                                            moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Name.ToUpperInvariant() + "_API=DLLEXPORT");
+                                            moduleOptions.CompileEnv.PreprocessorDefinitions.Add(q.Name.ToUpperInvariant() + "_API=" + toolchain.DllExport);
                                         }
                                         else
                                         {

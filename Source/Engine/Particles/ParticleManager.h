@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Compiler.h"
-
 struct RenderContext;
 struct RenderView;
 class ParticleEmitter;

@@ -196,6 +196,12 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
+        public override string DllExport => "__attribute__ ((__visibility__ (\"default\")))";
+
+        /// <inheritdoc />
+        public override string DllImport => "";
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             if (!string.IsNullOrEmpty(ToolsetRoot))

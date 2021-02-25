@@ -42,6 +42,16 @@ namespace Flax.Build
         public virtual bool GeneratesImportLibraryWhenLinking => false;
 
         /// <summary>
+        /// Gets the compiler attribute for symbols exported to shared library (dll file).
+        /// </summary>
+        public abstract string DllExport { get; }
+
+        /// <summary>
+        /// Gets the compiler attribute for symbols imported from shared library (dll file).
+        /// </summary>
+        public abstract string DllImport { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Toolchain"/> class.
         /// </summary>
         /// <param name="platform">The platform.</param>

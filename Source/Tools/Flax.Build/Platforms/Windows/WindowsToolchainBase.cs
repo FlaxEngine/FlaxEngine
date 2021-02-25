@@ -331,6 +331,12 @@ namespace Flax.Build.Platforms
         public override bool GeneratesImportLibraryWhenLinking => true;
 
         /// <inheritdoc />
+        public override string DllExport => "__declspec(dllexport)";
+
+        /// <inheritdoc />
+        public override string DllImport => "__declspec(dllimport)";
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             var sdkPath = WindowsPlatformBase.GetSDKs()[SDK];

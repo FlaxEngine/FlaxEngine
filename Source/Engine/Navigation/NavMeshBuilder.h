@@ -4,8 +4,6 @@
 
 #if COMPILE_WITH_NAV_MESH_BUILDER
 
-#include "Engine/Core/Compiler.h"
-
 class Scene;
 
 /// <summary>

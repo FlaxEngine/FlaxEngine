@@ -141,7 +141,7 @@ namespace Flax.Build
             mainModuleOptions.SourcePaths.Add(mainModule.FolderPath);
             mainModule.Setup(mainModuleOptions);
             mainModuleOptions.MergeSourcePathsIntoSourceFiles();
-            mainModuleOptions.CompileEnv.PreprocessorDefinitions.Add("FLAXENGINE_API=DLLIMPORT");
+            mainModuleOptions.CompileEnv.PreprocessorDefinitions.Add("FLAXENGINE_API=" + buildOptions.Toolchain.DllImport);
             Builder.BuildModuleInner(buildData, mainModule, mainModuleOptions, false);
 
             // Link executable
