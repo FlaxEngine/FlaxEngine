@@ -462,7 +462,7 @@ public:
     /// <summary>
     /// Gets the zero-based index of the layer.
     /// </summary>
-    static int32 GetLayerIndex(const StringView& layer);
+    API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
 
 private:
 

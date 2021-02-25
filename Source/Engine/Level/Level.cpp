@@ -42,16 +42,6 @@ bool LayersMask::HasLayer(const StringView& layerName) const
     return HasLayer(Level::GetLayerIndex(layerName));
 }
 
-bool LayersMask::operator==(const LayersMask& other) const
-{
-    return Mask == other.Mask;
-}
-
-bool LayersMask::operator!=(const LayersMask& other) const
-{
-    return Mask != other.Mask;
-}
-
 enum class SceneEventType
 {
     OnSceneSaving = 0,

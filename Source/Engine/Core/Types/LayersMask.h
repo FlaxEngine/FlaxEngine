@@ -17,6 +17,17 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LayersMask);
     /// </summary>
     API_FIELD() uint32 Mask = MAX_uint32;
 
+public:
+
+    FORCE_INLINE LayersMask()
+    {
+    }
+
+    FORCE_INLINE LayersMask(uint32 mask)
+        : Mask(mask)
+    {
+    }
+
     FORCE_INLINE bool HasLayer(int32 layerIndex) const
     {
         return (Mask & (1 << layerIndex)) != 0;
@@ -24,8 +35,50 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LayersMask);
 
     bool HasLayer(const StringView& layerName) const;
 
-    bool operator==(const LayersMask& other) const;
-    bool operator!=(const LayersMask& other) const;
+    operator uint32() const
+    {
+        return Mask;
+    }
+
+    bool operator==(const LayersMask& other) const
+    {
+        return Mask == other.Mask;
+    }
+
+    bool operator!=(const LayersMask& other) const
+    {
+        return Mask != other.Mask;
+    }
+
+    LayersMask operator+(const LayersMask& other) const
+    {
+        return Mask | other.Mask;
+    }
+
+    LayersMask operator-(const LayersMask& other) const
+    {
+        return Mask & ~other.Mask;
+    }
+
+    LayersMask operator&(const LayersMask& other) const
+    {
+        return Mask && other.Mask;
+    }
+
+    LayersMask operator|(const LayersMask& other) const
+    {
+        return Mask | other.Mask;
+    }
+
+    LayersMask operator^(const LayersMask& other) const
+    {
+        return Mask ^ other.Mask;
+    }
+
+    LayersMask operator-() const
+    {
+        return ~Mask;
+    }
 };
 
 // @formatter:off

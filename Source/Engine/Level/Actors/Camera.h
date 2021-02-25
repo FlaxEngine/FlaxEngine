@@ -7,7 +7,7 @@
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
-#include "Engine/Core/Config/LayersMask.h"
+#include "Engine/Core/Types/LayersMask.h"
 #if USE_EDITOR
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"

@@ -5,7 +5,7 @@
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Vector3.h"
-#include "Engine/Core/Config/LayersMask.h"
+#include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Level/Types.h"
 #include "Enums.h"
 
