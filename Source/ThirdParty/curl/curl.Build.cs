@@ -16,6 +16,9 @@ public class curl : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "curl License.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

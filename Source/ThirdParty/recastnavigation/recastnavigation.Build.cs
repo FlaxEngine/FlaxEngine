@@ -14,5 +14,8 @@ public class recastnavigation : ThirdPartyModule
 
         LicenseType = LicenseTypes.zLib;
         LicenseFilePath = "License.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

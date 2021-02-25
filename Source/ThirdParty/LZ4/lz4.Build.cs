@@ -14,5 +14,8 @@ public class lz4 : ThirdPartyModule
 
         LicenseType = LicenseTypes.BSD2Clause;
         LicenseFilePath = "LICENSE.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

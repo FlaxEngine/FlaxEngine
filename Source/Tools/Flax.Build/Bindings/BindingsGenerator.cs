@@ -72,7 +72,7 @@ namespace Flax.Build.Bindings
             buildData.ModulesInfo.Add(module, moduleInfo);
 
             // Skip for modules that cannot have API bindings
-            if (module is ThirdPartyModule || !module.BuildNativeCode)
+            if (!module.BuildCSharp || !module.BuildNativeCode)
                 return moduleInfo;
 
             if (moduleOptions == null)

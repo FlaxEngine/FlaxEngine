@@ -16,6 +16,9 @@ public class UVAtlas : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

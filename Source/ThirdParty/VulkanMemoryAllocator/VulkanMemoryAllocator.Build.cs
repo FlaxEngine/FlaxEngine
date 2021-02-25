@@ -14,5 +14,8 @@ public class VulkanMemoryAllocator : HeaderOnlyModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

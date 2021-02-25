@@ -14,5 +14,8 @@ public class minimp3 : HeaderOnlyModule
 
         LicenseType = LicenseTypes.CreativeCommonsZero;
         LicenseFilePath = "LICENSE";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

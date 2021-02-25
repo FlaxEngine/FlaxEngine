@@ -16,6 +16,9 @@ public class rapidjson : HeaderOnlyModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "RapidJSON license.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

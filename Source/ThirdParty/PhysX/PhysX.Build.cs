@@ -17,6 +17,9 @@ public class PhysX : DepsModule
 
         LicenseType = LicenseTypes.BSD3Clause;
         LicenseFilePath = "License.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

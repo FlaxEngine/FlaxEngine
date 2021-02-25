@@ -16,6 +16,9 @@ public class ogg : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "COPYING";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

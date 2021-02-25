@@ -17,6 +17,9 @@ public class spirv_tools : DepsModule
         Name = "spirv-tools";
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "LICENSE.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

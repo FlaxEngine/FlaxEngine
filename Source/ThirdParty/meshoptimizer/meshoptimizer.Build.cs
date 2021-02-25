@@ -14,5 +14,8 @@ public class meshoptimizer : ThirdPartyModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE.md";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

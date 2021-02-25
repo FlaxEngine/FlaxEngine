@@ -16,6 +16,9 @@ public class fmt : ThirdPartyModule
 
         LicenseType = LicenseTypes.BSD2Clause;
         LicenseFilePath = "cppformat license.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

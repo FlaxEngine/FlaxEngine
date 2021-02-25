@@ -14,5 +14,8 @@ public class pugixml : ThirdPartyModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "pugixml license.txt";
+
+        // Merge third-party modules into engine binary
+        BinaryModuleName = "FlaxEngine";
     }
 }

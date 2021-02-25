@@ -187,8 +187,8 @@ namespace Flax.Build
         /// <inheritdoc />
         public ThirdPartyModule()
         {
-            // Merge third-party modules into engine binary
-            BinaryModuleName = "FlaxEngine";
+            // Third-party modules are native and don't use bindings by default
+            BuildCSharp = false;
         }
 
         /// <inheritdoc />
