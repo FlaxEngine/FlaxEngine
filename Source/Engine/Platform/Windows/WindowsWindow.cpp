@@ -13,11 +13,35 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
 
-// TODO: finish better borderless window on windows (fix mouse pos offset when maximized and fix white flicker on window show)
-#define WINDOWS_USE_NEW_BORDER_LESS 0
-
+// Use improved borderless window support for Editor
+#define WINDOWS_USE_NEW_BORDER_LESS USE_EDITOR && 0
 #if WINDOWS_USE_NEW_BORDER_LESS
 #pragma comment(lib, "Gdi32.lib")
+WIN_API HRGN WIN_API_CALLCONV CreateRectRgn(int x1, int y1, int x2, int y2);
+#endif
+#define WINDOWS_USE_NEWER_BORDER_LESS USE_EDITOR && 1
+#if WINDOWS_USE_NEWER_BORDER_LESS
+#pragma comment(lib, "dwmapi.lib")
+WIN_API HRESULT WIN_API_CALLCONV DwmExtendFrameIntoClientArea(HWND hWnd, const void* pMarInset);
+WIN_API HRESULT WIN_API_CALLCONV DwmIsCompositionEnabled(BOOL* pfEnabled);
+
+namespace
+{
+    bool IsCompositionEnabled()
+    {
+        BOOL result = FALSE;
+        const bool success = ::DwmIsCompositionEnabled(&result) == S_OK;
+        return result && success;
+    }
+
+    bool IsWindowMaximized(HWND window)
+    {
+        WINDOWPLACEMENT placement;
+        if (!::GetWindowPlacement(window, &placement))
+            return false;
+        return placement.showCmd == SW_MAXIMIZE;
+    }
+}
 #endif
 
 WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
@@ -73,10 +97,13 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     else
     {
         // Create window style flags
-#if WINDOWS_USE_NEW_BORDER_LESS
-        style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
-#else
         style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+#if WINDOWS_USE_NEW_BORDER_LESS
+        if (settings.IsRegularWindow)
+            style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
+#elif WINDOWS_USE_NEWER_BORDER_LESS
+        if (settings.IsRegularWindow)
+            style |= WS_THICKFRAME | WS_SYSMENU;
 #endif
         exStyle |= WS_EX_WINDOWEDGE;
     }
@@ -102,6 +129,15 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         LOG_WIN32_LAST_ERROR;
         Platform::Fatal(TEXT("Cannot create window."));
     }
+
+#if WINDOWS_USE_NEWER_BORDER_LESS
+    // Enable shadow
+    if (_settings.IsRegularWindow && !_settings.HasBorder && IsCompositionEnabled())
+    {
+        static const int margin[4] = { 1, 1, 1, 1 };
+        ::DwmExtendFrameIntoClientArea(_handle, margin);
+    }
+#endif
 
 #if USE_EDITOR
     // Enable file dropping
@@ -156,7 +192,7 @@ void WindowsWindow::Show()
         // Show
         ShowWindow(_handle, (_settings.AllowInput && _settings.ActivateWhenFirstShown) ? SW_SHOW : SW_SHOWNA);
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (!_settings.HasBorder)
+        if (!_settings.HasBorder && _settings.IsRegularWindow)
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
         }
@@ -295,7 +331,10 @@ void WindowsWindow::SetClientBounds(const Rectangle& clientArea)
     // Change window size and location
     SetWindowPos(_handle, nullptr, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
 
-    UpdateRegion();
+    if (changeSize)
+    {
+        UpdateRegion();
+    }
 }
 
 void WindowsWindow::SetPosition(const Vector2& position)
@@ -438,8 +477,7 @@ float WindowsWindow::GetOpacity() const
     BYTE alpha;
     DWORD flags;
     GetLayeredWindowAttributes(_handle, &color, &alpha, &flags);
-
-    return alpha / 255.0f;
+    return (float)alpha / 255.0f;
 }
 
 void WindowsWindow::SetOpacity(const float opacity)
@@ -479,7 +517,7 @@ void WindowsWindow::StartTrackingMouse(bool useMouseScreenOffset)
         _trackingMouseOffset = Vector2::Zero;
         _isUsingMouseOffset = useMouseScreenOffset;
 
-        int32 x = 0 , y = 0, width = 0, height = 0;
+        int32 x = 0, y = 0, width = 0, height = 0;
         GetScreenInfo(x, y, width, height);
         _mouseOffsetScreenSize = Rectangle((float)x, (float)y, (float)width, (float)height);
 
@@ -630,13 +668,29 @@ void WindowsWindow::UpdateCursor() const
 void WindowsWindow::UpdateRegion()
 {
 #if WINDOWS_USE_NEW_BORDER_LESS
-    if (!_settings.HasBorder)
+    // Use region to remove rounded corners of the window
+    if (!_settings.HasBorder && _settings.IsRegularWindow)
     {
-        // Remove rounded corners
-        RECT rcWnd;
-        GetWindowRect(_handle, &rcWnd);
-        HRGN region = CreateRectRgn(0, 0, rcWnd.right - rcWnd.left, rcWnd.bottom - rcWnd.top);
-        SetWindowRgn(_handle, region, FALSE);
+        if (!_maximized && !_isResizing)
+        {
+            RECT rcWnd;
+            GetWindowRect(_handle, &rcWnd);
+            const int32 width = rcWnd.right - rcWnd.left;
+            const int32 height = rcWnd.bottom - rcWnd.top;
+            if (_regionWidth != width || _regionHeight != height)
+            {
+                _regionWidth = width;
+                _regionHeight = height;
+                const HRGN region = CreateRectRgn(0, 0, width, height);
+                SetWindowRgn(_handle, region, FALSE);
+            }
+        }
+        else if (_regionWidth != 0 || _regionHeight != 0)
+        {
+            _regionWidth = 0;
+            _regionHeight = 0;
+            SetWindowRgn(_handle, nullptr, FALSE);
+        }
     }
 #endif
 }
@@ -654,8 +708,6 @@ void TrackMouse(HWND hwnd)
 LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
     const UINT_PTR MouseStopTimerID = 1;
-
-    // Switch message type
     switch (msg)
     {
     case WM_PAINT:
@@ -675,7 +727,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     }
-
     case WM_TIMER:
     {
         if (wParam == MouseStopTimerID)
@@ -686,7 +737,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     }
-
     case WM_SETCURSOR:
     {
         if (LOWORD(lParam) == HTCLIENT)
@@ -697,7 +747,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
         break;
     }
-
     case WM_MOUSEMOVE:
     {
         if (!_trackingMouse)
@@ -717,18 +766,18 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         {
             // Check if move mouse to another edge of the desktop
             Vector2 desktopLocation = _mouseOffsetScreenSize.Location;
-            Vector2 destopSize = _mouseOffsetScreenSize.GetBottomRight();
+            Vector2 desktopSize = _mouseOffsetScreenSize.GetBottomRight();
 
             const Vector2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
             Vector2 mousePosition = ClientToScreen(mousePos);
             Vector2 newMousePosition = mousePosition;
             if (mousePosition.X <= desktopLocation.X + 2)
-                newMousePosition.X = destopSize.X - 2;
-            else if (mousePosition.X >= destopSize.X - 1)
+                newMousePosition.X = desktopSize.X - 2;
+            else if (mousePosition.X >= desktopSize.X - 1)
                 newMousePosition.X = desktopLocation.X + 2;
             if (mousePosition.Y <= desktopLocation.Y + 2)
-                newMousePosition.Y = destopSize.Y - 2;
-            else if (mousePosition.Y >= destopSize.Y - 1)
+                newMousePosition.Y = desktopSize.Y - 2;
+            else if (mousePosition.Y >= desktopSize.Y - 1)
                 newMousePosition.Y = desktopLocation.Y + 2;
             if (!Vector2::NearEqual(mousePosition, newMousePosition))
             {
@@ -739,17 +788,15 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
         break;
     }
-
     case WM_MOUSELEAVE:
     {
         _trackingMouse = false;
         break;
     }
-
     case WM_NCCALCSIZE:
     {
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (wParam && !_settings.HasBorder)
+        if (wParam && !_settings.HasBorder && _settings.IsRegularWindow)
         {
             if (_maximized)
             {
@@ -782,10 +829,30 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 return 0;
             }
         }
+#elif WINDOWS_USE_NEWER_BORDER_LESS
+        if (wParam == TRUE && !_settings.HasBorder && _settings.IsRegularWindow)
+        {
+            // In maximized mode fill the whole work area of the monitor (excludes task bar)
+            if (::IsWindowMaximized(_handle))
+            {
+                HMONITOR monitor = ::MonitorFromWindow(_handle, MONITOR_DEFAULTTONULL);
+                if (monitor)
+                {
+                    MONITORINFO monitorInfo;
+                    monitorInfo.cbSize = sizeof(monitorInfo);
+                    if (::GetMonitorInfoW(monitor, &monitorInfo))
+                    {
+                        LPNCCALCSIZE_PARAMS rects = (LPNCCALCSIZE_PARAMS)lParam;
+                        rects->rgrc[0] = monitorInfo.rcWork;
+                    }
+                }
+            }
+            SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            return 0;
+        }
 #endif
         break;
     }
-
     case WM_NCHITTEST:
     {
         // Override it for fullscreen mode
@@ -800,7 +867,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return static_cast<int32>(hit);
         break;
     }
-
     case WM_NCLBUTTONDOWN:
     {
         bool result = false;
@@ -809,7 +875,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return 0;
         break;
     }
-
     case WM_NCLBUTTONDBLCLK:
     {
         // Handle non-client area double click manually
@@ -819,7 +884,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             Maximize();
         return 0;
     }
-
     case WM_NCACTIVATE:
     {
         // Skip for border-less windows
@@ -827,21 +891,18 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return 1;
         break;
     }
-
     case WM_NCPAINT:
     {
         // Skip for border-less windows
         if (!_settings.HasBorder)
-            return 0;
+            return 1;
         break;
     }
-
     case WM_ERASEBKGND:
     {
         // Skip the window background erasing
         return 1;
     }
-
     case WM_GETMINMAXINFO:
     {
         const auto minMax = reinterpret_cast<MINMAXINFO*>(lParam);
@@ -872,18 +933,18 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 MONITORINFO monitorInfo;
                 monitorInfo.cbSize = sizeof(MONITORINFO);
-                GetMonitorInfoW(monitor, &monitorInfo);
-
-                minMax->ptMaxPosition.x = Math::Abs(monitorInfo.rcWork.left - monitorInfo.rcMonitor.left);
-                minMax->ptMaxPosition.y = Math::Abs(monitorInfo.rcWork.top - monitorInfo.rcMonitor.top);
-                minMax->ptMaxSize.x = Math::Abs(monitorInfo.rcWork.right - monitorInfo.rcWork.left);
-                minMax->ptMaxSize.y = Math::Abs(monitorInfo.rcWork.bottom - monitorInfo.rcWork.top);
+                if (::GetMonitorInfoW(monitor, &monitorInfo))
+                {
+                    minMax->ptMaxPosition.x = Math::Abs(monitorInfo.rcWork.left - monitorInfo.rcMonitor.left);
+                    minMax->ptMaxPosition.y = Math::Abs(monitorInfo.rcWork.top - monitorInfo.rcMonitor.top);
+                    minMax->ptMaxSize.x = Math::Abs(monitorInfo.rcWork.right - monitorInfo.rcWork.left);
+                    minMax->ptMaxSize.y = Math::Abs(monitorInfo.rcWork.bottom - monitorInfo.rcWork.top);
+                }
             }
         }
 
         return 0;
     }
-
     case WM_SYSCOMMAND:
     {
         // Prevent moving/sizing in full screen mode
@@ -901,22 +962,18 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
         break;
     }
-
     case WM_CREATE:
     {
         return 0;
     }
-
     case WM_MOVE:
     {
         break;
     }
-
     case WM_SIZE:
     {
         if (SIZE_MINIMIZED == wParam)
         {
-            // Set flags
             _minimized = true;
             _maximized = false;
         }
@@ -931,35 +988,29 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             else if (SIZE_MAXIMIZED == wParam)
             {
-                // Set flags
                 _minimized = false;
                 _maximized = true;
-
-                // Check size
                 CheckForWindowResize();
+                UpdateRegion();
             }
             else if (SIZE_RESTORED == wParam)
             {
                 if (_maximized)
                 {
-                    // Clear flag
                     _maximized = false;
-
-                    // Check size
                     CheckForWindowResize();
+                    UpdateRegion();
                 }
                 else if (_minimized)
                 {
-                    // Clear flag
                     _minimized = false;
-
-                    // Check size
                     CheckForWindowResize();
                 }
                 else if (_isResizing)
                 {
                     // If we're neither maximized nor minimized, the window size is changing by the user dragging the window edges.
-                    // In this case, we don't reset the device yet -- we wait until the user stops dragging, and a WM_EXITSIZEMOVE message comes.
+                    // In this case, we don't resize yet -- we wait until the user stops dragging, and a WM_EXITSIZEMOVE message comes.
+                    UpdateRegion();
                 }
                 else
                 {
@@ -968,35 +1019,26 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
             }
         }
-
         break;
     }
-
     case WM_ENTERSIZEMOVE:
     {
         _isResizing = true;
         break;
     }
-
     case WM_EXITSIZEMOVE:
     {
-        // Clear flag
         _isResizing = false;
-
-        // Check size
         CheckForWindowResize();
-
+        UpdateRegion();
         break;
     }
-
     case WM_SETFOCUS:
         OnGotFocus();
         break;
-
     case WM_KILLFOCUS:
         OnLostFocus();
         break;
-
     case WM_ACTIVATEAPP:
         if (wParam == TRUE && !_focused)
         {
@@ -1005,18 +1047,15 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         else if (wParam == FALSE && _focused)
         {
             OnLostFocus();
-
             if (IsFullscreen() && !_isSwitchingFullScreen)
             {
                 SetIsFullscreen(false);
             }
         }
         break;
-
     case WM_MENUCHAR:
         // A menu is active and the user presses a key that does not correspond to any mnemonic or accelerator key so just ignore and don't beep
         return MAKELRESULT(0, MNC_CLOSE);
-
     case WM_SYSKEYDOWN:
     {
         if (wParam == VK_F4)
@@ -1027,7 +1066,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         }
     }
     break;
-
     case WM_POWERBROADCAST:
         switch (wParam)
         {
@@ -1043,7 +1081,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CLOSE:
         Close(ClosingReason::User);
         return 0;
-
     case WM_DESTROY:
     {
 #if USE_EDITOR

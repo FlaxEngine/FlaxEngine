@@ -38,6 +38,11 @@ public class Platform : EngineModule
                 options.DelayLoadLibraries.Add("dbghelp.dll");
                 options.DependencyFiles.Add(Path.Combine(options.DepsFolder, "dbghelp.dll"));
             }
+            if (options.Target.IsEditor)
+            {
+                //options.Libraries.Add("Gdi32.dll");
+                options.Libraries.Add("Dwmapi.dll");
+            }
             break;
         case TargetPlatform.XboxOne:
         case TargetPlatform.UWP:

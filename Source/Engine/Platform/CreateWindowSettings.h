@@ -114,12 +114,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     API_FIELD() bool AllowDragAndDrop = false;
 
     /// <summary>
-    /// True if window topmost.
+    /// True if window topmost, otherwise false as default layout.
     /// </summary>
     API_FIELD() bool IsTopmost = false;
 
     /// <summary>
-    /// True if it's a regular window.
+    /// True if it's a regular window, false for tooltips, contextmenu and other utility windows.
     /// </summary>
     API_FIELD() bool IsRegularWindow = true;
 

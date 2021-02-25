@@ -30,6 +30,7 @@ private:
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
     Vector2 _clientSize;
+    int32 _regionWidth = 0, _regionHeight = 0;
 
 public:
 
