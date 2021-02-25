@@ -983,6 +983,115 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private class RerouteNode : SurfaceNode
+        {
+            public static readonly Vector2 DefaultSize = new Vector2(16);
+
+            private bool _deleteNode;
+
+            /// <inheritdoc />
+            protected override bool ShowTooltip => false;
+
+            /// <inheritdoc />
+            public RerouteNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                Size = DefaultSize;
+                Title = string.Empty;
+                BackgroundColor = Color.Transparent;
+            }
+
+            /// <inheritdoc />
+            public override void OnSurfaceLoaded()
+            {
+                base.OnSurfaceLoaded();
+
+                var inputBox = GetBox(0);
+                var outputBox = GetBox(1);
+                inputBox.Location = Vector2.Zero;
+                outputBox.Location = Vector2.Zero;
+
+                inputBox.Visible = false;
+                outputBox.Visible = false;
+            }
+
+            /// <inheritdoc />
+            public override void ConnectionTick(Box box)
+            {
+                base.ConnectionTick(box);
+
+                var inputBox = GetBox(0);
+                var outputBox = GetBox(1);
+
+                _deleteNode = !inputBox.HasAnyConnection;
+                outputBox.Visible = !outputBox.HasAnyConnection;
+            }
+
+            /*public override void OnDeleted()
+            {
+                var inputBox = GetBox(0);
+                var outputBox = GetBox(1);
+
+                var connectionA = inputBox.HasAnyConnection ? inputBox.Connections[0] : null; // This doesn't work
+                var connectionB = outputBox.HasAnyConnection ? outputBox.Connections[0] : null;
+
+                base.OnDeleted();
+
+                if (connectionA != null && connectionB != null)
+                {
+                    connectionA.CreateConnection(connectionB); // TODO: handle undo
+                }
+            }*/
+
+            public override void Update(float deltaTime)
+            {
+                base.Update(deltaTime);
+
+                if (_deleteNode)
+                {
+                    _deleteNode = false;
+                    Surface.Delete(this); // TODO: handle undo
+                }
+            }
+
+
+            /// <inheritdoc />
+            public override bool CanSelect(ref Vector2 location)
+            {
+                return new Rectangle(Location, DefaultSize).Contains(ref location);
+            }
+
+            /// <inheritdoc />
+            protected override void UpdateRectangles()
+            {
+                _headerRect = Rectangle.Empty;
+                _closeButtonRect = Rectangle.Empty;
+                _footerRect = Rectangle.Empty;
+            }
+
+            public override void Draw()
+            {
+                var style = Surface.Style;
+                var inputBox = GetBox(0);
+                var connectionColor = style.Colors.Default;
+
+                if (inputBox.HasAnyConnection)
+                {
+                    var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
+                    Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
+                }
+
+                //float barHeight = 4;
+                //Render2D.FillRectangle(new Rectangle(DefaultSize.X / 2, (DefaultSize.Y - barHeight) / 2, barHeight * 4, barHeight), connectionColor);
+
+                SpriteHandle icon = style.Icons.BoxClose;
+                Render2D.DrawSprite(icon, new Rectangle(Vector2.Zero, DefaultSize), connectionColor);
+
+                base.Draw();
+
+            }
+        }
+
         /// <summary>
         /// The nodes for that group.
         /// </summary>
@@ -1436,6 +1545,23 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 0),
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(object), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 29,
+                Title = "Reroute",
+                Create = (id, context, arch, groupArch) => new RerouteNode(id, context, arch, groupArch),
+                Description = "Reroute a connection.",
+                Flags = NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaGUI | NodeFlags.AllGraphs,
+                Size = RerouteNode.DefaultSize,
+                ConnectionsHints = ConnectionsHint.All,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
                 }
             },
         };

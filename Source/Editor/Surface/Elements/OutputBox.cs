@@ -13,6 +13,11 @@ namespace FlaxEditor.Surface.Elements
     [HideInEditor]
     public class OutputBox : Box
     {
+        /// <summary>
+        /// Distance for the mouse to be considered above the connection
+        /// </summary>
+        public float MouseOverConnectionDistance => 100f / Surface.ViewScale;
+
         /// <inheritdoc />
         public OutputBox(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(parentNode, archetype, archetype.Position + new Vector2(parentNode.Archetype.Size.X, 0))
@@ -45,6 +50,18 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <summary>
+        /// Checks if a point intersects a connection
+        /// </summary>
+        /// <param name="targetBox">The other box.</param>
+        /// <param name="mousePosition">The mouse position</param>
+        public bool IntersectsConnection(Box targetBox, ref Vector2 mousePosition)
+        {
+            var startPos = Parent.PointToParent(Center);
+            Vector2 endPos = targetBox.Parent.PointToParent(targetBox.Center);
+            return IntersectsConnection(ref startPos, ref endPos, ref mousePosition, MouseOverConnectionDistance);
+        }
+
+        /// <summary>
         /// Checks if a point intersects a bezier curve
         /// </summary>
         /// <param name="start">The start location.</param>
@@ -53,8 +70,6 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="distance">Distance at which its an intersection</param>
         public static bool IntersectsConnection(ref Vector2 start, ref Vector2 end, ref Vector2 point, float distance)
         {
-            // Maybe I should make this a non-static method and automatically read the Surface.ViewScale?
-
             // Pretty much a point in rectangle check
             if ((point.X - start.X) * (end.X - point.X) < 0) return false;
 
@@ -82,6 +97,7 @@ namespace FlaxEditor.Surface.Elements
                 float t = i * segmentCountInv;
                 Bezier(ref start, ref control1, ref control2, ref end, t, out p);
 
+                // Maybe it would be reasonable to return the point?
                 CollisionsHelper.ClosestPointPointLine(ref point, ref oldp, ref p, out Vector2 result);
                 if (Vector2.DistanceSquared(point, result) <= squaredDistance)
                 {
@@ -106,22 +122,21 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public void DrawConnections(ref Vector2 mousePosition)
         {
+            float mouseOverDistance = MouseOverConnectionDistance;
             // Draw all the connections
-            var center = Size * 0.5f;
-            var tmp = PointToParent(ref center);
-            var startPos = Parent.PointToParent(ref tmp);
+            var startPos = Parent.PointToParent(Center);
             var startHighlight = ConnectionsHighlightIntensity;
             for (int i = 0; i < Connections.Count; i++)
             {
                 Box targetBox = Connections[i];
-                tmp = targetBox.PointToParent(ref center);
-                Vector2 endPos = targetBox.Parent.PointToParent(ref tmp);
+                Vector2 endPos = targetBox.Parent.PointToParent(targetBox.Center);
                 var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
                 var color = _currentTypeColor * highlight;
 
-                if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, 100f / Surface.ViewScale))
+                // TODO: Figure out how to only draw the topmost connection
+                if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
                 {
-                    highlight += 2;
+                    highlight += 1;
                 }
 
                 DrawConnection(ref startPos, ref endPos, ref color, highlight);
@@ -134,11 +149,8 @@ namespace FlaxEditor.Surface.Elements
         public void DrawSelectedConnection(Box targetBox)
         {
             // Draw all the connections
-            var center = Size * 0.5f;
-            var tmp = PointToParent(ref center);
-            var startPos = Parent.PointToParent(ref tmp);
-            tmp = targetBox.PointToParent(ref center);
-            Vector2 endPos = targetBox.Parent.PointToParent(ref tmp);
+            var startPos = Parent.PointToParent(Center);
+            Vector2 endPos = targetBox.Parent.PointToParent(targetBox.Center);
             DrawConnection(ref startPos, ref endPos, ref _currentTypeColor, 2);
         }
 

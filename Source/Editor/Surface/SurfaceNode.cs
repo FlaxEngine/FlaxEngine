@@ -125,6 +125,7 @@ namespace FlaxEditor.Surface
             AutoFocus = false;
             TooltipText = nodeArch.Description;
             CullChildren = false;
+            BackgroundColor = Style.Current.BackgroundNormal;
 
             if (Archetype.DefaultValues != null)
             {
@@ -947,7 +948,7 @@ namespace FlaxEditor.Surface
 
             // Background
             var backgroundRect = new Rectangle(Vector2.Zero, Size);
-            Render2D.FillRectangle(backgroundRect, style.BackgroundNormal);
+            Render2D.FillRectangle(backgroundRect, BackgroundColor);
 
             // Breakpoint hit
             if (Breakpoint.Hit)

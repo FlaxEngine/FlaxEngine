@@ -274,12 +274,24 @@ namespace FlaxEditor.Surface
             bool handled = base.OnMouseDoubleClick(location, button);
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
-            if (handled)
+
+            if (!handled)
             {
-                return true;
+                var mousePos = _rootControl.PointFromParent(ref _mousePos);
+                if (IntersectsConnection(mousePos, out OutputBox outputBox, out Box connectedBox))
+                {
+                    var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+
+                    // TODO: Undo action
+                    outputBox.BreakConnection(connectedBox);
+                    outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
+                    rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(connectedBox);
+
+                    handled = true;
+                }
             }
 
-            return false;
+            return handled;
         }
 
         /// <inheritdoc />
@@ -814,6 +826,32 @@ namespace FlaxEditor.Surface
                 xLocation,
                 yLocation
             );
+        }
+
+        private bool IntersectsConnection(Vector2 mousePosition, out OutputBox outputBox, out Box connectedBox)
+        {
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                for (int j = 0; j < Nodes[i].Elements.Count; j++)
+                {
+                    if (Nodes[i].Elements[j] is OutputBox ob)
+                    {
+                        for (int k = 0; k < ob.Connections.Count; k++)
+                        {
+                            if (ob.IntersectsConnection(ob.Connections[k], ref mousePosition))
+                            {
+                                outputBox = ob;
+                                connectedBox = ob.Connections[k];
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            outputBox = null;
+            connectedBox = null;
+            return false;
         }
     }
 }
