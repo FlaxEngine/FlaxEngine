@@ -758,7 +758,7 @@ namespace FlaxEditor.Surface
             {
                 if (Elements[j] is OutputBox ob && ob.HasAnyConnection)
                 {
-                    ob.DrawConnections();
+                    ob.DrawConnections(ref mousePosition);
                 }
             }
 

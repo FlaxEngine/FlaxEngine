@@ -44,11 +44,6 @@ namespace FlaxEditor.Surface.Elements
             */
         }
 
-        private static bool IsRight(ref Vector2 a, ref Vector2 b, ref Vector2 point)
-        {
-            return ((b.X - a.X) * (point.Y - a.Y) - (b.Y - a.Y) * (point.X - a.X)) <= 0;
-        }
-
         /// <summary>
         /// Checks if a point intersects a bezier curve
         /// </summary>
@@ -58,34 +53,20 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="distance">Distance at which its an intersection</param>
         public static bool IntersectsConnection(ref Vector2 start, ref Vector2 end, ref Vector2 point, float distance)
         {
+            // Maybe I should make this a non-static method and automatically read the Surface.ViewScale?
+
+            // Pretty much a point in rectangle check
             if ((point.X - start.X) * (end.X - point.X) < 0) return false;
 
-            var dst = (end - start) * new Vector2(0.25f, 0.05f); // Purposefully tweaked to 0.25
-            Vector2 control1 = new Vector2(start.X + dst.X, start.Y + dst.Y);
-            Vector2 control2 = new Vector2(end.X - dst.X, end.Y + dst.Y);
-
-            // I'm ignoring the start.Y + dst.Y
-
-            Vector2 direction = end - start;
-            float offset = Mathf.Sign(direction.Y) * distance;
-
-            Vector2 pointAbove1 = new Vector2(control1.X, start.Y - offset);
-            Vector2 pointAbove2 = new Vector2(end.X, end.Y - offset);
-            Vector2 pointBelow1 = new Vector2(start.X, start.Y + offset);
-            Vector2 pointBelow2 = new Vector2(control2.X, end.Y + offset);
-
-            /*  Render2D.DrawLine(pointAbove1, pointAbove2, Color.Red);
-              Render2D.DrawRectangle(new Rectangle(pointAbove2 - new Vector2(5), new Vector2(10)), Color.Red);
-              Render2D.DrawLine(pointBelow1, pointBelow2, Color.Green);
-              Render2D.DrawRectangle(new Rectangle(pointBelow2 - new Vector2(5), new Vector2(10)), Color.Green);
-            */
-            // TODO: are they parallel ^?
-
-            return IsRight(ref pointAbove1, ref pointAbove2, ref point) == IsRight(ref pointBelow2, ref pointBelow1, ref point);
-
+            float offset = Mathf.Sign(end.Y - start.Y) * distance;
+            if ((point.Y - (start.Y - offset)) * ((end.Y + offset) - point.Y) < 0) return false;
 
             // Taken from the Render2D.DrawBezier code
             float squaredDistance = distance;
+
+            var dst = (end - start) * new Vector2(0.5f, 0.05f);
+            Vector2 control1 = new Vector2(start.X + dst.X, start.Y + dst.Y);
+            Vector2 control2 = new Vector2(end.X - dst.X, end.Y + dst.Y);
 
             Vector2 d1 = control1 - start;
             Vector2 d2 = control2 - control1;
@@ -138,28 +119,13 @@ namespace FlaxEditor.Surface.Elements
                 var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
                 var color = _currentTypeColor * highlight;
 
-                // if (PointInRectangle(ref startPos, ref endPos, ref mousePosition))
+                if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, 100f / Surface.ViewScale))
                 {
-                    for (int ix = 0; ix < 10000; ix++)
-                    {
-                        OutputBox.IntersectsConnection(ref startPos, ref endPos, ref mousePosition, 30f);
-                    }
-                    if (OutputBox.IntersectsConnection(ref startPos, ref endPos, ref mousePosition, 30f))
-                    {
-                        highlight += 2;
-                    }
+                    highlight += 2;
                 }
-
 
                 DrawConnection(ref startPos, ref endPos, ref color, highlight);
             }
-        }
-
-        private bool PointInRectangle(ref Vector2 a, ref Vector2 b, ref Vector2 point)
-        {
-            // This has the convenient property that it doesn't matter if a and b are switched
-            Vector2 signs = (point - a) * (b - point);
-            return signs.X >= 0 && signs.Y >= 0;
         }
 
         /// <summary>
