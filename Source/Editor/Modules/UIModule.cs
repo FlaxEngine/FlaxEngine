@@ -316,8 +316,7 @@ namespace FlaxEditor.Modules
                 if (win.IsMaximized)
                     return;
 
-                var style = Style.Current;
-                var color = style.BackgroundSelected;
+                var color = Editor.Instance.UI.StatusBar.StatusColor;
                 var rect = new Rectangle(0.5f, 0.5f, Parent.Width - 1.0f, Parent.Height - 1.0f - StatusBar.DefaultHeight);
                 Render2D.DrawLine(rect.UpperLeft, rect.UpperRight, color);
                 Render2D.DrawLine(rect.UpperLeft, rect.BottomLeft, color);
