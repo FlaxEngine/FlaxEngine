@@ -15,7 +15,10 @@ namespace FlaxEditor.LocalizationServices
     /// </summary>
     public static class Localization
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// Selects and loads the given language.
+        /// </summary>
+        /// <param name="language">The Language.</param>
         public static void SelectLanguage(Languages language)
         {
             m_SelectedLanguage = language;
@@ -24,28 +27,7 @@ namespace FlaxEditor.LocalizationServices
             if (m_Languages.TryGetValue(language, out _))
                 return;
 
-            Load(Path.Combine(Globals.BinariesFolder, "Localizations"), language);
-        }
-
-        /// <inheritdoc />
-        public static string GetValue(string key)
-        {
-            if (string.IsNullOrEmpty(key))
-                throw new ArgumentException($"'{nameof(key)}' cannot be null or empty", nameof(key));
-
-            // If key has value, use it.
-            if (m_Languages.TryGetValue(m_SelectedLanguage, out var map) && map.TryGetValue(key, out var value))
-                return value;
-
-            // Use as fallback if no value.
-            Editor.LogWarning($"Specified key `{key}` was not found, using key as fallback value.");
-            return key;
-        }
-
-        /// <inheritdoc />
-        public static void Load(string directory, Languages language)
-        {
-            string path = Path.Combine(directory, language.ToString() + ".json");
+            string path = Path.Combine(Globals.BinariesFolder, "Localization", language.ToString() + ".json");
 
             if (!File.Exists(path))
             {
@@ -58,29 +40,65 @@ namespace FlaxEditor.LocalizationServices
                 Culture = CultureInfo.InvariantCulture
             });
 
-            m_Languages.Add(language, new Dictionary<string, string>());
+            m_Languages.Add(language, new Dictionary<string, Dictionary<string, string>>());
 
             using (JsonReader reader = new JsonTextReader(new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), true)))
             {
                 try
                 {
-                    var entries = json.Deserialize<LocalizationEntry[]>(reader);
+                    var asset = json.Deserialize<LocalizationAsset>(reader);
 
                     // Add the values to that language
-                    foreach (var entry in entries)
-                        SetValue(entry.Key, entry.Value);
+                    foreach (var _namespace in asset.Namespaces)
+                        foreach (var _entry in _namespace.Entries)
+                        {
+                            SetValue(_namespace.Namespace, _entry.Key, _entry.Value);
+                        }
+
                 }
-                catch
+                catch (Exception e)
                 {
-                    Assert.IsFalse(true, $"Couldn't read language file `{language}` ({path})");
+                    Assert.IsTrue(false, $"Couldn't read language file `{language}` ({path}) \n" + e);
                 }
             }
-
+            Editor.Log("Finished reading localization asset...");
         }
 
-        /// <inheritdoc />
-        public static bool SetValue(string key, string value)
+        /// <summary>
+        /// Get the localized <see cref="string"/> from a given key for the current language.
+        /// </summary>
+        /// <param name="key">They key to identify the <see cref="string"/>.</param>
+        /// <returns>A localized string.</returns>
+        public static string GetValue(string inNamespace, string key)
         {
+            if (string.IsNullOrEmpty(inNamespace))
+                throw new ArgumentException($"'{nameof(inNamespace)}' cannot be null or empty", nameof(inNamespace));
+
+            if (string.IsNullOrEmpty(key))
+                throw new ArgumentException($"'{nameof(key)}' cannot be null or empty", nameof(key));
+
+            // Get language, get namespace then finally get the key's value
+            if (m_Languages.TryGetValue(m_SelectedLanguage, out var map) && map.TryGetValue(inNamespace, out var Namespace) && Namespace.TryGetValue(key, out string value))
+                return value;
+
+            // Use fallback if no value.
+            Editor.LogWarning($"Specified key `{key}` or namespace `{inNamespace}` was not found.");
+            return "INVALID_ID";
+        }
+
+        /// <summary>
+        /// Set the localized <see cref="string"/> to a given key for the current language.
+        /// If key is not valid, a new key with the value will be created instead.
+        /// </summary>
+        /// <param name="inNamespace"> The name space</param>
+        /// <param name="key">The key to identify the <see cref="string"/>.</param>
+        /// <param name="value">They value associated with this key.</param>
+        /// <returns>Whether the value for the key was updated/created.</returns>
+        public static bool SetValue(string inNamespace, string key, string value)
+        {
+            if (string.IsNullOrEmpty(inNamespace))
+                throw new ArgumentException($"'{nameof(inNamespace)}' cannot be null or empty", nameof(inNamespace));
+
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or empty", nameof(key));
 
@@ -90,24 +108,28 @@ namespace FlaxEditor.LocalizationServices
             // Get the language
             if (m_Languages.TryGetValue(m_SelectedLanguage, out var map))
             {
-                if (map.ContainsKey(key))
+                if (map.ContainsKey(inNamespace))
                 {
-                    // Update
-                    map[key] = value;
-                    return true;
-                }
-                else
-                {
-                    // Add
-                    map.Add(key, value);
-                    return true;
-                }
-            }
+                    // Update key
+                    if (map[inNamespace].ContainsKey(key))
+                        map[inNamespace][key] = value;
 
+                    // Add key
+                    else
+                        map[inNamespace].Add(key, value);
+
+                    return true;
+                }
+                // If no namespace, add it.
+                map.Add(inNamespace, new Dictionary<string, string> { { key, value } });
+                return true;
+            }
             return false;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// The selected localization language
+        /// </summary>
         public static Languages SelectedLanguage
         {
             get => m_SelectedLanguage;
@@ -115,19 +137,7 @@ namespace FlaxEditor.LocalizationServices
             set => SelectLanguage(value);
         }
 
-        /// <summary>
-        /// Localization entry for the JSON format
-        /// </summary>
-        private struct LocalizationEntry
-        {
-            [JsonProperty(nameof(Key))]
-            public string Key { get; set; }
-
-            [JsonProperty(nameof(Value))]
-            public string Value { get; set; }
-        }
-
-        private static Dictionary<Languages, Dictionary<string, string>> m_Languages = new Dictionary<Languages, Dictionary<string, string>>();
+        private static Dictionary<Languages, Dictionary<string, Dictionary<string, string>>> m_Languages = new Dictionary<Languages, Dictionary<string, Dictionary<string, string>>>();
         private static Languages m_SelectedLanguage;
     }
 }

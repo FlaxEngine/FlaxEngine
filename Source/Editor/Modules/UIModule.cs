@@ -8,6 +8,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.LocalizationServices;
 using FlaxEditor.Progress.Handlers;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
@@ -384,7 +385,7 @@ namespace FlaxEditor.Modules
             };
 
             // File
-            MenuFile = MainMenu.AddButton("File");
+            MenuFile = MainMenu.AddButton(Localization.GetValue("N_2", "T_CM_FILE"));
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
             cm.AddButton("Save All", "Ctrl+S", Editor.SaveAll);

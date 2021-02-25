@@ -1,30 +1,70 @@
-[
-  {
-    "Key": "T_CM_FILE",
-    "Value": "Plik"
-  },
-  {
-    "Key": "T_CM_EDIT",
-    "Value": "Edytować"
-  },
-  {
-    "Key": "T_CM_SCENE",
-    "Value": "Scena"
-  },
-  {
-    "Key": "T_CM_GAME",
-    "Value": "Gra"
-  },
-  {
-    "Key": "T_CM_TOOLS",
-    "Value": "Przybory"
-  },
-  {
-    "Key": "T_CM_WINDOW",
-    "Value": "Okno"
-  },
-  {
-    "Key": "T_CM_HELP",
-    "Value": "Wsparcie"
-  }
-]
+{
+  "Namespaces": [
+    {
+      "Namespace": "N_1",
+      "Entries": [
+        {
+          "Key": "T_CM_FILE",
+          "Value": "Plik"
+        },
+        {
+          "Key": "T_CM_EDIT",
+          "Value": "Edytować"
+        },
+        {
+          "Key": "T_CM_SCENE",
+          "Value": "Scena"
+        },
+        {
+          "Key": "T_CM_GAME",
+          "Value": "Gra"
+        },
+        {
+          "Key": "T_CM_TOOLS",
+          "Value": "Przybory"
+        },
+        {
+          "Key": "T_CM_WINDOW",
+          "Value": "Okno"
+        },
+        {
+          "Key": "T_CM_HELP",
+          "Value": "Wsparcie"
+        }
+      ]
+    },
+    {
+      "Namespace": "N_2",
+      "Entries": [
+        {
+          "Key": "T_CM_FILE",
+          "Value": "Plik2"
+        },
+        {
+          "Key": "T_CM_EDIT",
+          "Value": "Edytować2"
+        },
+        {
+          "Key": "T_CM_SCENE",
+          "Value": "Scena2"
+        },
+        {
+          "Key": "T_CM_GAME",
+          "Value": "Gra2"
+        },
+        {
+          "Key": "T_CM_TOOLS",
+          "Value": "Przybory2"
+        },
+        {
+          "Key": "T_CM_WINDOW",
+          "Value": "Okno2"
+        },
+        {
+          "Key": "T_CM_HELP",
+          "Value": "Wsparcie2"
+        }
+      ]
+    }
+  ]
+}

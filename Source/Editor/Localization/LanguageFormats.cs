@@ -15,16 +15,16 @@ namespace FlaxEditor.LocalizationServices
         /// <summary>
         /// The Polish language
         /// </summary>
-        Polish, //TODO: Add support
+        Polish,
 
         /// <summary>
         /// The German language
         /// </summary>
-        German, //TODO: Add support
+        German,
 
         /// <summary>
         /// The French language
         /// </summary>
-        French  //TODO: Add support
+        French
     }
 }

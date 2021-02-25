@@ -1,10 +1,26 @@
-[
-  {
-    "Key": "T_CM_FILE",
-    "Value": "File"
-  },
-  {
-    "Key": "T_CM_SAVEALL",
-    "Value": "Save All"
-  }
-]
+{
+  "Namespaces": 
+  [
+    {
+      "Namespace": "N_1",
+      "Entries": 
+      [
+        {
+          "Key": "T_CM_FILE",
+          "Value": "File :D"
+        }
+      ]
+    },
+
+    {
+      "Namespace": "N_2",
+      "Entries": 
+      [
+        {
+          "Key": "T_CM_FILE",
+          "Value": "File D:"
+        }
+      ]
+    }
+  ]
+}
