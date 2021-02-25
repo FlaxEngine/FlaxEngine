@@ -760,7 +760,8 @@ namespace FlaxEngine
                 for (var i = 0; i < 6; i++)
                 {
                     Plane plane = GetPlane(i);
-                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance) && (distance < nearstPlaneDistance))
+                    float distance;
+                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out distance) && (distance < nearstPlaneDistance))
                         nearstPlaneDistance = distance;
                 }
 

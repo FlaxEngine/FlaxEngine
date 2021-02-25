@@ -179,11 +179,9 @@ namespace FlaxEditor.Tools.Foliage
         private void OnCreateNewFoliageClicked()
         {
             // Create
-            var actor = new FlaxEngine.Foliage
-            {
-                StaticFlags = StaticFlags.FullyStatic,
-                Name = "Foliage"
-            };
+            var actor = new FlaxEngine.Foliage();
+            actor.StaticFlags = StaticFlags.FullyStatic;
+            actor.Name = "Foliage";
 
             // Spawn
             Editor.SceneEditing.Spawn(actor);

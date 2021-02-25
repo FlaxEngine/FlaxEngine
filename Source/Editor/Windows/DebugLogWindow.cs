@@ -592,7 +592,9 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
+            float value1;
+
+            if (float.TryParse(node.GetAttribute("Split"), out value1))
                 _split.SplitterValue = value1;
         }
 

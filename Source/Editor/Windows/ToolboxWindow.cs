@@ -197,7 +197,8 @@ namespace FlaxEditor.Windows
             {
                 var text = actorType.Name;
 
-                if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                QueryFilterHelper.Range[] ranges;
+                if (!QueryFilterHelper.Match(filterText, text, out ranges))
                     continue;
 
                 var item = _groupSearch.AddChild(CreateActorItem(CustomEditors.CustomEditorsUtil.GetPropertyNameUI(text), actorType));

@@ -23,25 +23,17 @@ void MaterialInstance::OnBaseSet()
     _baseMaterial->OnUnloaded.Bind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Bind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
 
-    // Sync parameters with the base parameters to ensure all data is valid for rendering (constants offset and resource register)
     MaterialParams& baseParams = _baseMaterial->Params;
-    Params._versionHash = 0;
-    if (Params.Count() != baseParams.Count())
-    {
-        // Params changed
-        OnBaseParamsChanged();
-        return;
-    }
-    for (int32 i = 0; i < Params.Count(); i++)
+    bool validParams = Params.Count() == baseParams.Count();
+    for (int32 i = 0; validParams && i < Params.Count(); i++)
     {
         MaterialParameter& param = Params[i];
         MaterialParameter& baseParam = baseParams[i];
 
         if (param.GetID() != baseParam.GetID() || param.GetParameterType() != baseParam.GetParameterType())
         {
-            // Params changed
-            OnBaseParamsChanged();
-            return;
+            validParams = false;
+            break;
         }
 
         param._isPublic = baseParam._isPublic;
@@ -49,14 +41,21 @@ void MaterialInstance::OnBaseSet()
         param._offset = baseParam._offset;
         param._name = baseParam._name;
     }
-
-    // Params are valid
-    Params._versionHash = baseParams._versionHash;
-    ParamsChanged();
+    if (validParams)
+    {
+        Params._versionHash = baseParams._versionHash;
+        ParamsChanged();
+    }
+    else
+    {
+        OnBaseParamsChanged();
+    }
 }
 
 void MaterialInstance::OnBaseUnset()
 {
+    ScopeLock lock(_baseMaterial->Locker);
+
     _baseMaterial->RemoveReference();
     _baseMaterial->OnUnloaded.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Unbind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);

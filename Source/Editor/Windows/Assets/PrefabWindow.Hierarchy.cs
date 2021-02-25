@@ -73,10 +73,8 @@ namespace FlaxEditor.Windows.Assets
 
             // Create popup
 
-            var contextMenu = new ContextMenu
-            {
-                MinimumWidth = 120
-            };
+            var contextMenu = new ContextMenu();
+            contextMenu.MinimumWidth = 120;
 
             // Basic editing options
 
@@ -215,17 +213,20 @@ namespace FlaxEditor.Windows.Assets
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
 
             // Link it
-            actor.Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+            actor.Parent = parent;
 
             // Peek spawned node
             var actorNode = SceneGraphFactory.FindNode(actor.ID) as ActorNode ?? SceneGraphFactory.BuildActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
-
             var parentNode = SceneGraphFactory.FindNode(parent.ID) as ActorNode;
-            actorNode.ParentNode = parentNode ?? throw new InvalidOperationException("Missing scene graph node for the spawned parent actor.");
+            if (parentNode == null)
+                throw new InvalidOperationException("Missing scene graph node for the spawned parent actor.");
+            actorNode.ParentNode = parentNode;
 
             // Call post spawn action (can possibly setup custom default values)
             actorNode.PostSpawn();

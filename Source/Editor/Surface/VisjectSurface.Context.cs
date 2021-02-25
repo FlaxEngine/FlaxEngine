@@ -54,7 +54,8 @@ namespace FlaxEditor.Surface
                 return;
 
             // Get or create context
-            if (!_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext))
+            VisjectSurfaceContext surfaceContext;
+            if (!_contextCache.TryGetValue(context, out surfaceContext))
             {
                 surfaceContext = CreateContext(_context, context);
                 _context?.Children.Add(surfaceContext);
@@ -118,7 +119,8 @@ namespace FlaxEditor.Surface
             }
 
             // Check if has context in cache
-            if (_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext))
+            VisjectSurfaceContext surfaceContext;
+            if (_contextCache.TryGetValue(context, out surfaceContext))
             {
                 // Remove from navigation path
                 while (ContextStack.Contains(surfaceContext))
@@ -147,7 +149,8 @@ namespace FlaxEditor.Surface
                 return;
 
             // Check if already in a path
-            if (_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext) && ContextStack.Contains(surfaceContext))
+            VisjectSurfaceContext surfaceContext;
+            if (_contextCache.TryGetValue(context, out surfaceContext) && ContextStack.Contains(surfaceContext))
             {
                 // Change stack
                 do

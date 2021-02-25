@@ -70,10 +70,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var scriptsMember = type.GetProperty("Scripts");
             if (scriptsMember != ScriptMemberInfo.Null)
             {
-                var item = new ItemInfo(scriptsMember)
-                {
-                    CustomEditor = new CustomEditorAttribute(typeof(ScriptsEditor))
-                };
+                var item = new ItemInfo(scriptsMember);
+                item.CustomEditor = new CustomEditorAttribute(typeof(ScriptsEditor));
                 items.Add(item);
             }
 
@@ -234,10 +232,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private TreeNode CreateDiffNode(CustomEditor editor)
         {
-            var node = new TreeNode(false)
-            {
-                Tag = editor
-            };
+            var node = new TreeNode(false);
+
+            node.Tag = editor;
 
             // Removed Script
             if (editor is RemovedScriptDummy removed)

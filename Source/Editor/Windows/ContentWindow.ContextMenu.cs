@@ -40,11 +40,8 @@ namespace FlaxEditor.Windows
             // Create context menu
             ContextMenuButton b;
             ContextMenuChildMenu c;
-            ContextMenu cm = new ContextMenu
-            {
-                Tag = item
-            };
-
+            ContextMenu cm = new ContextMenu();
+            cm.Tag = item;
             if (isTreeNode)
             {
                 b = cm.AddButton("Expand All", OnExpandAllClicked);
@@ -55,7 +52,6 @@ namespace FlaxEditor.Windows
 
                 cm.AddSeparator();
             }
-
             if (item is ContentFolder contentFolder && contentFolder.Node is ProjectTreeNode)
             {
                 cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
@@ -79,7 +75,8 @@ namespace FlaxEditor.Windows
 
                     if (item is BinaryAssetItem binaryAsset)
                     {
-                        if (!binaryAsset.GetImportPath(out string importPath))
+                        string importPath;
+                        if (!binaryAsset.GetImportPath(out importPath))
                         {
                             string importLocation = System.IO.Path.GetDirectoryName(importPath);
                             if (!string.IsNullOrEmpty(importLocation) && System.IO.Directory.Exists(importLocation))

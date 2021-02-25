@@ -120,8 +120,9 @@ namespace FlaxEditor.Content
             }
             else
             {
+                QueryFilterHelper.Range[] ranges;
                 var text = Text;
-                if (QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                if (QueryFilterHelper.Match(filterText, text, out ranges))
                 {
                     // Update highlights
                     if (_highlights == null)

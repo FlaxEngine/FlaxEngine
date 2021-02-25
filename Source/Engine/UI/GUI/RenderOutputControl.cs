@@ -89,11 +89,13 @@ namespace FlaxEngine.GUI
         /// <exception cref="System.ArgumentNullException">Invalid task.</exception>
         public RenderOutputControl(SceneRenderTask task)
         {
-            _task = task ?? throw new ArgumentNullException();
+            if (task == null)
+                throw new ArgumentNullException();
 
             _backBuffer = GPUDevice.Instance.CreateTexture();
             _resizeTime = ResizeCheckTime;
 
+            _task = task;
             _task.Output = _backBuffer;
             _task.End += OnEnd;
 

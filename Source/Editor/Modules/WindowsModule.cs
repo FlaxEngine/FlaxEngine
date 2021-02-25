@@ -415,7 +415,8 @@ namespace FlaxEditor.Modules
 
                 writer.WriteStartElement("Panel");
 
-                DockState state = p.TryGetDockState(out float splitterValue);
+                float splitterValue;
+                DockState state = p.TryGetDockState(out splitterValue);
 
                 writer.WriteAttributeString("DockState", ((int)state).ToString());
                 writer.WriteAttributeString("SplitterValue", splitterValue.ToString(CultureInfo.InvariantCulture));
@@ -683,7 +684,8 @@ namespace FlaxEditor.Modules
             }
 
             // Check if it's an asset ID
-            if (Guid.TryParse(typename, out Guid id))
+            Guid id;
+            if (Guid.TryParse(typename, out id))
             {
                 var el = Editor.ContentDatabase.Find(id);
                 if (el != null)

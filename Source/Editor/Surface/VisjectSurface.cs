@@ -743,7 +743,6 @@ namespace FlaxEditor.Surface
         {
             if (!CanEdit)
                 return;
-
             var node = control as SurfaceNode;
             if (node == null)
             {
@@ -751,7 +750,6 @@ namespace FlaxEditor.Surface
                 MarkAsEdited();
                 return;
             }
-
             if ((node.Archetype.Flags & NodeFlags.NoRemove) != 0)
                 return;
 

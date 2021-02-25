@@ -119,11 +119,8 @@ namespace FlaxEditor.Windows
 
             private void OnTreeRightClick(TreeNode treeNode, Vector2 location)
             {
-                var menu = new ContextMenu
-                {
-                    Tag = treeNode.Tag
-                };
-
+                var menu = new ContextMenu();
+                menu.Tag = treeNode.Tag;
                 menu.AddButton("Show node", button =>
                 {
                     var node = Node.GetNode(button.ParentContextMenu.Tag);

@@ -112,7 +112,8 @@ namespace FlaxEditor.GUI.Drag
                     for (int i = 0; i < ids.Length; i++)
                     {
                         // Find element
-                        if (Guid.TryParse(ids[i], out Guid id))
+                        Guid id;
+                        if (Guid.TryParse(ids[i], out id))
                         {
                             var obj = Editor.Instance.Scene.GetActorNode(id);
 

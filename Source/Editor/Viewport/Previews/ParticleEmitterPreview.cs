@@ -67,10 +67,8 @@ namespace FlaxEditor.Viewport.Previews
             if (useWidgets)
             {
                 var playbackDuration = ViewWidgetButtonMenu.AddButton("Duration");
-                var playbackDurationValue = new FloatValueBox(_playbackDuration, 90, 2, 70.0f, 0.1f, 1000000.0f, 0.1f)
-                {
-                    Parent = playbackDuration
-                };
+                var playbackDurationValue = new FloatValueBox(_playbackDuration, 90, 2, 70.0f, 0.1f, 1000000.0f, 0.1f);
+                playbackDurationValue.Parent = playbackDuration;
                 playbackDurationValue.ValueChanged += () => PlaybackDuration = playbackDurationValue.Value;
                 ViewWidgetButtonMenu.VisibleChanged += control => playbackDurationValue.Value = PlaybackDuration;
             }

@@ -244,7 +244,6 @@ namespace FlaxEditor.GUI
             {
                 if (b == null && control is MainMenuButton)
                     b = (MainMenuButton)control;
-
                 if (control is MainMenuButton && control.Right > b.Right)
                     b = (MainMenuButton)control;
             }

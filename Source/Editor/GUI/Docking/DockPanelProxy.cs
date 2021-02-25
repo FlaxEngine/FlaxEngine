@@ -402,7 +402,8 @@ namespace FlaxEditor.GUI.Docking
                 else if (MouseDownWindow != null && _panel.TabsCount > 1)
                 {
                     // Check if mouse left current tab rect
-                    GetTabRect(MouseDownWindow, out Rectangle currWinRect);
+                    Rectangle currWinRect;
+                    GetTabRect(MouseDownWindow, out currWinRect);
                     if (!currWinRect.Contains(location))
                     {
                         int index = _panel.GetTabIndex(MouseDownWindow);
@@ -495,10 +496,8 @@ namespace FlaxEditor.GUI.Docking
 
         private void ShowContextMenu(DockWindow tab, ref Vector2 location)
         {
-            var menu = new ContextMenu.ContextMenu
-            {
-                Tag = tab
-            };
+            var menu = new ContextMenu.ContextMenu();
+            menu.Tag = tab;
             tab.OnShowContextMenu(menu);
             menu.AddButton("Close", OnTabMenuCloseClicked);
             menu.AddButton("Close All", OnTabMenuCloseAllClicked);

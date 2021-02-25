@@ -37,7 +37,8 @@ namespace FlaxEditor.Surface
             // Push clipping mask
             if (ClipChildren)
             {
-                GetDesireClientArea(out Rectangle clientArea);
+                Rectangle clientArea;
+                GetDesireClientArea(out clientArea);
                 Render2D.PushClip(ref clientArea);
             }
 

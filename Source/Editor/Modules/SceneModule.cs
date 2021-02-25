@@ -138,11 +138,8 @@ namespace FlaxEditor.Modules
         public void CreateSceneFile(string path)
         {
             // Create a sample scene
-            var scene = new Scene
-            {
-                StaticFlags = StaticFlags.FullyStatic
-            };
-
+            var scene = new Scene();
+            scene.StaticFlags = StaticFlags.FullyStatic;
             //
             var sun = scene.AddChild<DirectionalLight>();
             sun.Name = "Sun";

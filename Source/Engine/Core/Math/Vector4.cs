@@ -587,7 +587,8 @@ namespace FlaxEngine
         /// <returns>A new <see cref="Vector4" /> containing the 4D Cartesian coordinates of the specified point.</returns>
         public static Vector4 Barycentric(Vector4 value1, Vector4 value2, Vector4 value3, float amount1, float amount2)
         {
-            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Vector4 result);
+            Vector4 result;
+            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out result);
             return result;
         }
 
@@ -628,7 +629,8 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Vector4 Clamp(Vector4 value, Vector4 min, Vector4 max)
         {
-            Clamp(ref value, ref min, ref max, out Vector4 result);
+            Vector4 result;
+            Clamp(ref value, ref min, ref max, out result);
             return result;
         }
 
@@ -824,7 +826,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector4 Lerp(Vector4 start, Vector4 end, float amount)
         {
-            Lerp(ref start, ref end, amount, out Vector4 result);
+            Vector4 result;
+            Lerp(ref start, ref end, amount, out result);
             return result;
         }
 
@@ -850,7 +853,8 @@ namespace FlaxEngine
         /// <returns>The cubic interpolation of the two vectors.</returns>
         public static Vector4 SmoothStep(Vector4 start, Vector4 end, float amount)
         {
-            SmoothStep(ref start, ref end, amount, out Vector4 result);
+            Vector4 result;
+            SmoothStep(ref start, ref end, amount, out result);
             return result;
         }
 
@@ -889,7 +893,8 @@ namespace FlaxEngine
         /// <returns>The result of the Hermite spline interpolation.</returns>
         public static Vector4 Hermite(Vector4 value1, Vector4 tangent1, Vector4 value2, Vector4 tangent2, float amount)
         {
-            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out Vector4 result);
+            Vector4 result;
+            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out result);
             return result;
         }
 
@@ -924,7 +929,8 @@ namespace FlaxEngine
         /// <returns>A vector that is the result of the Catmull-Rom interpolation.</returns>
         public static Vector4 CatmullRom(Vector4 value1, Vector4 value2, Vector4 value3, Vector4 value4, float amount)
         {
-            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out Vector4 result);
+            Vector4 result;
+            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out result);
             return result;
         }
 
@@ -953,7 +959,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Vector4 Max(Vector4 left, Vector4 right)
         {
-            Max(ref left, ref right, out Vector4 result);
+            Vector4 result;
+            Max(ref left, ref right, out result);
             return result;
         }
 
@@ -982,7 +989,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Vector4 Min(Vector4 left, Vector4 right)
         {
-            Min(ref left, ref right, out Vector4 result);
+            Vector4 result;
+            Min(ref left, ref right, out result);
             return result;
         }
 
@@ -1033,10 +1041,8 @@ namespace FlaxEngine
 
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1090,10 +1096,8 @@ namespace FlaxEngine
 
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1145,7 +1149,8 @@ namespace FlaxEngine
         /// <returns>The transformed <see cref="Vector4" />.</returns>
         public static Vector4 Transform(Vector4 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out Vector4 result);
+            Vector4 result;
+            Transform(ref vector, ref rotation, out result);
             return result;
         }
 
@@ -1170,10 +1175,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1231,7 +1234,8 @@ namespace FlaxEngine
         /// <returns>The transformed <see cref="Vector4" />.</returns>
         public static Vector4 Transform(Vector4 vector, Matrix transform)
         {
-            Transform(ref vector, ref transform, out Vector4 result);
+            Vector4 result;
+            Transform(ref vector, ref transform, out result);
             return result;
         }
 
@@ -1256,10 +1260,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 

@@ -270,10 +270,12 @@ namespace FlaxEngine
         /// <returns>The projected vector.</returns>
         public Vector3 Project(Vector3 source, Matrix projection, Matrix view, Matrix world)
         {
-            Matrix.Multiply(ref world, ref view, out Matrix matrix);
+            Matrix matrix;
+            Matrix.Multiply(ref world, ref view, out matrix);
             Matrix.Multiply(ref matrix, ref projection, out matrix);
 
-            Project(ref source, ref matrix, out Vector3 vector);
+            Vector3 vector;
+            Project(ref source, ref matrix, out vector);
             return vector;
         }
 
@@ -308,11 +310,13 @@ namespace FlaxEngine
         /// <returns>The unprojected Vector.</returns>
         public Vector3 Unproject(Vector3 source, Matrix projection, Matrix view, Matrix world)
         {
-            Matrix.Multiply(ref world, ref view, out Matrix matrix);
+            Matrix matrix;
+            Matrix.Multiply(ref world, ref view, out matrix);
             Matrix.Multiply(ref matrix, ref projection, out matrix);
             Matrix.Invert(ref matrix, out matrix);
 
-            Unproject(ref source, ref matrix, out Vector3 vector);
+            Vector3 vector;
+            Unproject(ref source, ref matrix, out vector);
             return vector;
         }
 

@@ -44,7 +44,8 @@ namespace FlaxEditor.Windows.Assets
                     {
                         var audio = window.Asset;
                         AudioDataInfo info = audio.Info;
-                        Editor.Internal_GetAudioClipMetadata(FlaxEngine.Object.GetUnmanagedPtr(audio), out int originalSize, out int importedSize);
+                        int originalSize, importedSize;
+                        Editor.Internal_GetAudioClipMetadata(FlaxEngine.Object.GetUnmanagedPtr(audio), out originalSize, out importedSize);
 
                         var group = layout.Group("General");
                         group.Label("Format: " + audio.Format);
@@ -219,7 +220,9 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
+            float value1;
+
+            if (float.TryParse(node.GetAttribute("Split"), out value1))
                 _split.SplitterValue = value1;
         }
 

@@ -504,7 +504,8 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Int4 Clamp(Int4 value, Int4 min, Int4 max)
         {
-            Clamp(ref value, ref min, ref max, out Int4 result);
+            Int4 result;
+            Clamp(ref value, ref min, ref max, out result);
             return result;
         }
 
@@ -533,7 +534,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Int4 Max(Int4 left, Int4 right)
         {
-            Max(ref left, ref right, out Int4 result);
+            Int4 result;
+            Max(ref left, ref right, out result);
             return result;
         }
 
@@ -562,7 +564,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Int4 Min(Int4 left, Int4 right)
         {
-            Min(ref left, ref right, out Int4 result);
+            Int4 result;
+            Min(ref left, ref right, out result);
             return result;
         }
 

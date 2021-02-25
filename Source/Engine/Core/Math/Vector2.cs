@@ -540,7 +540,8 @@ namespace FlaxEngine
         /// <returns>A new <see cref="Vector2" /> containing the 2D Cartesian coordinates of the specified point.</returns>
         public static Vector2 Barycentric(Vector2 value1, Vector2 value2, Vector2 value3, float amount1, float amount2)
         {
-            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Vector2 result);
+            Vector2 result;
+            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out result);
             return result;
         }
 
@@ -573,7 +574,8 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Vector2 Clamp(Vector2 value, Vector2 min, Vector2 max)
         {
-            Clamp(ref value, ref min, ref max, out Vector2 result);
+            Vector2 result;
+            Clamp(ref value, ref min, ref max, out result);
             return result;
         }
 
@@ -893,7 +895,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector2 Lerp(Vector2 start, Vector2 end, float amount)
         {
-            Lerp(ref start, ref end, amount, out Vector2 result);
+            Vector2 result;
+            Lerp(ref start, ref end, amount, out result);
             return result;
         }
 
@@ -927,7 +930,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector2 Lerp(Vector2 start, Vector2 end, Vector2 amount)
         {
-            Lerp(ref start, ref end, ref amount, out Vector2 result);
+            Vector2 result;
+            Lerp(ref start, ref end, ref amount, out result);
             return result;
         }
 
@@ -953,7 +957,8 @@ namespace FlaxEngine
         /// <returns>The cubic interpolation of the two vectors.</returns>
         public static Vector2 SmoothStep(Vector2 start, Vector2 end, float amount)
         {
-            SmoothStep(ref start, ref end, amount, out Vector2 result);
+            Vector2 result;
+            SmoothStep(ref start, ref end, amount, out result);
             return result;
         }
 
@@ -990,7 +995,8 @@ namespace FlaxEngine
         /// <returns>The result of the Hermite spline interpolation.</returns>
         public static Vector2 Hermite(Vector2 value1, Vector2 tangent1, Vector2 value2, Vector2 tangent2, float amount)
         {
-            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out Vector2 result);
+            Vector2 result;
+            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out result);
             return result;
         }
 
@@ -1048,7 +1054,8 @@ namespace FlaxEngine
         /// <returns>A vector that is the result of the Catmull-Rom interpolation.</returns>
         public static Vector2 CatmullRom(Vector2 value1, Vector2 value2, Vector2 value3, Vector2 value4, float amount)
         {
-            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out Vector2 result);
+            Vector2 result;
+            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out result);
             return result;
         }
 
@@ -1075,7 +1082,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Vector2 Max(Vector2 left, Vector2 right)
         {
-            Max(ref left, ref right, out Vector2 result);
+            Vector2 result;
+            Max(ref left, ref right, out result);
             return result;
         }
 
@@ -1102,7 +1110,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Vector2 Min(Vector2 left, Vector2 right)
         {
-            Min(ref left, ref right, out Vector2 result);
+            Vector2 result;
+            Min(ref left, ref right, out result);
             return result;
         }
 
@@ -1146,7 +1155,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector2 Reflect(Vector2 vector, Vector2 normal)
         {
-            Reflect(ref vector, ref normal, out Vector2 result);
+            Vector2 result;
+            Reflect(ref vector, ref normal, out result);
             return result;
         }
 
@@ -1242,10 +1252,8 @@ namespace FlaxEngine
 
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1289,7 +1297,8 @@ namespace FlaxEngine
         /// <returns>The transformed <see cref="Vector4" />.</returns>
         public static Vector2 Transform(Vector2 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out Vector2 result);
+            Vector2 result;
+            Transform(ref vector, ref rotation, out result);
             return result;
         }
 
@@ -1314,10 +1323,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1364,7 +1371,8 @@ namespace FlaxEngine
         /// <returns>The transformed <see cref="Vector4" />.</returns>
         public static Vector4 Transform(Vector2 vector, Matrix transform)
         {
-            Transform(ref vector, ref transform, out Vector4 result);
+            Vector4 result;
+            Transform(ref vector, ref transform, out result);
             return result;
         }
 
@@ -1386,10 +1394,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1438,7 +1444,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector2 TransformCoordinate(Vector2 coordinate, Matrix transform)
         {
-            TransformCoordinate(ref coordinate, ref transform, out Vector2 result);
+            Vector2 result;
+            TransformCoordinate(ref coordinate, ref transform, out result);
             return result;
         }
 
@@ -1470,10 +1477,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1516,7 +1521,8 @@ namespace FlaxEngine
         /// </remarks>
         public static Vector2 TransformNormal(Vector2 normal, Matrix transform)
         {
-            TransformNormal(ref normal, ref transform, out Vector2 result);
+            Vector2 result;
+            TransformNormal(ref normal, ref transform, out result);
             return result;
         }
 
@@ -1548,10 +1554,8 @@ namespace FlaxEngine
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 

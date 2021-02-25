@@ -469,7 +469,8 @@ namespace FlaxEngine
         /// <returns>The clamped value.</returns>
         public static Int2 Clamp(Int2 value, Int2 min, Int2 max)
         {
-            Clamp(ref value, ref min, ref max, out Int2 result);
+            Int2 result;
+            Clamp(ref value, ref min, ref max, out result);
             return result;
         }
 
@@ -599,7 +600,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Int2 Max(Int2 left, Int2 right)
         {
-            Max(ref left, ref right, out Int2 result);
+            Int2 result;
+            Max(ref left, ref right, out result);
             return result;
         }
 
@@ -626,7 +628,8 @@ namespace FlaxEngine
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Int2 Min(Int2 left, Int2 right)
         {
-            Min(ref left, ref right, out Int2 result);
+            Int2 result;
+            Min(ref left, ref right, out result);
             return result;
         }
 

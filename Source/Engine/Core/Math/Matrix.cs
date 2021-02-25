@@ -695,22 +695,20 @@ namespace FlaxEngine
             Orthonormalize(ref temp, out Q);
             Q.Transpose();
 
-            R = new Matrix
-            {
-                M11 = Vector4.Dot(Q.Column1, Column1),
-                M12 = Vector4.Dot(Q.Column1, Column2),
-                M13 = Vector4.Dot(Q.Column1, Column3),
-                M14 = Vector4.Dot(Q.Column1, Column4),
+            R = new Matrix();
+            R.M11 = Vector4.Dot(Q.Column1, Column1);
+            R.M12 = Vector4.Dot(Q.Column1, Column2);
+            R.M13 = Vector4.Dot(Q.Column1, Column3);
+            R.M14 = Vector4.Dot(Q.Column1, Column4);
 
-                M22 = Vector4.Dot(Q.Column2, Column2),
-                M23 = Vector4.Dot(Q.Column2, Column3),
-                M24 = Vector4.Dot(Q.Column2, Column4),
+            R.M22 = Vector4.Dot(Q.Column2, Column2);
+            R.M23 = Vector4.Dot(Q.Column2, Column3);
+            R.M24 = Vector4.Dot(Q.Column2, Column4);
 
-                M33 = Vector4.Dot(Q.Column3, Column3),
-                M34 = Vector4.Dot(Q.Column3, Column4),
+            R.M33 = Vector4.Dot(Q.Column3, Column3);
+            R.M34 = Vector4.Dot(Q.Column3, Column4);
 
-                M44 = Vector4.Dot(Q.Column4, Column4)
-            };
+            R.M44 = Vector4.Dot(Q.Column4, Column4);
         }
 
         /// <summary>
@@ -722,22 +720,20 @@ namespace FlaxEngine
         {
             Orthonormalize(ref this, out Q);
 
-            L = new Matrix
-            {
-                M11 = Vector4.Dot(Q.Row1, Row1),
+            L = new Matrix();
+            L.M11 = Vector4.Dot(Q.Row1, Row1);
 
-                M21 = Vector4.Dot(Q.Row1, Row2),
-                M22 = Vector4.Dot(Q.Row2, Row2),
+            L.M21 = Vector4.Dot(Q.Row1, Row2);
+            L.M22 = Vector4.Dot(Q.Row2, Row2);
 
-                M31 = Vector4.Dot(Q.Row1, Row3),
-                M32 = Vector4.Dot(Q.Row2, Row3),
-                M33 = Vector4.Dot(Q.Row3, Row3),
+            L.M31 = Vector4.Dot(Q.Row1, Row3);
+            L.M32 = Vector4.Dot(Q.Row2, Row3);
+            L.M33 = Vector4.Dot(Q.Row3, Row3);
 
-                M41 = Vector4.Dot(Q.Row1, Row4),
-                M42 = Vector4.Dot(Q.Row2, Row4),
-                M43 = Vector4.Dot(Q.Row3, Row4),
-                M44 = Vector4.Dot(Q.Row4, Row4)
-            };
+            L.M41 = Vector4.Dot(Q.Row1, Row4);
+            L.M42 = Vector4.Dot(Q.Row2, Row4);
+            L.M43 = Vector4.Dot(Q.Row3, Row4);
+            L.M44 = Vector4.Dot(Q.Row4, Row4);
         }
 
         /// <summary>
@@ -1209,7 +1205,7 @@ namespace FlaxEngine
             while (true)
             {
                 if ((exponent & 1) != 0)
-                    identity *= temp;
+                    identity = identity * temp;
 
                 exponent /= 2;
 
@@ -1521,14 +1517,14 @@ namespace FlaxEngine
             //By separating the above algorithm into multiple lines, we actually increase accuracy.
             result = value;
 
-            result.Row2 -= Vector4.Dot(result.Row1, result.Row2) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row2 = result.Row2 - Vector4.Dot(result.Row1, result.Row2) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
 
-            result.Row3 -= Vector4.Dot(result.Row1, result.Row3) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
-            result.Row3 -= Vector4.Dot(result.Row2, result.Row3) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
+            result.Row3 = result.Row3 - Vector4.Dot(result.Row1, result.Row3) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row3 = result.Row3 - Vector4.Dot(result.Row2, result.Row3) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
 
-            result.Row4 -= Vector4.Dot(result.Row1, result.Row4) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
-            result.Row4 -= Vector4.Dot(result.Row2, result.Row4) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
-            result.Row4 -= Vector4.Dot(result.Row3, result.Row4) / Vector4.Dot(result.Row3, result.Row3) * result.Row3;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row1, result.Row4) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row2, result.Row4) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row3, result.Row4) / Vector4.Dot(result.Row3, result.Row3) * result.Row3;
         }
 
         /// <summary>
@@ -1598,16 +1594,16 @@ namespace FlaxEngine
 
             result.Row1 = Vector4.Normalize(result.Row1);
 
-            result.Row2 -= Vector4.Dot(result.Row1, result.Row2) * result.Row1;
+            result.Row2 = result.Row2 - Vector4.Dot(result.Row1, result.Row2) * result.Row1;
             result.Row2 = Vector4.Normalize(result.Row2);
 
-            result.Row3 -= Vector4.Dot(result.Row1, result.Row3) * result.Row1;
-            result.Row3 -= Vector4.Dot(result.Row2, result.Row3) * result.Row2;
+            result.Row3 = result.Row3 - Vector4.Dot(result.Row1, result.Row3) * result.Row1;
+            result.Row3 = result.Row3 - Vector4.Dot(result.Row2, result.Row3) * result.Row2;
             result.Row3 = Vector4.Normalize(result.Row3);
 
-            result.Row4 -= Vector4.Dot(result.Row1, result.Row4) * result.Row1;
-            result.Row4 -= Vector4.Dot(result.Row2, result.Row4) * result.Row2;
-            result.Row4 -= Vector4.Dot(result.Row3, result.Row4) * result.Row3;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row1, result.Row4) * result.Row1;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row2, result.Row4) * result.Row2;
+            result.Row4 = result.Row4 - Vector4.Dot(result.Row3, result.Row4) * result.Row3;
             result.Row4 = Vector4.Normalize(result.Row4);
         }
 

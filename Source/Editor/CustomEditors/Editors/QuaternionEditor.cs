@@ -63,7 +63,8 @@ namespace FlaxEditor.CustomEditors.Editors
             float z = ZElement.FloatValue.Value;
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
-            Quaternion.Euler(x, y, z, out Quaternion value);
+            Quaternion value;
+            Quaternion.Euler(x, y, z, out value);
             SetValue(value, token);
         }
 

@@ -171,22 +171,16 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Check if can create group for them
                 if (nodes.Count > 0)
                 {
-                    var group = new VisjectCMGroup(this, groupArchetype)
-                    {
-                        HeaderText = groupArchetype.Name
-                    };
-
+                    var group = new VisjectCMGroup(this, groupArchetype);
+                    group.HeaderText = groupArchetype.Name;
                     group.Close(false);
                     for (int i = 0; i < nodes.Count; i++)
                     {
-                        var item = new VisjectCMItem(group, groupArchetype, nodes[i])
-                        {
-                            Parent = group
-                        };
+                        var item = new VisjectCMItem(group, groupArchetype, nodes[i]);
+                        item.Parent = group;
                     }
                     group.SortChildren();
                     group.Parent = panel2;
-
                     _groups.Add(group);
                 }
             }
@@ -215,21 +209,16 @@ namespace FlaxEditor.Surface.ContextMenu
                     // Create new group if name is unique
                     if (group == null)
                     {
-                        group = new VisjectCMGroup(this, info.CustomNodesGroup)
-                        {
-                            HeaderText = groupName
-                        };
-
+                        group = new VisjectCMGroup(this, info.CustomNodesGroup);
+                        group.HeaderText = groupName;
                         group.Close(false);
                         group.Parent = _groupsPanel;
                         _groups.Add(group);
                     }
 
                     // Add new item
-                    var item = new VisjectCMItem(group, info.CustomNodesGroup, nodeArchetype)
-                    {
-                        Parent = group
-                    };
+                    var item = new VisjectCMItem(group, info.CustomNodesGroup, nodeArchetype);
+                    item.Parent = group;
 
                     // Order items
                     group.SortChildren();
@@ -248,23 +237,16 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 Profiler.BeginEvent("VisjectCM.AddGroup");
 
-                var group = new VisjectCMGroup(this, groupArchetype)
-                {
-                    HeaderText = groupArchetype.Name
-                };
-
+                var group = new VisjectCMGroup(this, groupArchetype);
+                group.HeaderText = groupArchetype.Name;
                 group.Close(false);
-
                 foreach (var nodeArchetype in groupArchetype.Archetypes)
                 {
-                    var item = new VisjectCMItem(group, groupArchetype, nodeArchetype)
-                    {
-                        Parent = group
-                    };
+                    var item = new VisjectCMItem(group, groupArchetype, nodeArchetype);
+                    item.Parent = group;
                 }
                 group.SortChildren();
                 group.Parent = _groupsPanel;
-
                 _groups.Add(group);
 
                 if (!IsLayoutLocked)
@@ -299,24 +281,17 @@ namespace FlaxEditor.Surface.ContextMenu
                 var groups = new List<VisjectCMGroup>();
                 foreach (var groupArchetype in groupArchetypes)
                 {
-                    var group = new VisjectCMGroup(this, groupArchetype)
-                    {
-                        HeaderText = groupArchetype.Name
-                    };
-
+                    var group = new VisjectCMGroup(this, groupArchetype);
+                    group.HeaderText = groupArchetype.Name;
                     group.Close(false);
-
                     foreach (var nodeArchetype in groupArchetype.Archetypes)
                     {
-                        var item = new VisjectCMItem(group, groupArchetype, nodeArchetype)
-                        {
-                            Parent = group
-                        };
+                        var item = new VisjectCMItem(group, groupArchetype, nodeArchetype);
+                        item.Parent = group;
                     }
                     group.SortChildren();
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
-
                     groups.Add(group);
                 }
                 Profiler.EndEvent();
@@ -522,11 +497,8 @@ namespace FlaxEditor.Surface.ContextMenu
                     Archetypes = archetypes
                 };
 
-                var group = new VisjectCMGroup(this, groupArchetype)
-                {
-                    HeaderText = groupArchetype.Name
-                };
-
+                var group = new VisjectCMGroup(this, groupArchetype);
+                group.HeaderText = groupArchetype.Name;
                 group.Close(false);
                 archetypeIndex = 0;
                 for (int i = 0; i < parameters.Count; i++)
@@ -535,17 +507,13 @@ namespace FlaxEditor.Surface.ContextMenu
                     if (!param.IsPublic)
                         continue;
 
-                    var item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
-                    {
-                        Parent = group
-                    };
+                    var item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++]);
+                    item.Parent = group;
 
                     if (_parameterSetNodeArchetype != null)
                     {
-                        item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
-                        {
-                            Parent = group
-                        };
+                        item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++]);
+                        item.Parent = group;
                     }
                 }
                 group.SortChildren();

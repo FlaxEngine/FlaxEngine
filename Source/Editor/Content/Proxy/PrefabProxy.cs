@@ -74,13 +74,12 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (!(arg is Actor actor))
+            var actor = arg as Actor;
+            if (actor == null)
             {
                 // Create default prefab root object
-                actor = new EmptyActor
-                {
-                    Name = "Root"
-                };
+                actor = new EmptyActor();
+                actor.Name = "Root";
 
                 // Cleanup it after usage
                 Object.Destroy(actor, 20.0f);

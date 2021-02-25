@@ -179,10 +179,8 @@ namespace FlaxEditor.Tools.Terrain
 
             // Start async work
             _terrain = terrain;
-            var thread = new System.Threading.Thread(Generate)
-            {
-                Name = "Terrain Generator"
-            };
+            var thread = new System.Threading.Thread(Generate);
+            thread.Name = "Terrain Generator";
             thread.Start();
         }
 

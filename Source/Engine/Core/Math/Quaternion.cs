@@ -337,7 +337,7 @@ namespace FlaxEngine
                 X = -X * lengthSq;
                 Y = -Y * lengthSq;
                 Z = -Z * lengthSq;
-                W *= lengthSq;
+                W = W * lengthSq;
             }
         }
 

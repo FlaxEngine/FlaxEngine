@@ -282,7 +282,8 @@ namespace FlaxEditor.Tools.Foliage
                     };
 
                     // Try restore painting with the given model ID
-                    if (!Tab.FoliageTypeModelIdsToPaint.TryGetValue(model.ID, out bool itemChecked))
+                    bool itemChecked;
+                    if (!Tab.FoliageTypeModelIdsToPaint.TryGetValue(model.ID, out itemChecked))
                     {
                         // Enable by default
                         itemChecked = true;

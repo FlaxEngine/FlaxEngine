@@ -305,11 +305,8 @@ namespace FlaxEditor.Surface.Elements
             if (HasAnyConnection)
             {
                 // Remove all connections
-                var toUpdate = new List<Box>(1 + Connections.Count)
-                {
-                    this
-                };
-
+                var toUpdate = new List<Box>(1 + Connections.Count);
+                toUpdate.Add(this);
                 for (int i = 0; i < Connections.Count; i++)
                 {
                     var targetBox = Connections[i];

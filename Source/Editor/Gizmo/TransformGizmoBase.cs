@@ -157,8 +157,9 @@ namespace FlaxEditor.Gizmo
             _screenScale = vLength.Length / GizmoScaleFactor * gizmoSize;
             Matrix.Scaling(_screenScale, out _screenScaleMatrix);
 
+            Matrix rotation;
             Quaternion orientation = GetSelectedObject(0).Orientation;
-            Matrix.RotationQuaternion(ref orientation, out Matrix rotation);
+            Matrix.RotationQuaternion(ref orientation, out rotation);
             _localForward = rotation.Forward;
             _localUp = rotation.Up;
 

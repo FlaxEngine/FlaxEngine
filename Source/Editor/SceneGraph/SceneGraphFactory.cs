@@ -76,7 +76,8 @@ namespace FlaxEditor.SceneGraph
             if (id == Guid.Empty)
                 return null;
 
-            Nodes.TryGetValue(id, out SceneGraphNode result);
+            SceneGraphNode result;
+            Nodes.TryGetValue(id, out result);
             return result;
         }
 
@@ -87,7 +88,8 @@ namespace FlaxEditor.SceneGraph
         /// <returns>The result node.</returns>
         public static SceneGraphNode GetNode(Guid id)
         {
-            Nodes.TryGetValue(id, out SceneGraphNode result);
+            SceneGraphNode result;
+            Nodes.TryGetValue(id, out result);
             if (result == null)
             {
                 var actor = Object.TryFind<Actor>(ref id);

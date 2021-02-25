@@ -313,7 +313,7 @@ namespace FlaxEngine
             if (time < start)
             {
                 if (loop)
-                    time += (Mathf.Floor(end - time) / length) * length;
+                    time = time + (Mathf.Floor(end - time) / length) * length;
                 else
                     time = start;
             }
@@ -322,7 +322,7 @@ namespace FlaxEngine
             if (time > end)
             {
                 if (loop)
-                    time -= Mathf.Floor((time - start) / length) * length;
+                    time = time - Mathf.Floor((time - start) / length) * length;
                 else
                     time = end;
             }
@@ -420,7 +420,7 @@ namespace FlaxEngine
         {
             if (Keyframes.Length == 0)
             {
-                result = new Keyframe(time, default);
+                result = new Keyframe(time, default(T));
                 return;
             }
 
@@ -621,7 +621,7 @@ namespace FlaxEngine
             {
                 Time = time;
                 Value = value;
-                TangentIn = TangentOut = default;
+                TangentIn = TangentOut = default(T);
             }
 
             /// <summary>
@@ -696,7 +696,7 @@ namespace FlaxEngine
         {
             if (Keyframes.Length == 0)
             {
-                result = new Keyframe(time, default);
+                result = new Keyframe(time, default(T));
                 return;
             }
 

@@ -228,13 +228,9 @@ namespace FlaxEditor.Viewport
                 Parent = scaleSnappingWidget
             };
             enableScaleSnapping.Toggled += OnScaleSnappingToggle;
-
             var scaleSnappingCM = new ContextMenu();
-            _scaleSnapping = new ViewportWidgetButton(TransformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM)
-            {
-                TooltipText = "Scale snapping values"
-            };
-
+            _scaleSnapping = new ViewportWidgetButton(TransformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM);
+            _scaleSnapping.TooltipText = "Scale snapping values";
             for (int i = 0; i < EditorViewportScaleSnapValues.Length; i++)
             {
                 var v = EditorViewportScaleSnapValues[i];
@@ -255,13 +251,9 @@ namespace FlaxEditor.Viewport
                 Parent = rotateSnappingWidget
             };
             enableRotateSnapping.Toggled += OnRotateSnappingToggle;
-
             var rotateSnappingCM = new ContextMenu();
-            _rotateSnapping = new ViewportWidgetButton(TransformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM)
-            {
-                TooltipText = "Rotation snapping values"
-            };
-
+            _rotateSnapping = new ViewportWidgetButton(TransformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM);
+            _rotateSnapping.TooltipText = "Rotation snapping values";
             for (int i = 0; i < EditorViewportRotateSnapValues.Length; i++)
             {
                 var v = EditorViewportRotateSnapValues[i];
@@ -282,13 +274,9 @@ namespace FlaxEditor.Viewport
                 Parent = translateSnappingWidget
             };
             enableTranslateSnapping.Toggled += OnTranslateSnappingToggle;
-
             var translateSnappingCM = new ContextMenu();
-            _translateSnapping = new ViewportWidgetButton(TransformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM)
-            {
-                TooltipText = "Position snapping values"
-            };
-
+            _translateSnapping = new ViewportWidgetButton(TransformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM);
+            _translateSnapping.TooltipText = "Position snapping values";
             for (int i = 0; i < EditorViewportTranslateSnapValues.Length; i++)
             {
                 var v = EditorViewportTranslateSnapValues[i];
@@ -380,17 +368,15 @@ namespace FlaxEditor.Viewport
                 return;
 
             // Create actor
-            var actor = new Camera
-            {
-                StaticFlags = StaticFlags.None,
-                Name = "Camera",
-                Transform = ViewTransform,
-                NearPlane = NearPlane,
-                FarPlane = FarPlane,
-                OrthographicScale = OrthographicScale,
-                UsePerspective = !UseOrthographicProjection,
-                FieldOfView = FieldOfView
-            };
+            var actor = new Camera();
+            actor.StaticFlags = StaticFlags.None;
+            actor.Name = "Camera";
+            actor.Transform = ViewTransform;
+            actor.NearPlane = NearPlane;
+            actor.FarPlane = FarPlane;
+            actor.OrthographicScale = OrthographicScale;
+            actor.UsePerspective = !UseOrthographicProjection;
+            actor.FieldOfView = FieldOfView;
 
             // Spawn
             Editor.Instance.SceneEditing.Spawn(actor);
@@ -833,7 +819,8 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            Editor.GetActorEditorBox(actor, out _);
+            BoundingBox box;
+            Editor.GetActorEditorBox(actor, out box);
 
             // Place the object
             //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
@@ -859,11 +846,9 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<ParticleSystem>())
                 {
                     var asset = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect
-                    {
-                        Name = item.ShortName,
-                        ParticleSystem = asset
-                    };
+                    var actor = new ParticleEffect();
+                    actor.Name = item.ShortName;
+                    actor.ParticleSystem = asset;
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Editor.Instance.SceneEditing.Spawn(actor);
                     return;
@@ -871,11 +856,9 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<SceneAnimation>())
                 {
                     var asset = FlaxEngine.Content.LoadAsync<SceneAnimation>(item.ID);
-                    var actor = new SceneAnimationPlayer
-                    {
-                        Name = item.ShortName,
-                        Animation = asset
-                    };
+                    var actor = new SceneAnimationPlayer();
+                    actor.Name = item.ShortName;
+                    actor.Animation = asset;
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Editor.Instance.SceneEditing.Spawn(actor);
                     return;
@@ -908,11 +891,9 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<SkinnedModel>())
                 {
                     var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel
-                    {
-                        Name = item.ShortName,
-                        SkinnedModel = model
-                    };
+                    var actor = new AnimatedModel();
+                    actor.Name = item.ShortName;
+                    actor.SkinnedModel = model;
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Editor.Instance.SceneEditing.Spawn(actor);
                     return;
@@ -920,11 +901,9 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<Model>())
                 {
                     var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel
-                    {
-                        Name = item.ShortName,
-                        Model = model
-                    };
+                    var actor = new StaticModel();
+                    actor.Name = item.ShortName;
+                    actor.Model = model;
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Editor.Instance.SceneEditing.Spawn(actor);
                     return;
@@ -932,11 +911,9 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<AudioClip>())
                 {
                     var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource
-                    {
-                        Name = item.ShortName,
-                        Clip = clip
-                    };
+                    var actor = new AudioSource();
+                    actor.Name = item.ShortName;
+                    actor.Clip = clip;
                     actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
                     Editor.Instance.SceneEditing.Spawn(actor);
                     return;

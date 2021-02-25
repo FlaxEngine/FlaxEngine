@@ -39,10 +39,8 @@ namespace FlaxEditor.Windows.Assets
 
             public void Get(out FontOptions options)
             {
-                options = new FontOptions
-                {
-                    Hinting = Hinting
-                };
+                options = new FontOptions();
+                options.Hinting = Hinting;
                 if (AntiAliasing)
                     options.Flags |= FontFlags.AntiAliasing;
                 if (Bold)

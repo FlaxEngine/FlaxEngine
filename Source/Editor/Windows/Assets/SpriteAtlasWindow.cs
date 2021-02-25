@@ -163,7 +163,8 @@ namespace FlaxEditor.Windows.Assets
                 UpdateSprites();
 
                 // Try to restore target asset texture import options (useful for fast reimport)
-                if (TextureImportEntry.Internal_GetTextureImportOptions(win.Item.Path, out TextureImportSettings.InternalOptions options))
+                TextureImportSettings.InternalOptions options;
+                if (TextureImportEntry.Internal_GetTextureImportOptions(win.Item.Path, out options))
                 {
                     // Restore settings
                     ImportSettings.FromInternal(ref options);
@@ -351,7 +352,9 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
+            float value1;
+
+            if (float.TryParse(node.GetAttribute("Split"), out value1))
                 _split.SplitterValue = value1;
         }
 

@@ -615,7 +615,9 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (int.TryParse(node.GetAttribute("LogTypeShowMask"), out int value1))
+            int value1;
+
+            if (int.TryParse(node.GetAttribute("LogTypeShowMask"), out value1))
                 _logTypeShowMask = value1;
         }
 

@@ -133,8 +133,6 @@ namespace Flax.Build.Projects.VisualStudio
 
             // Per configuration options
             var buildToolPath = Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, projectDirectory);
-            var preprocessorDefinitions = new HashSet<string>();
-            var includePaths = new HashSet<string>();
             foreach (var configuration in project.Configurations)
             {
                 var platform = Platform.GetPlatform(configuration.Platform);
@@ -142,11 +140,11 @@ namespace Flax.Build.Projects.VisualStudio
                 var target = configuration.Target;
                 var targetBuildOptions = configuration.TargetBuildOptions;
 
-                preprocessorDefinitions.Clear();
+                var preprocessorDefinitions = new HashSet<string>();
                 foreach (var e in targetBuildOptions.CompileEnv.PreprocessorDefinitions)
                     preprocessorDefinitions.Add(e);
 
-                includePaths.Clear();
+                var includePaths = new HashSet<string>();
                 foreach (var e in targetBuildOptions.CompileEnv.IncludePaths)
                     includePaths.Add(e);
 

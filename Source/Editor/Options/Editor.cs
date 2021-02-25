@@ -21,11 +21,9 @@ namespace FlaxEditor.Options
             // Reset options button
             layout.Space(30);
             var panel = layout.Space(30);
-            var resetButton = new Button(4, 4, 100)
-            {
-                Text = "Reset",
-                Parent = panel.ContainerControl
-            };
+            var resetButton = new Button(4, 4, 100);
+            resetButton.Text = "Reset";
+            resetButton.Parent = panel.ContainerControl;
             resetButton.Clicked += OnResetButtonClicked;
         }
 

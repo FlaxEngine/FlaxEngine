@@ -29,10 +29,8 @@ namespace FlaxEditor.Windows
 
             // Create popup
 
-            var contextMenu = new ContextMenu
-            {
-                MinimumWidth = 120
-            };
+            var contextMenu = new ContextMenu();
+            contextMenu.MinimumWidth = 120;
 
             // Expand/collapse
 

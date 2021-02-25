@@ -113,7 +113,8 @@ namespace FlaxEditor.Content.Import
             extension = extension.ToLower();
 
             // Check if use overriden type
-            if (FileTypes.TryGetValue(extension, out ImportFileEntryHandler createDelegate))
+            ImportFileEntryHandler createDelegate;
+            if (FileTypes.TryGetValue(extension, out createDelegate))
                 return createDelegate(ref request);
 
             // Use default type

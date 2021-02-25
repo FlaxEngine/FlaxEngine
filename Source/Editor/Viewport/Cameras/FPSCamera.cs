@@ -85,7 +85,8 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="actor">The actor to preview.</param>
         public void ShowActor(Actor actor)
         {
-            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
+            BoundingSphere sphere;
+            Editor.GetActorEditorSphere(actor, out sphere);
             ShowSphere(ref sphere);
         }
 
@@ -103,7 +104,8 @@ namespace FlaxEditor.Viewport.Cameras
             {
                 if (actors[i] is ActorNode actor)
                 {
-                    Editor.GetActorEditorSphere(actor.Actor, out BoundingSphere sphere);
+                    BoundingSphere sphere;
+                    Editor.GetActorEditorSphere(actor.Actor, out sphere);
                     BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
                 }
             }
@@ -161,7 +163,7 @@ namespace FlaxEditor.Viewport.Cameras
             Viewport.GetInput(out var input);
             Viewport.GetPrevInput(out var prevInput);
             var mainViewport = Viewport as MainEditorGizmoViewport;
-            bool isUsingGizmo = mainViewport != null && mainViewport.TransformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
+            bool isUsingGizmo = mainViewport != null && mainViewport.TransformGizmo.ActiveAxis != TransformGizmo.Axis.None;
 
             // Get current view properties
             float yaw = Viewport.Yaw;
@@ -177,7 +179,8 @@ namespace FlaxEditor.Viewport.Cameras
             // Dolly
             if (input.IsPanning || input.IsMoving || input.IsRotating)
             {
-                Vector3.Transform(ref moveDelta, ref rotation, out Vector3 move);
+                Vector3 move;
+                Vector3.Transform(ref moveDelta, ref rotation, out move);
                 position += move;
             }
 

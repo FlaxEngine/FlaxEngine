@@ -195,11 +195,9 @@ namespace FlaxEditor.Viewport.Previews
             // Decal
             if (decalMaterial && _decal == null)
             {
-                _decal = new Decal
-                {
-                    Size = new Vector3(100.0f),
-                    LocalOrientation = Quaternion.RotationZ(Mathf.PiOverTwo)
-                };
+                _decal = new Decal();
+                _decal.Size = new Vector3(100.0f);
+                _decal.LocalOrientation = Quaternion.RotationZ(Mathf.PiOverTwo);
                 Task.AddCustomActor(_decal);
             }
             if (_decal)
@@ -249,11 +247,9 @@ namespace FlaxEditor.Viewport.Previews
             // Particle
             if (particleMaterial && _particleEffect == null)
             {
-                _particleEffect = new ParticleEffect
-                {
-                    IsLooping = true,
-                    UseTimeScale = false
-                };
+                _particleEffect = new ParticleEffect();
+                _particleEffect.IsLooping = true;
+                _particleEffect.UseTimeScale = false;
                 Task.AddCustomActor(_particleEffect);
             }
             if (_particleEffect != null)

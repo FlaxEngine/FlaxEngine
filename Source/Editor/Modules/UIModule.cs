@@ -379,10 +379,8 @@ namespace FlaxEditor.Modules
 
         private void InitMainMenu(RootControl mainWindow)
         {
-            MainMenu = new MainMenu(mainWindow)
-            {
-                Parent = mainWindow
-            };
+            MainMenu = new MainMenu(mainWindow);
+            MainMenu.Parent = mainWindow;
 
             // File
             MenuFile = MainMenu.AddButton(EditorLocalization.Manager.GetValue("T_CM_FILE"));
