@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.LocalizationServices;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -263,6 +264,9 @@ namespace FlaxEditor.Options
             Editor.Log("Options file path: " + _optionsFilePath);
             Load();
             SetupStyle();
+
+            Editor.Log("Launching localization service...");
+            Localization.SelectLanguage(Editor.Instance.Options.Options.Interface.Language);
         }
     }
 }

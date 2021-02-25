@@ -2,6 +2,7 @@
 
 using System.IO;
 using Flax.Build;
+using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
 /// <summary>
@@ -36,6 +37,27 @@ public class FlaxEditor : EngineTarget
         Modules.Add("ShadersCompilation");
         Modules.Add("ContentExporters");
         Modules.Add("ContentImporters");
+    }
+
+    /// <inheritdoc />
+    public override void PreBuild(TaskGraph graph, BuildOptions buildOptions)
+    {
+        base.PreBuild(graph, buildOptions);
+
+        // Register localization dependency
+        string locDir = Path.Combine(Globals.EngineRoot, "Source", "Editor", "Localization", "Languages");
+        buildOptions.AdvancedDependencies.Add(new BuildOptions.DependencyFileEntry()
+        {
+            IsFolder = true,
+            DestinationNames = new[]
+            {
+                Path.Combine("Localization")
+            },
+            SourcePaths = new[]
+            {
+                locDir
+            }
+        });
     }
 
     /// <inheritdoc />

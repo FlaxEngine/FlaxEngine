@@ -165,6 +165,7 @@ namespace Flax.Deploy
                     DeployFile(src, dst, "FlaxEngine.CSharp.xml");
                     DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFiles(src, dst, "*.dll");
+                    DeployFolder(src, dst, "Localization");
 
                     // Deploy debug symbols files
                     DeployFiles(src, dstDebug, "*.pdb");

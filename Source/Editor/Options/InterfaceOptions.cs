@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
+using FlaxEditor.LocalizationServices;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
@@ -36,6 +37,13 @@ namespace FlaxEditor.Options
             /// </summary>
             TimeSinceStartup,
         }
+
+        /// <summary>
+        /// Gets or sets the Editor's localization.
+        /// </summary>
+        [DefaultValue(Languages.English)]
+        [EditorDisplay("Interface"), EditorOrder(0), Tooltip("The Language used for the engine. Editor restart required.")]
+        public Languages Language { get; set; } = Languages.English;
 
         /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.

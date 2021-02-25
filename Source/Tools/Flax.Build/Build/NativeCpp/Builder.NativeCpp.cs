@@ -853,11 +853,7 @@ namespace Flax.Build
             {
                 using (new ProfileEventScope("DeployFiles"))
                 {
-                    foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
-                    {
-                        var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
-                        graph.AddCopyFile(dstFile, srcFile);
-                    }
+                    DeployDependencies(targetBuildOptions, outputPath, graph);
                 }
             }
 
@@ -1083,11 +1079,7 @@ namespace Flax.Build
             {
                 using (new ProfileEventScope("DeployFiles"))
                 {
-                    foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
-                    {
-                        var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
-                        graph.AddCopyFile(dstFile, srcFile);
-                    }
+                    DeployDependencies(targetBuildOptions, outputPath, graph);
                 }
             }
 
@@ -1098,6 +1090,95 @@ namespace Flax.Build
             }
 
             return buildData;
+        }
+
+        /// <summary>
+        /// Deploy all dependencies
+        /// </summary>
+        /// <param name="buildOptions">build options</param>
+        /// <param name="outputPath">output path</param>
+        /// <param name="graph">graph</param>
+        private static void DeployDependencies(BuildOptions buildOptions, string outputPath, TaskGraph graph)
+        {
+            foreach (var srcFile in buildOptions.OptionalDependencyFiles)
+            {
+                if (!File.Exists(srcFile))
+                    continue;
+
+                var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                graph.AddCopyFile(dstFile, srcFile);
+            }
+
+            foreach (var srcFile in buildOptions.DependencyFiles)
+            {
+                if (!File.Exists(srcFile))
+                    continue;
+
+                var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                graph.AddCopyFile(dstFile, srcFile);
+            }
+
+            foreach (var entry in buildOptions.AdvancedDependencies)
+            {
+                if (entry.SourcePaths == null || entry.DestinationNames == null || entry.SourcePaths.Length != entry.DestinationNames.Length)
+                {
+                    Log.Error("Advanced dependency entry contains invalid data!");
+                    continue;
+                }
+
+                for (int i = 0; i < entry.SourcePaths.Length; i++)
+                {
+                    var src = entry.SourcePaths[i];
+                    var dstName = entry.DestinationNames[i];
+
+                    var dstPath = Path.Combine(outputPath, dstName);
+
+                    if (!entry.IsFolder)
+                    {
+                        var srcFileInfo = new System.IO.FileInfo(src);
+                        var dstFileInfo = new System.IO.FileInfo(dstPath);
+
+                        if (!ShouldCreateNewCopy(srcFileInfo, dstFileInfo))
+                            continue;
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(dstPath));
+                        File.Copy(src, dstPath, true);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(dstPath);
+
+                        foreach (var file in Directory.GetFiles(src))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            var dstFilePath = Path.Combine(dstPath, fileName);
+
+                            var srcFileInfo = new System.IO.FileInfo(file);
+                            var dstFileInfo = new System.IO.FileInfo(dstFilePath);
+
+                            if (!ShouldCreateNewCopy(srcFileInfo, dstFileInfo))
+                                continue;
+
+                            File.Copy(file, dstFilePath, true);
+                        }
+                    }
+                }
+            }
+
+            bool ShouldCreateNewCopy(System.IO.FileInfo src, System.IO.FileInfo dst)
+            {
+                if (!src.Exists)
+                    return false;
+
+                if (!dst.Exists)
+                    return true;
+
+                if (src.LastWriteTimeUtc > dst.LastWriteTimeUtc
+                    || src.CreationTimeUtc > dst.CreationTimeUtc)
+                    return true;
+
+                return false;
+            }
         }
     }
 }

@@ -91,6 +91,11 @@ namespace Flax.Build.NativeCpp
         public HashSet<string> DependencyFiles = new HashSet<string>();
 
         /// <summary>
+        /// The dependency files with more control how they are being handled
+        /// </summary>
+        public HashSet<DependencyFileEntry> AdvancedDependencies = new HashSet<DependencyFileEntry>();
+
+        /// <summary>
         /// The optional dependency files to include with output (additional debug files, dynamic libraries, etc.). Missing files won't fail the build.
         /// </summary>
         public HashSet<string> OptionalDependencyFiles = new HashSet<string>();
@@ -134,6 +139,34 @@ namespace Flax.Build.NativeCpp
         /// The full path to the dependencies folder for the current build platform, configuration, and architecture.
         /// </summary>
         public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
+
+        /// <summary>
+        /// Dependency file entry
+        /// </summary>
+        public struct DependencyFileEntry
+        {
+            /// <summary>
+            /// File source path
+            /// </summary>
+            public string[] SourcePaths;
+
+            /// <summary>
+            /// Destination file name
+            /// </summary>
+            public string[] DestinationNames;
+
+            /// <summary>
+            /// Is dependent folder
+            /// </summary>
+            /// <remarks>Sub-folders won't be included.</remarks>
+            public bool IsFolder;
+
+            /// <summary>
+            /// If the destination is already the full path specified, there won't be any concats
+            /// </summary>
+            public bool IsDestinationFullPath;
+        }
+
 
         /// <summary>
         /// The scripting API building options.
