@@ -12,8 +12,8 @@ namespace Flax.Build.Bindings
     partial class BindingsGenerator
     {
         private static readonly bool[] CppParamsThatNeedLocalVariable = new bool[64];
-        private static readonly bool[] CppParamsThatNeedConvertion = new bool[64];
-        private static readonly string[] CppParamsThatNeedConvertionWrappers = new string[64];
+        private static readonly bool[] CppParamsThatNeedConversion = new bool[64];
+        private static readonly string[] CppParamsThatNeedConversionWrappers = new string[64];
         private static readonly string[] CppParamsWrappersCache = new string[64];
         public static readonly List<ApiTypeInfo> CppUsedNonPodTypes = new List<ApiTypeInfo>();
         private static readonly List<ApiTypeInfo> CppUsedNonPodTypesList = new List<ApiTypeInfo>();
@@ -619,7 +619,7 @@ namespace Flax.Build.Bindings
                     contents.Append(", ");
                 separator = true;
 
-                CppParamsThatNeedConvertion[i] = false;
+                CppParamsThatNeedConversion[i] = false;
                 CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
@@ -653,8 +653,8 @@ namespace Flax.Build.Bindings
                     if (convertOutputParameter)
                     {
                         useInlinedReturn = false;
-                        CppParamsThatNeedConvertion[i] = true;
-                        CppParamsThatNeedConvertionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out _, functionInfo);
+                        CppParamsThatNeedConversion[i] = true;
+                        CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out _, functionInfo);
                     }
                 }
             }
@@ -716,7 +716,7 @@ namespace Flax.Build.Bindings
                     callParams += ", ";
                 separator = true;
                 var name = parameterInfo.Name;
-                if (CppParamsThatNeedConvertion[i] && (!FindApiTypeInfo(buildData, parameterInfo.Type, caller)?.IsStruct ?? false))
+                if (CppParamsThatNeedConversion[i] && (!FindApiTypeInfo(buildData, parameterInfo.Type, caller)?.IsStruct ?? false))
                     name = '*' + name;
 
                 string param = string.Empty;
@@ -734,7 +734,7 @@ namespace Flax.Build.Bindings
                 }
 
                 // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures or output array parameter)
-                if (CppParamsThatNeedConvertion[i])
+                if (CppParamsThatNeedConversion[i])
                 {
                     var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
                     if (apiType != null)
@@ -791,7 +791,7 @@ namespace Flax.Build.Bindings
                     var parameterInfo = functionInfo.Parameters[i];
 
                     // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures or output array parameter)
-                    if (CppParamsThatNeedConvertion[i])
+                    if (CppParamsThatNeedConversion[i])
                     {
                         contents.AppendFormat("        *{0} = {1};", parameterInfo.Name, string.Format(CppParamsThatNeedConvertionWrappers[i], parameterInfo.Name + "Temp")).AppendLine();
                     }
