@@ -14,6 +14,7 @@ namespace Flax.Build.Bindings
         private static readonly bool[] CppParamsThatNeedLocalVariable = new bool[64];
         private static readonly bool[] CppParamsThatNeedConversion = new bool[64];
         private static readonly string[] CppParamsThatNeedConversionWrappers = new string[64];
+        private static readonly string[] CppParamsThatNeedConversionTypes = new string[64];
         private static readonly string[] CppParamsWrappersCache = new string[64];
         public static readonly List<ApiTypeInfo> CppUsedNonPodTypes = new List<ApiTypeInfo>();
         private static readonly List<ApiTypeInfo> CppUsedNonPodTypesList = new List<ApiTypeInfo>();
@@ -654,7 +655,7 @@ namespace Flax.Build.Bindings
                     {
                         useInlinedReturn = false;
                         CppParamsThatNeedConversion[i] = true;
-                        CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out _, functionInfo);
+                        CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out CppParamsThatNeedConversionTypes[i], functionInfo);
                     }
                 }
             }
@@ -793,7 +794,39 @@ namespace Flax.Build.Bindings
                     // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures or output array parameter)
                     if (CppParamsThatNeedConversion[i])
                     {
-                        contents.AppendFormat("        *{0} = {1};", parameterInfo.Name, string.Format(CppParamsThatNeedConvertionWrappers[i], parameterInfo.Name + "Temp")).AppendLine();
+                        var value = string.Format(CppParamsThatNeedConversionWrappers[i], parameterInfo.Name + "Temp");
+
+                        // MonoObject* parameters returned by reference need write barrier for GC
+                        if (parameterInfo.IsOut)
+                        {
+                            var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
+                            if (apiType != null)
+                            {
+                                if (apiType.IsClass)
+                                {
+                                    contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+                                    continue;
+                                }
+                                if (apiType.IsStruct && !apiType.IsPod)
+                                {
+                                    CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                                    contents.AppendFormat("        {{ auto _temp = {1}; mono_gc_wbarrier_value_copy({0}, &_temp, 1, {2}::TypeInitializer.GetType().ManagedClass->GetNative()); }}", parameterInfo.Name, value, apiType.FullNameNative).AppendLine();
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                // BytesContainer
+                                if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
+                                {
+                                    contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+                                    continue;
+                                }
+
+                                throw new Exception($"Unsupported type of parameter '{parameterInfo}' in method '{functionInfo}' to be passed using 'out'");
+                            }
+                        }
+                        contents.AppendFormat("        *{0} = {1};", parameterInfo.Name, value).AppendLine();
                     }
                 }
             }
