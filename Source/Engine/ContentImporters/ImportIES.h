@@ -2,13 +2,15 @@
 
 #pragma once
 
+#if COMPILE_WITH_ASSETS_IMPORTER
+
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Utility for loading IES files and extract light emission information.
 /// </summary>
-class IESLoader
+class ImportIES
 {
 private:
 
@@ -56,3 +58,5 @@ private:
     float InterpolateBilinear(float x, float y) const;
     static float ComputeFilterPos(float value, const Array<float>& sortedValues);
 };
+
+#endif

@@ -1,9 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+#if COMPILE_WITH_ASSETS_IMPORTER
+
+#include "ImportIES.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/RandomStream.h"
 #include "Engine/Core/Math/Packed.h"
-#include "IESLoader.h"
 
 #define MAX_LINE 200
 
@@ -84,7 +86,7 @@ static bool ReadLine(const uint8*& bufferPos, int32& ret)
 #define PARSE_FLOAT(x) float x; if (!ReadFloat(bufferPos, x)) { return true; }
 #define PARSE_INT(x) int32 x; if (!ReadLine(bufferPos, x)) { return true; }
 
-bool IESLoader::Load(const byte* buffer)
+bool ImportIES::Load(const byte* buffer)
 {
     // Referenced IES file format:
     // http://www.ltblight.com/English.lproj/LTBLhelp/pages/iesformat.html
@@ -214,7 +216,7 @@ bool IESLoader::Load(const byte* buffer)
 #undef PARSE_FLOAT
 #undef PARSE_INT
 
-float IESLoader::ExtractInR16(Array<byte>& output)
+float ImportIES::ExtractInR16(Array<byte>& output)
 {
     const uint32 width = GetWidth();
     const uint32 height = GetHeight();
@@ -263,14 +265,14 @@ float IESLoader::ExtractInR16(Array<byte>& output)
     return maxValue / integral;
 }
 
-float IESLoader::InterpolatePoint(int32 x, int32 y) const
+float ImportIES::InterpolatePoint(int32 x, int32 y) const
 {
     x %= _hAngles.Count();
     y %= _vAngles.Count();
     return _candalaValues[y + _vAngles.Count() * x];
 }
 
-float IESLoader::InterpolateBilinear(float x, float y) const
+float ImportIES::InterpolateBilinear(float x, float y) const
 {
     const int32 xInt = static_cast<int32>(x);
     const int32 yInt = static_cast<int32>(y);
@@ -289,7 +291,7 @@ float IESLoader::InterpolateBilinear(float x, float y) const
     return Math::Lerp(p0, p1, xFrac);
 }
 
-float IESLoader::ComputeFilterPos(float value, const Array<float>& sortedValues)
+float ImportIES::ComputeFilterPos(float value, const Array<float>& sortedValues)
 {
     ASSERT(sortedValues.HasItems());
 
@@ -336,3 +338,5 @@ float IESLoader::ComputeFilterPos(float value, const Array<float>& sortedValues)
 
     return startPos + fraction;
 }
+
+#endif
