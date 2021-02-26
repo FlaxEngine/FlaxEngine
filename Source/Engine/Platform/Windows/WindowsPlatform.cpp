@@ -1107,7 +1107,7 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     return handle;
 }
 
-Array<PlatformBase::StackFrame> WindowsPlatform::GetStackTrace(int32 skipCount, int32 maxDepth, void* context)
+Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 {
     Array<StackFrame> result;
 #if CRASH_LOG_ENABLE

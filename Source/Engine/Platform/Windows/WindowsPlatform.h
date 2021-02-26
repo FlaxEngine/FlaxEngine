@@ -82,7 +82,7 @@ public:
     static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow = true);
     static Window* CreateWindow(const CreateWindowSettings& settings);
     static void* LoadLibrary(const Char* filename);
-    static Array<StackFrame, HeapAllocation> GetStackTrace(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);
+    static Array<StackFrame, HeapAllocation> GetStackFrames(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);
 #if CRASH_LOG_ENABLE
     static void CollectCrashData(const String& crashDataFolder, void* context = nullptr);
 #endif

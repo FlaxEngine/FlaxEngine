@@ -202,11 +202,11 @@ void PlatformBase::Fatal(const Char* msg, void* context)
         LOG(Error, "");
 
         // Log stack trace
-        const auto stackTrace = Platform::GetStackTrace(context ? 0 : 1, 60, context);
-        if (stackTrace.HasItems())
+        const auto stackFrames = Platform::GetStackFrames(context ? 0 : 1, 60, context);
+        if (stackFrames.HasItems())
         {
             LOG(Error, "Stack trace:");
-            for (const auto& frame : stackTrace)
+            for (const auto& frame : stackFrames)
             {
                 char chr = 0;
                 int32 num = StringUtils::Length(frame.ModuleName);
@@ -217,11 +217,11 @@ void PlatformBase::Fatal(const Char* msg, void* context)
                 if (StringUtils::Length(frame.FileName) != 0)
                 {
                     StringAsUTF16<ARRAY_COUNT(StackFrame::FileName)> fileName(frame.FileName);
-                    LOG(Error, "    at {0}!{1} in {2}:line {3}", moduleName.Get(), functionName.Get(), fileName.Get(), frame.LineNumber);
+                    LOG(Error, "    at {0}!{1}() in {2}:line {3}", moduleName.Get(), functionName.Get(), fileName.Get(), frame.LineNumber);
                 }
                 else if (StringUtils::Length(frame.FunctionName) != 0)
                 {
-                    LOG(Error, "    at {0}::{1}", moduleName.Get(), functionName.Get());
+                    LOG(Error, "    at {0}!{1}()", moduleName.Get(), functionName.Get());
                 }
                 else if (StringUtils::Length(frame.ModuleName) != 0)
                 {
@@ -483,9 +483,33 @@ int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& work
     return -1;
 }
 
-Array<PlatformBase::StackFrame> PlatformBase::GetStackTrace(int32 skipCount, int32 maxDepth, void* context)
+Array<PlatformBase::StackFrame> PlatformBase::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 {
     return Array<StackFrame>();
+}
+
+String PlatformBase::GetStackTrace(int32 skipCount, int32 maxDepth, void* context)
+{
+    StringBuilder result;
+    Array<StackFrame> stackFrames = Platform::GetStackFrames(skipCount, maxDepth, context);
+    for (const auto& frame : stackFrames)
+    {
+        StringAsUTF16<ARRAY_COUNT(StackFrame::FunctionName)> functionName(frame.FunctionName);
+        if (StringUtils::Length(frame.FileName) != 0)
+        {
+            StringAsUTF16<ARRAY_COUNT(StackFrame::FileName)> fileName(frame.FileName);
+            result.AppendFormat(TEXT("   at {0}() in {1}:line {2}\n"), functionName.Get(), fileName.Get(), frame.LineNumber);
+        }
+        else if (StringUtils::Length(frame.FunctionName) != 0)
+        {
+            result.AppendFormat(TEXT("   at {0}()\n"), functionName.Get());
+        }
+        else
+        {
+            result.AppendFormat(TEXT("   at 0x{0:x}\n"), (uint64)frame.ProgramCounter);
+        }
+    }
+    return result.ToString();
 }
 
 void PlatformBase::CollectCrashData(const String& crashDataFolder, void* context)
