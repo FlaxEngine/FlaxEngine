@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
@@ -276,6 +276,7 @@ namespace FlaxEditor.Windows
         private LogEntry _selected;
         private readonly int[] _logCountPerGroup = new int[(int)LogGroup.Max];
         private readonly Regex _logRegex = new Regex("at (.*) in (.*):(line (\\d*)|(\\d*))");
+        private readonly ThreadLocal<StringBuilder> _stringBuilder = new ThreadLocal<StringBuilder>(() => new StringBuilder(), false);
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
 
         private readonly object _locker = new object();
@@ -504,7 +505,9 @@ namespace FlaxEditor.Windows
                 // Detect code location and remove leading internal stack trace part
                 var matches = _logRegex.Matches(stackTrace);
                 bool foundStart = false, noLocation = true;
-                var fineStackTrace = new StringBuilder(stackTrace.Length);
+                var fineStackTrace = _stringBuilder.Value;
+                fineStackTrace.Clear();
+                fineStackTrace.Capacity = Mathf.Max(fineStackTrace.Capacity, stackTrace.Length);
                 for (int i = 0; i < matches.Count; i++)
                 {
                     var match = matches[i];
