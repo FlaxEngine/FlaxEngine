@@ -278,14 +278,37 @@ namespace FlaxEditor.Surface
             if (!handled)
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
-                if (IntersectsConnection(mousePos, out OutputBox outputBox, out Box connectedBox))
+                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
                 {
-                    var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+                    if (Undo != null)
+                    {
+                        bool undoEnabled = Undo.Enabled;
+                        Undo.Enabled = false;
+                        var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+                        Undo.Enabled = undoEnabled;
 
-                    // TODO: Undo action
-                    outputBox.BreakConnection(connectedBox);
-                    outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
-                    rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(connectedBox);
+                        var spawnNodeAction = new AddRemoveNodeAction(rerouteNode, true);
+
+                        var disconnectBoxesAction = new ConnectBoxesAction(inputBox, outputBox, false);
+                        inputBox.BreakConnection(outputBox);
+                        disconnectBoxesAction.End();
+
+                        var addConnectionsAction = new EditNodeConnections(Context, rerouteNode);
+                        outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
+                        rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(inputBox);
+                        addConnectionsAction.End();
+
+
+                        Undo.AddAction(new MultiUndoAction(spawnNodeAction, disconnectBoxesAction, addConnectionsAction));
+                    }
+                    else
+                    {
+                        var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+                        inputBox.BreakConnection(outputBox);
+                        outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
+                        rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(inputBox);
+                    }
+                    MarkAsEdited();
 
                     handled = true;
                 }
@@ -828,7 +851,7 @@ namespace FlaxEditor.Surface
             );
         }
 
-        private bool IntersectsConnection(Vector2 mousePosition, out OutputBox outputBox, out Box connectedBox)
+        private bool IntersectsConnection(Vector2 mousePosition, out InputBox inputBox, out OutputBox outputBox)
         {
             for (int i = 0; i < Nodes.Count; i++)
             {
@@ -841,7 +864,7 @@ namespace FlaxEditor.Surface
                             if (ob.IntersectsConnection(ob.Connections[k], ref mousePosition))
                             {
                                 outputBox = ob;
-                                connectedBox = ob.Connections[k];
+                                inputBox = ob.Connections[k] as InputBox;
                                 return true;
                             }
                         }
@@ -850,7 +873,7 @@ namespace FlaxEditor.Surface
             }
 
             outputBox = null;
-            connectedBox = null;
+            inputBox = null;
             return false;
         }
     }
