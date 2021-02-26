@@ -7,6 +7,7 @@
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
+#include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -678,6 +679,21 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     SystemDpi = CalculateDpi(shCoreDll);
 
     FreeLibrary(shCoreDll);
+}
+
+BatteryInfo WindowsPlatform::GetBatteryInfo()
+{
+    BatteryInfo info;
+    SYSTEM_POWER_STATUS status;
+    GetSystemPowerStatus(&status);
+    info.BatteryLifePercent = (float)status.BatteryLifePercent / 255.0f;
+    if (status.BatteryFlag & 8)
+        info.State = BatteryInfo::States::BatteryCharging;
+    else if (status.BatteryFlag & 1 || status.BatteryFlag & 2 || status.BatteryFlag & 4)
+        info.State = BatteryInfo::States::BatteryDischarging;
+    else if (status.ACLineStatus == 1 || status.BatteryFlag & 128)
+        info.State = BatteryInfo::States::Connected;
+    return info;
 }
 
 int32 WindowsPlatform::GetDpi()

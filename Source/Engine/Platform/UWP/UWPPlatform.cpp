@@ -6,6 +6,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Core/Log.h"
 #include "UWPWindow.h"
@@ -112,6 +113,21 @@ void UWPPlatform::BeforeExit()
 void UWPPlatform::Exit()
 {
     Win32Platform::Exit();
+}
+
+BatteryInfo UWPPlatform::GetBatteryInfo()
+{
+    BatteryInfo info;
+    SYSTEM_POWER_STATUS status;
+    GetSystemPowerStatus(&status);
+    info.BatteryLifePercent = (float)status.BatteryLifePercent / 255.0f;
+    if (status.BatteryFlag & 8)
+        info.State = BatteryInfo::States::BatteryCharging;
+    else if (status.BatteryFlag & 1 || status.BatteryFlag & 2 || status.BatteryFlag & 4)
+        info.State = BatteryInfo::States::BatteryDischarging;
+    else if (status.ACLineStatus == 1 || status.BatteryFlag & 128)
+        info.State = BatteryInfo::States::Connected;
+    return info;
 }
 
 int32 UWPPlatform::GetDpi()

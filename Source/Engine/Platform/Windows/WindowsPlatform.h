@@ -64,6 +64,7 @@ public:
     static bool IsDebuggerPresent();
 #endif
     static void SetHighDpiAwarenessEnabled(bool enable);
+    static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
     static String GetUserLocaleName();
     static String GetComputerName();
