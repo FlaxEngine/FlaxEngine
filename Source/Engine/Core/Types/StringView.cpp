@@ -2,6 +2,12 @@
 
 #include "StringView.h"
 #include "String.h"
+#include "StringBuilder.h"
+
+StringView StringBuilder::ToStringView() const
+{
+    return StringView(_data.Get(), _data.Count());
+}
 
 StringView StringView::Empty;
 

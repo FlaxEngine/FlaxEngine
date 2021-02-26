@@ -269,6 +269,8 @@ public:
     {
         return String(_data.Get(), _data.Count());
     }
+
+    StringView ToStringView() const;
 };
 
 inline uint32 GetHash(const StringBuilder& key)
