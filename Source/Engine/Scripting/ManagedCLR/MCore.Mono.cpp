@@ -115,6 +115,8 @@ void* MonoCalloc(size_t count, size_t size)
 
 #if USE_MONO_PROFILER
 
+#include "Engine/Core/Types/StringBuilder.h"
+
 struct FlaxMonoProfiler
 {
 };
@@ -123,7 +125,7 @@ FlaxMonoProfiler Profiler;
 
 struct StackWalkDataResult
 {
-    StringAnsi Buffer;
+    StringBuilder Buffer;
 };
 
 mono_bool OnStackWalk(MonoMethod* method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data)
@@ -135,16 +137,16 @@ mono_bool OnStackWalk(MonoMethod* method, int32_t native_offset, int32_t il_offs
         auto mName = mono_method_get_name(method);
         auto mKlassNameSpace = mono_class_get_namespace(mono_method_get_class(method));
         auto mKlassName = mono_class_get_name(mono_method_get_class(method));
-        result->Buffer += mKlassNameSpace;
-        result->Buffer += ".";
-        result->Buffer += mKlassName;
-        result->Buffer += "::";
-        result->Buffer += mName;
-        result->Buffer += "\n";
+        result->Buffer.Append(mKlassNameSpace);
+        result->Buffer.Append(TEXT("."));
+        result->Buffer.Append(mKlassName);
+        result->Buffer.Append(TEXT("::"));
+        result->Buffer.Append(mName);
+        result->Buffer.Append(TEXT("\n"));
     }
     else if (!managed)
     {
-        result->Buffer += "<unmanaged>\n";
+        result->Buffer.Append(TEXT("<unmanaged>\n"));
     }
 
     return 0;
@@ -167,10 +169,10 @@ void OnGCAllocation(MonoProfiler* profiler, MonoObject* obj)
 		if (details)
 		{
 			StackWalkDataResult stackTrace;
-			stackTrace.Buffer.reserve(1024);
+			stackTrace.Buffer.SetCapacity(1024);
 			mono_stack_walk(&OnStackWalk, &stackTrace);
 
-			LOG(Info, "GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}", name_space, name, size, stackTrace.Buffer.c_str());
+			LOG(Info, "GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}", String(name_space), String(name), size, stackTrace.Buffer.ToStringView());
 		}
 	}
 #endif
