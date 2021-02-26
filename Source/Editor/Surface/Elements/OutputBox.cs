@@ -136,7 +136,7 @@ namespace FlaxEditor.Surface.Elements
                 // TODO: Figure out how to only draw the topmost connection
                 if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
                 {
-                    highlight += 1;
+                    highlight += 0.5f;
                 }
 
                 DrawConnection(ref startPos, ref endPos, ref color, highlight);
@@ -151,7 +151,7 @@ namespace FlaxEditor.Surface.Elements
             // Draw all the connections
             var startPos = Parent.PointToParent(Center);
             Vector2 endPos = targetBox.Parent.PointToParent(targetBox.Center);
-            DrawConnection(ref startPos, ref endPos, ref _currentTypeColor, 2);
+            DrawConnection(ref startPos, ref endPos, ref _currentTypeColor, 2.5f);
         }
 
         /// <inheritdoc />

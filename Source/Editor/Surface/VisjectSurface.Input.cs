@@ -562,89 +562,69 @@ namespace FlaxEditor.Surface
                     }
                     return true;
                 }
-
-                if (key == KeyboardKeys.ArrowUp)
+                if (key == KeyboardKeys.ArrowUp || key == KeyboardKeys.ArrowDown)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    Box toSelect = selectedBox?.ParentNode.GetPreviousBox(selectedBox);
+                    if (selectedBox == null) return true;
 
-                    if (toSelect != null)
+                    Box toSelect = (key == KeyboardKeys.ArrowUp) ?
+                        selectedBox?.ParentNode.GetPreviousBox(selectedBox) :
+                        selectedBox?.ParentNode.GetNextBox(selectedBox);
+
+                    if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
                     {
-                        if (toSelect.Connections.Count > 1)
-                        {
-                            // Box has multiple connections
-                        }
-
-                        if (toSelect.IsOutput != selectedBox.IsOutput)
-                        {
-                            // Jump up (nodes)
-                        }
-                        else
-                        {
-                            Select(toSelect.ParentNode);
-                            toSelect.ParentNode.SelectBox(toSelect);
-                        }
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
                     }
-
-                    return true;
                 }
-                if (key == KeyboardKeys.ArrowDown)
+
+                if (key == KeyboardKeys.Tab)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
+                    if (selectedBox == null) return true;
 
-                    if (toSelect != null)
+                    int connectionCount = selectedBox.Connections.Count;
+                    if (connectionCount == 0) return true;
+
+                    if (Root.GetKey(KeyboardKeys.Shift))
                     {
-                        if (toSelect.Connections.Count > 1)
-                        {
-                            // Box has multiple connections
-                        }
-
-                        if (toSelect.IsOutput != selectedBox.IsOutput)
-                        {
-                            // Jump down (nodes)
-                        }
-                        else
-                        {
-                            Select(toSelect.ParentNode);
-                            toSelect.ParentNode.SelectBox(toSelect);
-                        }
+                        _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
                     }
-
-                    return true;
+                    else
+                    {
+                        _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
+                    }
                 }
+
 
                 if (key == KeyboardKeys.ArrowRight || key == KeyboardKeys.ArrowLeft)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null) return false;
+                    if (selectedBox == null) return true;
 
                     Box toSelect = null;
 
-                    if (key == KeyboardKeys.ArrowRight && selectedBox.IsOutput || key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput)
+                    if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
                     {
-                        if (selectedBox.Connections.Count > 1)
+                        if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
                         {
-                            // Box has multiple connections
+                            _selectedConnectionIndex = 0;
                         }
-                        else if (selectedBox.Connections.Count == 1)
-                        {
-                            toSelect = selectedBox.Connections[0];
-                        }
+                        toSelect = selectedBox.Connections[_selectedConnectionIndex];
                     }
                     else
                     {
                         // Use the node with the closest Y-level
                         // Since there are cases like 3 nodes on one side and only 1 node on the other side
 
-                        var elements = selectedBox?.ParentNode.Elements;
-                        float distance = float.PositiveInfinity;
+                        var elements = selectedBox.ParentNode.Elements;
+                        float minDistance = float.PositiveInfinity;
                         for (int i = 0; i < elements.Count; i++)
                         {
-                            if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < distance)
+                            if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < minDistance)
                             {
                                 toSelect = box;
-                                distance = Mathf.Abs(box.Y - selectedBox.Y);
+                                minDistance = Mathf.Abs(box.Y - selectedBox.Y);
                             }
                         }
                     }

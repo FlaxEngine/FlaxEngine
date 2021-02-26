@@ -39,6 +39,7 @@ namespace FlaxEditor.Surface
         private GroupArchetype _customNodesGroup;
         private List<NodeArchetype> _customNodes;
         private Action _onSave;
+        private int _selectedConnectionIndex;
 
         internal int _isUpdatingBoxTypes;
 
@@ -361,6 +362,8 @@ namespace FlaxEditor.Surface
 
             Context.ControlSpawned += OnSurfaceControlSpawned;
             Context.ControlDeleted += OnSurfaceControlDeleted;
+
+            SelectionChanged += () => { _selectedConnectionIndex = 0; };
 
             // Init drag handlers
             DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));

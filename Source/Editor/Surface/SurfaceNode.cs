@@ -763,27 +763,57 @@ namespace FlaxEditor.Surface
                 }
             }
 
+        }
+
+        /// <summary>
+        /// Draws all selected connections between surface objects related to this node.
+        /// </summary>
+        /// <param name="selectedConnectionIndex">The index of the currently selected connection.</param>
+        public void DrawSelectedConnections(int selectedConnectionIndex)
+        {
             if (_isSelected)
             {
-                bool hasBoxesSelection = HasBoxesSelection;
-                for (int j = 0; j < Elements.Count; j++)
+                if (HasBoxesSelection)
                 {
-                    if (Elements[j] is Box box && box.HasAnyConnection && (!hasBoxesSelection || box.IsSelected))
+                    for (int j = 0; j < Elements.Count; j++)
                     {
-                        if (box is OutputBox ob)
+                        if (Elements[j] is Box box && box.IsSelected && selectedConnectionIndex < box.Connections.Count)
                         {
-                            for (int i = 0; i < ob.Connections.Count; i++)
+                            if (box is OutputBox ob)
                             {
-                                ob.DrawSelectedConnection(ob.Connections[i]);
+                                ob.DrawSelectedConnection(ob.Connections[selectedConnectionIndex]);
                             }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < box.Connections.Count; i++)
+                            else
                             {
-                                if (box.Connections[i] is OutputBox outputBox)
+                                if (box.Connections[selectedConnectionIndex] is OutputBox outputBox)
                                 {
                                     outputBox.DrawSelectedConnection(box);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < Elements.Count; j++)
+                    {
+                        if (Elements[j] is Box box)
+                        {
+                            if (box is OutputBox ob)
+                            {
+                                for (int i = 0; i < ob.Connections.Count; i++)
+                                {
+                                    ob.DrawSelectedConnection(ob.Connections[i]);
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 0; i < box.Connections.Count; i++)
+                                {
+                                    if (box.Connections[i] is OutputBox outputBox)
+                                    {
+                                        outputBox.DrawSelectedConnection(box);
+                                    }
                                 }
                             }
                         }
