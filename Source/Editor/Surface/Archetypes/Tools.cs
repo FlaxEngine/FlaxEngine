@@ -1023,37 +1023,22 @@ namespace FlaxEditor.Surface.Archetypes
                 var inputBox = GetBox(0);
                 var outputBox = GetBox(1);
 
-                _deleteNode = !inputBox.HasAnyConnection;
+                inputBox.Visible = !inputBox.HasAnyConnection;
                 outputBox.Visible = !outputBox.HasAnyConnection;
+
+                _deleteNode = !inputBox.HasAnyConnection && !outputBox.HasAnyConnection;
             }
 
-            /*public override void OnDeleted()
-            {
-                var inputBox = GetBox(0);
-                var outputBox = GetBox(1);
-
-                var connectionA = inputBox.HasAnyConnection ? inputBox.Connections[0] : null; // This doesn't work
-                var connectionB = outputBox.HasAnyConnection ? outputBox.Connections[0] : null;
-
-                base.OnDeleted();
-
-                if (connectionA != null && connectionB != null)
-                {
-                    connectionA.CreateConnection(connectionB); // TODO: handle undo
-                }
-            }*/
-
+            /// <inheritdoc />
             public override void Update(float deltaTime)
             {
                 base.Update(deltaTime);
 
                 if (_deleteNode)
                 {
-                    _deleteNode = false;
-                    Surface.Delete(this); // TODO: handle undo
+                    Surface.Delete(this);
                 }
             }
-
 
             /// <inheritdoc />
             public override bool CanSelect(ref Vector2 location)
@@ -1073,7 +1058,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var style = Surface.Style;
                 var inputBox = GetBox(0);
+                var outputBox = GetBox(1);
                 var connectionColor = style.Colors.Default;
+                float barHorizontalOffset = -2;
+                float barHeight = 3;
 
                 if (inputBox.HasAnyConnection)
                 {
@@ -1081,14 +1069,25 @@ namespace FlaxEditor.Surface.Archetypes
                     Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
                 }
 
-                //float barHeight = 4;
-                //Render2D.FillRectangle(new Rectangle(DefaultSize.X / 2, (DefaultSize.Y - barHeight) / 2, barHeight * 4, barHeight), connectionColor);
+                if (!inputBox.HasAnyConnection)
+                {
+                    Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 4, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
+                }
 
-                SpriteHandle icon = style.Icons.BoxClose;
-                Render2D.DrawSprite(icon, new Rectangle(Vector2.Zero, DefaultSize), connectionColor);
+                if (!outputBox.HasAnyConnection)
+                {
+                    Render2D.FillRectangle(new Rectangle(DefaultSize.X + barHorizontalOffset, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
+                }
+
+                if (inputBox.HasAnyConnection && outputBox.HasAnyConnection)
+                {
+                    var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
+                    Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
+                    SpriteHandle icon = style.Icons.BoxClose;
+                    Render2D.DrawSprite(icon, new Rectangle(Vector2.Zero, DefaultSize), connectionColor);
+                }
 
                 base.Draw();
-
             }
         }
 
