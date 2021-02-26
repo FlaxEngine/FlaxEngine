@@ -967,17 +967,18 @@ namespace FlaxEngine
             Matrix3x3.LookAt(ref eye, ref target, ref up, out var matrix);
             RotationMatrix(ref matrix, out result);
         }
-        
+
         /// <summary>
         /// Creates a left-handed, look-at quaternion.
         /// </summary>
         /// <param name="eye">The position of the viewer's eye.</param>
         /// <param name="target">The camera look-at target.</param>
         /// <returns>The created look-at quaternion.</returns>
-        public static Quaternion LookAt(Vector3 eye, Vector3 target){
+        public static Quaternion LookAt(Vector3 eye, Vector3 target)
+        {
             return LookAt(eye, target, Vector3.Up);
         }
-        
+
         /// <summary>
         /// Creates a left-handed, look-at quaternion.
         /// </summary>
@@ -1012,7 +1013,7 @@ namespace FlaxEngine
         {
             return RotationLookAt(forward, Vector3.Up);
         }
-        
+
         /// <summary>
         /// Creates a left-handed, look-at quaternion.
         /// </summary>
