@@ -77,7 +77,19 @@ public:
             AddParam(val);
         }
 
+        FORCE_INLINE void AddParam(const StringView& value)
+        {
+            MonoString* val = MUtils::ToString(value);
+            AddParam(val);
+        }
+
         FORCE_INLINE void AddParam(const String& value, MonoDomain* domain)
+        {
+            MonoString* val = MUtils::ToString(value, domain);
+            AddParam(val);
+        }
+
+        FORCE_INLINE void AddParam(const StringView& value, MonoDomain* domain)
         {
             MonoString* val = MUtils::ToString(value, domain);
             AddParam(val);

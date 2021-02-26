@@ -43,7 +43,7 @@ bool CacheMethods()
     if (!debugLogHandlerClass)
         return false;
 
-    Internal_SendLog = debugLogHandlerClass->GetMethod("Internal_SendLog", 2);
+    Internal_SendLog = debugLogHandlerClass->GetMethod("Internal_SendLog", 3);
     if (!Internal_SendLog)
         return false;
 
@@ -60,7 +60,7 @@ bool CacheMethods()
     return false;
 }
 
-void DebugLog::Log(LogType type, const String& message)
+void DebugLog::Log(LogType type, const StringView& message)
 {
     if (CacheMethods())
         return;
@@ -69,15 +69,18 @@ void DebugLog::Log(LogType type, const String& message)
     MainThreadManagedInvokeAction::ParamsBuilder params;
     params.AddParam(type);
     params.AddParam(message, scriptsDomain->GetNative());
+#if BUILD_RELEASE
+    params.AddParam(StringView::Empty, scriptsDomain->GetNative());
+#else
+    const String stackTrace = Platform::GetStackTrace(1);
+    params.AddParam(stackTrace, scriptsDomain->GetNative());
+#endif
     MainThreadManagedInvokeAction::Invoke(Internal_SendLog, params);
 }
 
 void DebugLog::LogException(MonoObject* exceptionObject)
 {
-    if (exceptionObject == nullptr)
-        return;
-
-    if (CacheMethods())
+    if (exceptionObject == nullptr || CacheMethods())
         return;
 
     MainThreadManagedInvokeAction::ParamsBuilder params;

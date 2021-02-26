@@ -17,13 +17,13 @@ public:
     /// </summary>
     /// <param name="type">The message type.</param>
     /// <param name="message">The message.</param>
-    static void Log(LogType type, const String& message);
+    static void Log(LogType type, const StringView& message);
 
     /// <summary>
     /// A variant of Debug.Log that logs a warning message to the console.
     /// </summary>
     /// <param name="message">The text message to display.</param>
-    FORCE_INLINE static void Log(const String& message)
+    FORCE_INLINE static void Log(const StringView& message)
     {
         Log(LogType::Info, message);
     }
@@ -32,7 +32,7 @@ public:
     /// A variant of Debug.Log that logs a warning message to the console.
     /// </summary>
     /// <param name="message">The text message to display.</param>
-    FORCE_INLINE static void LogWarning(const String& message)
+    FORCE_INLINE static void LogWarning(const StringView& message)
     {
         Log(LogType::Warning, message);
     }
@@ -41,7 +41,7 @@ public:
     /// A variant of Debug.Log that logs a error message to the console.
     /// </summary>
     /// <param name="message">The text message to display.</param>
-    FORCE_INLINE static void LogError(const String& message)
+    FORCE_INLINE static void LogError(const StringView& message)
     {
         Log(LogType::Error, message);
     }

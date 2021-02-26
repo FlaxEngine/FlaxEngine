@@ -216,7 +216,7 @@ namespace FlaxEditor.Windows
             /// </summary>
             public void Copy()
             {
-                Clipboard.Text = Info.Replace("\n", Environment.NewLine);
+                Clipboard.Text = Info.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
             }
 
             public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
@@ -275,7 +275,7 @@ namespace FlaxEditor.Windows
         private readonly VerticalPanel _entriesPanel;
         private LogEntry _selected;
         private readonly int[] _logCountPerGroup = new int[(int)LogGroup.Max];
-        private readonly Regex _logRegex = new Regex("at(.*) in (.*):(\\d*)");
+        private readonly Regex _logRegex = new Regex("at (.*) in (.*):(line (\\d*)|(\\d*))");
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
 
         private readonly object _locker = new object();
@@ -508,19 +508,26 @@ namespace FlaxEditor.Windows
                 for (int i = 0; i < matches.Count; i++)
                 {
                     var match = matches[i];
-                    if (foundStart)
+                    var matchLocation = match.Groups[1].Value.Trim();
+                    if (matchLocation.StartsWith("FlaxEngine.Debug.", StringComparison.Ordinal))
+                    {
+                        // C# start
+                        foundStart = true;
+                    }
+                    else if (matchLocation.StartsWith("DebugLog::", StringComparison.Ordinal))
+                    {
+                        // C++ start
+                        foundStart = true;
+                    }
+                    else if (foundStart)
                     {
                         if (noLocation)
                         {
                             desc.LocationFile = match.Groups[2].Value;
-                            int.TryParse(match.Groups[3].Value, out desc.LocationLine);
+                            int.TryParse(match.Groups[5].Value, out desc.LocationLine);
                             noLocation = false;
                         }
                         fineStackTrace.AppendLine(match.Groups[0].Value);
-                    }
-                    else if (match.Groups[1].Value.Trim().StartsWith("FlaxEngine.Debug.", StringComparison.Ordinal))
-                    {
-                        foundStart = true;
                     }
                 }
                 desc.Description = fineStackTrace.ToString();
