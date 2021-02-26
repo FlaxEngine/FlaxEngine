@@ -271,7 +271,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
                 mp.Type = MaterialParameterType::Texture;
 
                 // Special case for Normal Maps
-                auto asset = Content::LoadAsync<Texture>((Guid)param->Value);
+                auto asset = (Texture*)::LoadAsset((Guid)param->Value, Texture::TypeInitializer);
                 if (asset && !asset->WaitForLoaded() && asset->IsNormalMap())
                     mp.Type = MaterialParameterType::NormalMap;
             }

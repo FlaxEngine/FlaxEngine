@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "Engine/Content/Content.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Content/AssetReference.h"
-#include "../Asset.h"
+#include "Asset.h"
 
 /// <summary>
 /// Assets Container allows to load collection of assets and keep references to them.
@@ -27,13 +26,9 @@ public:
             if (e.GetID() == id)
                 return (T*)e.Get();
         }
-
-        auto asset = Content::LoadAsync<T>(id);
+        auto asset = (T*)::LoadAsset(id, T::TypeInitializer);
         if (asset)
-        {
             Add(asset);
-        }
-
         return asset;
     }
 

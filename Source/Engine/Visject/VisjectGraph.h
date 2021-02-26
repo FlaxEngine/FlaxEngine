@@ -8,7 +8,7 @@
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Content/Utilities/AssetsContainer.h"
+#include "Engine/Content/AssetsContainer.h"
 #include "Engine/Animations/Curve.h"
 
 #define VISJECT_GRAPH_NODE_MAX_ASSETS 14
@@ -204,7 +204,7 @@ public:
                 // Get Gameplay Global
             case 16:
             {
-                n->Assets[0] = Content::LoadAsync<Asset>((Guid)n->Values[0]);
+                n->Assets[0] = ::LoadAsset((Guid)n->Values[0], Asset::TypeInitializer);
                 break;
             }
             }

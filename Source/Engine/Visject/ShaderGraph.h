@@ -10,7 +10,7 @@
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Utilities/TextWriter.h"
 #include "Engine/Graphics/Materials/MaterialParams.h"
-#include "Engine/Content/Utilities/AssetsContainer.h"
+#include "Engine/Content/AssetsContainer.h"
 #include "Engine/Animations/Curve.h"
 
 #define SHADER_GRAPH_MAX_CALL_STACK 100

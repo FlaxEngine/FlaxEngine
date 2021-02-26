@@ -3,6 +3,7 @@
 #include "VisualScript.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/Scripting.h"

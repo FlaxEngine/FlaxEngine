@@ -723,7 +723,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         // Asset Reference
     case 18:
     {
-        value = Content::LoadAsync<Asset>((Guid)node->Values[0]);
+        value = ::LoadAsset((Guid)node->Values[0], Asset::TypeInitializer);
         break;
     }
         // To String
