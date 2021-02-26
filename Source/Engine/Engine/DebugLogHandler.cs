@@ -36,13 +36,14 @@ namespace FlaxEngine
         /// <inheritdoc />
         public void Log(LogType logType, Object context, string message)
         {
-#if DEBUG
-            string stackTrace = Environment.StackTrace;
+            if (message == null)
+                return;
+#if BUILD_RELEASE
+            string stackTrace = null;
 #else
-            string stackTrace = string.Empty;
+            string stackTrace = Environment.StackTrace;
 #endif
             Internal_Log(logType, message, Object.GetUnmanagedPtr(context), stackTrace);
-
             SendLog?.Invoke(logType, message, context, stackTrace);
         }
 

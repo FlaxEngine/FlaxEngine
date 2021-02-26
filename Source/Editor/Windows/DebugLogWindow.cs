@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -183,6 +185,11 @@ namespace FlaxEditor.Windows
                         return true;
                     }
                 }
+                // Enter
+                else if (key == KeyboardKeys.Return)
+                {
+                    Open();
+                }
                 // Ctrl+C
                 else if (key == KeyboardKeys.C && Root.GetKey(KeyboardKeys.Control))
                 {
@@ -191,6 +198,17 @@ namespace FlaxEditor.Windows
                 }
 
                 return base.OnKeyDown(key);
+            }
+
+            /// <summary>
+            /// Opens the entry location.
+            /// </summary>
+            public void Open()
+            {
+                if (!string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile))
+                {
+                    Editor.Instance.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine);
+                }
             }
 
             /// <summary>
@@ -203,9 +221,7 @@ namespace FlaxEditor.Windows
 
             public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
             {
-                // Show the location
-                Editor.Instance.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine);
-
+                Open();
                 return true;
             }
 
@@ -238,6 +254,7 @@ namespace FlaxEditor.Windows
 
                     var menu = new ContextMenu();
                     menu.AddButton("Copy", Copy);
+                    menu.AddButton("Open", Open).Enabled = !string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile);
                     menu.Show(this, location);
                 }
 
@@ -337,7 +354,6 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
-
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -502,7 +518,7 @@ namespace FlaxEditor.Windows
                         }
                         fineStackTrace.AppendLine(match.Groups[0].Value);
                     }
-                    else if (match.Groups[1].Value.Trim().StartsWith("FlaxEngine.Debug.Info", StringComparison.Ordinal))
+                    else if (match.Groups[1].Value.Trim().StartsWith("FlaxEngine.Debug.", StringComparison.Ordinal))
                     {
                         foundStart = true;
                     }
