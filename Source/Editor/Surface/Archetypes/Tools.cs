@@ -987,8 +987,6 @@ namespace FlaxEditor.Surface.Archetypes
         {
             public static readonly Vector2 DefaultSize = new Vector2(16);
 
-            private bool _deleteNode;
-
             /// <inheritdoc />
             protected override bool ShowTooltip => false;
 
@@ -1029,20 +1027,6 @@ namespace FlaxEditor.Surface.Archetypes
 
                 inputBox.Visible = !inputBox.HasAnyConnection;
                 outputBox.Visible = !outputBox.HasAnyConnection;
-
-                _deleteNode = !inputBox.HasAnyConnection && !outputBox.HasAnyConnection;
-            }
-
-            /// <inheritdoc />
-            public override void Update(float deltaTime)
-            {
-                base.Update(deltaTime);
-
-                if (_deleteNode)
-                {
-                    _deleteNode = false;
-                    // Surface.Delete(this); // Doesn't work with undo-ing
-                }
             }
 
             /// <inheritdoc />
@@ -1565,7 +1549,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1, true),
                 }
             },
         };
