@@ -1011,8 +1011,7 @@ namespace FlaxEditor.Surface.Archetypes
                 inputBox.Location = Vector2.Zero;
                 outputBox.Location = Vector2.Zero;
 
-                inputBox.Visible = false;
-                outputBox.Visible = false;
+                UpdateBoxes();
             }
 
             /// <inheritdoc />
@@ -1020,6 +1019,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.ConnectionTick(box);
 
+                UpdateBoxes();
+            }
+
+            private void UpdateBoxes()
+            {
                 var inputBox = GetBox(0);
                 var outputBox = GetBox(1);
 
@@ -1036,7 +1040,8 @@ namespace FlaxEditor.Surface.Archetypes
 
                 if (_deleteNode)
                 {
-                    Surface.Delete(this);
+                    _deleteNode = false;
+                    // Surface.Delete(this); // Doesn't work with undo-ing
                 }
             }
 
@@ -1071,7 +1076,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 if (!inputBox.HasAnyConnection)
                 {
-                    Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 4, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
+                    Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 2, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
                 }
 
                 if (!outputBox.HasAnyConnection)
