@@ -13,13 +13,6 @@ class FLAXENGINE_API DebugLog
 public:
 
     /// <summary>
-    /// Registers the internal calls to managed code.
-    /// </summary>
-    static void RegisterInternalCalls();
-
-public:
-
-    /// <summary>
     /// Sends the log message to the Flax console and the log file.
     /// </summary>
     /// <param name="type">The message type.</param>
