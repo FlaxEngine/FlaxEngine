@@ -832,7 +832,7 @@ namespace FlaxEngine
             value.Normalize();
             return value;
         }
-        
+
         /// <summary>
         /// Makes sure that Length of the output vector is always below max and above 0.
         /// </summary>
@@ -840,8 +840,9 @@ namespace FlaxEngine
         /// <param name="max">Max Length</param>
         public static Vector2 ClampLength(Vector2 vector, float max)
         {
-            return ClampLength(vector, 0, max); 
+            return ClampLength(vector, 0, max);
         }
+
         /// <summary>
         /// Makes sure that Length of the output vector is always below max and above min.
         /// </summary>
@@ -853,6 +854,7 @@ namespace FlaxEngine
             ClampLength(ref vector, min, max, out Vector2 retVect);
             return retVect;
         }
+
         /// <summary>
         /// Makes sure that Length of the output vector is always below max and above min.
         /// </summary>
@@ -864,7 +866,7 @@ namespace FlaxEngine
         {
             retVect.X = vector.X;
             retVect.Y = vector.Y;
-            
+
             float lenSq = retVect.LengthSquared;
             if (lenSq > max * max)
             {
@@ -879,6 +881,7 @@ namespace FlaxEngine
                 retVect.Y = retVect.Y * scaleFactor;
             }
         }
+
         /// <summary>
         /// Returns the vector with components rounded to the nearest integer.
         /// </summary>

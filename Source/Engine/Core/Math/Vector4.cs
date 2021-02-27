@@ -799,8 +799,9 @@ namespace FlaxEngine
         /// <param name="max">Max Length</param>
         public static Vector4 ClampLength(Vector4 vector, float max)
         {
-            return ClampLength(vector, 0, max); 
+            return ClampLength(vector, 0, max);
         }
+
         /// <summary>
         /// Makes sure that Length of the output vector is always below max and above min.
         /// </summary>
@@ -812,6 +813,7 @@ namespace FlaxEngine
             ClampLength(ref vector, min, max, out Vector4 retVect);
             return retVect;
         }
+
         /// <summary>
         /// Makes sure that Length of the output vector is always below max and above min.
         /// </summary>
@@ -825,7 +827,7 @@ namespace FlaxEngine
             retVect.Y = vector.Y;
             retVect.Z = vector.Z;
             retVect.W = vector.W;
-                
+
             float lenSq = retVect.LengthSquared;
             if (lenSq > max * max)
             {
@@ -844,6 +846,7 @@ namespace FlaxEngine
                 retVect.W = retVect.W * scaleFactor;
             }
         }
+
         /// <summary>
         /// Performs a linear interpolation between two vectors.
         /// </summary>
