@@ -636,8 +636,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     ClipLayersStack.Add({ defaultMask, defaultBounds });
 
     TintLayersStack.Clear();
-    Color defaultColor(1, 1, 1, 1);
-    TintLayersStack.Add(defaultColor);
+    TintLayersStack.Add({1,1,1,1});
     // Scissors can be enabled only for 2D orthographic projections
     IsScissorsRectEnabled = false;
 
