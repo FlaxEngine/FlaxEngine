@@ -36,19 +36,27 @@ namespace FlaxEngine
         /// <inheritdoc />
         public void Log(LogType logType, Object context, string message)
         {
-#if DEBUG
-            string stackTrace = Environment.StackTrace;
+            if (message == null)
+                return;
+#if BUILD_RELEASE
+            string stackTrace = null;
 #else
-            string stackTrace = string.Empty;
+            string stackTrace = Environment.StackTrace;
 #endif
             Internal_Log(logType, message, Object.GetUnmanagedPtr(context), stackTrace);
-
             SendLog?.Invoke(logType, message, context, stackTrace);
         }
 
-        internal static void Internal_SendLog(LogType type, string message)
+        internal static void Internal_SendLog(LogType logType, string message, string stackTrace)
         {
-            Debug.Logger.Log(type, message);
+            if (message == null)
+                return;
+            var logger = Debug.Logger;
+            if (logger.IsLogTypeAllowed(logType))
+            {
+                Internal_Log(logType, message, IntPtr.Zero, stackTrace);
+                ((DebugLogHandler)logger.LogHandler).SendLog?.Invoke(logType, message, null, stackTrace);
+            }
         }
 
         internal static void Internal_SendLogException(Exception exception)

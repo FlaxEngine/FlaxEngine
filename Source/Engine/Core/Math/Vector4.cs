@@ -793,6 +793,61 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above 0.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="max">Max Length</param>
+        public static Vector4 ClampLength(Vector4 vector, float max)
+        {
+            return ClampLength(vector, 0, max);
+        }
+
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        public static Vector4 ClampLength(Vector4 vector, float min, float max)
+        {
+            ClampLength(ref vector, min, max, out Vector4 retVect);
+            return retVect;
+        }
+
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        /// <param name="retVect">The Return Vector</param>
+        public static void ClampLength(ref Vector4 vector, float min, float max, out Vector4 retVect)
+        {
+            retVect.X = vector.X;
+            retVect.Y = vector.Y;
+            retVect.Z = vector.Z;
+            retVect.W = vector.W;
+
+            float lenSq = retVect.LengthSquared;
+            if (lenSq > max * max)
+            {
+                float scaleFactor = max / (float)Math.Sqrt(lenSq);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
+                retVect.W = retVect.W * scaleFactor;
+            }
+            if (lenSq < min * min)
+            {
+                float scaleFactor = min / (float)Math.Sqrt(lenSq);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+                retVect.Z = retVect.Z * scaleFactor;
+                retVect.W = retVect.W * scaleFactor;
+            }
+        }
+
+        /// <summary>
         /// Performs a linear interpolation between two vectors.
         /// </summary>
         /// <param name="start">Start vector.</param>

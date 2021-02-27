@@ -148,9 +148,11 @@ namespace FlaxEngine
         /// </summary>
         internal static void Init()
         {
-#if DEBUG
+#if BUILD_DEBUG
             Debug.Logger.LogHandler.LogWrite(LogType.Info, "Using FlaxAPI in Debug");
-#else
+#elif BUILD_DEVELOPMENT
+            Debug.Logger.LogHandler.LogWrite(LogType.Info, "Using FlaxAPI in Development");
+#elif BUILD_RELEASE
             Debug.Logger.LogHandler.LogWrite(LogType.Info, "Using FlaxAPI in Release");
 #endif
 

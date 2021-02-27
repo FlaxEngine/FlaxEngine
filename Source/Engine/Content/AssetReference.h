@@ -193,7 +193,7 @@ public:
 
     FORCE_INLINE AssetReference& operator=(const Guid& id)
     {
-        OnSet((T*)LoadAsset(id, T::TypeInitializer));
+        OnSet((T*)::LoadAsset(id, T::TypeInitializer));
         return *this;
     }
 

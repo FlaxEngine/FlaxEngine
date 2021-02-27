@@ -30,6 +30,7 @@ public:
     static void Tick();
     static void BeforeExit();
     static void Exit();
+    static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
     static String GetUserLocaleName();
     static String GetComputerName();

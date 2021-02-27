@@ -13,7 +13,7 @@
 #include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
-#include "Engine/Content/Utilities/IESLoader.h"
+#include "Engine/ContentImporters/ImportIES.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Assets/IESProfile.h"
 #include "Engine/Content/Assets/Texture.h"
@@ -527,7 +527,7 @@ CreateAssetResult ImportTexture::ImportIES(class CreateAssetContext& context)
     fileData.Add('\0');
 
     // Load IES profile data
-    IESLoader loader;
+    ::ImportIES loader;
     if (loader.Load(fileData.Get()))
     {
         return CreateAssetResult::Error;

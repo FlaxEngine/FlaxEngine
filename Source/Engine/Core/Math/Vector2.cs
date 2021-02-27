@@ -834,6 +834,55 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above 0.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="max">Max Length</param>
+        public static Vector2 ClampLength(Vector2 vector, float max)
+        {
+            return ClampLength(vector, 0, max);
+        }
+
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        public static Vector2 ClampLength(Vector2 vector, float min, float max)
+        {
+            ClampLength(ref vector, min, max, out Vector2 retVect);
+            return retVect;
+        }
+
+        /// <summary>
+        /// Makes sure that Length of the output vector is always below max and above min.
+        /// </summary>
+        /// <param name="vector">Input Vector.</param>
+        /// <param name="min">Min Length</param>
+        /// <param name="max">Max Length</param>
+        /// <param name="retVect">The Return Vector</param>
+        public static void ClampLength(ref Vector2 vector, float min, float max, out Vector2 retVect)
+        {
+            retVect.X = vector.X;
+            retVect.Y = vector.Y;
+
+            float lenSq = retVect.LengthSquared;
+            if (lenSq > max * max)
+            {
+                float scaleFactor = max / (float)Math.Sqrt(lenSq);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+            }
+            if (lenSq < min * min)
+            {
+                float scaleFactor = min / (float)Math.Sqrt(lenSq);
+                retVect.X = retVect.X * scaleFactor;
+                retVect.Y = retVect.Y * scaleFactor;
+            }
+        }
+
+        /// <summary>
         /// Returns the vector with components rounded to the nearest integer.
         /// </summary>
         /// <param name="v">The value.</param>

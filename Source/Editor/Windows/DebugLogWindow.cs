@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
@@ -183,6 +185,11 @@ namespace FlaxEditor.Windows
                         return true;
                     }
                 }
+                // Enter
+                else if (key == KeyboardKeys.Return)
+                {
+                    Open();
+                }
                 // Ctrl+C
                 else if (key == KeyboardKeys.C && Root.GetKey(KeyboardKeys.Control))
                 {
@@ -194,18 +201,27 @@ namespace FlaxEditor.Windows
             }
 
             /// <summary>
+            /// Opens the entry location.
+            /// </summary>
+            public void Open()
+            {
+                if (!string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile))
+                {
+                    Editor.Instance.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine);
+                }
+            }
+
+            /// <summary>
             /// Copies the entry information to the system clipboard (as text).
             /// </summary>
             public void Copy()
             {
-                Clipboard.Text = Info.Replace("\n", Environment.NewLine);
+                Clipboard.Text = Info.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
             }
 
             public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
             {
-                // Show the location
-                Editor.Instance.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine);
-
+                Open();
                 return true;
             }
 
@@ -238,6 +254,7 @@ namespace FlaxEditor.Windows
 
                     var menu = new ContextMenu();
                     menu.AddButton("Copy", Copy);
+                    menu.AddButton("Open", Open).Enabled = !string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile);
                     menu.Show(this, location);
                 }
 
@@ -258,7 +275,8 @@ namespace FlaxEditor.Windows
         private readonly VerticalPanel _entriesPanel;
         private LogEntry _selected;
         private readonly int[] _logCountPerGroup = new int[(int)LogGroup.Max];
-        private readonly Regex _logRegex = new Regex("at(.*) in (.*):(\\d*)");
+        private readonly Regex _logRegex = new Regex("at (.*) in (.*):(line (\\d*)|(\\d*))");
+        private readonly ThreadLocal<StringBuilder> _stringBuilder = new ThreadLocal<StringBuilder>(() => new StringBuilder(), false);
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
 
         private readonly object _locker = new object();
@@ -337,7 +355,6 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
-
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -488,23 +505,32 @@ namespace FlaxEditor.Windows
                 // Detect code location and remove leading internal stack trace part
                 var matches = _logRegex.Matches(stackTrace);
                 bool foundStart = false, noLocation = true;
-                var fineStackTrace = new StringBuilder(stackTrace.Length);
+                var fineStackTrace = _stringBuilder.Value;
+                fineStackTrace.Clear();
+                fineStackTrace.Capacity = Mathf.Max(fineStackTrace.Capacity, stackTrace.Length);
                 for (int i = 0; i < matches.Count; i++)
                 {
                     var match = matches[i];
-                    if (foundStart)
+                    var matchLocation = match.Groups[1].Value.Trim();
+                    if (matchLocation.StartsWith("FlaxEngine.Debug.", StringComparison.Ordinal))
+                    {
+                        // C# start
+                        foundStart = true;
+                    }
+                    else if (matchLocation.StartsWith("DebugLog::", StringComparison.Ordinal))
+                    {
+                        // C++ start
+                        foundStart = true;
+                    }
+                    else if (foundStart)
                     {
                         if (noLocation)
                         {
                             desc.LocationFile = match.Groups[2].Value;
-                            int.TryParse(match.Groups[3].Value, out desc.LocationLine);
+                            int.TryParse(match.Groups[5].Value, out desc.LocationLine);
                             noLocation = false;
                         }
                         fineStackTrace.AppendLine(match.Groups[0].Value);
-                    }
-                    else if (match.Groups[1].Value.Trim().StartsWith("FlaxEngine.Debug.Info", StringComparison.Ordinal))
-                    {
-                        foundStart = true;
                     }
                 }
                 desc.Description = fineStackTrace.ToString();
