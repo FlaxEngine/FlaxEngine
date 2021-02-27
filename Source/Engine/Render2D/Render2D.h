@@ -170,6 +170,7 @@ public:
     /// Pops tint color.
     /// </summary>
     API_FUNCTION() static void PopTint();
+
 public:
 
     /// <summary>
