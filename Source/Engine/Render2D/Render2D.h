@@ -157,7 +157,7 @@ public:
     /// Pushes tint color.
     /// </summary>
     /// <param name="tint">The tint color.</param>
-    API_FUNCTION() static void PushTint(API_PARAM(Ref) const Color& tint);
+    API_FUNCTION() static void PushTint(API_PARAM(Ref) const Color& tint, bool inherit = true);
 
     /// <summary>
     /// Peeks the current tint color.

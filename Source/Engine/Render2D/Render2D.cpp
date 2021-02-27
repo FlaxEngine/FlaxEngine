@@ -812,11 +812,11 @@ void Render2D::PopClip()
     OnClipScissors();
 }
 
-void Render2D::PushTint(const Color& tint)
+void Render2D::PushTint(const Color& tint, bool inherit)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     
-    TintLayersStack.Push(tint * TintLayersStack.Peek());
+    TintLayersStack.Push(inherit ? tint * TintLayersStack.Peek() : tint);
 }
 
 void Render2D::PeekTint(Color& tint)
