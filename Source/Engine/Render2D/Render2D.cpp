@@ -816,7 +816,7 @@ void Render2D::PushTint(const Color& tint)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     
-    TintLayersStack.Push(tint);
+    TintLayersStack.Push(tint * TintLayersStack.Peek());
 }
 
 void Render2D::PeekTint(Color& tint)
