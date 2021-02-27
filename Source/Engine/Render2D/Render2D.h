@@ -157,6 +157,7 @@ public:
     /// Pushes tint color.
     /// </summary>
     /// <param name="tint">The tint color.</param>
+    /// <param name="inherit">Multiply <see cref="tint"/> by the last tint on the stack.</param>
     API_FUNCTION() static void PushTint(API_PARAM(Ref) const Color& tint, bool inherit = true);
 
     /// <summary>
