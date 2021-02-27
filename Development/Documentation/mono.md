@@ -9,5 +9,6 @@ Some useful notes and tips for devs:
 * To update mono deps when developing/updating use `.\Development\Scripts\Windows\CallBuildTool.bat -log -ReBuildDeps -verbose -depsToBuild=mono -platform=Windows`, then build engine and run it
 * `MONO_GC_DEBUG=check-remset-consistency` - it will do additional checks at each collection to see if there are any missing write barriers
 * `MONO_GC_DEBUG=nursery-canaries` - it might catch some buffer overflows in case of problems in code.
+* `MONO_GC_DEBUG=<log-level>:<log-file>` - will print GC debug to the log file (eg. `4:sgen-gc`).
 * Methods `mono_custom_attrs_from_property` and `mono_custom_attrs_get_attr` are internally cached
 * If C++ mono call a method in c# that will throw an error, error will be handled but, not completly. Calling relase domain will return random `Access memory violation`. First search for error in c# code. No workaround yet.
