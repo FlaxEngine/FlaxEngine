@@ -738,6 +738,12 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = Scripting::FindObject<Actor>((Guid)node->Values[0]);
         break;
     }
+
+    case 29:
+    {
+        value = tryGetValue(node->GetBox(0), Value::Zero);
+        break;
+    }
     default:
         break;
     }

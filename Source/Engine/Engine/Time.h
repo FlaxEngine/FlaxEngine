@@ -121,8 +121,11 @@ public:
     API_FIELD() static float PhysicsFPS;
 
     /// <summary>
-    /// The target amount of the frames rendered per second (actual game FPS).
+    /// The target amount of the frames rendered per second (target game FPS).
     /// </summary>
+    /// <remarks>
+    /// To get the actual game FPS use <see cref="Engine.FramesPerSecond"/>
+    /// </remarks>
     API_FIELD() static float DrawFPS;
 
     /// <summary>

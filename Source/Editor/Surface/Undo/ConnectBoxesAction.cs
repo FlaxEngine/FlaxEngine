@@ -106,9 +106,12 @@ namespace FlaxEditor.Surface.Undo
             }
             for (int i = 0; i < output.Length; i++)
             {
-                var box = output[i].Get(context);
-                oB.Connections.Add(box);
-                box.Connections.Add(oB);
+                if (!output[i].Equals(_input))
+                {
+                    var box = output[i].Get(context);
+                    oB.Connections.Add(box);
+                    box.Connections.Add(oB);
+                }
             }
 
             toUpdate.AddRange(iB.Connections);

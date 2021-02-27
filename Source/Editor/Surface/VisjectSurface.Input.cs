@@ -274,12 +274,47 @@ namespace FlaxEditor.Surface
             bool handled = base.OnMouseDoubleClick(location, button);
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
-            if (handled)
+
+            if (!handled)
             {
-                return true;
+                var mousePos = _rootControl.PointFromParent(ref _mousePos);
+                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
+                {
+                    if (Undo != null)
+                    {
+                        bool undoEnabled = Undo.Enabled;
+                        Undo.Enabled = false;
+                        var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+                        Undo.Enabled = undoEnabled;
+
+                        var spawnNodeAction = new AddRemoveNodeAction(rerouteNode, true);
+
+                        var disconnectBoxesAction = new ConnectBoxesAction(inputBox, outputBox, false);
+                        inputBox.BreakConnection(outputBox);
+                        disconnectBoxesAction.End();
+
+                        var addConnectionsAction = new EditNodeConnections(Context, rerouteNode);
+                        outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
+                        rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(inputBox);
+                        addConnectionsAction.End();
+
+
+                        Undo.AddAction(new MultiUndoAction(spawnNodeAction, disconnectBoxesAction, addConnectionsAction));
+                    }
+                    else
+                    {
+                        var rerouteNode = Context.SpawnNode(7, 29, mousePos);
+                        inputBox.BreakConnection(outputBox);
+                        outputBox.CreateConnection(rerouteNode.GetBoxes().First(b => !b.IsOutput));
+                        rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(inputBox);
+                    }
+                    MarkAsEdited();
+
+                    handled = true;
+                }
             }
 
-            return false;
+            return handled;
         }
 
         /// <inheritdoc />
@@ -527,6 +562,81 @@ namespace FlaxEditor.Surface
                     }
                     return true;
                 }
+                if (key == KeyboardKeys.ArrowUp || key == KeyboardKeys.ArrowDown)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox == null) return true;
+
+                    Box toSelect = (key == KeyboardKeys.ArrowUp) ?
+                        selectedBox?.ParentNode.GetPreviousBox(selectedBox) :
+                        selectedBox?.ParentNode.GetNextBox(selectedBox);
+
+                    if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
+                    {
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
+                    }
+                }
+
+                if (key == KeyboardKeys.Tab)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox == null) return true;
+
+                    int connectionCount = selectedBox.Connections.Count;
+                    if (connectionCount == 0) return true;
+
+                    if (Root.GetKey(KeyboardKeys.Shift))
+                    {
+                        _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
+                    }
+                    else
+                    {
+                        _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
+                    }
+                }
+
+
+                if (key == KeyboardKeys.ArrowRight || key == KeyboardKeys.ArrowLeft)
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox == null) return true;
+
+                    Box toSelect = null;
+
+                    if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
+                    {
+                        if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
+                        {
+                            _selectedConnectionIndex = 0;
+                        }
+                        toSelect = selectedBox.Connections[_selectedConnectionIndex];
+                    }
+                    else
+                    {
+                        // Use the node with the closest Y-level
+                        // Since there are cases like 3 nodes on one side and only 1 node on the other side
+
+                        var elements = selectedBox.ParentNode.Elements;
+                        float minDistance = float.PositiveInfinity;
+                        for (int i = 0; i < elements.Count; i++)
+                        {
+                            if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < minDistance)
+                            {
+                                toSelect = box;
+                                minDistance = Mathf.Abs(box.Y - selectedBox.Y);
+                            }
+                        }
+                    }
+
+                    if (toSelect != null)
+                    {
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
+
+                    }
+                    return true;
+                }
             }
 
             return false;
@@ -719,6 +829,32 @@ namespace FlaxEditor.Surface
                 xLocation,
                 yLocation
             );
+        }
+
+        private bool IntersectsConnection(Vector2 mousePosition, out InputBox inputBox, out OutputBox outputBox)
+        {
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                for (int j = 0; j < Nodes[i].Elements.Count; j++)
+                {
+                    if (Nodes[i].Elements[j] is OutputBox ob)
+                    {
+                        for (int k = 0; k < ob.Connections.Count; k++)
+                        {
+                            if (ob.IntersectsConnection(ob.Connections[k], ref mousePosition))
+                            {
+                                outputBox = ob;
+                                inputBox = ob.Connections[k] as InputBox;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            outputBox = null;
+            inputBox = null;
+            return false;
         }
     }
 }
