@@ -986,13 +986,6 @@ namespace FlaxEditor.Viewport
                     OnMiddleMouseButtonUp();
             }
 
-            if (_isOrtho)
-            {
-                var scroll = FlaxEngine.Input.MouseScrollDelta;
-                if (scroll != 0)
-                    _orthoSize -= scroll * 0.2f * _orthoSize;
-            }
-            
             // Get clamped delta time (more stable during lags)
             var dt = Math.Min(Time.UnscaledDeltaTime, 1.0f);
 
@@ -1131,6 +1124,14 @@ namespace FlaxEditor.Viewport
                 {
                     Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
+                }
+                
+                // Change Ortho size on mouse scroll
+                if (_isOrtho)
+                {
+                    var scroll = FlaxEngine.Input.MouseScrollDelta;
+                    if (scroll != 0)
+                        _orthoSize -= scroll * 0.2f * _orthoSize;
                 }
             }
             else
