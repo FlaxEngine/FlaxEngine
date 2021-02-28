@@ -2057,12 +2057,15 @@ bool LinuxPlatform::GetHasFocus()
 
 bool LinuxPlatform::CanOpenUrl(const StringView& url)
 {
-    return false;
+    return true;
 }
 
 void LinuxPlatform::OpenUrl(const StringView& url)
 {
-    // TODO: add support for OpenUrl on Linux
+    const StringAsANSI<> urlAnsi(*url, url.Length());
+    char cmd[2048];
+    sprintf(cmd, "xdg-open %s", urlAnsi.Get());
+    system(cmd);
 }
 
 Vector2 LinuxPlatform::GetMousePosition()
