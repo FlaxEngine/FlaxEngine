@@ -196,7 +196,7 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
-        public override string DllExport => "__attribute__ ((__visibility__ (\"default\")))";
+        public override string DllExport => "__attribute__((__visibility__(\\\"default\\\")))";
 
         /// <inheritdoc />
         public override string DllImport => "";
