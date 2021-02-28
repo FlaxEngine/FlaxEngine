@@ -27,6 +27,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Removing 'C:\\Windows\\'"),
 #elif PLATFORM_LINUX
     TEXT("Time to switch to Windows?"),
+    TEXT("Installing Windows 10..."),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),

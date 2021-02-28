@@ -808,6 +808,8 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 
 int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 {
+    if (event->error_code == 5)
+        return 0; // BadAtom (invalid Atom parameter)
 	char buffer[256];
 	XGetErrorText(display, event->error_code, buffer, sizeof(buffer));
 	LOG(Error, "X11 Error: {0}", String(buffer));
