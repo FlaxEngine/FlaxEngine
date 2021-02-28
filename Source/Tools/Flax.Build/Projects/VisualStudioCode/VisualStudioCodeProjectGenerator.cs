@@ -487,7 +487,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("**/Binaries", true);
                 json.AddField("**/Cache", true);
                 json.AddField("**/packages", true);
-                json.AddField("**/Content", true);
                 json.AddField("**/Logs", true);
                 json.AddField("**/Screenshots", true);
                 json.AddField("**/Output", true);
