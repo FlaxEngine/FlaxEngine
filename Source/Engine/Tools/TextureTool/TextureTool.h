@@ -291,6 +291,7 @@ private:
 #if COMPILE_WITH_STB
     static bool ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData);
     static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
+    static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 #endif
 };
 

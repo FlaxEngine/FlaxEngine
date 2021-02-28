@@ -569,11 +569,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     {
         auto& tmpImg = GET_TMP_IMG();
 
-        LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
-
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRation = false; // TODO: expose as import option
-        if (keepAspectRation)
+        const bool keepAspectRatio = false; // TODO: expose as import option
+        if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
             if (width >= height)
@@ -583,6 +581,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         }
 
         // Resize source texture
+        LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
         result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR, tmpImg);
         if (FAILED(result))
         {

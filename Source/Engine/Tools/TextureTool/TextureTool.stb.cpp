@@ -15,10 +15,6 @@
 #define STBI_REALLOC(p, newsz) AllocatorExt::Realloc(p, newsz)
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) AllocatorExt::Realloc(p, oldsz, newsz)
 #define STBI_FREE(p) Allocator::Free(p)
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <ThirdParty/stb/stb_image_write.h>
-
 #define STBI_NO_PSD
 #define STBI_NO_PIC
 #define STBI_NO_PNM
@@ -26,6 +22,20 @@
 #define STBI_NO_STDIO
 #define STB_IMAGE_IMPLEMENTATION
 #include <ThirdParty/stb/stb_image.h>
+
+#define STBIW_ASSERT(x) ASSERT(x)
+#define STBIW_MALLOC(sz) Allocator::Allocate(sz)
+#define STBIW_REALLOC(p, newsz) AllocatorExt::Realloc(p, newsz)
+#define STBIW_REALLOC_SIZED(p, oldsz, newsz) AllocatorExt::Realloc(p, oldsz, newsz)
+#define STBIW_FREE(p) Allocator::Free(p)
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <ThirdParty/stb/stb_image_write.h>
+
+#define STBIR_ASSERT(x) ASSERT(x)
+#define STBIR_MALLOC(sz, c) Allocator::Allocate(sz)
+#define STBIR_FREE(p, c) Allocator::Free(p)
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <ThirdParty/stb/stb_image_resize.h>
 
 static void stbWrite(void* context, void* data, int size)
 {
@@ -245,6 +255,102 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     default:
         LOG(Warning, "Unknown format.");
         return true;
+    }
+
+    return false;
+}
+
+bool TextureTool::ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight)
+{
+    // Setup
+    auto arraySize = src.GetArraySize();
+    dst.Width = dstWidth;
+    dst.Height = dstHeight;
+    dst.Depth = src.Depth;
+    dst.Format = src.Format;
+    dst.Items.Resize(arraySize);
+    auto formatSize = PixelFormatExtensions::SizeInBytes(src.Format);
+    auto components = PixelFormatExtensions::ComputeComponentsCount(src.Format);
+
+    // Resize all array slices
+    for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+    {
+        const auto& srcSlice = src.Items[arrayIndex];
+        auto& dstSlice = dst.Items[arrayIndex];
+        auto mipLevels = srcSlice.Mips.Count();
+        dstSlice.Mips.Resize(mipLevels);
+
+        // Resize all mip levels
+        for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
+        {
+            const auto& srcMip = srcSlice.Mips[mipIndex];
+            auto& dstMip = dstSlice.Mips[mipIndex];
+            auto srcMipWidth = srcMip.RowPitch / formatSize;
+            auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
+            auto dstMipWidth = Math::Max(dstWidth << mipIndex, 1);
+            auto dstMipHeight = Math::Max(dstHeight << mipIndex, 1);
+
+            // Allocate memory
+            dstMip.RowPitch = dstMipWidth * formatSize;
+            dstMip.DepthPitch = dstMip.RowPitch * dstMipHeight;
+            dstMip.Lines = dstMipHeight;
+            dstMip.Data.Allocate(dstMip.DepthPitch);
+
+            // Resize texture
+            switch (src.Format)
+            {
+            case PixelFormat::R8_Typeless:
+            case PixelFormat::R8_SInt:
+            case PixelFormat::R8_SNorm:
+            case PixelFormat::R8G8_Typeless:
+            case PixelFormat::R8G8_SInt:
+            case PixelFormat::R8G8_SNorm:
+            case PixelFormat::R8G8B8A8_Typeless:
+            case PixelFormat::R8G8B8A8_UNorm:
+            case PixelFormat::R8G8B8A8_UInt:
+            case PixelFormat::R8G8B8A8_SNorm:
+            case PixelFormat::R8G8B8A8_SInt:
+            case PixelFormat::B8G8R8A8_UNorm:
+            case PixelFormat::B8G8R8X8_Typeless:
+            case PixelFormat::B8G8R8X8_UNorm:
+            {
+                if (!stbir_resize_uint8((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
+                {
+                    LOG(Warning, "Cannot resize image.");
+                    return true;
+                }
+                break;
+            }
+            case PixelFormat::R8G8B8A8_UNorm_sRGB:
+            case PixelFormat::B8G8R8A8_UNorm_sRGB:
+            case PixelFormat::B8G8R8X8_UNorm_sRGB:
+            {
+                auto alphaChannel = src.Format == PixelFormat::B8G8R8X8_UNorm_sRGB ? STBIR_ALPHA_CHANNEL_NONE : 3;
+                if (!stbir_resize_uint8_srgb((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components, alphaChannel, 0))
+                {
+                    LOG(Warning, "Cannot resize image.");
+                    return true;
+                }
+                break;
+            }
+            case PixelFormat::R32_Typeless:
+            case PixelFormat::R32_Float:
+            case PixelFormat::R32G32_Float:
+            case PixelFormat::R32G32B32_Float:
+            case PixelFormat::R32G32B32A32_Float:
+            {
+                if (!stbir_resize_float((const float*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (float*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
+                {
+                    LOG(Warning, "Cannot resize image.");
+                    return true;
+                }
+                break;
+            }
+            default:
+                LOG(Warning, "Cannot resize image. Unsupported format {0}", static_cast<int32>(src.Format));
+                return true;
+            }
+        }
     }
 
     return false;
