@@ -540,12 +540,7 @@ namespace FlaxEditor.Viewport
                             _isOrtho = checkBox.Checked;
                             ViewWidgetButtonMenu.Hide();
                             if (_isOrtho)
-                            {/*
-                                var invdir = ViewDirection;
-                                invdir.Negate();
-                                //var target = Editor.Instance.SceneEditing.
-                                var targetpos = new Vector3(0.0f) + 2000.0f * invdir;
-                                ((FPSCamera)ViewportCamera).MoveViewport(targetpos, ViewOrientation);*/
+                            {
                                 if (!Editor.Instance.SceneEditing.HasSthSelected)
                                     ((FPSCamera)ViewportCamera).ShowActor(Editor.Instance.Scene.Root.Actor);
                                 else
