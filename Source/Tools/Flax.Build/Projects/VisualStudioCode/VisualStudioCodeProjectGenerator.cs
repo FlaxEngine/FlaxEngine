@@ -480,6 +480,9 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                 // File and folders excludes
                 json.BeginObject("files.exclude");
+                json.AddField("**/.git", true);
+                json.AddField("**/.svn", true);
+                json.AddField("**/.hg", true);
                 json.AddField("**/.vs", true);
                 json.AddField("**/Binaries", true);
                 json.AddField("**/Cache", true);
