@@ -113,12 +113,22 @@ namespace FlaxEditor.Viewport.Cameras
 
         private void ShowSphere(ref BoundingSphere sphere)
         {
-            // Calculate view transform
-            Quaternion orientation = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
-            Vector3 position = sphere.Center - Vector3.Forward * orientation * (sphere.Radius * 2.5f);
-
-            // Move viewport
-            TargetPoint = sphere.Center;
+            Quaternion orientation;
+            Vector3 position;
+            
+            if (Viewport.UseOrthographicProjection)
+            {
+                orientation = Quaternion.LookRotation(Viewport.ViewDirection);
+                var invdir = Viewport.ViewDirection;
+                invdir.Negate();
+                position = sphere.Center + sphere.Radius * 2.5f * invdir;
+            }
+            else
+            {
+                orientation = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
+                position = sphere.Center - Vector3.Forward * orientation * (sphere.Radius * 2.5f);
+            }
+            TargetPoint = position;
             MoveViewport(position, orientation);
         }
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -538,6 +539,18 @@ namespace FlaxEditor.Viewport
                         {
                             _isOrtho = checkBox.Checked;
                             ViewWidgetButtonMenu.Hide();
+                            if (_isOrtho)
+                            {/*
+                                var invdir = ViewDirection;
+                                invdir.Negate();
+                                //var target = Editor.Instance.SceneEditing.
+                                var targetpos = new Vector3(0.0f) + 2000.0f * invdir;
+                                ((FPSCamera)ViewportCamera).MoveViewport(targetpos, ViewOrientation);*/
+                                if (!Editor.Instance.SceneEditing.HasSthSelected)
+                                    ((FPSCamera)ViewportCamera).ShowActor(Editor.Instance.Scene.Root.Actor);
+                                else
+                                    ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents);
+                            }
                         }
                     };
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
