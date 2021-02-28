@@ -542,7 +542,13 @@ namespace FlaxEditor.Viewport
                             if (_isOrtho)
                             {
                                 if (!Editor.Instance.SceneEditing.HasSthSelected)
-                                    ((FPSCamera)ViewportCamera).ShowActor(Editor.Instance.Scene.Root.Actor);
+                                {
+                                    var invdir = ViewDirection;
+                                    invdir.Negate();
+                                    var target = new Vector3(0.0f) + 2000.0f * invdir;
+                                    OrthographicScale = Vector3.Distance(target, new Vector3(0.0f)) / 1000;
+                                    ((FPSCamera)ViewportCamera).MoveViewport(target, Quaternion.LookRotation(ViewDirection));
+                                }
                                 else
                                     ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents);
                             }

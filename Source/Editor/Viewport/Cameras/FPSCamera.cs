@@ -121,7 +121,8 @@ namespace FlaxEditor.Viewport.Cameras
                 orientation = Quaternion.LookRotation(Viewport.ViewDirection);
                 var invdir = Viewport.ViewDirection;
                 invdir.Negate();
-                position = sphere.Center + sphere.Radius * 2.5f * invdir;
+                position = sphere.Center + sphere.Radius * 5.0f * invdir;
+                Viewport.OrthographicScale = Vector3.Distance(position, sphere.Center) / 1000;
             }
             else
             {
