@@ -47,6 +47,15 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     return false;
 }
 
+bool LinuxFileSystem::ShowFileExplorer(const StringView& path)
+{
+    const StringAsANSI<> pathAnsi(*path, path.Length());
+    char cmd[2048];
+    sprintf(cmd, "nautilus %s &", pathAnsi.Get());
+    system(cmd);
+    return false;
+}
+
 bool LinuxFileSystem::CreateDirectory(const StringView& path)
 {
     const StringAsANSI<> pathAnsi(*path, path.Length());
