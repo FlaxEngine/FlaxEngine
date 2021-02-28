@@ -171,8 +171,8 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     case ImageType::HDR:
     case ImageType::TGA:
     {
-        int x, y, comp;
-        stbi_uc* stbData = stbi_load_from_memory(fileData.Get(), fileData.Count(), &x, &y, &comp, 4);
+        int width, height, components;
+        stbi_uc* stbData = stbi_load_from_memory(fileData.Get(), fileData.Count(), &width, &height, &components, 4);
         if (!stbData)
         {
             LOG(Warning, "Failed to load image.");
@@ -180,20 +180,29 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         }
 
         // Setup texture data
-        textureData.Width = x;
-        textureData.Height = y;
+        textureData.Width = width;
+        textureData.Height = height;
         textureData.Depth = 1;
         textureData.Format = PixelFormat::R8G8B8A8_UNorm;
         textureData.Items.Resize(1);
         textureData.Items[0].Mips.Resize(1);
         auto& mip = textureData.Items[0].Mips[0];
-        mip.RowPitch = sizeof(Color32) * x;
-        mip.DepthPitch = mip.RowPitch * y;
-        mip.Lines = y;
+        mip.RowPitch = sizeof(Color32) * width;
+        mip.DepthPitch = mip.RowPitch * height;
+        mip.Lines = height;
         mip.Data.Copy(stbData, mip.DepthPitch);
 
 #if USE_EDITOR
-        // TODO: detect hasAlpha
+        // Detect alpha channel usage
+        auto ptrAlpha = (Color32*)mip.Data.Get();
+        for (int32 y = 0; y < height && !hasAlpha; y++)
+        {
+            for (int32 x = 0; x < width && !hasAlpha; x++)
+            {
+                hasAlpha |= ptrAlpha->A < 255;
+                ptrAlpha++;
+            }
+        }
 #endif
 
         stbi_image_free(stbData);
