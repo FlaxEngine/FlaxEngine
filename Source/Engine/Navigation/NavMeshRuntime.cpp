@@ -4,7 +4,7 @@
 #include "NavigationSettings.h"
 #include "NavMesh.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Random.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
@@ -220,6 +220,71 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
     dtPolyRef startPoly = 0;
     query->findNearestPoly(&pointNavMesh.X, &extent.X, &filter, &startPoly, &result.X);
     if (!startPoly)
+    {
+        return false;
+    }
+
+    Quaternion invRotation;
+    Quaternion::Invert(Properties.Rotation, invRotation);
+    Vector3::Transform(result, invRotation, result);
+
+    return true;
+}
+
+bool NavMeshRuntime::FindRandomPoint(Vector3& result) const
+{
+    ScopeLock lock(Locker);
+
+    const auto query = GetNavMeshQuery();
+    if (!query || !_navMesh)
+    {
+        return false;
+    }
+
+    dtQueryFilter filter;
+    InitFilter(filter);
+
+    dtPolyRef randomPoly = 0;
+    query->findRandomPoint(&filter, Random::Rand, &randomPoly, &result.X);
+    if (!randomPoly)
+    {
+        return false;
+    }
+
+    Quaternion invRotation;
+    Quaternion::Invert(Properties.Rotation, invRotation);
+    Vector3::Transform(result, invRotation, result);
+
+    return true;
+}
+
+bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float radius, Vector3& result) const
+{
+    ScopeLock lock(Locker);
+
+    const auto query = GetNavMeshQuery();
+    if (!query || !_navMesh)
+    {
+        return false;
+    }
+
+    dtQueryFilter filter;
+    InitFilter(filter);
+    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+
+    Vector3 centerNavMesh;
+    Vector3::Transform(center, Properties.Rotation, centerNavMesh);
+
+    dtPolyRef centerPoly = 0;
+    query->findNearestPoly(&centerNavMesh.X, &extent.X, &filter, &centerPoly, nullptr);
+    if (!centerPoly)
+    {
+        return false;
+    }
+
+    dtPolyRef randomPoly = 0;
+    query->findRandomPointAroundCircle(centerPoly, &centerNavMesh.X, radius, &filter, Random::Rand, &randomPoly, &result.X);
+    if (!randomPoly)
     {
         return false;
     }
@@ -522,6 +587,7 @@ void NavMeshRuntime::RemoveTiles(bool (* prediction)(const NavMeshRuntime* navMe
 #if COMPILE_WITH_DEBUG_DRAW
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Core/Math/Matrix.h"
 
 void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMeshTile& tile, const dtPoly& poly)
 {

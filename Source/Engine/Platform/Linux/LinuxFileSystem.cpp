@@ -47,6 +47,15 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     return false;
 }
 
+bool LinuxFileSystem::ShowFileExplorer(const StringView& path)
+{
+    const StringAsANSI<> pathAnsi(*path, path.Length());
+    char cmd[2048];
+    sprintf(cmd, "nautilus %s &", pathAnsi.Get());
+    system(cmd);
+    return false;
+}
+
 bool LinuxFileSystem::CreateDirectory(const StringView& path)
 {
     const StringAsANSI<> pathAnsi(*path, path.Length());
@@ -309,64 +318,58 @@ bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
 {
     const StringAsANSI<> srcANSI(*src, src.Length());
     const StringAsANSI<> dstANSI(*dst, dst.Length());
-    const char* from = srcANSI.Get();
-    const char* to = dstANSI.Get();
 
-    int fd_to, fd_from;
-    char buf[4096];
-    ssize_t nread;
-    int saved_errno;
+    int srcFile, dstFile;
+    char buffer[4096];
+    ssize_t readSize;
+    int cachedError;
 
-    fd_from = open(from, O_RDONLY);
-    if (fd_from < 0)
+    srcFile = open(srcANSI.Get(), O_RDONLY);
+    if (srcFile < 0)
         return true;
-
-    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
-    if (fd_to < 0)
+    dstFile = open(dstANSI.Get(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (dstFile < 0)
         goto out_error;
 
-    while (nread = read(fd_from, buf, sizeof buf), nread > 0)
+    while (readSize = read(srcFile, buffer, sizeof(buffer)), readSize > 0)
     {
-        char* out_ptr = buf;
-        ssize_t nwritten;
+        char* ptr = buffer;
+        ssize_t writeSize;
 
         do
         {
-            nwritten = write(fd_to, out_ptr, nread);
-
-            if (nwritten >= 0)
+            writeSize = write(dstFile, ptr, readSize);
+            if (writeSize >= 0)
             {
-                nread -= nwritten;
-                out_ptr += nwritten;
+                readSize -= writeSize;
+                ptr += writeSize;
             }
             else if (errno != EINTR)
             {
                 goto out_error;
             }
-        } while (nread > 0);
+        } while (readSize > 0);
     }
 
-    if (nread == 0)
+    if (readSize == 0)
     {
-        if (close(fd_to) < 0)
+        if (close(dstFile) < 0)
         {
-            fd_to = -1;
+            dstFile = -1;
             goto out_error;
         }
-        close(fd_from);
+        close(srcFile);
 
         // Success
         return false;
     }
 
 out_error:
-    saved_errno = errno;
-
-    close(fd_from);
-    if (fd_to >= 0)
-        close(fd_to);
-
-    errno = saved_errno;
+    cachedError = errno;
+    close(srcFile);
+    if (dstFile >= 0)
+        close(dstFile);
+    errno = cachedError;
     return true;
 }
 

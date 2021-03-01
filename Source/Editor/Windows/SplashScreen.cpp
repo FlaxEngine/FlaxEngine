@@ -27,6 +27,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Removing 'C:\\Windows\\'"),
 #elif PLATFORM_LINUX
     TEXT("Time to switch to Windows?"),
+    TEXT("Installing Windows 10..."),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),
@@ -116,6 +117,9 @@ const Char* SplashScreenQuotes[] =
     TEXT("Compiling Shaders (93,788)"),
     TEXT("Hi There"),
     TEXT("BAGUETTE"),
+    TEXT("All we had to do was follow the damn train, CJ"),
+    TEXT("28 stab wounds"),
+    TEXT("Here we go again"),
 };
 
 SplashScreen::~SplashScreen()

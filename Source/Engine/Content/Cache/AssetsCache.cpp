@@ -245,12 +245,22 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
     {
         return FindAsset(id, info);
     }
+#if !USE_EDITOR
+    if (FileSystem::IsRelative(path))
+    {
+        // Additional check if user provides path relative to the project folder (eg. Content/SomeAssets/MyFile.json)
+        const String absolutePath = Globals::ProjectFolder / *path;
+        if (_pathsMapping.TryGet(absolutePath, id))
+        {
+            return FindAsset(id, info);
+        }
+    }
+#endif
 
     // Find asset in registry
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         auto& e = i->Value;
-
         if (e.Info.Path == path)
         {
             // Validate file exists

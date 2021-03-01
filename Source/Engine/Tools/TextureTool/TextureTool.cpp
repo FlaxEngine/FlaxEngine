@@ -354,6 +354,8 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
 
 #if COMPILE_WITH_DIRECTXTEX
     return ResizeDirectXTex(dst, src, dstWidth, dstHeight);
+#elif COMPILE_WITH_STB
+    return ResizeStb(dst, src, dstWidth, dstHeight);
 #else
     LOG(Warning, "Resizing textures is not supported on this platform.");
     return true;

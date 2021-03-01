@@ -417,7 +417,7 @@ void WindowBase::OnClosed()
         RenderTask->Enabled = false;
 
     // Delete object
-    DeleteObject(60);
+    DeleteObject(1);
 }
 
 void WindowBase::OnGotFocus()

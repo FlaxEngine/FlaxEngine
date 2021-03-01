@@ -434,17 +434,19 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             Text = "+",
                             TooltipText = "Create a new instance of the object",
-                            Height = ButtonSize,
-                            Width = ButtonSize,
-                            X = layout.ContainerControl.Width - ButtonSize - 4,
+                            Size = new Vector2(ButtonSize, ButtonSize),
                             AnchorPreset = AnchorPresets.MiddleRight,
-                            Parent = layout.ContainerControl
+                            Parent = layout.ContainerControl,
+                            Location = new Vector2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
                         };
                         button.Clicked += () =>
                         {
                             var newType = Values.Type;
                             SetValue(newType.CreateInstance());
-                            RebuildLayoutOnRefresh();
+                            if (ParentEditor != null)
+                                ParentEditor.RebuildLayoutOnRefresh();
+                            else
+                                RebuildLayoutOnRefresh();
                         };
                     }
 

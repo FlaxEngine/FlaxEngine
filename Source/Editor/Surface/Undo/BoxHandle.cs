@@ -10,7 +10,7 @@ namespace FlaxEditor.Surface.Undo
     /// The helper structure for Surface node box handle.
     /// </summary>
     [HideInEditor]
-    public struct BoxHandle
+    public struct BoxHandle : IEquatable<BoxHandle>
     {
         private readonly uint _nodeId;
         private readonly int _boxId;
@@ -50,6 +50,28 @@ namespace FlaxEditor.Surface.Undo
             if (box == null)
                 throw new Exception("Missing box.");
             return box;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is BoxHandle handle && Equals(handle);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(BoxHandle other)
+        {
+            return _nodeId == other._nodeId &&
+                   _boxId == other._boxId;
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (_nodeId.GetHashCode() * 397) ^ _boxId.GetHashCode();
+            }
         }
     }
 }

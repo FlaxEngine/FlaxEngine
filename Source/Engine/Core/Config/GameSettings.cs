@@ -90,41 +90,53 @@ namespace FlaxEditor.Content.Settings
         [EditorOrder(1100), EditorDisplay("Other Settings"), Tooltip("The custom settings to use with a game. Can be specified by the user to define game-specific options and be used by the external plugins (used as key-value pair).")]
         public Dictionary<string, JsonAsset> CustomSettings;
 
+#if FLAX_EDITOR || PLATFORM_WINDOWS
         /// <summary>
         /// Reference to <see cref="WindowsPlatformSettings"/> asset. Used to apply configuration on Windows platform.
         /// </summary>
         [EditorOrder(2010), EditorDisplay("Platform Settings", "Windows"), AssetReference(typeof(WindowsPlatformSettings), true), Tooltip("Reference to Windows Platform Settings asset")]
         public JsonAsset WindowsPlatform;
+#endif
 
+#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
         /// <summary>
         /// Reference to <see cref="UWPPlatformSettings"/> asset. Used to apply configuration on Universal Windows Platform.
         /// </summary>
         [EditorOrder(2020), EditorDisplay("Platform Settings", "Universal Windows Platform"), AssetReference(typeof(UWPPlatformSettings), true), Tooltip("Reference to Universal Windows Platform Settings asset")]
         public JsonAsset UWPPlatform;
+#endif
 
+#if FLAX_EDITOR || PLATFORM_LINUX
         /// <summary>
         /// Reference to <see cref="LinuxPlatformSettings"/> asset. Used to apply configuration on Linux platform.
         /// </summary>
         [EditorOrder(2030), EditorDisplay("Platform Settings", "Linux"), AssetReference(typeof(LinuxPlatformSettings), true), Tooltip("Reference to Linux Platform Settings asset")]
         public JsonAsset LinuxPlatform;
+#endif
 
+#if FLAX_EDITOR || PLATFORM_PS4
         /// <summary>
         /// Reference to PS4 Platform Settings asset. Used to apply configuration on PS4 platform.
         /// </summary>
         [EditorOrder(2040), EditorDisplay("Platform Settings", "PlayStation 4"), AssetReference(PS4PlatformSettingsTypename, true), Tooltip("Reference to PS4 Platform Settings asset")]
         public JsonAsset PS4Platform;
+#endif
 
+#if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
         /// <summary>
         /// Reference to Xbox Scarlett Platform Settings asset. Used to apply configuration on Xbox Scarlett platform.
         /// </summary>
         [EditorOrder(2050), EditorDisplay("Platform Settings", "Xbox Scarlett"), AssetReference(XboxScarlettPlatformSettingsTypename, true), Tooltip("Reference to Xbox Scarlett Platform Settings asset")]
         public JsonAsset XboxScarlettPlatform;
+#endif
 
+#if FLAX_EDITOR || PLATFORM_ANDROID
         /// <summary>
         /// Reference to <see cref="AndroidPlatformSettings"/> asset. Used to apply configuration on Android platform.
         /// </summary>
         [EditorOrder(2060), EditorDisplay("Platform Settings", "Android"), AssetReference(typeof(AndroidPlatformSettings), true), Tooltip("Reference to Android Platform Settings asset")]
         public JsonAsset AndroidPlatform;
+#endif
 
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
@@ -202,20 +214,32 @@ namespace FlaxEditor.Content.Settings
                 return LoadAsset<BuildSettings>(gameSettings.GameCooking) as T;
             if (type == typeof(InputSettings))
                 return LoadAsset<InputSettings>(gameSettings.Input) as T;
-            if (type == typeof(WindowsPlatformSettings))
-                return LoadAsset<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
-            if (type == typeof(UWPPlatformSettings))
-                return LoadAsset<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
-            if (type == typeof(LinuxPlatformSettings))
-                return LoadAsset<LinuxPlatformSettings>(gameSettings.LinuxPlatform) as T;
-            if (type.FullName == PS4PlatformSettingsTypename)
-                return LoadAsset(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
-            if (type.FullName == XboxScarlettPlatformSettingsTypename)
-                return LoadAsset(gameSettings.XboxScarlettPlatform, XboxScarlettPlatformSettingsTypename) as T;
-            if (type == typeof(AndroidPlatformSettings))
-                return LoadAsset<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
             if (type == typeof(AudioSettings))
                 return LoadAsset<AudioSettings>(gameSettings.Audio) as T;
+#if FLAX_EDITOR || PLATFORM_WINDOWS
+            if (type == typeof(WindowsPlatformSettings))
+                return LoadAsset<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
+            if (type == typeof(UWPPlatformSettings))
+                return LoadAsset<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_LINUX
+            if (type == typeof(LinuxPlatformSettings))
+                return LoadAsset<LinuxPlatformSettings>(gameSettings.LinuxPlatform) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_PS4
+            if (type.FullName == PS4PlatformSettingsTypename)
+                return LoadAsset(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
+            if (type.FullName == XboxScarlettPlatformSettingsTypename)
+                return LoadAsset(gameSettings.XboxScarlettPlatform, XboxScarlettPlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_ANDROID
+            if (type == typeof(AndroidPlatformSettings))
+                return LoadAsset<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -233,6 +257,7 @@ namespace FlaxEditor.Content.Settings
             return null;
         }
 
+#if FLAX_EDITOR
         private static bool SaveAsset<T>(GameSettings gameSettings, ref JsonAsset asset, T obj) where T : SettingsBase
         {
             if (asset)
@@ -337,5 +362,6 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void Apply();
+#endif
     }
 }

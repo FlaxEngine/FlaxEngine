@@ -103,6 +103,7 @@ namespace FlaxEditor.Surface
             for (int i = 0; i < Nodes.Count; i++)
             {
                 Nodes[i].DrawConnections(ref mousePosition);
+                Nodes[i].DrawSelectedConnections(_selectedConnectionIndex);
             }
         }
 

@@ -214,7 +214,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Linux:
                                     {
-                                        json.AddField("command", "mono");
+                                        json.AddField("command", Path.Combine(Globals.EngineRoot, "Source/Platforms/Editor/Linux/Mono/bin/mono"));
                                         json.BeginArray("args");
                                         {
                                             json.AddUnnamedField(buildToolPath);
@@ -480,11 +480,13 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                 // File and folders excludes
                 json.BeginObject("files.exclude");
+                json.AddField("**/.git", true);
+                json.AddField("**/.svn", true);
+                json.AddField("**/.hg", true);
                 json.AddField("**/.vs", true);
                 json.AddField("**/Binaries", true);
                 json.AddField("**/Cache", true);
                 json.AddField("**/packages", true);
-                json.AddField("**/Content", true);
                 json.AddField("**/Logs", true);
                 json.AddField("**/Screenshots", true);
                 json.AddField("**/Output", true);

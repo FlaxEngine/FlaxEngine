@@ -283,6 +283,28 @@ inline bool dtVequal(const float* p0, const float* p1)
 	return d < thr;
 }
 
+/// Checks that the specified vector's components are all finite.
+///  @param[in]		v	A point. [(x, y, z)]
+/// @return True if all of the point's components are finite, i.e. not NaN
+/// or any of the infinities.
+inline bool dtVisfinite(const float* v)
+{
+	bool result =
+		dtMathIsfinite(v[0]) &&
+		dtMathIsfinite(v[1]) &&
+		dtMathIsfinite(v[2]);
+
+	return result;
+}
+
+/// Checks that the specified vector's 2D components are finite.
+///  @param[in]		v	A point. [(x, y, z)]
+inline bool dtVisfinite2D(const float* v)
+{
+	bool result = dtMathIsfinite(v[0]) && dtMathIsfinite(v[2]);
+	return result;
+}
+
 /// Derives the dot product of two vectors on the xz-plane. (@p u . @p v)
 ///  @param[in]		u		A vector [(x, y, z)]
 ///  @param[in]		v		A vector [(x, y, z)]
@@ -394,6 +416,8 @@ bool dtDistancePtPolyEdgesSqr(const float* pt, const float* verts, const int nve
 							float* ed, float* et);
 
 float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, float& t);
+
+float dtDistancePtPtSqr2D(const float* pt, const float* p);
 
 /// Derives the centroid of a convex polygon.
 ///  @param[out]	tc		The centroid of the polgyon. [(x, y, z)]

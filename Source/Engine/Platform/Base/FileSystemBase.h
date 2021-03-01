@@ -104,7 +104,7 @@ public:
     /// </summary>
     /// <param name="path">Input path to check</param>
     /// <returns>True if input path is relative one, otherwise false</returns>
-    static bool IsRelative(const String& path);
+    static bool IsRelative(const StringView& path);
 
     /// <summary>
     /// Retrieves file extension (without a dot)

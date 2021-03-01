@@ -153,6 +153,24 @@ public:
     /// </summary>
     API_FUNCTION() static void PopClip();
 
+    /// <summary>
+    /// Pushes tint color.
+    /// </summary>
+    /// <param name="tint">The tint color.</param>
+    /// <param name="inherit">Multiply <paramref ref="tint"/> by the last tint on the stack.</param>
+    API_FUNCTION() static void PushTint(API_PARAM(Ref) const Color& tint, bool inherit = true);
+
+    /// <summary>
+    /// Peeks the current tint color.
+    /// </summary>
+    /// <param name="tint">The output tint color.</param>
+    API_FUNCTION() static void PeekTint(API_PARAM(Out) Color& tint);
+
+    /// <summary>
+    /// Pops tint color.
+    /// </summary>
+    API_FUNCTION() static void PopTint();
+
 public:
 
     /// <summary>
@@ -348,7 +366,7 @@ public:
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
     API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs);
-    
+
     /// <summary>
     /// Draws vertices array.
     /// </summary>

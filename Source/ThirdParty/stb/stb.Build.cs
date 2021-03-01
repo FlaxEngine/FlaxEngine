@@ -14,7 +14,7 @@ public class stb : HeaderOnlyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
-        LicenseFilePath = "LICENSE.txt";
+        LicenseFilePath = "LICENSE";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";

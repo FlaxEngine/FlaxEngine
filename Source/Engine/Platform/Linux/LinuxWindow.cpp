@@ -50,11 +50,32 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	: WindowBase(settings)
 {
 	// Cache data
-	int32 x = Math::TruncToInt(settings.Position.X);
-	int32 y = Math::TruncToInt(settings.Position.Y);
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
 	_clientSize = Vector2((float)width, (float)height);
+    int32 x = 0, y = 0;
+	switch (settings.StartPosition)
+    {
+    case WindowStartPosition::CenterParent:
+        if (settings.Parent)
+        {
+            Rectangle parentBounds = settings.Parent->GetClientBounds();
+            x = Math::TruncToInt(parentBounds.Location.X + (parentBounds.Size.X - _clientSize.X) * 0.5f);
+            y = Math::TruncToInt(parentBounds.Location.Y + (parentBounds.Size.Y - _clientSize.Y) * 0.5f);
+        }
+        break;
+    case WindowStartPosition::CenterScreen:
+        {
+            Vector2 desktopSize = Platform::GetDesktopSize();
+            x = Math::TruncToInt((desktopSize.X - _clientSize.X) * 0.5f);
+            y = Math::TruncToInt((desktopSize.Y - _clientSize.Y) * 0.5f);
+        }
+        break;
+    case WindowStartPosition::Manual:
+        x = Math::TruncToInt(settings.Position.X);
+        y = Math::TruncToInt(settings.Position.Y);
+        break;
+	}
 	_resizeDisabled = !settings.HasSizingFrame;
 
 	auto display = (X11::Display*)LinuxPlatform::GetXDisplay();
@@ -78,24 +99,11 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 
 	// TODO: implement all window settings
 	/*
-	WindowStartPosition StartPosition;
 	bool Fullscreen;
-	bool AllowInput;
 	bool AllowMinimize;
 	bool AllowMaximize;
 	bool AllowDragAndDrop;
 	*/
-
-	switch (settings.StartPosition)
-	{
-		case WindowStartPosition::CenterParent:
-			break;
-		case WindowStartPosition::CenterScreen:
-			break;
-		case WindowStartPosition::Manual:
-			break;
-		default: ;
-	}
 
 	const X11::Window window = X11::XCreateWindow(
 		display, X11::XRootWindow(display, screen), x, y,
@@ -161,17 +169,19 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	// Adjust style for borderless windows
 	if (!settings.HasBorder)
 	{
+        // [Reference: https://www.tonyobryan.com//index.php?article=9]
 		typedef struct X11Hints
 		{
-			unsigned long flags = 0;
-			unsigned long functions = 0;
-			unsigned long decorations = 0;
-			long inputMode = 0;
-			unsigned long status = 0;
+			unsigned long flags;
+			unsigned long functions;
+			unsigned long decorations;
+			long inputMode;
+			unsigned long status;
 		} X11Hints;
 		X11Hints hints;
 		hints.flags = 2;
-		X11::Atom wmHints = X11::XInternAtom(display, "_MOTIF_WM_HINTS", 1);
+		hints.decorations = 0;
+		X11::Atom wmHints = X11::XInternAtom(display, "_MOTIF_WM_HINTS", 0);
 		X11::Atom property;
 		if (wmHints)
 			X11::XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
@@ -180,13 +190,13 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	// Adjust type for utility windows
 	if (!settings.IsRegularWindow)
 	{
-		X11::Atom wmTypeUtility = X11::XInternAtom(display, "_NET_WM_WINDOW_TYPE_UTILITY", 0);
-		X11::Atom wmType = X11::XInternAtom(display, "_NET_WM_WINDOW_TYPE", 0);
-		if (wmTypeUtility && wmType)
-			X11::XChangeProperty(display, window, wmTypeUtility, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&wmType, 1);
+		X11::Atom value = XInternAtom(display, "_NET_WM_WINDOW_TYPE_DOCK", 0);
+		X11::Atom wmType = XInternAtom(display, "_NET_WM_WINDOW_TYPE", 0);
+		if (value && wmType)
+			X11::XChangeProperty(display, window, wmType, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&value, 1);
 	}
 
-	// Initialize statee
+	// Initialize state
 	X11::Atom wmState = X11::XInternAtom(display, "_NET_WM_STATE", 0);
 	X11::Atom wmStateAbove = X11::XInternAtom(display, "_NET_WM_STATE_ABOVE", 0);
 	X11::Atom wmSateSkipTaskbar = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
@@ -231,6 +241,7 @@ void LinuxWindow::Show()
 {
 	if (!_visible)
 	{
+        InitSwapChain();
         if (_showAfterFirstPaint)
         {
             if (RenderTask)
