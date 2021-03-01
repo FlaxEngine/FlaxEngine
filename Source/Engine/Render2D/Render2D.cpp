@@ -210,6 +210,8 @@ namespace
 
     Array<ClipMask, InlinedAllocation<64>> ClipLayersStack;
 
+    Array<Color, InlinedAllocation<64>> TintLayersStack;
+    
     // Shader
     AssetReference<Shader> GUIShader;
     CachedPSO PsoDepth;
@@ -252,9 +254,9 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& pos, const Vector2& uv, co
     {
         point,
         Half2(uv),
-        color,
+        color * TintLayersStack.Peek(),
         { 0.0f, (float)Render2D::Features },
-        ClipLayersStack.Peek().Mask,
+        ClipLayersStack.Peek().Mask
     };
 }
 
@@ -267,6 +269,18 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, 
         color,
         customData,
         mask,
+    };
+}
+
+FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, const Color& color, const RotatedRectangle& mask, const Vector2& customData, const Color& tint)
+{
+    return
+    {
+        point,
+        Half2(uv),
+        color * tint,
+        customData,
+        mask
     };
 }
 
@@ -548,6 +562,7 @@ bool Render2DService::Init()
 
 void Render2DService::Dispose()
 {
+    TintLayersStack.Resize(0);
     ClipLayersStack.Resize(0);
     DrawCalls.Resize(0);
     Lines.Resize(0);
@@ -620,6 +635,8 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     ClipLayersStack.Clear();
     ClipLayersStack.Add({ defaultMask, defaultBounds });
 
+    TintLayersStack.Clear();
+    TintLayersStack.Add({1,1,1,1});
     // Scissors can be enabled only for 2D orthographic projections
     IsScissorsRectEnabled = false;
 
@@ -793,6 +810,25 @@ void Render2D::PopClip()
     ClipLayersStack.Pop();
 
     OnClipScissors();
+}
+
+void Render2D::PushTint(const Color& tint, bool inherit)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    
+    TintLayersStack.Push(inherit ? tint * TintLayersStack.Peek() : tint);
+}
+
+void Render2D::PeekTint(Color& tint)
+{
+    tint = TintLayersStack.Peek();
+}
+
+void Render2D::PopTint()
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    TintLayersStack.Pop();
 }
 
 void CalculateKernelSize(float strength, int32& kernelSize, int32& downSample)
@@ -1263,12 +1299,32 @@ void Render2D::DrawText(Font* font, const StringView& text, const TextRange& tex
     DrawText(font, StringView(text.Get() + textRange.StartIndex, textRange.Length()), color, layout, customMaterial);
 }
 
+FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
+{
+    return (color.A * TintLayersStack.Peek().A) < 1.0f;
+}
+
+FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2)
+{
+    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f;
+}
+
+FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3)
+{
+    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f;
+}
+
+FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3, const Color& color4)
+{
+    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f || (color4.A * TintLayersStack.Peek().A) < 1.0f;
+}
+
 void Render2D::FillRectangle(const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = color.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
     WriteRect(rect, color);
@@ -1279,7 +1335,7 @@ void Render2D::FillRectangle(const Rectangle& rect, const Color& color1, const C
     RENDER2D_CHECK_RENDERING_STATE;
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = color1.A < 1.0f || color2.A < 1.0f || color3.A < 1.0f || color4.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = NeedAlphaWithTint(color1, color2, color3, color4) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
     WriteRect(rect, color1, color2, color3, color4);
@@ -1374,7 +1430,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
     }
 #else
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = color1.A < 1.0f || color2.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = NeedAlphaWithTint(color1, color2) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 4 * (6 + 3);
 
@@ -1638,7 +1694,7 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
 #else
     const float thicknessHalf = thickness * 0.5f;
 
-    drawCall.Type = color1.A < 1.0f || color2.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = NeedAlphaWithTint(color1, color2) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.CountIB = 0;
 
     ApplyTransform(points[0], p1t);
@@ -1781,7 +1837,7 @@ void Render2D::FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2&
     RENDER2D_CHECK_RENDERING_STATE;
     
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = color.A < 1.0f ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 3;
     WriteTri(p0, p1, p2, color, color, color);
