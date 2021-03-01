@@ -22,6 +22,9 @@
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Render2D/FontAsset.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#endif
 
 // Debug draw service configuration
 #define DEBUG_DRAW_INITIAL_VB_CAPACITY (4 * 1024)
@@ -514,7 +517,11 @@ void DebugDrawService::Update()
     PROFILE_CPU();
 
     // Update lists
-    const float deltaTime = Time::Update.DeltaTime.GetTotalSeconds();
+    float deltaTime = Time::Update.DeltaTime.GetTotalSeconds();
+#if USE_EDITOR
+    if (!Editor::IsPlayMode)
+        deltaTime = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
+#endif
     GlobalContext.DebugDrawDefault.Update(deltaTime);
     GlobalContext.DebugDrawDepthTest.Update(deltaTime);
 
