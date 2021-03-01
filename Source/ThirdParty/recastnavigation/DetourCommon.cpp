@@ -183,6 +183,13 @@ float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, floa
 	return dx*dx + dz*dz;
 }
 
+float dtDistancePtPtSqr2D(const float* pt, const float* p)
+{
+	float dx = pt[0] - p[0];
+	float dz = pt[2] - p[2];
+	return dx*dx + dz*dz;
+}
+
 void dtCalcPolyCenter(float* tc, const unsigned short* idx, int nidx, const float* verts)
 {
 	tc[0] = 0.0f;

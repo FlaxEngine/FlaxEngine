@@ -482,12 +482,15 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 		dtVcopy(&verts[j*3],v);
 	}
 	
-	const float s = frand();
-	const float t = frand();
-	
 	float pt[3];
-	dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
-	
+    do
+    {
+        const float s = frand();
+	    const float t = frand();
+	    dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
+    }
+	while (dtDistancePtPtSqr2D(centerPos, pt) > radiusSqr);
+
 	float h = 0.0f;
 	dtStatus stat = getPolyHeight(randomPolyRef, pt, &h);
 	if (dtStatusFailed(status))
