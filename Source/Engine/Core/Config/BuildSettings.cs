@@ -7,6 +7,7 @@ namespace FlaxEditor.Content.Settings
 {
     partial class BuildSettings
     {
+#if FLAX_EDITOR
         /// <summary>
         /// The build presets.
         /// </summary>
@@ -60,5 +61,6 @@ namespace FlaxEditor.Content.Settings
             }
             return null;
         }
+#endif
     }
 }
