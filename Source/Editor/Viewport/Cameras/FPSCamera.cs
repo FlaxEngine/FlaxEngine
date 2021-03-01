@@ -88,6 +88,12 @@ namespace FlaxEditor.Viewport.Cameras
             Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
             ShowSphere(ref sphere);
         }
+        
+        public void ShowActor(Actor actor, ref Quaternion orientation)
+        {
+            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
+            ShowSphere(ref sphere, ref orientation);
+        }
 
         /// <summary>
         /// Moves the viewport to visualize selected actors.
@@ -111,28 +117,47 @@ namespace FlaxEditor.Viewport.Cameras
             ShowSphere(ref mergesSphere);
         }
 
+        public void ShowActors(List<SceneGraphNode> actors, ref Quaternion orientation)
+        {
+            if (actors.Count == 0)
+                return;
+
+            BoundingSphere mergesSphere = BoundingSphere.Empty;
+            for (int i = 0; i < actors.Count; i++)
+            {
+                if (actors[i] is ActorNode actor)
+                {
+                    Editor.GetActorEditorSphere(actor.Actor, out BoundingSphere sphere);
+                    BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
+                }
+            }
+
+            ShowSphere(ref mergesSphere, ref orientation);
+        }
+        
         private void ShowSphere(ref BoundingSphere sphere)
         {
-            Quaternion orientation;
+            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
+            ShowSphere(ref sphere, ref q);
+        }
+
+        private void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
+        {
             Vector3 position;
             
             if (Viewport.UseOrthographicProjection)
             {
-                orientation = Quaternion.LookRotation(Viewport.ViewDirection);
-                var invdir = Viewport.ViewDirection;
-                invdir.Negate();
-                position = sphere.Center + sphere.Radius * 5.0f * invdir;
+                Vector3 offset = Vector3.Forward * orientation;
+                offset.Negate();
+                position = sphere.Center + offset * (sphere.Radius * 5.0f);
                 Viewport.OrthographicScale = Vector3.Distance(position, sphere.Center) / 1000;
             }
             else
-            {
-                orientation = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
                 position = sphere.Center - Vector3.Forward * orientation * (sphere.Radius * 2.5f);
-            }
             TargetPoint = position;
             MoveViewport(position, orientation);
         }
-
+        
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {

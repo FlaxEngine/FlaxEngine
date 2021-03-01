@@ -559,14 +559,26 @@ namespace FlaxEditor.Viewport
 
                 // Camera Orientation
                 {
-                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Orientation").ContextMenu;
-                    for (int i = 0; i < EditorViewportCameraOrientationValues.Length; i++)
+                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Viewpoint").ContextMenu;
+                    for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
                     {
-                        var co = EditorViewportCameraOrientationValues[i];
+                        var co = EditorViewportCameraViewpointValues[i];
                         var button = cameraView.AddButton(co.Name);
                         button.Tag = co.Orientation;
                     }
-                    cameraView.ButtonClicked += button => ViewOrientation = Quaternion.Euler((Vector3)button.Tag);
+                    cameraView.ButtonClicked += button =>
+                    {
+                        var orient = Quaternion.Euler((Vector3)button.Tag);
+                        if (Editor.Instance.SceneEditing.HasSthSelected)
+                            ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
+                        else
+                        {
+                            var invdir = (Vector3)button.Tag;
+                            invdir.Negate();
+                            ViewPosition = new Vector3(0.0f) + Vector3.Forward * orient * 1000.0f;
+                            ((FPSCamera)ViewportCamera).MoveViewport(ViewPosition, ViewOrientation);
+                        }
+                    };
                 }
 
                 // Field of View
@@ -1284,26 +1296,26 @@ namespace FlaxEditor.Viewport
             base.OnDestroy();
         }
 
-        private struct CameraOrientation
+        private struct CameraViewpoint
         {
             public readonly string Name;
             public readonly Vector3 Orientation;
 
-            public CameraOrientation(string name, Vector3 orientation)
+            public CameraViewpoint(string name, Vector3 orientation)
             {
                 Name = name;
                 Orientation = orientation;
             }
         }
 
-        private readonly CameraOrientation[] EditorViewportCameraOrientationValues =
+        private readonly CameraViewpoint[] EditorViewportCameraViewpointValues =
         {
-            new CameraOrientation("Front", new Vector3(0, 0, 0)),
-            new CameraOrientation("Back", new Vector3(0, 180, 0)),
-            new CameraOrientation("Left", new Vector3(0, 90, 0)),
-            new CameraOrientation("Right", new Vector3(0, -90, 0)),
-            new CameraOrientation("Top", new Vector3(-90, 0, 0)),
-            new CameraOrientation("Bottom", new Vector3(90, 0, 0))
+            new CameraViewpoint("Front", new Vector3(0, 0, 0)),
+            new CameraViewpoint("Back", new Vector3(0, 180, 0)),
+            new CameraViewpoint("Left", new Vector3(0, 90, 0)),
+            new CameraViewpoint("Right", new Vector3(0, -90, 0)),
+            new CameraViewpoint("Top", new Vector3(90, 0, 0)),
+            new CameraViewpoint("Bottom", new Vector3(-90, 0, 0))
         };
 
         private readonly float[] EditorViewportCameraSpeedValues =
