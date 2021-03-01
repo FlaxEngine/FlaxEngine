@@ -98,11 +98,11 @@ void FileSystemBase::NormalizePath(String& path)
     }
 }
 
-bool FileSystemBase::IsRelative(const String& path)
+bool FileSystemBase::IsRelative(const StringView& path)
 {
     const bool isRooted =
             (path.Length() >= 2 && StringUtils::IsAlpha(path[0]) && path[1] == ':') ||
-            path.StartsWith(TEXT("\\\\")) ||
+            path.StartsWith(StringView(TEXT("\\\\"), 2), StringSearchCase::CaseSensitive) ||
             path.StartsWith('/') ||
             path.StartsWith('\\') ||
             path.StartsWith('/');

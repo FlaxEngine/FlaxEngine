@@ -1081,12 +1081,12 @@ bool CookAssetsStep::Perform(CookingData& data)
 
     data.StepProgress(TEXT("Creating assets cache"), Step2ProgressEnd);
 
-    // Create asset paths mapping for the root assets.
+    // Create asset paths mapping for the assets.
     // Assets mapping is use to convert paths used in Content::Load(path) into the asset id.
-    // It fixes the issues when in build game all assets are in the packages while engine parts are requesting in-build assets by name.
+    // It fixes the issues when in build game all assets are in the packages and are requested by path.
     // E.g. game settings are loaded from `Content/GameSettings.json` file which is packages in one of the packages.
-    // Additionally it improves the in-build assets loading performance.
-    for (auto i = data.RootAssets.Begin(); i.IsNotEnd(); ++i)
+    // Additionally it improves the in-build assets loading performance (no more registry linear lookup for path by dictionary access).
+    for (auto i = data.Assets.Begin(); i.IsNotEnd(); ++i)
     {
         if (Content::GetAssetInfo(i->Item, assetInfo))
         {
