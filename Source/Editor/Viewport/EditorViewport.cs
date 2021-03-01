@@ -557,9 +557,9 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Camera Orientation
+                // Camera Viewpoints
                 {
-                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Viewpoint").ContextMenu;
+                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Viewpoints").ContextMenu;
                     for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
                     {
                         var co = EditorViewportCameraViewpointValues[i];
