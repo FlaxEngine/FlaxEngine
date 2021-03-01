@@ -128,6 +128,22 @@ public:
     bool ProjectPoint(const Vector3& point, Vector3& result) const;
 
     /// <summary>
+    /// Finds random location on nav mesh.
+    /// </summary>
+    /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
+    /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
+    bool FindRandomPoint(Vector3& result) const;
+
+    /// <summary>
+    /// Finds random location on nav mesh within the reach of specified location.
+    /// </summary>
+    /// <param name="center">The source point to find random location around it.</param>
+    /// <param name="radius">The search distance for a random point. Maximum distance for a result point from the center of the circle.</param>
+    /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
+    /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
+    bool FindRandomPointAroundCircle(const Vector3& center, float radius, Vector3& result) const;
+
+    /// <summary>
     /// Casts a 'walkability' ray along the surface of the navigation mesh from the start position toward the end position.
     /// </summary>
     /// <param name="startPosition">The start position.</param>

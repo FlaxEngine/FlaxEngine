@@ -49,6 +49,23 @@ public:
     API_FUNCTION() static bool ProjectPoint(const Vector3& point, API_PARAM(Out) Vector3& result);
 
     /// <summary>
+    /// Finds random location on nav mesh.
+    /// </summary>
+    /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
+    /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
+    API_FUNCTION() static bool FindRandomPoint(API_PARAM(Out) Vector3& result);
+
+    /// <summary>
+    /// Finds random location on nav mesh within the reach of specified location.
+    /// </summary>
+    /// <remarks>If the result location doesn't need to be exactly inside the circle but just in local are aof the navigation mesh polys, then use more optimized <see cref="FindRandomPointAround"/>.</remarks>
+    /// <param name="center">The source point to find random location around it.</param>
+    /// <param name="radius">The search distance for a random point. Maximum distance for a result point from the center of the circle.</param>
+    /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
+    /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
+    API_FUNCTION() static bool FindRandomPointAroundCircle(const Vector3& center, float radius, API_PARAM(Out) Vector3& result);
+
+    /// <summary>
     /// Casts a 'walkability' ray along the surface of the navigation mesh from the start position toward the end position.
     /// </summary>
     /// <param name="startPosition">The start position.</param>

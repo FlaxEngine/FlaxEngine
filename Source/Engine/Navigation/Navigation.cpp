@@ -315,6 +315,20 @@ bool Navigation::ProjectPoint(const Vector3& point, Vector3& result)
     return NavMeshes.First()->ProjectPoint(point, result);
 }
 
+bool Navigation::FindRandomPoint(Vector3& result)
+{
+    if (NavMeshes.IsEmpty())
+        return false;
+    return NavMeshes.First()->FindRandomPoint(result);
+}
+
+bool Navigation::FindRandomPointAroundCircle(const Vector3& center, float radius, Vector3& result)
+{
+    if (NavMeshes.IsEmpty())
+        return false;
+    return NavMeshes.First()->FindRandomPointAroundCircle(center, radius, result);
+}
+
 bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo)
 {
     if (NavMeshes.IsEmpty())
