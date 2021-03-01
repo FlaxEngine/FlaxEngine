@@ -209,9 +209,8 @@ namespace
     Matrix3x3 TransformCached;
 
     Array<ClipMask, InlinedAllocation<64>> ClipLayersStack;
-
     Array<Color, InlinedAllocation<64>> TintLayersStack;
-    
+
     // Shader
     AssetReference<Shader> GUIShader;
     CachedPSO PsoDepth;
@@ -297,7 +296,7 @@ void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vec
     indices[1] = VBIndex + 1;
     indices[2] = VBIndex + 2;
     IB.Write(indices, sizeof(indices));
-    
+
     VBIndex += 3;
     IBIndex += 3;
 }
@@ -635,8 +634,10 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     ClipLayersStack.Clear();
     ClipLayersStack.Add({ defaultMask, defaultBounds });
 
+    // Initialize default tint stack
     TintLayersStack.Clear();
-    TintLayersStack.Add({1,1,1,1});
+    TintLayersStack.Add({ 1, 1, 1, 1 });
+
     // Scissors can be enabled only for 2D orthographic projections
     IsScissorsRectEnabled = false;
 
@@ -815,7 +816,7 @@ void Render2D::PopClip()
 void Render2D::PushTint(const Color& tint, bool inherit)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    
+
     TintLayersStack.Push(inherit ? tint * TintLayersStack.Peek() : tint);
 }
 
@@ -1804,9 +1805,9 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs)
 {
     CHECK(vertices.Length() == uvs.Length())
-    
+
     RENDER2D_CHECK_RENDERING_STATE;
-    
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
@@ -1820,9 +1821,9 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
 void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha)
 {
     CHECK(vertices.Length() == colors.Length());
-    
+
     RENDER2D_CHECK_RENDERING_STATE;
-    
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = useAlpha ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
@@ -1835,7 +1836,7 @@ void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& c
 void Render2D::FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
     drawCall.StartIB = IBIndex;
