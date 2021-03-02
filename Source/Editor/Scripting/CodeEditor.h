@@ -43,7 +43,7 @@ API_ENUM(Namespace="FlaxEditor", Attributes="HideInEditor") enum class CodeEdito
     VS2013,
 
     /// <summary>
-    /// Visual Studio 2059
+    /// Visual Studio 2015
     /// </summary>
     VS2015,
 
@@ -66,6 +66,11 @@ API_ENUM(Namespace="FlaxEditor", Attributes="HideInEditor") enum class CodeEdito
     /// Visual Studio Code Insiders
     /// </summary>
     VSCodeInsiders,
+
+    /// <summary>
+    /// Rider
+    /// </summary>
+    Rider,
 
     MAX
 };

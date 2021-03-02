@@ -57,6 +57,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             case CodeEditorTypes.VSCodeInsiders:
                 Name = "Visual Studio Code - Insiders";
                 break;
+            case CodeEditorTypes.Rider:
+                Name = "Rider";
+                break;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
@@ -73,6 +76,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 {
                 case CodeEditorTypes.VSCodeInsiders:
                 case CodeEditorTypes.VSCode: return "-vscode";
+                case CodeEditorTypes.Rider: return "-vs2019";
                 default: return null;
                 }
             }

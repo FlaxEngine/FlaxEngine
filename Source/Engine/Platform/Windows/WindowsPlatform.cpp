@@ -420,7 +420,7 @@ bool WindowsPlatform::ReadRegValue(void* root, const String& key, const String& 
     }
 
     Array<Char> data;
-    data.Resize((int32)cbData);
+    data.Resize((int32)cbData / sizeof(Char));
     if (RegQueryValueExW(hKey, *name, nullptr, nullptr, reinterpret_cast<LPBYTE>(data.Get()), &cbData) != ERROR_SUCCESS)
     {
         RegCloseKey(hKey);
