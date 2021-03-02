@@ -87,9 +87,10 @@ namespace FlaxEditor.GUI.Docking
                 {
                     var tab = _panel.GetTab(i);
                     var titleSize = tab.TitleSize;
-                    float width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin;
+                    var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                    var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
                     var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                    bool isMouseOver = tabRect.Contains(position);
+                    var isMouseOver = tabRect.Contains(position);
                     if (isMouseOver)
                     {
                         var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
@@ -232,13 +233,13 @@ namespace FlaxEditor.GUI.Docking
                 {
                     // Cache data
                     var tab = _panel.GetTab(i);
-                    Color tabColor = Color.Black;
+                    var tabColor = Color.Black;
                     var titleSize = tab.TitleSize;
-                    float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
-                    float width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
+                    var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                    var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
                     var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                    bool isMouseOver = IsMouseOver && tabRect.Contains(MousePosition);
-                    bool isSelected = _panel.SelectedTab == tab;
+                    var isMouseOver = IsMouseOver && tabRect.Contains(MousePosition);
+                    var isSelected = _panel.SelectedTab == tab;
 
                     // Check if tab is selected
                     if (isSelected)
