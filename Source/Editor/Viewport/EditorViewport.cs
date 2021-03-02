@@ -541,16 +541,16 @@ namespace FlaxEditor.Viewport
                             ViewWidgetButtonMenu.Hide();
                             if (_isOrtho)
                             {
+                                var orient = ViewOrientation;
                                 if (!Editor.Instance.SceneEditing.HasSthSelected)
                                 {
-                                    var invdir = ViewDirection;
-                                    invdir.Negate();
-                                    var target = new Vector3(0.0f) + 2000.0f * invdir;
-                                    OrthographicScale = Vector3.Distance(target, new Vector3(0.0f)) / 1000;
-                                    ((FPSCamera)ViewportCamera).MoveViewport(target, Quaternion.LookRotation(ViewDirection));
+                                    var invdir = ViewOrientation;
+                                    invdir.Invert();
+                                    ViewPosition = new Vector3(0.0f) + Vector3.Forward * orient * 1000.0f;
+                                    ((FPSCamera)ViewportCamera).MoveViewport(ViewPosition, ViewOrientation);
                                 }
                                 else
-                                    ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents);
+                                    ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
                             }
                         }
                     };
