@@ -75,7 +75,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 switch (Type)
                 {
                 case CodeEditorTypes.VSCodeInsiders:
-                case CodeEditorTypes.VSCode: return "-vscode";
+                case CodeEditorTypes.VSCode: return "-vscode -vs2019";
                 case CodeEditorTypes.Rider: return "-vs2019";
                 default: return null;
                 }
