@@ -599,7 +599,7 @@ void InputService::Update()
     for (const auto& e : InputEvents)
     {
         auto window = e.Target ? e.Target : defaultWindow;
-        if (!window)
+        if (!window || !WindowsManager::Windows.Contains(window))
             continue;
         switch (e.Type)
         {
