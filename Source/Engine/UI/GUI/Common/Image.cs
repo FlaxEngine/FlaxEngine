@@ -29,18 +29,6 @@ namespace FlaxEngine.GUI
         public Color Color { get; set; } = Color.White;
 
         /// <summary>
-        /// Gets or sets the color used to multiply the image pixels when mouse is over the image.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color MouseOverColor { get; set; } = Color.White;
-
-        /// <summary>
-        /// Gets or sets the color used to multiply the image pixels when control is disabled.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color DisabledTint { get; set; } = Color.Gray;
-
-        /// <summary>
         /// Gets or sets a value indicating whether keep aspect ratio when drawing the image.
         /// </summary>
         [EditorOrder(60), Tooltip("If checked, control will keep aspect ratio of the image.")]
@@ -114,10 +102,7 @@ namespace FlaxEngine.GUI
 
             Margin.ShrinkRectangle(ref rect);
 
-            var color = IsMouseOver ? MouseOverColor : Color;
-            if (!Enabled)
-                color *= DisabledTint;
-            Brush.Draw(rect, color);
+            Brush.Draw(rect, Color);
         }
 
         /// <inheritdoc />
