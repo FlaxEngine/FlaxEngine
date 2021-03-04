@@ -7,6 +7,7 @@ Cache/
 Binaries/
 Logs/
 Source/*.csproj
+/Package_*/
 !Source/Engine/Debug
 
 # User-specific files
@@ -21,11 +22,6 @@ Source/*.csproj
 # NUNIT
 *.VisualState.xml
 TestResult.xml
-
-# Build Results of an ATL Project
-[Dd]ebugPS/
-[Rr]eleasePS/
-dlldata.c
 
 # NuGet Packages Directory
 packages/**/*
@@ -56,9 +52,6 @@ packages/**/*
 *.svclog
 *.scc
 
-# Chutzpah Test files
-_Chutzpah*
-
 # Visual C++ cache files
 ipch/
 *.aps
@@ -71,12 +64,6 @@ ipch/
 *.psess
 *.vsp
 *.vspx
-
-# TFS 2012 Local Workspace
-$tf/
-
-# Guidance Automation Toolkit
-*.gpState
 
 # ReSharper is a .NET coding add-in
 _ReSharper*/
@@ -99,9 +86,6 @@ _NCrunch_*
 # MightyMoose
 *.mm.*
 AutoTest.Net/
-
-# Web workbench (sass)
-.sass-cache/
 
 # Installshield output folder
 [Ee]xpress/
