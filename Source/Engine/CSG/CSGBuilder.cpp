@@ -244,7 +244,7 @@ struct BuildData
     Guid outputCollisionDataAssetId = Guid::Empty;
 
     BuildData(int32 meshesCapacity = 32)
-        : meshes(meshesCapacity, 32)
+        : meshes(meshesCapacity * 32)
         , cache(meshesCapacity * 4)
     {
     }
