@@ -47,12 +47,17 @@ namespace FlaxEditor.Scripting
         {
             get
             {
+                int standardToken = _managed?.MetadataToken ?? _custom?.MetadataToken ?? 0;
                 if (_managed != null && IsProperty)
                 {
                     ScriptMemberInfo finfo =  DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
+                    if(finfo.MetadataToken == 0)
+                    {
+                        return standardToken;
+                    }
                     return finfo.MetadataToken;
                 }
-                return _managed?.MetadataToken ?? _custom?.MetadataToken ?? 0;
+                return standardToken;
             }
         }
 
