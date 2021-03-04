@@ -173,8 +173,16 @@ namespace FlaxEditor.CustomEditors.Editors
                             return string.Compare(Display.Group, other.Display.Group, StringComparison.InvariantCulture);
                     }
 
-                    // By name
-                    return string.Compare(Info.Name, other.Info.Name, StringComparison.InvariantCulture);
+                    // By declaration order
+                    if (Info.MetadataToken > other.Info.MetadataToken)
+                        return 1;
+                    else if (Info.MetadataToken < other.Info.MetadataToken)
+                        return -1;
+                    else
+                    {
+                        // By name
+                        return string.Compare(Info.Name, other.Info.Name, StringComparison.InvariantCulture);
+                    }
                 }
 
                 return 0;

@@ -41,6 +41,22 @@ namespace FlaxEditor.Scripting
         public string Name => _managed?.Name ?? _custom?.Name;
 
         /// <summary>
+        /// Gets a metadata token for sorting so it may not be the actual token.
+        /// </summary>
+        public int MetadataToken
+        {
+            get
+            {
+                if (_managed != null && IsProperty)
+                {
+                    ScriptMemberInfo finfo =  DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
+                    return finfo.MetadataToken;
+                }
+                return _managed?.MetadataToken ?? _custom?.MetadataToken ?? 0;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether the type is declared public.
         /// </summary>
         public bool IsPublic
@@ -1443,6 +1459,11 @@ namespace FlaxEditor.Scripting
         /// Gets a member name (eg. name of the field or method without leading class name nor namespace prefixes).
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// Gets a metadata token for sorting so it may not be the actual token.
+        /// </summary>
+        int MetadataToken { get; }
 
         /// <summary>
         /// Gets a value indicating whether the type is declared public.
