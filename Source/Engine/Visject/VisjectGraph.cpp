@@ -379,9 +379,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
         const bool clamp = tryGetValue(node->GetBox(3), node->Values[3]).AsBool;
 
-        auto mapFunc = rangeB.X + (inVal - rangeA.X) * (rangeB.Y - rangeB.X) / (rangeA.Y - rangeA.X);
+        auto mapFunc = Math::Remap(inVal, rangeA.X, rangeA.Y, rangeB.X, rangeB.Y);
         
-        // Clamp value?
         value = clamp ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
         break;
     }
