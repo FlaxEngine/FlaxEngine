@@ -103,6 +103,28 @@ namespace FlaxEditor.CustomEditors
         }
 
         /// <summary>
+        /// Adds new horizontal panel element.
+        /// </summary>
+        /// <returns>The created element.</returns>
+        public HorizontalPanelElement HorizontalPanel()
+        {
+            var element = new HorizontalPanelElement();
+            OnAddElement(element);
+            return element;
+        }
+        
+        /// <summary>
+        /// Adds new horizontal panel element.
+        /// </summary>
+        /// <returns>The created element.</returns>
+        public VerticalPanelElement VerticalPanel()
+        {
+            var element = new VerticalPanelElement();
+            OnAddElement(element);
+            return element;
+        }
+
+        /// <summary>
         /// Adds new button element.
         /// </summary>
         /// <param name="text">The text.</param>
