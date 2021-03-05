@@ -509,6 +509,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("gulp.autoDetect", "off");
                 json.AddField("jake.autoDetect", "off");
                 json.AddField("grunt.autoDetect", "off");
+                json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
                 json.EndObject();
 
                 // Folders

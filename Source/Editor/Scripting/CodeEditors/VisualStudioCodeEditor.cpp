@@ -82,8 +82,15 @@ String VisualStudioCodeEditor::GetName() const
 
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
 {
+    // Generate VS solution files for intellisense
+    if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
+    {
+        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+    }
+
     // Generate project files if missing
-    if (!FileSystem::FileExists(Globals::ProjectFolder / TEXT(".vscode/tasks.json")))
+    if (!FileSystem::FileExists(Globals::ProjectFolder / TEXT(".vscode/tasks.json")) ||
+        !FileSystem::FileExists(_workspacePath))
     {
         ScriptsBuilder::GenerateProject(TEXT("-vscode"));
     }
@@ -96,8 +103,15 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
 
 void VisualStudioCodeEditor::OpenSolution()
 {
+    // Generate VS solution files for intellisense
+    if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
+    {
+        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+    }
+
     // Generate project files if solution is missing
-    if (!FileSystem::FileExists(Globals::ProjectFolder / TEXT(".vscode/tasks.json")))
+    if (!FileSystem::FileExists(Globals::ProjectFolder / TEXT(".vscode/tasks.json")) ||
+        !FileSystem::FileExists(_workspacePath))
     {
         ScriptsBuilder::GenerateProject(TEXT("-vscode"));
     }
