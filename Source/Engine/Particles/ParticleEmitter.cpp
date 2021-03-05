@@ -112,12 +112,8 @@ Asset::LoadResult ParticleEmitter::load()
     }
     if (SimulationMode == ParticlesSimulationMode::GPU)
     {
-        if (IsUsingLights)
-        {
-            // Downgrade to CPU simulation for light particles (no GPU support for that)
-            SimulationMode = ParticlesSimulationMode::CPU;
-        }
-        else if (Graph.RibbonRenderingModules.HasItems())
+        // Downgrade to CPU simulation if no GPU support for that
+        if (IsUsingLights || Graph.RibbonRenderingModules.HasItems() || Graph.UsesVolumetricFogRendering)
         {
             // Downgrade to CPU simulation for ribbons (no GPU support for that)
             SimulationMode = ParticlesSimulationMode::CPU;

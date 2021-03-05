@@ -218,6 +218,13 @@ struct DrawCall
                 uint32 SegmentCount;
                 GPUBuffer* SegmentDistances;
             } Ribbon;
+
+            struct
+            {
+                Vector3 Position;
+                float Radius;
+                int32 ParticleIndex;
+            } VolumetricFog;
         } Particle;
 
         struct

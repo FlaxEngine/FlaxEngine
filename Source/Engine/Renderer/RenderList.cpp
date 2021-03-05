@@ -350,6 +350,7 @@ void RenderList::Clear()
     DirectionalLights.Clear();
     EnvironmentProbes.Clear();
     Decals.Clear();
+    VolumetricFogParticles.Clear();
     Sky = nullptr;
     AtmosphericFog = nullptr;
     Fog = nullptr;

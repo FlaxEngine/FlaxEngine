@@ -304,6 +304,11 @@ public:
     Array<Decal*> Decals;
 
     /// <summary>
+    /// Local volumetric fog particles registered for the rendering.
+    /// </summary>
+    Array<DrawCall> VolumetricFogParticles;
+
+    /// <summary>
     /// Sky/skybox renderer proxy to use (only one per frame)
     /// </summary>
     ISkyRenderer* Sky;

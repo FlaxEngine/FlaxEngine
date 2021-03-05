@@ -11,6 +11,16 @@
 /// </summary>
 class VolumetricFogPass : public RendererPass<VolumetricFogPass>
 {
+public:
+
+    struct CustomData
+    {
+        GPUShader* Shader;
+        Vector3 GridSize;
+        float VolumetricFogMaxDistance;
+        int32 ParticleIndex;
+    };
+
 private:
 
     PACK_STRUCT(struct SkyLightData {
@@ -53,7 +63,7 @@ private:
         });
 
     PACK_STRUCT(struct PerLight {
-        Vector2 Dummy1;
+        Vector2 SliceToDepth;
         int32 MinZ;
         float LocalLightScatteringIntensity;
 

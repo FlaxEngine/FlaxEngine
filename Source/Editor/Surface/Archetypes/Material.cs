@@ -234,7 +234,25 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
                     break;
                 }
-                default: throw new ArgumentOutOfRangeException();
+                case MaterialDomain.VolumeParticle:
+                {
+                    GetBox(MaterialNodeBoxes.Color).Enabled = true;
+                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
+                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
+                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
+                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    break;
+                }
+                    default: throw new ArgumentOutOfRangeException();
                 }
             }
 

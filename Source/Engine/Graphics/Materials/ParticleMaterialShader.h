@@ -45,6 +45,7 @@ private:
     Cache _cacheSprite;
     Cache _cacheModel;
     Cache _cacheRibbon;
+    PipelineStateCache _cacheVolumetricFog;
     DrawPass _drawModes = DrawPass::None;
 
 public:

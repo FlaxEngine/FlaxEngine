@@ -179,6 +179,9 @@ namespace FlaxEditor.Viewport.Previews
                         usePreviewActor = false;
                         deformableMaterial = _material;
                         break;
+                    case MaterialDomain.VolumeParticle:
+                        usePreviewActor = false;
+                        break;
                     default: throw new ArgumentOutOfRangeException();
                     }
                 }

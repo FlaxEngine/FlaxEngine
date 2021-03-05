@@ -60,7 +60,7 @@ META_CB_END
 
 META_CB_BEGIN(1, PerLight)
 
-float2 Dummy1;
+float2 SliceToDepth;
 int MinZ;
 float LocalLightScatteringIntensity;
 
@@ -119,7 +119,7 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 	Quad_VS2GS output;
 
 	uint slice = LayerIndex + MinZ;
-	float depth = GetSliceDepth(slice);
+	float depth = (slice / SliceToDepth.x) * SliceToDepth.y;
 	float depthOffset = abs(depth - ViewSpaceBoundingSphere.z);
 
 	if (depthOffset < ViewSpaceBoundingSphere.w)
@@ -133,7 +133,7 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 		output.Vertex.Position = float4(0, 0, 0, 0);
 	}
 
-	output.Vertex.TexCoord = 0;
+	output.Vertex.TexCoord = TexCoord;
 	output.LayerIndex = slice;
 
 	return output;

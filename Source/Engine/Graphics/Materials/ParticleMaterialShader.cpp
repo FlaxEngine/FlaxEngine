@@ -15,8 +15,6 @@
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Particles/Graph/CPU/ParticleEmitterGraph.CPU.h"
 
-#define MAX_LOCAL_LIGHTS 4
-
 PACK_STRUCT(struct ParticleMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
@@ -98,53 +96,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         }
     }
 
-    // Select pipeline state based on current pass and render mode
-    const bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0 || view.Mode == ViewMode::Wireframe;
-    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
-    PipelineStateCache* psCache = nullptr;
-    switch (drawCall.Particle.Module->TypeID)
-    {
-        // Sprite Rendering
-    case 400:
-    {
-        psCache = (PipelineStateCache*)_cacheSprite.GetPS(view.Pass);
-        break;
-    }
-        // Model Rendering
-    case 403:
-    {
-        psCache = (PipelineStateCache*)_cacheModel.GetPS(view.Pass);
-        break;
-    }
-        // Ribbon Rendering
-    case 404:
-    {
-        psCache = (PipelineStateCache*)_cacheRibbon.GetPS(view.Pass);
-
-        static StringView ParticleRibbonWidth(TEXT("RibbonWidth"));
-        static StringView ParticleRibbonTwist(TEXT("RibbonTwist"));
-        static StringView ParticleRibbonFacingVector(TEXT("RibbonFacingVector"));
-
-        materialData->RibbonWidthOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonWidth, ParticleAttribute::ValueTypes::Float, -1);
-        materialData->RibbonTwistOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonTwist, ParticleAttribute::ValueTypes::Float, -1);
-        materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Vector3, -1);
-
-        materialData->RibbonUVTilingDistance = drawCall.Particle.Ribbon.UVTilingDistance;
-        materialData->RibbonUVScale.X = drawCall.Particle.Ribbon.UVScaleX;
-        materialData->RibbonUVScale.Y = drawCall.Particle.Ribbon.UVScaleY;
-        materialData->RibbonUVOffset.X = drawCall.Particle.Ribbon.UVOffsetX;
-        materialData->RibbonUVOffset.Y = drawCall.Particle.Ribbon.UVOffsetY;
-        materialData->RibbonSegmentCount = drawCall.Particle.Ribbon.SegmentCount;
-
-        if (drawCall.Particle.Ribbon.SegmentDistances)
-            context->BindSR(1, drawCall.Particle.Ribbon.SegmentDistances->View());
-
-        break;
-    }
-    }
-    ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
-
     // Setup material constants
     {
         static StringView ParticlePosition(TEXT("Position"));
@@ -179,6 +130,53 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         Matrix::Invert(drawCall.World, materialData->WorldMatrixInverseTransposed);
     }
 
+    // Select pipeline state based on current pass and render mode
+    bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0 || view.Mode == ViewMode::Wireframe;
+    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+    PipelineStateCache* psCache = nullptr;
+    switch (drawCall.Particle.Module->TypeID)
+    {
+        // Sprite Rendering
+    case 400:
+    {
+        psCache = _cacheSprite.GetPS(view.Pass);
+        break;
+    }
+        // Model Rendering
+    case 403:
+    {
+        psCache = _cacheModel.GetPS(view.Pass);
+        break;
+    }
+        // Ribbon Rendering
+    case 404:
+    {
+        psCache = _cacheRibbon.GetPS(view.Pass);
+
+        static StringView ParticleRibbonWidth(TEXT("RibbonWidth"));
+        static StringView ParticleRibbonTwist(TEXT("RibbonTwist"));
+        static StringView ParticleRibbonFacingVector(TEXT("RibbonFacingVector"));
+
+        materialData->RibbonWidthOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonWidth, ParticleAttribute::ValueTypes::Float, -1);
+        materialData->RibbonTwistOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonTwist, ParticleAttribute::ValueTypes::Float, -1);
+        materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Vector3, -1);
+
+        materialData->RibbonUVTilingDistance = drawCall.Particle.Ribbon.UVTilingDistance;
+        materialData->RibbonUVScale.X = drawCall.Particle.Ribbon.UVScaleX;
+        materialData->RibbonUVScale.Y = drawCall.Particle.Ribbon.UVScaleY;
+        materialData->RibbonUVOffset.X = drawCall.Particle.Ribbon.UVOffsetX;
+        materialData->RibbonUVOffset.Y = drawCall.Particle.Ribbon.UVOffsetY;
+        materialData->RibbonSegmentCount = drawCall.Particle.Ribbon.SegmentCount;
+
+        if (drawCall.Particle.Ribbon.SegmentDistances)
+            context->BindSR(1, drawCall.Particle.Ribbon.SegmentDistances->View());
+
+        break;
+    }
+    }
+    ASSERT(psCache);
+    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+
     // Bind constants
     if (_cb)
     {
@@ -198,6 +196,7 @@ void ParticleMaterialShader::Unload()
     _cacheSprite.Release();
     _cacheModel.Release();
     _cacheRibbon.Release();
+    _cacheVolumetricFog.Release();
 }
 
 bool ParticleMaterialShader::Load()
@@ -262,6 +261,9 @@ bool ParticleMaterialShader::Load()
     _cacheModel.Depth.Init(psDesc);
     psDesc.VS = vsRibbon;
     _cacheRibbon.Depth.Init(psDesc);
+
+    // Lazy initialization
+    _cacheVolumetricFog.Desc.PS = nullptr;
 
     return false;
 }

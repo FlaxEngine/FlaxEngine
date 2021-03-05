@@ -524,6 +524,34 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
+            // Volumetric Fog Rendering
+        case 405:
+        {
+            const auto material = (MaterialBase*)module->Assets[0].Get();
+            drawCall.Material = material;
+            drawCall.InstanceCount = 1;
+
+            auto positionOffset = emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]);
+            int32 count = buffer->CPU.Count;
+            if (positionOffset == -1 || count < 0)
+                break;
+            auto radiusOffset = emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]);
+            ParticleBufferCPUDataAccessor<Vector3> positionData(buffer, positionOffset);
+            ParticleBufferCPUDataAccessor<float> radiusData(buffer, radiusOffset);
+            const bool hasRadius = radiusOffset != -1;
+            for (int32 i = 0; i < count; i++)
+            {
+                // Submit draw call
+                // TODO: use instancing for volumetric fog particles (combine it with instanced circle rasterization into 3d texture)
+                drawCall.Particle.VolumetricFog.Position = positionData[i];
+                if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                    Vector3::Transform(drawCall.Particle.VolumetricFog.Position, drawCall.World, drawCall.Particle.VolumetricFog.Position);
+                drawCall.Particle.VolumetricFog.Radius = hasRadius ? radiusData[i] : 100.0f;
+                drawCall.Particle.VolumetricFog.ParticleIndex = i;
+                renderContext.List->VolumetricFogParticles.Add(drawCall);
+            }
+            break;
+        }
         }
     }
 }
@@ -713,7 +741,12 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         case 404:
         {
             // Not supported
-            CRASH;
+            break;
+        }
+            // Volumetric Fog Rendering
+        case 405:
+        {
+            // Not supported
             break;
         }
         }
@@ -775,7 +808,12 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         case 404:
         {
             // Not supported
-            CRASH;
+            break;
+        }
+            // Volumetric Fog Rendering
+        case 405:
+        {
+            // Not supported
             break;
         }
         }
@@ -841,7 +879,12 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         case 404:
         {
             // Not supported
-            CRASH;
+            break;
+        }
+            // Volumetric Fog Rendering
+        case 405:
+        {
+            // Not supported
             break;
         }
         }
@@ -909,7 +952,6 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
                     (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
                 )
                     break;
-
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }
@@ -929,7 +971,6 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
                     (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
                 )
                     break;
-
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }
@@ -944,7 +985,19 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
                     (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
                 )
                     break;
-
+                renderModulesIndices.Add(moduleIndex);
+                break;
+            }
+                // Volumetric Fog Rendering
+            case 405:
+            {
+                const auto material = (MaterialBase*)module->Assets[0].Get();
+                if (!material ||
+                    !material->IsReady() ||
+                    material->GetInfo().Domain != MaterialDomain::VolumeParticle ||
+                    (view.Flags & ViewFlags::Fog) == 0
+                )
+                    break;
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }

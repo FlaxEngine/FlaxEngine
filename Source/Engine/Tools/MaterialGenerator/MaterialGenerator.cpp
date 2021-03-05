@@ -296,6 +296,21 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Refraction);
             eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::SubsurfaceColor);
         }
+        else if (baseLayer->Domain == MaterialDomain::VolumeParticle)
+        {
+            eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Emissive);
+            eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Opacity);
+            eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Mask);
+            eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Color);
+
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Normal);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Metalness);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Specular);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::AmbientOcclusion);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Roughness);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::Refraction);
+            eatMaterialGraphBoxWithDefault(baseLayer, MaterialGraphBoxes::SubsurfaceColor);
+        }
         else
         {
             CRASH;
@@ -422,6 +437,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         case MaterialDomain::Deformable:
             srv = 1; // Mesh deformation buffer
             break;
+        case MaterialDomain::VolumeParticle:
+            srv = 1; // Particles data
+            break;
         }
         for (auto f : features)
         {
@@ -503,6 +521,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             break;
         case MaterialDomain::Deformable:
             path /= TEXT("Deformable.shader");
+            break;
+        case MaterialDomain::VolumeParticle:
+            path /= TEXT("VolumeParticle.shader");
             break;
         default:
             LOG(Warning, "Unknown material domain.");

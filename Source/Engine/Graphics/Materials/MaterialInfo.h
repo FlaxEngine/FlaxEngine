@@ -44,6 +44,11 @@ API_ENUM() enum class MaterialDomain : byte
     /// The deformable shader. Can be used only with objects that can be deformed (spline models).
     /// </summary>
     Deformable = 6,
+
+    /// <summary>
+    /// The particle shader used for volumetric effects rendering such as Volumetric Fog.
+    /// </summary>
+    VolumeParticle = 7,
 };
 
 /// <summary>

@@ -253,13 +253,9 @@ GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext
     if (renderContext.Buffers->LocalShadowedLightScattering == nullptr)
     {
         ASSERT(renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount);
-
         const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(_cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
-
         const auto texture = RenderTargetPool::Get(volumeDescRGB);
-
         renderContext.Buffers->LocalShadowedLightScattering = texture;
-
         context->Clear(texture->ViewVolume(), Color::Transparent);
     }
 
@@ -299,7 +295,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 
     // Bind the output
     context->SetRenderTarget(localShadowedLightScattering);
-    context->SetViewportAndScissors((float)_cache.Data.GridSizeIntX, (float)_cache.Data.GridSizeIntY);
+    context->SetViewportAndScissors(_cache.Data.GridSize.X, _cache.Data.GridSize.Y);
 
     // Setup data
     perLight.MinZ = volumeZBoundsMin;
@@ -481,8 +477,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             && Vector3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
 
     // Allocate buffers
-    const GPUTextureDescription volumeDesc = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
-    const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
+    const GPUTextureDescription volumeDesc = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
+    const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
     auto vBufferA = RenderTargetPool::Get(volumeDesc);
     auto vBufferB = RenderTargetPool::Get(volumeDescRGB);
     const auto lightScattering = RenderTargetPool::Get(volumeDesc);
@@ -500,15 +496,78 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         context->BindUA(1, vBufferB->ViewVolume());
 
         context->Dispatch(_csInitialize, groupCountX, groupCountY, groupCountZ);
+
+        context->UnBindUA(0);
+        context->UnBindUA(1);
+        context->FlushState();
     }
 
-    // Voxelize local fog particles
-    // TODO: support rendering volume particles with custom Albedo/Extinction/Emissive
+    // Render local fog particles
+    if (renderContext.List->VolumetricFogParticles.HasItems())
+    {
+        PROFILE_GPU_CPU("Local Fog");
 
-    // Unbind fog attributes tables
-    context->UnBindUA(0);
-    context->UnBindUA(1);
-    context->FlushState();
+        // Bind the output
+        GPUTextureView* rt[] = { vBufferA->ViewVolume(), vBufferB->ViewVolume() };
+        context->SetRenderTarget(nullptr, Span<GPUTextureView*>(rt, 2));
+        context->SetViewportAndScissors((float)volumeDesc.Width, (float)volumeDesc.Height);
+
+        // Ensure to have valid buffers created
+        if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
+            InitCircleBuffer();
+
+        MaterialBase::BindParameters bindParams(context, renderContext);
+        bindParams.DrawCallsCount = 1;
+        CustomData customData;
+        customData.Shader = _shader->GetShader();
+        customData.GridSize = cache.GridSize;
+        customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
+        bindParams.CustomData = &customData;
+
+        for (auto& drawCall : renderContext.List->VolumetricFogParticles)
+        {
+            const BoundingSphere bounds(drawCall.Particle.VolumetricFog.Position, drawCall.Particle.VolumetricFog.Radius);
+            ASSERT(!bounds.Center.IsNanOrInfinity() && !isnan(bounds.Radius) && !isinf(bounds.Radius));
+
+            // Calculate light volume bounds in camera frustum depth range (min and max)
+            const Vector3 viewSpaceLightBoundsOrigin = Vector3::Transform(bounds.Center, view.View);
+            const float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + bounds.Radius, options, cache.GridSizeZ);
+            const float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - bounds.Radius, options, cache.GridSizeZ);
+            const int32 volumeZBoundsMin = (int32)Math::Clamp(closestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
+            const int32 volumeZBoundsMax = (int32)Math::Clamp(furthestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
+
+            // Culling
+            if ((view.Position - bounds.Center).LengthSquared() >= (options.Distance + bounds.Radius) * (options.Distance + bounds.Radius) || volumeZBoundsMin >= volumeZBoundsMax)
+                continue;
+
+            // Setup material shader data
+            customData.ParticleIndex = drawCall.Particle.VolumetricFog.ParticleIndex;
+            bindParams.FirstDrawCall = &drawCall;
+            drawCall.Material->Bind(bindParams);
+
+            // Setup volumetric shader data
+            PerLight perLight;
+            auto cb1 = _shader->GetShader()->GetCB(1);
+            perLight.SliceToDepth.X = cache.Data.GridSize.Z;
+            perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
+            perLight.MinZ = volumeZBoundsMin;
+            perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
+            Matrix::Transpose(renderContext.View.Projection, perLight.ViewToVolumeClip);
+
+            // Upload data
+            context->UpdateCB(cb1, &perLight);
+            context->BindCB(1, cb1);
+
+            // Call rendering to the volume
+            const int32 instanceCount = volumeZBoundsMax - volumeZBoundsMin;
+            const int32 indexCount = _ibCircleRasterize->GetElementsCount();
+            context->BindVB(ToSpan(&_vbCircleRasterize, 1));
+            context->BindIB(_ibCircleRasterize);
+            context->DrawIndexedInstanced(indexCount, instanceCount, 0);
+        }
+
+        context->ResetRenderTarget();
+    }
 
     // Render Lights
     GPUTextureView* localShadowedLightScattering = nullptr;
@@ -542,13 +601,15 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         // Skip if no lights to render
         if (pointLights.Count() + spotLights.Count())
         {
-            PROFILE_GPU("Render Lights");
+            PROFILE_GPU_CPU("Lights Injection");
 
             // Allocate temporary buffer for light scattering injection
             localShadowedLightScattering = GetLocalShadowedLightScattering(renderContext, context, options);
 
             // Prepare
             PerLight perLight;
+            perLight.SliceToDepth.X = cache.Data.GridSize.Z;
+            perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
             auto cb1 = _shader->GetShader()->GetCB(1);
 
             // Bind the output
