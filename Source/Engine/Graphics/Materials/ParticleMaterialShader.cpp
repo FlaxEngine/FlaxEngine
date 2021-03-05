@@ -88,8 +88,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
             const auto& param = p.At(i);
             if (param.GetParameterType() == MaterialParameterType::Integer && param.GetName().StartsWith(TEXT("Particle.")))
             {
-                auto name = StringView(param.GetName().Get() + 9);
-
+                const StringView name(param.GetName().Get() + 9, param.GetName().Length() - 9);
                 const int32 offset = drawCall.Particle.Particles->Layout->FindAttributeOffset(name);
                 *((int32*)(bindMeta.Constants + param.GetBindOffset())) = offset;
             }
