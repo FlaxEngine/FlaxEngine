@@ -122,7 +122,7 @@ namespace
 void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor)
 {
     auto& view = renderContext.View;
-    if ((view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
+    if (!actor || (view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
         return;
 
     Mesh::DrawInfo draw;
