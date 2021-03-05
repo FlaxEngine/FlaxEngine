@@ -312,6 +312,30 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                 }
                 break;
             }
+                // Volumetric Fog Rendering
+            case 405:
+            {
+                // Find the maximum radius of the particle
+                float maxRadius = 0.0f;
+                if (_graph._attrRadius != -1)
+                {
+                    byte* radius = bufferPtr + layout->Attributes[_graph._attrRadius].Offset;
+                    for (int32 i = 0; i < count; i++)
+                    {
+                        maxRadius = Math::Max(*((float*)radius), maxRadius);
+                        radius += stride;
+                    }
+                    ASSERT(!isnan(maxRadius) && !isinf(maxRadius));
+                }
+                else
+                {
+                    maxRadius = 100.0f;
+                }
+
+                // Enlarge the emitter bounds sphere
+                sphere.Radius += maxRadius;
+            }
+            break;
             }
         }
 
