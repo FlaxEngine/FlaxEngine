@@ -196,8 +196,14 @@ private:
         Int,
         Uint,
     };
+    enum class ParticleAttributeSpace
+    {
+        AsIs,
+        LocalPosition,
+        LocalDirection,
+    };
 
-    MaterialValue AccessParticleAttribute(Node* caller, const StringView& name, ParticleAttributeValueTypes valueType, const Char* index = nullptr);
+    MaterialValue AccessParticleAttribute(Node* caller, const StringView& name, ParticleAttributeValueTypes valueType, const Char* index = nullptr, ParticleAttributeSpace space = ParticleAttributeSpace::AsIs);
     void prepareLayer(MaterialLayer* layer, bool allowVisibleParams);
 
 public:
