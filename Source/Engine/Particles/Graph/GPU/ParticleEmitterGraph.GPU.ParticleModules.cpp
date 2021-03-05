@@ -248,6 +248,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 260:
     case 261:
     case 262:
+    case 263:
     case 350:
     case 351:
     case 352:
@@ -261,6 +262,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 360:
     case 361:
     case 362:
+    case 363:
     {
         auto attribute = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Write);
         auto box = node->GetBox(0);

@@ -925,6 +925,7 @@ namespace FlaxEditor.Surface.Archetypes
             GetParticleAttribute(ModuleType.Initialize, 260, "Set Ribbon Width", "Sets the ribbon width", typeof(float), 20.0f),
             GetParticleAttribute(ModuleType.Initialize, 261, "Set Ribbon Twist", "Sets the ribbon twist angle (in degrees)", typeof(float), 0.0f),
             GetParticleAttribute(ModuleType.Initialize, 262, "Set Ribbon Facing Vector", "Sets the ribbon particles facing vector", typeof(Vector3), Vector3.Up),
+            GetParticleAttribute(ModuleType.Initialize, 263, "Set Radius", "Sets the particle radius", typeof(float), 100.0f),
 
             // Update Modules
             new NodeArchetype
@@ -1374,6 +1375,7 @@ namespace FlaxEditor.Surface.Archetypes
             GetParticleAttribute(ModuleType.Update, 360, "Set Ribbon Width", "Sets the ribbon width", typeof(float), 20.0f),
             GetParticleAttribute(ModuleType.Update, 361, "Set Ribbon Twist", "Sets the ribbon twist angle (in degrees)", typeof(float), 0.0f),
             GetParticleAttribute(ModuleType.Update, 362, "Set Ribbon Facing Vector", "Sets the ribbon particles facing vector", typeof(Vector3), Vector3.Up),
+            GetParticleAttribute(ModuleType.Update, 363, "Set Radius", "Sets the particle radius", typeof(float), 100.0f),
 
             // Render Modules
             new NodeArchetype

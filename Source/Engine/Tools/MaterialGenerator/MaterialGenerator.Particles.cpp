@@ -174,6 +174,12 @@ void MaterialGenerator::ProcessGroupParticles(Box* box, Node* node, Value& value
         value = writeOperation2(node, age, lifetime, '/');
         break;
     }
+        // Particle Radius
+    case 111:
+    {
+        value = AccessParticleAttribute(node, TEXT("Radius"), ParticleAttributeValueTypes::Float);
+        break;
+    }
     default:
         break;
     }

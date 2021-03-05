@@ -535,6 +535,18 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 111,
+                Title = "Particle Radius",
+                Description = "Particle radius.",
+                Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
+                Size = new Vector2(200, 30),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
+                }
+            },
 
             // Simulation data access nodes
             new NodeArchetype

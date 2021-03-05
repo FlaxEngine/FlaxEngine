@@ -292,6 +292,13 @@ protected:
             USE_ATTRIBUTE(Lifetime, Float, 1);
             break;
         }
+            // Particle Mass
+        case GRAPH_NODE_MAKE_TYPE(14, 111):
+        {
+            node->UsesParticleData = true;
+            USE_ATTRIBUTE(Radius, Float, 0);
+            break;
+        }
             // Random
         case GRAPH_NODE_MAKE_TYPE(14, 208):
         case GRAPH_NODE_MAKE_TYPE(14, 209):
@@ -425,6 +432,7 @@ protected:
         CASE_SET_PARTICLE_ATTRIBUTE(260, 360, RibbonWidth, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(261, 361, RibbonTwist, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(262, 362, RibbonFacingVector, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(263, 363, Radius, Float);
 #undef CASE_SET_PARTICLE_ATTRIBUTE
             // Conform to Sphere
         case GRAPH_NODE_MAKE_TYPE(15, 305):

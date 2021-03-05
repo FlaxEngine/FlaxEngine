@@ -287,6 +287,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         value = age / Math::Max(lifetime, ZeroTolerance);
         break;
     }
+        // Particle Radius
+    case 111:
+    {
+        value = GET_PARTICLE_ATTRIBUTE(0, float);
+        break;
+    }
         // Effect Position
     case 200:
     {

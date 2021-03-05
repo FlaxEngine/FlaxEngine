@@ -347,6 +347,12 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         value = writeOperation2(node, age, lifetime, '/');
         break;
     }
+        // Particle Radius
+    case 111:
+    {
+        value = AccessParticleAttribute(node, TEXT("Radius"), ParticleAttribute::ValueTypes::Float, AccessMode::Read);
+        break;
+    }
         // Effect Position
     case 200:
     {

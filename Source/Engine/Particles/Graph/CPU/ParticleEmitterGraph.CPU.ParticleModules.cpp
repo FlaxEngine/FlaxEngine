@@ -615,6 +615,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 260:
     case 261:
     case 262:
+    case 263:
     case 350:
     case 351:
     case 352:
@@ -628,6 +629,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 360:
     case 361:
     case 362:
+    case 363:
     {
         auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* dataPtr = start + attribute.Offset;
