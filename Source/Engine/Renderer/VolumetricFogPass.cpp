@@ -28,7 +28,7 @@ String VolumetricFogPass::ToString() const
 bool VolumetricFogPass::Init()
 {
     const auto& limits = GPUDevice::Instance->Limits;
-    _isSupported = limits.HasGeometryShaders && limits.HasVolumeTextureRendering && limits.HasCompute;
+    _isSupported = limits.HasGeometryShaders && limits.HasVolumeTextureRendering && limits.HasCompute && limits.HasInstancing;
 
     // Create pipeline states
     _psInjectLight.CreatePipelineStates();
