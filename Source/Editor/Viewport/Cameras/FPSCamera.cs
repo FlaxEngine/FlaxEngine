@@ -147,9 +147,7 @@ namespace FlaxEditor.Viewport.Cameras
             
             if (Viewport.UseOrthographicProjection)
             {
-                Vector3 offset = Vector3.Forward * orientation;
-                offset.Negate();
-                position = sphere.Center + offset * (sphere.Radius * 5.0f);
+                position = sphere.Center + Vector3.Backward * orientation * (sphere.Radius * 5.0f);
                 Viewport.OrthographicScale = Vector3.Distance(position, sphere.Center) / 1000;
             }
             else

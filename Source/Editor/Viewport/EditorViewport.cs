@@ -544,10 +544,8 @@ namespace FlaxEditor.Viewport
                                 var orient = ViewOrientation;
                                 if (!Editor.Instance.SceneEditing.HasSthSelected)
                                 {
-                                    var invdir = ViewOrientation;
-                                    invdir.Invert();
-                                    ViewPosition = new Vector3(0.0f) + Vector3.Forward * orient * 1000.0f;
-                                    ((FPSCamera)ViewportCamera).MoveViewport(ViewPosition, ViewOrientation);
+                                    var pos = new Vector3(0.0f) + Vector3.Backward * ViewOrientation * 1000.0f;
+                                    ((FPSCamera)ViewportCamera).MoveViewport(pos, ViewOrientation);
                                 }
                                 else
                                     ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
@@ -573,10 +571,8 @@ namespace FlaxEditor.Viewport
                             ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
                         else
                         {
-                            var invdir = (Vector3)button.Tag;
-                            invdir.Negate();
-                            ViewPosition = new Vector3(0.0f) + Vector3.Forward * orient * 1000.0f;
-                            ((FPSCamera)ViewportCamera).MoveViewport(ViewPosition, ViewOrientation);
+                            var pos = new Vector3(0.0f) + Vector3.Backward * orient * 2000.0f;
+                            ((FPSCamera)ViewportCamera).MoveViewport(pos, orient);
                         }
                     };
                 }
@@ -1310,8 +1306,8 @@ namespace FlaxEditor.Viewport
 
         private readonly CameraViewpoint[] EditorViewportCameraViewpointValues =
         {
-            new CameraViewpoint("Front", new Vector3(0, 0, 0)),
-            new CameraViewpoint("Back", new Vector3(0, 180, 0)),
+            new CameraViewpoint("Front", new Vector3(0, 180, 0)),
+            new CameraViewpoint("Back", new Vector3(0, 0, 0)),
             new CameraViewpoint("Left", new Vector3(0, 90, 0)),
             new CameraViewpoint("Right", new Vector3(0, -90, 0)),
             new CameraViewpoint("Top", new Vector3(90, 0, 0)),
