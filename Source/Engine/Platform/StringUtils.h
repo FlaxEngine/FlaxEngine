@@ -193,8 +193,14 @@ public:
     // Convert characters from UTF-8 to UTF-16
     static void ConvertUTF82UTF16(const char* from, Char* to, int32 fromLength, int32& toLength);
 
-    // Convert characters from UTF-8 to UTF-16 (allocates the output buffer with Allocator::Allocate of size toLength + 1, call Allocator::Free after usage). Returns null on empty or invalid string.
+    // Convert characters from UTF-8 to UTF-16 (allocates the output buffer with Allocator::Allocate of size (toLength + 1) * sizeof(Char), call Allocator::Free after usage). Returns null on empty or invalid string.
     static Char* ConvertUTF82UTF16(const char* from, int32 fromLength, int32& toLength);
+
+    // Convert characters from UTF-16 to UTF-8
+    static void ConvertUTF162UTF8(const Char* from, char* to, int32 fromLength, int32& toLength);
+
+    // Convert characters from UTF-16 to UTF-8 (allocates the output buffer with Allocator::Allocate of size toLength + 1, call Allocator::Free after usage). Returns null on empty or invalid string.
+    static char* ConvertUTF162UTF8(const Char* from, int32 fromLength, int32& toLength);
 
 public:
 

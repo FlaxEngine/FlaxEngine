@@ -5,7 +5,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
 #if PLATFORM_TEXT_IS_CHAR16
@@ -69,7 +68,7 @@ void PrintUTF8Error(const char* from, uint32 fromLength)
     LOG(Error, "Not a UTF-8 string. Length: {0}", fromLength);
     for (uint32 i = 0; i < fromLength; i++)
     {
-        LOG(Error, "str[{0}] = {0}", i, from[i]);
+        LOG(Error, "str[{0}] = {0}", i, (uint32)from[i]);
     }
 }
 
@@ -153,9 +152,9 @@ void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, int32 fromLength
 {
     Array<uint32> unicode;
     ConvertUTF82UTF16Helper(unicode, from, fromLength, toLength);
-    for (int32 i = 0; i < toLength; i++)
+    for (int32 i = 0, j = 0; j < unicode.Count(); i++, j++)
     {
-        uint32 uni = unicode[i];
+        uint32 uni = unicode[j];
         if (uni <= 0xFFFF)
         {
             to[i] = (Char)uni;
@@ -176,9 +175,9 @@ Char* StringUtils::ConvertUTF82UTF16(const char* from, int32 fromLength, int32& 
     if (toLength == 0)
         return nullptr;
     Char* to = (Char*)Allocator::Allocate((toLength + 1) * sizeof(Char));
-    for (int32 i = 0; i < toLength; i++)
+    for (int32 i = 0, j = 0; j < unicode.Count(); i++, j++)
     {
-        uint32 uni = unicode[i];
+        uint32 uni = unicode[j];
         if (uni <= 0xFFFF)
         {
             to[i] = (Char)uni;
@@ -189,6 +188,88 @@ Char* StringUtils::ConvertUTF82UTF16(const char* from, int32 fromLength, int32& 
             to[i++] += (Char)((uni >> 10) + 0xD800);
             to[i] += (Char)((uni & 0x3FF) + 0xDC00);
         }
+    }
+    to[toLength] = 0;
+    return to;
+}
+
+void PrintUTF16Error(const Char* from, uint32 fromLength)
+{
+    LOG(Error, "Not a UTF-16 string. Length: {0}", fromLength);
+    for (uint32 i = 0; i < fromLength; i++)
+    {
+        LOG(Error, "str[{0}] = {0}", i, (uint32)from[i]);
+    }
+}
+
+void ConvertUTF162UTF8Helper(Array<uint32>& unicode, const Char* from, int32 fromLength, int32& toLength)
+{
+    // Reference: https://stackoverflow.com/questions/21456926/how-do-i-convert-a-string-in-utf-16-to-utf-8-in-c
+    unicode.EnsureCapacity(fromLength);
+    toLength = 0;
+    int32 i = 0;
+    while (i < fromLength)
+    {
+        uint32 uni = from[i++];
+        if (uni < 0xD800U || uni > 0xDFFFU)
+        {
+        }
+        else if (uni >= 0xDC00U)
+        {
+            PrintUTF16Error(from, fromLength);
+            return;
+        }
+        else if (i + 1 == fromLength)
+        {
+            PrintUTF16Error(from, fromLength);
+            return;
+        }
+        else if (i < fromLength)
+        {
+            uni = (uni & 0x3FFU) << 10;
+            if ((from[i] < 0xDC00U) || (from[i] > 0xDFFFU))
+            {
+                PrintUTF16Error(from, fromLength);
+                return;
+            }
+            uni |= from[i++] & 0x3FFU;
+            uni += 0x10000U;
+        }
+
+        unicode.Add(uni);
+
+        toLength += uni <= 0x7FU ? 1 : uni <= 0x7FFU ? 2 : uni <= 0xFFFFU ? 3 : uni <= 0x1FFFFFU ? 4 : uni <= 0x3FFFFFFU ? 5 : uni <= 0x7FFFFFFFU ? 6 : 7;
+    }
+}
+
+void StringUtils::ConvertUTF162UTF8(const Char* from, char* to, int32 fromLength, int32& toLength)
+{
+    Array<uint32> unicode;
+    ConvertUTF162UTF8Helper(unicode, from, fromLength, toLength);
+    for (int32 i = 0, j = 0; j < unicode.Count(); j++)
+    {
+        const uint32 uni = unicode[j];
+        const uint32 count = uni <= 0x7FU ? 1 : uni <= 0x7FFU ? 2 : uni <= 0xFFFFU ? 3 : uni <= 0x1FFFFFU ? 4 : uni <= 0x3FFFFFFU ? 5 : uni <= 0x7FFFFFFFU ? 6 : 7;
+        to[i++] = (char)(count <= 1 ? (byte)uni : ((byte(0xFFU) << (8 - count)) | byte(uni >> (6 * (count - 1)))));
+        for (uint32 k = 1; k < count; k++)
+            to[i++] = char(byte(0x80U | (byte(0x3FU) & byte(uni >> (6 * (count - 1 - k))))));
+    }
+}
+
+char* StringUtils::ConvertUTF162UTF8(const Char* from, int32 fromLength, int32& toLength)
+{
+    Array<uint32> unicode;
+    ConvertUTF162UTF8Helper(unicode, from, fromLength, toLength);
+    if (toLength == 0)
+        return nullptr;
+    char* to = (char*)Allocator::Allocate(toLength + 1);
+    for (int32 i = 0, j = 0; j < unicode.Count(); j++)
+    {
+        const uint32 uni = unicode[j];
+        const uint32 count = uni <= 0x7FU ? 1 : uni <= 0x7FFU ? 2 : uni <= 0xFFFFU ? 3 : uni <= 0x1FFFFFU ? 4 : uni <= 0x3FFFFFFU ? 5 : uni <= 0x7FFFFFFFU ? 6 : 7;
+        to[i++] = (char)(count <= 1 ? (byte)uni : ((byte(0xFFU) << (8 - count)) | byte(uni >> (6 * (count - 1)))));
+        for (uint32 k = 1; k < count; k++)
+            to[i++] = char(byte(0x80U | (byte(0x3FU) & byte(uni >> (6 * (count - 1 - k))))));
     }
     to[toLength] = 0;
     return to;
