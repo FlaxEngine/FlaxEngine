@@ -11,6 +11,9 @@ public:
     uint8* Buffer;
     
     API_FIELD()
+    uint32 MessageId; // TODO: Make it read-only
+    
+    API_FIELD()
     uint32 BufferSize;
     
     API_FIELD()

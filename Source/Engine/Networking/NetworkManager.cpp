@@ -96,12 +96,18 @@ NetworkMessage NetworkManager::CreateMessage()
     const uint32 messageId = MessagePool.Pop();
     uint8* messageBuffer = GetMessageBuffer(messageId);
 
-    return NetworkMessage { messageBuffer, Config.MessageSize, 0, 0 };
+    return NetworkMessage { messageBuffer, messageId, Config.MessageSize, 0, 0 };
 }
 
 void NetworkManager::RecycleMessage(const NetworkMessage& message)
 {
     ASSERT(message.IsValid());
+#ifdef BUILD_DEBUG
+    ASSERT(MessagePool.Contains(message.MessageId) == false);
+#endif
+    
+    // Return the message id
+    MessagePool.Push(message.MessageId);
 }
 
 void NetworkManager::CreateMessageBuffers()
