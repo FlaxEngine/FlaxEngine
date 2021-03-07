@@ -173,7 +173,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             return string.Compare(Display.Group, other.Display.Group, StringComparison.InvariantCulture);
                     }
 
-                    if(Editor.Instance.Options.Options.General.ScritpMembersOrder == Options.GeneralOptions.MembersOrder.Declaration)
+                    if(Editor.Instance.Options.Options.General.ScriptMembersOrder == Options.GeneralOptions.MembersOrder.Declaration)
                     {
                         // By declaration order
                         if (Info.MetadataToken > other.Info.MetadataToken)

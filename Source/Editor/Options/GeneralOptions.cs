@@ -138,8 +138,8 @@ namespace FlaxEditor.Options
         /// Gets or sets a value indicating whether automatically save the Visual Script asset editors when starting the play mode in editor.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Scripting", "Scritp Members Order"), EditorOrder(503), Tooltip("Sets the order of script properties/fields")]
-        public MembersOrder ScritpMembersOrder { get; set; } = MembersOrder.Alphabetical;
+        [EditorDisplay("Scripting", "Script Members Order"), EditorOrder(503), Tooltip("Sets the order of script properties/fields")]
+        public MembersOrder ScriptMembersOrder { get; set; } = MembersOrder.Alphabetical;
 
         /// <summary>
         /// Gets or sets a value indicating whether automatically save the Visual Script asset editors when starting the play mode in editor.
