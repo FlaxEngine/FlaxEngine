@@ -21,6 +21,84 @@ String::String(const StringAnsiView& str)
     Set(str.Get(), str.Length());
 }
 
+void String::Set(const Char* chars, int32 length)
+{
+    if (length != _length)
+    {
+        ASSERT(length >= 0);
+        Platform::Free(_data);
+        if (length != 0)
+        {
+            _data = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
+            _data[length] = 0;
+        }
+        else
+        {
+            _data = nullptr;
+        }
+        _length = length;
+    }
+
+    Platform::MemoryCopy(_data, chars, length * sizeof(Char));
+}
+
+void String::Set(const char* chars, int32 length)
+{
+    if (length != _length)
+    {
+        Platform::Free(_data);
+        if (length != 0)
+        {
+            _data = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
+            _data[length] = 0;
+        }
+        else
+        {
+            _data = nullptr;
+        }
+        _length = length;
+    }
+
+    if (chars)
+        StringUtils::ConvertANSI2UTF16(chars, _data, length);
+}
+
+void String::Append(const Char* chars, int32 count)
+{
+    if (count == 0)
+        return;
+
+    const auto oldData = _data;
+    const auto oldLength = _length;
+
+    _length = oldLength + count;
+    _data = (Char*)Platform::Allocate((_length + 1) * sizeof(Char), 16);
+
+    Platform::MemoryCopy(_data, oldData, oldLength * sizeof(Char));
+    Platform::MemoryCopy(_data + oldLength, chars, count * sizeof(Char));
+    _data[_length] = 0;
+
+    Platform::Free(oldData);
+}
+
+void String::Append(const char* chars, int32 count)
+{
+    if (count == 0)
+        return;
+
+    const auto oldData = _data;
+    const auto oldLength = _length;
+
+    _length = oldLength + count;
+    _data = (Char*)Platform::Allocate((_length + 1) * sizeof(Char), 16);
+
+    Platform::MemoryCopy(_data, oldData, oldLength * sizeof(Char));
+    StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count * sizeof(Char));
+    _data[_length] = 0;
+
+    Platform::Free(oldData);
+}
+
 String& String::operator+=(const StringView& str)
 {
     Append(str.Get(), str.Length());
@@ -147,6 +225,22 @@ bool String::EndsWith(const StringView& suffix, StringSearchCase searchCase) con
     if (searchCase == StringSearchCase::IgnoreCase)
         return !StringUtils::CompareIgnoreCase(&(*this)[Length() - suffix.Length()], *suffix);
     return !StringUtils::Compare(&(*this)[Length() - suffix.Length()], *suffix);
+}
+
+String String::ToLower() const
+{
+    String result(*this);
+    for (int32 i = 0; i < result.Length(); i++)
+        result[i] = StringUtils::ToLower(result[i]);
+    return result;
+}
+
+String String::ToUpper() const
+{
+    String result(*this);
+    for (int32 i = 0; i < result.Length(); i++)
+        result[i] = StringUtils::ToUpper(result[i]);
+    return result;
 }
 
 void String::TrimToNullTerminator()
