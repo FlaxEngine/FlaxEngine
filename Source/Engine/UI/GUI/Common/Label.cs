@@ -192,7 +192,7 @@ namespace FlaxEngine.GUI
             var rect = new Rectangle(new Vector2(Margin.Left, Margin.Top), Size - Margin.Size);
 
             if (ClipText)
-                Render2D.PushClip(ref rect);
+                Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
 
             var color = IsMouseOver ? TextColorHighlighted : TextColor;
 
