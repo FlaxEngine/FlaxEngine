@@ -21,6 +21,11 @@ public:
     
     API_FIELD()
     uint32 Position;
+
+public:
+    NetworkMessage(uint8* buffer, uint32 messageId, uint32 bufferSize, uint32 length, uint32 position) :
+        Buffer(buffer), MessageId(messageId), BufferSize(bufferSize), Length(length), Position(position)
+    { }
     
 public:
     API_FUNCTION() void WriteBytes(uint8* bytes, int numBytes);

@@ -96,7 +96,7 @@ NetworkMessage NetworkManager::CreateMessage()
     const uint32 messageId = MessagePool.Pop();
     uint8* messageBuffer = GetMessageBuffer(messageId);
 
-    return NetworkMessage { messageBuffer, messageId, Config.MessageSize, 0, 0 };
+    return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
 }
 
 void NetworkManager::RecycleMessage(const NetworkMessage& message)
