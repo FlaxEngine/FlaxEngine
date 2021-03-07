@@ -12,4 +12,6 @@ public:
     uint16 Port = 7777;
     uint16 MessageSize = 1500; // MTU
     uint16 MessagePoolSize = 2048; // (RX and TX)
+
+    // TODO: End point for server/client
 };

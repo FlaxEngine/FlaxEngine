@@ -23,6 +23,9 @@ public:
     API_FUNCTION() static void AbortSendMessage(const NetworkMessage& message);
     API_FUNCTION() static bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets);
 
+    // TODO: Stats API
+    // TODO: Simulation API
+    
 private:
 
     static NetworkMessage CreateMessage();

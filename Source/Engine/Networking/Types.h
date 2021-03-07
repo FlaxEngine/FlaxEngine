@@ -3,6 +3,7 @@
 #pragma once
 
 enum class NetworkChannelType;
+enum class NetworkEventType;
 
 class INetworkDriver;
 
