@@ -7,6 +7,7 @@ Cache/
 Binaries/
 Logs/
 Source/*.csproj
+/Package_*/
 !Source/Engine/Debug
 /Source/Platforms/Editor/Linux/Mono/etc/mono/registry
 
@@ -65,9 +66,6 @@ ipch/
 *.vsp
 *.vspx
 
-# Guidance Automation Toolkit
-*.gpState
-
 # ReSharper is a .NET coding add-in
 _ReSharper*/
 *.[Rr]e[Ss]harper
@@ -81,6 +79,34 @@ _TeamCity*
 
 # DotCover is a Code Coverage Tool
 *.dotCover
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+
+# MightyMoose
+*.mm.*
+AutoTest.Net/
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.[Pp]ublish.xml
+*.azurePubxml
 
 # Enable "build/" folder in the NuGet Packages folder since
 # NuGet packages use it for MSBuild targets.
