@@ -64,16 +64,25 @@ const char* StringUtils::FindIgnoreCase(const char* str, const char* toFind)
     return nullptr;
 }
 
-void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, uint32 fromLength, uint32* toLength)
+void PrintUTF8Error(const char* from, uint32 fromLength)
 {
-    Array<unsigned long> unicode;
-    uint32 i = 0;
-    *toLength = 0;
+    LOG(Error, "Not a UTF-8 string. Length: {0}", fromLength);
+    for (uint32 i = 0; i < fromLength; i++)
+    {
+        LOG(Error, "str[{0}] = {0}", i, from[i]);
+    }
+}
+
+void ConvertUTF82UTF16Helper(Array<uint32>& unicode, const char* from, int32 fromLength, int32& toLength)
+{
+    // Reference: https://stackoverflow.com/questions/7153935/how-to-convert-utf-8-stdstring-to-utf-16-stdwstring
+    unicode.EnsureCapacity(fromLength);
+    int32 i = 0, todo;
+    uint32 uni;
+    toLength = 0;
     while (i < fromLength)
     {
-        unsigned long uni;
-        uint32 todo;
-        unsigned char ch = from[i++];
+        byte ch = from[i++];
 
         if (ch <= 0x7F)
         {
@@ -82,7 +91,7 @@ void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, uint32 fromLengt
         }
         else if (ch <= 0xBF)
         {
-            LOG(Error, "Not a UTF-8 string.");
+            PrintUTF8Error(from, fromLength);
             return;
         }
         else if (ch <= 0xDF)
@@ -102,21 +111,21 @@ void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, uint32 fromLengt
         }
         else
         {
-            LOG(Error, "Not a UTF-8 string.");
+            PrintUTF8Error(from, fromLength);
             return;
         }
 
-        for (uint32 j = 0; j < todo; j++)
+        for (int32 j = 0; j < todo; j++)
         {
             if (i == fromLength)
             {
-                LOG(Error, "Not a UTF-8 string.");
+                PrintUTF8Error(from, fromLength);
                 return;
             }
             ch = from[i++];
             if (ch < 0x80 || ch > 0xBF)
             {
-                LOG(Error, "Not a UTF-8 string.");
+                PrintUTF8Error(from, fromLength);
                 return;
             }
 
@@ -126,28 +135,27 @@ void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, uint32 fromLengt
 
         if ((uni >= 0xD800 && uni <= 0xDFFF) || uni > 0x10FFFF)
         {
-            LOG(Error, "Not a UTF-8 string.");
+            PrintUTF8Error(from, fromLength);
             return;
         }
 
         unicode.Add(uni);
-    }
 
-    // Count chars
-    uint32 length = (uint32)unicode.Count();
-    for (i = 0; i < length; i++)
-    {
-        if (unicode[i] > 0xFFFF)
+        toLength++;
+        if (uni > 0xFFFF)
         {
-            length++;
+            toLength++;
         }
     }
+}
 
-    // Copy chars
-    *toLength = length;
-    for (i = 0; i < length; i++)
+void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, int32 fromLength, int32& toLength)
+{
+    Array<uint32> unicode;
+    ConvertUTF82UTF16Helper(unicode, from, fromLength, toLength);
+    for (int32 i = 0; i < toLength; i++)
     {
-        unsigned long uni = unicode[i];
+        uint32 uni = unicode[i];
         if (uni <= 0xFFFF)
         {
             to[i] = (Char)uni;
@@ -159,6 +167,31 @@ void StringUtils::ConvertUTF82UTF16(const char* from, Char* to, uint32 fromLengt
             to[i] += (Char)((uni & 0x3FF) + 0xDC00);
         }
     }
+}
+
+Char* StringUtils::ConvertUTF82UTF16(const char* from, int32 fromLength, int32& toLength)
+{
+    Array<uint32> unicode;
+    ConvertUTF82UTF16Helper(unicode, from, fromLength, toLength);
+    if (toLength == 0)
+        return nullptr;
+    Char* to = (Char*)Allocator::Allocate((toLength + 1) * sizeof(Char));
+    for (int32 i = 0; i < toLength; i++)
+    {
+        uint32 uni = unicode[i];
+        if (uni <= 0xFFFF)
+        {
+            to[i] = (Char)uni;
+        }
+        else
+        {
+            uni -= 0x10000;
+            to[i++] += (Char)((uni >> 10) + 0xD800);
+            to[i] += (Char)((uni & 0x3FF) + 0xDC00);
+        }
+    }
+    to[toLength] = 0;
+    return to;
 }
 
 void RemoveLongPathPrefix(const String& path, String& result)
