@@ -20,16 +20,12 @@ bool CreateJson::Create(const StringView& path, rapidjson_flax::StringBuffer& da
 
 bool CreateJson::Create(const StringView& path, rapidjson_flax::StringBuffer& data, const char* dataTypename)
 {
-    DataContainer<char> data1;
-    DataContainer<char> data2;
-
-    data1.Link((char*)data.GetString(), (int32)data.GetSize());
-    data2.Link((char*)dataTypename, StringUtils::Length(dataTypename));
-
+    StringAnsiView data1((char*)data.GetString(), (int32)data.GetSize());
+    StringAnsiView data2((char*)dataTypename, StringUtils::Length(dataTypename));
     return Create(path, data1, data2);
 }
 
-bool CreateJson::Create(const StringView& path, DataContainer<char>& data, DataContainer<char>& dataTypename)
+bool CreateJson::Create(const StringView& path, StringAnsiView& data, StringAnsiView& dataTypename)
 {
     Guid id = Guid::New();
 

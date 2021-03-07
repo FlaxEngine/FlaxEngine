@@ -3,10 +3,10 @@
 #include "JsonStorageProxy.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Level/Types.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/JsonWriters.h"
+#include "Engine/Level/Types.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include <ThirdParty/rapidjson/document.h>
 
@@ -17,10 +17,6 @@ bool JsonStorageProxy::IsValidExtension(const StringView& extension)
 
 bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, String& resultDataTypeName)
 {
-    // TODO:
-
-#if USE_EDITOR || true
-
     // TODO: we could just open file and start reading until we find 'ID:..' without parsing whole file - could be much more faster
 
     // Load file
@@ -51,12 +47,6 @@ bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, Stri
     }
 
     return false;
-
-#else
-
-	todo_loading_json_resources_in_builded_version
-
-#endif
 }
 
 #if USE_EDITOR

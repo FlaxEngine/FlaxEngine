@@ -9,7 +9,7 @@
 #include "Engine/Serialization/Json.h"
 
 /// <summary>
-/// Json resources factory.
+/// Json resources factory. Ensure to keep data encoded in UTF-8.
 /// </summary>
 class CreateJson
 {
@@ -17,7 +17,7 @@ public:
 
     static bool Create(const StringView& path, rapidjson_flax::StringBuffer& data, const String& dataTypename);
     static bool Create(const StringView& path, rapidjson_flax::StringBuffer& data, const char* dataTypename);
-    static bool Create(const StringView& path, DataContainer<char>& data, DataContainer<char>& dataTypename);
+    static bool Create(const StringView& path, StringAnsiView& data, StringAnsiView& dataTypename);
 };
 
 #endif

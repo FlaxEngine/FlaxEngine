@@ -50,19 +50,8 @@ public:
     }
 
     StringAsANSI(const Char* text)
+        : StringAsANSI(text, StringUtils::Length(text))
     {
-        const int32 length = StringUtils::Length(text);
-        if (length + 1 < InlinedSize)
-        {
-            StringUtils::ConvertUTF162ANSI(text, this->_inlined, length);
-            this->_inlined[length] = 0;
-        }
-        else
-        {
-            this->_dynamic = (CharType*)Allocator::Allocate((length + 1) * sizeof(CharType));
-            StringUtils::ConvertUTF162ANSI(text, this->_dynamic, length);
-            this->_dynamic[length] = 0;
-        }
     }
 
     StringAsANSI(const Char* text, const int32 length)
@@ -82,6 +71,43 @@ public:
 };
 
 template<int InlinedSize = 128>
+class StringAsUTF8 : public StringAsBase<char>
+{
+public:
+
+    typedef char CharType;
+    typedef StringAsBase<CharType, InlinedSize> Base;
+
+public:
+
+    StringAsUTF8(const char* text)
+    {
+        this->_static = text;
+    }
+
+    StringAsUTF8(const Char* text)
+        : StringAsUTF8(text, StringUtils::Length(text))
+    {
+    }
+
+    StringAsUTF8(const Char* text, const int32 length)
+    {
+        if (length + 1 < InlinedSize)
+        {
+            int32 lengthUtf8;
+            StringUtils::ConvertUTF162UTF8(text, this->_inlined, length, lengthUtf8);
+            this->_inlined[lengthUtf8] = 0;
+        }
+        else
+        {
+            int32 lengthUtf8;
+            this->_dynamic = StringUtils::ConvertUTF162UTF8(text, length, lengthUtf8);
+            this->_dynamic[lengthUtf8] = 0;
+        }
+    }
+};
+
+template<int InlinedSize = 128>
 class StringAsUTF16 : public StringAsBase<Char>
 {
 public:
@@ -92,19 +118,8 @@ public:
 public:
 
     StringAsUTF16(const char* text)
+        : StringAsUTF16(text, StringUtils::Length(text))
     {
-        const int32 length = StringUtils::Length(text);
-        if (length + 1 < InlinedSize)
-        {
-            StringUtils::ConvertANSI2UTF16(text, this->_inlined, length);
-            this->_inlined[length] = 0;
-        }
-        else
-        {
-            this->_dynamic = (CharType*)Allocator::Allocate((length + 1) * sizeof(CharType));
-            StringUtils::ConvertANSI2UTF16(text, this->_dynamic, length);
-            this->_dynamic[length] = 0;
-        }
     }
 
     StringAsUTF16(const char* text, const int32 length)

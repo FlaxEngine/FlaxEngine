@@ -442,13 +442,13 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
     if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address ? address->Get() : String("ANY"), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address ? address->Get() : TEXT("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address ? address->Get() : String("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}", address ? address->Get() : TEXT("ANY"));
         return true;
     }
 

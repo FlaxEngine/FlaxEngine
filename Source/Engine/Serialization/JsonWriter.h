@@ -73,21 +73,20 @@ public:
 
     void String(const Char* str)
     {
-        const int32 length = StringUtils::Length(str);
-        const StringAsANSI<256> buf(str, length);
-        String(buf.Get(), length);
+        const StringAsUTF8<256> buf(str);
+        String(buf.Get());
     }
 
     void String(const Char* str, const int32 length)
     {
-        const StringAsANSI<256> buf(str, length);
-        String(buf.Get(), length);
+        const StringAsUTF8<256> buf(str, length);
+        String(buf.Get());
     }
 
     void String(const ::String& value)
     {
-        const StringAsANSI<256> buf(*value, value.Length());
-        String(buf.Get(), value.Length());
+        const StringAsUTF8<256> buf(*value, value.Length());
+        String(buf.Get());
     }
 
     FORCE_INLINE void RawValue(const StringAnsi& str)

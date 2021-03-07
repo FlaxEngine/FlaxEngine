@@ -81,9 +81,8 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
     else
     {
         // Write result data
-        auto length = mono_string_length(invokeResultStr);
         auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-        stream.RawValue(invokeResultChars, length);
+        stream.RawValue(invokeResultChars);
         mono_free(invokeResultChars);
     }
 }

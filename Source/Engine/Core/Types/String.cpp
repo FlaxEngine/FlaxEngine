@@ -63,6 +63,12 @@ void String::Set(const char* chars, int32 length)
         StringUtils::ConvertANSI2UTF16(chars, _data, length);
 }
 
+void String::SetUTF8(const char* chars, int32 length)
+{
+    Platform::Free(_data);
+    _data = StringUtils::ConvertUTF82UTF16(chars, length, _length);
+}
+
 void String::Append(const Char* chars, int32 count)
 {
     if (count == 0)
@@ -338,6 +344,84 @@ StringAnsi::StringAnsi(const StringAnsiView& str)
     Set(str.Get(), str.Length());
 }
 
+void StringAnsi::Set(const char* chars, int32 length)
+{
+    if (length != _length)
+    {
+        ASSERT(length >= 0);
+        Platform::Free(_data);
+        if (length != 0)
+        {
+            _data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
+            _data[length] = 0;
+        }
+        else
+        {
+            _data = nullptr;
+        }
+        _length = length;
+    }
+
+    Platform::MemoryCopy(_data, chars, length * sizeof(char));
+}
+
+void StringAnsi::Set(const Char* chars, int32 length)
+{
+    if (length != _length)
+    {
+        Platform::Free(_data);
+        if (length != 0)
+        {
+            _data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
+            _data[length] = 0;
+        }
+        else
+        {
+            _data = nullptr;
+        }
+        _length = length;
+    }
+
+    if (_data)
+        StringUtils::ConvertUTF162ANSI(chars, _data, length);
+}
+
+void StringAnsi::Append(const char* chars, int32 count)
+{
+    if (count == 0)
+        return;
+
+    const auto oldData = _data;
+    const auto oldLength = _length;
+
+    _length = oldLength + count;
+    _data = (char*)Platform::Allocate((_length + 1) * sizeof(char), 16);
+
+    Platform::MemoryCopy(_data, oldData, oldLength * sizeof(char));
+    Platform::MemoryCopy(_data + oldLength, chars, count * sizeof(char));
+    _data[_length] = 0;
+
+    Platform::Free(oldData);
+}
+
+void StringAnsi::Append(const Char* chars, int32 count)
+{
+    if (count == 0)
+        return;
+
+    const auto oldData = _data;
+    const auto oldLength = _length;
+
+    _length = oldLength + count;
+    _data = (char*)Platform::Allocate((_length + 1) * sizeof(char), 16);
+
+    Platform::MemoryCopy(_data, oldData, oldLength * sizeof(char));
+    StringUtils::ConvertUTF162ANSI(chars, _data + oldLength, count * sizeof(char));
+    _data[_length] = 0;
+
+    Platform::Free(oldData);
+}
+
 StringAnsi& StringAnsi::operator+=(const StringAnsiView& str)
 {
     Append(str.Get(), str.Length());
@@ -366,6 +450,22 @@ bool StringAnsi::EndsWith(const StringAnsiView& suffix, StringSearchCase searchC
     if (searchCase == StringSearchCase::IgnoreCase)
         return !StringUtils::CompareIgnoreCase(&(*this)[Length() - suffix.Length()], *suffix);
     return !StringUtils::Compare(&(*this)[Length() - suffix.Length()], *suffix);
+}
+
+StringAnsi StringAnsi::ToLower() const
+{
+    StringAnsi result(*this);
+    for (int32 i = 0; i < result.Length(); i++)
+        result[i] = StringUtils::ToLower(result[i]);
+    return result;
+}
+
+StringAnsi StringAnsi::ToUpper() const
+{
+    StringAnsi result(*this);
+    for (int32 i = 0; i < result.Length(); i++)
+        result[i] = StringUtils::ToUpper(result[i]);
+    return result;
 }
 
 void StringAnsi::Insert(int32 startIndex, const StringAnsi& other)

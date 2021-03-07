@@ -358,9 +358,9 @@ public:
     FORCE_INLINE static void GetString(String& result, const Value& node, const char* name)
     {
         const auto member = node.FindMember(name);
-        if (member != node.MemberEnd() && member->value.IsString())
+        if (member != node.MemberEnd())
         {
-            result.Set(member->value.GetString(), member->value.GetStringLength());
+            result = member->value.GetText();
         }
     }
 

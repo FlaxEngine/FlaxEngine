@@ -99,14 +99,13 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     {
         stream.JKEY("Control");
         const auto controlTypeChars = mono_string_to_utf8(controlType);
-        stream.String(controlTypeChars, controlTypeLength);
+        stream.String(controlTypeChars);
         mono_free(controlTypeChars);
     }
 
     stream.JKEY("Data");
-    const auto invokeResultLength = mono_string_length(invokeResultStr);
     const auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars, invokeResultLength);
+    stream.RawValue(invokeResultChars);
     mono_free(invokeResultChars);
 }
 

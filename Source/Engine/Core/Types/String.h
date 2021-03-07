@@ -629,6 +629,13 @@ public:
     void Set(const char* chars, int32 length);
 
     /// <summary>
+    /// Sets an array of characters to the string.
+    /// </summary>
+    /// <param name="chars">The pointer to the start of an array of characters to set (UTF-8). This array need not be null-terminated, and null characters are not treated specially.</param>
+    /// <param name="length">The number of characters to assign.</param>
+    void SetUTF8(const char* chars, int32 length);
+
+    /// <summary>
     /// Appends an array of characters to the string.
     /// </summary>
     /// <param name="chars">The array of characters to append. It does not need be null-terminated, and null characters are not treated specially.</param>
@@ -1306,100 +1313,30 @@ public:
     /// <summary>
     /// Sets an array of characters to the string.
     /// </summary>
-    /// <param name="chars">The pointer to the start of an array of characters to set. This array need not be null-terminated, and null characters are not treated specially.</param>
+    /// <param name="chars">The pointer to the start of an array of characters to set (ANSI). This array need not be null-terminated, and null characters are not treated specially.</param>
     /// <param name="length">The number of characters to assign.</param>
-    void Set(const char* chars, int32 length)
-    {
-        if (length != _length)
-        {
-            ASSERT(length >= 0);
-            Platform::Free(_data);
-            if (length != 0)
-            {
-                _data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
-                _data[length] = 0;
-            }
-            else
-            {
-                _data = nullptr;
-            }
-            _length = length;
-        }
-
-        Platform::MemoryCopy(_data, chars, length * sizeof(char));
-    }
+    void Set(const char* chars, int32 length);
 
     /// <summary>
     /// Sets an array of characters to the string.
     /// </summary>
-    /// <param name="chars">The pointer to the start of an array of characters to set. This array need not be null-terminated, and null characters are not treated specially.</param>
+    /// <param name="chars">The pointer to the start of an array of characters to set (UTF-16). This array need not be null-terminated, and null characters are not treated specially.</param>
     /// <param name="length">The number of characters to assign.</param>
-    void Set(const Char* chars, int32 length)
-    {
-        if (length != _length)
-        {
-            Platform::Free(_data);
-            if (length != 0)
-            {
-                _data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
-                _data[length] = 0;
-            }
-            else
-            {
-                _data = nullptr;
-            }
-            _length = length;
-        }
-
-        if (_data)
-            StringUtils::ConvertUTF162ANSI(chars, _data, length);
-    }
+    void Set(const Char* chars, int32 length);
 
     /// <summary>
     /// Appends an array of characters to the string.
     /// </summary>
     /// <param name="chars">The array of characters to append. It does not need be null-terminated, and null characters are not treated specially.</param>
     /// <param name="count">The number of characters to append.</param>
-    void Append(const char* chars, int32 count)
-    {
-        if (count == 0)
-            return;
-
-        const auto oldData = _data;
-        const auto oldLength = _length;
-
-        _length = oldLength + count;
-        _data = (char*)Platform::Allocate((_length + 1) * sizeof(char), 16);
-
-        Platform::MemoryCopy(_data, oldData, oldLength * sizeof(char));
-        Platform::MemoryCopy(_data + oldLength, chars, count * sizeof(char));
-        _data[_length] = 0;
-
-        Platform::Free(oldData);
-    }
+    void Append(const char* chars, int32 count);
 
     /// <summary>
     /// Appends an array of characters to the string.
     /// </summary>
     /// <param name="chars">The array of characters to append. It does not need be null-terminated, and null characters are not treated specially.</param>
     /// <param name="count">The number of characters to append.</param>
-    void Append(const Char* chars, int32 count)
-    {
-        if (count == 0)
-            return;
-
-        const auto oldData = _data;
-        const auto oldLength = _length;
-
-        _length = oldLength + count;
-        _data = (char*)Platform::Allocate((_length + 1) * sizeof(char), 16);
-
-        Platform::MemoryCopy(_data, oldData, oldLength * sizeof(char));
-        StringUtils::ConvertUTF162ANSI(chars, _data + oldLength, count * sizeof(char));
-        _data[_length] = 0;
-
-        Platform::Free(oldData);
-    }
+    void Append(const Char* chars, int32 count);
 
     /// <summary>
     /// Appends the specified text to this string.
@@ -1663,25 +1600,13 @@ public:
     /// Converts all uppercase characters to lowercase.
     /// </summary>
     /// <returns>The lowercase string.</returns>
-    StringAnsi ToLower() const
-    {
-        StringAnsi result(*this);
-        for (int32 i = 0; i < result.Length(); i++)
-            result[i] = StringUtils::ToLower(result[i]);
-        return result;
-    }
+    StringAnsi ToLower() const;
 
     /// <summary>
     /// Converts all lowercase characters to uppercase.
     /// </summary>
     /// <returns>The uppercase string.</returns>
-    StringAnsi ToUpper() const
-    {
-        StringAnsi result(*this);
-        for (int32 i = 0; i < result.Length(); i++)
-            result[i] = StringUtils::ToUpper(result[i]);
-        return result;
-    }
+    StringAnsi ToUpper() const;
 
     /// <summary>
     /// Gets the left most given number of characters.

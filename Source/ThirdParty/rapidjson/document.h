@@ -1685,9 +1685,9 @@ public:
         if (IsString())
         {
             if (data_.f.flags & kInlineStrFlag)
-                result.Set(data_.ss.str, data_.ss.GetLength());
+                result.SetUTF8(data_.ss.str, data_.ss.GetLength());
             else
-                result.Set(GetStringPointer(), data_.s.length);
+                result.SetUTF8(GetStringPointer(), data_.s.length);
         }
         return result;
     }

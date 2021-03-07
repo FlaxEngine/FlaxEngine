@@ -113,10 +113,9 @@ bool FileBase::ReadAllText(const StringView& path, String& data)
         }
 
         // Convert to UTF-16
-        auto utf16Data = (Char*)Allocator::Allocate(count * sizeof(Char));
-        uint32 utf16Length;
-        StringUtils::ConvertUTF82UTF16(reinterpret_cast<char*>(bytes.Get()), utf16Data, count, &utf16Length);
-        data = utf16Data;
+        int32 utf16Length;
+        Char* utf16Data = StringUtils::ConvertUTF82UTF16(reinterpret_cast<char*>(bytes.Get()), count, utf16Length);
+        data.Set(utf16Data, utf16Length);
         Allocator::Free(utf16Data);
     }
     break;

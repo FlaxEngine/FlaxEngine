@@ -41,9 +41,8 @@ void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, Mon
     }
 
     // Write result data
-    const auto length = mono_string_length(invokeResultStr);
     const auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars, length);
+    stream.RawValue(invokeResultChars);
     mono_free(invokeResultChars);
 }
 
@@ -80,9 +79,8 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
     }
 
     // Write result data
-    auto length = mono_string_length(invokeResultStr);
     auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars, length);
+    stream.RawValue(invokeResultChars);
     mono_free(invokeResultChars);
 }
 

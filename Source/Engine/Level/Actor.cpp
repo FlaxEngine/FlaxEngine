@@ -1710,7 +1710,10 @@ String Actor::ToJson()
     rapidjson_flax::StringBuffer buffer;
     CompactJsonWriter writer(buffer);
     writer.SceneObject(this);
-    return String(buffer.GetString());
+    String result;
+    const char* c = buffer.GetString();
+    result.SetUTF8(c, (int32)buffer.GetSize());
+    return result;
 }
 
 void Actor::FromJson(const StringAnsiView& json)

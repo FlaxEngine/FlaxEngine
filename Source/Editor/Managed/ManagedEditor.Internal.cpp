@@ -578,15 +578,11 @@ public:
         MUtils::ToString(outputPathObj, outputPath);
         FileSystem::NormalizePath(outputPath);
 
-        DataContainer<char> data;
-        const auto dataObjLength = mono_string_length(dataObj);
         const auto dataObjPtr = mono_string_to_utf8(dataObj);
-        data.Link(dataObjPtr, dataObjLength);
+        StringAnsiView data(dataObjPtr);
 
-        DataContainer<char> dataTypeName;
-        const auto dataTypeNameObjLength = mono_string_length(dataTypeNameObj);
         const auto dataTypeNameObjPtr = mono_string_to_utf8(dataTypeNameObj);
-        dataTypeName.Link(dataTypeNameObjPtr, dataTypeNameObjLength);
+        StringAnsiView dataTypeName(dataTypeNameObjPtr);
 
         const bool result = CreateJson::Create(outputPath, data, dataTypeName);
 
