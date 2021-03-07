@@ -8,6 +8,16 @@ public:
     virtual void Initialize(const NetworkConfig& config) = 0;
     virtual void Dispose() = 0;
     
-    virtual void Listen() = 0;
-    virtual void SendMessage(const NetworkMessage* message, void* targets) = 0; // TODO
+    virtual bool Listen() = 0;
+    virtual void Connect() = 0;
+    virtual void Disconnect() = 0;
+    virtual void Disconnect(const NetworkConnection& connection) = 0;
+
+    virtual bool PopEvent(NetworkEvent* event);
+    
+    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) = 0;
+
+    // TODO: Stats API
+    // TODO: Simulation API
+    
 };

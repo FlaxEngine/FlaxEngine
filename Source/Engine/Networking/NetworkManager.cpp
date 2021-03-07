@@ -54,36 +54,54 @@ void NetworkManager::Shutdown()
 
 bool NetworkManager::Listen()
 {
-    // TODO
-    return false;
+    ASSERT(NetworkDriver != nullptr);
+    return NetworkDriver->Listen();
 }
 
 void NetworkManager::Connect()
 {
-    // TODO
+    ASSERT(NetworkDriver != nullptr);
+    // TODO: Assert address/endpoint
+    NetworkDriver->Connect();
 }
 
 void NetworkManager::Disconnect()
 {
-    // TODO
+    ASSERT(NetworkDriver != nullptr);
+    NetworkDriver->Disconnect();
+}
+
+void NetworkManager::Disconnect(const NetworkConnection& connection)
+{
+    ASSERT(NetworkDriver != nullptr);
+    NetworkDriver->Disconnect(connection);
+}
+
+bool NetworkManager::PopEvent(NetworkEvent* event)
+{
+    ASSERT(NetworkDriver != nullptr);
+    return NetworkDriver->PopEvent(event);
 }
 
 NetworkMessage NetworkManager::BeginSendMessage()
 {
+    ASSERT(NetworkDriver != nullptr);
     return CreateMessage();
 }
 
 void NetworkManager::AbortSendMessage(const NetworkMessage& message)
 {
+    ASSERT(NetworkDriver != nullptr);
     ASSERT(message.IsValid());
     RecycleMessage(message);
 }
 
-bool NetworkManager::EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection> targets)
+bool NetworkManager::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection> targets)
 {
+    ASSERT(NetworkDriver != nullptr);
     ASSERT(message.IsValid());
     
-    // TODO: Send message
+    NetworkDriver->SendMessage(channelType, message, targets);
 
     RecycleMessage(message);
     return false;

@@ -16,6 +16,7 @@ public:
     API_FUNCTION() static bool Listen();
     API_FUNCTION() static void Connect();
     API_FUNCTION() static void Disconnect();
+    API_FUNCTION() static void Disconnect(const NetworkConnection& connection);
 
     API_FUNCTION() static bool PopEvent(NetworkEvent* event);
 
