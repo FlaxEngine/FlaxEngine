@@ -621,6 +621,7 @@ namespace FlaxEditor.Surface.Archetypes
                     dataA.X = location.X;
 
                     _node.Values[4 + index * 2] = dataA;
+                    _node.Surface.MarkAsEdited();
 
                     _node.UpdateUI();
                 }
@@ -751,6 +752,7 @@ namespace FlaxEditor.Surface.Archetypes
                     dataA.Y = location.Y;
 
                     _node.Values[4 + index * 2] = dataA;
+                    _node.Surface.MarkAsEdited();
 
                     _node.UpdateUI();
                 }
