@@ -326,7 +326,7 @@ bool MeshData::GenerateNormals(float smoothingAngle)
 {
     if (Positions.IsEmpty() || Indices.IsEmpty())
     {
-        LOG(Warning, "Missing vertex and index data");
+        LOG(Warning, "Missing vertex or index data to generate normals.");
         return true;
     }
 
@@ -446,9 +446,14 @@ bool MeshData::GenerateNormals(float smoothingAngle)
 
 bool MeshData::GenerateTangents(float smoothingAngle)
 {
-    if (Positions.IsEmpty() || Indices.IsEmpty() || Normals.IsEmpty() || UVs.IsEmpty())
+    if (Positions.IsEmpty() || Indices.IsEmpty())
     {
-        LOG(Warning, "Missing vertex and index data");
+        LOG(Warning, "Missing vertex or index data to generate tangents.");
+        return true;
+    }
+    if (Normals.IsEmpty() || UVs.IsEmpty())
+    {
+        LOG(Warning, "Missing normals or texcoors data to generate tangents.");
         return true;
     }
 
