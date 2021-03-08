@@ -281,6 +281,8 @@ protected:
     String _title;
     CursorType _cursor;
     Vector2 _clientSize;
+    int _dpi;
+    float _dpiScale;
 
     Vector2 _trackingMouseOffset;
     bool _isUsingMouseOffset;
@@ -542,6 +544,21 @@ public:
     /// <returns>The screen space position.</returns>
     API_FUNCTION() virtual Vector2 ClientToScreen(const Vector2& clientPos) const = 0;
 
+    /// <summary>
+    /// Gets the window DPI setting.
+    /// </summary>
+    API_PROPERTY() int GetDpi() const
+    {
+        return _dpi;
+    }
+
+    /// <summary>
+    /// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
+    /// </summary>
+    API_PROPERTY() float GetDpiScale() const
+    {
+        return Platform::CustomDpiScale * _dpiScale;
+    }
 public:
 
     /// <summary>
