@@ -78,6 +78,10 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
             LOG(Error, "Failed to load {0}.", path);
             Locker.Lock();
             StorageMap.Remove(path);
+            if (result->IsPackage())
+                Packages.Remove((FlaxPackage*)result);
+            else
+                Files.Remove((FlaxFile*)result);
             Locker.Unlock();
             Delete(result);
             return nullptr;
