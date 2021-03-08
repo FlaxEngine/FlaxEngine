@@ -6,7 +6,6 @@
 #include "Engine/Core/Types/String.h"
 API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
 
-#define SOCKGROUP_MAXCOUNT 64
 #define SOCKGROUP_ITEMSIZE 16
 
 enum class FLAXENGINE_API NetworkProtocol
@@ -36,11 +35,15 @@ struct FLAXENGINE_API NetworkSocket
     byte Data[8] = {};
 };
 
+struct FLAXENGINE_API NetworkAddress
+{
+    String Address;
+    String Port;
+};
+
 struct FLAXENGINE_API NetworkEndPoint
 {
     NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
-    String Address;
-    String Port;
     byte Data[28] = {};
 };
 
@@ -77,7 +80,9 @@ enum class FLAXENGINE_API NetworkSocketOption
     /// <summary>Enables IPv6/Ipv4 dual-stacking, UDP/TCP.</summary>
     IPv6Only,
     /// <summary>Retrieve the current path MTU, the socket must be connected UDP/TCP.</summary>
-    Mtu
+    Mtu,
+    // <summary>Socket type, DGRAM, STREAM ..</summary>
+    Type
 };
 
 struct FLAXENGINE_API NetworkSocketState
@@ -92,7 +97,8 @@ struct FLAXENGINE_API NetworkSocketState
 struct FLAXENGINE_API NetworkSocketGroup
 {
     uint32 Count = 0;
-    byte Data[SOCKGROUP_MAXCOUNT * SOCKGROUP_ITEMSIZE] = {};
+    uint32 Capacity = 0;
+    byte *Data;
 };
 
 class FLAXENGINE_API NetworkBase
@@ -198,6 +204,21 @@ public:
     static bool IsWriteable(NetworkSocket& socket);
 
     /// <summary>
+    /// Creates a socket group. It allocate memory based on the desired capacity.
+    /// </summary>
+    /// <param name="capacity">The group capacity (fixed).</param>
+    /// <param name="group">The group.</param>
+    /// <returns>Returns true on error, otherwise false.</returns>
+    static bool CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group);
+
+    /// <summary>
+    /// Destroy the socket group, and free the allocated memory. 
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <returns>Returns true if the group is already destroyed, otherwise false.</returns>
+    static bool DestroySocketGroup(NetworkSocketGroup& group);
+    
+    /// <summary>
     /// Updates sockets states.
     /// </summary>
     /// <param name="group">The sockets group.</param>
@@ -221,6 +242,31 @@ public:
     /// <returns>Returns the socket index in group or -1 on error.</returns>
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
 
+    /// <summary>
+    /// Gets a socket by index.
+    /// Some data like socket IPVersion might be undefined.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="index">The index.</param>
+    /// <param name="socket">The returned socket.</param>
+    /// <returns>Returns true on error, otherwise false.</returns>
+    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
+
+    /// <summary>
+    /// Removes the socket at the specified index.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="index">The index.</param>
+    static void RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index);
+
+    /// <summary>
+    /// Removes the socket if present.
+    /// </summary>
+    /// <param name="group">The group.</param>
+    /// <param name="socket">The socket.</param>
+    /// <returns>Returns true if the socket is not found, otherwise false.</returns>
+    static bool RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket);
+    
     /// <summary>
     /// Clears the socket group.
     /// </summary>
@@ -250,13 +296,12 @@ public:
     /// <summary>
     /// Creates an end point.
     /// </summary>
-    /// <param name="address">The address (hostname, IPv4 or IPv6).</param>
-    /// <param name="port">The port.</param>
+    /// <param name="address">The address.</param>
     /// <param name="ipv">The ip version.</param>
     /// <param name="endPoint">The created end point.</param>
     /// <param name="bindable">True if the end point will be connected or binded.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = false);
+    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = true);
 
     /// <summary>
     /// Remaps an ipv4 end point to an ipv6 one.

@@ -62,6 +62,16 @@ bool NetworkBase::IsWriteable(NetworkSocket& socket)
     return true;
 }
 
+bool NetworkBase::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
+{
+    return false;
+}
+
+bool NetworkBase::DestroySocketGroup(NetworkSocketGroup& group)
+{
+    return true;
+}
+
 int32 NetworkBase::Poll(NetworkSocketGroup& group)
 {
     return -1;
@@ -75,6 +85,21 @@ bool NetworkBase::GetSocketState(NetworkSocketGroup& group, uint32 index, Networ
 int32 NetworkBase::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
     return -1;
+}
+
+bool NetworkBase::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
+{
+    return true;
+}
+
+void NetworkBase::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index)
+{
+    
+}
+
+bool NetworkBase::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    return true;
 }
 
 void NetworkBase::ClearGroup(NetworkSocketGroup& group)
@@ -92,7 +117,7 @@ int32 NetworkBase::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferS
     return -1;
 }
 
-bool NetworkBase::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
+bool NetworkBase::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     return true;
 }

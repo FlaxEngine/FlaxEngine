@@ -11,6 +11,7 @@
 
 static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
 static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
+static_assert(SOCKGROUP_ITEMSIZE >= sizeof(pollfd), "SOCKGROUP_ITEMSIZE macro is not big enough to contains pollfd !");
 
 // @formatter:off
 static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -18,6 +19,8 @@ static const IN6_ADDR v4MappedPrefix = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0
 // @formatter:on
 
 /*
+ * Todo :
+ *  Return precise errors so user can understand what's happening ( disconnected, ect ... )
  * Known issues :
  *  Even if dualstacking is enabled it's not possible to bind an Ipv4mappedIPv6 endpoint. windows limitation
  */
@@ -81,10 +84,8 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         LOG(Error, "Unable to extract address from sockaddr! Error : {0}", GetLastErrorMessage());
         return true;
     }
-    endPoint.Address = String(ip);
     char strPort[6];
     _itoa(port, strPort, 10);
-    endPoint.Port = String(strPort);
     endPoint.IPVersion = GetIPVersionFromAddr(*addr);
     memcpy(endPoint.Data, addr, size);
     return false;
@@ -133,6 +134,7 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
     SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
     SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     SOCKOPT(NetworkSocketOption::Mtu, IPPROTO_IP , IP_MTU)
+    SOCKOPT(NetworkSocketOption::Type, SOL_SOCKET, SO_TYPE)
     }
 }
 
@@ -225,7 +227,7 @@ bool Win32Network::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoin
         int error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Error, "Unable to connect socket to address! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetErrorMessage(error));
+        LOG(Error, "Unable to connect socket to address! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetErrorMessage(error));
         return true;
     }
     return false;
@@ -242,7 +244,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
     const uint16 size = endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to bind socket! Socket : {0} Address : {1} Port : {2} Error : {3}", *(SOCKET*)socket.Data, endPoint.Address, endPoint.Port, GetLastErrorMessage());
+        LOG(Error, "Unable to bind socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -252,7 +254,7 @@ bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
 {
     if (listen(*(SOCKET*)socket.Data, (int32)queueSize) == SOCKET_ERROR)
     {
-        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", GetLastErrorMessage());
+        LOG(Error, "Unable to listen ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
     }
     return false;
@@ -321,6 +323,28 @@ bool Win32Network::IsWriteable(NetworkSocket& socket)
     return false;
 }
 
+bool Win32Network::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
+{
+    if (!(group.Data = (byte*)Platform::Allocate(capacity * SOCKGROUP_ITEMSIZE, 16)))
+    {
+        LOG(Error, "Unable to malloc NetworkSocketGroup::Data ! Size : {0}", capacity * SOCKGROUP_ITEMSIZE);
+        return true;
+    }
+    group.Capacity = capacity;
+    for(int i = 0; i < (int)group.Capacity; i++)
+        ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
+    
+    return false;
+}
+
+bool Win32Network::DestroySocketGroup(NetworkSocketGroup& group)
+{
+    if (!group.Data)
+        return true;
+    Platform::Free(group.Data);
+    return false;
+}
+
 int32 Win32Network::Poll(NetworkSocketGroup& group)
 {
     int32 pollret = WSAPoll((pollfd*)group.Data, group.Count, 0);
@@ -331,7 +355,7 @@ int32 Win32Network::Poll(NetworkSocketGroup& group)
 
 bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
 {
-    if (index >= SOCKGROUP_MAXCOUNT)
+    if (index >= group.Capacity)
         return true;
     pollfd* pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
     memset(&state, 0, sizeof state);
@@ -350,18 +374,70 @@ bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, Netwo
 
 int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    if (group.Count >= SOCKGROUP_MAXCOUNT)
+    if (group.Count >= group.Capacity)
         return -1;
+    
     pollfd pollinfo;
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
-    *(pollfd*)&group.Data[group.Count * SOCKGROUP_ITEMSIZE] = pollinfo;
-    group.Count++;
-    return group.Count - 1;
+
+    for(int i = 0; i < (int)group.Capacity; i++)
+    {
+        if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == -1)
+        {
+            *(pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE] = pollinfo;
+            group.Count++;
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
+{
+    if (index >= group.Capacity)
+        return true;
+    SOCKET s = ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd;
+    memcpy(socket->Data, &s, sizeof s);
+    int32 value;
+    if (GetSocketOption(*socket, NetworkSocketOption::Type, &value))
+        return true;
+    if (value == SOCK_DGRAM)
+        socket->Protocol = NetworkProtocol::Udp;
+    else if (value == SOCK_STREAM)
+        socket->Protocol = NetworkProtocol::Tcp;
+    else
+        socket->Protocol = NetworkProtocol::Undefined;
+    return false;
+}
+
+void Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index)
+{
+    if (((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd != -1)
+    {
+        ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd = -1;
+        group.Count--;
+    }
+}
+
+bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
+{
+    for(int i = 0; i < (int)group.Capacity; i++)
+    {
+        if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == *(SOCKET*)&socket.Data)
+        {
+            ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
+            group.Count--;
+            return false;
+        }
+    }
+    return true;
 }
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
+    for(int i = 0; i < (int)group.Capacity; i++)
+        ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
     group.Count = 0;
 }
 
@@ -385,7 +461,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
     {
         if ((size = sendto(*(SOCKET*)socket.Data, (const char*)data, length, 0, (const sockaddr*)endPoint->Data, GetAddrSizeFromEP(*endPoint))) == SOCKET_ERROR)
         {
-            LOG(Error, "Unable to send data! Socket : {0} Address : {1} Port : {2} Data Length : {3} Error : {4}", *(SOCKET*)socket.Data, endPoint->Address, endPoint->Port, length, GetLastErrorMessage());
+            LOG(Error, "Unable to send data! Socket : {0} Data Length : {1} Error : {2}", *(SOCKET*)socket.Data, length, GetLastErrorMessage());
             return -1;
         }
     }
@@ -401,7 +477,7 @@ int32 Win32Network::WriteSocket(NetworkSocket socket, byte* data, uint32 length,
 int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint)
 {
     uint32 size;
-    if (endPoint == nullptr) // TCP
+    if (endPoint == nullptr)
     {
         if ((size = recv(*(SOCKET*)socket.Data, (char*)buffer, bufferSize, 0)) == SOCKET_ERROR)
         {
@@ -412,7 +488,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
             return -1;
         }
     }
-    else // UDP
+    else
     {
         int32 addrsize = sizeof sockaddr_in6;
         sockaddr_in6 addr;
@@ -427,7 +503,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     return size;
 }
 
-bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
+bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     int status;
     addrinfoW hints;
@@ -440,15 +516,15 @@ bool Win32Network::CreateEndPoint(String* address, String* port, NetworkIPVersio
         hints.ai_flags = AI_PASSIVE;
 
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
-    if ((status = GetAddrInfoW(address == nullptr ? nullptr : address->Get(), port->Get(), &hints, &info)) != 0)
+    if ((status = GetAddrInfoW(address.Address == String::Empty ? nullptr : address.Address.Get(), address.Port == String::Empty ? nullptr : address.Port.Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address ? address->Get() : TEXT("ANY"), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? address.Address : String("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address ? address->Get() : TEXT("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? address.Address : String("ANY"));
         return true;
     }
 
@@ -483,7 +559,6 @@ NetworkEndPoint Win32Network::RemapEndPointToIPv6(NetworkEndPoint endPoint)
     addr6->sin6_port = addr4->sin_port;
     memcpy(&addr6->sin6_addr.u.Byte[12], &addr4->sin_addr, 4); // :::::FFFF:XXXX:XXXX    X=IPv4
     pv6.IPVersion = NetworkIPVersion::IPv6;
-    pv6.Port = endPoint.Port;
 
     return pv6;
 }
