@@ -1063,8 +1063,8 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, con
     auto& globalSettings = importerData.GlobalSettings;
     ProcessNodes(importerData, scene->getRoot(), -1);
 
-    // TODO: verify this
-    //importerData.Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, globalSettings.UnitScaleFactor) * importerData.Nodes[0].LocalTransform;
+    // Apply model scene global scale factor
+    importerData.Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, globalSettings.UnitScaleFactor) * importerData.Nodes[0].LocalTransform;
 
     // Log scene info
     LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", importerData.FrameRate, globalSettings.UnitScaleFactor);
