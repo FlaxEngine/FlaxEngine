@@ -542,13 +542,7 @@ namespace FlaxEditor.Viewport
                             if (_isOrtho)
                             {
                                 var orient = ViewOrientation;
-                                if (!Editor.Instance.SceneEditing.HasSthSelected)
-                                {
-                                    var pos = new Vector3(0.0f) + Vector3.Backward * ViewOrientation * 1000.0f;
-                                    ((FPSCamera)ViewportCamera).MoveViewport(pos, ViewOrientation);
-                                }
-                                else
-                                    ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
+                                OrientViewport(ref orient);
                             }
                         }
                     };
@@ -567,13 +561,7 @@ namespace FlaxEditor.Viewport
                     cameraView.ButtonClicked += button =>
                     {
                         var orient = Quaternion.Euler((Vector3)button.Tag);
-                        if (Editor.Instance.SceneEditing.HasSthSelected)
-                            ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orient);
-                        else
-                        {
-                            var pos = new Vector3(0.0f) + Vector3.Backward * orient * 2000.0f;
-                            ((FPSCamera)ViewportCamera).MoveViewport(pos, orient);
-                        }
+                        OrientViewport(ref orient);
                     };
                 }
 
@@ -676,6 +664,19 @@ namespace FlaxEditor.Viewport
             task.Begin += OnRenderBegin;
         }
 
+        private void OrientViewport(ref Quaternion orientation)
+        {
+            if (Editor.Instance.SceneEditing.HasSthSelected)
+            {
+                ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orientation);
+            }
+            else
+            {
+                var pos = new Vector3(0.0f) + Vector3.Backward * orientation * 2000.0f;
+                ((FPSCamera)ViewportCamera).MoveViewport(pos, orientation);
+            }
+        }
+        
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _mouseSensitivity = options.Viewport.MouseSensitivity;

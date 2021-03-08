@@ -89,6 +89,11 @@ namespace FlaxEditor.Viewport.Cameras
             ShowSphere(ref sphere);
         }
         
+        /// <summary>
+        /// Moves the viewport to visualize selected actors.
+        /// </summary>
+        /// <param name="actor">The actors to show.</param>
+        /// <param name="orientation">The used orientation.</param>
         public void ShowActor(Actor actor, ref Quaternion orientation)
         {
             Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
@@ -117,6 +122,11 @@ namespace FlaxEditor.Viewport.Cameras
             ShowSphere(ref mergesSphere);
         }
 
+        /// <summary>
+        /// Moves the viewport to visualize selected actors.
+        /// </summary>
+        /// <param name="actors">The actors to show.</param>
+        /// <param name="orientation">The used orientation.</param>
         public void ShowActors(List<SceneGraphNode> actors, ref Quaternion orientation)
         {
             if (actors.Count == 0)
