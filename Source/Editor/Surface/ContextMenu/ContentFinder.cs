@@ -108,11 +108,13 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             _resultPanel.DisposeChildren();
 
+            var dpiScale = RootWindow.DpiScale;
+
             if (items.Count == 0)
             {
                 Height = _searchBox.Height + 1;
                 _resultPanel.ScrollBars = ScrollBars.None;
-                RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * Platform.DpiScale);
+                RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * dpiScale);
                 return;
             }
 
@@ -146,7 +148,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 MatchedItems.Add(searchItem);
             }
 
-            RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * Platform.DpiScale);
+            RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * dpiScale);
 
             PerformLayout();
         }

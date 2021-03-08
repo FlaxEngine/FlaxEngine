@@ -673,7 +673,7 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
 
     if (setProcessDpiAwareness)
     {
-        setProcessDpiAwareness(enable ? PROCESS_SYSTEM_DPI_AWARE : PROCESS_DPI_UNAWARE);
+        setProcessDpiAwareness(enable ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE);
     }
 
     SystemDpi = CalculateDpi(shCoreDll);
