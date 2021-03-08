@@ -133,7 +133,7 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
     SOCKOPT(NetworkSocketOption::Error, SOL_SOCKET, SO_ERROR)
     SOCKOPT(NetworkSocketOption::NoDelay, IPPROTO_TCP, TCP_NODELAY)
     SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
-    SOCKOPT(NetworkSocketOption::Mtu, IPPROTO_IP , IP_MTU)
+    SOCKOPT(NetworkSocketOption::Mtu, IPPROTO_IP, IP_MTU)
     SOCKOPT(NetworkSocketOption::Type, SOL_SOCKET, SO_TYPE)
     }
 }
@@ -331,9 +331,9 @@ bool Win32Network::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
         return true;
     }
     group.Capacity = capacity;
-    for(int i = 0; i < (int)group.Capacity; i++)
+    for (int i = 0; i < (int)group.Capacity; i++)
         ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
-    
+
     return false;
 }
 
@@ -376,12 +376,12 @@ int32 Win32Network::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& s
 {
     if (group.Count >= group.Capacity)
         return -1;
-    
+
     pollfd pollinfo;
     pollinfo.fd = *(SOCKET*)socket.Data;
     pollinfo.events = POLLRDNORM | POLLWRNORM;
 
-    for(int i = 0; i < (int)group.Capacity; i++)
+    for (int i = 0; i < (int)group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == -1)
         {
@@ -422,7 +422,7 @@ void Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index
 
 bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
 {
-    for(int i = 0; i < (int)group.Capacity; i++)
+    for (int i = 0; i < (int)group.Capacity; i++)
     {
         if (((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd == *(SOCKET*)&socket.Data)
         {
@@ -436,7 +436,7 @@ bool Win32Network::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocke
 
 void Win32Network::ClearGroup(NetworkSocketGroup& group)
 {
-    for(int i = 0; i < (int)group.Capacity; i++)
+    for (int i = 0; i < (int)group.Capacity; i++)
         ((pollfd*)&group.Data[i * SOCKGROUP_ITEMSIZE])->fd = -1;
     group.Count = 0;
 }
