@@ -37,6 +37,5 @@ public class Content : EngineModule
         files.AddRange(Directory.GetFiles(Path.Combine(FolderPath, "Assets"), "*.h", SearchOption.TopDirectoryOnly));
         files.AddRange(Directory.GetFiles(Path.Combine(FolderPath, "Cache"), "*.h", SearchOption.TopDirectoryOnly));
         files.AddRange(Directory.GetFiles(Path.Combine(FolderPath, "Storage"), "*.h", SearchOption.TopDirectoryOnly));
-        files.Add(Path.Combine(FolderPath, "Utilities/AssetsContainer.h"));
     }
 }
