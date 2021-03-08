@@ -71,7 +71,7 @@ public:
 };
 
 template<int InlinedSize = 128>
-class StringAsUTF8 : public StringAsBase<char>
+class StringAsUTF8 : public StringAsBase<char, InlinedSize>
 {
 public:
 
@@ -92,15 +92,14 @@ public:
 
     StringAsUTF8(const Char* text, const int32 length)
     {
+        int32 lengthUtf8;
         if (length + 1 < InlinedSize)
         {
-            int32 lengthUtf8;
             StringUtils::ConvertUTF162UTF8(text, this->_inlined, length, lengthUtf8);
             this->_inlined[lengthUtf8] = 0;
         }
         else
         {
-            int32 lengthUtf8;
             this->_dynamic = StringUtils::ConvertUTF162UTF8(text, length, lengthUtf8);
             this->_dynamic[lengthUtf8] = 0;
         }
@@ -108,7 +107,7 @@ public:
 };
 
 template<int InlinedSize = 128>
-class StringAsUTF16 : public StringAsBase<Char>
+class StringAsUTF16 : public StringAsBase<Char, InlinedSize>
 {
 public:
 
