@@ -4,7 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
-API_ENUM() enum class NetworkEventType
+API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkEventType
 {
     Undefined = 0,
 
@@ -15,7 +15,7 @@ API_ENUM() enum class NetworkEventType
     Error
 };
 
-API_STRUCT() struct FLAXENGINE_API NetworkEvent
+API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkEvent
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkEvent);
 public:

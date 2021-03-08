@@ -4,7 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
-API_INTERFACE() class FLAXENGINE_API INetworkDriver
+API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
 public:

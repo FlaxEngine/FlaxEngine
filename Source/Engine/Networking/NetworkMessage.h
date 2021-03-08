@@ -4,7 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
-API_STRUCT() struct FLAXENGINE_API NetworkMessage
+API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkMessage
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkMessage);
 public:

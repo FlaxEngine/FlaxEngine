@@ -5,7 +5,7 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "Types.h"
 
-API_CLASS(Static) class FLAXENGINE_API NetworkManager
+API_CLASS(Namespace="FlaxEngine.Networking", Static) class FLAXENGINE_API NetworkManager
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkManager);
 public:

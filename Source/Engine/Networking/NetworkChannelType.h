@@ -4,7 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
-API_ENUM() enum class NetworkChannelType
+API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkChannelType
 {
     None = 0,
     
