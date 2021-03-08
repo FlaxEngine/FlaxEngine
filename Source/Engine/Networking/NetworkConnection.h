@@ -6,6 +6,7 @@
 
 API_STRUCT() struct FLAXENGINE_API NetworkConnection
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConnection);
 public:
     uint32 ConnectionId;
 };

@@ -18,7 +18,7 @@ public:
     API_FUNCTION() static void Disconnect();
     API_FUNCTION() static void Disconnect(const NetworkConnection& connection);
 
-    API_FUNCTION() static bool PopEvent(NetworkEvent* event);
+    API_FUNCTION() static bool PopEvent(NetworkEvent* eventPtr);
 
     API_FUNCTION() static NetworkMessage BeginSendMessage();
     API_FUNCTION() static void AbortSendMessage(const NetworkMessage& message);

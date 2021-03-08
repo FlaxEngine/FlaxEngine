@@ -2,8 +2,11 @@
 
 #pragma once
 
+#include "Engine/Scripting/ScriptingType.h"
+
 API_INTERFACE() class FLAXENGINE_API INetworkDriver
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
 public:
     virtual void Initialize(const NetworkConfig& config) = 0;
     virtual void Dispose() = 0;
@@ -13,7 +16,7 @@ public:
     virtual void Disconnect() = 0;
     virtual void Disconnect(const NetworkConnection& connection) = 0;
 
-    virtual bool PopEvent(NetworkEvent* event);
+    virtual bool PopEvent(NetworkEvent* eventPtr) = 0;
     
     virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) = 0;
 

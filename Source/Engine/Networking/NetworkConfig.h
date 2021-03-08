@@ -4,6 +4,7 @@
 
 API_STRUCT() struct FLAXENGINE_API NetworkConfig
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
 public:
     INetworkDriver* NetworkDriver = nullptr;
 

@@ -4,6 +4,7 @@
 
 #include "NetworkMessage.h"
 #include "NetworkConfig.h"
+#include "NetworkConnection.h"
 #include "INetworkDriver.h"
 
 #include "Engine/Core/Core.h"
@@ -77,10 +78,10 @@ void NetworkManager::Disconnect(const NetworkConnection& connection)
     NetworkDriver->Disconnect(connection);
 }
 
-bool NetworkManager::PopEvent(NetworkEvent* event)
+bool NetworkManager::PopEvent(NetworkEvent* eventPtr)
 {
     ASSERT(NetworkDriver != nullptr);
-    return NetworkDriver->PopEvent(event);
+    return NetworkDriver->PopEvent(eventPtr);
 }
 
 NetworkMessage NetworkManager::BeginSendMessage()

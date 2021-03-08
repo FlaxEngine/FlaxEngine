@@ -17,6 +17,7 @@ API_ENUM() enum class NetworkEventType
 
 API_STRUCT() struct FLAXENGINE_API NetworkEvent
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkEvent);
 public:
     API_FIELD();
     NetworkEventType EventType;
