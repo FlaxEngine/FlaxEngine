@@ -6,6 +6,9 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
+#if USE_EDITOR
+#include "Engine/Content/Storage/FlaxFile.h"
+#endif
 #include "Engine/Content/Upgraders/BinaryAssetUpgrader.h"
 
 bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)

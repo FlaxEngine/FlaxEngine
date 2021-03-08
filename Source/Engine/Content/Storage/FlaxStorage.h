@@ -116,7 +116,7 @@ public:
     /// <summary>
     /// Finalizes an instance of the <see cref="FlaxStorage"/> class.
     /// </summary>
-    ~FlaxStorage();
+    virtual ~FlaxStorage();
 
 public:
 

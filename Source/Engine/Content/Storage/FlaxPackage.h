@@ -20,67 +20,19 @@ public:
     /// Initializes a new instance of the <see cref="FlaxPackage"/> class.
     /// </summary>
     /// <param name="path">The path.</param>
-    FlaxPackage(const StringView& path)
-        : FlaxStorage(path)
-        , _entries(256)
-    {
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="FlaxPackage"/> class.
-    /// </summary>
-    ~FlaxPackage()
-    {
-    }
+    FlaxPackage(const StringView& path);
 
 public:
 
     // [FlaxStorage]
-    String ToString() const override
-    {
-        return String::Format(TEXT("Package \'{0}\'"), _path);
-    }
-
-    bool IsPackage() const override
-    {
-        return true;
-    }
-
-    bool AllowDataModifications() const override
-    {
-        return false;
-    }
-
-    bool HasAsset(const Guid& id) const override
-    {
-        return _entries.ContainsKey(id);
-    }
-
+    String ToString() const override;
+    bool IsPackage() const override;
+    bool AllowDataModifications() const override;
+    bool HasAsset(const Guid& id) const override;
     bool HasAsset(const AssetInfo& info) const override;
-
-    int32 GetEntriesCount() const override
-    {
-        return _entries.Count();
-    }
-
-    void GetEntry(int32 index, Entry& output) const override
-    {
-        ASSERT(index >= 0 && index < _entries.Count());
-        for (auto i = _entries.Begin(); i.IsNotEnd(); ++i)
-        {
-            if (index-- <= 0)
-            {
-                output = i->Value;
-                return;
-            }
-        }
-    }
-
-    void GetEntries(Array<Entry>& output) const override
-    {
-        _entries.GetValues(output);
-    }
-
+    int32 GetEntriesCount() const override;
+    void GetEntry(int32 index, Entry& output) const override;
+    void GetEntries(Array<Entry>& output) const override;
     void Dispose() override;
 
 protected:

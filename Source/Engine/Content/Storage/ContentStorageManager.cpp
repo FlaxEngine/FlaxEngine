@@ -1,12 +1,14 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ContentStorageManager.h"
+#include "FlaxFile.h"
+#include "FlaxPackage.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
-namespace ContentStorageManagerImpl
+namespace
 {
     CriticalSection Locker;
 #if USE_EDITOR
@@ -14,12 +16,10 @@ namespace ContentStorageManagerImpl
     Array<FlaxPackage*> Packages;
 #else
     Array<FlaxFile*> Files;
-    Array<FlaxPackage*> Packages(32);
+    Array<FlaxPackage*> Packages(64);
 #endif
     Dictionary<String, FlaxStorage*> StorageMap(2048);
 }
-
-using namespace ContentStorageManagerImpl;
 
 class ContentStorageManagerService : public EngineService
 {

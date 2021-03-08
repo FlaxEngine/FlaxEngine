@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "FlaxStorage.h"
+#include "FlaxFile.h"
+#include "FlaxPackage.h"
 #include "ContentStorageManager.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/File.h"
@@ -1319,3 +1321,152 @@ void FlaxStorage::OnRename(const StringView& newPath)
 }
 
 #endif
+
+FlaxFile::FlaxFile(const StringView& path)
+    : FlaxStorage(path)
+{
+    _asset.ID = Guid::Empty;
+}
+
+String FlaxFile::ToString() const
+{
+    return String::Format(TEXT("Asset \'{0}\'"), _path);
+}
+
+bool FlaxFile::IsPackage() const
+{
+    return false;
+}
+
+bool FlaxFile::AllowDataModifications() const
+{
+    return true;
+}
+
+bool FlaxFile::HasAsset(const Guid& id) const
+{
+    return _asset.ID == id;
+}
+
+bool FlaxFile::HasAsset(const AssetInfo& info) const
+{
+#if USE_EDITOR
+    if (_path != info.Path)
+        return false;
+#endif
+    return _asset.ID == info.ID && _asset.TypeName == info.TypeName;
+}
+
+int32 FlaxFile::GetEntriesCount() const
+{
+    return _asset.ID.IsValid() ? 1 : 0;
+}
+
+void FlaxFile::GetEntry(int32 index, Entry& output) const
+{
+    ASSERT(index == 0);
+    output = _asset;
+}
+
+void FlaxFile::GetEntries(Array<Entry>& output) const
+{
+    if (_asset.ID.IsValid())
+        output.Add(_asset);
+}
+
+void FlaxFile::Dispose()
+{
+    // Base
+    FlaxStorage::Dispose();
+
+    // Clean
+    _asset.ID = Guid::Empty;
+}
+
+bool FlaxFile::GetEntry(const Guid& id, Entry& e)
+{
+    e = _asset;
+    return id != _asset.ID;
+}
+
+void FlaxFile::AddEntry(Entry& e)
+{
+    ASSERT(_asset.ID.IsValid() == false);
+    _asset = e;
+}
+
+FlaxPackage::FlaxPackage(const StringView& path)
+    : FlaxStorage(path)
+    , _entries(256)
+{
+}
+
+String FlaxPackage::ToString() const
+{
+    return String::Format(TEXT("Package \'{0}\'"), _path);
+}
+
+bool FlaxPackage::IsPackage() const
+{
+    return true;
+}
+
+bool FlaxPackage::AllowDataModifications() const
+{
+    return false;
+}
+
+bool FlaxPackage::HasAsset(const Guid& id) const
+{
+    return _entries.ContainsKey(id);
+}
+
+bool FlaxPackage::HasAsset(const AssetInfo& info) const
+{
+    ASSERT(_path == info.Path);
+    Entry* e = _entries.TryGet(info.ID);
+    return e && e->TypeName == info.TypeName;
+}
+
+int32 FlaxPackage::GetEntriesCount() const
+{
+    return _entries.Count();
+}
+
+void FlaxPackage::GetEntry(int32 index, Entry& output) const
+{
+    ASSERT(index >= 0 && index < _entries.Count());
+    for (auto i = _entries.Begin(); i.IsNotEnd(); ++i)
+    {
+        if (index-- <= 0)
+        {
+            output = i->Value;
+            return;
+        }
+    }
+}
+
+void FlaxPackage::GetEntries(Array<Entry>& output) const
+{
+    _entries.GetValues(output);
+}
+
+void FlaxPackage::Dispose()
+{
+    // Base
+    FlaxStorage::Dispose();
+
+    // Clean
+    _entries.Clear();
+}
+
+bool FlaxPackage::GetEntry(const Guid& id, Entry& e)
+{
+    return !_entries.TryGet(id, e);
+}
+
+void FlaxPackage::AddEntry(Entry& e)
+{
+    ASSERT(HasAsset(e.ID) == false);
+    _entries.Add(e.ID, e);
+}

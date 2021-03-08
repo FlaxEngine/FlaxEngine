@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "FlaxFile.h"
-#include "FlaxPackage.h"
 #include "FlaxStorageReference.h"
+
+class FlaxFile;
+class FlaxPackage;
 
 /// <summary>
 /// Content Storage Manager is responsible for content data management
