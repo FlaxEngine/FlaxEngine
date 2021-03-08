@@ -1165,7 +1165,7 @@ namespace FlaxEditor.Viewport
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
             }
-            if (_input.IsMouseLeftDown)
+            if (_input.IsMouseLeftDown && false)
             {
                 // Calculate smooth mouse delta not dependant on viewport size
                 Vector2 offset = _viewMousePos - _startPos;

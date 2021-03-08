@@ -579,7 +579,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     for (int i = 0; i < uiControls.Count; i++)
                     {
                         var uiControl = (UIControl)uiControls[i];
+                        string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
                         uiControl.Control = (Control)controlType.CreateInstance();
+                        if (uiControl.Name.StartsWith(previousName))
+                        {
+                            string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
+                            uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+                        }
                     }
                 }
             }
@@ -588,7 +594,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 for (int i = 0; i < uiControls.Count; i++)
                 {
                     var uiControl = (UIControl)uiControls[i];
+                    string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
                     uiControl.Control = (Control)controlType.CreateInstance();
+                    if (uiControl.Name.StartsWith(previousName))
+                    {
+                        string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
+                        uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+                    }
                 }
             }
 
