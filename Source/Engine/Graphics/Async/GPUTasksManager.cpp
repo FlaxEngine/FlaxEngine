@@ -72,6 +72,7 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
     auto& b2 = _buffers[b2Index];
 
     // Take maximum amount of tasks to the buffer at once
+    ASSERT(b1.IsEmpty());
     const int32 takenTasksCount = (int32)_tasks.try_dequeue_bulk(b1.Get(), maxCount);
     b2.Add(b1.Get(), takenTasksCount);
 
@@ -83,15 +84,24 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
     for (; i < b2.Count() && count < maxCount; i++)
     {
         auto task = b2[i];
-        if (task->IsQueued())
+        const auto state = task->GetState();
+        switch (state)
         {
-            // Enqueue task
+        case TaskState::Failed:
+        case TaskState::Canceled:
+        case TaskState::Finished:
+            // Skip task
+            break;
+        case TaskState::Queued:
+            // Run queued task
             buffer[count++] = task;
-        }
-        else
-        {
+            break;
+        case TaskState::Created:
+        case TaskState::Running:
+        default:
             // Keep task for the next RequestWork
             b1.Add(task);
+            break;
         }
     }
     const int32 itemsLeft = b2.Count() - i;
