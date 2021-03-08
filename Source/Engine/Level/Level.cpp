@@ -140,15 +140,31 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
         Log::ArgumentNullException(TEXT("Cannot spawn null actor."));
         return true;
     }
-    if (Level::Scenes.IsEmpty())
-    {
-        Log::InvalidOperationException(TEXT("Cannot spawn actor. No scene loaded."));
-        return true;
-    }
-    if (parent == nullptr)
-        parent = Level::Scenes[0];
 
-    actor->SetParent(parent, true, true);
+    if (actor->Is<Scene>())
+    {
+        // Spawn scene
+        actor->PostSpawn();
+        actor->OnTransformChanged();
+        {
+            SceneBeginData beginData;
+            actor->BeginPlay(&beginData);
+            beginData.OnDone();
+        }
+        CallSceneEvent(SceneEventType::OnSceneLoaded, (Scene*)actor, actor->GetID());
+    }
+    else
+    {
+        // Spawn actor
+        if (Level::Scenes.IsEmpty())
+        {
+            Log::InvalidOperationException(TEXT("Cannot spawn actor. No scene loaded."));
+            return true;
+        }
+        if (parent == nullptr)
+            parent = Level::Scenes[0];
+        actor->SetParent(parent, true, true);
+    }
 
     return false;
 }
