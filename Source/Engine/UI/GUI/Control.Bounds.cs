@@ -84,42 +84,47 @@ namespace FlaxEngine.GUI
             }
         }
 
+#if FLAX_EDITOR
         /// <summary>
-        /// Helper for UI
+        /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
         [NoSerialize, HideInEditor]
-        public float Proxy_Offset_Left
+        internal float Proxy_Offset_Left
         {
             get => Offsets.Left;
             set => Offsets = new Margin(value, Offsets.Right, Offsets.Top, Offsets.Bottom);
         }
+
         /// <summary>
-        /// Helper for UI
+        /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
         [NoSerialize, HideInEditor]
-        public float Proxy_Offset_Right
+        internal float Proxy_Offset_Right
         {
             get => Offsets.Right;
             set => Offsets = new Margin(Offsets.Left, value, Offsets.Top, Offsets.Bottom);
         }
+
         /// <summary>
-        /// Helper for UI
+        /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
         [NoSerialize, HideInEditor]
-        public float Proxy_Offset_Top
+        internal float Proxy_Offset_Top
         {
             get => Offsets.Top;
             set => Offsets = new Margin(Offsets.Left, Offsets.Right, value, Offsets.Bottom);
         }
+
         /// <summary>
-        /// Helper for UI
+        /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
         [NoSerialize, HideInEditor]
-        public float Proxy_Offset_Bottom
+        internal float Proxy_Offset_Bottom
         {
             get => Offsets.Bottom;
             set => Offsets = new Margin(Offsets.Left, Offsets.Right, Offsets.Top, value);
         }
+#endif
 
         /// <summary>
         /// Gets or sets coordinates of the upper-left corner of the control relative to the upper-left corner of its container.
