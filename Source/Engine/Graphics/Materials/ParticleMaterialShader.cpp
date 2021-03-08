@@ -3,7 +3,6 @@
 #include "ParticleMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderView.h"
@@ -112,7 +111,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? sortedIndicesOffset : 0xFFFFFFFF;

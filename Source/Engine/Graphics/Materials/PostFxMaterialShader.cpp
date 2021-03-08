@@ -2,7 +2,6 @@
 
 #include "PostFxMaterialShader.h"
 #include "MaterialParams.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
@@ -47,7 +46,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         materialData->TemporalAAJitter = view.TemporalAAJitter;

@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Engine/Time.h"
 #include "DecalMaterialShader.h"
 #include "PostFxMaterialShader.h"
 #include "ForwardMaterialShader.h"
@@ -16,6 +17,33 @@
 #include "ParticleMaterialShader.h"
 #include "DeformableMaterialShader.h"
 #include "VolumeParticleMaterialShader.h"
+
+IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
+    : GPUContext(context)
+    , RenderContext(renderContext)
+    , FirstDrawCall(nullptr)
+    , DrawCallsCount(0)
+    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+{
+}
+
+IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall)
+    : GPUContext(context)
+    , RenderContext(renderContext)
+    , FirstDrawCall(&drawCall)
+    , DrawCallsCount(1)
+    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+{
+}
+
+IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount)
+    : GPUContext(context)
+    , RenderContext(renderContext)
+    , FirstDrawCall(firstDrawCall)
+    , DrawCallsCount(drawCallsCount)
+    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+{
+}
 
 GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
 {

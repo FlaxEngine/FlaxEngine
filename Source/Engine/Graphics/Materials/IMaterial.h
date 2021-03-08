@@ -139,35 +139,16 @@ public:
         int32 DrawCallsCount;
         MaterialParamsLink* ParamsLink = nullptr;
         void* CustomData = nullptr;
+        float TimeParam;
 
         /// <summary>
         /// The input scene color. It's optional and used in forward/postFx rendering.
         /// </summary>
         GPUTextureView* Input = nullptr;
 
-        BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
-            : GPUContext(context)
-            , RenderContext(renderContext)
-            , FirstDrawCall(nullptr)
-            , DrawCallsCount(0)
-        {
-        }
-
-        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall)
-            : GPUContext(context)
-            , RenderContext(renderContext)
-            , FirstDrawCall(&drawCall)
-            , DrawCallsCount(1)
-        {
-        }
-
-        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount)
-            : GPUContext(context)
-            , RenderContext(renderContext)
-            , FirstDrawCall(firstDrawCall)
-            , DrawCallsCount(drawCallsCount)
-        {
-        }
+        BindParameters(::GPUContext* context, const ::RenderContext& renderContext);
+        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall);
+        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount);
     };
 
     /// <summary>

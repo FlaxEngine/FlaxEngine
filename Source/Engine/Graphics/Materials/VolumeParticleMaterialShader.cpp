@@ -3,7 +3,6 @@
 #include "VolumeParticleMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/VolumetricFogPass.h"
 #include "Engine/Renderer/RenderList.h"
@@ -90,7 +89,7 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         materialData->GridSize = customData->GridSize;

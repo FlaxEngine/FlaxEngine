@@ -2,10 +2,8 @@
 
 #include "GUIMaterialShader.h"
 #include "MaterialParams.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -53,7 +51,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = Vector3::Zero;
         materialData->ViewFar = 0.0f;
         materialData->ViewDir = Vector3::Forward;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = Vector4::Zero;
         auto& viewport = Render2D::GetViewport();
         materialData->ScreenSize = Vector4(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);

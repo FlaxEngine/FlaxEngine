@@ -3,7 +3,6 @@
 #include "ForwardMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderView.h"
@@ -95,7 +94,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();

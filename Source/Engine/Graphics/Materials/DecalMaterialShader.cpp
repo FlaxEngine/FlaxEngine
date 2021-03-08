@@ -3,7 +3,6 @@
 #include "DecalMaterialShader.h"
 #include "MaterialParams.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -64,7 +63,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = Time::Draw.UnscaledTime.GetTotalSeconds();
+        materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
 
