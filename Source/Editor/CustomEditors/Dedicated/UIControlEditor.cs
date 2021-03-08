@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -349,6 +351,174 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             // Show control properties
             base.Initialize(layout);
+
+            for (int i = 0; i < layout.Children.Count; i++)
+            {
+                //Debug.Log(((GroupElement)layout.Children[i])?.Panel?.HeaderText);
+                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "Transform")
+                {
+                    VerticalPanelElement mainHor = VerticalPanelWihtoutMargin(group);
+                    CreateTransformElements(mainHor);
+
+                    group.ContainerControl.ChangeChildIndex(mainHor.Control, 0);
+                    break;
+                }
+            }
+        }
+
+        void CreateTransformElements(LayoutElementsContainer main)
+        {
+            main.Space(10);
+            HorizontalPanelElement sidePanel = main.HorizontalPanel();//HorizontalPanelWihtoutMargin(main);
+            sidePanel.Panel.ClipChildren = false;
+
+            ScriptMemberInfo anchorinfo = ValuesTypes[0].GetProperty("AnchorPreset");
+            ItemInfo anchorItem = new ItemInfo(anchorinfo);
+            sidePanel.Object(anchorItem.GetValues(Values));
+            
+            VerticalPanelElement group = VerticalPanelWihtoutMargin(sidePanel);
+            
+            group.Panel.AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            group.Panel.Offsets = new Margin(100, 10, 0, 0);
+            
+            var horUp = UniformGridTwoByOne(group);
+            horUp.CustomControl.Height = TextBoxBase.DefaultHeight;
+            var horDown = UniformGridTwoByOne(group);
+            horDown.CustomControl.Height = TextBoxBase.DefaultHeight;
+
+            GetAnchorEquality(out cache_xEq, out cache_yEq);
+
+            BuildLocationSizeOffsets(horUp, horDown, cache_xEq, cache_yEq);
+
+            main.Space(10);
+            BuildAnchorsDropper(main);
+        }
+        void BuildAnchorsDropper(LayoutElementsContainer main)
+        {
+            ScriptMemberInfo mininfo = ValuesTypes[0].GetProperty("AnchorMin");
+            ScriptMemberInfo maxinfo = ValuesTypes[0].GetProperty("AnchorMax");
+            ItemInfo minitem = new ItemInfo(mininfo);
+            ItemInfo maxitem = new ItemInfo(maxinfo);
+
+            GroupElement ng = main.Group("Anchors", true);
+            ng.Panel.Close(false);
+            ng.Property("Min", minitem.GetValues(Values));
+            ng.Property("Max", maxitem.GetValues(Values));
+        }
+        void GetAnchorEquality(out bool xEq, out bool yEq)
+        {
+            ScriptMemberInfo mininfo = ValuesTypes[0].GetProperty("AnchorMin");
+            ScriptMemberInfo maxinfo = ValuesTypes[0].GetProperty("AnchorMax");
+            ItemInfo minitem = new ItemInfo(mininfo);
+            ItemInfo maxitem = new ItemInfo(maxinfo);
+            ValueContainer minVal = minitem.GetValues(Values);
+            ValueContainer maxVal = maxitem.GetValues(Values);
+
+            ItemInfo XItem = new ItemInfo(mininfo.ValueType.GetField("X"));
+            ItemInfo YItem = new ItemInfo(mininfo.ValueType.GetField("Y"));
+
+            xEq = XItem.GetValues(minVal).ToList().Any(XItem.GetValues(maxVal).ToList().Contains);
+            yEq = YItem.GetValues(minVal).ToList().Any(YItem.GetValues(maxVal).ToList().Contains);
+        }
+        void BuildLocationSizeOffsets(LayoutElementsContainer horUp, LayoutElementsContainer horDown, bool xEq, bool yEq)
+        {
+            ScriptMemberInfo xInfo = ValuesTypes[0].GetProperty("X");
+            ItemInfo xItem = new ItemInfo(xInfo);
+            ScriptMemberInfo yInfo = ValuesTypes[0].GetProperty("Y");
+            ItemInfo yItem = new ItemInfo(yInfo);
+            ScriptMemberInfo widthInfo = ValuesTypes[0].GetProperty("Width");
+            ItemInfo widthItem = new ItemInfo(widthInfo);
+            ScriptMemberInfo heightInfo = ValuesTypes[0].GetProperty("Height");
+            ItemInfo heightItem = new ItemInfo(heightInfo);
+
+            ScriptMemberInfo leftInfo = ValuesTypes[0].GetProperty("Proxy_Offset_Left");
+            ItemInfo leftItem = new ItemInfo(leftInfo);
+            ScriptMemberInfo rightInfo = ValuesTypes[0].GetProperty("Proxy_Offset_Right");
+            ItemInfo rightItem = new ItemInfo(rightInfo);
+            ScriptMemberInfo topInfo = ValuesTypes[0].GetProperty("Proxy_Offset_Top");
+            ItemInfo topItem = new ItemInfo(topInfo);
+            ScriptMemberInfo bottomInfo = ValuesTypes[0].GetProperty("Proxy_Offset_Bottom");
+            ItemInfo bottomItem = new ItemInfo(bottomInfo);
+
+            LayoutElementsContainer xEl;
+            LayoutElementsContainer yEl;
+            LayoutElementsContainer hEl;
+            LayoutElementsContainer vEl;
+            if (xEq)
+            {
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "X: ", xItem.GetValues(Values));
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Width: ", widthItem.GetValues(Values));
+            }
+            else
+            {
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "Left: ", leftItem.GetValues(Values));
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Right: ", rightItem.GetValues(Values));
+            }
+            if (yEq)
+            {
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Y: ", yItem.GetValues(Values));
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Height: ", heightItem.GetValues(Values));
+            }
+            else
+            {
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values));
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values));
+            }
+            xEl.Control.AnchorMin = new Vector2(0, xEl.Control.AnchorMin.Y);
+            xEl.Control.AnchorMax = new Vector2(0.5f, xEl.Control.AnchorMax.Y);
+
+            vEl.Control.AnchorMin = new Vector2(0, xEl.Control.AnchorMin.Y);
+            vEl.Control.AnchorMax = new Vector2(0.5f, xEl.Control.AnchorMax.Y);
+
+            yEl.Control.AnchorMin = new Vector2(0.5f, xEl.Control.AnchorMin.Y);
+            yEl.Control.AnchorMax = new Vector2(1, xEl.Control.AnchorMax.Y);
+
+            hEl.Control.AnchorMin = new Vector2(0.5f, xEl.Control.AnchorMin.Y);
+            hEl.Control.AnchorMax = new Vector2(1, xEl.Control.AnchorMax.Y);
+
+        }
+        VerticalPanelElement VerticalPanelWihtoutMargin(LayoutElementsContainer cont)
+        {
+            var horUp = cont.VerticalPanel();
+            horUp.Panel.Margin = Margin.Zero;
+            return horUp;
+        }
+
+        CustomElementsContainer<UniformGridPanel> UniformGridTwoByOne(LayoutElementsContainer cont)
+        {
+            var horUp = cont.CustomContainer<UniformGridPanel>();
+            horUp.CustomControl.SlotsHorizontally = 2;
+            horUp.CustomControl.SlotsVertically = 1;
+            horUp.CustomControl.SlotPadding = Margin.Zero;
+            horUp.CustomControl.ClipChildren = false;
+            return horUp;
+        }
+
+        CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el,string text, ValueContainer values)
+        {
+            CustomElementsContainer<UniformGridPanel> hor = UniformGridTwoByOne(el);
+            hor.CustomControl.SlotPadding = new Margin(5, 5, 0, 0);
+            LabelElement lab = hor.Label(text);
+            hor.Object(values);
+            return hor;
+        }
+
+        bool cache_xEq;
+        bool cache_yEq;
+        /// <summary>
+        /// Refreshes if equality of anchors does not correspond to the cached equality
+        /// </summary>
+        public void RefreshBaseOnAnchorsEquality()
+        {
+            if (Values.HasNull)
+                return;
+
+            GetAnchorEquality(out bool xEq,out bool yEq);
+            if (xEq != cache_xEq || yEq != cache_yEq)
+            {
+                RebuildLayout();
+                return;
+            }
         }
 
         /// <inheritdoc />
@@ -361,6 +531,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 RebuildLayout();
                 return;
             }
+            RefreshBaseOnAnchorsEquality();
+            //RefreshValues();
 
             base.Refresh();
         }
