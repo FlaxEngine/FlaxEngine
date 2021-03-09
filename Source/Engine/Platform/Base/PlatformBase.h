@@ -322,13 +322,13 @@ public:
     /// <param name="numPages">The number of pages to allocate.</param>
     /// <param name="pageSize">The size of single page. Use Platform::GetCPUInfo().PageSize or provide compatible, custom size.</param>
     /// <returns>The pointer to the allocated pages in memory.</returns>
-    static void* AllocatePages(uint64 numPages, uint64 pageSize) = delete;
+    static void* AllocatePages(uint64 numPages, uint64 pageSize);
 
     /// <summary>
     /// Frees allocated pages memory block.
     /// </summary>
     /// <param name="ptr">The pointer to the pages to deallocate.</param>
-    static void FreePages(void* ptr) = delete;
+    static void FreePages(void* ptr);
 
 public:
 

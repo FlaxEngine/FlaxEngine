@@ -163,6 +163,19 @@ void PlatformBase::Exit()
 {
 }
 
+void* PlatformBase::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    // Fallback to the default memory allocation
+    const uint64 numBytes = numPages * pageSize;
+    return Platform::Allocate(numBytes, pageSize);
+}
+
+void PlatformBase::FreePages(void* ptr)
+{
+    // Fallback to free
+    Platform::Free(ptr);
+}
+
 PlatformType PlatformBase::GetPlatformType()
 {
     return PLATFORM_TYPE;
