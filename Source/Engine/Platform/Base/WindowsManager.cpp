@@ -41,11 +41,6 @@ Window* WindowsManager::GetByNativePtr(void* handle)
     return result;
 }
 
-Vector2 WindowsManager::CalcCenteredWinPos(const Vector2& size)
-{
-    return (Platform::GetDesktopSize() - size) * 0.5f;
-}
-
 void WindowsManager::Register(Window* win)
 {
     WindowsLocker.Lock();
