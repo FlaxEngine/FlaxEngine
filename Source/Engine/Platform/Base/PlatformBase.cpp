@@ -420,6 +420,11 @@ ScreenOrientationType PlatformBase::GetScreenOrientationType()
     return ScreenOrientationType::Unknown;
 }
 
+bool PlatformBase::GetIsPaused()
+{
+    return false;
+}
+
 void PlatformBase::CreateGuid(Guid& result)
 {
     static uint16 guidCounter = 0;

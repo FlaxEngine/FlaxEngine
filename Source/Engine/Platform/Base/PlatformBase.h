@@ -616,10 +616,7 @@ public:
     /// <summary>
     /// Returns true if app is paused. Engine ticking (update/physics/drawing) is disabled in that state, only platform is updated until app end or resume.
     /// </summary>
-    static bool GetIsPaused()
-    {
-        return false;
-    }
+    static bool GetIsPaused();
 
     /// <summary>
     /// Creates the unique identifier.
