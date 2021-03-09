@@ -47,6 +47,9 @@ void CharacterController::SetHeight(const float value)
 
     _height = value;
 
+    if (GetStepOffset() > value)
+        SetStepOffset(value);
+
     UpdateSize();
     UpdateBounds();
 }
@@ -77,6 +80,9 @@ void CharacterController::SetStepOffset(float value)
         return;
 
     _stepOffset = value;
+
+    if (GetHeight() < value)
+        SetHeight(value);
 
     if (_controller)
         _controller->setStepOffset(value);
