@@ -140,6 +140,29 @@ typedef AndroidWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
 
+#elif PLATFORM_SWITCH
+
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class SwitchCriticalSection;
+typedef SwitchCriticalSection CriticalSection;
+class SwitchConditionVariable;
+typedef SwitchConditionVariable ConditionVariable;
+class SwitchFileSystem;
+typedef SwitchFileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class SwitchFile;
+typedef SwitchFile File;
+class SwitchPlatform;
+typedef SwitchPlatform Platform;
+class SwitchThread;
+typedef SwitchThread Thread;
+class SwitchWindow;
+typedef SwitchWindow Window;
+class NetworkBase;
+typedef NetworkBase Network;
+
 #else
 
 #error Missing Types implementation!

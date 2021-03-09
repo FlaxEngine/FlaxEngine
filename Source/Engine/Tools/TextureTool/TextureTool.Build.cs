@@ -33,6 +33,7 @@ public class TextureTool : EngineModule
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
             useStb = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

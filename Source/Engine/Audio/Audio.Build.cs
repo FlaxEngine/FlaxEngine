@@ -46,6 +46,9 @@ public class Audio : EngineModule
         case TargetPlatform.Android:
             useOpenAL = true;
             break;
+        case TargetPlatform.Switch:
+            useNone = true;
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

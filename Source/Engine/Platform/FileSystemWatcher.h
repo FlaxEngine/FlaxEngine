@@ -14,6 +14,8 @@
 #include "Base/FileSystemWatcherBase.h"
 #elif PLATFORM_ANDROID
 #include "Base/FileSystemWatcherBase.h"
+#elif PLATFORM_SWITCH
+#include "Base/FileSystemWatcherBase.h"
 #else
 #error Missing File System Watcher implementation!
 #endif

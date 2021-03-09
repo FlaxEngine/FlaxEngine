@@ -90,6 +90,7 @@ namespace Flax.Build
             case TargetPlatform.PS4: return "PLATFORM_PS4";
             case TargetPlatform.XboxScarlett: return "PLATFORM_XBOX_SCARLETT";
             case TargetPlatform.Android: return "PLATFORM_ANDROID";
+            case TargetPlatform.Switch: return "PLATFORM_SWITCH";
             default: throw new InvalidPlatformException(platform);
             }
         }

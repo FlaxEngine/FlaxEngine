@@ -43,6 +43,11 @@ API_ENUM() enum class PlatformType
     /// Running on Android.
     /// </summary>
     Android = 7,
+
+    /// <summary>
+    /// Running on Switch.
+    /// </summary>
+    Switch = 8,
 };
 
 /// <summary>
@@ -113,6 +118,9 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_IOS)
 #define PLATFORM_IOS 0
 #endif
+#if !defined(PLATFORM_SWITCH)
+#define PLATFORM_SWITCH 0
+#endif
 
 #if PLATFORM_WINDOWS
 #include "Windows/WindowsDefines.h"
@@ -126,6 +134,8 @@ API_ENUM() enum class ArchitectureType
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettDefines.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidDefines.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchDefines.h"
 #else
 #error Missing Defines implementation!
 #endif

@@ -11,6 +11,7 @@ namespace FlaxEditor.Content.Settings
     {
         internal const string PS4PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS4PlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
+        internal const string SwitchPlatformSettingsTypename = "FlaxEditor.Content.Settings.SwitchPlatformSettings";
 
         /// <summary>
         /// The default application icon.
@@ -138,6 +139,14 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset AndroidPlatform;
 #endif
 
+#if FLAX_EDITOR || PLATFORM_SWITCH
+        /// <summary>
+        /// Reference to Switch Platform Settings asset. Used to apply configuration on Switch platform.
+        /// </summary>
+        [EditorOrder(2070), EditorDisplay("Platform Settings", "Switch"), AssetReference(SwitchPlatformSettingsTypename, true), Tooltip("Reference to Switch Platform Settings asset")]
+        public JsonAsset SwitchPlatform;
+#endif
+
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
         /// </summary>
@@ -240,6 +249,10 @@ namespace FlaxEditor.Content.Settings
             if (type == typeof(AndroidPlatformSettings))
                 return LoadAsset<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
 #endif
+#if FLAX_EDITOR || PLATFORM_SWITCH
+            if (type.FullName == SwitchPlatformSettingsTypename)
+                return LoadAsset(gameSettings.SwitchPlatform, SwitchPlatformSettingsTypename) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -324,6 +337,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.XboxScarlettPlatform, obj);
             if (type == typeof(AndroidPlatformSettings))
                 return SaveAsset(gameSettings, ref gameSettings.AndroidPlatform, obj);
+            if (type.FullName == SwitchPlatformSettingsTypename)
+                return SaveAsset(gameSettings, ref gameSettings.SwitchPlatform, obj);
             if (type == typeof(AudioSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Audio, obj);
 
