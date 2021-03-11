@@ -152,7 +152,7 @@ void NetworkManager::CreateMessageBuffers()
     const uint64 totalSize = static_cast<uint64>(Config.MessagePoolSize) * Config.MessageSize;
 
     // Calculate the amount of pages that we need
-    const uint32 numPages = totalSize > pageSize ? Math::CeilToInt(totalSize / static_cast<double>(pageSize)) : 1;
+    const uint32 numPages = totalSize > pageSize ? Math::CeilToInt(totalSize / static_cast<float>(pageSize)) : 1;
 
     MessageBuffer = static_cast<uint8*>(Platform::AllocatePages(numPages, pageSize));
     Platform::MemorySet(MessageBuffer, 0, numPages * pageSize);
