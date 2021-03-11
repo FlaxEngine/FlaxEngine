@@ -208,7 +208,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         ASSERT(_swapChain);
 
         // Disable DXGI changes to the window
-        VALIDATE_DIRECTX_RESULT(dxgi->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER));
+        VALIDATE_DIRECTX_RESULT(dxgi->MakeWindowAssociation(_windowHandle, 0));
 #else
         auto dxgiFactory = (IDXGIFactory2*)_device->GetDXGIFactory();
         VALIDATE_DIRECTX_RESULT(dxgiFactory->CreateSwapChainForCoreWindow(_device->GetDevice(), static_cast<IUnknown*>(_windowHandle), &swapChainDesc, nullptr, &_swapChain));
