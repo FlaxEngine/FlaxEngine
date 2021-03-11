@@ -6,7 +6,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Platform/File.h"
 
@@ -190,9 +192,10 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         stbi_uc* stbData = stbi_load_from_memory(fileData.Get(), fileData.Count(), &width, &height, &components, 4);
         if (!stbData)
         {
-            LOG(Warning, "Failed to load image.");
+            LOG(Warning, "Failed to load image. {0}", String(stbi_failure_reason()));
             return false;
         }
+        fileData.Resize(0);
 
         // Setup texture data
         textureData.Width = width;
@@ -260,6 +263,141 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     default:
         LOG(Warning, "Unknown format.");
         return true;
+    }
+
+    return false;
+}
+
+bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha)
+{
+    // Load image data
+    if (type == ImageType::Internal)
+    {
+        if (options.FlipY)
+        {
+            errorMsg = TEXT("Flipping images imported from Internal source is not supported by stb.");
+            return true;
+        }
+
+        MISSING_CODE("Importing internal textures with STB.");
+        return true;
+    }
+    else
+    {
+        stbi_set_flip_vertically_on_load_thread(options.FlipY);
+        bool failed = ImportTextureStb(type, path, textureData, hasAlpha);
+        stbi_set_flip_vertically_on_load_thread(false);
+        if (failed)
+        {
+            return true;
+        }
+    }
+
+    // Use two data containers for texture importing for more optimzied performance
+    TextureData textureDataTmp;
+    TextureData* textureDataSrc = &textureData;
+    TextureData* textureDataDst = &textureDataTmp;
+
+    // Check if resize source image
+    const int32 sourceWidth = textureData.Width;
+    const int32 sourceHeight = textureData.Height;
+    int32 width = Math::Clamp(options.Resize ? options.SizeX : static_cast<int32>(sourceWidth * options.Scale), 1, options.MaxSize);
+    int32 height = Math::Clamp(options.Resize ? options.SizeY : static_cast<int32>(sourceHeight * options.Scale), 1, options.MaxSize);
+    if (sourceWidth != width || sourceHeight != height)
+    {
+        // During resizing we need to keep texture aspect ratio
+        const bool keepAspectRatio = false; // TODO: expose as import option
+        if (keepAspectRatio)
+        {
+            const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
+            if (width >= height)
+                height = Math::CeilToInt(width / aspectRatio);
+            else
+                width = Math::CeilToInt(height / aspectRatio);
+        }
+
+        // Resize source texture
+        LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
+        if (ResizeStb(*textureDataDst, *textureDataSrc, width, height))
+        {
+            errorMsg = String::Format(TEXT("Cannot resize texture."));
+            return true;
+        }
+        ::Swap(textureDataSrc, textureDataDst);
+    }
+
+    // Cache data
+    float alphaThreshold = 0.3f;
+    bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
+    PixelFormat targetFormat = TextureUtils::ToPixelFormat(options.Type, width, height, options.Compress);
+    if (options.sRGB)
+        targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
+
+    // Check mip levels
+    int32 sourceMipLevels = textureDataSrc->GetMipLevels();
+    bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
+    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) && (width > 1 || height > 1);
+    int32 arraySize = (int32)textureDataSrc->GetArraySize();
+    int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
+    if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
+    {
+        errorMsg = String::Format(TEXT("Imported texture has not full mip chain, loaded mips count: {0}, expected: {1}"), sourceMipLevels, mipLevels);
+        return true;
+    }
+
+    // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
+    if (PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
+    {
+        // TODO: implement texture decompression
+        errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
+        return true;
+    }
+
+    // Generate mip maps chain
+    if (useMipLevels && options.GenerateMipMaps)
+    {
+        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            auto& slice = textureDataSrc->Items[arrayIndex];
+            slice.Mips.Resize(mipLevels);
+            for (int32 mipIndex = 1; mipIndex < mipLevels; mipIndex++)
+            {
+                const auto& srcMip = slice.Mips[mipIndex - 1];
+                auto& dstMip = slice.Mips[mipIndex];
+                auto dstMipWidth = Math::Max(textureDataSrc->Width >> mipIndex, 1);
+                auto dstMipHeight = Math::Max(textureDataSrc->Height >> mipIndex, 1);
+                if (ResizeStb(textureDataSrc->Format, dstMip, srcMip, dstMipWidth, dstMipHeight))
+                {
+                    errorMsg = TEXT("Failed to generate mip texture.");
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Preserve mipmap alpha coverage (if requested)
+    if (PixelFormatExtensions::HasAlpha(textureDataSrc->Format) && options.PreserveAlphaCoverage && useMipLevels)
+    {
+        // TODO: implement alpha coverage preserving
+        errorMsg = TEXT("Importing textures with alpha coverage preserving is not supported on this platform.");
+        return true;
+    }
+
+    // Compress mip maps or convert image
+    if (targetFormat != textureDataSrc->Format)
+    {
+        if (ConvertStb(*textureDataDst, *textureDataSrc, targetFormat))
+        {
+            errorMsg = String::Format(TEXT("Cannot convert/compress texture."));
+            return true;
+        }
+        ::Swap(textureDataSrc, textureDataDst);
+    }
+
+    // Copy data to the output if not in the result container
+    if (textureDataSrc != &textureData)
+    {
+        textureData = textureDataTmp;
     }
 
     return false;
