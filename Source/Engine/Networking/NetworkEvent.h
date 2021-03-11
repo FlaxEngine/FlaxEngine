@@ -2,17 +2,16 @@
 
 #pragma once
 
+#include "NetworkMessage.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkEventType
 {
     Undefined = 0,
 
-    ConnectionRequest,
     Connected,
     Disconnected,
-    Message,
-    Error
+    Message
 };
 
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkEvent
@@ -22,5 +21,9 @@ public:
     API_FIELD();
     NetworkEventType EventType;
     
-    // TODO
+    API_FIELD();
+    NetworkMessage Message;
+
+    API_FIELD();
+    NetworkConnection Sender;
 };
