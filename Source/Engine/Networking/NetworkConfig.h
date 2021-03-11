@@ -2,12 +2,20 @@
 
 #pragma once
 
+API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkTransportType
+{
+    Undefined = 0,
+    
+    ENet
+};
+
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfig
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
 public:
     API_FIELD()
-    INetworkDriver* NetworkDriver = nullptr; // TODO: Pass by ref not pointer (?)
+    NetworkTransportType NetworkDriverType = NetworkTransportType::ENet;
+    // TODO: Expose INetworkDriver as a ref not enum, when C++/C# interfaces are done.
 
 public:
     API_FIELD()

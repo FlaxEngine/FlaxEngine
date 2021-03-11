@@ -7,7 +7,8 @@
 #include "NetworkConnection.h"
 #include "INetworkDriver.h"
 
-#include "Engine/Core/Core.h"
+#include "Drivers/ENetDriver.h"
+
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -26,7 +27,7 @@ bool NetworkManager::Initialize(const NetworkConfig& config)
     Config = config;
     
     ASSERT(NetworkDriver == nullptr);
-    ASSERT(Config.NetworkDriver);
+    ASSERT(Config.NetworkDriverType != NetworkTransportType::Undefined);
     ASSERT(Config.ConnectionsLimit > 0);
     ASSERT(Config.MessageSize > 32); // TODO: Adjust this, not sure what the lowest limit should be.
     ASSERT(Config.MessagePoolSize > 128);
@@ -40,7 +41,7 @@ bool NetworkManager::Initialize(const NetworkConfig& config)
         MessagePool.Push(messageId);
 
     // Setup network driver
-    NetworkDriver = Config.NetworkDriver;
+    NetworkDriver = New<ENetDriver>();
     NetworkDriver->Initialize(Config);
     
     return false;
@@ -48,7 +49,7 @@ bool NetworkManager::Initialize(const NetworkConfig& config)
 
 void NetworkManager::Shutdown()
 {
-    SAFE_DISPOSE(NetworkDriver);
+    Delete(NetworkDriver);
     DisposeMessageBuffers();
 }
 
