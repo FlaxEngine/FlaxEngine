@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Platform/Network.h"
+
 API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkTransportType
 {
     Undefined = 0,
@@ -24,11 +26,12 @@ public:
     API_FIELD()
     uint16 Port = 7777;
     
+    // API_FIELD()
+    // NetworkEndPoint EndPoint = {}; // TODO: Use NetSockets C# API when done
+    
     API_FIELD()
     uint16 MessageSize = 1500; // MTU
     
     API_FIELD()
     uint16 MessagePoolSize = 2048; // (RX and TX)
-
-    // TODO: End point for server/client
 };
