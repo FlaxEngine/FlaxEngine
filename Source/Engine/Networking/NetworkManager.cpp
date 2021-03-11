@@ -68,6 +68,8 @@ bool NetworkManager::Listen()
 
 void NetworkManager::Connect()
 {
+    // TODO: Support multiple hosts
+    
     LOG(Info, "Connecting to 127.0.0.1:{0}...", Config.Port); // TODO: Proper IP address
     
     ASSERT(NetworkDriver != nullptr);
@@ -97,6 +99,27 @@ bool NetworkManager::PopEvent(NetworkEvent* eventPtr)
     return NetworkDriver->PopEvent(eventPtr);
 }
 
+NetworkMessage NetworkManager::CreateMessage()
+{
+    ASSERT(MessagePool.Count() > 0);
+
+    const uint32 messageId = MessagePool.Pop();
+    uint8* messageBuffer = GetMessageBuffer(messageId);
+
+    return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
+}
+
+void NetworkManager::RecycleMessage(const NetworkMessage& message)
+{
+    ASSERT(message.IsValid());
+#ifdef BUILD_DEBUG
+    ASSERT(MessagePool.Contains(message.MessageId) == false);
+#endif
+    
+    // Return the message id
+    MessagePool.Push(message.MessageId);
+}
+
 NetworkMessage NetworkManager::BeginSendMessage()
 {
     ASSERT(NetworkDriver != nullptr);
@@ -119,27 +142,6 @@ bool NetworkManager::EndSendMessage(const NetworkChannelType channelType, const 
 
     RecycleMessage(message);
     return false;
-}
-
-NetworkMessage NetworkManager::CreateMessage()
-{
-    ASSERT(MessagePool.Count() > 0);
-
-    const uint32 messageId = MessagePool.Pop();
-    uint8* messageBuffer = GetMessageBuffer(messageId);
-
-    return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
-}
-
-void NetworkManager::RecycleMessage(const NetworkMessage& message)
-{
-    ASSERT(message.IsValid());
-#ifdef BUILD_DEBUG
-    ASSERT(MessagePool.Contains(message.MessageId) == false);
-#endif
-    
-    // Return the message id
-    MessagePool.Push(message.MessageId);
 }
 
 void NetworkManager::CreateMessageBuffers()

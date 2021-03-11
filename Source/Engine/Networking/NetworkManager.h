@@ -19,6 +19,9 @@ public:
     API_FUNCTION() static void Disconnect(const NetworkConnection& connection);
 
     API_FUNCTION() static bool PopEvent(NetworkEvent* eventPtr);
+    
+    API_FUNCTION() static NetworkMessage CreateMessage();
+    API_FUNCTION() static void RecycleMessage(const NetworkMessage& message);
 
     API_FUNCTION() static NetworkMessage BeginSendMessage();
     API_FUNCTION() static void AbortSendMessage(const NetworkMessage& message);
@@ -29,9 +32,6 @@ public:
     
 private:
 
-    static NetworkMessage CreateMessage();
-    static void RecycleMessage(const NetworkMessage& message);
-    
     static void CreateMessageBuffers();
     static void DisposeMessageBuffers();
     static uint8* GetMessageBuffer(uint32 messageId);
