@@ -62,6 +62,9 @@ namespace FlaxEditor.Windows
             public abstract class Platform
             {
                 [HideInEditor]
+                public bool IsSupported;
+
+                [HideInEditor]
                 public bool IsAvailable;
 
                 [EditorOrder(10), Tooltip("Output folder path")]
@@ -92,6 +95,23 @@ namespace FlaxEditor.Windows
                 public virtual void Init(string output, string platformDataSubDir)
                 {
                     Output = output;
+
+                    // Check if can build on that platform
+#if PLATFORM_WINDOWS
+                    IsSupported = true;
+#elif PLATFORM_LINUX
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.LinuxX64:
+                        IsSupported = true;
+                        break;
+                    default:
+                        IsSupported = false;
+                        break;
+                    }
+#else
+#error "Unknown platform."
+#endif
 
                     // TODO: restore build settings from the Editor cache!
 
@@ -179,7 +199,11 @@ namespace FlaxEditor.Windows
                     _platform = proxy.Selector.Selected;
                     var platformObj = proxy.PerPlatformOptions[_platform];
 
-                    if (platformObj.IsAvailable)
+                    if (!platformObj.IsSupported)
+                    {
+                        layout.Label("This platform is not supported on this system.", TextAlignment.Center);
+                    }
+                    else if (platformObj.IsAvailable)
                     {
                         string name;
                         switch (_platform)
