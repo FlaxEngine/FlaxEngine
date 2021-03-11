@@ -40,12 +40,12 @@ public class vorbis : DepsModule
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisenc.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisfile.a"));
             break;
         case TargetPlatform.PS4:
-        case TargetPlatform.Switch:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

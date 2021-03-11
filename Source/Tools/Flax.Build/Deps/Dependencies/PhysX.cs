@@ -33,6 +33,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
+                        TargetPlatform.Switch,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -165,6 +166,12 @@ namespace Flax.Deps.Dependencies
                 }
                 binariesPrefix = "lib";
                 suppressBitsPostfix = true;
+                break;
+            case TargetPlatform.Switch:
+                binariesSubDir = "switch64";
+                buildPlatform = "NX64";
+                suppressBitsPostfix = true;
+                binariesPrefix = "lib";
                 break;
             default: throw new InvalidPlatformException(targetPlatform);
             }
@@ -352,6 +359,12 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Android:
                 {
                     Build(options, "android", platform, TargetArchitecture.ARM64);
+                    break;
+                }
+                case TargetPlatform.Switch:
+                {
+                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "PhysX"), root, true, true);
+                    Build(options, "switch64", platform, TargetArchitecture.ARM64);
                     break;
                 }
                 }
