@@ -217,7 +217,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         _backBuffers.Resize(swapChainDesc.BufferCount);
 
         // Disable DXGI changes to the window
-        dxgiFactory->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
+        dxgiFactory->MakeWindowAssociation(_windowHandle, 0);
     }
     else
     {
