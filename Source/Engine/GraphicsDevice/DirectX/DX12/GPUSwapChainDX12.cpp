@@ -124,8 +124,6 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
             swapChainDesc.BufferDesc = outputDX.DesktopViewMode;
         }
 
-        releaseBackBuffer();
-
         if (FAILED(_swapChain->ResizeTarget(&swapChainDesc.BufferDesc)))
         {
             LOG(Warning, "Swapchain resize failed.");
@@ -135,10 +133,6 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
         {
             LOG(Warning, "Cannot change fullscreen mode for '{0}' to {1}.", ToString(), isFullscreen);
         }
-
-        VALIDATE_DIRECTX_RESULT(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, _width, _height, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
-
-        getBackBuffer();
 
         _isFullscreen = isFullscreen;
     }
