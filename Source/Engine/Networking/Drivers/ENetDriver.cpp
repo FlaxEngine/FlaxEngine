@@ -4,6 +4,13 @@
 
 #include "Engine/Core/Collections/Array.h"
 
+#define ENET_IMPLEMENTATION
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <enet/enet.h>
+
+#undef _WINSOCK_DEPRECATED_NO_WARNINGS
+#undef SendMessage
+
 void ENetDriver::Initialize(const NetworkConfig& config)
 {
 }
