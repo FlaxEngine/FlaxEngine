@@ -327,6 +327,8 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
 
 #if COMPILE_WITH_DIRECTXTEX
     return ConvertDirectXTex(dst, src, dstFormat);
+#elif COMPILE_WITH_STB
+    return ConvertStb(dst, src, dstFormat);
 #else
     LOG(Warning, "Converting textures is not supported on this platform.");
     return true;
