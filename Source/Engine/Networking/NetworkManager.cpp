@@ -93,10 +93,10 @@ void NetworkManager::Disconnect(const NetworkConnection& connection)
     NetworkDriver->Disconnect(connection);
 }
 
-bool NetworkManager::PopEvent(NetworkEvent* eventPtr)
+bool NetworkManager::PopEvent(NetworkEvent& eventPtr)
 {
     ASSERT(NetworkDriver != nullptr);
-    return NetworkDriver->PopEvent(eventPtr);
+    return NetworkDriver->PopEvent(&eventPtr);
 }
 
 NetworkMessage NetworkManager::CreateMessage()
