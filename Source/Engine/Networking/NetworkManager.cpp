@@ -34,10 +34,9 @@ bool NetworkManager::Initialize(const NetworkConfig& config)
     // Setup messages
     CreateMessageBuffers();
     MessagePool.Clear();
-    MessagePool.Resize(Config.MessagePoolSize);
 
     // Warmup message pool
-    for(uint32 messageId = Config.MessagePoolSize; messageId > 0; messageId --)
+    for (uint32 messageId = Config.MessagePoolSize; messageId > 0; messageId --)
         MessagePool.Push(messageId);
 
     // Setup network driver
