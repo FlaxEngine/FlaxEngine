@@ -44,6 +44,12 @@
 #define STB_DXT_IMPLEMENTATION
 #include <ThirdParty/stb/stb_dxt.h>
 
+#if USE_EDITOR
+
+#include <ThirdParty/detex/detex.h>
+
+#endif
+
 static void stbWrite(void* context, void* data, int size)
 {
     auto file = (FileWriteStream*)context;
@@ -57,46 +63,142 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
         LOG(Warning, "Exporting texture arrays and cubemaps is not supported by stb library.");
     }
 
+    TextureData const* texture = &textureData;
+
+#if USE_EDITOR
+    // Handle compressed textures
+    TextureData decompressed;
+    if (PixelFormatExtensions::IsCompressed(textureData.Format))
+    {
+        decompressed.Format = PixelFormatExtensions::IsSRGB(textureData.Format) ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+        decompressed.Width = textureData.Width;
+        decompressed.Height = textureData.Height;
+        decompressed.Depth = textureData.Depth;
+        decompressed.Items.Resize(1);
+        decompressed.Items[0].Mips.Resize(1);
+
+        auto decompressedData = decompressed.GetData(0, 0);
+        decompressedData->RowPitch = textureData.Width * sizeof(Color32);
+        decompressedData->Lines = textureData.Height;
+        decompressedData->DepthPitch = decompressedData->RowPitch * decompressedData->Lines;
+        decompressedData->Data.Allocate(decompressedData->DepthPitch);
+
+        Color32 colors[16];
+        int32 blocksWidth = textureData.Width / 4;
+        int32 blocksHeight = textureData.Height / 4;
+        const auto blocksData = texture->GetData(0, 0);
+        byte* decompressedBytes = decompressedData->Data.Get();
+
+        switch (textureData.Format)
+        {
+        case PixelFormat::BC1_UNorm:
+        case PixelFormat::BC1_UNorm_sRGB:
+        {
+            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+            {
+                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+                {
+                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 8;
+                    detexDecompressBlockBC1(block, 0, 0, (byte*)&colors);
+                    for (int32 y = 0; y < 4; y++)
+                    {
+                        for (int32 x = 0; x < 4; x++)
+                        {
+                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case PixelFormat::BC2_UNorm:
+        case PixelFormat::BC2_UNorm_sRGB:
+        {
+            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+            {
+                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+                {
+                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 16;
+                    detexDecompressBlockBC2(block, 0, 0, (byte*)&colors);
+                    for (int32 y = 0; y < 4; y++)
+                    {
+                        for (int32 x = 0; x < 4; x++)
+                        {
+                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case PixelFormat::BC3_UNorm:
+        case PixelFormat::BC3_UNorm_sRGB:
+        {
+            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+            {
+                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+                {
+                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 16;
+                    detexDecompressBlockBC3(block, 0, 0, (byte*)&colors);
+                    for (int32 y = 0; y < 4; y++)
+                    {
+                        for (int32 x = 0; x < 4; x++)
+                        {
+                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        default:
+            LOG(Warning, "Texture data format {0} is not supported by stb library.", (int32)textureData.Format);
+            return true;
+        }
+        texture = &decompressed;
+    }
+#endif
+
     // Convert into RGBA8
-    const auto sampler = GetSampler(textureData.Format);
+    const auto sampler = GetSampler(texture->Format);
     if (sampler == nullptr)
     {
         LOG(Warning, "Texture data format {0} is not supported by stb library.", (int32)textureData.Format);
         return true;
     }
-    const auto srcData = textureData.GetData(0, 0);
+    const auto srcData = texture->GetData(0, 0);
     const int comp = 4;
     Array<byte> data;
-    bool sRGB = PixelFormatExtensions::IsSRGB(textureData.Format);
+    bool sRGB = PixelFormatExtensions::IsSRGB(texture->Format);
     if (type == ImageType::HDR)
     {
-        data.Resize(sizeof(float) * comp * textureData.Width * textureData.Height);
+        data.Resize(sizeof(float) * comp * texture->Width * texture->Height);
 
         auto ptr = (Vector4*)data.Get();
-        for (int32 y = 0; y < textureData.Height; y++)
+        for (int32 y = 0; y < texture->Height; y++)
         {
-            for (int32 x = 0; x < textureData.Width; x++)
+            for (int32 x = 0; x < texture->Width; x++)
             {
                 Color color = SamplePoint(sampler, x, y, srcData->Data.Get(), srcData->RowPitch);
                 if (sRGB)
                     color = Color::SrgbToLinear(color);
-                *(ptr + x + y * textureData.Width) = color.ToVector4();
+                *(ptr + x + y * texture->Width) = color.ToVector4();
             }
         }
     }
     else
     {
-        data.Resize(sizeof(Color32) * comp * textureData.Width * textureData.Height);
+        data.Resize(sizeof(Color32) * comp * texture->Width * texture->Height);
 
         auto ptr = (Color32*)data.Get();
-        for (int32 y = 0; y < textureData.Height; y++)
+        for (int32 y = 0; y < texture->Height; y++)
         {
-            for (int32 x = 0; x < textureData.Width; x++)
+            for (int32 x = 0; x < texture->Width; x++)
             {
                 Color color = SamplePoint(sampler, x, y, srcData->Data.Get(), srcData->RowPitch);
                 if (sRGB)
                     color = Color::SrgbToLinear(color);
-                *(ptr + x + y * textureData.Width) = Color32(color);
+                *(ptr + x + y * texture->Width) = Color32(color);
             }
         }
     }
@@ -116,21 +218,21 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
     switch (type)
     {
     case ImageType::BMP:
-        result = stbi_write_bmp_core(&s, textureData.Width, textureData.Height, comp, data.Get());
+        result = stbi_write_bmp_core(&s, texture->Width, texture->Height, comp, data.Get());
         break;
     case ImageType::JPEG:
-        result = stbi_write_jpg_core(&s, textureData.Width, textureData.Height, comp, data.Get(), 90);
+        result = stbi_write_jpg_core(&s, texture->Width, texture->Height, comp, data.Get(), 90);
         break;
     case ImageType::TGA:
-        result = stbi_write_tga_core(&s, textureData.Width, textureData.Height, comp, data.Get());
+        result = stbi_write_tga_core(&s, texture->Width, texture->Height, comp, data.Get());
         break;
     case ImageType::HDR:
-        result = stbi_write_hdr_core(&s, textureData.Width, textureData.Height, comp, (float*)data.Get());
+        result = stbi_write_hdr_core(&s, texture->Width, texture->Height, comp, (float*)data.Get());
         break;
     case ImageType::PNG:
     {
         int32 ptrSize = 0;
-        const auto ptr = stbi_write_png_to_mem(data.Get(), 0, textureData.Width, textureData.Height, comp, &ptrSize);
+        const auto ptr = stbi_write_png_to_mem(data.Get(), 0, texture->Width, texture->Height, comp, &ptrSize);
         if (ptr)
         {
             file->WriteBytes(ptr, ptrSize);
