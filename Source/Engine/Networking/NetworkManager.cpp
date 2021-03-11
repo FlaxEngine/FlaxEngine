@@ -9,6 +9,7 @@
 
 #include "Drivers/ENetDriver.h"
 
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -44,6 +45,8 @@ bool NetworkManager::Initialize(const NetworkConfig& config)
     NetworkDriver = New<ENetDriver>();
     NetworkDriver->Initialize(Config);
     
+    LOG(Info, "NetworkManager initialized using driver = {0}", static_cast<int>(Config.NetworkDriverType));
+    
     return false;
 }
 
@@ -51,16 +54,22 @@ void NetworkManager::Shutdown()
 {
     Delete(NetworkDriver);
     DisposeMessageBuffers();
+    
+    LOG(Info, "NetworkManager shutdown");
 }
 
 bool NetworkManager::Listen()
 {
+    LOG(Info, "NetworkManager starting to listen on address = any:{0}", Config.Port);
+    
     ASSERT(NetworkDriver != nullptr);
     return NetworkDriver->Listen();
 }
 
 void NetworkManager::Connect()
 {
+    LOG(Info, "Connecting to 127.0.0.1:{0}...", Config.Port); // TODO: Proper IP address
+    
     ASSERT(NetworkDriver != nullptr);
     // TODO: Assert address/endpoint
     NetworkDriver->Connect();
@@ -68,12 +77,16 @@ void NetworkManager::Connect()
 
 void NetworkManager::Disconnect()
 {
+    LOG(Info, "Disconnecting...");
+    
     ASSERT(NetworkDriver != nullptr);
     NetworkDriver->Disconnect();
 }
 
 void NetworkManager::Disconnect(const NetworkConnection& connection)
 {
+    LOG(Info, "Disconnecting connection with id = {0}...", connection.ConnectionId);
+    
     ASSERT(NetworkDriver != nullptr);
     NetworkDriver->Disconnect(connection);
 }
