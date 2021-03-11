@@ -250,6 +250,8 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
     bool hasAlpha = false;
 #if COMPILE_WITH_DIRECTXTEX
     const auto failed = ImportTextureDirectXTex(type, path, textureData, options, errorMsg, hasAlpha);
+#elif COMPILE_WITH_STB
+    const auto failed = ImportTextureStb(type, path, textureData, options, errorMsg, hasAlpha);
 #else
     const auto failed = true;
     LOG(Warning, "Importing textures is not supported on this platform.");
@@ -443,11 +445,12 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Color32),
         [](const void* ptr)
         {
-            return Color(*(Color32*)ptr);
+            return Color::SrgbToLinear(Color(*(Color32*)ptr));
         },
         [](const void* ptr, const Color& color)
         {
-            *(Color32*)ptr = Color32(color);
+            Color srgb = Color::LinearToSrgb(color);
+            *(Color32*)ptr = Color32(srgb);
         },
     },
     {
@@ -555,11 +558,12 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         [](const void* ptr)
         {
             const Color32 bgra = *(Color32*)ptr;
-            return Color(Color32(bgra.B, bgra.G, bgra.R, bgra.A));
+            return Color::SrgbToLinear(Color(Color32(bgra.B, bgra.G, bgra.R, bgra.A)));
         },
         [](const void* ptr, const Color& color)
         {
-            *(Color32*)ptr = Color32(byte(color.B * MAX_uint8), byte(color.G * MAX_uint8), byte(color.R * MAX_uint8), byte(color.A * MAX_uint8));
+            Color srgb = Color::LinearToSrgb(color);
+            *(Color32*)ptr = Color32(byte(srgb.B * MAX_uint8), byte(srgb.G * MAX_uint8), byte(srgb.R * MAX_uint8), byte(srgb.A * MAX_uint8));
         },
     },
     {
@@ -581,11 +585,12 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         [](const void* ptr)
         {
             const Color32 bgra = *(Color32*)ptr;
-            return Color(Color32(bgra.B, bgra.G, bgra.R, MAX_uint8));
+            return Color::SrgbToLinear(Color(Color32(bgra.B, bgra.G, bgra.R, MAX_uint8)));
         },
         [](const void* ptr, const Color& color)
         {
-            *(Color32*)ptr = Color32(byte(color.B * MAX_uint8), byte(color.G * MAX_uint8), byte(color.R * MAX_uint8), MAX_uint8);
+            Color srgb = Color::LinearToSrgb(color);
+            *(Color32*)ptr = Color32(byte(srgb.B * MAX_uint8), byte(srgb.G * MAX_uint8), byte(srgb.R * MAX_uint8), MAX_uint8);
         },
     },
     {
