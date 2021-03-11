@@ -23,6 +23,5 @@ public:
     bool PopEvent(NetworkEvent* eventPtr) override;
     
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) override;
-
 };
 
