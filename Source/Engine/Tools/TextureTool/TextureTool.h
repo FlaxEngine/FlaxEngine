@@ -292,6 +292,7 @@ private:
     static bool ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData);
     static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
     static bool ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
+    static bool ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight);
     static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 #endif
 };

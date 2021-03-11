@@ -373,13 +373,127 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
     }
     else
     {
-        // TODO: converting images to a different format
-        LOG(Error, "Converting texture formats is not supported on this platform.");
+        int32 bytesPerPixel = PixelFormatExtensions::SizeInBytes(dstFormat);
+        auto dstSampler = TextureTool::GetSampler(dstFormat);
+        if (!dstSampler)
+        {
+            LOG(Warning, "Cannot convert image. Unsupported format {0}", static_cast<int32>(dstFormat));
+            return true;
+        }
+
+        // Convert all array slices
+        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            const auto& srcSlice = src.Items[arrayIndex];
+            auto& dstSlice = dst.Items[arrayIndex];
+            auto mipLevels = srcSlice.Mips.Count();
+            dstSlice.Mips.Resize(mipLevels, false);
+
+            // Convert all mip levels
+            for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
+            {
+                const auto& srcMip = srcSlice.Mips[mipIndex];
+                auto& dstMip = dstSlice.Mips[mipIndex];
+                auto mipWidth = Math::Max(src.Width >> mipIndex, 1);
+                auto mipHeight = Math::Max(src.Height >> mipIndex, 1);
+
+                // Allocate memory
+                dstMip.RowPitch = mipWidth * bytesPerPixel;
+                dstMip.DepthPitch = dstMip.RowPitch * mipHeight;
+                dstMip.Lines = mipHeight;
+                dstMip.Data.Allocate(dstMip.DepthPitch);
+
+                // Convert texture
+                for (int32 y = 0; y < mipHeight; y++)
+                {
+                    for (int32 x = 0; x < mipWidth; x++)
+                    {
+                        // Sample source texture
+                        Color color = TextureTool::SamplePoint(sampler, x, y, srcMip.Data.Get(), srcMip.RowPitch);
+
+                        // Store destination texture
+                        TextureTool::Store(dstSampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight)
+{
+    // Setup
+    auto formatSize = PixelFormatExtensions::SizeInBytes(format);
+    auto components = PixelFormatExtensions::ComputeComponentsCount(format);
+    auto srcMipWidth = srcMip.RowPitch / formatSize;
+    auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
+
+    // Allocate memory
+    dstMip.RowPitch = dstMipWidth * formatSize;
+    dstMip.DepthPitch = dstMip.RowPitch * dstMipHeight;
+    dstMip.Lines = dstMipHeight;
+    dstMip.Data.Allocate(dstMip.DepthPitch);
+
+    // Resize texture
+    switch (format)
+    {
+    case PixelFormat::R8_Typeless:
+    case PixelFormat::R8_SInt:
+    case PixelFormat::R8_SNorm:
+    case PixelFormat::R8G8_Typeless:
+    case PixelFormat::R8G8_SInt:
+    case PixelFormat::R8G8_SNorm:
+    case PixelFormat::R8G8B8A8_Typeless:
+    case PixelFormat::R8G8B8A8_UNorm:
+    case PixelFormat::R8G8B8A8_UInt:
+    case PixelFormat::R8G8B8A8_SNorm:
+    case PixelFormat::R8G8B8A8_SInt:
+    case PixelFormat::B8G8R8A8_UNorm:
+    case PixelFormat::B8G8R8X8_Typeless:
+    case PixelFormat::B8G8R8X8_UNorm:
+    {
+        if (!stbir_resize_uint8((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
+        {
+            LOG(Warning, "Cannot resize image.");
+            return true;
+        }
+        break;
+    }
+    case PixelFormat::R8G8B8A8_UNorm_sRGB:
+    case PixelFormat::B8G8R8A8_UNorm_sRGB:
+    case PixelFormat::B8G8R8X8_UNorm_sRGB:
+    {
+        auto alphaChannel = format == PixelFormat::B8G8R8X8_UNorm_sRGB ? STBIR_ALPHA_CHANNEL_NONE : 3;
+        if (!stbir_resize_uint8_srgb((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components, alphaChannel, 0))
+        {
+            LOG(Warning, "Cannot resize image.");
+            return true;
+        }
+        break;
+    }
+    case PixelFormat::R32_Typeless:
+    case PixelFormat::R32_Float:
+    case PixelFormat::R32G32_Float:
+    case PixelFormat::R32G32B32_Float:
+    case PixelFormat::R32G32B32A32_Float:
+    {
+        if (!stbir_resize_float((const float*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (float*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
+        {
+            LOG(Warning, "Cannot resize image.");
+            return true;
+        }
+        break;
+    }
+    default:
+        LOG(Warning, "Cannot resize image. Unsupported format {0}", static_cast<int32>(format));
         return true;
     }
 
     return false;
 }
+
 bool TextureTool::ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight)
 {
     // Setup
@@ -388,7 +502,7 @@ bool TextureTool::ResizeStb(TextureData& dst, const TextureData& src, int32 dstW
     dst.Height = dstHeight;
     dst.Depth = src.Depth;
     dst.Format = src.Format;
-    dst.Items.Resize(arraySize);
+    dst.Items.Resize(arraySize, false);
     auto formatSize = PixelFormatExtensions::SizeInBytes(src.Format);
     auto components = PixelFormatExtensions::ComputeComponentsCount(src.Format);
 
@@ -398,7 +512,7 @@ bool TextureTool::ResizeStb(TextureData& dst, const TextureData& src, int32 dstW
         const auto& srcSlice = src.Items[arrayIndex];
         auto& dstSlice = dst.Items[arrayIndex];
         auto mipLevels = srcSlice.Mips.Count();
-        dstSlice.Mips.Resize(mipLevels);
+        dstSlice.Mips.Resize(mipLevels, false);
 
         // Resize all mip levels
         for (int32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
@@ -407,69 +521,10 @@ bool TextureTool::ResizeStb(TextureData& dst, const TextureData& src, int32 dstW
             auto& dstMip = dstSlice.Mips[mipIndex];
             auto srcMipWidth = srcMip.RowPitch / formatSize;
             auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
-            auto dstMipWidth = Math::Max(dstWidth << mipIndex, 1);
-            auto dstMipHeight = Math::Max(dstHeight << mipIndex, 1);
-
-            // Allocate memory
-            dstMip.RowPitch = dstMipWidth * formatSize;
-            dstMip.DepthPitch = dstMip.RowPitch * dstMipHeight;
-            dstMip.Lines = dstMipHeight;
-            dstMip.Data.Allocate(dstMip.DepthPitch);
-
-            // Resize texture
-            switch (src.Format)
-            {
-            case PixelFormat::R8_Typeless:
-            case PixelFormat::R8_SInt:
-            case PixelFormat::R8_SNorm:
-            case PixelFormat::R8G8_Typeless:
-            case PixelFormat::R8G8_SInt:
-            case PixelFormat::R8G8_SNorm:
-            case PixelFormat::R8G8B8A8_Typeless:
-            case PixelFormat::R8G8B8A8_UNorm:
-            case PixelFormat::R8G8B8A8_UInt:
-            case PixelFormat::R8G8B8A8_SNorm:
-            case PixelFormat::R8G8B8A8_SInt:
-            case PixelFormat::B8G8R8A8_UNorm:
-            case PixelFormat::B8G8R8X8_Typeless:
-            case PixelFormat::B8G8R8X8_UNorm:
-            {
-                if (!stbir_resize_uint8((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
-                {
-                    LOG(Warning, "Cannot resize image.");
-                    return true;
-                }
-                break;
-            }
-            case PixelFormat::R8G8B8A8_UNorm_sRGB:
-            case PixelFormat::B8G8R8A8_UNorm_sRGB:
-            case PixelFormat::B8G8R8X8_UNorm_sRGB:
-            {
-                auto alphaChannel = src.Format == PixelFormat::B8G8R8X8_UNorm_sRGB ? STBIR_ALPHA_CHANNEL_NONE : 3;
-                if (!stbir_resize_uint8_srgb((const uint8*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (uint8*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components, alphaChannel, 0))
-                {
-                    LOG(Warning, "Cannot resize image.");
-                    return true;
-                }
-                break;
-            }
-            case PixelFormat::R32_Typeless:
-            case PixelFormat::R32_Float:
-            case PixelFormat::R32G32_Float:
-            case PixelFormat::R32G32B32_Float:
-            case PixelFormat::R32G32B32A32_Float:
-            {
-                if (!stbir_resize_float((const float*)srcMip.Data.Get(), srcMipWidth, srcMipHeight, srcMip.RowPitch, (float*)dstMip.Data.Get(), dstMipWidth, dstMipHeight, dstMip.RowPitch, components))
-                {
-                    LOG(Warning, "Cannot resize image.");
-                    return true;
-                }
-                break;
-            }
-            default:
-                LOG(Warning, "Cannot resize image. Unsupported format {0}", static_cast<int32>(src.Format));
+            auto dstMipWidth = Math::Max(dstWidth >> mipIndex, 1);
+            auto dstMipHeight = Math::Max(dstHeight >> mipIndex, 1);
+            if (ResizeStb(src.Format, dstMip, srcMip, dstMipWidth, dstMipHeight))
                 return true;
-            }
         }
     }
 
