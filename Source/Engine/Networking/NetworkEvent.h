@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "NetworkConnection.h"
 #include "NetworkMessage.h"
 #include "Engine/Scripting/ScriptingType.h"
 
@@ -26,4 +27,7 @@ public:
 
     API_FIELD();
     NetworkConnection Sender;
+
+    API_FIELD();
+    int32 HostId;
 };

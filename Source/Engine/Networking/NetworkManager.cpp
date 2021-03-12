@@ -6,170 +6,133 @@
 #include "NetworkConfig.h"
 #include "NetworkConnection.h"
 #include "INetworkDriver.h"
-
-#include "Drivers/ENetDriver.h"
+#include "NetworkEvent.h"
+#include "NetworkHost.h"
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Platform/CPUInfo.h"
 
 namespace
 {
-    NetworkConfig Config;
-    INetworkDriver* NetworkDriver = nullptr;
-
-    uint8* MessageBuffer = nullptr;
-    Array<uint32, HeapAllocation> MessagePool;
+    Array<NetworkHost, HeapAllocation> Hosts;
 }
 
-bool NetworkManager::Initialize(const NetworkConfig& config)
+int NetworkManager::Initialize(const NetworkConfig& config)
 {
-    Config = config;
-    
-    ASSERT(NetworkDriver == nullptr);
-    ASSERT(Config.NetworkDriverType != NetworkTransportType::Undefined);
-    ASSERT(Config.ConnectionsLimit > 0);
-    ASSERT(Config.MessageSize > 32); // TODO: Adjust this, not sure what the lowest limit should be.
-    ASSERT(Config.MessagePoolSize > 128);
+    // Alloc new host
+    const int hostId = Hosts.Count();
+    Hosts.Add(NetworkHost());
+    NetworkHost& host = Hosts.Last();
 
-    // Setup messages
-    CreateMessageBuffers();
-    MessagePool.Clear();
-
-    // Warmup message pool
-    for (uint32 messageId = Config.MessagePoolSize; messageId > 0; messageId --)
-        MessagePool.Push(messageId);
-
-    // Setup network driver
-    NetworkDriver = New<ENetDriver>();
-    NetworkDriver->Initialize(Config);
+    // Initialize the host
+    host.Initialize(config);
     
-    LOG(Info, "NetworkManager initialized using driver = {0}", static_cast<int>(Config.NetworkDriverType));
-    
-    return false;
+    return hostId;
 }
 
-void NetworkManager::Shutdown()
+void NetworkManager::Shutdown(const int hostId)
 {
-    Delete(NetworkDriver);
-    DisposeMessageBuffers();
-    
-    LOG(Info, "NetworkManager shutdown");
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
+    host.Shutdown();
 }
 
-bool NetworkManager::Listen()
+bool NetworkManager::Listen(const int hostId)
 {
-    LOG(Info, "NetworkManager starting to listen on address = any:{0}", Config.Port);
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
     
-    ASSERT(NetworkDriver != nullptr);
-    return NetworkDriver->Listen();
+    LOG(Info, "NetworkManager starting to listen on address = any:{0}", host.Config.Port);
+    
+    return host.NetworkDriver->Listen();
 }
 
-void NetworkManager::Connect()
+bool NetworkManager::Connect(const int hostId)
 {
-    // TODO: Support multiple hosts
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
+    LOG(Info, "Connecting to 127.0.0.1:{0}...", host.Config.Port); // TODO: Proper IP address
     
-    LOG(Info, "Connecting to 127.0.0.1:{0}...", Config.Port); // TODO: Proper IP address
-    
-    ASSERT(NetworkDriver != nullptr);
     // TODO: Assert address/endpoint
-    NetworkDriver->Connect();
+    return host.NetworkDriver->Connect();
 }
 
-void NetworkManager::Disconnect()
+void NetworkManager::Disconnect(const int hostId)
 {
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
     LOG(Info, "Disconnecting...");
     
-    ASSERT(NetworkDriver != nullptr);
-    NetworkDriver->Disconnect();
+    host.NetworkDriver->Disconnect();
 }
 
-void NetworkManager::Disconnect(const NetworkConnection& connection)
+void NetworkManager::Disconnect(const int hostId, const NetworkConnection& connection)
 {
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
     LOG(Info, "Disconnecting connection with id = {0}...", connection.ConnectionId);
     
-    ASSERT(NetworkDriver != nullptr);
-    NetworkDriver->Disconnect(connection);
+    host.NetworkDriver->Disconnect(connection);
 }
 
-bool NetworkManager::PopEvent(NetworkEvent& eventPtr)
+bool NetworkManager::PopEvent(const int hostId, NetworkEvent& eventPtr)
 {
-    ASSERT(NetworkDriver != nullptr);
-    return NetworkDriver->PopEvent(&eventPtr);
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
+
+    // Set host id of the event
+    eventPtr.HostId = hostId;
+    
+    return host.NetworkDriver->PopEvent(&eventPtr);
 }
 
-NetworkMessage NetworkManager::CreateMessage()
+NetworkMessage NetworkManager::CreateMessage(const int hostId)
 {
-    ASSERT(MessagePool.Count() > 0);
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
+    ASSERT(host.MessagePool.Count() > 0);
 
-    const uint32 messageId = MessagePool.Pop();
-    uint8* messageBuffer = GetMessageBuffer(messageId);
+    const uint32 messageId = host.MessagePool.Pop();
+    uint8* messageBuffer = host.GetMessageBuffer(messageId);
 
-    return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
+    return NetworkMessage(messageBuffer, messageId, host.Config.MessageSize, 0, 0);
 }
 
-void NetworkManager::RecycleMessage(const NetworkMessage& message)
+void NetworkManager::RecycleMessage(const int hostId, const NetworkMessage& message)
 {
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
     ASSERT(message.IsValid());
 #ifdef BUILD_DEBUG
-    ASSERT(MessagePool.Contains(message.MessageId) == false);
+    ASSERT(host.MessagePool.Contains(message.MessageId) == false);
 #endif
     
     // Return the message id
-    MessagePool.Push(message.MessageId);
+    host.MessagePool.Push(message.MessageId);
 }
 
-NetworkMessage NetworkManager::BeginSendMessage()
+NetworkMessage NetworkManager::BeginSendMessage(const int hostId)
 {
-    ASSERT(NetworkDriver != nullptr);
-    return CreateMessage();
+    ASSERT(Hosts[hostId].IsValid());
+    return CreateMessage(hostId);
 }
 
-void NetworkManager::AbortSendMessage(const NetworkMessage& message)
+void NetworkManager::AbortSendMessage(const int hostId, const NetworkMessage& message)
 {
-    ASSERT(NetworkDriver != nullptr);
+    ASSERT(Hosts[hostId].IsValid());
     ASSERT(message.IsValid());
-    RecycleMessage(message);
+    RecycleMessage(hostId, message);
 }
 
-bool NetworkManager::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection> targets)
+bool NetworkManager::EndSendMessage(const int hostId, const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection> targets)
 {
-    ASSERT(NetworkDriver != nullptr);
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
     ASSERT(message.IsValid());
     
-    NetworkDriver->SendMessage(channelType, message, targets);
+    host.NetworkDriver->SendMessage(channelType, message, targets);
 
-    RecycleMessage(message);
+    RecycleMessage(hostId, message);
     return false;
-}
-
-void NetworkManager::CreateMessageBuffers()
-{
-    ASSERT(MessageBuffer == nullptr);
-    
-    const uint32 pageSize = Platform::GetCPUInfo().PageSize;
-
-    // Calculate total size in bytes
-    const uint64 totalSize = static_cast<uint64>(Config.MessagePoolSize) * Config.MessageSize;
-
-    // Calculate the amount of pages that we need
-    const uint32 numPages = totalSize > pageSize ? Math::CeilToInt(totalSize / static_cast<float>(pageSize)) : 1;
-
-    MessageBuffer = static_cast<uint8*>(Platform::AllocatePages(numPages, pageSize));
-    Platform::MemorySet(MessageBuffer, 0, numPages * pageSize);
-}
-
-void NetworkManager::DisposeMessageBuffers()
-{
-    ASSERT(MessageBuffer != nullptr);
-    
-    Platform::FreePages(MessageBuffer);
-    MessageBuffer = nullptr;
-}
-
-uint8* NetworkManager::GetMessageBuffer(const uint32 messageId)
-{
-    // Calculate and return the buffer slice using previously calculated slice.
-    return MessageBuffer + Config.MessageSize * messageId;
 }

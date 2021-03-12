@@ -12,7 +12,7 @@ public:
     virtual void Dispose() = 0;
     
     virtual bool Listen() = 0;
-    virtual void Connect() = 0;
+    virtual bool Connect() = 0;
     virtual void Disconnect() = 0;
     virtual void Disconnect(const NetworkConnection& connection) = 0;
 

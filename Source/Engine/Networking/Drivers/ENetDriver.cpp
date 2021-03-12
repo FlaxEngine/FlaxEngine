@@ -5,6 +5,8 @@
 #include "ENetDriver.h"
 
 #include "Engine/Networking/NetworkConfig.h"
+#include "Engine/Networking/NetworkEvent.h"
+#include "Engine/Networking/NetworkManager.h"
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -12,110 +14,88 @@
 #define ENET_IMPLEMENTATION
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <enet/enet.h>
-
-#include "Engine/Networking/NetworkEvent.h"
-#include "Engine/Networking/NetworkManager.h"
 #undef _WINSOCK_DEPRECATED_NO_WARNINGS
 #undef SendMessage
 
-namespace
-{
-    bool Initialized = false;
-    
-    NetworkConfig Config;
-
-    ENetHost* Server = nullptr;
-    ENetHost* Client = nullptr;
-    ENetPeer* ClientPeer = nullptr;
-}
-
 void ENetDriver::Initialize(const NetworkConfig& config)
 {
-    Config = config;
+    _config = config;
 
     if (enet_initialize () != 0) {
         LOG(Error, "Failed to initialize ENet driver!");
     }
 
     LOG(Info, "Initialized ENet driver!");
-    Initialized = true;
 }
 
 void ENetDriver::Dispose()
 {
-    ASSERT(Initialized);
+    if(_peer)
+        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
+    enet_host_destroy((ENetHost*)_host);
     
-    if (Server != nullptr)
-    {
-        enet_host_destroy(Server);
-        Server = nullptr;
-    }
-    
-    if (Client != nullptr)
-    {
-        enet_peer_disconnect_now(ClientPeer, 0);
-        enet_host_destroy(Client);
-        Client = nullptr;
-    }
-
     enet_deinitialize();
-    Initialized = false;
+    _peer = nullptr;
+    _host = nullptr;
 }
 
 bool ENetDriver::Listen()
 {
-    ASSERT(Client == nullptr);
-    ASSERT(Server == nullptr);
-
     ENetAddress address = {0};
     address.host = ENET_HOST_ANY; // TODO
-    address.port = Config.Port;
-
-    Server = enet_host_create(&address, Config.ConnectionsLimit, 0, 0, 0);
-
-    if(Server == nullptr)
+    address.port = _config.Port;
+    
+    // Create ENet host
+    _host = enet_host_create(&address, _config.ConnectionsLimit, 0, 0, 0);
+    if(_host == nullptr)
     {
-        LOG(Error, "Failed to initialize ENet driver!");
-        return true;
+        LOG(Error, "Failed to initialize ENet host!");
+        return false;
     }
     
     LOG(Info, "Created ENet server!");
-    return false;
+    return true;
 }
 
-void ENetDriver::Connect()
+bool ENetDriver::Connect()
 {
-    ASSERT(Server == nullptr);
-    ASSERT(Client == nullptr);
-    ASSERT(ClientPeer == nullptr);
-    
     LOG(Info, "Connecting using ENet...");
 
     ENetAddress address = {0};
-    address.port = Config.Port;
+    address.port = _config.Port;
     enet_address_set_host(&address, "127.0.0.1"); // TODO
 
-    Client = enet_host_create(nullptr, 1, 0, 0, 0);
-    ClientPeer = enet_host_connect(Client, &address, 0, 0);
-
-    if(ClientPeer == nullptr)
+    // Create ENet host
+    _host = enet_host_create(nullptr, 1, 0, 0, 0);
+    if(_host == nullptr)
+    {
+        LOG(Error, "Failed to initialize ENet host!");
+        return false;
+    }
+    
+    // Create ENet peer/connect to the server
+    _peer = enet_host_connect((ENetHost*)_host, &address, 0, 0);
+    if(_peer == nullptr)
     {
         LOG(Error, "Failed to create ENet host!");
-        enet_host_destroy(Client);
-        Client = nullptr;
+        enet_host_destroy((ENetHost*)_host);
+        return false;
     }
+
+    return true;
 }
 
 void ENetDriver::Disconnect()
 {
-    ASSERT(Client != nullptr);
-    ASSERT(ClientPeer != nullptr);
+    ASSERT(_peer != nullptr);
     
-    enet_peer_disconnect_now(ClientPeer, 0);
-    enet_host_destroy(Client);
-    
-    Client = nullptr;
-    ClientPeer = nullptr;
+    if(_peer)
+    {
+        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
+        _peer = nullptr;
+        
+        LOG(Info, "Disconnected");
+    }
 }
 
 void ENetDriver::Disconnect(const NetworkConnection& connection)
@@ -125,12 +105,8 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
 
 bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 {
-    ASSERT(Server != nullptr || Client != nullptr);
-    
-    ENetHost* host = Server != nullptr ? Server : Client; // TODO: Get host by id
-    
     ENetEvent event;
-    const int result = enet_host_service(host, &event, 0);
+    const int result = enet_host_service((ENetHost*)_host, &event, 0);
 
     if(result < 0)
         LOG(Error, "Failed to check ENet events!");
@@ -147,16 +123,19 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
             eventPtr->EventType = NetworkEventType::Disconnected;
             LOG(Info, "Disconnected"); // TODO
             break;
+        case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
+            eventPtr->EventType = NetworkEventType::Disconnected;
+            LOG(Info, "Disconnected (timeout)"); // TODO
+            break;
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;
 
             // Acquire message and copy message data
-            eventPtr->Message = NetworkManager::CreateMessage();
+            eventPtr->Message = NetworkManager::CreateMessage(eventPtr->HostId);
             eventPtr->Message.Length = event.packet->dataLength;
             Memory::CopyItems(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
 
             // TODO: Copy sender info
-            
             break;
             
         default: break;

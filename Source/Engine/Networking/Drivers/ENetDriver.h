@@ -4,8 +4,8 @@
 
 #include "Engine/Networking/Types.h"
 #include "Engine/Networking/INetworkDriver.h"
+#include "Engine/Networking/NetworkConfig.h"
 
-#include "Engine/Networking/NetworkConnection.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public INetworkDriver
@@ -16,12 +16,17 @@ public:
     void Dispose() override;
     
     bool Listen() override;
-    void Connect() override;
+    bool Connect() override;
     void Disconnect() override;
     void Disconnect(const NetworkConnection& connection) override;
 
     bool PopEvent(NetworkEvent* eventPtr) override;
     
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) override;
+
+private:
+    NetworkConfig _config;
+    void* _host = nullptr;
+    void* _peer = nullptr;
 };
 
