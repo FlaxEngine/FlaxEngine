@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using FlaxEngine.Assertions;
-
 namespace FlaxEngine.GUI
 {
     /// <summary>
