@@ -79,6 +79,11 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
     const String gameExePath = outputPath / TEXT("FlaxGame");
 #endif
 
+    // Ensure the output binary can be executed
+#if PLATFORM_LINUX
+    system(*StringAnsi(String::Format(TEXT("chmod +x \"{0}\""), gameExePath)));
+#endif
+
     // Apply game icon
     TextureData iconData;
     if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
