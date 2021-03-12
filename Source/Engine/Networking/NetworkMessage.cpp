@@ -15,15 +15,3 @@ void NetworkMessage::ReadBytes(uint8* bytes, const int numBytes)
     Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
     Position += numBytes;
 }
-
-void NetworkMessage::WriteUInt32(uint32 value)
-{
-    WriteBytes(reinterpret_cast<uint8*>(&value), sizeof(uint32));
-}
-
-uint32 NetworkMessage::ReadUInt32()
-{
-    uint32 value = 0;
-    ReadBytes(reinterpret_cast<uint8*>(&value), sizeof(uint32));
-    return value;
-}
