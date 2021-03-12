@@ -281,6 +281,11 @@ void TextRender::UpdateLayout()
 #endif
 
     // Update text bounds (from build vertex positions)
+    if (_ib.Data.IsEmpty())
+    {
+        // Empty
+        box = BoundingBox(_transform.Translation, _transform.Translation);
+    }
     _localBox = box;
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
