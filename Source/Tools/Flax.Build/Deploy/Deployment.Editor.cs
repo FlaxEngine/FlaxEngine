@@ -50,6 +50,10 @@ namespace Flax.Deploy
                 {
                     DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Windows/Mono");
                 }
+                else if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
+                {
+                    DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Linux/Mono");
+                }
                 else
                 {
                     throw new NotImplementedException();
@@ -120,18 +124,21 @@ namespace Flax.Deploy
                 }
                 Log.Info("Compressed editor package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
-                Log.Info("Compressing editor debug symbols files...");
-                editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols.zip");
-                using (ZipFile zip = new ZipFile())
+                if (Platform.BuildPlatform.Target == TargetPlatform.Windows)
                 {
-                    zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols"));
+                    Log.Info("Compressing editor debug symbols files...");
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols.zip");
+                    using (ZipFile zip = new ZipFile())
+                    {
+                        zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols"));
 
-                    zip.CompressionLevel = CompressionLevel.BestCompression;
-                    zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
+                        zip.CompressionLevel = CompressionLevel.BestCompression;
+                        zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
 
-                    zip.Save(editorPackageZipPath);
+                        zip.Save(editorPackageZipPath);
+                    }
+                    Log.Info("Compressed editor debug symbols package size: " + Utilities.GetFileSize(editorPackageZipPath));
                 }
-                Log.Info("Compressed editor debug symbols package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
                 // Cleanup
                 Utilities.DirectoryDelete(OutputPath);
@@ -170,6 +177,25 @@ namespace Flax.Deploy
                     DeployFiles(src, dstDebug, "*.pdb");
                     File.Delete(Path.Combine(dstDebug, "FlaxEngine.CSharp.pdb"));
                     File.Delete(Path.Combine(dstDebug, "Newtonsoft.Json.pdb"));
+                }
+                else if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
+                {
+                    var binariesSubDir = "Binaries/Editor/Linux/" + configuration;
+                    var src = Path.Combine(RootPath, binariesSubDir);
+                    var dst = Path.Combine(OutputPath, binariesSubDir);
+                    Directory.CreateDirectory(dst);
+
+                    // Deploy binaries
+                    DeployFile(src, dst, "FlaxEditor");
+                    DeployFile(src, dst, "FlaxEditor.Build.json");
+                    DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
+                    DeployFile(src, dst, "FlaxEngine.CSharp.xml");
+                    DeployFile(src, dst, "Newtonsoft.Json.pdb");
+                    DeployFiles(src, dst, "*.dll");
+                    DeployFiles(src, dst, "*.so");
+                    DeployFile(src, dst, "libmonosgen-2.0.so.1");
+                    DeployFile(src, dst, "libmonosgen-2.0.so.1.0.0");
+                    DeployFile(src, dst, "Logo.png");
                 }
                 else
                 {
