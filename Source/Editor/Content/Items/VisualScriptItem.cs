@@ -75,6 +75,8 @@ namespace FlaxEditor.Content
             }
         }
 
+        public int MetadataToken => 0;
+
         /// <inheritdoc />
         public bool HasAttribute(Type attributeType, bool inherit)
         {
@@ -194,6 +196,8 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public ScriptType ValueType => _returnType;
+
+        public int MetadataToken => 0;
 
         /// <inheritdoc />
         public bool HasAttribute(Type attributeType, bool inherit)
