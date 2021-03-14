@@ -123,7 +123,6 @@ void MAssembly::Unload(bool isReloading)
             LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
 
             mono_assembly_close(_monoAssembly);
-            mono_image_close(_monoImage);
         }
         else
         {
@@ -306,11 +305,9 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
 
     // Setup assembly
     const auto assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
+    mono_image_close(assemblyImage);
     if (status != MONO_IMAGE_OK || assembly == nullptr)
     {
-        // Close image if error occurred
-        mono_image_close(assemblyImage);
-
         Log::CLRInnerException(TEXT("Mono assembly image is corrupted at ") + assemblyPath);
         return true;
     }
