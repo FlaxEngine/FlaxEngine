@@ -69,6 +69,24 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Order of script members show in editor
+        /// </summary>
+        public enum MembersOrder
+        {
+            /// <summary>
+            /// Shows properties/fields in alphabetical order
+            /// </summary>
+            [Tooltip("Shows properties/fields in alphabetical order")]
+            Alphabetical,
+
+            /// <summary>
+            /// Shows properties/fields in declaration order
+            /// </summary>
+            [Tooltip("Shows properties/fields in declaration order")]
+            Declaration
+        }
+
+        /// <summary>
         /// Gets or sets the scene to load on editor startup.
         /// </summary>
         [DefaultValue(StartupSceneModes.LastOpened)]
@@ -115,6 +133,13 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Scripting", "Force Script Compilation On Startup"), EditorOrder(501), Tooltip("Determines whether automatically compile game scripts before starting the editor.")]
         public bool ForceScriptCompilationOnStartup { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether automatically save the Visual Script asset editors when starting the play mode in editor.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Scripting", "Script Members Order"), EditorOrder(503), Tooltip("Sets the order of script properties/fields")]
+        public MembersOrder ScriptMembersOrder { get; set; } = MembersOrder.Alphabetical;
 
         /// <summary>
         /// Gets or sets a value indicating whether automatically save the Visual Script asset editors when starting the play mode in editor.
