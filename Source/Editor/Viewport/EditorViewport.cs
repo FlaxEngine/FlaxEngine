@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -141,6 +142,11 @@ namespace FlaxEditor.Viewport
         private Vector2 _startPos;
         private Vector2 _mouseDeltaRightLast;
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
+
+        /// <summary>
+        /// Mouse detla (x = Left, Y = Right)
+        /// </summary>
+        protected Vector2 _mouseDelta;
 
         /// <summary>
         /// The previous input (from the previous update).
@@ -809,6 +815,7 @@ namespace FlaxEditor.Viewport
             {
                 if (IsMouseOver)
                     return ConvertMouseToRay(ref _viewMousePos);
+
                 return new Ray(Vector3.Maximum, Vector3.Up);
             }
         }
@@ -1125,9 +1132,11 @@ namespace FlaxEditor.Viewport
                     Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
                 }
+
             }
             else
             {
+                _mouseDelta = Vector2.Zero;
                 _mouseDeltaRight = _mouseDeltaRightLast = Vector2.Zero;
 
                 if (ContainsFocus)
@@ -1165,19 +1174,23 @@ namespace FlaxEditor.Viewport
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
             }
-            if (_input.IsMouseLeftDown && false)
+
+            if (_input.IsMouseLeftDown)
             {
                 // Calculate smooth mouse delta not dependant on viewport size
-                Vector2 offset = _viewMousePos - _startPos;
-                offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDeltaLeft = offset / size;
+                var mouseDeltaLeftOffset = _viewMousePos.X - _startPos.X;
+                mouseDeltaLeftOffset = mouseDeltaLeftOffset > 0 ? Mathf.Floor(mouseDeltaLeftOffset) : Mathf.Ceil(mouseDeltaLeftOffset);
+                _mouseDeltaLeft = mouseDeltaLeftOffset / size;
                 _startPos = _viewMousePos;
+                _mouseDelta.X = _mouseDeltaLeft.X * 1000;
             }
             else
-            {
-                _mouseDeltaLeft = Vector2.Zero;
-            }
+                _mouseDelta.X = 0;
+
+            if (_input.IsMouseRightDown)
+                _mouseDelta.Y = _mouseDeltaRight.Y * 1000;
+            else
+                _mouseDelta.Y = 0;
 
             _input.MouseWheelDelta = 0;
         }
