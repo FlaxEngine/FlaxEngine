@@ -676,7 +676,7 @@ namespace FlaxEditor.Viewport
                 ((FPSCamera)ViewportCamera).MoveViewport(pos, orientation);
             }
         }
-        
+
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _mouseSensitivity = options.Viewport.MouseSensitivity;
@@ -1150,7 +1150,7 @@ namespace FlaxEditor.Viewport
                     Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
                 }
-                
+
                 // Change Ortho size on mouse scroll
                 if (_isOrtho && !rmbWheel)
                 {
