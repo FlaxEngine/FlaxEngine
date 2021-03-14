@@ -177,8 +177,15 @@ void TextRender::UpdateLayout()
                     // Get texture atlas that contains current character
                     drawChunk.FontAtlasIndex = entry.TextureIndex;
                     fontAtlas = FontManager::GetAtlas(drawChunk.FontAtlasIndex);
-                    fontAtlas->EnsureTextureCreated();
-                    invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    }
+                    else
+                    {
+                        invAtlasSize = 1.0f;
+                    }
 
                     // Setup material
                     drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();

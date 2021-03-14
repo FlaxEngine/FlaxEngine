@@ -1137,11 +1137,17 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                 // Get texture atlas that contains current character
                 fontAtlasIndex = entry.TextureIndex;
                 fontAtlas = FontManager::GetAtlas(fontAtlasIndex);
-                fontAtlas->EnsureTextureCreated();
-                drawCall.AsChar.Tex = fontAtlas->GetTexture();
-
-                // Cache atlas inverted size (inverted to improve performance)
-                invAtlasSize = 1.0f / fontAtlas->GetSize();
+                if (fontAtlas)
+                {
+                    fontAtlas->EnsureTextureCreated();
+                    drawCall.AsChar.Tex = fontAtlas->GetTexture();
+                    invAtlasSize = 1.0f / fontAtlas->GetSize();
+                }
+                else
+                {
+                    drawCall.AsChar.Tex = nullptr;
+                    invAtlasSize = 1.0f;
+                }
             }
 
             // Check if character is a whitespace
@@ -1250,9 +1256,17 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                     // Get texture atlas that contains current character
                     fontAtlasIndex = entry.TextureIndex;
                     fontAtlas = FontManager::GetAtlas(fontAtlasIndex);
-                    fontAtlas->EnsureTextureCreated();
-                    invAtlasSize = 1.0f / fontAtlas->GetSize();
-                    drawCall.AsChar.Tex = fontAtlas->GetTexture();
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                        drawCall.AsChar.Tex = fontAtlas->GetTexture();
+                    }
+                    else
+                    {
+                        invAtlasSize = 1.0f;
+                        drawCall.AsChar.Tex = nullptr;
+                    }
                 }
 
                 // Get kerning
