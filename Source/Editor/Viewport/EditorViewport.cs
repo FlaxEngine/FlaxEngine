@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -538,21 +539,30 @@ namespace FlaxEditor.Viewport
                         {
                             _isOrtho = checkBox.Checked;
                             ViewWidgetButtonMenu.Hide();
+                            if (_isOrtho)
+                            {
+                                var orient = ViewOrientation;
+                                OrientViewport(ref orient);
+                            }
                         }
                     };
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Cara Orientation
+                // Camera Viewpoints
                 {
-                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Orientation").ContextMenu;
-                    for (int i = 0; i < EditorViewportCameraOrientationValues.Length; i++)
+                    var cameraView = ViewWidgetButtonMenu.AddChildMenu("Viewpoints").ContextMenu;
+                    for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
                     {
-                        var co = EditorViewportCameraOrientationValues[i];
+                        var co = EditorViewportCameraViewpointValues[i];
                         var button = cameraView.AddButton(co.Name);
                         button.Tag = co.Orientation;
                     }
-                    cameraView.ButtonClicked += button => ViewOrientation = Quaternion.Euler((Vector3)button.Tag);
+                    cameraView.ButtonClicked += button =>
+                    {
+                        var orient = Quaternion.Euler((Vector3)button.Tag);
+                        OrientViewport(ref orient);
+                    };
                 }
 
                 // Field of View
@@ -654,6 +664,19 @@ namespace FlaxEditor.Viewport
             task.Begin += OnRenderBegin;
         }
 
+        private void OrientViewport(ref Quaternion orientation)
+        {
+            if (Editor.Instance.SceneEditing.HasSthSelected)
+            {
+                ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orientation);
+            }
+            else
+            {
+                var pos = new Vector3(0.0f) + Vector3.Backward * orientation * 2000.0f;
+                ((FPSCamera)ViewportCamera).MoveViewport(pos, orientation);
+            }
+        }
+        
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _mouseSensitivity = options.Viewport.MouseSensitivity;
@@ -994,6 +1017,7 @@ namespace FlaxEditor.Viewport
             var options = Editor.Instance.Options.Options.Input;
             if (_isControllingMouse)
             {
+                var rmbWheel = false;
                 // Gather input
                 {
                     bool isAltDown = _input.IsAltDown;
@@ -1009,10 +1033,11 @@ namespace FlaxEditor.Viewport
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
-                    if (useMovementSpeed && _input.IsMouseRightDown && wheelInUse)
+                    rmbWheel = useMovementSpeed && _input.IsMouseRightDown && wheelInUse;
+                    if (rmbWheel)
                     {
                         float step = 4.0f;
-                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta;
+                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity;
                         int camValueIndex = -1;
                         for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
                         {
@@ -1076,7 +1101,7 @@ namespace FlaxEditor.Viewport
                 // Calculate smooth mouse delta not dependant on viewport size
 
                 Vector2 offset = _viewMousePos - _startPos;
-                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown)
+                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel)
                 {
                     offset = Vector2.Zero;
                 }
@@ -1124,6 +1149,14 @@ namespace FlaxEditor.Viewport
                 {
                     Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
+                }
+                
+                // Change Ortho size on mouse scroll
+                if (_isOrtho && !rmbWheel)
+                {
+                    var scroll = _input.MouseWheelDelta;
+                    if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
+                        _orthoSize -= scroll * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
             }
             else
@@ -1260,26 +1293,26 @@ namespace FlaxEditor.Viewport
             base.OnDestroy();
         }
 
-        private struct CameraOrientation
+        private struct CameraViewpoint
         {
             public readonly string Name;
             public readonly Vector3 Orientation;
 
-            public CameraOrientation(string name, Vector3 orientation)
+            public CameraViewpoint(string name, Vector3 orientation)
             {
                 Name = name;
                 Orientation = orientation;
             }
         }
 
-        private readonly CameraOrientation[] EditorViewportCameraOrientationValues =
+        private readonly CameraViewpoint[] EditorViewportCameraViewpointValues =
         {
-            new CameraOrientation("Front", new Vector3(0, 0, 0)),
-            new CameraOrientation("Back", new Vector3(0, 180, 0)),
-            new CameraOrientation("Left", new Vector3(0, -90, 0)),
-            new CameraOrientation("Right", new Vector3(0, 90, 0)),
-            new CameraOrientation("Top", new Vector3(90, 0, 0)),
-            new CameraOrientation("Bottom", new Vector3(-90, 0, 0))
+            new CameraViewpoint("Front", new Vector3(0, 180, 0)),
+            new CameraViewpoint("Back", new Vector3(0, 0, 0)),
+            new CameraViewpoint("Left", new Vector3(0, 90, 0)),
+            new CameraViewpoint("Right", new Vector3(0, -90, 0)),
+            new CameraViewpoint("Top", new Vector3(90, 0, 0)),
+            new CameraViewpoint("Bottom", new Vector3(-90, 0, 0))
         };
 
         private readonly float[] EditorViewportCameraSpeedValues =
