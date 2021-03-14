@@ -124,8 +124,6 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
             swapChainDesc.BufferDesc = outputDX.DesktopViewMode;
         }
 
-        releaseBackBuffer();
-
         if (FAILED(_swapChain->ResizeTarget(&swapChainDesc.BufferDesc)))
         {
             LOG(Warning, "Swapchain resize failed.");
@@ -135,10 +133,6 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
         {
             LOG(Warning, "Cannot change fullscreen mode for '{0}' to {1}.", ToString(), isFullscreen);
         }
-
-        VALIDATE_DIRECTX_RESULT(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, _width, _height, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
-
-        getBackBuffer();
 
         _isFullscreen = isFullscreen;
     }
@@ -223,7 +217,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         _backBuffers.Resize(swapChainDesc.BufferCount);
 
         // Disable DXGI changes to the window
-        dxgiFactory->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
+        dxgiFactory->MakeWindowAssociation(_windowHandle, 0);
     }
     else
     {
