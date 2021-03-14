@@ -549,7 +549,7 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Cara Orientation
+                // Camera Orientation
                 {
                     var cameraView = ViewWidgetButtonMenu.AddChildMenu("Orientation").ContextMenu;
                     for (int i = 0; i < EditorViewportCameraOrientationValues.Length; i++)
@@ -1001,6 +1001,7 @@ namespace FlaxEditor.Viewport
             var options = Editor.Instance.Options.Options.Input;
             if (_isControllingMouse)
             {
+                var rmbWheel = false;
                 // Gather input
                 {
                     bool isAltDown = _input.IsAltDown;
@@ -1016,10 +1017,11 @@ namespace FlaxEditor.Viewport
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
-                    if (useMovementSpeed && _input.IsMouseRightDown && wheelInUse)
+                    rmbWheel = useMovementSpeed && _input.IsMouseRightDown && wheelInUse;
+                    if (rmbWheel)
                     {
                         float step = 4.0f;
-                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta;
+                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity;
                         int camValueIndex = -1;
                         for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
                         {
@@ -1083,7 +1085,7 @@ namespace FlaxEditor.Viewport
                 // Calculate smooth mouse delta not dependant on viewport size
 
                 Vector2 offset = _viewMousePos - _startPos;
-                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown)
+                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel)
                 {
                     offset = Vector2.Zero;
                 }
@@ -1131,6 +1133,14 @@ namespace FlaxEditor.Viewport
                 {
                     Vector2 center = PointToWindow(_startPos);
                     win.MousePosition = center;
+                }
+
+                // Change Ortho size on mouse scroll
+                if (_isOrtho && !rmbWheel)
+                {
+                    var scroll = _input.MouseWheelDelta;
+                    if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
+                        _orthoSize -= scroll * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
 
             }

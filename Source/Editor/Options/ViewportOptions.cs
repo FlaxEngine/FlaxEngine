@@ -19,6 +19,13 @@ namespace FlaxEditor.Options
         public float MouseSensitivity { get; set; } = 1.0f;
 
         /// <summary>
+        /// Gets or sets the mouse wheel sensitivity applied to zoom in orthographic mode.
+        /// </summary>
+        [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
+        [EditorDisplay("General"), EditorOrder(101), Tooltip("The mouse wheel sensitivity applied to zoom in orthographic mode.")]
+        public float MouseWheelSensitivity { get; set; } = 1.0f;
+
+        /// <summary>
         /// Gets or sets the default movement speed for the viewport camera (must match the dropdown menu values in the viewport).
         /// </summary>
         [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
