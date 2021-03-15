@@ -8,4 +8,6 @@
 #include "Linux/LinuxVulkanPlatform.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidVulkanPlatform.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/GraphicsDevice/Vulkan/SwitchVulkanPlatform.h"
 #endif

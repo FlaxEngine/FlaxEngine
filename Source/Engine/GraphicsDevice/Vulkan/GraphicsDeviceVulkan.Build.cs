@@ -108,7 +108,15 @@ public class GraphicsDeviceVulkan : GraphicsDeviceBaseModule
 
         options.PublicDefinitions.Add("GRAPHICS_API_VULKAN");
 
-        options.PrivateDependencies.Add("volk");
         options.PrivateDependencies.Add("VulkanMemoryAllocator");
+
+        if (options.Platform.Target == TargetPlatform.Switch)
+        {
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "GraphicsDevice", "Vulkan"));
+        }
+        else
+        {
+            options.PrivateDependencies.Add("volk");
+        }
     }
 }

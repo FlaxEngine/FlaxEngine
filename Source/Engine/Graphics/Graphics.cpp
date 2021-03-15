@@ -171,6 +171,14 @@ bool GraphicsService::Init()
             device = CreateGPUDeviceVulkan();
 #endif
 
+#elif PLATFORM_SWITCH
+
+        // Switch
+#if GRAPHICS_API_VULKAN
+        if (!device)
+            device = CreateGPUDeviceVulkan();
+#endif
+
 #elif !defined(GRAPHICS_API_NULL)
 
 #error "Platform does not support GPU devices."

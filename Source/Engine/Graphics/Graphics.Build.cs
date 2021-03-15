@@ -76,7 +76,7 @@ public class Graphics : EngineModule
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
         case TargetPlatform.Switch:
-            options.PrivateDependencies.Add("GraphicsDeviceNull"); // TODO: use Vulkan on Switch
+            options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
