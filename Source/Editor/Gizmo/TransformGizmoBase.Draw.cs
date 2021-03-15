@@ -99,7 +99,6 @@ namespace FlaxEditor.Gizmo
             bool isZAxis = _activeAxis == Axis.Z || _activeAxis == Axis.YZ || _activeAxis == Axis.ZX;
             bool isCenter = _activeAxis == Axis.Center;
 
-            // TODO: Invert condition to make more sense (When flip is true it should be the opposite not the normal value)
             // Flip gizmos based on view position
             flipX = Owner.ViewPosition.X < Position.X;
             flipY = Owner.ViewPosition.Y < Position.Y;
