@@ -101,29 +101,29 @@ namespace FlaxEditor.Gizmo
 
             // TODO: Invert condition to make more sense (When flip is true it should be the opposite not the normal value)
             // Flip gizmos based on view position
-            flipX = Owner.ViewPosition.X > Position.X;
-            flipY = Owner.ViewPosition.Y > Position.Y;
-            flipZ = Owner.ViewPosition.Z < Position.Z;
+            flipX = Owner.ViewPosition.X < Position.X;
+            flipY = Owner.ViewPosition.Y < Position.Y;
+            flipZ = Owner.ViewPosition.Z > Position.Z;
 
-            var unitX = flipX ? Vector3.UnitX : -Vector3.UnitX;
-            var unitY = flipY ? Vector3.UnitY : -Vector3.UnitY;
-            var unitZ = flipZ ? -Vector3.UnitZ : Vector3.UnitZ;
+            var unitX = flipX ? -Vector3.UnitX : Vector3.UnitX;
+            var unitY = flipY ? -Vector3.UnitY : Vector3.UnitY;
+            var unitZ = flipZ ? Vector3.UnitZ : -Vector3.UnitZ;
 
-            float XRot = flipX ? -Mathf.PiOverTwo : Mathf.PiOverTwo;
-            float YRot = flipY ? Mathf.PiOverTwo : -Mathf.PiOverTwo;
-            float ZRot = flipZ ? 0 : Mathf.Pi;
+            float XRot = flipX ? Mathf.PiOverTwo : -Mathf.PiOverTwo;
+            float YRot = flipY ? -Mathf.PiOverTwo : Mathf.PiOverTwo;
+            float ZRot = flipZ ? Mathf.Pi : 0;
 
-            float xBox = flipX ? boxScale : -boxScale;
-            float yBox = flipY ? boxScale : -boxScale;
-            float zBox = flipZ ? -boxScale : boxScale;
+            float xBox = flipX ? -boxScale : boxScale;
+            float yBox = flipY ? -boxScale : boxScale;
+            float zBox = flipZ ? boxScale : -boxScale;
 
-            float xInner = flipX ? InnerExtend : -InnerExtend;
-            float yInner = flipY ? InnerExtend : -InnerExtend;
-            float zInner = flipZ ? -InnerExtend : InnerExtend;
+            float xInner = flipX ? -InnerExtend : InnerExtend;
+            float yInner = flipY ? -InnerExtend : InnerExtend;
+            float zInner = flipZ ? InnerExtend : -InnerExtend;
 
-            float xOuter = flipX ? OuterExtend : -OuterExtend;
-            float yOuter = flipY ? OuterExtend : -OuterExtend;
-            float zOuter = flipZ ? -OuterExtend : OuterExtend;
+            float xOuter = flipX ? -OuterExtend : OuterExtend;
+            float yOuter = flipY ? -OuterExtend : OuterExtend;
+            float zOuter = flipZ ? OuterExtend : -OuterExtend;
 
             XAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * unitX).Merge(AxisLength * unitX);
             YAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * unitY).Merge(AxisLength * unitY);
