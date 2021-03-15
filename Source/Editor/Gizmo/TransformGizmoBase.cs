@@ -303,6 +303,7 @@ namespace FlaxEditor.Gizmo
                     Quaternion orientation = GetSelectedObject(0).Orientation;
                     delta = Vector3.Transform(delta, orientation);
 
+                    // FIXME: This will cause delta to ALWAYS be positive!
                     // Fix axis sign of delta movement for rotated object in some cases (eg. rotated object by 90 deg on Y axis and scale in world space with Red/X axis)
                     switch (_activeAxis)
                     {
@@ -310,10 +311,12 @@ namespace FlaxEditor.Gizmo
                         if (deltaLocal.X < 0)
                             delta *= -1;
                         break;
+
                     case Axis.Y:
                         if (deltaLocal.Y < 0)
                             delta *= -1;
                         break;
+
                     case Axis.Z:
                         if (deltaLocal.Z < 0)
                             delta *= -1;

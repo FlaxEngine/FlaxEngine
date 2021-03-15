@@ -415,6 +415,33 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Merges the box with a point.
+        /// </summary>
+        /// <param name="point">The point to add to the box bounds.</param>
+        public BoundingBox Merge(Vector3 point)
+        {
+            BoundingBox result;
+            Vector3.Min(ref Minimum, ref point, out result.Minimum);
+            Vector3.Max(ref Maximum, ref point, out result.Maximum);
+            return result;
+        }
+
+        /// <summary>
+        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
+        /// </summary>
+        /// <param name="value1">The bounding box</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>The result.</returns>
+        public BoundingBox MakeOffsetted(Vector3 offset)
+        {
+            BoundingBox result;
+            result.Minimum = Minimum + offset;
+            result.Maximum = Maximum + offset;
+            return result;
+        }
+
+        /// <summary>
         /// Transforms bounding box using the given transformation matrix.
         /// </summary>
         /// <param name="box">The bounding box to transform.</param>
