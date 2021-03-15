@@ -125,6 +125,18 @@ void NetworkManager::AbortSendMessage(const int hostId, const NetworkMessage& me
     RecycleMessage(hostId, message);
 }
 
+bool NetworkManager::EndSendMessage(const int hostId, const NetworkChannelType channelType, const NetworkMessage& message)
+{
+    ASSERT(Hosts[hostId].IsValid());
+    NetworkHost& host = Hosts[hostId];
+    ASSERT(message.IsValid());
+    
+    host.NetworkDriver->SendMessage(channelType, message);
+
+    RecycleMessage(hostId, message);
+    return false;
+}
+
 bool NetworkManager::EndSendMessage(const int hostId, const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection> targets)
 {
     ASSERT(Hosts[hostId].IsValid());

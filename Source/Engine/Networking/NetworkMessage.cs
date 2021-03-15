@@ -1,17 +1,19 @@
 ﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.Networking
 {
     public unsafe partial struct NetworkMessage
     {
         public void WriteBytes(byte* bytes, int length)
         {
-            // TODO
+            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer), length);
         }
 
         public void ReadBytes(byte* buffer, int length)
         {
-            // TODO
+            Utils.MemoryCopy(new IntPtr(Buffer), new IntPtr(buffer), length);
         }
 
         public void WriteUInt32(uint value)

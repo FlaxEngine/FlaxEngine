@@ -25,6 +25,7 @@ public:
 
     API_FUNCTION() static NetworkMessage BeginSendMessage(int hostId);
     API_FUNCTION() static void AbortSendMessage(int hostId, const NetworkMessage& message);
+    API_FUNCTION() static bool EndSendMessage(int hostId, NetworkChannelType channelType, const NetworkMessage& message);
     API_FUNCTION() static bool EndSendMessage(int hostId, NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets);
 
     // TODO: Stats API

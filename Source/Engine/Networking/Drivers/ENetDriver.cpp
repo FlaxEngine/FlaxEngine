@@ -5,6 +5,7 @@
 #include "ENetDriver.h"
 
 #include "Engine/Networking/NetworkConfig.h"
+#include "Engine/Networking/NetworkChannelType.h"
 #include "Engine/Networking/NetworkEvent.h"
 #include "Engine/Networking/NetworkManager.h"
 
@@ -16,6 +17,40 @@
 #include <enet/enet.h>
 #undef _WINSOCK_DEPRECATED_NO_WARNINGS
 #undef SendMessage
+
+ENetPacketFlag ChannelTypeToPacketFlag(const NetworkChannelType channel)
+{
+    int flag = 0; // Maybe use ENET_PACKET_FLAG_NO_ALLOCATE?
+
+    // Add reliable flag when it is "reliable" channel
+    if(channel > NetworkChannelType::UnreliableOrdered)
+        flag |= ENET_PACKET_FLAG_RELIABLE;
+
+    // Use unsequenced flag when the flag is unreliable. We have to sequence all other packets.
+    if(channel == NetworkChannelType::Unreliable)
+        flag |= ENET_PACKET_FLAG_UNSEQUENCED;
+
+    // Note that all reliable channels are exactly the same. TODO: How to handle unordered reliable packets...?
+    
+    return static_cast<ENetPacketFlag>(flag);
+}
+
+void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, const NetworkMessage& message)
+{
+    // Covert our channel type to the internal ENet packet flags
+    const ENetPacketFlag flag = ChannelTypeToPacketFlag(channelType);
+
+    // This will copy the data into the packet when ENET_PACKET_FLAG_NO_ALLOCATE is not set.
+    // Tho, we cannot use it, because we're releasing the message right after the send - and the packet might not
+    // be sent, yet. To avoid data corruption, we're just using the copy method. We might fix that later, but I'll take
+    // the smaller risk.
+    ENetPacket* packet = enet_packet_create(message.Buffer, message.Length, flag);
+
+    // And send it!
+    enet_peer_send (peer, 0, packet);
+
+    // TODO: To reduce latency, we can use `enet_host_flush` to flush all packets. Maybe some API, like NetworkManager::FlushQueues()?
+}
 
 void ENetDriver::Initialize(const NetworkConfig& config)
 {
@@ -117,7 +152,7 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
         {
         case ENET_EVENT_TYPE_CONNECT:
             eventPtr->EventType = NetworkEventType::Connected;
-            LOG(Info, "Connected"); // TODO
+            LOG(Info, "Connected. Peer id={0}", enet_peer_get_id(event.peer)); // TODO
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             eventPtr->EventType = NetworkEventType::Disconnected;
@@ -144,6 +179,11 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
     }
 
     return false; // No events
+}
+
+void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
+{
+    SendPacketToPeer((ENetPeer*)_peer, channelType, message);
 }
 
 void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
