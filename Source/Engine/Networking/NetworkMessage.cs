@@ -8,12 +8,15 @@ namespace FlaxEngine.Networking
     {
         public void WriteBytes(byte* bytes, int length)
         {
-            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer), length);
+            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer + Position), length);
+            Position += (uint)length;
+            Length = Position;
         }
 
         public void ReadBytes(byte* buffer, int length)
         {
-            Utils.MemoryCopy(new IntPtr(Buffer), new IntPtr(buffer), length);
+            Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(buffer), length);
+            Position += (uint)length;
         }
 
         public void WriteUInt32(uint value)
