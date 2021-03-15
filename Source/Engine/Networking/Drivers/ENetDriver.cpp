@@ -46,7 +46,7 @@ bool ENetDriver::Listen()
     address.port = _config.Port;
     
     // Create ENet host
-    _host = enet_host_create(&address, _config.ConnectionsLimit, 0, 0, 0);
+    _host = enet_host_create(&address, _config.ConnectionsLimit, 1, 0, 0);
     if(_host == nullptr)
     {
         LOG(Error, "Failed to initialize ENet host!");
@@ -66,7 +66,7 @@ bool ENetDriver::Connect()
     enet_address_set_host(&address, "127.0.0.1"); // TODO
 
     // Create ENet host
-    _host = enet_host_create(nullptr, 1, 0, 0, 0);
+    _host = enet_host_create(nullptr, 1, 1, 0, 0);
     if(_host == nullptr)
     {
         LOG(Error, "Failed to initialize ENet host!");
@@ -74,7 +74,7 @@ bool ENetDriver::Connect()
     }
     
     // Create ENet peer/connect to the server
-    _peer = enet_host_connect((ENetHost*)_host, &address, 0, 0);
+    _peer = enet_host_connect((ENetHost*)_host, &address, 1, 0);
     if(_peer == nullptr)
     {
         LOG(Error, "Failed to create ENet host!");
