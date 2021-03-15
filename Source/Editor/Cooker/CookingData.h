@@ -87,34 +87,14 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"Android ARM64 (arm64-v8a)\")")
     AndroidARM64 = 9,
+
+    /// <summary>
+    /// Switch.
+    /// </summary>
+    Switch = 10,
 };
 
-inline const Char* ToString(const BuildPlatform platform)
-{
-    switch (platform)
-    {
-    case BuildPlatform::Windows32:
-        return TEXT("Windows x86");
-    case BuildPlatform::Windows64:
-        return TEXT("Windows x64");
-    case BuildPlatform::UWPx86:
-        return TEXT("Windows Store x86");
-    case BuildPlatform::UWPx64:
-        return TEXT("Windows Store x64");
-    case BuildPlatform::XboxOne:
-        return TEXT("Xbox One");
-    case BuildPlatform::LinuxX64:
-        return TEXT("Linux x64");
-    case BuildPlatform::PS4:
-        return TEXT("PlayStation 4");
-    case BuildPlatform::XboxScarlett:
-        return TEXT("Xbox Scarlett");
-    case BuildPlatform::AndroidARM64:
-        return TEXT("Android ARM64");
-    default:
-        return TEXT("?");
-    }
-}
+extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
 
 /// <summary>
 /// Game build configuration modes.
@@ -137,20 +117,7 @@ API_ENUM() enum class BuildConfiguration
     Release = 2,
 };
 
-inline const Char* ToString(const BuildConfiguration configuration)
-{
-    switch (configuration)
-    {
-    case BuildConfiguration::Debug:
-        return TEXT("Debug");
-    case BuildConfiguration::Development:
-        return TEXT("Development");
-    case BuildConfiguration::Release:
-        return TEXT("Release");
-    default:
-        return TEXT("?");
-    }
-}
+extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuration);
 
 #define BUILD_STEP_CANCEL_CHECK if (GameCooker::IsCancelRequested()) return true
 

@@ -39,13 +39,15 @@
 #endif
 #if PLATFORM_TOOLS_PS4
 #include "Platforms/PS4/Editor/PlatformTools/PS4PlatformTools.h"
-#include "Platforms/PS4/Engine/Platform/PS4PlatformSettings.h"
 #endif
 #if PLATFORM_TOOLS_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Editor/PlatformTools/XboxScarlettPlatformTools.h"
 #endif
 #if PLATFORM_TOOLS_ANDROID
 #include "Platform/Android/AndroidPlatformTools.h"
+#endif
+#if PLATFORM_TOOLS_SWITCH
+#include "Platforms/Switch/Editor/PlatformTools/SwitchPlatformTools.h"
 #endif
 
 namespace GameCookerImpl
@@ -88,6 +90,50 @@ using namespace GameCookerImpl;
 
 Delegate<GameCooker::EventType> GameCooker::OnEvent;
 Delegate<const String&, float> GameCooker::OnProgress;
+
+const Char* ToString(const BuildPlatform platform)
+{
+    switch (platform)
+    {
+    case BuildPlatform::Windows32:
+        return TEXT("Windows x86");
+    case BuildPlatform::Windows64:
+        return TEXT("Windows x64");
+    case BuildPlatform::UWPx86:
+        return TEXT("Windows Store x86");
+    case BuildPlatform::UWPx64:
+        return TEXT("Windows Store x64");
+    case BuildPlatform::XboxOne:
+        return TEXT("Xbox One");
+    case BuildPlatform::LinuxX64:
+        return TEXT("Linux x64");
+    case BuildPlatform::PS4:
+        return TEXT("PlayStation 4");
+    case BuildPlatform::XboxScarlett:
+        return TEXT("Xbox Scarlett");
+    case BuildPlatform::AndroidARM64:
+        return TEXT("Android ARM64");
+    case BuildPlatform::Switch:
+        return TEXT("Switch");
+    default:
+        return TEXT("?");
+    }
+}
+
+const Char* ToString(const BuildConfiguration configuration)
+{
+    switch (configuration)
+    {
+    case BuildConfiguration::Debug:
+        return TEXT("Debug");
+    case BuildConfiguration::Development:
+        return TEXT("Development");
+    case BuildConfiguration::Release:
+        return TEXT("Release");
+    default:
+        return TEXT("?");
+    }
+}
 
 bool CookingData::AssetTypeStatistics::operator<(const AssetTypeStatistics& other) const
 {
@@ -249,6 +295,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #if PLATFORM_TOOLS_ANDROID
         case BuildPlatform::AndroidARM64:
             result = New<AndroidPlatformTools>(ArchitectureType::ARM64);
+            break;
+#endif
+#if PLATFORM_TOOLS_SWITCH
+        case BuildPlatform::Switch:
+            result = New<SwitchPlatformTools>();
             break;
 #endif
         }

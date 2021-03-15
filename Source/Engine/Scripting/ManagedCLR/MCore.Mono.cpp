@@ -510,7 +510,7 @@ bool MCore::LoadEngine()
     // Info
     char* buildInfo = mono_get_runtime_build_info();
     LOG(Info, "Mono version: {0}", String(buildInfo));
-	mono_free(buildInfo);
+    mono_free(buildInfo);
 
     return false;
 }

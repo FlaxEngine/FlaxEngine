@@ -92,6 +92,11 @@ namespace FlaxEditor.Content.Create
             /// The Android settings
             /// </summary>
             AndroidPlatformSettings,
+
+            /// <summary>
+            /// The Switch settings
+            /// </summary>
+            SwitchPlatformSettings,
         }
 
         private static readonly Type[] _types =
@@ -111,6 +116,7 @@ namespace FlaxEditor.Content.Create
             TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename),
             TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename),
             typeof(AndroidPlatformSettings),
+            TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
         };
 
         /// <summary>
