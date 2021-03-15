@@ -165,17 +165,19 @@ namespace FlaxEngine.Json
             public StringWriter StringWriter;
             public JsonTextWriter JsonWriter;
             public JsonSerializerInternalWriter SerializerWriter;
-            public UnmanagedStringReader StringReader;
+            public UnmanagedMemoryStream MemoryStream;
+            public StreamReader Reader;
             public bool IsDuringSerialization;
 
-            public SerializerCache(JsonSerializerSettings settings)
+            public unsafe SerializerCache(JsonSerializerSettings settings)
             {
                 JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(settings);
                 JsonSerializer.Formatting = Formatting.Indented;
                 StringBuilder = new StringBuilder(256);
                 StringWriter = new StringWriter(StringBuilder, CultureInfo.InvariantCulture);
                 SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
-                StringReader = new UnmanagedStringReader();
+                MemoryStream = new UnmanagedMemoryStream((byte*)0, 0);
+                Reader = new StreamReader(MemoryStream, Encoding.UTF8, false);
                 JsonWriter = new JsonTextWriter(StringWriter)
                 {
                     IndentChar = '\t',
@@ -404,14 +406,15 @@ namespace FlaxEngine.Json
         /// <param name="input">The object.</param>
         /// <param name="jsonBuffer">The input json data buffer (raw, fixed memory buffer).</param>
         /// <param name="jsonLength">The input json data buffer length (characters count).</param>
-        public static unsafe void Deserialize(object input, void* jsonBuffer, int jsonLength)
+        public static unsafe void Deserialize(object input, byte* jsonBuffer, int jsonLength)
         {
             var cache = Cache.Value;
             cache.IsDuringSerialization = false;
             Current.Value = cache;
 
-            cache.StringReader.Initialize(jsonBuffer, jsonLength);
-            var jsonReader = new JsonTextReader(cache.StringReader);
+            cache.MemoryStream.Initialize(jsonBuffer, jsonLength);
+            cache.Reader.DiscardBufferedData();
+            var jsonReader = new JsonTextReader(cache.Reader);
             cache.JsonSerializer.Populate(jsonReader, input);
 
             if (!cache.JsonSerializer.CheckAdditionalContent)

@@ -371,7 +371,7 @@ namespace FlaxEditor.Windows
 
                 // Focus content window
                 Focus();
-                RootWindow?.Window.Focus();
+                RootWindow?.Focus();
             }
 
             // Refresh database and view now

@@ -182,6 +182,7 @@ WindowsFileSystemWatcher::~WindowsFileSystemWatcher()
         FileSystemWatchers::ThreadActive = false;
         QueueUserAPC(FileSystemWatchers::StopProc, FileSystemWatchers::Thread->GetHandle(), 0);
         FileSystemWatchers::Thread->Join();
+        Delete(FileSystemWatchers::Thread);
         FileSystemWatchers::Thread = nullptr;
     }
     FileSystemWatchers::Locker.Unlock();

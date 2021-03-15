@@ -177,8 +177,15 @@ void TextRender::UpdateLayout()
                     // Get texture atlas that contains current character
                     drawChunk.FontAtlasIndex = entry.TextureIndex;
                     fontAtlas = FontManager::GetAtlas(drawChunk.FontAtlasIndex);
-                    fontAtlas->EnsureTextureCreated();
-                    invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    }
+                    else
+                    {
+                        invAtlasSize = 1.0f;
+                    }
 
                     // Setup material
                     drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
@@ -281,6 +288,11 @@ void TextRender::UpdateLayout()
 #endif
 
     // Update text bounds (from build vertex positions)
+    if (_ib.Data.IsEmpty())
+    {
+        // Empty
+        box = BoundingBox(_transform.Translation, _transform.Translation);
+    }
     _localBox = box;
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);

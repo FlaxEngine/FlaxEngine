@@ -48,6 +48,11 @@ public class TextureTool : EngineModule
         {
             options.PrivateDependencies.Add("stb");
             options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.stb.cpp"));
+            if (options.Target.IsEditor)
+            {
+                // Use helper lib for decompression
+                options.PrivateDependencies.Add("detex");
+            }
         }
 
         options.PublicDefinitions.Add("COMPILE_WITH_TEXTURE_TOOL");

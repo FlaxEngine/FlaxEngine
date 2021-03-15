@@ -1181,7 +1181,7 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.Window.ScreenToClient(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
                 else
                 {
@@ -1201,7 +1201,7 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(root.Window.ClientToScreen(Windows.GameWin.Viewport.PointToWindow(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
                 else
                 {
@@ -1231,13 +1231,18 @@ namespace FlaxEditor
             var gameWin = Windows.GameWin;
             if (gameWin != null)
             {
-                // Handle case when Game window is not selected in tab view
-                var dockedTo = gameWin.ParentDockPanel;
-                if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    resultAsRef = dockedTo.SelectedTab.Size;
-                else
-                    resultAsRef = gameWin.Size;
-                resultAsRef = Vector2.Round(resultAsRef);
+                var win = gameWin.Root;
+                if (win != null && win.RootWindow is WindowRootControl root)
+                {
+                    // Handle case when Game window is not selected in tab view
+                    var dockedTo = gameWin.ParentDockPanel;
+                    if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
+                        resultAsRef = dockedTo.SelectedTab.Size * root.DpiScale;
+                    else
+                        resultAsRef = gameWin.Size * root.DpiScale;
+
+                    resultAsRef = Vector2.Round(resultAsRef);
+                }
             }
         }
 

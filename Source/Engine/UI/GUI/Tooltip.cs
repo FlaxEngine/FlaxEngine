@@ -68,7 +68,7 @@ namespace FlaxEngine.GUI
             var parentWin = target.Root;
             if (parentWin == null)
                 return;
-            float dpiScale = Platform.DpiScale;
+            float dpiScale = target.RootWindow.DpiScale;
             Vector2 dpiSize = Size * dpiScale;
             Vector2 locationWS = target.PointToWindow(location);
             Vector2 locationSS = parentWin.PointToScreen(locationWS);
@@ -183,7 +183,7 @@ namespace FlaxEngine.GUI
         {
             if (_window)
             {
-                _window.ClientSize = Size * Platform.DpiScale;
+                _window.ClientSize = Size * _window.DpiScale;
             }
         }
 

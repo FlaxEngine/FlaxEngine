@@ -218,7 +218,7 @@ public:
     /// <param name="y">The Y texture coordinates (normalized to range 0-height).</param>
     /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <param name="color">The color to store.</param>
+    /// <param name="color">The color to store (linear).</param>
     static void Store(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch, const Color& color);
 
     /// <summary>
@@ -232,7 +232,7 @@ public:
     /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
     /// <param name="size">The size of the input texture (in pixels).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color.</returns>
+    /// <returns>The sampled color (linear).</returns>
     static Color SamplePoint(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch);
 
     /// <summary>
@@ -246,7 +246,7 @@ public:
     /// <param name="y">The Y texture coordinates (normalized to range 0-height).</param>
     /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color.</returns>
+    /// <returns>The sampled color (linear).</returns>
     static Color SamplePoint(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch);
 
     /// <summary>
@@ -260,7 +260,7 @@ public:
     /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
     /// <param name="size">The size of the input texture (in pixels).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color.</returns>
+    /// <returns>The sampled color (linear).</returns>
     static Color SampleLinear(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch);
 
 private:
@@ -291,6 +291,9 @@ private:
 #if COMPILE_WITH_STB
     static bool ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData);
     static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
+    static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
+    static bool ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
+    static bool ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight);
     static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 #endif
 };

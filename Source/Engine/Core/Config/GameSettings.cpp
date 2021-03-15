@@ -100,7 +100,12 @@ bool GameSettings::Load()
     auto settings = Get();
     if (!settings)
     {
+#if USE_EDITOR
+        // Allow lack of Game Settings in Editor
+        return false;
+#else
         return true;
+#endif
     }
 
     // Preload all settings assets

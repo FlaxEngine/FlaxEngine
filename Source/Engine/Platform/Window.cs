@@ -7,8 +7,6 @@ namespace FlaxEngine
 {
     partial class Window
     {
-        internal float _dpiScale;
-
         /// <summary>
         /// Window closing delegate.
         /// </summary>
@@ -176,7 +174,6 @@ namespace FlaxEngine
         private Window()
         {
             GUI = new WindowRootControl(this);
-            _dpiScale = Platform.DpiScale;
         }
 
         internal void Internal_OnShow()
@@ -192,7 +189,7 @@ namespace FlaxEngine
 
         internal void Internal_OnDraw()
         {
-            Matrix3x3.Scaling(_dpiScale, out var scale);
+            Matrix3x3.Scaling(DpiScale, out var scale);
             Render2D.PushTransform(ref scale);
             GUI.Draw();
             Render2D.PopTransform();
@@ -200,7 +197,7 @@ namespace FlaxEngine
 
         internal void Internal_OnResize(int width, int height)
         {
-            GUI.Size = new Vector2(width / _dpiScale, height / _dpiScale);
+            GUI.Size = new Vector2(width / DpiScale, height / DpiScale);
         }
 
         internal void Internal_OnCharInput(char c)
@@ -223,7 +220,7 @@ namespace FlaxEngine
 
         internal void Internal_OnMouseDown(ref Vector2 mousePos, MouseButton button)
         {
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
 
             bool handled = false;
             MouseDown?.Invoke(ref pos, button, ref handled);
@@ -235,7 +232,7 @@ namespace FlaxEngine
 
         internal void Internal_OnMouseUp(ref Vector2 mousePos, MouseButton button)
         {
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
 
             bool handled = false;
             MouseUp?.Invoke(ref pos, button, ref handled);
@@ -247,7 +244,7 @@ namespace FlaxEngine
 
         internal void Internal_OnMouseDoubleClick(ref Vector2 mousePos, MouseButton button)
         {
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
 
             bool handled = false;
             MouseDoubleClick?.Invoke(ref pos, button, ref handled);
@@ -259,7 +256,7 @@ namespace FlaxEngine
 
         internal void Internal_OnMouseWheel(ref Vector2 mousePos, float delta)
         {
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
 
             bool handled = false;
             MouseWheel?.Invoke(ref pos, delta, ref handled);
@@ -271,7 +268,7 @@ namespace FlaxEngine
 
         internal void Internal_OnMouseMove(ref Vector2 mousePos)
         {
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
 
             MouseMove?.Invoke(ref pos);
             GUI.OnMouseMove(pos);
@@ -285,7 +282,7 @@ namespace FlaxEngine
 
         internal void Internal_OnTouchDown(ref Vector2 pointerPosition, int pointerId)
         {
-            Vector2 pos = pointerPosition / _dpiScale;
+            Vector2 pos = pointerPosition / DpiScale;
 
             bool handled = false;
             TouchDown?.Invoke(ref pos, pointerId, ref handled);
@@ -297,7 +294,7 @@ namespace FlaxEngine
 
         internal void Internal_OnTouchMove(ref Vector2 pointerPosition, int pointerId)
         {
-            Vector2 pos = pointerPosition / _dpiScale;
+            Vector2 pos = pointerPosition / DpiScale;
 
             bool handled = false;
             TouchMove?.Invoke(ref pos, pointerId, ref handled);
@@ -309,7 +306,7 @@ namespace FlaxEngine
 
         internal void Internal_OnTouchUp(ref Vector2 pointerPosition, int pointerId)
         {
-            Vector2 pos = pointerPosition / _dpiScale;
+            Vector2 pos = pointerPosition / DpiScale;
 
             bool handled = false;
             TouchUp?.Invoke(ref pos, pointerId, ref handled);
@@ -335,7 +332,7 @@ namespace FlaxEngine
         {
             if (HitTest != null)
             {
-                Vector2 pos = mousePos / _dpiScale;
+                Vector2 pos = mousePos / DpiScale;
                 result = HitTest(ref pos);
                 handled = true;
             }
@@ -356,7 +353,7 @@ namespace FlaxEngine
                 dragData = new DragDataText(data[0]);
             else
                 dragData = new DragDataFiles(data);
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
             return GUI.OnDragEnter(ref pos, dragData);
         }
 
@@ -367,7 +364,7 @@ namespace FlaxEngine
                 dragData = new DragDataText(data[0]);
             else
                 dragData = new DragDataFiles(data);
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
             return GUI.OnDragMove(ref pos, dragData);
         }
 
@@ -378,7 +375,7 @@ namespace FlaxEngine
                 dragData = new DragDataText(data[0]);
             else
                 dragData = new DragDataFiles(data);
-            Vector2 pos = mousePos / _dpiScale;
+            Vector2 pos = mousePos / DpiScale;
             return GUI.OnDragDrop(ref pos, dragData);
         }
 

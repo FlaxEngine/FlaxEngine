@@ -1118,7 +1118,8 @@ ShaderGenerator::Value ShaderGenerator::writeLocal(ValueType type, const String&
 
 ShaderGenerator::Value ShaderGenerator::writeOperation2(Node* caller, const Value& valueA, const Value& valueB, Char op1)
 {
-    const String value = String::Format(TEXT("{0} {1} {2}"), valueA.Value, op1, Value::Cast(valueB, valueA.Type).Value);
+    const Char op1Str[2] = { op1, 0};
+    const String value = String::Format(TEXT("{0} {1} {2}"), valueA.Value, op1Str, Value::Cast(valueB, valueA.Type).Value);
     return writeLocal(valueA.Type, value, caller);
 }
 

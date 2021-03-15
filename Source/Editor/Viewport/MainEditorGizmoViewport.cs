@@ -1042,10 +1042,12 @@ namespace FlaxEditor.Viewport
 
             DisposeModes();
             _debugDrawData.Dispose();
-            //Object.Destroy(ref SelectionOutline);
-            //Object.Destroy(ref EditorPrimitives);
-            //Object.Destroy(ref _editorSpritesRenderer);
-            //Object.Destroy(ref _customSelectionOutline);
+            if (_task != null)
+            {
+                // Release if task is not used to save screenshot for project icon
+                Object.Destroy(ref _task);
+                ReleaseResources();
+            }
 
             base.OnDestroy();
         }
@@ -1062,7 +1064,6 @@ namespace FlaxEditor.Viewport
 
             _task = null;
             _backBuffer = null;
-            _editorSpritesRenderer = null;
         }
 
         internal void SaveProjectIconEnd()
@@ -1070,9 +1071,19 @@ namespace FlaxEditor.Viewport
             if (_savedTask)
             {
                 _savedTask.Enabled = false;
+                Object.Destroy(_savedTask);
+                ReleaseResources();
                 _savedTask = null;
             }
             Object.Destroy(ref _savedBackBuffer);
+        }
+
+        private void ReleaseResources()
+        {
+            Object.Destroy(ref SelectionOutline);
+            Object.Destroy(ref EditorPrimitives);
+            Object.Destroy(ref _editorSpritesRenderer);
+            Object.Destroy(ref _customSelectionOutline);
         }
     }
 }
