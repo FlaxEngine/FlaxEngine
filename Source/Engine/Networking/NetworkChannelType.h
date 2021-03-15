@@ -10,9 +10,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkChannelType
     
     Unreliable,
     UnreliableOrdered,
-    UnreliableFragmented,
     
     Reliable,
-    ReliableOrdered,
-    ReliableFragmented
+    ReliableOrdered
 };
