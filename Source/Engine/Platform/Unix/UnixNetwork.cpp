@@ -249,9 +249,9 @@ bool UnixNetwork::IsReadable(NetworkSocket& socket)
     return NetworkBase::IsReadable(socket); // TODO: impl this
 }
 
-bool UnixNetwork::IsWriteable(NetworkSocket& socket)
+bool UnixNetwork::IsWritable(NetworkSocket& socket)
 {
-    return NetworkBase::IsWriteable(socket); // TODO: impl this
+    return NetworkBase::IsWritable(socket); // TODO: impl this
 }
 
 bool UnixNetwork::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
