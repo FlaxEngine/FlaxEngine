@@ -193,9 +193,14 @@ namespace Flax.Deploy
                     DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFiles(src, dst, "*.dll");
                     DeployFiles(src, dst, "*.so");
-                    DeployFile(src, dst, "libmonosgen-2.0.so.1");
-                    DeployFile(src, dst, "libmonosgen-2.0.so.1.0.0");
                     DeployFile(src, dst, "Logo.png");
+
+                    // Optimize package size
+                    Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "libFlaxEditor.so", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "libmonosgen-2.0.so", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0", null, dst, Utilities.RunOptions.None);
                 }
                 else
                 {
