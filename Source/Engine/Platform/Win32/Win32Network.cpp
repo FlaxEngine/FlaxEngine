@@ -311,7 +311,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket)
     return false;
 }
 
-bool Win32Network::IsWriteable(NetworkSocket& socket)
+bool Win32Network::IsWritable(NetworkSocket& socket)
 {
     pollfd entry;
     entry.fd = *(SOCKET*)socket.Data;

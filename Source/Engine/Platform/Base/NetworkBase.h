@@ -201,7 +201,7 @@ public:
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <returns>Returns true when data can be written. Otherwise false.</returns>
-    static bool IsWriteable(NetworkSocket& socket);
+    static bool IsWritable(NetworkSocket& socket);
 
     /// <summary>
     /// Creates a socket group. It allocate memory based on the desired capacity.

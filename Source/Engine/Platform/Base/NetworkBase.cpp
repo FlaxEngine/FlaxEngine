@@ -57,7 +57,7 @@ bool NetworkBase::IsReadable(NetworkSocket& socket)
     return true;
 }
 
-bool NetworkBase::IsWriteable(NetworkSocket& socket)
+bool NetworkBase::IsWritable(NetworkSocket& socket)
 {
     return true;
 }

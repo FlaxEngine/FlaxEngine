@@ -22,7 +22,7 @@ public:
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
     static bool Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
-    static bool IsWriteable(NetworkSocket& socket);
+    static bool IsWritable(NetworkSocket& socket);
     static bool CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group);
     static bool DestroySocketGroup(NetworkSocketGroup& group);
     static int32 Poll(NetworkSocketGroup& group);
