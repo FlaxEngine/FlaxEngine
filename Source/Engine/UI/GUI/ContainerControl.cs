@@ -262,6 +262,8 @@ namespace FlaxEngine.GUI
                 // Change order
                 _children.Insert(newIndex, child);
             }
+
+            PerformLayout();
         }
 
         /// <summary>
