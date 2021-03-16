@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <cerrno>
 
 struct UnixSocketData
 {

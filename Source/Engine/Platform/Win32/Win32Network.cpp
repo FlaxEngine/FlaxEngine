@@ -270,7 +270,7 @@ bool Win32Network::Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket,
 {
     if (serverSocket.Protocol != NetworkProtocol::Tcp)
     {
-        LOG(Warning, "Can't accept connection on UDP socket! Socket : {0}", *(SOCKET*)serverSock.Data);
+        LOG(Warning, "Can't accept connection on UDP socket! Socket : {0}", *(SOCKET*)serverSocket.Data);
         return true;
     }
     SOCKET sock;
