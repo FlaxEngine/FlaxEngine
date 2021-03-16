@@ -107,7 +107,7 @@ namespace FlaxEngine.GUI
                 return Vector2.Zero;
             }
 
-            height = font.Height / RootWindow.DpiScale;
+            height = font.Height / DpiScale;
             return font.GetCharPosition(_text, index, ref _layout);
         }
 
@@ -159,7 +159,7 @@ namespace FlaxEngine.GUI
             {
                 Vector2 leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 Vector2 rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / RootWindow.DpiScale;
+                float fontHeight = font.Height / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
