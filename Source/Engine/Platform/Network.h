@@ -7,7 +7,7 @@
 #elif PLATFORM_UWP
 #include "Win32/Win32Network.h"
 #elif PLATFORM_LINUX
-#include "Base/NetworkBase.h"
+#include "Unix/UnixNetwork.h"
 #elif PLATFORM_PS4
 #include "Base/NetworkBase.h"
 #elif PLATFORM_XBOX_SCARLETT
