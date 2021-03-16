@@ -367,6 +367,17 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                     Level::callActorEvent(Level::ActorEventType::OnActorActiveChanged, actor, nullptr);
                     Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
                 }
+
+                // Preserve order in parent (values from prefab are used)
+                if (i != 0)
+                {
+                    auto prefab = Content::Load<Prefab>(prefabId);
+                    const auto defaultInstance = prefab ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+                    if (defaultInstance)
+                    {
+                        obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+                    }
+                }
             }
         }
 
@@ -784,6 +795,20 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 obj->Deserialize(diffDataDocument[dataIndex], modifier.Value);
 
                 sceneObjects->Add(obj);
+
+                // Synchronize order of the scene objects with the serialized data (eg. user reordered actors in prefab editor and applied changes)
+                if (i != 0)
+                {
+                    for (int32 j = 0; j < targetObjects->Count(); j++)
+                    {
+                        SceneObject* targetObject = targetObjects->At(j);
+                        if (targetObject->GetPrefabObjectID() == obj->GetID())
+                        {
+                            obj->SetOrderInParent(targetObject->GetOrderInParent());
+                            break;
+                        }
+                    }
+                }
             }
             else
             {

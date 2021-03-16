@@ -257,6 +257,16 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
             // Reparent
             obj->SetParent(actualParent, false);
         }
+
+        // Preserve order in parent (values from prefab are used)
+        if (i != 0)
+        {
+            const auto defaultInstance = prefab ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+            if (defaultInstance)
+            {
+                obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+            }
+        }
     }
 
     // Check all actors with prefab linkage for adding missing objects
