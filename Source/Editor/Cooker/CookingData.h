@@ -152,9 +152,14 @@ struct FLAXENGINE_API CookingData
     String OriginalOutputPath;
 
     /// <summary>
-    /// The output path.
+    /// The output path for data files (Content, Mono, etc.).
     /// </summary>
-    String OutputPath;
+    String DataOutputPath;
+
+    /// <summary>
+    /// The output path for binaries (executable and code libraries).
+    /// </summary>
+    String CodeOutputPath;
 
     /// <summary>
     /// The platform tools.

@@ -333,9 +333,10 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     data.Configuration = configuration;
     data.Options = options;
     data.CustomDefines = customDefines;
-    data.OutputPath = outputPath;
-    FileSystem::NormalizePath(data.OutputPath);
-    data.OutputPath = data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OutputPath);
+    data.OriginalOutputPath = outputPath;
+    FileSystem::NormalizePath(data.OriginalOutputPath);
+    data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OriginalOutputPath);
+    data.CodeOutputPath = data.DataOutputPath = data.OriginalOutputPath;
     data.CacheDirectory = Globals::ProjectCacheFolder / TEXT("Cooker") / tools->GetName();
     if (!FileSystem::DirectoryExists(data.CacheDirectory))
     {
@@ -418,7 +419,7 @@ bool GameCookerImpl::Build()
     CookingData& data = Data;
     LOG(Info, "Starting Game Cooker...");
     LOG(Info, "Platform: {0}, Configuration: {2}, Options: {1}", ::ToString(data.Platform), (int32)data.Options, ::ToString(data.Configuration));
-    LOG(Info, "Output Path: {0}", data.OutputPath);
+    LOG(Info, "Output Path: {0}", data.OriginalOutputPath);
 
     // Late init feature
     if (Steps.IsEmpty())

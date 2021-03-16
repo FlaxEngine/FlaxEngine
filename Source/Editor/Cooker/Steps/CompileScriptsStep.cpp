@@ -119,7 +119,7 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
     }
     for (auto& file : files)
     {
-        const String dst = data.OutputPath / StringUtils::GetFileName(file);
+        const String dst = data.CodeOutputPath / StringUtils::GetFileName(file);
         if (dst != file && FileSystem::CopyFile(dst, file))
         {
             data.Error(TEXT("Failed to copy file from {0} to {1}."), file, dst);
@@ -294,7 +294,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
         }
         writer.EndObject();
 
-        const String outputBuildInfo = data.OutputPath / TEXT("Game.Build.json");
+        const String outputBuildInfo = data.CodeOutputPath / TEXT("Game.Build.json");
         if (File::WriteAllBytes(outputBuildInfo, (byte*)buffer.GetString(), (int32)buffer.GetSize()))
         {
             LOG(Error, "Failed to save binary modules info file {0}.", outputBuildInfo);
