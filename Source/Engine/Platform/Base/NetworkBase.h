@@ -183,11 +183,11 @@ public:
     /// <summary>
     /// Accepts a pending connection.
     /// </summary>
-    /// <param name="serverSock">The socket.</param>
-    /// <param name="newSock">The newly connected socket.</param>
+    /// <param name="serverSocket">The socket.</param>
+    /// <param name="newSocket">The newly connected socket.</param>
     /// <param name="newEndPoint">The end point of the new socket.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
+    static bool Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, NetworkEndPoint& newEndPoint);
 
     /// <summary>
     /// Checks for socket readability.

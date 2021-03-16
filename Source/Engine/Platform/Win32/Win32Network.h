@@ -9,6 +9,7 @@
 class FLAXENGINE_API Win32Network : public NetworkBase
 {
 public:
+
     // [NetworkBase]
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv);
     static bool DestroySocket(NetworkSocket& socket);
@@ -19,7 +20,7 @@ public:
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
-    static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
+    static bool Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, NetworkEndPoint& newEndPoint);
     static bool IsReadable(NetworkSocket& socket);
     static bool IsWriteable(NetworkSocket& socket);
     static bool CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group);
