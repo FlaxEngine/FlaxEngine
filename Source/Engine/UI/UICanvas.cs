@@ -510,7 +510,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Distance);
                 }
 
-                if (Size != other.Size)
+                if ((RenderMode != other.RenderMode || RenderMode != CanvasRenderMode.ScreenSpace) && Size != other.Size)
                 {
                     jsonWriter.WritePropertyName("Size");
                     jsonWriter.WriteStartObject();
