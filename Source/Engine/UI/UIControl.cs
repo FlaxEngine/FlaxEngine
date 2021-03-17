@@ -296,6 +296,9 @@ namespace FlaxEngine
             if (_control != null)
             {
                 Json.JsonSerializer.Deserialize(_control, json);
+
+                // Synchronize actor with control location
+                OnControlLocationChanged(_control);
             }
         }
 
