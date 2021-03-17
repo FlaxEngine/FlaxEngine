@@ -358,16 +358,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
             {
                 obj->Deserialize(instance.Data[dataIndex], modifier.Value);
 
-                // Send events because some properties may be modified during prefab changes apply
-                // TODO: maybe send only valid events (need to track changes for before-after state)
-                Actor* actor = dynamic_cast<Actor*>(obj);
-                if (actor && actor->IsDuringPlay())
-                {
-                    Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, actor, nullptr);
-                    Level::callActorEvent(Level::ActorEventType::OnActorActiveChanged, actor, nullptr);
-                    Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
-                }
-
                 // Preserve order in parent (values from prefab are used)
                 if (i != 0)
                 {
@@ -383,11 +373,30 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
-        // Setup objects after deserialization
+        // Setup new objects after deserialization
         for (int32 i = existingObjectsCount; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
             obj->PostLoad();
+        }
+
+        // Synchronize existing objects logic with deserialized state (fire events)
+        for (int32 i = 0; i < existingObjectsCount; i++)
+        {
+            SceneObject* obj = sceneObjects->At(i);
+            Actor* actor = dynamic_cast<Actor*>(obj);
+            if (actor && actor->IsDuringPlay())
+            {
+                const bool shouldBeActiveInHierarchy = actor->GetIsActive() && (!actor->GetParent() || actor->GetParent()->IsActiveInHierarchy());
+                if (shouldBeActiveInHierarchy != actor->IsActiveInHierarchy())
+                {
+                    actor->_isActiveInHierarchy = shouldBeActiveInHierarchy;
+                    actor->OnActiveInTreeChanged();
+                    Level::callActorEvent(Level::ActorEventType::OnActorActiveChanged, actor, nullptr);
+                }
+                Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, actor, nullptr);
+                Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
+            }
         }
 
         // Restore order in parent
