@@ -199,6 +199,11 @@ namespace FlaxEngine
             // Don't link disabled actors
             if (!IsActiveInHierarchy)
                 return null;
+#if FLAX_EDITOR
+            // Prefab editor doesn't fire BeginPlay so for disabled actors we don't unlink them so do it here
+            if (!IsActive)
+                return null;
+#endif
 
             var parent = Parent;
             if (parent is UIControl uiControl && uiControl.Control is ContainerControl uiContainerControl)
