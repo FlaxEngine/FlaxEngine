@@ -895,7 +895,10 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             auto obj = sceneObjects.Value->At(i);
-            obj->PostLoad();
+            if (obj)
+            {
+                obj->PostLoad();
+            }
         }
 
         // Update transformations
