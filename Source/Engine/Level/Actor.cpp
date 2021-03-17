@@ -945,28 +945,34 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Name, _name);
     DESERIALIZE_MEMBER(Transform, _localTransform);
 
-    Guid parentId = Guid::Empty;
-    DESERIALIZE_MEMBER(ParentID, parentId);
-    const auto parent = Scripting::FindObject<Actor>(parentId);
-    if (_parent != parent)
     {
-        if (IsDuringPlay())
+        const auto member = SERIALIZE_FIND_MEMBER(stream, "ParentID");
+        if (member != stream.MemberEnd())
         {
-            SetParent(parent, false, false);
+            Guid parentId;
+            Serialization::Deserialize(member->value, parentId, modifier);
+            const auto parent = Scripting::FindObject<Actor>(parentId);
+            if (_parent != parent)
+            {
+                if (IsDuringPlay())
+                {
+                    SetParent(parent, false, false);
+                }
+                else
+                {
+                    if (_parent)
+                        _parent->Children.RemoveKeepOrder(this);
+                    _parent = parent;
+                    if (_parent)
+                        _parent->Children.Add(this);
+                    OnParentChanged();
+                }
+            }
+            else if (!parent && parentId.IsValid())
+            {
+                LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+            }
         }
-        else
-        {
-            if (_parent)
-                _parent->Children.RemoveKeepOrder(this);
-            _parent = parent;
-            if (_parent)
-                _parent->Children.Add(this);
-            OnParentChanged();
-        }
-    }
-    else if (!parent && parentId.IsValid())
-    {
-        LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
     }
 
     // StaticFlags update - added StaticFlags::Navigation
