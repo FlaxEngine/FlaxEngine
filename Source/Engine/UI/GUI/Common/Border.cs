@@ -5,7 +5,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Border control that draws the border around the control edges (inner and outer sides).
     /// </summary>
-    public class Border : Control
+    public class Border : ContainerControl
     {
         /// <summary>
         /// Gets or sets the color used to draw border lines.
@@ -30,9 +30,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             Render2D.DrawRectangle(new Rectangle(Vector2.Zero, Size), BorderColor, BorderWidth);
         }
