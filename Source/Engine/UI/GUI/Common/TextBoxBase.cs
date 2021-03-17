@@ -539,6 +539,12 @@ namespace FlaxEngine.GUI
                 return;
             }
 
+            // If it's not selected
+            if (_selectionStart == -1 && _selectionEnd == -1)
+            {
+                return;
+            }
+
             Rectangle caretBounds = CaretBounds;
             Rectangle textArea = TextRectangle;
 
