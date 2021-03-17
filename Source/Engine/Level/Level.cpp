@@ -1037,9 +1037,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-    Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
-    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
     // Delete objects without parent
     for (int32 i = 1; i < objectsCount; i++)

@@ -204,6 +204,8 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
 {
     PROFILE_CPU_NAMED("SynchronizePrefabInstances");
 
+    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
+
     // Check all objects with prefab linkage for moving to a proper parent
     const int32 objectsToCheckCount = sceneObjects.Count();
     for (int32 i = 0; i < objectsToCheckCount; i++)
@@ -261,7 +263,7 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
         // Preserve order in parent (values from prefab are used)
         if (i != 0)
         {
-            const auto defaultInstance = prefab ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+            const auto defaultInstance = prefab->GetDefaultInstance(obj->GetPrefabObjectID());
             if (defaultInstance)
             {
                 obj->SetOrderInParent(defaultInstance->GetOrderInParent());
@@ -315,6 +317,7 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
                 continue;
 
             // Create instance (including all children)
+            Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
             SynchronizeNewPrefabInstance(prefab, actor, prefabObjectId, sceneObjects, modifier);
         }
     }
@@ -325,6 +328,8 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
         SceneObject* obj = sceneObjects[i];
         obj->PostLoad();
     }
+
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 }
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
@@ -424,6 +429,7 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Prefab* prefab, Actor* ac
 
     // Map prefab object ID to the new prefab object instance
     modifier->IdsMapping[prefabObjectId] = Guid::New();
+    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
 
     // Create prefab instance (recursive prefab loading to support nested prefabs)
     auto child = Spawn(*(ISerializable::DeserializeStream*)prefabData, modifier);

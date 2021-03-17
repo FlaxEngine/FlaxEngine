@@ -576,7 +576,7 @@ namespace FlaxEditor.Viewport
             // Selected UI controls outline
             for (var i = 0; i < _window.Selection.Count; i++)
             {
-                if (_window.Selection[i].EditableObject is UIControl controlActor && controlActor.Control != null)
+                if (_window.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     var control = controlActor.Control;
                     var bounds = Rectangle.FromPoints(control.PointToParent(this, Vector2.Zero), control.PointToParent(this, control.Size));
