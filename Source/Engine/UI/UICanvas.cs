@@ -101,7 +101,7 @@ namespace FlaxEngine
                     Setup();
 
                     // Reset size
-                    if (previous == CanvasRenderMode.ScreenSpace && _renderMode == CanvasRenderMode.WorldSpace)
+                    if (previous == CanvasRenderMode.ScreenSpace || _renderMode == CanvasRenderMode.WorldSpace)
                         Size = new Vector2(500, 500);
                 }
             }
@@ -145,7 +145,7 @@ namespace FlaxEngine
         private bool Editor_IsCameraSpace => _renderMode == CanvasRenderMode.CameraSpace;
 
         /// <summary>
-        /// Gets or sets the size of the canvas. Used only in <see cref="CanvasRenderMode.CameraSpace"/> or <see cref="CanvasRenderMode.WorldSpace"/>.
+        /// Gets or sets the size of the canvas. Used only in <see cref="CanvasRenderMode.WorldSpace"/>.
         /// </summary>
         [EditorOrder(20), EditorDisplay("Canvas"), VisibleIf(nameof(Editor_IsWorldSpace)), Tooltip("Canvas size.")]
         public Vector2 Size
@@ -368,7 +368,7 @@ namespace FlaxEngine
                     _renderer = null;
                 }
 #if FLAX_EDITOR
-                if (_editorRoot != null)
+                if (_editorRoot != null && IsActiveInHierarchy)
                     _guiRoot.Parent = _editorRoot;
 #endif
                 break;
@@ -442,13 +442,16 @@ namespace FlaxEngine
                 jsonWriter.WritePropertyName("Distance");
                 jsonWriter.WriteValue(Distance);
 
-                jsonWriter.WritePropertyName("Size");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("X");
-                jsonWriter.WriteValue(Size.X);
-                jsonWriter.WritePropertyName("Y");
-                jsonWriter.WriteValue(Size.Y);
-                jsonWriter.WriteEndObject();
+                if (RenderMode == CanvasRenderMode.WorldSpace)
+                {
+                    jsonWriter.WritePropertyName("Size");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(Size.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(Size.Y);
+                    jsonWriter.WriteEndObject();
+                }
 
                 jsonWriter.WriteEndObject();
             }
@@ -510,7 +513,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Distance);
                 }
 
-                if ((RenderMode != other.RenderMode || RenderMode != CanvasRenderMode.ScreenSpace) && Size != other.Size)
+                if ((RenderMode == CanvasRenderMode.WorldSpace || other.RenderMode == CanvasRenderMode.WorldSpace) && Size != other.Size)
                 {
                     jsonWriter.WritePropertyName("Size");
                     jsonWriter.WriteStartObject();
@@ -544,7 +547,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
-                _guiRoot.Parent = HasParent ? _editorRoot : null;
+                _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
             }
 #endif
         }
@@ -608,7 +611,7 @@ namespace FlaxEngine
             _editorRoot = root;
             Setup();
 
-            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
+            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null && IsActiveInHierarchy)
                 _guiRoot.Parent = _editorRoot;
         }
 #endif
