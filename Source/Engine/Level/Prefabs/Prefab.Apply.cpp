@@ -385,7 +385,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
         {
             SceneObject* obj = sceneObjects->At(i);
             Actor* actor = dynamic_cast<Actor*>(obj);
-            if (actor && actor->IsDuringPlay())
+            if (actor)
             {
                 const bool shouldBeActiveInHierarchy = actor->GetIsActive() && (!actor->GetParent() || actor->GetParent()->IsActiveInHierarchy());
                 if (shouldBeActiveInHierarchy != actor->IsActiveInHierarchy())
