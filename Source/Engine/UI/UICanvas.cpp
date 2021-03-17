@@ -15,6 +15,7 @@ MMethod* UICanvas_PostDeserialize = nullptr;
 MMethod* UICanvas_OnEnable = nullptr;
 MMethod* UICanvas_OnDisable = nullptr;
 MMethod* UICanvas_EndPlay = nullptr;
+MMethod* UICanvas_ParentChanged = nullptr;
 
 #define UICANVAS_INVOKE(event) \
     auto instance = GetManagedInstance(); \
@@ -43,6 +44,7 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_OnEnable = mclass->GetMethod("OnEnable");
         UICanvas_OnDisable = mclass->GetMethod("OnDisable");
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
+        UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
     }
 }
 
@@ -131,6 +133,14 @@ void UICanvas::EndPlay()
 
     // Base
     Actor::EndPlay();
+}
+
+void UICanvas::OnParentChanged()
+{
+    // Base
+    Actor::OnParentChanged();
+
+    UICANVAS_INVOKE(ParentChanged);
 }
 
 void UICanvas::OnEnable()

@@ -539,6 +539,16 @@ namespace FlaxEngine
             Setup();
         }
 
+        internal void ParentChanged()
+        {
+#if FLAX_EDITOR
+            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
+            {
+                _guiRoot.Parent = HasParent ? _editorRoot : null;
+            }
+#endif
+        }
+
         internal void OnEnable()
         {
 #if FLAX_EDITOR
@@ -587,6 +597,8 @@ namespace FlaxEngine
 
         internal void EditorOverride(SceneRenderTask task, ContainerControl root)
         {
+            if (_editorTask == task && _editorRoot == root)
+                return;
             if (_editorTask != null && _renderer != null)
                 _editorTask.CustomPostFx.Remove(_renderer);
             if (_editorRoot != null && _guiRoot != null)
