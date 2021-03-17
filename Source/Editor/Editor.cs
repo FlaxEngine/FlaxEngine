@@ -1166,7 +1166,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     return true;
                 }
@@ -1179,7 +1179,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
@@ -1199,7 +1199,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
