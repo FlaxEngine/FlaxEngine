@@ -50,6 +50,44 @@ namespace FlaxEditor.Gizmo
         {
         }
 
+        /// <summary>
+        /// Helper function, recursivily finds the Prefab Root of node or null
+        /// </summary>
+        /// <param name="node">The node from which to start</param>
+        /// <returns></returns>
+        public ActorNode GetPrefabRootInParent(ActorNode node)
+        {
+            if (!node.HasPrefabLink)
+                return null;
+            if (node.Actor.IsPrefabRoot)
+                return node;
+            else if (node.ParentNode is ActorNode parAct)
+                return GetPrefabRootInParent(parAct);
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Recursively walks up from the node up to ceiling node(inclusive) or selection(exclusive)
+        /// </summary>
+        /// <param name="node">The node from which to start</param>
+        /// <param name="ceiling">The ceiling(inclusive)</param>
+        /// <returns></returns>
+        public ActorNode RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(ActorNode node, ActorNode ceiling)
+        {
+            if (node == ceiling)
+                return node;
+            if (node.ParentNode is ActorNode parAct)
+            {
+                if (Editor.Instance.SceneEditing.Selection.Contains(node.ParentNode))
+                    return node;
+                else
+                    return RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(parAct, ceiling);
+            }
+            else
+                return null;
+        }
+
         /// <inheritdoc />
         public override void Pick()
         {
@@ -97,6 +135,16 @@ namespace FlaxEditor.Gizmo
                     {
                         // Select parent
                         hit = parentNode;
+                    }
+                }
+
+                //select prefab root and then go down until you find the actual item in which case select the prefab root again
+                if(hit is ActorNode act)
+                {
+                    ActorNode prefabRoot = GetPrefabRootInParent(act);
+                    if (prefabRoot != null && act != prefabRoot)
+                    {
+                        hit = RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(act, prefabRoot);                   
                     }
                 }
 
