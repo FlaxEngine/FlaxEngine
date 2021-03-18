@@ -274,9 +274,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the scale.
+        /// Gets or sets the scale. Scales control according to its Pivot which by default is (0.5,0.5) (middle of the control). If you set pivot to (0,0) it will scale the control based on it's upper-left corner.
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter.")]
+        [ExpandGroups, EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter. Scales control according to its Pivot which by default is (0.5,0.5) (middle of the control). If you set pivot to (0,0) it will scale the control based on it's upper-left corner.")]
         public Vector2 Scale
         {
             get => _scale;
@@ -306,9 +306,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the shear transform angles (x, y). Defined in degrees.
+        /// Gets or sets the shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees.")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.")]
         public Vector2 Shear
         {
             get => _shear;
@@ -322,9 +322,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the rotation angle (in degrees).
+        /// Gets or sets the rotation angle (in degrees). Control is rotated around it's pivot point (middle of the control by default).
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees).")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees). Control is rotated around it's pivot point (middle of the control by default).")]
         public float Rotation
         {
             get => _rotation;
