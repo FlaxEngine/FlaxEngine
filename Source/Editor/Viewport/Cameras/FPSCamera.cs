@@ -167,6 +167,14 @@ namespace FlaxEditor.Viewport.Cameras
         }
         
         /// <inheritdoc />
+        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        {
+            base.SetArcBallView(orientation, orbitCenter, orbitRadius);
+
+            TargetPoint = orbitCenter;
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             // Update animated movement

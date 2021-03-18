@@ -86,6 +86,19 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            switch (key)
+            {
+            case KeyboardKeys.F:
+                // Pay respect..
+                ViewportCamera.SetArcBallView(_previewModel.Box);
+                break;
+            }
+            return base.OnKeyDown(key);
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             // Ensure to cleanup created actor objects
