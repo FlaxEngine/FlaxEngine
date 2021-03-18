@@ -616,32 +616,35 @@ namespace FlaxEngine.GUI
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Draw the control and the children.
+        /// </summary>
         public override void Draw()
         {
-            base.Draw();
+            DrawSelf();
+            DrawChildren();
+        }
 
+        /// <summary>
+        /// Draws the control.
+        /// </summary>
+        public virtual void DrawSelf()
+        {
+            base.Draw();    
+        }
+        
+        /// <summary>
+        /// Draws the children. Can be overridden to provide some customizations. Draw is performed with applied clipping mask for the client area.
+        /// </summary>
+        protected virtual void DrawChildren()
+        {
             // Push clipping mask
             if (ClipChildren)
             {
                 GetDesireClientArea(out var clientArea);
                 Render2D.PushClip(ref clientArea);
             }
-
-            DrawChildren();
-
-            // Pop clipping mask
-            if (ClipChildren)
-            {
-                Render2D.PopClip();
-            }
-        }
-
-        /// <summary>
-        /// Draws the children. Can be overridden to provide some customizations. Draw is performed with applied clipping mask for the client area.
-        /// </summary>
-        protected virtual void DrawChildren()
-        {
+            
             // Draw all visible child controls
             if (CullChildren)
             {
@@ -675,6 +678,12 @@ namespace FlaxEngine.GUI
                         Render2D.PopTransform();
                     }
                 }
+            }
+            
+            // Pop clipping mask
+            if (ClipChildren)
+            {
+                Render2D.PopClip();
             }
         }
 

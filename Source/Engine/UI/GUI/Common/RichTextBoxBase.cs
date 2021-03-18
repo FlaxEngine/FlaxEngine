@@ -220,7 +220,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             // Cache data
             var rect = new Rectangle(Vector2.Zero, Size);
