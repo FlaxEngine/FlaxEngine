@@ -81,7 +81,7 @@ namespace FlaxEngine
         private CanvasRenderMode _renderMode;
         private readonly CanvasRootControl _guiRoot;
         private CanvasRenderer _renderer;
-        private bool _isLoading;
+        private bool _isLoading, _isRegisteredForTick;
 
         /// <summary>
         /// Gets or sets the canvas rendering mode.
@@ -238,6 +238,18 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Finalizes an instance of the <see cref="UICanvas"/> class.
+        /// </summary>
+        ~UICanvas()
+        {
+            if (_isRegisteredForTick)
+            {
+                _isRegisteredForTick = false;
+                Scripting.Update -= OnUpdate;
+            }
+        }
+
+        /// <summary>
         /// Gets the world-space oriented bounding box that contains a 3D canvas.
         /// </summary>
         public OrientedBoundingBox Bounds
@@ -371,6 +383,11 @@ namespace FlaxEngine
                 if (_editorRoot != null && IsActiveInHierarchy)
                     _guiRoot.Parent = _editorRoot;
 #endif
+                if (_isRegisteredForTick)
+                {
+                    _isRegisteredForTick = false;
+                    Scripting.Update -= OnUpdate;
+                }
                 break;
             }
             case CanvasRenderMode.CameraSpace:
@@ -404,8 +421,29 @@ namespace FlaxEngine
                     }
 #endif
                 }
+                if (!_isRegisteredForTick)
+                {
+                    _isRegisteredForTick = true;
+                    Scripting.Update += OnUpdate;
+                }
                 break;
             }
+            }
+        }
+
+        private void OnUpdate()
+        {
+            if (this && IsActiveInHierarchy && _renderMode != CanvasRenderMode.ScreenSpace)
+            {
+                try
+                {
+                    Profiler.BeginEvent(Name);
+                    _guiRoot.Update(Time.UnscaledDeltaTime);
+                }
+                finally
+                {
+                    Profiler.EndEvent();
+                }
             }
         }
 
@@ -585,6 +623,12 @@ namespace FlaxEngine
 
         internal void EndPlay()
         {
+            if (_isRegisteredForTick)
+            {
+                _isRegisteredForTick = false;
+                Scripting.Update -= OnUpdate;
+            }
+
             if (_renderer)
             {
                 SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
