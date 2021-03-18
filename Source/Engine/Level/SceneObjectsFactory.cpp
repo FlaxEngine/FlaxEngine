@@ -326,6 +326,15 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
     for (int32 i = objectsToCheckCount; i < sceneObjects.Count(); i++)
     {
         SceneObject* obj = sceneObjects[i];
+
+        // Preserve order in parent (values from prefab are used)
+        auto prefab = Content::LoadAsync<Prefab>(obj->GetPrefabID());
+        const auto defaultInstance = prefab && prefab->IsLoaded() ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+        if (defaultInstance)
+        {
+            obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+        }
+
         obj->PostLoad();
     }
 

@@ -834,7 +834,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 sceneObjects->RemoveAtKeepOrder(i);
         }
 
-        // Deserialize new prefab objects (add new objects)
+        // Deserialize new prefab objects
         int32 newPrefabInstanceIdToDataIndexCounter = 0;
         int32 newPrefabInstanceIdToDataIndexStart = sceneObjects->Count();
         sceneObjects->Resize(sceneObjects->Count() + newPrefabInstanceIdToDataIndex.Count());
@@ -856,9 +856,27 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             const int32 dataIndex = i->Value;
             SceneObject* obj = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
-            if (obj)
+            if (!obj)
+                continue;
+            SceneObjectsFactory::Deserialize(obj, diffDataDocument[dataIndex], modifier.Value);
+        }
+        for (int32 j = 0; j < targetObjects->Count(); j++)
+        {
+            auto obj = targetObjects->At(j);
+            Guid prefabObjectId;
+            if (newPrefabInstanceIdToPrefabObjectId.TryGet(obj->GetSceneObjectId(), prefabObjectId))
             {
-                SceneObjectsFactory::Deserialize(obj, diffDataDocument[dataIndex], modifier.Value);
+                newPrefabInstanceIdToDataIndexCounter = 0;
+                for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
+                {
+                    SceneObject* e = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
+                    if (e->GetID() == prefabObjectId)
+                    {
+                        // Synchronize order of new objects with the order in target instance
+                        e->SetOrderInParent(obj->GetOrderInParent());
+                        break;
+                    }
+                }
             }
         }
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
