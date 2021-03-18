@@ -339,14 +339,14 @@ bool Input::GetKeyUp(const KeyboardKeys key)
 
 Vector2 Input::GetMousePosition()
 {
-    return Mouse ? Engine::ScreenToGameViewport(Mouse->GetPosition()) : Vector2::Minimum;
+    return Mouse ? Screen::ScreenToGameViewport(Mouse->GetPosition()) : Vector2::Minimum;
 }
 
 void Input::SetMousePosition(const Vector2& position)
 {
     if (Mouse && Engine::HasGameViewportFocus())
     {
-        const auto pos = Engine::GameViewportToScreen(position);
+        const auto pos = Screen::GameViewportToScreen(position);
         if (pos > Vector2::Minimum)
             Mouse->SetMousePosition(pos);
     }
