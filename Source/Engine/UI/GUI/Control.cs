@@ -209,7 +209,6 @@ namespace FlaxEngine.GUI
         public bool Enabled
         {
             get => _isEnabled;
-
             set
             {
                 if (_isEnabled != value)
@@ -255,7 +254,6 @@ namespace FlaxEngine.GUI
         public bool Visible
         {
             get => _isVisible;
-
             set
             {
                 if (_isVisible != value)

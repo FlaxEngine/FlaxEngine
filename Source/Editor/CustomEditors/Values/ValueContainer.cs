@@ -251,6 +251,10 @@ namespace FlaxEditor.CustomEditors
             }
             if (instanceValues._hasReferenceValue)
             {
+                // If the reference value is set for the parent values but it's null object then skip it
+                if (instanceValues._referenceValue == null && !instanceValues.Type.IsValueType)
+                    return;
+
                 _referenceValue = Info.GetValue(instanceValues._referenceValue);
                 _hasReferenceValue = true;
             }
