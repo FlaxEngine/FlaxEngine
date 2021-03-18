@@ -328,6 +328,12 @@ namespace FlaxEngine
         {
             if (_control != null && !_blockEvents)
             {
+                // Skip if this control is inactive and it's parent too (parent will unlink from hierarchy but children will stay connected while being inactive)
+                if (!IsActiveInHierarchy && Parent && !Parent.IsActive)
+                {
+                    return;
+                }
+
                 // Link or unlink control (won't modify Enable/Visible state)
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;

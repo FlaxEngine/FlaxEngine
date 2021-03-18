@@ -195,8 +195,8 @@ void UIControl::OnOrderInParentChanged()
 
 void UIControl::OnActiveInTreeChanged()
 {
+    UICONTROL_INVOKE(ActiveInTreeChanged);
+
     // Base
     Actor::OnActiveInTreeChanged();
-
-    UICONTROL_INVOKE(ActiveInTreeChanged);
 }
