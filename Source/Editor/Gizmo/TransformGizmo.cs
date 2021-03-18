@@ -73,7 +73,7 @@ namespace FlaxEditor.Gizmo
         /// <param name="node">The node from which to start</param>
         /// <param name="ceiling">The ceiling(inclusive)</param>
         /// <returns></returns>
-        public ActorNode RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(ActorNode node, ActorNode ceiling)
+        public ActorNode WalkUpAndFindActorNodeBeforeSelection(ActorNode node, ActorNode ceiling)
         {
             if (node == ceiling)
                 return node;
@@ -82,7 +82,7 @@ namespace FlaxEditor.Gizmo
                 if (Editor.Instance.SceneEditing.Selection.Contains(node.ParentNode))
                     return node;
                 else
-                    return RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(parAct, ceiling);
+                    return WalkUpAndFindActorNodeBeforeSelection(parAct, ceiling);
             }
             else
                 return null;
@@ -144,7 +144,7 @@ namespace FlaxEditor.Gizmo
                     ActorNode prefabRoot = GetPrefabRootInParent(act);
                     if (prefabRoot != null && act != prefabRoot)
                     {
-                        hit = RecursiveWalkUpAndFindSomethingBeforeSelectedOrSupplied(act, prefabRoot);                   
+                        hit = WalkUpAndFindActorNodeBeforeSelection(act, prefabRoot);                   
                     }
                 }
 
