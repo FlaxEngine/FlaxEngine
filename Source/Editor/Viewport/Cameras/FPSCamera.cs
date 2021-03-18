@@ -88,7 +88,7 @@ namespace FlaxEditor.Viewport.Cameras
             Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
             ShowSphere(ref sphere);
         }
-        
+
         /// <summary>
         /// Moves the viewport to visualize selected actors.
         /// </summary>
@@ -144,7 +144,7 @@ namespace FlaxEditor.Viewport.Cameras
 
             ShowSphere(ref mergesSphere, ref orientation);
         }
-        
+
         private void ShowSphere(ref BoundingSphere sphere)
         {
             var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
@@ -154,18 +154,19 @@ namespace FlaxEditor.Viewport.Cameras
         private void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
         {
             Vector3 position;
-            
             if (Viewport.UseOrthographicProjection)
             {
                 position = sphere.Center + Vector3.Backward * orientation * (sphere.Radius * 5.0f);
                 Viewport.OrthographicScale = Vector3.Distance(position, sphere.Center) / 1000;
             }
             else
+            {
                 position = sphere.Center - Vector3.Forward * orientation * (sphere.Radius * 2.5f);
-            TargetPoint = position;
+            }
+            TargetPoint = sphere.Center;
             MoveViewport(position, orientation);
         }
-        
+
         /// <inheritdoc />
         public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
         {
@@ -212,12 +213,12 @@ namespace FlaxEditor.Viewport.Cameras
 
             Viewport.GetInput(out var input);
             Viewport.GetPrevInput(out var prevInput);
-            var mainViewport = Viewport as MainEditorGizmoViewport;
-            bool isUsingGizmo = mainViewport != null && mainViewport.TransformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
+            var transformGizmo = (Viewport as EditorGizmoViewport)?.Gizmos.Active as TransformGizmoBase;
+            var isUsingGizmo = transformGizmo != null && transformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
 
             // Get current view properties
-            float yaw = Viewport.Yaw;
-            float pitch = Viewport.Pitch;
+            var yaw = Viewport.Yaw;
+            var pitch = Viewport.Pitch;
             var position = Viewport.ViewPosition;
             var rotation = Viewport.ViewOrientation;
 
@@ -271,7 +272,7 @@ namespace FlaxEditor.Viewport.Cameras
                 position += forward * (Viewport.MouseWheelZoomSpeedFactor * input.MouseWheelDelta * 25.0f);
                 if (input.IsAltDown)
                 {
-                    position += forward * (Viewport.MouseSpeed * 40 * Viewport.MouseDeltaRight.ValuesSum);
+                    position += forward * (Viewport.MouseSpeed * 40 * Viewport.MousePositionDelta.ValuesSum);
                 }
             }
 
@@ -279,7 +280,7 @@ namespace FlaxEditor.Viewport.Cameras
             if (input.IsOrbiting && isUsingGizmo)
             {
                 centerMouse = false;
-                Viewport.ViewPosition += mainViewport.TransformGizmo.LastDelta.Translation;
+                Viewport.ViewPosition += transformGizmo.LastDelta.Translation;
                 return;
             }
 
@@ -288,7 +289,7 @@ namespace FlaxEditor.Viewport.Cameras
             Viewport.Pitch = pitch;
             if (input.IsOrbiting)
             {
-                float orbitRadius = Vector3.Distance(ref position, ref TargetPoint);
+                float orbitRadius = Mathf.Max(Vector3.Distance(ref position, ref TargetPoint), 0.0001f);
                 Vector3 localPosition = Viewport.ViewDirection * (-1 * orbitRadius);
                 Viewport.ViewPosition = TargetPoint + localPosition;
             }

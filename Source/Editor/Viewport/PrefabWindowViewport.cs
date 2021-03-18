@@ -342,7 +342,7 @@ namespace FlaxEditor.Viewport
         public bool SnapToGround => false;
 
         /// <inheritdoc />
-        public Vector2 MouseDelta => _mouseDeltaLeft * 1000;
+        public Vector2 MouseDelta => _mouseDelta * 1000;
 
         /// <inheritdoc />
         public bool UseSnapping => Root.GetKey(KeyboardKeys.Control);
