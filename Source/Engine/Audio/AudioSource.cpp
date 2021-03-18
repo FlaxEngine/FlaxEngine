@@ -461,7 +461,7 @@ void AudioSource::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 
     if (IsActiveInHierarchy() && SourceIDs.HasItems())

@@ -187,7 +187,7 @@ void StaticModel::UpdateBounds()
     }
     else
     {
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
 }

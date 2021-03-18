@@ -31,7 +31,7 @@ TextRender::TextRender(const SpawnParams& params)
 {
     _world = Matrix::Identity;
     _color = Color::White;
-    _localBox = BoundingBox(Vector3::Zero, Vector3::Zero);
+    _localBox = BoundingBox(Vector3::Zero);
     _layoutOptions.Bounds = Rectangle(-100, -100, 200, 200);
     _layoutOptions.HorizontalAlignment = TextAlignment::Center;
     _layoutOptions.VerticalAlignment = TextAlignment::Center;
@@ -92,7 +92,7 @@ void TextRender::UpdateLayout()
     _vb0.Clear();
     _vb1.Clear();
     _vb2.Clear();
-    _localBox = BoundingBox(Vector3::Zero, Vector3::Zero);
+    _localBox = BoundingBox(Vector3::Zero);
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
 #if USE_PRECISE_MESH_INTERSECTS
@@ -291,7 +291,7 @@ void TextRender::UpdateLayout()
     if (_ib.Data.IsEmpty())
     {
         // Empty
-        box = BoundingBox(_transform.Translation, _transform.Translation);
+        box = BoundingBox(_transform.Translation);
     }
     _localBox = box;
     BoundingBox::Transform(_localBox, _world, _box);
