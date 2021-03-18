@@ -1139,19 +1139,27 @@ BoundingBox Actor::GetBoxWithChildren() const
 
 #if USE_EDITOR
 
+BoundingBox Actor::GetEditorBox() const
+{
+    return GetBox();
+}
+
 BoundingBox Actor::GetEditorBoxChildren() const
 {
     BoundingBox result = GetEditorBox();
-
     for (int32 i = 0; i < Children.Count(); i++)
     {
         BoundingBox::Merge(result, Children[i]->GetEditorBoxChildren(), result);
     }
-
     return result;
 }
 
 #endif
+
+bool Actor::HasContentLoaded() const
+{
+    return true;
+}
 
 void Actor::UnregisterObjectHierarchy()
 {
@@ -1168,6 +1176,10 @@ void Actor::UnregisterObjectHierarchy()
     {
         Children[i]->UnregisterObjectHierarchy();
     }
+}
+
+void Actor::Draw(RenderContext& renderContext)
+{
 }
 
 void Actor::DrawGeneric(RenderContext& renderContext)

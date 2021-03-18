@@ -103,45 +103,43 @@ namespace FlaxEditor.Viewport.Cameras
         /// <summary>
         /// Moves the viewport to visualize selected actors.
         /// </summary>
-        /// <param name="actors">The actors to show.</param>
-        public void ShowActors(List<SceneGraphNode> actors)
+        /// <param name="selection">The actors to show.</param>
+        public void ShowActors(List<SceneGraphNode> selection)
         {
-            if (actors.Count == 0)
+            if (selection.Count == 0)
                 return;
 
             BoundingSphere mergesSphere = BoundingSphere.Empty;
-            for (int i = 0; i < actors.Count; i++)
+            for (int i = 0; i < selection.Count; i++)
             {
-                if (actors[i] is ActorNode actor)
-                {
-                    Editor.GetActorEditorSphere(actor.Actor, out BoundingSphere sphere);
-                    BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
-                }
+                selection[i].GetEditorSphere(out var sphere);
+                BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
             }
 
+            if (mergesSphere == BoundingSphere.Empty)
+                return;
             ShowSphere(ref mergesSphere);
         }
 
         /// <summary>
         /// Moves the viewport to visualize selected actors.
         /// </summary>
-        /// <param name="actors">The actors to show.</param>
+        /// <param name="selection">The actors to show.</param>
         /// <param name="orientation">The used orientation.</param>
-        public void ShowActors(List<SceneGraphNode> actors, ref Quaternion orientation)
+        public void ShowActors(List<SceneGraphNode> selection, ref Quaternion orientation)
         {
-            if (actors.Count == 0)
+            if (selection.Count == 0)
                 return;
 
             BoundingSphere mergesSphere = BoundingSphere.Empty;
-            for (int i = 0; i < actors.Count; i++)
+            for (int i = 0; i < selection.Count; i++)
             {
-                if (actors[i] is ActorNode actor)
-                {
-                    Editor.GetActorEditorSphere(actor.Actor, out BoundingSphere sphere);
-                    BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
-                }
+                selection[i].GetEditorSphere(out var sphere);
+                BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
             }
 
+            if (mergesSphere == BoundingSphere.Empty)
+                return;
             ShowSphere(ref mergesSphere, ref orientation);
         }
 

@@ -264,6 +264,12 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <inheritdoc />
+        public override void GetEditorSphere(out BoundingSphere sphere)
+        {
+            Editor.GetActorEditorSphere(_actor, out sphere);
+        }
+
+        /// <inheritdoc />
         public override void OnDebugDraw(ViewportDebugDrawData data)
         {
             data.Add(_actor);
