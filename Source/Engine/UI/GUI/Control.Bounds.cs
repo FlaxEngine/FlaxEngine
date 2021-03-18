@@ -223,51 +223,54 @@ namespace FlaxEngine.GUI
             set
             {
                 if (!_bounds.Equals(ref value))
-                {
-                    // Calculate anchors based on the parent container client area
-                    Margin anchors;
-                    if (_parent != null)
-                    {
-                        _parent.GetDesireClientArea(out var parentBounds);
-                        anchors = new Margin
-                        (
-                         _anchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
-                         _anchorMax.X * parentBounds.Size.X,
-                         _anchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
-                         _anchorMax.Y * parentBounds.Size.Y
-                        );
-                    }
-                    else
-                    {
-                        anchors = Margin.Zero;
-                    }
-
-                    // Calculate offsets on X axis
-                    _offsets.Left = value.Location.X - anchors.Left;
-                    if (_anchorMin.X != _anchorMax.X)
-                    {
-                        _offsets.Right = anchors.Right - value.Location.X - value.Size.X;
-                    }
-                    else
-                    {
-                        _offsets.Right = value.Size.X;
-                    }
-
-                    // Calculate offsets on Y axis
-                    _offsets.Top = value.Location.Y - anchors.Top;
-                    if (_anchorMin.Y != _anchorMax.Y)
-                    {
-                        _offsets.Bottom = anchors.Bottom - value.Location.Y - value.Size.Y;
-                    }
-                    else
-                    {
-                        _offsets.Bottom = value.Size.Y;
-                    }
-
-                    // Flush the control bounds
-                    UpdateBounds();
-                }
+                    SetBounds(ref value);
             }
+        }
+
+        private void SetBounds(ref Rectangle value)
+        {
+            // Calculate anchors based on the parent container client area
+            Margin anchors;
+            if (_parent != null)
+            {
+                _parent.GetDesireClientArea(out var parentBounds);
+                anchors = new Margin
+                (
+                 _anchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
+                 _anchorMax.X * parentBounds.Size.X,
+                 _anchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
+                 _anchorMax.Y * parentBounds.Size.Y
+                );
+            }
+            else
+            {
+                anchors = Margin.Zero;
+            }
+
+            // Calculate offsets on X axis
+            _offsets.Left = value.Location.X - anchors.Left;
+            if (_anchorMin.X != _anchorMax.X)
+            {
+                _offsets.Right = anchors.Right - value.Location.X - value.Size.X;
+            }
+            else
+            {
+                _offsets.Right = value.Size.X;
+            }
+
+            // Calculate offsets on Y axis
+            _offsets.Top = value.Location.Y - anchors.Top;
+            if (_anchorMin.Y != _anchorMax.Y)
+            {
+                _offsets.Bottom = anchors.Bottom - value.Location.Y - value.Size.Y;
+            }
+            else
+            {
+                _offsets.Bottom = value.Size.Y;
+            }
+
+            // Flush the control bounds
+            UpdateBounds();
         }
 
         /// <summary>
@@ -553,7 +556,7 @@ namespace FlaxEngine.GUI
                             }
                             bounds.Location += parentBounds.Location;
                         }
-                        Bounds = bounds;
+                        SetBounds(ref bounds);
                     }
                     return;
                 }
