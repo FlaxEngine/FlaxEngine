@@ -198,6 +198,16 @@ namespace FlaxEngine
         public float ValuesSum => X + Y;
 
         /// <summary>
+        /// Gets a vector with values being absolute values of that vector.
+        /// </summary>
+        public Vector2 Absolute => new Vector2(Mathf.Abs(X), Mathf.Abs(Y));
+
+        /// <summary>
+        /// Gets a vector with values being opposite to values of that vector.
+        /// </summary>
+        public Vector2 Negative => new Vector2(-X, -Y);
+
+        /// <summary>
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X or Y component, depending on the index.</value>

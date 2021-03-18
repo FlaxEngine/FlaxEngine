@@ -865,9 +865,14 @@ namespace FlaxEditor.Viewport
             win.StartTrackingMouse(false);
             win.Cursor = CursorType.Hidden;
 
-            // Center mouse position
-            //_viewMousePos = Center;
-            //win.MousePosition = PointToWindow(_viewMousePos);
+            // Center mouse position if it's too close to the edge
+            var size = Size;
+            var center = size * 0.5f;
+            if (Mathf.Abs(_viewMousePos.X - center.X) > center.X * 0.8f || Mathf.Abs(_viewMousePos.Y - center.Y) > center.Y * 0.8f)
+            {
+                _viewMousePos = center;
+                win.MousePosition = PointToWindow(_viewMousePos);
+            }
         }
 
         /// <summary>
