@@ -222,7 +222,7 @@ namespace FlaxEditor.Windows
             }
             else if (((ContainerControl)_tree.GetChild(0)).ChildrenCount == 0)
             {
-                overlayText = "No scene";
+                overlayText = "No scene\nOpen one from the content window";
             }
             if (overlayText != null)
             {

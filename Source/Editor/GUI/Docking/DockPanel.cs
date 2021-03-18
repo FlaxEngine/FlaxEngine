@@ -123,9 +123,8 @@ namespace FlaxEditor.GUI.Docking
                 if (parentWin == null)
                     throw new InvalidOperationException("Missing parent window.");
                 var control = _tabsProxy != null ? (Control)_tabsProxy : this;
-                var dpiScale = Platform.DpiScale;
                 var clientPos = control.PointToWindow(Vector2.Zero);
-                return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * dpiScale);
+                return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * RootWindow.DpiScale);
             }
         }
 
@@ -289,6 +288,10 @@ namespace FlaxEditor.GUI.Docking
                         _selectedTab.Focus();
                 }
                 OnSelectedTabChanged();
+            }
+            else if (autoFocus && _selectedTab != null && !_selectedTab.ContainsFocus)
+            {
+                _selectedTab.Focus();
             }
         }
 

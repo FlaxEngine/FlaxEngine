@@ -51,13 +51,16 @@ public class Editor : EditorModule
 
         var platformToolsRoot = Path.Combine(FolderPath, "Cooker", "Platform");
         var platformToolsRootExternal = Path.Combine(Globals.EngineRoot, "Source", "Platforms");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Windows", "PLATFORM_TOOLS_WINDOWS");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_UWP");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_XBOX_ONE");
+        if (options.Platform.Target == TargetPlatform.Windows)
+        {
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Windows", "PLATFORM_TOOLS_WINDOWS");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_UWP");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_XBOX_ONE");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
+        }
         AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT");
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
 
         // Visual Studio integration
         if (options.Platform.Target == TargetPlatform.Windows)

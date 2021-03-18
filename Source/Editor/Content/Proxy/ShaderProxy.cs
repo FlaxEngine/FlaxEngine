@@ -29,7 +29,7 @@ namespace FlaxEditor.Content
             if (asset)
             {
                 var source = Editor.GetShaderSourceCode(asset);
-                Utilities.Utils.ShowSourceCodeWindow(source, "Shader Source");
+                Utilities.Utils.ShowSourceCodeWindow(source, "Shader Source", item.RootWindow.Window);
             }
             return null;
         }

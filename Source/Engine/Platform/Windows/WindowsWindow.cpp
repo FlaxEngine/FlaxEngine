@@ -13,6 +13,8 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
 
+#define DefaultDPI 96
+
 // Use improved borderless window support for Editor
 #define WINDOWS_USE_NEW_BORDER_LESS USE_EDITOR && 0
 #if WINDOWS_USE_NEW_BORDER_LESS
@@ -122,6 +124,21 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         nullptr,
         (HINSTANCE)Platform::Instance,
         nullptr);
+
+    // Query DPI
+    _dpi = Platform::GetDpi();
+    const HMODULE user32Dll = LoadLibraryW(L"user32.dll");
+    if (user32Dll)
+    {
+        typedef UINT (STDAPICALLTYPE* GetDpiForWindowProc)(HWND hwnd);
+        const GetDpiForWindowProc getDpiForWindowProc = (GetDpiForWindowProc)GetProcAddress(user32Dll, "GetDpiForWindow");
+        if (getDpiForWindowProc)
+        {
+            _dpi = getDpiForWindowProc(_handle);
+        }
+        FreeLibrary(user32Dll);
+    }
+    _dpiScale = (float)_dpi / (float)DefaultDPI;
 
     // Validate result
     if (!HasHWND())
@@ -1020,6 +1037,22 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    }
+    case WM_DPICHANGED:
+    {
+        // Maybe https://stackoverflow.com/a/45110656
+        _dpi = HIWORD(wParam);
+        _dpiScale = (float)_dpi / (float)DefaultDPI;
+        RECT* windowRect = (RECT*)lParam;
+        SetWindowPos(_handle,
+                     nullptr,
+                     windowRect->left,
+                     windowRect->top,
+                     windowRect->right - windowRect->left,
+                     windowRect->bottom - windowRect->top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+        // TODO: Recalculate fonts
+        return 0;
     }
     case WM_ENTERSIZEMOVE:
     {

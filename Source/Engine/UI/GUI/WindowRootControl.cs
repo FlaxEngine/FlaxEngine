@@ -55,6 +55,11 @@ namespace FlaxEngine.GUI
         /// </summary>
         public bool IsMaximized => _window.IsMaximized;
 
+        /// <summary>
+        /// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
+        /// </summary>
+        public float DpiScale => _window.DpiScale;
+
         internal WindowRootControl(Window window)
         {
             _window = window;
@@ -151,7 +156,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 TrackingMouseOffset => _window.TrackingMouseOffset / _window._dpiScale;
+        public override Vector2 TrackingMouseOffset => _window.TrackingMouseOffset / _window.DpiScale;
 
         /// <inheritdoc />
         public override WindowRootControl RootWindow => this;
@@ -159,8 +164,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Vector2 MousePosition
         {
-            get => _window.MousePosition / _window._dpiScale;
-            set => _window.MousePosition = value * _window._dpiScale;
+            get => _window.MousePosition / _window.DpiScale;
+            set => _window.MousePosition = value * _window.DpiScale;
         }
 
         /// <inheritdoc />
@@ -234,13 +239,13 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Vector2 PointFromScreen(Vector2 location)
         {
-            return _window.ScreenToClient(location) / _window._dpiScale;
+            return _window.ScreenToClient(location) / _window.DpiScale;
         }
 
         /// <inheritdoc />
         public override Vector2 PointToScreen(Vector2 location)
         {
-            return _window.ClientToScreen(location * _window._dpiScale);
+            return _window.ClientToScreen(location * _window.DpiScale);
         }
 
         /// <inheritdoc />

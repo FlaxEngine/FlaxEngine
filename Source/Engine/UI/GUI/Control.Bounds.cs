@@ -30,7 +30,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
         [Serialize]
-        [ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(990), Tooltip("The normalized position in the parent control that the upper left corner is anchored to (range 0-1).")]
+        [HideInEditor, ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(990), Tooltip("The normalized position in the parent control that the upper left corner is anchored to (range 0-1).")]
         public Vector2 AnchorMin
         {
             get => _anchorMin;
@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the normalized position in the parent control that the bottom right corner is anchored to (range 0-1).
         /// </summary>
         [Serialize]
-        [ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(991), Tooltip("The normalized position in the parent control that the bottom right corner is anchored to (range 0-1).")]
+        [HideInEditor, ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(991), Tooltip("The normalized position in the parent control that the bottom right corner is anchored to (range 0-1).")]
         public Vector2 AnchorMax
         {
             get => _anchorMax;
@@ -70,7 +70,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the offsets of the corners of the control relative to its anchors.
         /// </summary>
         [Serialize]
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(992), Tooltip("The offsets of the corners of the control relative to its anchors.")]
+        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(992), Tooltip("The offsets of the corners of the control relative to its anchors.")]
         public Margin Offsets
         {
             get => _offsets;
@@ -84,11 +84,53 @@ namespace FlaxEngine.GUI
             }
         }
 
+#if FLAX_EDITOR
+        /// <summary>
+        /// Helper for Editor UI (see UIControlControlEditor).
+        /// </summary>
+        [NoSerialize, HideInEditor]
+        internal float Proxy_Offset_Left
+        {
+            get => Offsets.Left;
+            set => Offsets = new Margin(value, Offsets.Right, Offsets.Top, Offsets.Bottom);
+        }
+
+        /// <summary>
+        /// Helper for Editor UI (see UIControlControlEditor).
+        /// </summary>
+        [NoSerialize, HideInEditor]
+        internal float Proxy_Offset_Right
+        {
+            get => Offsets.Right;
+            set => Offsets = new Margin(Offsets.Left, value, Offsets.Top, Offsets.Bottom);
+        }
+
+        /// <summary>
+        /// Helper for Editor UI (see UIControlControlEditor).
+        /// </summary>
+        [NoSerialize, HideInEditor]
+        internal float Proxy_Offset_Top
+        {
+            get => Offsets.Top;
+            set => Offsets = new Margin(Offsets.Left, Offsets.Right, value, Offsets.Bottom);
+        }
+
+        /// <summary>
+        /// Helper for Editor UI (see UIControlControlEditor).
+        /// </summary>
+        [NoSerialize, HideInEditor]
+        internal float Proxy_Offset_Bottom
+        {
+            get => Offsets.Bottom;
+            set => Offsets = new Margin(Offsets.Left, Offsets.Right, Offsets.Top, value);
+        }
+#endif
+
         /// <summary>
         /// Gets or sets coordinates of the upper-left corner of the control relative to the upper-left corner of its container.
         /// </summary>
         [NoSerialize]
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1000), Tooltip("The location of the upper-left corner of the control relative to he upper-left corner of its container.")]
+        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(1000), Tooltip("The location of the upper-left corner of the control relative to he upper-left corner of its container.")]
         public Vector2 Location
         {
             get => _bounds.Location;
@@ -119,7 +161,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets control's size.
         /// </summary>
         [NoSerialize]
-        [EditorDisplay("Transform"), EditorOrder(1010), Tooltip("The size of the control bounds.")]
+        [HideInEditor, EditorDisplay("Transform"), EditorOrder(1010), Tooltip("The size of the control bounds.")]
         public Vector2 Size
         {
             get => _bounds.Size;
@@ -231,7 +273,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the scale.
         /// </summary>
-        [EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter.")]
+        [ExpandGroups, EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter.")]
         public Vector2 Scale
         {
             get => _scale;
@@ -247,7 +289,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized pivot location (used to transform control around it). Point (0,0) is upper left corner, (0.5,0.5) is center, (1,1) is bottom right corner.
         /// </summary>
-        [EditorDisplay("Transform"), Limit(0.0f, 1.0f, 0.1f), EditorOrder(1030), Tooltip("The control rotation pivot location in normalized control size. Point (0,0) is upper left corner, (0.5,0.5) is center, (1,1) is bottom right corner.")]
+        [ExpandGroups, EditorDisplay("Transform"), Limit(0.0f, 1.0f, 0.1f), EditorOrder(1030), Tooltip("The control rotation pivot location in normalized control size. Point (0,0) is upper left corner, (0.5,0.5) is center, (1,1) is bottom right corner.")]
         public Vector2 Pivot
         {
             get => _pivot;
@@ -263,7 +305,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the shear transform angles (x, y). Defined in degrees.
         /// </summary>
-        [EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees.")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees.")]
         public Vector2 Shear
         {
             get => _shear;
@@ -279,7 +321,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the rotation angle (in degrees).
         /// </summary>
-        [EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees).")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees).")]
         public float Rotation
         {
             get => _rotation;

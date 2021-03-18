@@ -518,7 +518,7 @@ void Scripting::Release()
 
             module->Destroy(false);
         }
-        _nonNativeModules.Clear();
+        _nonNativeModules.ClearDelete();
         _hasGameModulesLoaded = false;
     }
 
@@ -619,7 +619,7 @@ void Scripting::Reload(bool canTriggerSceneReload)
         module->Destroy(true);
     }
     modules.Clear();
-    _nonNativeModules.Clear();
+    _nonNativeModules.ClearDelete();
     _hasGameModulesLoaded = false;
 
     // Give GC a try to cleanup old user objects and the other mess

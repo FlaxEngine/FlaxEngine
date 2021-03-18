@@ -218,7 +218,7 @@ namespace FlaxEngine
             var camera = Camera.MainCamera;
             if (camera)
             {
-                ray = camera.ConvertMouseToRay(location);
+                ray = camera.ConvertMouseToRay(location * Platform.DpiScale);
             }
             else
             {

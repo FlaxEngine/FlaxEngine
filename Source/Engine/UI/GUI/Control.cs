@@ -176,7 +176,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the anchor preset used by the control anchors (based on <see cref="AnchorMin"/> and <see cref="AnchorMax"/>).
         /// </summary>
         /// <remarks>To change anchor preset with current control bounds preservation use <see cref="SetAnchorPreset"/>.</remarks>
-        [NoSerialize, EditorDisplay("Transform"), EditorOrder(980), Tooltip("The anchor preset used by the control anchors.")]
+        [NoSerialize, EditorDisplay("Transform"), HideInEditor, EditorOrder(980), Tooltip("The anchor preset used by the control anchors.")]
         public AnchorPresets AnchorPreset
         {
             get
@@ -310,7 +310,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the GUI window root control which contains that control (or null if not linked to any).
         /// </summary>
-        public virtual WindowRootControl RootWindow => _parent?.RootWindow;
+        public virtual WindowRootControl RootWindow => _root?.RootWindow;
 
         /// <summary>
         /// Gets screen position of the control (upper left corner).

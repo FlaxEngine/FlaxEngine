@@ -100,7 +100,6 @@ private:
 
     UWPWindowImpl* _impl;
 
-    float _dpi, _dpiScale;
     Vector2 _logicalSize;
 
 public:

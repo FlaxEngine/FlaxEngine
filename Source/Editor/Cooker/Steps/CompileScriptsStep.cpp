@@ -101,7 +101,7 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
     // Deploy files
     Array<String> files(16);
     const String outputPath = StringUtils::GetDirectoryName(path);
-    FileSystem::DirectoryGetFiles(files, outputPath, TEXT("*.*"), DirectorySearchOption::TopDirectoryOnly);
+    FileSystem::DirectoryGetFiles(files, outputPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
     for (int32 i = files.Count() - 1; i >= 0; i--)
     {
         bool skip = false;

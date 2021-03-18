@@ -125,7 +125,7 @@ namespace FlaxEngine
     public static class CollisionsHelper
     {
         /// <summary>
-        /// Determines the closest point between a point and a line.
+        /// Determines the closest point between a point and a line segment.
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <param name="p0">The line first point.</param>
