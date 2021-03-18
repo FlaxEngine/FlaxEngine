@@ -83,7 +83,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             base.DrawSelf();
-            
+
             if (Brush == null)
                 return;
 
