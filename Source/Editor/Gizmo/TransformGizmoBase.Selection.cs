@@ -26,7 +26,7 @@ namespace FlaxEditor.Gizmo
             // Return arithmetic average or whatever it means
             return center / count;
         }
-        
+
         private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out float distance)
         {
             var plane = new Plane(Vector3.Zero, normal);
@@ -51,7 +51,7 @@ namespace FlaxEditor.Gizmo
             Vector3.Transform(ref ray.Position, ref invGizmoWorld, out localRay.Position);
 
             // Find gizmo collisions with mouse
-            float closestintersection = float.MaxValue;
+            float closestIntersection = float.MaxValue;
             float intersection;
             _activeAxis = Axis.None;
             switch (_activeMode)
@@ -59,42 +59,42 @@ namespace FlaxEditor.Gizmo
             case Mode.Translate:
             {
                 // Axis boxes collision
-                if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
+                if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
-                if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
+                if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
-                if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestintersection)
+                if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
                 // Quad planes collision
-                if (closestintersection >= float.MaxValue)
-                    closestintersection = float.MinValue;
-                if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestintersection)
+                if (closestIntersection >= float.MaxValue)
+                    closestIntersection = float.MinValue;
+                if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.XY;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
-                if (XZBox.Intersects(ref localRay, out intersection) && intersection > closestintersection)
+                if (XZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.ZX;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
-                if (YZBox.Intersects(ref localRay, out intersection) && intersection > closestintersection)
+                if (YZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.YZ;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
                 break;
@@ -103,20 +103,20 @@ namespace FlaxEditor.Gizmo
             case Mode.Rotate:
             {
                 // Circles
-                if (IntersectsRotateCircle(Vector3.UnitX, ref localRay, out intersection) && intersection < closestintersection)
+                if (IntersectsRotateCircle(Vector3.UnitX, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
-                if (IntersectsRotateCircle(Vector3.UnitY, ref localRay, out intersection) && intersection < closestintersection)
+                if (IntersectsRotateCircle(Vector3.UnitY, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
-                if (IntersectsRotateCircle(Vector3.UnitZ, ref localRay, out intersection) && intersection < closestintersection)
+                if (IntersectsRotateCircle(Vector3.UnitZ, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
                 // Center
@@ -132,27 +132,27 @@ namespace FlaxEditor.Gizmo
             case Mode.Scale:
             {
                 // Spheres collision
-                if (ScaleXSphere.Intersects(ref ray, out intersection) && intersection < closestintersection)
+                if (ScaleXSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
-                if (ScaleYSphere.Intersects(ref ray, out intersection) && intersection < closestintersection)
+                if (ScaleYSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
-                if (ScaleZSphere.Intersects(ref ray, out intersection) && intersection < closestintersection)
+                if (ScaleZSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
                 // Center
-                if (CenterBox.Intersects(ref ray, out intersection) && intersection < closestintersection)
+                if (CenterBox.Intersects(ref ray, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Center;
-                    closestintersection = intersection;
+                    closestIntersection = intersection;
                 }
 
                 break;
