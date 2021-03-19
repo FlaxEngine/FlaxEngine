@@ -43,7 +43,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// Gets the values type.
         /// </summary>
-        public ScriptType Type { get; }
+        public ScriptType Type { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether single object is selected.
@@ -281,6 +281,15 @@ namespace FlaxEditor.CustomEditors
         protected ValueContainer(ScriptMemberInfo info, ScriptType type)
         {
             Info = info;
+            Type = type;
+        }
+
+        /// <summary>
+        /// Sets the type. Use with caution.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        public void SetType(ScriptType type)
+        {
             Type = type;
         }
 
