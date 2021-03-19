@@ -797,6 +797,8 @@ namespace FlaxEditor.Viewport
                     return true;
                 if (assetItem.IsOfType<ModelBase>())
                     return true;
+                if (assetItem.IsOfType<CollisionData>())
+                    return true;
                 if (assetItem.IsOfType<AudioClip>())
                     return true;
                 if (assetItem.IsOfType<Prefab>())
@@ -940,6 +942,17 @@ namespace FlaxEditor.Viewport
                     Spawn(actor, ref hitLocation);
                     return;
                 }
+                if (assetItem.IsOfType<CollisionData>())
+                {
+                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
+                    var actor = new MeshCollider
+                    {
+                        Name = item.ShortName,
+                        CollisionData = collisionData
+                    };
+                    Spawn(actor, ref hitLocation);
+                    return;
+                }
                 if (assetItem.IsOfType<AudioClip>())
                 {
                     var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
@@ -983,8 +996,7 @@ namespace FlaxEditor.Viewport
                 return;
             }
             actor.Name = item.Name;
-            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-            Editor.Instance.SceneEditing.Spawn(actor);
+            Spawn(actor, ref hitLocation);
         }
 
         /// <inheritdoc />
