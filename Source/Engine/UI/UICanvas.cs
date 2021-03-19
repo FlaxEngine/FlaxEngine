@@ -57,7 +57,8 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
         {
-            // TODO: apply frustum culling to skip rendering if canvas is not in a viewport
+            if (renderContext.View.Frustum.Contains(Canvas.Bounds.GetBoundingBox()) == ContainmentType.Disjoint)
+                return;
 
             Profiler.BeginEventGPU("UI Canvas");
 
