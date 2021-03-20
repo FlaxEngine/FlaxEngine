@@ -312,7 +312,8 @@ namespace FlaxEngine
                     Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                     Matrix.Scaling(ref transform.Scale, out var m2);
                     Matrix.Multiply(ref m1, ref m2, out var m3);
-                    Matrix.RotationY(Mathf.Pi, out m2);
+                    Quaternion.Euler(180, 180, 0, out var quat);
+                    Matrix.RotationQuaternion(ref quat, out m2);
                     Matrix.Multiply(ref m3, ref m2, out m1);
                     Matrix.Billboard(ref transform.Translation, ref cameraPosition, ref up, ref cameraDirection, out m2);
                     Matrix.Multiply(ref m1, ref m2, out world);
@@ -363,7 +364,8 @@ namespace FlaxEngine
                 Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                 Matrix.Scaling(ref transform.Scale, out var m2);
                 Matrix.Multiply(ref m1, ref m2, out var m3);
-                Matrix.RotationY(Mathf.Pi, out m2);
+                Quaternion.Euler(180, 180, 0, out var quat);
+                Matrix.RotationQuaternion(ref quat, out m2);
                 Matrix.Multiply(ref m3, ref m2, out m1);
                 Matrix.Billboard(ref transform.Translation, ref cameraPosition, ref up, ref cameraDirection, out m2);
                 Matrix.Multiply(ref m1, ref m2, out world);
