@@ -1438,6 +1438,7 @@ namespace FlaxEditor.GUI.Timeline
             ArrangeTracks();
             PerformLayout(true);
             UnlockChildrenRecursive();
+            PerformLayout(true);
             Profiler.EndEvent();
 
             ClearEditedFlag();
