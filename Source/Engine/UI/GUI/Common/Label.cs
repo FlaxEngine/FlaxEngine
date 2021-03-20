@@ -239,7 +239,13 @@ namespace FlaxEngine.GUI
                 if (font)
                 {
                     // Calculate text size
-                    _textSize = font.MeasureText(_text);
+                    var layout = TextLayoutOptions.Default;
+                    layout.TextWrapping = Wrapping;
+                    if (_autoHeight && !_autoWidth)
+                        layout.Bounds.Size.X = Width - Margin.Width;
+                    else if (_autoWidth && !_autoHeight)
+                        layout.Bounds.Size.Y = Height - Margin.Height;
+                    _textSize = font.MeasureText(_text, ref layout);
 
                     // Check if size is controlled via text
                     if (_autoWidth || _autoHeight)
