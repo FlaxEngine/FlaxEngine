@@ -816,9 +816,16 @@ namespace FlaxEditor
         /// <param name="sphere">The bounding sphere.</param>
         public static void GetActorEditorSphere(Actor actor, out BoundingSphere sphere)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
-            BoundingSphere.FromBox(ref box, out sphere);
-            sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
+                BoundingSphere.FromBox(ref box, out sphere);
+                sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            }
+            else
+            {
+                sphere = BoundingSphere.Empty;
+            }
         }
 
         /// <summary>
@@ -828,7 +835,14 @@ namespace FlaxEditor
         /// <param name="box">The bounding box.</param>
         public static void GetActorEditorBox(Actor actor, out BoundingBox box)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            }
+            else
+            {
+                box = BoundingBox.Zero;
+            }
         }
 
         /// <summary>
