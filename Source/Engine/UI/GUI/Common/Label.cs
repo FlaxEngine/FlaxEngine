@@ -200,8 +200,8 @@ namespace FlaxEngine.GUI
                 color *= 0.6f;
 
             var scale = 1.0f;
-            var hAlignment = _autoWidth ? TextAlignment.Near : HorizontalAlignment;
-            var wAlignment = _autoHeight ? TextAlignment.Near : VerticalAlignment;
+            var hAlignment = HorizontalAlignment;
+            var wAlignment = VerticalAlignment;
             if (_autoFitText)
             {
                 hAlignment = TextAlignment.Center;
