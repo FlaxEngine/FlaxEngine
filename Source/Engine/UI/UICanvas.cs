@@ -117,7 +117,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the canvas rendering location within rendering pipeline. Used only in <see cref="CanvasRenderMode.CameraSpace"/> or <see cref="CanvasRenderMode.WorldSpace"/> or <see cref="CanvasRenderMode.WorldSpaceFaceCamera"/>.
         /// </summary>
-        [EditorOrder(13), EditorDisplay("Canvas"), VisibleIf(nameof(Editor_Is3D)), Tooltip("Canvas rendering location within the rendering pipeline. Change this if you want GUI to affect the lighting or post processing effects like bloom.")]
+        [EditorOrder(13), EditorDisplay("Canvas"), VisibleIf("Editor_Is3D"), Tooltip("Canvas rendering location within the rendering pipeline. Change this if you want GUI to affect the lighting or post processing effects like bloom.")]
         public PostProcessEffectLocation RenderLocation { get; set; } = PostProcessEffectLocation.Default;
 
         private int _order;
