@@ -203,6 +203,13 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
         return;
     }
+#if USE_EDITOR || !BUILD_RELEASE
+    if (Is<Scene>())
+    {
+        LOG(Error, "Cannot change parent of the Scene. Use Level to manage scenes.");
+        return;
+    }
+#endif
 
     // Peek the previous state
     const Transform prevTransform = _transform;
