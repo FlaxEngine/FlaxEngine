@@ -321,5 +321,11 @@ namespace FlaxEditor.SceneGraph
 
             base.Dispose();
         }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return _actor ? _actor.ToString() : base.ToString();
+        }
     }
 }

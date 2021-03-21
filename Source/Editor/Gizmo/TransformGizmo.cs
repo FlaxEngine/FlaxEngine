@@ -51,41 +51,38 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <summary>
-        /// Helper function, recursivily finds the Prefab Root of node or null
+        /// Helper function, recursively finds the Prefab Root of node or null.
         /// </summary>
-        /// <param name="node">The node from which to start</param>
-        /// <returns></returns>
+        /// <param name="node">The node from which to start.</param>
+        /// <returns>The prefab root or null.</returns>
         public ActorNode GetPrefabRootInParent(ActorNode node)
         {
             if (!node.HasPrefabLink)
                 return null;
             if (node.Actor.IsPrefabRoot)
                 return node;
-            else if (node.ParentNode is ActorNode parAct)
+            if (node.ParentNode is ActorNode parAct)
                 return GetPrefabRootInParent(parAct);
-            else
-                return null;
+            return null;
         }
 
         /// <summary>
-        /// Recursively walks up from the node up to ceiling node(inclusive) or selection(exclusive)
+        /// Recursively walks up from the node up to ceiling node(inclusive) or selection(exclusive).
         /// </summary>
         /// <param name="node">The node from which to start</param>
         /// <param name="ceiling">The ceiling(inclusive)</param>
-        /// <returns></returns>
+        /// <returns>The node to select.</returns>
         public ActorNode WalkUpAndFindActorNodeBeforeSelection(ActorNode node, ActorNode ceiling)
         {
-            if (node == ceiling)
+            if (node == ceiling || _selection.Contains(node))
                 return node;
-            if (node.ParentNode is ActorNode parAct)
+            if (node.ParentNode is ActorNode parentNode)
             {
-                if (Editor.Instance.SceneEditing.Selection.Contains(node.ParentNode))
+                if (_selection.Contains(node.ParentNode))
                     return node;
-                else
-                    return WalkUpAndFindActorNodeBeforeSelection(parAct, ceiling);
+                return WalkUpAndFindActorNodeBeforeSelection(parentNode, ceiling);
             }
-            else
-                return null;
+            return node;
         }
 
         /// <inheritdoc />
@@ -138,13 +135,13 @@ namespace FlaxEditor.Gizmo
                     }
                 }
 
-                //select prefab root and then go down until you find the actual item in which case select the prefab root again
-                if(hit is ActorNode act)
+                // Select prefab root and then go down until you find the actual item in which case select the prefab root again
+                if (hit is ActorNode actorNode)
                 {
-                    ActorNode prefabRoot = GetPrefabRootInParent(act);
-                    if (prefabRoot != null && act != prefabRoot)
+                    ActorNode prefabRoot = GetPrefabRootInParent(actorNode);
+                    if (prefabRoot != null && actorNode != prefabRoot)
                     {
-                        hit = WalkUpAndFindActorNodeBeforeSelection(act, prefabRoot);                   
+                        hit = WalkUpAndFindActorNodeBeforeSelection(actorNode, prefabRoot);
                     }
                 }
 
