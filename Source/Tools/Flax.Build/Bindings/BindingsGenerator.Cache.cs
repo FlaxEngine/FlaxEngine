@@ -18,7 +18,8 @@ namespace Flax.Build.Bindings
 
     partial class BindingsGenerator
     {
-        private static readonly Dictionary<string, Type> _typeCache = new Dictionary<string, Type>();
+        private static readonly Dictionary<string, Type> TypeCache = new Dictionary<string, Type>();
+        private const int CacheVersion = 7;
 
         internal static void Write(BinaryWriter writer, string e)
         {
@@ -160,7 +161,7 @@ namespace Flax.Build.Bindings
             var typename = reader.ReadString();
             if (string.IsNullOrEmpty(typename))
                 return e;
-            if (!_typeCache.TryGetValue(typename, out var type))
+            if (!TypeCache.TryGetValue(typename, out var type))
             {
                 type = Builder.BuildTypes.FirstOrDefault(x => x.FullName == typename);
                 if (type == null)
@@ -169,7 +170,7 @@ namespace Flax.Build.Bindings
                     Log.Error(msg);
                     throw new Exception(msg);
                 }
-                _typeCache.Add(typename, type);
+                TypeCache.Add(typename, type);
             }
             e = (T)Activator.CreateInstance(type);
             e.Read(reader);
@@ -185,7 +186,7 @@ namespace Flax.Build.Bindings
                 for (int i = 0; i < count; i++)
                 {
                     var typename = reader.ReadString();
-                    if (!_typeCache.TryGetValue(typename, out var type))
+                    if (!TypeCache.TryGetValue(typename, out var type))
                     {
                         type = Builder.BuildTypes.FirstOrDefault(x => x.FullName == typename);
                         if (type == null)
@@ -194,7 +195,7 @@ namespace Flax.Build.Bindings
                             Log.Error(msg);
                             throw new Exception(msg);
                         }
-                        _typeCache.Add(typename, type);
+                        TypeCache.Add(typename, type);
                     }
                     var e = (T)Activator.CreateInstance(type);
                     e.Read(reader);
@@ -218,7 +219,7 @@ namespace Flax.Build.Bindings
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 // Version
-                writer.Write(5);
+                writer.Write(CacheVersion);
                 writer.Write(File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks);
 
                 // Build options
@@ -254,7 +255,7 @@ namespace Flax.Build.Bindings
             {
                 // Version
                 var version = reader.ReadInt32();
-                if (version != 5)
+                if (version != CacheVersion)
                     return false;
                 if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
                     return false;
