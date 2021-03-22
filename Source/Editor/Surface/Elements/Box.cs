@@ -578,6 +578,7 @@ namespace FlaxEditor.Surface.Elements
                             BreakConnection(connectedBox);
                             action.End();
                             Surface.Undo.AddAction(action);
+                            Surface.MarkAsEdited();
                         }
                         else
                         {
