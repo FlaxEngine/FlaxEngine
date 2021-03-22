@@ -137,8 +137,8 @@ class AndroidThread;
 typedef AndroidThread Thread;
 class AndroidWindow;
 typedef AndroidWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class UnixNetwork;
+typedef UnixNetwork Network;
 
 #else
 

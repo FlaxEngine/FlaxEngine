@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,7 @@
 #elif PLATFORM_XBOX_SCARLETT
 #include "Win32/Win32Network.h"
 #elif PLATFORM_ANDROID
-#include "Base/NetworkBase.h"
+#include "Unix/UnixNetwork.h"
 #else
 #error Missing Network implementation!
 #endif
