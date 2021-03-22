@@ -333,8 +333,9 @@ namespace FlaxEditor.Windows
                 AutoWidth = true,
                 AutoHeight = true,
                 Margin = new Margin(4),
+                VerticalAlignment = TextAlignment.Near,
+                HorizontalAlignment = TextAlignment.Near,
                 Offsets = Margin.Zero,
-                AnchorPreset = AnchorPresets.StretchAll,
             };
 
             // Entries panel
