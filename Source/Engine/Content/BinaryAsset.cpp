@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
+#include "Cache/AssetsCache.h"
 #include "Storage/ContentStorageManager.h"
 #include "Loading/Tasks/LoadAssetDataTask.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -303,9 +304,13 @@ bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool si
 
 bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool silentMode)
 {
+    // Ensure path is in a valid format
+    String pathNorm(path);
+    FileSystem::NormalizePath(pathNorm);
+
     // Find target storage container and the asset
-    auto storage = ContentStorageManager::TryGetStorage(path);
-    auto asset = Content::GetAsset(path);
+    auto storage = ContentStorageManager::TryGetStorage(pathNorm);
+    auto asset = Content::GetAsset(pathNorm);
     auto binaryAsset = dynamic_cast<BinaryAsset*>(asset);
     if (asset && !binaryAsset)
     {
@@ -351,11 +356,17 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     }
     else
     {
-        ASSERT(path.HasChars());
-        result = FlaxStorage::Create(path, data, silentMode);
+        ASSERT(pathNorm.HasChars());
+        result = FlaxStorage::Create(pathNorm, data, silentMode);
     }
     if (binaryAsset)
         binaryAsset->_isSaving = false;
+
+    if (!result)
+    {
+        // Ensure to have valid cached data about the asset in the registry
+        Content::GetRegistry()->RegisterAsset(data.Header, pathNorm);
+    }
 
     return result;
 }
