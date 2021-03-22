@@ -2,11 +2,11 @@
 
 #pragma once
 
-#if PLATFORM_WIN32
+#if PLATFORM_UNIX
 
 #include "Engine/Platform/Base/NetworkBase.h"
 
-class FLAXENGINE_API Win32Network : public NetworkBase
+class FLAXENGINE_API UnixNetwork : public NetworkBase
 {
 public:
 

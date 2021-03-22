@@ -62,7 +62,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="orientation">The view rotation.</param>
         /// <param name="orbitCenter">The orbit center location.</param>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        public virtual void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
         {
             // Rotate
             Viewport.ViewOrientation = orientation;

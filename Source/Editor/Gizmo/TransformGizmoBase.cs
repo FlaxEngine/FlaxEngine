@@ -174,7 +174,7 @@ namespace FlaxEditor.Gizmo
             _axisAlignedWorld = _screenScaleMatrix * Matrix.CreateWorld(Position, Vector3.Backward, Vector3.Up);
 
             // Assign world
-            if (_activeTransformSpace == TransformSpace.World)
+            if (_activeTransformSpace == TransformSpace.World && _activeMode != Mode.Scale)
             {
                 _gizmoWorld = _axisAlignedWorld;
 
@@ -297,29 +297,6 @@ namespace FlaxEditor.Gizmo
             else if (_activeMode == Mode.Scale)
             {
                 // Scale
-                if (_activeTransformSpace == TransformSpace.World && _activeAxis != Axis.Center)
-                {
-                    var deltaLocal = delta;
-                    Quaternion orientation = GetSelectedObject(0).Orientation;
-                    delta = Vector3.Transform(delta, orientation);
-
-                    // Fix axis sign of delta movement for rotated object in some cases (eg. rotated object by 90 deg on Y axis and scale in world space with Red/X axis)
-                    switch (_activeAxis)
-                    {
-                    case Axis.X:
-                        if (deltaLocal.X < 0)
-                            delta *= -1;
-                        break;
-                    case Axis.Y:
-                        if (deltaLocal.Y < 0)
-                            delta *= -1;
-                        break;
-                    case Axis.Z:
-                        if (deltaLocal.Z < 0)
-                            delta *= -1;
-                        break;
-                    }
-                }
                 _scaleDelta = delta;
             }
         }

@@ -327,7 +327,7 @@ void Joint::OnTransformChanged()
 
     // TODO: this could track only local transform changed
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 
     if (_joint)

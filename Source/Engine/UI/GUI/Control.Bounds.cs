@@ -223,57 +223,60 @@ namespace FlaxEngine.GUI
             set
             {
                 if (!_bounds.Equals(ref value))
-                {
-                    // Calculate anchors based on the parent container client area
-                    Margin anchors;
-                    if (_parent != null)
-                    {
-                        _parent.GetDesireClientArea(out var parentBounds);
-                        anchors = new Margin
-                        (
-                         _anchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
-                         _anchorMax.X * parentBounds.Size.X,
-                         _anchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
-                         _anchorMax.Y * parentBounds.Size.Y
-                        );
-                    }
-                    else
-                    {
-                        anchors = Margin.Zero;
-                    }
-
-                    // Calculate offsets on X axis
-                    _offsets.Left = value.Location.X - anchors.Left;
-                    if (_anchorMin.X != _anchorMax.X)
-                    {
-                        _offsets.Right = anchors.Right - value.Location.X - value.Size.X;
-                    }
-                    else
-                    {
-                        _offsets.Right = value.Size.X;
-                    }
-
-                    // Calculate offsets on Y axis
-                    _offsets.Top = value.Location.Y - anchors.Top;
-                    if (_anchorMin.Y != _anchorMax.Y)
-                    {
-                        _offsets.Bottom = anchors.Bottom - value.Location.Y - value.Size.Y;
-                    }
-                    else
-                    {
-                        _offsets.Bottom = value.Size.Y;
-                    }
-
-                    // Flush the control bounds
-                    UpdateBounds();
-                }
+                    SetBounds(ref value);
             }
         }
 
+        private void SetBounds(ref Rectangle value)
+        {
+            // Calculate anchors based on the parent container client area
+            Margin anchors;
+            if (_parent != null)
+            {
+                _parent.GetDesireClientArea(out var parentBounds);
+                anchors = new Margin
+                (
+                 _anchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
+                 _anchorMax.X * parentBounds.Size.X,
+                 _anchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
+                 _anchorMax.Y * parentBounds.Size.Y
+                );
+            }
+            else
+            {
+                anchors = Margin.Zero;
+            }
+
+            // Calculate offsets on X axis
+            _offsets.Left = value.Location.X - anchors.Left;
+            if (_anchorMin.X != _anchorMax.X)
+            {
+                _offsets.Right = anchors.Right - value.Location.X - value.Size.X;
+            }
+            else
+            {
+                _offsets.Right = value.Size.X;
+            }
+
+            // Calculate offsets on Y axis
+            _offsets.Top = value.Location.Y - anchors.Top;
+            if (_anchorMin.Y != _anchorMax.Y)
+            {
+                _offsets.Bottom = anchors.Bottom - value.Location.Y - value.Size.Y;
+            }
+            else
+            {
+                _offsets.Bottom = value.Size.Y;
+            }
+
+            // Flush the control bounds
+            UpdateBounds();
+        }
+
         /// <summary>
-        /// Gets or sets the scale.
+        /// Gets or sets the scale. Scales control according to its Pivot which by default is (0.5,0.5) (middle of the control). If you set pivot to (0,0) it will scale the control based on it's upper-left corner.
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter.")]
+        [ExpandGroups, EditorDisplay("Transform"), Limit(float.MinValue, float.MaxValue, 0.1f), EditorOrder(1020), Tooltip("The control scale parameter. Scales control according to its Pivot which by default is (0.5,0.5) (middle of the control). If you set pivot to (0,0) it will scale the control based on it's upper-left corner.")]
         public Vector2 Scale
         {
             get => _scale;
@@ -303,9 +306,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the shear transform angles (x, y). Defined in degrees.
+        /// Gets or sets the shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees.")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.")]
         public Vector2 Shear
         {
             get => _shear;
@@ -319,9 +322,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the rotation angle (in degrees).
+        /// Gets or sets the rotation angle (in degrees). Control is rotated around it's pivot point (middle of the control by default).
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees).")]
+        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1050), Tooltip("The control rotation angle (in degrees). Control is rotated around it's pivot point (middle of the control by default).")]
         public float Rotation
         {
             get => _rotation;
@@ -553,7 +556,7 @@ namespace FlaxEngine.GUI
                             }
                             bounds.Location += parentBounds.Location;
                         }
-                        Bounds = bounds;
+                        SetBounds(ref bounds);
                     }
                     return;
                 }

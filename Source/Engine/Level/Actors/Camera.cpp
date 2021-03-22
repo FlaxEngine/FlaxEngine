@@ -101,12 +101,12 @@ void Camera::SetOrthographicScale(float value)
     }
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpaceLocation) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& gameWindowSpaceLocation) const
 {
-    ProjectPoint(worldSpaceLocation, screenSpaceLocation, GetViewport());
+    ProjectPoint(worldSpaceLocation, gameWindowSpaceLocation, GetViewport());
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpaceLocation, const Viewport& viewport) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& cameraViewportSpaceLocation, const Viewport& viewport) const
 {
     Matrix v, p, vp;
     GetMatrices(v, p, viewport);
@@ -114,7 +114,7 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpac
     Vector3 clipSpaceLocation;
     Vector3::Transform(worldSpaceLocation, vp, clipSpaceLocation);
     viewport.Project(worldSpaceLocation, vp, clipSpaceLocation);
-    screenSpaceLocation = Vector2(clipSpaceLocation);
+    cameraViewportSpaceLocation = Vector2(clipSpaceLocation);
 }
 
 Ray Camera::ConvertMouseToRay(const Vector2& mousePosition) const

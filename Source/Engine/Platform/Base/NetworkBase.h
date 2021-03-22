@@ -183,11 +183,11 @@ public:
     /// <summary>
     /// Accepts a pending connection.
     /// </summary>
-    /// <param name="serverSock">The socket.</param>
-    /// <param name="newSock">The newly connected socket.</param>
+    /// <param name="serverSocket">The socket.</param>
+    /// <param name="newSocket">The newly connected socket.</param>
     /// <param name="newEndPoint">The end point of the new socket.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    static bool Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint);
+    static bool Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, NetworkEndPoint& newEndPoint);
 
     /// <summary>
     /// Checks for socket readability.
@@ -201,7 +201,7 @@ public:
     /// </summary>
     /// <param name="socket">The socket.</param>
     /// <returns>Returns true when data can be written. Otherwise false.</returns>
-    static bool IsWriteable(NetworkSocket& socket);
+    static bool IsWritable(NetworkSocket& socket);
 
     /// <summary>
     /// Creates a socket group. It allocate memory based on the desired capacity.

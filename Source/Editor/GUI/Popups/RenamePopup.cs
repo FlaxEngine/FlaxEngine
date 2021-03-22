@@ -42,9 +42,6 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets or sets the initial value.
         /// </summary>
-        /// <value>
-        /// The initial value.
-        /// </value>
         public string InitialValue
         {
             get => _startValue;
@@ -54,9 +51,6 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets or sets the input field text.
         /// </summary>
-        /// <value>
-        /// The text.
-        /// </value>
         public string Text
         {
             get => _inputField.Text;
@@ -137,6 +131,9 @@ namespace FlaxEditor.GUI
 
             Hide();
         }
+
+        /// <inheritdoc />
+        protected override bool UseAutomaticDirectionFix => false;
 
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)

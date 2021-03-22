@@ -797,6 +797,8 @@ namespace FlaxEditor.Viewport
                     return true;
                 if (assetItem.IsOfType<ModelBase>())
                     return true;
+                if (assetItem.IsOfType<CollisionData>())
+                    return true;
                 if (assetItem.IsOfType<AudioClip>())
                     return true;
                 if (assetItem.IsOfType<Prefab>())
@@ -860,6 +862,13 @@ namespace FlaxEditor.Viewport
             return location;
         }
 
+        private void Spawn(Actor actor, ref Vector3 hitLocation)
+        {
+            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
+            Editor.Instance.SceneEditing.Spawn(actor);
+            Focus();
+        }
+
         private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
         {
             if (item is AssetItem assetItem)
@@ -872,8 +881,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         ParticleSystem = asset
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<SceneAnimation>())
@@ -884,8 +892,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Animation = asset
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<MaterialBase>())
@@ -921,8 +928,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         SkinnedModel = model
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<Model>())
@@ -933,8 +939,18 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Model = model
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
+                    return;
+                }
+                if (assetItem.IsOfType<CollisionData>())
+                {
+                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
+                    var actor = new MeshCollider
+                    {
+                        Name = item.ShortName,
+                        CollisionData = collisionData
+                    };
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<AudioClip>())
@@ -945,8 +961,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Clip = clip
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<Prefab>())
@@ -954,8 +969,7 @@ namespace FlaxEditor.Viewport
                     var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
                     var actor = PrefabManager.SpawnPrefab(prefab, null);
                     actor.Name = item.ShortName;
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<SceneAsset>())
@@ -967,8 +981,7 @@ namespace FlaxEditor.Viewport
                 {
                     var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
                     actor.Name = item.ShortName;
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
             }
@@ -983,8 +996,7 @@ namespace FlaxEditor.Viewport
                 return;
             }
             actor.Name = item.Name;
-            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-            Editor.Instance.SceneEditing.Spawn(actor);
+            Spawn(actor, ref hitLocation);
         }
 
         /// <inheritdoc />

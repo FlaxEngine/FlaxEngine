@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using FlaxEngine.GUI;
 using FlaxEngine.Json.JsonCustomSerializers;
 using FlaxEngine.Utilities;
 using Newtonsoft.Json;
@@ -119,6 +120,115 @@ namespace FlaxEngine.Json
         }
     }
 
+    /// <summary>
+    /// Serialize SoftObjectReference as Guid in internal format.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class MarginConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var valueMargin = (Margin)value;
+
+            writer.WriteStartObject();
+            {
+                writer.WritePropertyName("Left");
+                writer.WriteValue(valueMargin.Left);
+                writer.WritePropertyName("Right");
+                writer.WriteValue(valueMargin.Right);
+                writer.WritePropertyName("Top");
+                writer.WriteValue(valueMargin.Top);
+                writer.WritePropertyName("Bottom");
+                writer.WriteValue(valueMargin.Bottom);
+            }
+            writer.WriteEndObject();
+        }
+
+        /// <inheritdoc />
+        public override void WriteJsonDiff(JsonWriter writer, object value, object other, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var valueMargin = (Margin)value;
+            var otherMargin = (Margin)other;
+            writer.WriteStartObject();
+            if (!Mathf.NearEqual(valueMargin.Left, otherMargin.Left))
+            {
+                writer.WritePropertyName("Left");
+                writer.WriteValue(valueMargin.Left);
+            }
+            if (!Mathf.NearEqual(valueMargin.Right, otherMargin.Right))
+            {
+                writer.WritePropertyName("Right");
+                writer.WriteValue(valueMargin.Right);
+            }
+            if (!Mathf.NearEqual(valueMargin.Top, otherMargin.Top))
+            {
+                writer.WritePropertyName("Top");
+                writer.WriteValue(valueMargin.Top);
+            }
+            if (!Mathf.NearEqual(valueMargin.Bottom, otherMargin.Bottom))
+            {
+                writer.WritePropertyName("Bottom");
+                writer.WriteValue(valueMargin.Bottom);
+            }
+            writer.WriteEndObject();
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var value = (Margin?)existingValue ?? new Margin();
+            if (reader.TokenType == JsonToken.StartObject)
+            {
+                while (reader.Read())
+                {
+                    switch (reader.TokenType)
+                    {
+                    case JsonToken.PropertyName:
+                    {
+                        var propertyName = (string)reader.Value;
+                        var propertyValue = (float)reader.ReadAsDouble();
+                        switch (propertyName)
+                        {
+                        case "Left":
+                            value.Left = propertyValue;
+                            break;
+                        case "Right":
+                            value.Right = propertyValue;
+                            break;
+                        case "Top":
+                            value.Top = propertyValue;
+                            break;
+                        case "Bottom":
+                            value.Bottom = propertyValue;
+                            break;
+                        }
+                        break;
+                    }
+                    case JsonToken.Comment: break;
+                    default: return value;
+                    }
+                }
+            }
+            return value;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Margin);
+        }
+
+        /// <inheritdoc />
+        public override bool CanRead => true;
+
+        /// <inheritdoc />
+        public override bool CanWrite => true;
+
+        /// <inheritdoc />
+        public override bool CanWriteDiff => true;
+    }
+
     /*
     /// <summary>
     /// Serialize Guid values using `N` format
@@ -219,6 +329,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(ObjectConverter);
             settings.Converters.Add(new SceneReferenceConverter());
             settings.Converters.Add(new SoftObjectReferenceConverter());
+            settings.Converters.Add(new MarginConverter());
             settings.Converters.Add(new VersionConverter());
             //settings.Converters.Add(new GuidConverter());
             return settings;

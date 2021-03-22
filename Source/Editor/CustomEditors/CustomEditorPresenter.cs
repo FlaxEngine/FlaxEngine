@@ -250,6 +250,7 @@ namespace FlaxEditor.CustomEditors
 
             Selection.Clear();
             Selection.Add(obj);
+            Selection.SetType(new ScriptType(obj.GetType()));
 
             OnSelectionChanged();
         }
@@ -271,6 +272,7 @@ namespace FlaxEditor.CustomEditors
 
             Selection.Clear();
             Selection.AddRange(objectsArray);
+            Selection.SetType(new ScriptType(objectsArray.GetType()));
 
             OnSelectionChanged();
         }
@@ -284,6 +286,7 @@ namespace FlaxEditor.CustomEditors
                 return;
 
             Selection.Clear();
+            Selection.SetType(ScriptType.Null);
 
             OnSelectionChanged();
         }

@@ -209,7 +209,6 @@ namespace FlaxEngine.GUI
         public bool Enabled
         {
             get => _isEnabled;
-
             set
             {
                 if (_isEnabled != value)
@@ -255,7 +254,6 @@ namespace FlaxEngine.GUI
         public bool Visible
         {
             get => _isVisible;
-
             set
             {
                 if (_isVisible != value)
@@ -311,6 +309,11 @@ namespace FlaxEngine.GUI
         /// Gets the GUI window root control which contains that control (or null if not linked to any).
         /// </summary>
         public virtual WindowRootControl RootWindow => _root?.RootWindow;
+
+        /// <summary>
+        /// Gets the control DPI scale factor (1 is default). Includes custom DPI scale.
+        /// </summary>
+        public float DpiScale => _root?.RootWindow?.Window.DpiScale ?? Platform.DpiScale;
 
         /// <summary>
         /// Gets screen position of the control (upper left corner).

@@ -306,7 +306,7 @@ void ParticleEffect::UpdateBounds()
     // Empty bounds if there is no particle system to play or it has been never played
     if (bounds == BoundingBox::Empty)
     {
-        bounds = BoundingBox(_transform.Translation, _transform.Translation);
+        bounds = BoundingBox(_transform.Translation);
     }
 
     _box = bounds;

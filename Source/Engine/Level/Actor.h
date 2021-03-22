@@ -629,10 +629,7 @@ public:
     /// <summary>
     /// Gets actor bounding box (single actor, no children included) for editor tools.
     /// </summary>
-    API_PROPERTY() virtual BoundingBox GetEditorBox() const
-    {
-        return GetBox();
-    }
+    API_PROPERTY() virtual BoundingBox GetEditorBox() const;
 
     /// <summary>
     /// Gets actor bounding box of the actor including all child actors for editor tools.
@@ -644,10 +641,7 @@ public:
     /// <summary>
     /// Returns true if actor has loaded content.
     /// </summary>
-    API_PROPERTY() virtual bool HasContentLoaded() const
-    {
-        return true;
-    }
+    API_PROPERTY() virtual bool HasContentLoaded() const;
 
     /// <summary>
     /// Calls UnregisterObject for all objects in the actor hierarchy.
@@ -660,9 +654,7 @@ public:
     /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. models are rendered during all passed but other actors are invoked only during GBufferFill pass).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    virtual void Draw(RenderContext& renderContext)
-    {
-    }
+    virtual void Draw(RenderContext& renderContext);
 
     /// <summary>
     /// Draws this actor. Called during custom actor rendering or any other generic rendering from code.

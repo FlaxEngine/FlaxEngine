@@ -95,6 +95,15 @@ namespace FlaxEditor.Viewport.Cameras
         }
 
         /// <inheritdoc />
+        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        {
+            base.SetArcBallView(orientation, orbitCenter, orbitRadius);
+
+            _orbitCenter = orbitCenter;
+            _orbitRadius = orbitRadius;
+        }
+
+        /// <inheritdoc />
         public override void UpdateView(float dt, ref Vector3 moveDelta, ref Vector2 mouseDelta, out bool centerMouse)
         {
             centerMouse = true;

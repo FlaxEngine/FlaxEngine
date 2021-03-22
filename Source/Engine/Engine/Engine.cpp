@@ -413,24 +413,6 @@ bool Engine::HasGameViewportFocus()
 #endif
 }
 
-Vector2 Engine::ScreenToGameViewport(const Vector2& screenPos)
-{
-#if USE_EDITOR
-    return Editor::Managed->ScreenToGameViewport(screenPos);
-#else
-    return MainWindow ? MainWindow->ScreenToClient(screenPos) : Vector2::Minimum;
-#endif
-}
-
-Vector2 Engine::GameViewportToScreen(const Vector2& viewportPos)
-{
-#if USE_EDITOR
-    return Editor::Managed->GameViewportToScreen(viewportPos);
-#else
-    return MainWindow ? MainWindow->ClientToScreen(viewportPos) : Vector2::Minimum;
-#endif
-}
-
 void Engine::OnPause()
 {
     LOG(Info, "App paused");

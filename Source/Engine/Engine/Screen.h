@@ -34,6 +34,20 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_PROPERTY() static Vector2 GetSize();
 
     /// <summary>
+    /// Converts the screen-space position to the game viewport position.
+    /// </summary>
+    /// <param name="screenPos">The screen-space position.</param>
+    /// <returns>The game viewport position.</returns>
+    API_FUNCTION() static Vector2 ScreenToGameViewport(const Vector2& screenPos);
+
+    /// <summary>
+    /// Converts the game viewport position to the screen-space position.
+    /// </summary>
+    /// <param name="viewportPos">The game viewport position.</param>
+    /// <returns>The screen-space position.</returns>
+    API_FUNCTION() static Vector2 GameViewportToScreen(const Vector2& viewportPos);
+
+    /// <summary>
     /// Sets the window size.
     /// </summary>
     /// <remarks>

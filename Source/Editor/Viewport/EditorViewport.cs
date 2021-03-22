@@ -140,7 +140,7 @@ namespace FlaxEditor.Viewport
         private bool _isControllingMouse;
         private int _deltaFilteringStep;
         private Vector2 _startPos;
-        private Vector2 _mouseDeltaRightLast;
+        private Vector2 _mouseDeltaLast;
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
 
         /// <summary>
@@ -159,14 +159,9 @@ namespace FlaxEditor.Viewport
         protected Vector2 _viewMousePos;
 
         /// <summary>
-        /// The mouse delta (right button down).
+        /// The mouse position delta.
         /// </summary>
-        protected Vector2 _mouseDeltaRight;
-
-        /// <summary>
-        /// The mouse delta (left button down).
-        /// </summary>
-        protected Vector2 _mouseDeltaLeft;
+        protected Vector2 _mouseDelta;
 
         // Camera
 
@@ -213,14 +208,9 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
-        /// Gets the mouse movement delta for the right button (user press and move).
+        /// Gets the mouse movement position delta (user press and move).
         /// </summary>
-        public Vector2 MouseDeltaRight => _mouseDeltaRight;
-
-        /// <summary>
-        /// Gets the mouse movement delta for the left button (user press and move).
-        /// </summary>
-        public Vector2 MouseDeltaLeft => _mouseDeltaLeft;
+        public Vector2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
         /// Camera's pitch angle clamp range (in degrees).
@@ -875,9 +865,14 @@ namespace FlaxEditor.Viewport
             win.StartTrackingMouse(false);
             win.Cursor = CursorType.Hidden;
 
-            // Center mouse position
-            //_viewMousePos = Center;
-            //win.MousePosition = PointToWindow(_viewMousePos);
+            // Center mouse position if it's too close to the edge
+            var size = Size;
+            var center = size * 0.5f;
+            if (Mathf.Abs(_viewMousePos.X - center.X) > center.X * 0.8f || Mathf.Abs(_viewMousePos.Y - center.Y) > center.Y * 0.8f)
+            {
+                _viewMousePos = center;
+                win.MousePosition = PointToWindow(_viewMousePos);
+            }
         }
 
         /// <summary>
@@ -1018,6 +1013,7 @@ namespace FlaxEditor.Viewport
             if (_isControllingMouse)
             {
                 var rmbWheel = false;
+
                 // Gather input
                 {
                     bool isAltDown = _input.IsAltDown;
@@ -1099,23 +1095,21 @@ namespace FlaxEditor.Viewport
                     moveDelta *= 0.3f;
 
                 // Calculate smooth mouse delta not dependant on viewport size
-
                 Vector2 offset = _viewMousePos - _startPos;
                 if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel)
                 {
                     offset = Vector2.Zero;
                 }
-
                 offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                 offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDeltaRight = offset / size;
-                _mouseDeltaRight.Y *= size.Y / size.X;
+                _mouseDelta = offset / size;
+                _mouseDelta.Y *= size.Y / size.X;
 
                 Vector2 mouseDelta = Vector2.Zero;
                 if (_useMouseFiltering)
                 {
                     // Update delta filtering buffer
-                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDeltaRight;
+                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
                     _deltaFilteringStep++;
 
                     // If the step is too far, zero
@@ -1129,14 +1123,16 @@ namespace FlaxEditor.Viewport
                     mouseDelta /= FpsCameraFilteringFrames;
                 }
                 else
-                    mouseDelta = _mouseDeltaRight;
+                {
+                    mouseDelta = _mouseDelta;
+                }
 
                 if (_useMouseAcceleration)
                 {
                     // Accelerate the delta
                     var currentDelta = mouseDelta;
-                    mouseDelta += _mouseDeltaRightLast * _mouseAccelerationScale;
-                    _mouseDeltaRightLast = currentDelta;
+                    mouseDelta += _mouseDeltaLast * _mouseAccelerationScale;
+                    _mouseDeltaLast = currentDelta;
                 }
 
                 // Update
@@ -1161,7 +1157,20 @@ namespace FlaxEditor.Viewport
             }
             else
             {
-                _mouseDeltaRight = _mouseDeltaRightLast = Vector2.Zero;
+                if (_input.IsMouseLeftDown || _input.IsMouseRightDown)
+                {
+                    // Calculate smooth mouse delta not dependant on viewport size
+                    Vector2 offset = _viewMousePos - _startPos;
+                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
+                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
+                    _mouseDelta = offset / size;
+                    _startPos = _viewMousePos;
+                }
+                else
+                {
+                    _mouseDelta = Vector2.Zero;
+                }
+                _mouseDeltaLast = Vector2.Zero;
 
                 if (ContainsFocus)
                 {
@@ -1197,19 +1206,6 @@ namespace FlaxEditor.Viewport
                     Vector2 mouseDelta = Vector2.Zero;
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
-            }
-            if (_input.IsMouseLeftDown)
-            {
-                // Calculate smooth mouse delta not dependant on viewport size
-                Vector2 offset = _viewMousePos - _startPos;
-                offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDeltaLeft = offset / size;
-                _startPos = _viewMousePos;
-            }
-            else
-            {
-                _mouseDeltaLeft = Vector2.Zero;
             }
 
             _input.MouseWheelDelta = 0;

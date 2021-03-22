@@ -110,7 +110,7 @@ void SplineModel::OnSplineUpdated()
     // Skip updates when actor is disabled or something is missing
     if (!_spline || !Model || !Model->IsLoaded() || !IsActiveInHierarchy() || _spline->GetSplinePointsCount() < 2)
     {
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
         BoundingSphere::FromBox(_box, _sphere);
         return;
     }

@@ -37,7 +37,7 @@ Terrain::~Terrain()
 void Terrain::UpdateBounds()
 {
     PROFILE_CPU();
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     for (int32 i = 0; i < _patches.Count(); i++)
     {
         auto patch = _patches[i];

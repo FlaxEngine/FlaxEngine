@@ -9,7 +9,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Base class for all text box controls which can gather text input from the user.
     /// </summary>
-    public abstract class TextBoxBase : Control
+    public abstract class TextBoxBase : ContainerControl
     {
         /// <summary>
         /// The text separators (used for words skipping).
@@ -536,6 +536,12 @@ namespace FlaxEngine.GUI
             if (_text.Length == 0)
             {
                 TargetViewOffset = Vector2.Zero;
+                return;
+            }
+
+            // If it's not selected
+            if (_selectionStart == -1 && _selectionEnd == -1)
+            {
                 return;
             }
 

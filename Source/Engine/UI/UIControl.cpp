@@ -155,9 +155,6 @@ void UIControl::OnParentChanged()
     // Base
     Actor::OnParentChanged();
 
-    if (!IsDuringPlay())
-        return;
-
     UICONTROL_INVOKE(ParentChanged);
 }
 
@@ -166,7 +163,7 @@ void UIControl::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 
     UICONTROL_INVOKE(TransformChanged);
@@ -198,8 +195,8 @@ void UIControl::OnOrderInParentChanged()
 
 void UIControl::OnActiveInTreeChanged()
 {
+    UICONTROL_INVOKE(ActiveInTreeChanged);
+
     // Base
     Actor::OnActiveInTreeChanged();
-
-    UICONTROL_INVOKE(ActiveInTreeChanged);
 }

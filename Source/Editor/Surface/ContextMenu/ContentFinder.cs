@@ -108,7 +108,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             _resultPanel.DisposeChildren();
 
-            var dpiScale = RootWindow.DpiScale;
+            var dpiScale = DpiScale;
 
             if (items.Count == 0)
             {

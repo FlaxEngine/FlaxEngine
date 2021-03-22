@@ -310,6 +310,20 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Gets the object bounding sphere (including child actors).
+        /// </summary>
+        /// <param name="sphere">The bounding sphere.</param>
+        public virtual void GetEditorSphere(out BoundingSphere sphere)
+        {
+            sphere = new BoundingSphere(Transform.Translation, 15.0f);
+            for (int i = 0; i < ChildNodes.Count; i++)
+            {
+                ChildNodes[i].GetEditorSphere(out var childSphere);
+                BoundingSphere.Merge(ref sphere, ref childSphere, out sphere);
+            }
+        }
+
+        /// <summary>
         /// Called when selected nodes should draw debug shapes using <see cref="DebugDraw"/> interface.
         /// </summary>
         /// <param name="data">The debug draw data.</param>

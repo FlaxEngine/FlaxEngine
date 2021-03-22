@@ -68,8 +68,8 @@ class LinuxThread;
 typedef LinuxThread Thread;
 class LinuxWindow;
 typedef LinuxWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class UnixNetwork;
+typedef UnixNetwork Network;
 
 #elif PLATFORM_PS4
 
@@ -137,8 +137,8 @@ class AndroidThread;
 typedef AndroidThread Thread;
 class AndroidWindow;
 typedef AndroidWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class UnixNetwork;
+typedef UnixNetwork Network;
 
 #elif PLATFORM_SWITCH
 

@@ -243,9 +243,14 @@ namespace Flax.Build.Platforms
         {
             if (_toolsets != null)
                 return _toolsets;
-            var vsInstances = VisualStudioInstance.GetInstances();
             _toolsets = new Dictionary<WindowsPlatformToolset, string>();
 
+            // Skip if running on non-Windows system
+            if (BuildTargetPlatform != TargetPlatform.Windows)
+                return _toolsets;
+
+            var vsInstances = VisualStudioInstance.GetInstances();
+    
             // Visual Studio 2015 - single instance
             var vs2015 = vsInstances.FirstOrDefault(x => x.Version == VisualStudioVersion.VisualStudio2015);
             if (vs2015 != null)

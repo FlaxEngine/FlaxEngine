@@ -220,7 +220,7 @@ void CharacterController::UpdateBounds()
     if (actor)
         _box = P2C(actor->getWorldBounds(boundsScale));
     else
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
 }
 
@@ -345,7 +345,7 @@ void CharacterController::OnTransformChanged()
     }
     else if (!_controller)
     {
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
         BoundingSphere::FromBox(_box, _sphere);
     }
 }
