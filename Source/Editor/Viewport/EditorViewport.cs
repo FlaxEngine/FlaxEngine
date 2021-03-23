@@ -654,16 +654,20 @@ namespace FlaxEditor.Viewport
             task.Begin += OnRenderBegin;
         }
 
-        private void OrientViewport(ref Quaternion orientation)
+        /// <summary>
+        /// Orients the viewport.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>
+        protected virtual void OrientViewport(ref Quaternion orientation)
         {
-            if (Editor.Instance.SceneEditing.HasSthSelected)
+            if (ViewportCamera is FPSCamera fpsCamera)
             {
-                ((FPSCamera)ViewportCamera).ShowActors(Editor.Instance.Windows.EditWin.Viewport.TransformGizmo.SelectedParents, ref orientation);
+                var pos = Vector3.Zero + Vector3.Backward * orientation * 2000.0f;
+                fpsCamera.MoveViewport(pos, orientation);
             }
             else
             {
-                var pos = new Vector3(0.0f) + Vector3.Backward * orientation * 2000.0f;
-                ((FPSCamera)ViewportCamera).MoveViewport(pos, orientation);
+                ViewportCamera.SetArcBallView(orientation, Vector3.Zero, 2000.0f);
             }
         }
 
@@ -1009,7 +1013,7 @@ namespace FlaxEditor.Viewport
 
             // Check if update mouse
             Vector2 size = Size;
-            var options = Editor.Instance.Options.Options.Input;
+            var options = Editor.Instance.Options.Options;
             if (_isControllingMouse)
             {
                 var rmbWheel = false;
@@ -1033,7 +1037,7 @@ namespace FlaxEditor.Viewport
                     if (rmbWheel)
                     {
                         float step = 4.0f;
-                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity;
+                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
                         int camValueIndex = -1;
                         for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
                         {
@@ -1061,27 +1065,27 @@ namespace FlaxEditor.Viewport
 
                 // Get input movement
                 Vector3 moveDelta = Vector3.Zero;
-                if (win.GetKey(options.Forward.Key))
+                if (win.GetKey(options.Input.Forward.Key))
                 {
                     moveDelta += Vector3.Forward;
                 }
-                if (win.GetKey(options.Backward.Key))
+                if (win.GetKey(options.Input.Backward.Key))
                 {
                     moveDelta += Vector3.Backward;
                 }
-                if (win.GetKey(options.Right.Key))
+                if (win.GetKey(options.Input.Right.Key))
                 {
                     moveDelta += Vector3.Right;
                 }
-                if (win.GetKey(options.Left.Key))
+                if (win.GetKey(options.Input.Left.Key))
                 {
                     moveDelta += Vector3.Left;
                 }
-                if (win.GetKey(options.Up.Key))
+                if (win.GetKey(options.Input.Up.Key))
                 {
                     moveDelta += Vector3.Up;
                 }
-                if (win.GetKey(options.Down.Key))
+                if (win.GetKey(options.Input.Down.Key))
                 {
                     moveDelta += Vector3.Down;
                 }
@@ -1152,7 +1156,7 @@ namespace FlaxEditor.Viewport
                 {
                     var scroll = _input.MouseWheelDelta;
                     if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
-                        _orthoSize -= scroll * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
+                        _orthoSize -= scroll * options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
             }
             else
