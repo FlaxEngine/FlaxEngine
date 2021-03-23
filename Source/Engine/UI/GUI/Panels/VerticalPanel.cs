@@ -25,7 +25,7 @@ namespace FlaxEngine.GUI
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
-                if (c.Visible)
+                if (c.Visible && Mathf.IsZero(c.AnchorMin.X) && Mathf.IsZero(c.AnchorMax.X))
                 {
                     c.Width = w;
                 }
