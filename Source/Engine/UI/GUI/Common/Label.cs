@@ -77,7 +77,19 @@ namespace FlaxEngine.GUI
         public FontReference Font
         {
             get => _font;
-            set => _font = value;
+            set
+            {
+                if (_font != value)
+                {
+                    _font = value;
+
+                    if (_autoWidth || _autoHeight || _autoFitText)
+                    {
+                        _textSize = Vector2.Zero;
+                        PerformLayout();
+                    }
+                }
+            }
         }
 
         /// <summary>
