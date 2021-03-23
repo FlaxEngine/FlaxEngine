@@ -698,6 +698,27 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Calculates the orientation from the direction vector.
+        /// </summary>
+        /// <param name="direction">The direction vector (normalized).</param>
+        /// <returns>The orientation.</returns>
+        public static Quaternion FromDirection(Vector3 direction)
+        {
+            Quaternion orientation;
+            if (Vector3.Dot(direction, Vector3.Up) >= 0.999f)
+            {
+                orientation = RotationAxis(Vector3.Left, Mathf.PiOverTwo);
+            }
+            else
+            {
+                Vector3 right = Vector3.Cross(direction, Vector3.Up);
+                Vector3 up = Vector3.Cross(right, direction);
+                orientation = LookRotation(direction, up);
+            }
+            return orientation;
+        }
+
+        /// <summary>
         /// Performs a linear interpolation between two quaternions.
         /// </summary>
         /// <param name="start">Start quaternion.</param>

@@ -306,16 +306,13 @@ namespace FlaxEngine
                 {
                     var view = _editorTask.View;
                     var transform = Transform;
-                    var cameraPosition = view.Position;
-                    var cameraDirection = view.Direction;
-                    var up = Vector3.Up;
                     Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                     Matrix.Scaling(ref transform.Scale, out var m2);
                     Matrix.Multiply(ref m1, ref m2, out var m3);
                     Quaternion.Euler(180, 180, 0, out var quat);
                     Matrix.RotationQuaternion(ref quat, out m2);
                     Matrix.Multiply(ref m3, ref m2, out m1);
-                    Matrix.Billboard(ref transform.Translation, ref cameraPosition, ref up, ref cameraDirection, out m2);
+                    m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-view.Direction), transform.Translation);
                     Matrix.Multiply(ref m1, ref m2, out world);
                 }
                 else if (_renderMode == CanvasRenderMode.CameraSpace)
@@ -358,16 +355,13 @@ namespace FlaxEngine
             {
                 // In 3D world face camera
                 var transform = Transform;
-                var cameraPosition = camera.Position;
-                var cameraDirection = camera.Direction;
-                var up = Vector3.Up;
                 Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                 Matrix.Scaling(ref transform.Scale, out var m2);
                 Matrix.Multiply(ref m1, ref m2, out var m3);
                 Quaternion.Euler(180, 180, 0, out var quat);
                 Matrix.RotationQuaternion(ref quat, out m2);
                 Matrix.Multiply(ref m3, ref m2, out m1);
-                Matrix.Billboard(ref transform.Translation, ref cameraPosition, ref up, ref cameraDirection, out m2);
+                m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-camera.Direction), transform.Translation);
                 Matrix.Multiply(ref m1, ref m2, out world);
             }
             else if (_renderMode == CanvasRenderMode.CameraSpace && camera)

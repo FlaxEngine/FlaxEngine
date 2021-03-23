@@ -850,6 +850,17 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        protected override void OrientViewport(ref Quaternion orientation)
+        {
+            if (TransformGizmo.SelectedParents.Count != 0)
+            {
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+            }
+
+            base.OrientViewport(ref orientation);
+        }
+
+        /// <inheritdoc />
         public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);

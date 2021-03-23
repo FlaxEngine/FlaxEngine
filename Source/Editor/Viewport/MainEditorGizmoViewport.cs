@@ -9,6 +9,7 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
+using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -696,6 +697,17 @@ namespace FlaxEditor.Viewport
 
                 obj.Transform = trans;
             }
+        }
+
+        /// <inheritdoc />
+        protected override void OrientViewport(ref Quaternion orientation)
+        {
+            if (TransformGizmo.SelectedParents.Count != 0)
+            {
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+            }
+
+            base.OrientViewport(ref orientation);
         }
 
         /// <inheritdoc />
