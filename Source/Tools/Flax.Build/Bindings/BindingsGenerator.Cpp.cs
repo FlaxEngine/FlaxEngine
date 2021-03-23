@@ -473,10 +473,11 @@ namespace Flax.Build.Bindings
                 // Array
                 if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
                 {
+                    var T = typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller);
                     type = "MonoArray*";
                     if (typeInfo.GenericArgs.Count != 1)
-                        return "MUtils::ToArray<" + typeInfo.GenericArgs[0] + ", " + typeInfo.GenericArgs[1] + ">({0})";
-                    return "MUtils::ToArray<" + typeInfo.GenericArgs[0] + ">({0})";
+                        return "MUtils::ToArray<" + T + ", " + typeInfo.GenericArgs[1] + ">({0})";
+                    return "MUtils::ToArray<" + T + ">({0})";
                 }
 
                 // Span
