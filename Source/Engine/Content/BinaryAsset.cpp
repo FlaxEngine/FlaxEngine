@@ -362,12 +362,6 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     if (binaryAsset)
         binaryAsset->_isSaving = false;
 
-    if (!result)
-    {
-        // Ensure to have valid cached data about the asset in the registry
-        Content::GetRegistry()->RegisterAsset(data.Header, pathNorm);
-    }
-
     return result;
 }
 
