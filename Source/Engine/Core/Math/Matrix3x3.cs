@@ -1566,7 +1566,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a Matrix3x3 that scales along the x-axis, y-axis, and y-axis.
+        /// Creates a Matrix3x3 that scales along the x-axis, y-axis, and z-axis.
         /// </summary>
         /// <param name="scale">Scaling factor for all three axes.</param>
         /// <returns>The created scaling Matrix3x3.</returns>
@@ -1577,7 +1577,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a Matrix3x3 that scales along the x-axis, y-axis, and y-axis.
+        /// Creates a Matrix3x3 that scales along the x-axis, y-axis, and z-axis.
         /// </summary>
         /// <param name="x">Scaling factor that is applied along the x-axis.</param>
         /// <param name="y">Scaling factor that is applied along the y-axis.</param>
@@ -1605,9 +1605,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a Matrix3x3 that uniformly scales along all three axis.
+        /// Creates a Matrix3x3 that uniformly scales along all three axes.
         /// </summary>
-        /// <param name="scale">The uniform scale that is applied along all axis.</param>
+        /// <param name="scale">The uniform scale that is applied along all axes.</param>
         /// <param name="result">When the method completes, contains the created scaling Matrix3x3.</param>
         public static void Scaling(float scale, out Matrix3x3 result)
         {
@@ -1616,9 +1616,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a Matrix3x3 that uniformly scales along all three axis.
+        /// Creates a Matrix3x3 that uniformly scales along all three axes.
         /// </summary>
-        /// <param name="scale">The uniform scale that is applied along all axis.</param>
+        /// <param name="scale">The uniform scale that is applied along all axes.</param>
         /// <returns>The created scaling Matrix3x3.</returns>
         public static Matrix3x3 Scaling(float scale)
         {
