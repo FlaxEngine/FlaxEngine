@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Flax.Build;
 using Flax.Build.Platforms;
 using Flax.Build.Projects.VisualStudio;
@@ -254,6 +255,23 @@ namespace Flax.Deploy
 
             string cmdLine = string.Format("\"{0}\" /t:Clean /verbosity:minimal /nologo", solutionFile);
             Utilities.Run(msBuild, cmdLine);
+        }
+
+        internal static void CodeSign(string file, string certificatePath, string certificatePass)
+        {
+            if (!File.Exists(file))
+                throw new FileNotFoundException("Missing file to sign.", file);
+            if (!File.Exists(certificatePath))
+                throw new FileNotFoundException("Missing certificate to sign with.", certificatePath);
+            var sdks = WindowsPlatformBase.GetSDKs();
+            if (sdks.Count == 0)
+                throw new Exception("No Windows SDK found. Cannot sign file.");
+            var sdkKeys = sdks.Keys.ToList();
+            sdkKeys.Sort();
+            var sdk = sdks[sdkKeys.Last()];
+            var signtool = Path.Combine(sdk, "bin", "x64", "signtool.exe");
+            var cmdLine = string.Format("sign /debug /f \"{0}\" /p \"{1}\" /tr http://timestamp.comodoca.com /td sha256 /fd sha256 \"{2}\"", certificatePath, certificatePass, file);
+            Utilities.Run(signtool, cmdLine);
         }
     }
 }
