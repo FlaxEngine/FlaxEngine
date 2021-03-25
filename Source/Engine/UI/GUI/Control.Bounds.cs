@@ -558,6 +558,7 @@ namespace FlaxEngine.GUI
                         }
                         SetBounds(ref bounds);
                     }
+                    _parent?.PerformLayout();
                     return;
                 }
             }
