@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev curl
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Checkout LFS
