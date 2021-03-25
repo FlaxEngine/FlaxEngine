@@ -8,6 +8,9 @@
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#if PLATFORM_LINUX
+#include <stdio.h>
+#endif
 
 VisualStudioCodeEditor::VisualStudioCodeEditor(const String& execPath, const bool isInsiders)
     : _execPath(execPath)
