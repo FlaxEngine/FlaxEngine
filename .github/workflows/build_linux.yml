@@ -3,6 +3,24 @@ on: [push, pull_request]
 
 jobs:
 
+  # Editor
+  editor-linux:
+    name: Editor (Linux, Development x64)
+    runs-on: "ubuntu-20.04"
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
+
   # Game
   game-linux:
     name: Game (Linux, Release x64)
