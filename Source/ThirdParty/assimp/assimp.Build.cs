@@ -37,6 +37,13 @@ public class assimp : DepsModule
         case TargetPlatform.Linux:
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libassimp.so"));
             options.Libraries.Add(Path.Combine(depsRoot, "libassimp.so"));
+            if (Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Linux)
+            {
+                // Linux uses link files for shared libs versions linkage and we don't add those as they break git repo on Windows (invalid changes to stage)
+                Flax.Build.Utilities.Run("ln", "-s libassimp.so libassimp.so.4", null, depsRoot, Flax.Build.Utilities.RunOptions.None);
+                Flax.Build.Utilities.Run("ln", "-s libassimp.so libassimp.so.4.1", null, depsRoot, Flax.Build.Utilities.RunOptions.None);
+                Flax.Build.Utilities.Run("ln", "-s libassimp.so libassimp.so.4.1.0", null, depsRoot, Flax.Build.Utilities.RunOptions.None);
+            }
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
