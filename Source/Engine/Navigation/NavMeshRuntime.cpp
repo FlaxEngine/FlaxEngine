@@ -126,10 +126,9 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
 
-    // Check for special case, where path has not been found, and starting polygon was the one closest to the target
     if (pathSize == 1 && dtStatusDetail(findPathStatus, DT_PARTIAL_RESULT))
     {
-        // In this case we find a point on starting polygon, that's closest to destination and store it as path end
+        // TODO: skip adding 2nd end point if it's not reachable (use navmesh raycast check? or physics check? or local Z distance check?)
         resultPath.Resize(2);
         resultPath[0] = startPosition;
         resultPath[1] = startPositionNavMesh;
