@@ -392,6 +392,7 @@ void WheeledVehicle::Setup()
 
 void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 {
+    // Wheels shapes
     for (auto& wheel : _wheels)
     {
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
@@ -403,6 +404,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 
 void WheeledVehicle::OnDebugDrawSelected()
 {
+    // Wheels shapes
     for (auto& wheel : _wheels)
     {
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
@@ -410,6 +412,9 @@ void WheeledVehicle::OnDebugDrawSelected()
             DEBUG_DRAW_WIRE_CYLINDER(wheel.Collider->GetPosition(), wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
         }
     }
+
+    // Center of mass
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(_centerOfMassOffset), 10.0f), Color::Blue, 0, false);
 
     RigidBody::OnDebugDrawSelected();
 }

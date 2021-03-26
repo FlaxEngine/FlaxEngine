@@ -139,20 +139,20 @@ private:
 public:
 
     /// <summary>
+    /// If checked, the negative throttle value will be used as brake and reverse to behave in a more arcade style where holding reverse also functions as brake. Disable it for more realistic driving controls.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Vehicle\")")
+    bool UseReverseAsBrake = true;
+
+    /// <summary>
     /// Gets the vehicle wheels settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+    API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
 
     /// <summary>
     /// Sets the vehicle wheels settings.
     /// </summary>
     API_PROPERTY() void SetWheels(const Array<Wheel>& value);
-
-    /// <summary>
-    /// If checked, the negative throttle value will be used as brake and reverse to behave in a more arcade style where holding reverse also functions as brake. Disable it for more realistic driving controls.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")")
-    bool UseReverseAsBrake = true;
 
     /// <summary>
     /// Gets the vehicle gearbox settings.
