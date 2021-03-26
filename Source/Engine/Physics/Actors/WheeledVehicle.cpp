@@ -182,6 +182,14 @@ void WheeledVehicle::Setup()
         return;
     auto& drive = (PxVehicleDrive4W*&)_drive;
 
+    // Release previous
+    if (drive)
+    {
+        WheelVehicles.Remove(this);
+        drive->free();
+        drive = nullptr;
+    }
+
     // Get wheels
     Array<Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels;
     _wheelsData.Clear();
@@ -202,18 +210,15 @@ void WheeledVehicle::Setup()
             LOG(Warning, "Invalid wheel collider {1} in vehicle {0} cannot be a trigger", ToString(), wheel.Collider->ToString());
             continue;
         }
-        wheels.Add(&wheel);
+        if (wheel.Collider->IsDuringPlay())
+        {
+            wheels.Add(&wheel);
+        }
     }
     if (wheels.IsEmpty())
     {
         // No wheel, no car
         // No woman, no cry
-        if (drive)
-        {
-            WheelVehicles.Remove(this);
-            drive->free();
-            drive = nullptr;
-        }
         return;
     }
     _wheelsData.Resize(wheels.Count());
@@ -294,14 +299,22 @@ void WheeledVehicle::Setup()
         wheelsSimData->setTireForceAppPointOffset(i, forceAppPointOffset);
 
         PxShape* wheelShape = wheel.Collider->GetPxShape();
-        wheelsSimData->setWheelShapeMapping(i, shapes.Find(wheelShape));
+        if (wheel.Collider->IsActiveInHierarchy())
+        {
+            wheelsSimData->setWheelShapeMapping(i, shapes.Find(wheelShape));
 
-        // Setup Vehicle ID inside word3 for suspension raycasts to ignore self
-        PxFilterData filter = wheelShape->getQueryFilterData();
-        filter.word3 = _id.D + 1;
-        wheelShape->setQueryFilterData(filter);
-        wheelShape->setSimulationFilterData(filter);
-        wheelsSimData->setSceneQueryFilterData(i, filter);
+            // Setup Vehicle ID inside word3 for suspension raycasts to ignore self
+            PxFilterData filter = wheelShape->getQueryFilterData();
+            filter.word3 = _id.D + 1;
+            wheelShape->setQueryFilterData(filter);
+            wheelShape->setSimulationFilterData(filter);
+            wheelsSimData->setSceneQueryFilterData(i, filter);
+        }
+        else
+        {
+            wheelsSimData->setWheelShapeMapping(i, -1);
+            wheelsSimData->disableWheel(i);
+        }
     }
     for (auto child : Children)
     {
@@ -375,7 +388,7 @@ void WheeledVehicle::Setup()
     // Create vehicle drive
     drive = PxVehicleDrive4W::allocate(wheels.Count());
     _actor->setSolverIterationCounts(12, 4);
-    drive->setup(CPhysX, _actor, *wheelsSimData, driveSimData, wheels.Count() - 4);
+    drive->setup(CPhysX, _actor, *wheelsSimData, driveSimData, Math::Max(wheels.Count() - 4, 0));
     WheelVehicles.Add(this);
 
     // Initialize
@@ -440,6 +453,14 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(Wheels, _wheels);
     DESERIALIZE(UseReverseAsBrake);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
+}
+
+void WheeledVehicle::OnColliderChanged(Collider* c)
+{
+    RigidBody::OnColliderChanged(c);
+
+    // Rebuild vehicle when someone adds/removed wheels
+    Setup();
 }
 
 void WheeledVehicle::BeginPlay(SceneBeginData* data)

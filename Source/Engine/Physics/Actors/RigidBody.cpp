@@ -383,6 +383,15 @@ void RigidBody::OnTriggerExit(PhysicsColliderActor* c)
     TriggerExit(c);
 }
 
+void RigidBody::OnColliderChanged(Collider* c)
+{
+    UpdateMass();
+
+    // TODO: maybe wake up only if one ore more shapes attached is active?
+    //if (GetStartAwake())
+    //	WakeUp();
+}
+
 void RigidBody::CreateActor()
 {
     ASSERT(_actor == nullptr);
@@ -394,7 +403,7 @@ void RigidBody::CreateActor()
 
     // Setup flags
 #if WITH_PVD
-	PxActorFlags actorFlags = PxActorFlag::eVISUALIZATION;
+    PxActorFlags actorFlags = PxActorFlag::eVISUALIZATION;
 #else
     PxActorFlags actorFlags = static_cast<PxActorFlags>(0);
 #endif

@@ -551,6 +551,9 @@ public:
     void OnTriggerEnter(PhysicsColliderActor* c);
     void OnTriggerExit(PhysicsColliderActor* c);
 
+    // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
+    virtual void OnColliderChanged(Collider* c);
+
 protected:
 
     /// <summary>

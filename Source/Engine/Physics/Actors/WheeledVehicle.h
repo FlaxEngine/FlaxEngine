@@ -254,6 +254,7 @@ public:
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void OnColliderChanged(Collider* c) override;
 
 protected:
 

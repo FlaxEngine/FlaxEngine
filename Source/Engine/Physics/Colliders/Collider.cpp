@@ -170,19 +170,7 @@ bool Collider::ComputePenetration(const Collider* colliderA, const Collider* col
     const PxTransform poseA(C2P(colliderA->GetPosition()), C2P(colliderA->GetOrientation()));
     const PxTransform poseB(C2P(colliderB->GetPosition()), C2P(colliderB->GetOrientation()));
 
-    return PxGeometryQuery::computePenetration(
-        C2P(direction),
-        distance,
-        shapeA->getGeometry().any(),
-        poseA,
-        shapeB->getGeometry().any(),
-        poseB
-    );
-}
-
-bool Collider::IsAttached() const
-{
-    return _shape && _shape->getActor() != nullptr;
+    return PxGeometryQuery::computePenetration(C2P(direction), distance, shapeA->getGeometry().any(), poseA, shapeB->getGeometry().any(), poseB);
 }
 
 bool Collider::CanAttach(RigidBody* rigidBody) const
@@ -442,15 +430,18 @@ void Collider::BeginPlay(SceneBeginData* data)
 
 void Collider::EndPlay()
 {
+    // Base
+    PhysicsColliderActor::EndPlay();
+
     if (_shape)
     {
         // Detach from the actor
         auto actor = _shape->getActor();
         if (actor)
             actor->detachShape(*_shape);
-
-        // Check if was using a static actor and cleanup it
-        if (_staticActor)
+        if (actor && actor->is<PxRigidDynamic>())
+            static_cast<RigidBody*>(actor->userData)->OnColliderChanged(this);
+        else if (_staticActor)
         {
             RemoveStaticActor();
         }
@@ -460,9 +451,6 @@ void Collider::EndPlay()
         _shape->release();
         _shape = nullptr;
     }
-
-    // Base
-    PhysicsColliderActor::EndPlay();
 }
 
 void Collider::OnActiveInTreeChanged()
@@ -479,11 +467,7 @@ void Collider::OnActiveInTreeChanged()
         auto rigidBody = GetAttachedRigidBody();
         if (rigidBody)
         {
-            rigidBody->UpdateMass();
-
-            // TODO: maybe wake up only if one ore more shapes attached is active?
-            //if (rigidBody->GetStartAwake())
-            //	rigidBody->WakeUp();
+            rigidBody->OnColliderChanged(this);
         }
     }
 }
@@ -500,6 +484,8 @@ void Collider::OnParentChanged()
         auto actor = _shape->getActor();
         if (actor)
             actor->detachShape(*_shape);
+        if (actor && actor->is<PxRigidDynamic>())
+            static_cast<RigidBody*>(actor->userData)->OnColliderChanged(this);
 
         // Check if the new parent is a rigidbody
         const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
