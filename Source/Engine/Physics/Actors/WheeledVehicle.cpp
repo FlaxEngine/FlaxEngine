@@ -374,6 +374,7 @@ void WheeledVehicle::Setup()
 
     // Create vehicle drive
     drive = PxVehicleDrive4W::allocate(wheels.Count());
+    _actor->setSolverIterationCounts(12, 4);
     drive->setup(CPhysX, _actor, *wheelsSimData, driveSimData, wheels.Count() - 4);
     WheelVehicles.Add(this);
 
