@@ -39,6 +39,46 @@ namespace Flax.Deps.Dependencies
         {
             var root = options.IntermediateFolder;
             var moduleFilename = "assimp.Build.cs";
+            var configs = new string[]
+            {
+                "-DASSIMP_NO_EXPORT=ON",
+                "-DASSIMP_BUILD_ASSIMP_TOOLS=OFF",
+                "-DASSIMP_BUILD_TESTS=OFF",
+                "-DASSIMP_BUILD_AMF_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_AC_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_ASE_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_ASSBIN_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_ASSXML_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_DXF_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_CSM_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_HMP_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_NFF_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_NDO_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_IFC_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_FBX_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_RAW_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_TERRAGEN_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_3MF_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_STEP_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_3DS_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_BVH_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_IRRMESH_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_IRR_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MD2_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MD3_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MD5_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MDC_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MDL_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_OFF_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_COB_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_Q3D_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_Q3BSP_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_SIB_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_SMD_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_X3D_IMPORTER=FALSE",
+                "-DASSIMP_BUILD_MMD_IMPORTER=FALSE",
+            };
+            var globalConfig = string.Join(" ", configs);
 
             // Get the source
             CloneGitRepo(root, "https://github.com/FlaxEngine/assimp.git");
@@ -73,13 +113,11 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Linux:
                 {
                     // Build for Linux
-                    RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ASSIMP_TOOLS=OFF -DASSIMP_BUILD_TESTS=OFF");
+                    RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
-                    var srcName = "libassimp.so.4.1.0";
-                    var dstName = "libassimp.so";
-                    Utilities.FileCopy(Path.Combine(root, "lib", srcName), Path.Combine(depsFolder, dstName));
-                    Utilities.Run("strip", dstName, null, depsFolder, Utilities.RunOptions.None);
+                    Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
+                    Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
                     break;
                 }
                 }
