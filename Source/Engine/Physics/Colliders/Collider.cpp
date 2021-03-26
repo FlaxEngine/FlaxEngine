@@ -350,6 +350,9 @@ void Collider::CreateStaticActor()
     _staticActor = CPhysX->createRigidStatic(trans);
     ASSERT(_staticActor);
     _staticActor->userData = this;
+#if WITH_PVD
+    _staticActor->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+#endif
 
     // Reset local pos of the shape and link it to the actor
     _shape->setLocalPose(PxTransform(C2P(_center)));

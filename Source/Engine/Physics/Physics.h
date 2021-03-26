@@ -67,9 +67,8 @@ API_CLASS(Static) class FLAXENGINE_API Physics
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
 
     /// <summary>
-    /// Gets master physics object
+    /// Gets the master physics object.
     /// </summary>
-    /// <returns>Physics object</returns>
     static PxPhysics* GetPhysics();
 
 #if COMPILE_WITH_PHYSICS_COOKING
@@ -77,7 +76,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
     /// <summary>
     /// Gets physics cooking object
     /// </summary>
-    /// <returns>Physics cooking object</returns>
     static PxCooking* GetCooking();
 
 #endif
@@ -85,37 +83,31 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
     /// <summary>
     /// Gets PhysX scene object
     /// </summary>
-    /// <returns>Scene object</returns>
     static PxScene* GetScene();
 
     /// <summary>
     /// Gets PhysX characters controller manager object
     /// </summary>
-    /// <returns>Controller manager object</returns>
     static PxControllerManager* GetControllerManager();
 
     /// <summary>
     /// Gets the physics tolerances scale.
     /// </summary>
-    /// <returns>The tolerances scale.</returns>
     static PxTolerancesScale* GetTolerancesScale();
 
     /// <summary>
     /// Gets the default query filter callback used for the scene queries.
     /// </summary>
-    /// <returns>The query filter callback.</returns>
     static PxQueryFilterCallback* GetQueryFilterCallback();
 
     /// <summary>
     /// Gets the default query filter callback used for the character controller collisions detection.
     /// </summary>
-    /// <returns>The query filter callback.</returns>
     static PxQueryFilterCallback* GetCharacterQueryFilterCallback();
 
     /// <summary>
     /// Gets the default physical material.
     /// </summary>
-    /// <returns>The native material resource.</returns>
     static PxMaterial* GetDefaultMaterial();
 
 public:
