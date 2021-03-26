@@ -282,7 +282,13 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 // Remove unused points
                 while (srcCount > dstCount)
-                    ActorChildNodes[srcCount-- - 1].Dispose();
+                {
+                    var node = ActorChildNodes[srcCount-- - 1];
+                    // TODO: support selection interface inside SceneGraph nodes (eg. on Root) so prefab editor can handle this too
+                    if (Editor.Instance.SceneEditing.Selection.Contains(node))
+                        Editor.Instance.SceneEditing.Deselect();
+                    node.Dispose();
+                }
 
                 // Add new points
                 var id = ID;
