@@ -320,7 +320,7 @@ void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
     const uint64 numBytes = numPages * pageSize;
 
     // Use VirtualAlloc to allocate page-aligned memory
-    return VirtualAlloc(nullptr, numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
 
 void Win32Platform::FreePages(void* ptr)
