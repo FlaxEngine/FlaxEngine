@@ -141,11 +141,10 @@ namespace FlaxEditor.Viewport
         private int _deltaFilteringStep;
         private Vector2 _startPos;
         private Vector2 _mouseDeltaLast;
-        private Vector2 _mouseDeltaRightLast;
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
 
         /// <summary>
-        /// Mouse detla (x = Left, Y = Right)
+        /// Mouse delta (x = Left, Y = Right)
         /// </summary>
         protected Vector2 _mouseDelta;
 
