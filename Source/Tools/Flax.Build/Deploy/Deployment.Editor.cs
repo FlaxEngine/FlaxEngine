@@ -126,14 +126,22 @@ namespace Flax.Deploy
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 var editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
-                using (ZipFile zip = new ZipFile())
+                if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
                 {
-                    zip.AddDirectory(OutputPath);
+                    // Use system tool (preserves executable file attributes and link files)
+                    Utilities.Run("zip", "Editor.zip -r Editor", null, Deployer.PackageOutputPath, Utilities.RunOptions.None);
+                }
+                else
+                {
+                    using (ZipFile zip = new ZipFile())
+                    {
+                        zip.AddDirectory(OutputPath);
 
-                    zip.CompressionLevel = CompressionLevel.BestCompression;
-                    zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
+                        zip.CompressionLevel = CompressionLevel.BestCompression;
+                        zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
 
-                    zip.Save(editorPackageZipPath);
+                        zip.Save(editorPackageZipPath);
+                    }
                 }
                 Log.Info("Compressed editor package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
