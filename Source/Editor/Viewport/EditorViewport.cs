@@ -140,6 +140,7 @@ namespace FlaxEditor.Viewport
         private bool _isControllingMouse;
         private int _deltaFilteringStep;
         private Vector2 _startPos;
+        private Vector2 _mouseDeltaLast;
         private Vector2 _mouseDeltaRightLast;
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
 
@@ -549,7 +550,7 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Camera Orientation
+                // Camera Viewpoints
                 {
                     var cameraView = ViewWidgetButtonMenu.AddChildMenu("Orientation").ContextMenu;
                     for (int i = 0; i < EditorViewportCameraOrientationValues.Length; i++)
@@ -998,7 +999,7 @@ namespace FlaxEditor.Viewport
 
             // Check if update mouse
             Vector2 size = Size;
-            var options = Editor.Instance.Options.Options.Input;
+            var options = Editor.Instance.Options.Options;
             if (_isControllingMouse)
             {
                 var rmbWheel = false;
@@ -1021,7 +1022,7 @@ namespace FlaxEditor.Viewport
                     if (rmbWheel)
                     {
                         float step = 4.0f;
-                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity;
+                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
                         int camValueIndex = -1;
                         for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
                         {
@@ -1049,27 +1050,27 @@ namespace FlaxEditor.Viewport
 
                 // Get input movement
                 Vector3 moveDelta = Vector3.Zero;
-                if (win.GetKey(options.Forward.Key))
+                if (win.GetKey(options.Input.Forward.Key))
                 {
                     moveDelta += Vector3.Forward;
                 }
-                if (win.GetKey(options.Backward.Key))
+                if (win.GetKey(options.Input.Backward.Key))
                 {
                     moveDelta += Vector3.Backward;
                 }
-                if (win.GetKey(options.Right.Key))
+                if (win.GetKey(options.Input.Right.Key))
                 {
                     moveDelta += Vector3.Right;
                 }
-                if (win.GetKey(options.Left.Key))
+                if (win.GetKey(options.Input.Left.Key))
                 {
                     moveDelta += Vector3.Left;
                 }
-                if (win.GetKey(options.Up.Key))
+                if (win.GetKey(options.Input.Up.Key))
                 {
                     moveDelta += Vector3.Up;
                 }
-                if (win.GetKey(options.Down.Key))
+                if (win.GetKey(options.Input.Down.Key))
                 {
                     moveDelta += Vector3.Down;
                 }
@@ -1083,23 +1084,21 @@ namespace FlaxEditor.Viewport
                     moveDelta *= 0.3f;
 
                 // Calculate smooth mouse delta not dependant on viewport size
-
                 Vector2 offset = _viewMousePos - _startPos;
                 if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel)
                 {
                     offset = Vector2.Zero;
                 }
-
                 offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                 offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDeltaRight = offset / size;
-                _mouseDeltaRight.Y *= size.Y / size.X;
+                _mouseDelta = offset / size;
+                _mouseDelta.Y *= size.Y / size.X;
 
                 Vector2 mouseDelta = Vector2.Zero;
                 if (_useMouseFiltering)
                 {
                     // Update delta filtering buffer
-                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDeltaRight;
+                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
                     _deltaFilteringStep++;
 
                     // If the step is too far, zero
@@ -1113,14 +1112,16 @@ namespace FlaxEditor.Viewport
                     mouseDelta /= FpsCameraFilteringFrames;
                 }
                 else
-                    mouseDelta = _mouseDeltaRight;
+                {
+                    mouseDelta = _mouseDelta;
+                }
 
                 if (_useMouseAcceleration)
                 {
                     // Accelerate the delta
                     var currentDelta = mouseDelta;
-                    mouseDelta += _mouseDeltaRightLast * _mouseAccelerationScale;
-                    _mouseDeltaRightLast = currentDelta;
+                    mouseDelta += _mouseDeltaLast * _mouseAccelerationScale;
+                    _mouseDeltaLast = currentDelta;
                 }
 
                 // Update
@@ -1140,14 +1141,25 @@ namespace FlaxEditor.Viewport
                 {
                     var scroll = _input.MouseWheelDelta;
                     if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
-                        _orthoSize -= scroll * Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
+                        _orthoSize -= scroll * options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
-
             }
             else
             {
-                _mouseDelta = Vector2.Zero;
-                _mouseDeltaRight = _mouseDeltaRightLast = Vector2.Zero;
+                if (_input.IsMouseLeftDown || _input.IsMouseRightDown)
+                {
+                    // Calculate smooth mouse delta not dependant on viewport size
+                    Vector2 offset = _viewMousePos - _startPos;
+                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
+                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
+                    _mouseDelta = offset / size;
+                    _startPos = _viewMousePos;
+                }
+                else
+                {
+                    _mouseDelta = Vector2.Zero;
+                }
+                _mouseDeltaLast = Vector2.Zero;
 
                 if (ContainsFocus)
                 {
@@ -1184,23 +1196,6 @@ namespace FlaxEditor.Viewport
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
             }
-
-            if (_input.IsMouseLeftDown)
-            {
-                // Calculate smooth mouse delta not dependant on viewport size
-                var mouseDeltaLeftOffset = _viewMousePos.X - _startPos.X;
-                mouseDeltaLeftOffset = mouseDeltaLeftOffset > 0 ? Mathf.Floor(mouseDeltaLeftOffset) : Mathf.Ceil(mouseDeltaLeftOffset);
-                _mouseDeltaLeft = mouseDeltaLeftOffset / size;
-                _startPos = _viewMousePos;
-                _mouseDelta.X = _mouseDeltaLeft.X * 1000;
-            }
-            else
-                _mouseDelta.X = 0;
-
-            if (_input.IsMouseRightDown)
-                _mouseDelta.Y = _mouseDeltaRight.Y * 1000;
-            else
-                _mouseDelta.Y = 0;
 
             _input.MouseWheelDelta = 0;
         }
