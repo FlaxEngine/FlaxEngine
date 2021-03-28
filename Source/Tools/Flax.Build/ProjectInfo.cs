@@ -119,6 +119,8 @@ namespace Flax.Build
 
         private bool IsTargetCSharpOnly(string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return true;
             var rules = Builder.GenerateRulesAssembly();
             var target = rules.GetTarget(name);
             return target == null || target.Modules.TrueForAll(x => !rules.GetModule(x).BuildNativeCode);
