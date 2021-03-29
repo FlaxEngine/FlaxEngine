@@ -58,10 +58,7 @@ void WheeledVehicle::SetDriveType(DriveTypes value)
     if (_driveType == value)
         return;
     _driveType = value;
-    if (IsDuringPlay())
-    {
-        Setup();
-    }
+    Setup();
 }
 
 const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
@@ -72,10 +69,7 @@ const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
 void WheeledVehicle::SetWheels(const Array<Wheel>& value)
 {
     _wheels = value;
-    if (IsDuringPlay())
-    {
-        Setup();
-    }
+    Setup();
 }
 
 WheeledVehicle::EngineSettings WheeledVehicle::GetEngine() const
@@ -235,7 +229,7 @@ void WheeledVehicle::GetWheelState(int32 index, WheelState& result)
 void WheeledVehicle::Setup()
 {
 #if WITH_VEHICLE
-    if (!_actor)
+    if (!_actor || !IsDuringPlay())
         return;
     auto& drive = (PxVehicleWheels*&)_drive;
 

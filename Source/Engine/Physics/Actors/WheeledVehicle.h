@@ -372,9 +372,13 @@ public:
     /// <param name="result">The current state.</param>
     API_FUNCTION() void GetWheelState(int32 index, API_PARAM(Out) WheelState& result);
 
+    /// <summary>
+    /// Rebuilds the vehicle. Call it after modifying vehicle settings (eg. engine options).
+    /// </summary>
+    API_FUNCTION() void Setup();
+
 private:
 
-    void Setup();
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view);
 #endif
