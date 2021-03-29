@@ -32,25 +32,6 @@ public:
     };
 
     /// <summary>
-    /// Vehicle gearbox settings.
-    /// </summary>
-    API_STRUCT() struct GearboxSettings : ISerializable
-    {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(GearboxSettings);
-    API_AUTO_SERIALIZATION();
-
-        /// <summary>
-        /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
-        /// </summary>
-        API_FIELD() bool AutoGear = true;
-
-        /// <summary>
-        /// Time it takes to switch gear. Specified in seconds (s).
-        /// </summary>
-        API_FIELD() float SwitchTime = 0.5f;
-    };
-
-    /// <summary>
     /// Vehicle engine settings.
     /// </summary>
     API_STRUCT() struct EngineSettings : ISerializable
@@ -135,6 +116,32 @@ public:
         /// Maximum allowed ratio of rear-left and rear-right wheel rotation speeds. The differential will divert more torque to the slower wheel when the bias is exceeded. Only applied to LimitedSlip4W and LimitedSlipRearDrive.
         /// </summary>
         API_FIELD(Attributes="LimitAttribute(1)") float RearBias = 1.3f;
+    };
+
+    /// <summary>
+    /// Vehicle gearbox settings.
+    /// </summary>
+    API_STRUCT() struct GearboxSettings : ISerializable
+    {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GearboxSettings);
+    API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
+        /// </summary>
+        API_FIELD() bool AutoGear = true;
+
+        /// <summary>
+        /// Time it takes to switch gear. Specified in seconds (s).
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float SwitchTime = 0.5f;
+
+        /// <summary>
+        /// Strength of clutch. A stronger clutch more strongly couples the engine to the wheels, while a clutch of strength zero completely decouples the engine from the wheels.
+        /// Stronger clutches more quickly bring the wheels and engine into equilibrium, while weaker clutches take longer, resulting in periods of clutch slip and delays in power transmission from the engine to the wheels.
+        /// Specified in kilograms metres-squared per second (kg m^2 s^-1).
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float ClutchStrength = 10.0f;
     };
 
     /// <summary>

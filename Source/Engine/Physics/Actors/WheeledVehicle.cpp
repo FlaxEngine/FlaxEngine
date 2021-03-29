@@ -433,8 +433,7 @@ void WheeledVehicle::Setup()
 
         // Clutch
         PxVehicleClutchData clutch;
-        // TODO: expose Clutch options
-        clutch.mStrength = M2ToCm2(10.0f);
+        clutch.mStrength = M2ToCm2(_gearbox.ClutchStrength);
         driveSimData.setClutchData(clutch);
 
         // Ackermann steer accuracy
@@ -484,8 +483,7 @@ void WheeledVehicle::Setup()
 
         // Clutch
         PxVehicleClutchData clutch;
-        // TODO: expose Clutch options
-        clutch.mStrength = M2ToCm2(10.0f);
+        clutch.mStrength = M2ToCm2(_gearbox.ClutchStrength);
         driveSimData.setClutchData(clutch);
 
         // Create vehicle drive
