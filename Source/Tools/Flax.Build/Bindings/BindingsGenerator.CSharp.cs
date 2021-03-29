@@ -438,11 +438,16 @@ namespace Flax.Build.Bindings
                 if (comment.Length >= 3 &&
                     comment[0] == "/// <summary>" &&
                     comment[1].StartsWith("/// ") &&
-                    comment[2] == "/// </summary>")
+                    comment[comment.Length - 1] == "/// </summary>")
                 {
                     var tooltip = comment[1].Substring(4);
                     if (tooltip.StartsWith("Gets the "))
                         tooltip = "The " + tooltip.Substring(9);
+                    for (int i = 3; i < comment.Length; i++)
+                    {
+                        if (comment[i - 1].StartsWith("/// "))
+                            tooltip += " " + comment[i - 1].Substring(4);
+                    }
                     if (tooltip.IndexOf('\"') != -1)
                         tooltip = tooltip.Replace("\"", "\\\"");
                     contents.Append(indent).Append("[Tooltip(\"").Append(tooltip).Append("\")]").AppendLine();
