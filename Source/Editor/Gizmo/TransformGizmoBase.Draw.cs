@@ -61,12 +61,6 @@ namespace FlaxEditor.Gizmo
                 // Error
                 Platform.Fatal("Failed to load transform gizmo resources.");
             }
-
-            _transAxisMesh = _modelTranslationAxis.LODs[0].Meshes[0];
-            _sphereMesh = _modelSphere.LODs[0].Meshes[0];
-            _scaleAxisMesh = _modelScaleAxis.LODs[0].Meshes[0];
-            _rotationAxisMesh = _modelRotationAxis.LODs[0].Meshes[0];
-            _cubeMesh = _modelCube.LODs[0].Meshes[0];
         }
 
         /// <inheritdoc />
@@ -90,8 +84,12 @@ namespace FlaxEditor.Gizmo
             {
             case Mode.Translate:
             {
-                if (!_modelTranslationAxis || !_modelTranslationAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
+                if (!_modelTranslationAxis || !_modelTranslationAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
                     break;
+
+                _transAxisMesh = _modelTranslationAxis.LODs[0].Meshes[0];
+                _cubeMesh = _modelCube.LODs[0].Meshes[0];
+                _sphereMesh = _modelSphere.LODs[0].Meshes[0];
 
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
@@ -136,8 +134,11 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Rotate:
             {
-                if (!_modelRotationAxis || !_modelRotationAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
+                if (!_modelRotationAxis || !_modelRotationAxis.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
                     break;
+
+                _rotationAxisMesh = _modelRotationAxis.LODs[0].Meshes[0];
+                _sphereMesh = _modelSphere.LODs[0].Meshes[0];
 
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
@@ -165,8 +166,12 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Scale:
             {
-                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded)
+                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
                     break;
+
+                _scaleAxisMesh = _modelScaleAxis.LODs[0].Meshes[0];
+                _cubeMesh = _modelCube.LODs[0].Meshes[0];
+                _sphereMesh = _modelSphere.LODs[0].Meshes[0];
 
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
