@@ -51,6 +51,35 @@ public:
     };
 
     /// <summary>
+    /// Vehicle engine settings.
+    /// </summary>
+    API_STRUCT() struct EngineSettings : ISerializable
+    {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(EngineSettings);
+    API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
+        /// </summary>
+        API_FIELD() bool AutoGear = true;
+
+        /// <summary>
+        /// Moment of inertia of the engine around the axis of rotation. Specified in kilograms metres-squared (kg m^2).
+        /// </summary>
+        API_FIELD() float MOI = 1.0f;
+
+        /// <summary>
+        /// Maximum torque available to apply to the engine when the accelerator pedal is at maximum. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2).
+        /// </summary>
+        API_FIELD() float MaxTorque = 500.0f;
+
+        /// <summary>
+        /// Maximum rotation speed of the engine (Revolutions Per Minute is the number of turns in one minute).
+        /// </summary>
+        API_FIELD() float MaxRotationSpeed = 6000.0f;
+    };
+
+    /// <summary>
     /// Vehicle wheel types.
     /// </summary>
     API_ENUM() enum class WheelTypes
@@ -147,8 +176,9 @@ private:
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;
-    GearboxSettings _gearbox;
     Array<Wheel> _wheels;
+    GearboxSettings _gearbox;
+    EngineSettings _engine;
 
 public:
 
@@ -177,6 +207,16 @@ public:
     /// Sets the vehicle wheels settings.
     /// </summary>
     API_PROPERTY() void SetWheels(const Array<Wheel>& value);
+
+    /// <summary>
+    /// Gets the vehicle engine settings.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
+
+    /// <summary>
+    /// Sets the vehicle engine settings.
+    /// </summary>
+    API_PROPERTY() void SetEngine(const EngineSettings& value);
 
     /// <summary>
     /// Gets the vehicle gearbox settings.
