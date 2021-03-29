@@ -59,11 +59,6 @@ public:
     API_AUTO_SERIALIZATION();
 
         /// <summary>
-        /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
-        /// </summary>
-        API_FIELD() bool AutoGear = true;
-
-        /// <summary>
         /// Moment of inertia of the engine around the axis of rotation. Specified in kilograms metres-squared (kg m^2).
         /// </summary>
         API_FIELD() float MOI = 1.0f;

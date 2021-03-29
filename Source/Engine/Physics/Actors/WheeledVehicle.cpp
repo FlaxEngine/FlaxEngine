@@ -457,10 +457,9 @@ void WheeledVehicle::Setup()
 
         // Engine
         PxVehicleEngineData engine;
-        // TODO: expose Engine options
-        engine.mMOI = M2ToCm2(1.0f);
-        engine.mPeakTorque = M2ToCm2(500.0f);
-        engine.mMaxOmega = RpmToRadPerS(6000.0f);
+        engine.mMOI = M2ToCm2(_engine.MOI);
+        engine.mPeakTorque = M2ToCm2(_engine.MaxTorque);
+        engine.mMaxOmega = RpmToRadPerS(_engine.MaxRotationSpeed);
         engine.mDampingRateFullThrottle = M2ToCm2(0.15f);
         engine.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
         engine.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
