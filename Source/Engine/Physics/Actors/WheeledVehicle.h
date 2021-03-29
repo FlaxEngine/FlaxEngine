@@ -190,6 +190,26 @@ public:
         API_FIELD() float Width = 20.0f;
 
         /// <summary>
+        /// Max steer angle that can be achieved by the wheel (in degrees).
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float MaxSteerAngle = 0.0f;
+
+        /// <summary>
+        /// Damping rate applied to wheel. Specified in kilograms metres-squared per second (kg m^2 s^-1).
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float DampingRate = 0.25f;
+
+        /// <summary>
+        /// Max brake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float MaxBrakeTorque = 1500.0f;
+
+        /// <summary>
+        /// Max handbrake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0)") float MaxHandBrakeTorque = 2000.0f;
+
+        /// <summary>
         /// Collider that represents the wheel shape and it's placement. Has to be attached as a child to the vehicle. Triangle mesh collider is not supported (use convex mesh or basic shapes).
         /// </summary>
         API_FIELD() ScriptingObjectReference<Collider> Collider;

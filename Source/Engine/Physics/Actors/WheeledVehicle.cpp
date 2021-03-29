@@ -301,7 +301,6 @@ void WheeledVehicle::Setup()
         data.LocalOrientation = wheel.Collider->GetLocalOrientation();
 
         PxVehicleSuspensionData suspensionData;
-        // TODO: expose as wheel settings
         const float suspensionFrequency = 7.0f;
         const float suspensionDampingRatio = 1.0f;
         suspensionData.mMaxCompression = 10.0f;
@@ -318,24 +317,10 @@ void WheeledVehicle::Setup()
         wheelData.mRadius = wheel.Radius;
         wheelData.mWidth = wheel.Width;
         wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
-        wheelData.mDampingRate = M2ToCm2(0.25f);
-        switch (wheel.Type)
-        {
-        case WheelTypes::FrontLeft:
-        case WheelTypes::FrontRight:
-            // Enable steering for the front wheels only
-            // TODO: expose as settings
-            wheelData.mMaxSteer = PI * 0.3333f;
-            wheelData.mMaxSteer = PI * 0.3333f;
-            break;
-        case WheelTypes::RearLeft:
-        case WheelTypes::ReadRight:
-            // Enable the handbrake for the rear wheels only
-            // TODO: expose as settings
-            wheelData.mMaxHandBrakeTorque = M2ToCm2(4000.0f);
-            wheelData.mMaxHandBrakeTorque = M2ToCm2(4000.0f);
-            break;
-        }
+        wheelData.mDampingRate = M2ToCm2(wheel.DampingRate);
+        wheelData.mMaxSteer = wheel.MaxSteerAngle * DegreesToRadians;
+        wheelData.mMaxBrakeTorque = M2ToCm2(wheel.MaxBrakeTorque);
+        wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
 
         PxVec3 centreOffset = centerOfMassOffset.transformInv(offsets[i]);
         float suspensionForceOffset = 0.0f;
