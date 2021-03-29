@@ -429,9 +429,7 @@ namespace FlaxEngine
         /// <summary>
         /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
         /// </summary>
-        /// <param name="value1">The bounding box</param>
         /// <param name="offset">The offset.</param>
-        /// <param name="result">The result.</param>
         /// <returns>The result.</returns>
         public BoundingBox MakeOffsetted(Vector3 offset)
         {

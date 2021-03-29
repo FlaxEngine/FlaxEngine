@@ -18,9 +18,6 @@ namespace FlaxEditor.Gizmo
         private MaterialInstance _materialAxisY;
         private MaterialInstance _materialAxisZ;
         private MaterialInstance _materialAxisFocus;
-
-        private MaterialBase _materialWire;
-        private MaterialBase _materialWireFocus;
         private MaterialBase _materialSphere;
 
         // Axis mesh
