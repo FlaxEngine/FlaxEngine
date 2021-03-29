@@ -661,12 +661,11 @@ void Physics::CollectResults()
         int32 wheelsCount = 0;
         for (auto wheelVehicle : WheelVehicles)
         {
-            auto drive = (PxVehicleDrive4W*)wheelVehicle->_drive;
+            auto drive = (PxVehicleWheels*)wheelVehicle->_drive;
             ASSERT(drive);
             WheelVehiclesCache.Add(drive);
             wheelsCount += drive->mWheelsSimData.getNbWheels();
 
-            PxVehicleDrive4WRawInputData rawInputData;
             float throttle = wheelVehicle->_throttle;
             float brake = wheelVehicle->_brake;
             if (wheelVehicle->UseReverseAsBrake)
@@ -723,10 +722,6 @@ void Physics::CollectResults()
             {
                 throttle = Math::Max(throttle, 0.0f);
             }
-            rawInputData.setAnalogAccel(throttle);
-            rawInputData.setAnalogBrake(brake);
-            rawInputData.setAnalogSteer(wheelVehicle->_steering);
-            rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
             // @formatter:off
             // Reference: PhysX SDK docs
             // TODO: expose input control smoothing data
@@ -762,7 +757,29 @@ void Physics::CollectResults()
             };
             const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
             // @formatter:on
-            PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *drive);
+            switch (wheelVehicle->_driveTypeCurrent)
+            {
+            case WheeledVehicle::DriveTypes::Drive4W:
+            {
+                PxVehicleDrive4WRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::DriveNW:
+            {
+                PxVehicleDriveNWRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                break;
+            }
+            }
         }
 
         // Update batches queries cache
@@ -798,7 +815,7 @@ void Physics::CollectResults()
         wheelsCount = 0;
         for (int32 i = 0; i < WheelVehicles.Count(); i++)
         {
-            auto drive = (PxVehicleDrive4W*)WheelVehicles[i]->_drive;
+            auto drive = (PxVehicleWheels*)WheelVehicles[i]->_drive;
             auto& perVehicle = WheelVehiclesResultsPerVehicle[i];
             perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
             perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;

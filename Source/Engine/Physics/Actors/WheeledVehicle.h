@@ -19,6 +19,19 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
 public:
 
     /// <summary>
+    /// Vehicle driving mode types.
+    /// </summary>
+    API_ENUM() enum class DriveTypes
+    {
+        // Four-wheel drive. Any additional wheels are non-drivable. Optimized for 4-wheel cars.
+        Drive4W,
+        // N-wheel drive. Up to 20 drivable wheels. Suits generic wheels configurations.
+        DriveNW,
+        // Non-drivable vehicle.
+        NoDrive,
+    };
+
+    /// <summary>
     /// Vehicle gearbox settings.
     /// </summary>
     API_STRUCT() struct GearboxSettings : ISerializable
@@ -40,7 +53,7 @@ public:
     /// <summary>
     /// Vehicle wheel types.
     /// </summary>
-    API_ENUM() enum class WheelType
+    API_ENUM() enum class WheelTypes
     {
         // Left wheel of the front axle.
         FrontLeft,
@@ -65,7 +78,7 @@ public:
         /// <summary>
         /// Wheel placement type.
         /// </summary>
-        API_FIELD() WheelType Type = WheelType::FrontLeft;
+        API_FIELD() WheelTypes Type = WheelTypes::FrontLeft;
 
         /// <summary>
         /// Combined mass of the wheel and the tire in kg. Typically, a wheel has mass between 20Kg and 80Kg but can be lower and higher depending on the vehicle.
@@ -131,6 +144,7 @@ private:
     };
 
     void* _drive = nullptr;
+    DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;
     GearboxSettings _gearbox;
@@ -145,9 +159,19 @@ public:
     bool UseReverseAsBrake = true;
 
     /// <summary>
+    /// Gets the vehicle driving model type.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
+
+    /// <summary>
+    /// Sets the vehicle driving model type.
+    /// </summary>
+    API_PROPERTY() void SetDriveType(DriveTypes value);
+
+    /// <summary>
     /// Gets the vehicle wheels settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
 
     /// <summary>
     /// Sets the vehicle wheels settings.

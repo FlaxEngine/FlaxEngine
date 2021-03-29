@@ -11,7 +11,9 @@
 #endif
 #if WITH_VEHICLE
 #include <ThirdParty/PhysX/vehicle/PxVehicleSDK.h>
+#include <ThirdParty/PhysX/vehicle/PxVehicleNoDrive.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleDrive4W.h>
+#include <ThirdParty/PhysX/vehicle/PxVehicleDriveNW.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleUtilSetup.h>
 #include <ThirdParty/PhysX/PxFiltering.h>
 #endif
@@ -21,10 +23,45 @@ extern void InitVehicleSDK();
 extern Array<WheeledVehicle*> WheelVehicles;
 #endif
 
+namespace
+{
+    void FreeDrive(WheeledVehicle::DriveTypes driveType, PxVehicleWheels* drive)
+    {
+        switch (driveType)
+        {
+        case WheeledVehicle::DriveTypes::Drive4W:
+            ((PxVehicleDrive4W*)drive)->free();
+            break;
+        case WheeledVehicle::DriveTypes::DriveNW:
+            ((PxVehicleDriveNW*)drive)->free();
+            break;
+        case WheeledVehicle::DriveTypes::NoDrive:
+            ((PxVehicleNoDrive*)drive)->free();
+            break;
+        }
+    }
+}
+
 WheeledVehicle::WheeledVehicle(const SpawnParams& params)
     : RigidBody(params)
 {
     _useCCD = 1;
+}
+
+WheeledVehicle::DriveTypes WheeledVehicle::GetDriveType() const
+{
+    return _driveType;
+}
+
+void WheeledVehicle::SetDriveType(DriveTypes value)
+{
+    if (_driveType == value)
+        return;
+    _driveType = value;
+    if (IsDuringPlay())
+    {
+        Setup();
+    }
 }
 
 const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
@@ -49,7 +86,7 @@ WheeledVehicle::GearboxSettings WheeledVehicle::GetGearbox() const
 void WheeledVehicle::SetGearbox(const GearboxSettings& value)
 {
 #if WITH_VEHICLE
-    auto& drive = (PxVehicleDrive4W*&)_drive;
+    auto& drive = (PxVehicleDrive*&)_drive;
     if (drive)
     {
         drive->mDriveDynData.setUseAutoGears(value.AutoGear);
@@ -90,7 +127,7 @@ void WheeledVehicle::ClearInput()
 float WheeledVehicle::GetForwardSpeed() const
 {
 #if WITH_VEHICLE
-    auto& drive = (const PxVehicleDrive4W*&)_drive;
+    auto& drive = (const PxVehicleWheels*&)_drive;
     return drive ? drive->computeForwardSpeed() : 0.0f;
 #else
     return 0.0f;
@@ -100,7 +137,7 @@ float WheeledVehicle::GetForwardSpeed() const
 float WheeledVehicle::GetSidewaysSpeed() const
 {
 #if WITH_VEHICLE
-    auto& drive = (const PxVehicleDrive4W*&)_drive;
+    auto& drive = (const PxVehicleWheels*&)_drive;
     return drive ? drive->computeSidewaysSpeed() : 0.0f;
 #else
     return 0.0f;
@@ -110,8 +147,8 @@ float WheeledVehicle::GetSidewaysSpeed() const
 float WheeledVehicle::GetEngineRotationSpeed() const
 {
 #if WITH_VEHICLE
-    auto& drive = (const PxVehicleDrive4W*&)_drive;
-    return drive ? RadPerSToRpm(drive->mDriveDynData.getEngineRotationSpeed()) : 0.0f;
+    auto& drive = (const PxVehicleDrive*&)_drive;
+    return drive && _driveType != DriveTypes::NoDrive ? RadPerSToRpm(drive->mDriveDynData.getEngineRotationSpeed()) : 0.0f;
 #else
     return 0.0f;
 #endif
@@ -120,8 +157,8 @@ float WheeledVehicle::GetEngineRotationSpeed() const
 int32 WheeledVehicle::GetCurrentGear() const
 {
 #if WITH_VEHICLE
-    auto& drive = (const PxVehicleDrive4W*&)_drive;
-    return drive ? (int32)drive->mDriveDynData.getCurrentGear() - 1 : 0;
+    auto& drive = (const PxVehicleDrive*&)_drive;
+    return drive && _driveType != DriveTypes::NoDrive ? (int32)drive->mDriveDynData.getCurrentGear() - 1 : 0;
 #else
     return 0;
 #endif
@@ -130,8 +167,8 @@ int32 WheeledVehicle::GetCurrentGear() const
 void WheeledVehicle::SetCurrentGear(int32 value)
 {
 #if WITH_VEHICLE
-    auto& drive = (PxVehicleDrive4W*&)_drive;
-    if (drive)
+    auto& drive = (PxVehicleDrive*&)_drive;
+    if (drive && _driveType != DriveTypes::NoDrive)
     {
         drive->mDriveDynData.forceGearChange((PxU32)(value + 1));
     }
@@ -141,8 +178,8 @@ void WheeledVehicle::SetCurrentGear(int32 value)
 int32 WheeledVehicle::GetTargetGear() const
 {
 #if WITH_VEHICLE
-    auto& drive = (const PxVehicleDrive4W*&)_drive;
-    return drive ? (int32)drive->mDriveDynData.getTargetGear() - 1 : 0;
+    auto& drive = (const PxVehicleDrive*&)_drive;
+    return drive && _driveType != DriveTypes::NoDrive ? (int32)drive->mDriveDynData.getTargetGear() - 1 : 0;
 #else
     return 0;
 #endif
@@ -151,8 +188,8 @@ int32 WheeledVehicle::GetTargetGear() const
 void WheeledVehicle::SetTargetGear(int32 value)
 {
 #if WITH_VEHICLE
-    auto& drive = (PxVehicleDrive4W*&)_drive;
-    if (drive)
+    auto& drive = (PxVehicleDrive*&)_drive;
+    if (drive && _driveType != DriveTypes::NoDrive)
     {
         drive->mDriveDynData.startGearChange((PxU32)(value + 1));
     }
@@ -180,13 +217,13 @@ void WheeledVehicle::Setup()
 #if WITH_VEHICLE
     if (!_actor)
         return;
-    auto& drive = (PxVehicleDrive4W*&)_drive;
+    auto& drive = (PxVehicleWheels*&)_drive;
 
     // Release previous
     if (drive)
     {
         WheelVehicles.Remove(this);
-        drive->free();
+        FreeDrive(_driveTypeCurrent, drive);
         drive = nullptr;
     }
 
@@ -270,15 +307,15 @@ void WheeledVehicle::Setup()
         wheelData.mDampingRate = M2ToCm2(0.25f);
         switch (wheel.Type)
         {
-        case WheelType::FrontLeft:
-        case WheelType::FrontRight:
+        case WheelTypes::FrontLeft:
+        case WheelTypes::FrontRight:
             // Enable steering for the front wheels only
             // TODO: expose as settings
             wheelData.mMaxSteer = PI * 0.3333f;
             wheelData.mMaxSteer = PI * 0.3333f;
             break;
-        case WheelType::RearLeft:
-        case WheelType::ReadRight:
+        case WheelTypes::RearLeft:
+        case WheelTypes::ReadRight:
             // Enable the handbrake for the rear wheels only
             // TODO: expose as settings
             wheelData.mMaxHandBrakeTorque = M2ToCm2(4000.0f);
@@ -342,9 +379,14 @@ void WheeledVehicle::Setup()
         }
     }
 
-    // Initialize vehicle drive simulation data
-    PxVehicleDriveSimData4W driveSimData;
+    // Initialize vehicle drive
+    _driveTypeCurrent = _driveType;
+    switch (_driveType)
     {
+    case DriveTypes::Drive4W:
+    {
+        PxVehicleDriveSimData4W driveSimData;
+
         // Differential
         PxVehicleDifferential4WData diff;
         // TODO: expose Differential options
@@ -383,20 +425,79 @@ void WheeledVehicle::Setup()
         ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z);
         ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
         driveSimData.setAckermannGeometryData(ackermann);
+
+        // Create vehicle drive
+        auto drive4W = PxVehicleDrive4W::allocate(wheels.Count());
+        drive4W->setup(CPhysX, _actor, *wheelsSimData, driveSimData, Math::Max(wheels.Count() - 4, 0));
+        drive4W->setToRestState();
+        drive4W->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
+        drive4W->mDriveDynData.setUseAutoGears(_gearbox.AutoGear);
+        drive = drive4W;
+        break;
+    }
+    case DriveTypes::DriveNW:
+    {
+        PxVehicleDriveSimDataNW driveSimData;
+
+        // Differential
+        PxVehicleDifferentialNWData diff;
+        // TODO: expose Differential options
+        for (int32 i = 0; i < wheels.Count(); i++)
+            diff.setDrivenWheel(i, true);
+        driveSimData.setDiffData(diff);
+
+        // Engine
+        PxVehicleEngineData engine;
+        // TODO: expose Engine options
+        engine.mMOI = M2ToCm2(1.0f);
+        engine.mPeakTorque = M2ToCm2(500.0f);
+        engine.mMaxOmega = RpmToRadPerS(6000.0f);
+        engine.mDampingRateFullThrottle = M2ToCm2(0.15f);
+        engine.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+        engine.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setEngineData(engine);
+
+        // Gears
+        PxVehicleGearsData gears;
+        gears.mSwitchTime = Math::Max(_gearbox.SwitchTime, 0.0f);
+        driveSimData.setGearsData(gears);
+
+        // Auto Box
+        PxVehicleAutoBoxData autoBox;
+        driveSimData.setAutoBoxData(autoBox);
+
+        // Clutch
+        PxVehicleClutchData clutch;
+        // TODO: expose Clutch options
+        clutch.mStrength = M2ToCm2(10.0f);
+        driveSimData.setClutchData(clutch);
+
+        // Create vehicle drive
+        auto driveNW = PxVehicleDriveNW::allocate(wheels.Count());
+        driveNW->setup(CPhysX, _actor, *wheelsSimData, driveSimData, wheels.Count());
+        driveNW->setToRestState();
+        driveNW->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
+        driveNW->mDriveDynData.setUseAutoGears(_gearbox.AutoGear);
+        drive = driveNW;
+        break;
+    }
+    case DriveTypes::NoDrive:
+    {
+        // Create vehicle drive
+        auto driveNo = PxVehicleNoDrive::allocate(wheels.Count());
+        driveNo->setup(CPhysX, _actor, *wheelsSimData);
+        driveNo->setToRestState();
+        drive = driveNo;
+        break;
+    }
+    default:
+    CRASH;
     }
 
-    // Create vehicle drive
-    drive = PxVehicleDrive4W::allocate(wheels.Count());
-    _actor->setSolverIterationCounts(12, 4);
-    drive->setup(CPhysX, _actor, *wheelsSimData, driveSimData, Math::Max(wheels.Count() - 4, 0));
     WheelVehicles.Add(this);
-
-    // Initialize
-    drive->setToRestState();
-    drive->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
-    drive->mDriveDynData.setUseAutoGears(_gearbox.AutoGear);
-
     wheelsSimData->free();
+    _actor->setSolverIterationCounts(12, 4);
+
 #else
     LOG(Fatal, "PhysX Vehicle SDK is not supported.");
 #endif
@@ -441,6 +542,7 @@ void WheeledVehicle::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(WheeledVehicle);
 
+    SERIALIZE_MEMBER(DriveType, _driveType);
     SERIALIZE_MEMBER(Wheels, _wheels);
     SERIALIZE(UseReverseAsBrake);
     SERIALIZE_MEMBER(Gearbox, _gearbox);
@@ -450,6 +552,7 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
 {
     RigidBody::Deserialize(stream, modifier);
 
+    DESERIALIZE_MEMBER(DriveType, _driveType);
     DESERIALIZE_MEMBER(Wheels, _wheels);
     DESERIALIZE(UseReverseAsBrake);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
@@ -483,12 +586,12 @@ void WheeledVehicle::EndPlay()
 #endif
 
 #if WITH_VEHICLE
-    auto& drive = (PxVehicleDrive4W*&)_drive;
+    auto& drive = (PxVehicleWheels*&)_drive;
     if (drive)
     {
         // Parkway Drive
         WheelVehicles.Remove(this);
-        drive->free();
+        FreeDrive(_driveTypeCurrent, drive);
         drive = nullptr;
     }
 #endif
