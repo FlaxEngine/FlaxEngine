@@ -88,6 +88,16 @@ void WheeledVehicle::SetEngine(const EngineSettings& value)
     _engine = value;
 }
 
+WheeledVehicle::DifferentialSettings WheeledVehicle::GetDifferential() const
+{
+    return _differential;
+}
+
+void WheeledVehicle::SetDifferential(const DifferentialSettings& value)
+{
+    _differential = value;
+}
+
 WheeledVehicle::GearboxSettings WheeledVehicle::GetGearbox() const
 {
     return _gearbox;
@@ -399,8 +409,13 @@ void WheeledVehicle::Setup()
 
         // Differential
         PxVehicleDifferential4WData diff;
-        // TODO: expose Differential options
-        diff.mType = PxVehicleDifferential4WData::eDIFF_TYPE_LS_4WD;
+        diff.mType = (PxVehicleDifferential4WData::Enum)_differential.Type;
+        diff.mFrontRearSplit = _differential.FrontRearSplit;
+        diff.mFrontLeftRightSplit = _differential.FrontLeftRightSplit;
+        diff.mRearLeftRightSplit = _differential.RearLeftRightSplit;
+        diff.mCentreBias = _differential.CentreBias;
+        diff.mFrontBias = _differential.FrontBias;
+        diff.mRearBias = _differential.RearBias;
         driveSimData.setDiffData(diff);
 
         // Engine
@@ -450,7 +465,6 @@ void WheeledVehicle::Setup()
 
         // Differential
         PxVehicleDifferentialNWData diff;
-        // TODO: expose Differential options
         for (int32 i = 0; i < wheels.Count(); i++)
             diff.setDrivenWheel(i, true);
         driveSimData.setDiffData(diff);
@@ -554,6 +568,7 @@ void WheeledVehicle::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Wheels, _wheels);
     SERIALIZE(UseReverseAsBrake);
     SERIALIZE_MEMBER(Engine, _engine);
+    SERIALIZE_MEMBER(Differential, _differential);
     SERIALIZE_MEMBER(Gearbox, _gearbox);
 }
 
@@ -565,6 +580,7 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(Wheels, _wheels);
     DESERIALIZE(UseReverseAsBrake);
     DESERIALIZE_MEMBER(Engine, _engine);
+    DESERIALIZE_MEMBER(Differential, _differential);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
 }
 

@@ -75,6 +75,69 @@ public:
     };
 
     /// <summary>
+    /// Vehicle differential types.
+    /// </summary>
+    API_ENUM() enum class DifferentialTypes
+    {
+        // Limited slip differential for car with 4 driven wheels.
+        LimitedSlip4W,
+        // Limited slip differential for car with front-wheel drive.
+        LimitedSlipFrontDrive,
+        // Limited slip differential for car with rear-wheel drive.
+        LimitedSlipRearDrive,
+        // Open differential for car with 4 driven wheels.
+        Open4W,
+        // Open differential for car with front-wheel drive.
+        OpenFrontDrive,
+        // Open differential for car with rear-wheel drive.
+        OpenRearDrive,
+    };
+
+    /// <summary>
+    /// Vehicle differential settings.
+    /// </summary>
+    API_STRUCT() struct DifferentialSettings : ISerializable
+    {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(DifferentialSettings);
+    API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// Type of differential.
+        /// </summary>
+        API_FIELD() DifferentialTypes Type = DifferentialTypes::LimitedSlip4W;
+
+        /// <summary>
+        /// Ratio of torque split between front and rear (higher then 0.5 means more to front, smaller than 0.5 means more to rear). Only applied to LimitedSlip4W and Open4W.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0, 1)") float FrontRearSplit = 0.45f;
+
+        /// <summary>
+        /// Ratio of torque split between front-left and front-right (higher then 0.5 means more to front-left, smaller than 0.5 means more to front-right). Only applied to LimitedSlip4W and Open4W and LimitedSlipFrontDrive.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0, 1)") float FrontLeftRightSplit = 0.5f;
+
+        /// <summary>
+        /// Ratio of torque split between rear-left and rear-right (higher then 0.5 means more to rear-left, smaller than 0.5 means more to rear-right). Only applied to LimitedSlip4W and Open4W and LimitedSlipRearDrive.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(0, 1)") float RearLeftRightSplit = 0.5f;
+
+        /// <summary>
+        /// Maximum allowed ratio of average front wheel rotation speed and rear wheel rotation speeds. The differential will divert more torque to the slower wheels when the bias is exceeded. Only applied to LimitedSlip4W.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(1)") float CentreBias = 1.3f;
+
+        /// <summary>
+        /// Maximum allowed ratio of front-left and front-right wheel rotation speeds. The differential will divert more torque to the slower wheel when the bias is exceeded. Only applied to LimitedSlip4W and LimitedSlipFrontDrive.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(1)") float FrontBias = 1.3f;
+
+        /// <summary>
+        /// Maximum allowed ratio of rear-left and rear-right wheel rotation speeds. The differential will divert more torque to the slower wheel when the bias is exceeded. Only applied to LimitedSlip4W and LimitedSlipRearDrive.
+        /// </summary>
+        API_FIELD(Attributes="LimitAttribute(1)") float RearBias = 1.3f;
+    };
+
+    /// <summary>
     /// Vehicle wheel types.
     /// </summary>
     API_ENUM() enum class WheelTypes
@@ -172,8 +235,9 @@ private:
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;
     Array<Wheel> _wheels;
-    GearboxSettings _gearbox;
     EngineSettings _engine;
+    DifferentialSettings _differential;
+    GearboxSettings _gearbox;
 
 public:
 
@@ -212,6 +276,16 @@ public:
     /// Sets the vehicle engine settings.
     /// </summary>
     API_PROPERTY() void SetEngine(const EngineSettings& value);
+
+    /// <summary>
+    /// Gets the vehicle differential settings.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
+
+    /// <summary>
+    /// Sets the vehicle differential settings.
+    /// </summary>
+    API_PROPERTY() void SetDifferential(const DifferentialSettings& value);
 
     /// <summary>
     /// Gets the vehicle gearbox settings.
