@@ -5,6 +5,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Log.h"
 
 bool FileBase::ReadAllBytes(const StringView& path, byte* data, int32 length)
 {
@@ -36,16 +37,23 @@ bool FileBase::ReadAllBytes(const StringView& path, Array<byte>& data)
     auto file = File::Open(path, FileMode::OpenExisting, FileAccess::Read, FileShare::All);
     if (file)
     {
-        uint32 size = file->GetSize();
-        data.Resize(size, false);
-        if (size > 0)
+        const uint32 size = file->GetSize();
+        if (size < MAX_int32)
         {
-            result = file->Read(data.Get(), size) != 0;
+            data.Resize(size, false);
+            if (size > 0)
+            {
+                result = file->Read(data.Get(), size) != 0;
+            }
+            else
+            {
+                data.Resize(0, false);
+                result = false;
+            }
         }
         else
         {
-            data.Resize(0, false);
-            result = false;
+            LOG(Error, "Failed to load file {0}. It's too big. Size: {1} MB", path, size / (1024 * 1024));
         }
 
         Delete(file);
@@ -61,16 +69,23 @@ bool FileBase::ReadAllBytes(const StringView& path, DataContainer<byte>& data)
     auto file = File::Open(path, FileMode::OpenExisting, FileAccess::Read, FileShare::All);
     if (file)
     {
-        uint32 size = file->GetSize();
-        data.Allocate(size);
-        if (size > 0)
+        const uint32 size = file->GetSize();
+        if (size < MAX_int32)
         {
-            result = file->Read(data.Get(), size) != 0;
+            data.Allocate(size);
+            if (size > 0)
+            {
+                result = file->Read(data.Get(), size) != 0;
+            }
+            else
+            {
+                data.Release();
+                result = false;
+            }
         }
         else
         {
-            data.Release();
-            result = false;
+            LOG(Error, "Failed to load file {0}. It's too big. Size: {1} MB", path, size / (1024 * 1024));
         }
 
         Delete(file);
