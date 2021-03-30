@@ -119,6 +119,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("BAGUETTE"),
     TEXT("All we had to do was follow the damn train, CJ"),
     TEXT("28 stab wounds"),
+    TEXT("Here we go again"),
     TEXT("@everyone"),
     TEXT("uwu some spiders on the ceiling"),
     TEXT("There you are you little shit"),
