@@ -553,3 +553,9 @@ float ViewToCenterLessRadius(const RenderView& view, const Vector3& center, floa
     // Calculate result
     return viewToCenter - radius;
 }
+
+void MeshBase::SetBounds(const BoundingBox& box)
+{
+    _box = box;
+    BoundingSphere::FromBox(box, _sphere);
+}

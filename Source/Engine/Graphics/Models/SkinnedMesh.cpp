@@ -218,7 +218,7 @@ bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) c
     return buffer && buffer->DownloadData(result);
 }
 
-Task* SkinnedMesh::DownloadDataAsyncGPU(MeshBufferType type, BytesContainer& result) const
+Task* SkinnedMesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
 {
     GPUBuffer* buffer = nullptr;
     switch (type)
@@ -535,7 +535,7 @@ bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 type
     {
         // Get data from GPU
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
-        auto task = mesh->DownloadDataAsyncGPU(bufferType, data);
+        auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
             return true;
         task->Start();

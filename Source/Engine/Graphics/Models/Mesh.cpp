@@ -464,7 +464,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 
-bool Mesh::ExtractData(MeshBufferType type, BytesContainer& result) const
+bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const
 {
     GPUBuffer* buffer = nullptr;
     switch (type)
@@ -485,7 +485,7 @@ bool Mesh::ExtractData(MeshBufferType type, BytesContainer& result) const
     return buffer && buffer->DownloadData(result);
 }
 
-Task* Mesh::ExtractDataAsync(MeshBufferType type, BytesContainer& result) const
+Task* Mesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
 {
     GPUBuffer* buffer = nullptr;
     switch (type)
@@ -504,6 +504,15 @@ Task* Mesh::ExtractDataAsync(MeshBufferType type, BytesContainer& result) const
         break;
     }
     return buffer ? buffer->DownloadDataAsync(result) : nullptr;
+}
+
+bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) const
+{
+#if !BUILD_RELEASE
+    // TODO: implement this
+    LOG(Error, "Mesh::DownloadDataCPU not implemented.");
+#endif
+    return true;
 }
 
 ScriptingObject* Mesh::GetParentModel()
@@ -661,7 +670,7 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
 
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
         BytesContainer data;
-        auto task = mesh->ExtractDataAsync(bufferType, data);
+        auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
             return true;
 
