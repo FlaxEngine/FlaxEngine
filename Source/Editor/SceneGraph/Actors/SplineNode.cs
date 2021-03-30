@@ -368,6 +368,15 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
+        public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+        {
+            // Select only spline points
+            normal = Vector3.Up;
+            distance = float.MaxValue;
+            return false;
+        }
+
+        /// <inheritdoc />
         public override void OnDispose()
         {
             FlaxEngine.Scripting.Update -= OnUpdate;
