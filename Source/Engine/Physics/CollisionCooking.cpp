@@ -5,6 +5,7 @@
 #include "CollisionCooking.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Core/Log.h"
 #include "Physics.h"
 #include <ThirdParty/PhysX/cooking/PxCooking.h>
@@ -186,14 +187,15 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         }
 
         // Pick a proper model LOD
-        const int32 lodIndex = Math::Clamp(arg.ModelLodIndex, 0, arg.Model->LODs.Count());
-        auto lod = &arg.Model->LODs[lodIndex];
+        const int32 lodIndex = Math::Clamp(arg.ModelLodIndex, 0, arg.Model->GetLODsCount());
+        Array<MeshBase*> meshes;
+        arg.Model->GetMeshes(meshes, lodIndex);
 
         // Download model LOD data from the GPU.
         // It's easier than reading internal, versioned mesh storage format.
         // Also it works with virtual assets that have no dedicated storage.
         // Note: request all meshes data at once and wait for the tasks to be done.
-        const int32 meshesCount = lod->Meshes.Count();
+        const int32 meshesCount = meshes.Count();
         Array<BytesContainer> vertexBuffers;
         Array<BytesContainer> indexBuffers;
         vertexBuffers.Resize(meshesCount);
@@ -205,9 +207,9 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         Array<Task*> tasks(meshesCount + meshesCount);
         for (int32 i = 0; i < meshesCount; i++)
         {
-            const auto& mesh = lod->Meshes[i];
+            const auto& mesh = *meshes[i];
 
-            auto task = mesh.ExtractDataAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
+            auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
             if (task == nullptr)
                 return true;
             task->Start();
@@ -216,7 +218,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
             if (needIndexBuffer)
             {
-                task = mesh.ExtractDataAsync(MeshBufferType::Index, indexBuffers[i]);
+                task = mesh.DownloadDataGPUAsync(MeshBufferType::Index, indexBuffers[i]);
                 if (task == nullptr)
                     return true;
                 task->Start();
@@ -236,7 +238,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         int32 vertexCounter = 0, indexCounter = 0;
         for (int32 i = 0; i < meshesCount; i++)
         {
-            const auto& mesh = lod->Meshes[i];
+            const auto& mesh = *meshes[i];
             const auto& vData = vertexBuffers[i];
 
             const int32 firstVertexIndex = vertexCounter;
@@ -251,7 +253,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
                 if (mesh.Use16BitIndexBuffer())
                 {
                     auto dst = finalIndexData.Get() + indexCounter;
-                    auto src = (uint16*)iData.Get();
+                    auto src = iData.Get<uint16>();
                     for (int32 j = 0; j < indexCount; j++)
                     {
                         *dst++ = firstVertexIndex + *src++;
@@ -261,7 +263,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
                 else
                 {
                     auto dst = finalIndexData.Get() + indexCounter;
-                    auto src = (uint32*)iData.Get();
+                    auto src = iData.Get<uint32>();
                     for (int32 j = 0; j < indexCount; j++)
                     {
                         *dst++ = firstVertexIndex + *src++;

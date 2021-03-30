@@ -4,10 +4,16 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Physics/Types.h"
 
 class Model;
+class ModelBase;
 class ModelData;
+
+namespace physx
+{
+    class PxConvexMesh;
+    class PxTriangleMesh;
+}
 
 /// <summary>
 /// A <see cref="CollisionData"/> storage data type.
@@ -156,8 +162,8 @@ public:
 private:
 
     CollisionDataOptions _options;
-    PxConvexMesh* _convexMesh;
-    PxTriangleMesh* _triangleMesh;
+    physx::PxConvexMesh* _convexMesh;
+    physx::PxTriangleMesh* _triangleMesh;
 
 public:
 
@@ -173,8 +179,7 @@ public:
     /// <summary>
     /// Gets the convex mesh object (valid only if asset is loaded and has cooked convex data).
     /// </summary>
-    /// <returns>The convex mesh</returns>
-    FORCE_INLINE PxConvexMesh* GetConvex() const
+    FORCE_INLINE physx::PxConvexMesh* GetConvex() const
     {
         return _convexMesh;
     }
@@ -182,8 +187,7 @@ public:
     /// <summary>
     /// Gets the triangle mesh object (valid only if asset is loaded and has cooked triangle data).
     /// </summary>
-    /// <returns>The triangle mesh</returns>
-    FORCE_INLINE PxTriangleMesh* GetTriangle() const
+    FORCE_INLINE physx::PxTriangleMesh* GetTriangle() const
     {
         return _triangleMesh;
     }
@@ -203,7 +207,7 @@ public:
     /// <param name="modelLodIndex">The source model LOD index.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
-    API_FUNCTION() bool CookCollision(CollisionDataType type, Model* model, int32 modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
+    API_FUNCTION() bool CookCollision(CollisionDataType type, ModelBase* model, int32 modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
     /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.

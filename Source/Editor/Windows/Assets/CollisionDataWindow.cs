@@ -34,7 +34,7 @@ namespace FlaxEditor.Windows.Assets
             public CollisionDataType Type;
 
             [EditorOrder(10), EditorDisplay("General"), Tooltip("Source model asset to use for collision data generation")]
-            public Model Model;
+            public ModelBase Model;
 
             [EditorOrder(20), Limit(0, 5), EditorDisplay("General", "Model LOD Index"), Tooltip("Source model LOD index to use for collision data generation (will be clamped to the actual model LODs collection size)")]
             public int ModelLodIndex;
@@ -90,12 +90,12 @@ namespace FlaxEditor.Windows.Assets
             {
                 private PropertiesProxy Proxy;
                 private CollisionDataType Type;
-                private Model Model;
+                private ModelBase Model;
                 private int ModelLodIndex;
                 private ConvexMeshGenerationFlags ConvexFlags;
                 private int ConvexVertexLimit;
 
-                public CookData(PropertiesProxy proxy, string resultUrl, CollisionDataType type, Model model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit)
+                public CookData(PropertiesProxy proxy, string resultUrl, CollisionDataType type, ModelBase model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit)
                 : base("Collision Data", resultUrl)
                 {
                     Proxy = proxy;
@@ -135,7 +135,7 @@ namespace FlaxEditor.Windows.Assets
                 Type = options.Type;
                 if (Type == CollisionDataType.None)
                     Type = CollisionDataType.ConvexMesh;
-                Model = FlaxEngine.Content.LoadAsync<Model>(options.Model);
+                Model = FlaxEngine.Content.LoadAsync<ModelBase>(options.Model);
                 ModelLodIndex = options.ModelLodIndex;
                 ConvexFlags = options.ConvexFlags;
                 ConvexVertexLimit = options.ConvexVertexLimit;
@@ -151,7 +151,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         private readonly SplitPanel _split;
-        private readonly ModelPreview _preview;
+        private readonly ModelBasePreview _preview;
         private readonly CustomEditorPresenter _propertiesPresenter;
         private readonly PropertiesProxy _properties;
         private Model _collisionWiresModel;
@@ -176,7 +176,7 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Model preview
-            _preview = new ModelPreview(true)
+            _preview = new ModelBasePreview(true)
             {
                 ViewportCamera = new FPSCamera(),
                 Parent = _split.Panel1
@@ -195,7 +195,7 @@ namespace FlaxEditor.Windows.Assets
             // Sync helper actor size with actual preview model (preview scales model for better usage experience)
             if (_collisionWiresShowActor && _collisionWiresShowActor.IsActive)
             {
-                _collisionWiresShowActor.Transform = _preview.PreviewActor.Transform;
+                _collisionWiresShowActor.Transform = _preview.StaticModel.Transform;
             }
 
             base.Update(deltaTime);
@@ -230,14 +230,14 @@ namespace FlaxEditor.Windows.Assets
             }
             _collisionWiresShowActor.Model = _collisionWiresModel;
             _collisionWiresShowActor.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.WiresDebugMaterial));
-            _preview.Model = FlaxEngine.Content.LoadAsync<Model>(_asset.Options.Model);
+            _preview.Asset = FlaxEngine.Content.LoadAsync<ModelBase>(_asset.Options.Model);
         }
 
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
             _properties.OnClean();
-            _preview.Model = null;
+            _preview.Asset = null;
 
             base.UnlinkItem();
         }
@@ -245,7 +245,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnAssetLinked()
         {
-            _preview.Model = null;
+            _preview.Asset = null;
 
             base.OnAssetLinked();
         }

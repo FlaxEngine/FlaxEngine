@@ -7,7 +7,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Graphics/Models/ModelData.h"
-#include "Engine/Content/Assets/Model.h"
+#include "Engine/Content/Assets/ModelBase.h"
 
 namespace physx
 {
@@ -40,7 +40,7 @@ public:
     {
         CollisionDataType Type = CollisionDataType::None;
         ModelData* OverrideModelData = nullptr;
-        AssetReference<Model> Model;
+        AssetReference<ModelBase> Model;
         int32 ModelLodIndex = 0;
         ConvexMeshGenerationFlags ConvexFlags = ConvexMeshGenerationFlags::None;
         int32 ConvexVertexLimit = 255;

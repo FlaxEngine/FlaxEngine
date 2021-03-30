@@ -23,7 +23,7 @@ CollisionData::CollisionData(const SpawnParams& params, const AssetInfo* info)
 
 #if COMPILE_WITH_PHYSICS_COOKING
 
-bool CollisionData::CookCollision(CollisionDataType type, Model* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     // Validate state
     if (!IsVirtual())

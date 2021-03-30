@@ -715,7 +715,7 @@ public:
         return str;
     }
 
-    static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, Model* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+    static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
     {
 #if COMPILE_WITH_PHYSICS_COOKING
         CollisionCooking::Argument arg;
@@ -727,7 +727,6 @@ public:
         arg.ModelLodIndex = modelLodIndex;
         arg.ConvexFlags = convexFlags;
         arg.ConvexVertexLimit = convexVertexLimit;
-
         return CreateCollisionData::CookMeshCollision(path, arg);
 #else
 		LOG(Warning, "Collision cooking is disabled.");
