@@ -82,6 +82,17 @@ void CharacterController::SetStepOffset(float value)
         _controller->setStepOffset(value);
 }
 
+void CharacterController::SetUpDirection(const Vector3& up)
+{
+    if (_controller)
+        _controller->setUpDirection(C2P(up));
+}
+
+Vector3 CharacterController::GetUpDirection() const
+{
+    return _controller ? P2C(_controller->getUpDirection()) : Vector3::Up;
+}
+
 void CharacterController::SetMinMoveDistance(float value)
 {
     _minMoveDistance = Math::Max(value, 0.0f);
