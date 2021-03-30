@@ -90,32 +90,32 @@ public:
         /// <summary>
         /// Ratio of torque split between front and rear (higher then 0.5 means more to front, smaller than 0.5 means more to rear). Only applied to LimitedSlip4W and Open4W.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0, 1)") float FrontRearSplit = 0.45f;
+        API_FIELD(Attributes="Limit(0, 1)") float FrontRearSplit = 0.45f;
 
         /// <summary>
         /// Ratio of torque split between front-left and front-right (higher then 0.5 means more to front-left, smaller than 0.5 means more to front-right). Only applied to LimitedSlip4W and Open4W and LimitedSlipFrontDrive.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0, 1)") float FrontLeftRightSplit = 0.5f;
+        API_FIELD(Attributes="Limit(0, 1)") float FrontLeftRightSplit = 0.5f;
 
         /// <summary>
         /// Ratio of torque split between rear-left and rear-right (higher then 0.5 means more to rear-left, smaller than 0.5 means more to rear-right). Only applied to LimitedSlip4W and Open4W and LimitedSlipRearDrive.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0, 1)") float RearLeftRightSplit = 0.5f;
+        API_FIELD(Attributes="Limit(0, 1)") float RearLeftRightSplit = 0.5f;
 
         /// <summary>
         /// Maximum allowed ratio of average front wheel rotation speed and rear wheel rotation speeds. The differential will divert more torque to the slower wheels when the bias is exceeded. Only applied to LimitedSlip4W.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(1)") float CentreBias = 1.3f;
+        API_FIELD(Attributes="Limit(1)") float CentreBias = 1.3f;
 
         /// <summary>
         /// Maximum allowed ratio of front-left and front-right wheel rotation speeds. The differential will divert more torque to the slower wheel when the bias is exceeded. Only applied to LimitedSlip4W and LimitedSlipFrontDrive.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(1)") float FrontBias = 1.3f;
+        API_FIELD(Attributes="Limit(1)") float FrontBias = 1.3f;
 
         /// <summary>
         /// Maximum allowed ratio of rear-left and rear-right wheel rotation speeds. The differential will divert more torque to the slower wheel when the bias is exceeded. Only applied to LimitedSlip4W and LimitedSlipRearDrive.
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(1)") float RearBias = 1.3f;
+        API_FIELD(Attributes="Limit(1)") float RearBias = 1.3f;
     };
 
     /// <summary>
@@ -134,14 +134,14 @@ public:
         /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float SwitchTime = 0.5f;
+        API_FIELD(Attributes="Limit(0)") float SwitchTime = 0.5f;
 
         /// <summary>
         /// Strength of clutch. A stronger clutch more strongly couples the engine to the wheels, while a clutch of strength zero completely decouples the engine from the wheels.
         /// Stronger clutches more quickly bring the wheels and engine into equilibrium, while weaker clutches take longer, resulting in periods of clutch slip and delays in power transmission from the engine to the wheels.
         /// Specified in kilograms metres-squared per second (kg m^2 s^-1).
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float ClutchStrength = 10.0f;
+        API_FIELD(Attributes="Limit(0)") float ClutchStrength = 10.0f;
     };
 
     /// <summary>
@@ -192,22 +192,22 @@ public:
         /// <summary>
         /// Max steer angle that can be achieved by the wheel (in degrees).
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float MaxSteerAngle = 0.0f;
+        API_FIELD(Attributes="Limit(0)") float MaxSteerAngle = 0.0f;
 
         /// <summary>
         /// Damping rate applied to wheel. Specified in kilograms metres-squared per second (kg m^2 s^-1).
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float DampingRate = 0.25f;
+        API_FIELD(Attributes="Limit(0)") float DampingRate = 0.25f;
 
         /// <summary>
         /// Max brake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float MaxBrakeTorque = 1500.0f;
+        API_FIELD(Attributes="Limit(0)") float MaxBrakeTorque = 1500.0f;
 
         /// <summary>
         /// Max handbrake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
         /// </summary>
-        API_FIELD(Attributes="LimitAttribute(0)") float MaxHandBrakeTorque = 2000.0f;
+        API_FIELD(Attributes="Limit(0)") float MaxHandBrakeTorque = 2000.0f;
 
         /// <summary>
         /// Collider that represents the wheel shape and it's placement. Has to be attached as a child to the vehicle. Triangle mesh collider is not supported (use convex mesh or basic shapes).
