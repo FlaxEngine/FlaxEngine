@@ -12,6 +12,18 @@ namespace Flax.Deploy
 {
     partial class Deployment
     {
+        private static void CodeSign(string file)
+        {
+            if (string.IsNullOrEmpty(Configuration.DeployCert))
+                return;
+            switch (Platform.BuildTargetPlatform)
+            {
+            case TargetPlatform.Windows:
+                VCEnvironment.CodeSign(file, Configuration.DeployCert, Configuration.DeployCertPass);
+                break;
+            }
+        }
+
         public class Editor
         {
             private static string RootPath;
@@ -37,6 +49,7 @@ namespace Flax.Deploy
                     var dst = Path.Combine(OutputPath, binariesSubDir);
 
                     DeployFile(src, dst, "Flax.Build.exe");
+                    CodeSign(Path.Combine(dst, "Flax.Build.exe"));
                     DeployFile(src, dst, "Flax.Build.xml");
                     DeployFile(src, dst, "Ionic.Zip.Reduced.dll");
                     DeployFile(src, dst, "Newtonsoft.Json.dll");
@@ -112,15 +125,26 @@ namespace Flax.Deploy
                 // Compress
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
-                var editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
-                using (ZipFile zip = new ZipFile())
+                string editorPackageZipPath;
+                if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
                 {
-                    zip.AddDirectory(OutputPath);
+                    // Use system tool (preserves executable file attributes and link files)
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
+                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.None);
+                    File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
+                }
+                else
+                {
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
+                    using (ZipFile zip = new ZipFile())
+                    {
+                        zip.AddDirectory(OutputPath);
 
-                    zip.CompressionLevel = CompressionLevel.BestCompression;
-                    zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
+                        zip.CompressionLevel = CompressionLevel.BestCompression;
+                        zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
 
-                    zip.Save(editorPackageZipPath);
+                        zip.Save(editorPackageZipPath);
+                    }
                 }
                 Log.Info("Compressed editor package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
@@ -166,12 +190,14 @@ namespace Flax.Deploy
 
                     // Deploy binaries
                     DeployFile(src, dst, editorExeName);
+                    CodeSign(Path.Combine(dst, editorExeName));
                     DeployFile(src, dst, "FlaxEditor.Build.json");
                     DeployFile(src, dst, "FlaxEditor.lib");
                     DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
                     DeployFile(src, dst, "FlaxEngine.CSharp.xml");
                     DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFiles(src, dst, "*.dll");
+                    CodeSign(Path.Combine(dst, "FlaxEngine.CSharp.dll"));
 
                     // Deploy debug symbols files
                     DeployFiles(src, dstDebug, "*.pdb");

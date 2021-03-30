@@ -37,6 +37,22 @@ namespace Flax.Deploy
                         File.Delete(Path.Combine(dst, "Binaries", "Game", "x64", "Release", "FlaxGame.a"));
                     }
 
+                    // Sign binaries
+                    if (platform == TargetPlatform.Windows && !string.IsNullOrEmpty(Configuration.DeployCert))
+                    {
+                        var binaries = Path.Combine(dst, "Binaries", "Game", "x64", "Debug");
+                        CodeSign(Path.Combine(binaries, "FlaxGame.exe"));
+                        CodeSign(Path.Combine(binaries, "FlaxEngine.CSharp.dll"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "x64", "Development");
+                        CodeSign(Path.Combine(binaries, "FlaxGame.exe"));
+                        CodeSign(Path.Combine(binaries, "FlaxEngine.CSharp.dll"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "x64", "Release");
+                        CodeSign(Path.Combine(binaries, "FlaxGame.exe"));
+                        CodeSign(Path.Combine(binaries, "FlaxEngine.CSharp.dll"));
+                    }
+
                     // Don't distribute engine deps
                     Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "ThirdParty"));
 

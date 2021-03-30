@@ -189,10 +189,10 @@ public:
         *height = bounds.Height;
     }
 
-    void GetDpi(float* dpi) override
+    void GetDpi(int* dpi) override
     {
         auto currentDisplayInformation = Windows::Graphics::Display::DisplayInformation::GetForCurrentView();
-        *dpi = currentDisplayInformation->LogicalDpi;
+        *dpi = (int)currentDisplayInformation->LogicalDpi;
     }
 
     void GetTitle(wchar_t* buffer, int bufferLength) override

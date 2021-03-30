@@ -87,8 +87,8 @@ bool ShadowsPass::Init()
     if (!_supportsShadows)
     {
         LOG(Warning, "GPU doesn't support shadows rendering");
-        LOG(Warning, "Format: {0} features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
-        LOG(Warning, "Format: {0} features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
     }
 
     return false;

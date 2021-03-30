@@ -341,7 +341,21 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
         target = platform = architecture = configuration = nullptr;
         return;
     }
-    target = Editor::Project->EditorTarget.GetText();
+
+    // Pick game target
+    if (Editor::Project->EditorTarget.HasChars())
+    {
+        target = Editor::Project->EditorTarget.Get();
+    }
+    else if (Editor::Project->GameTarget.HasChars())
+    {
+        target = Editor::Project->GameTarget.Get();
+    }
+    else
+    {
+        target = TEXT("");
+        LOG(Error, "Missing editor/game targets in project. Please specify EditorTarget and GameTarget properties in .flaxproj file.");
+    }
 
 #if PLATFORM_WINDOWS
     platform = TEXT("Windows");
@@ -551,19 +565,13 @@ bool ScriptsBuilderService::Init()
     }
 
     // Verify project
-    if (project->EditorTarget.IsEmpty() || project->GameTarget.IsEmpty())
+    if (project->EditorTarget.IsEmpty())
     {
-        const String& name = project->Name;
-        String codeName;
-        for (int32 i = 0; i < name.Length(); i++)
-        {
-            Char c = name[i];
-            if (StringUtils::IsAlnum(c) && c != ' ' && c != '.')
-                codeName += c;
-        }
-        project->GameTarget = codeName + TEXT("Target");
-        project->EditorTarget = codeName + TEXT("EditorTarget");
-        LOG(Warning, "Missing EditorTarget property in opened project, using deducted target name {0}", Editor::Project->EditorTarget);
+        LOG(Warning, "Missing {0} property in opened project", TEXT("EditorTarget"));
+    }
+    if (project->GameTarget.IsEmpty())
+    {
+        LOG(Warning, "Missing {0} property in opened project", TEXT("GameTarget"));
     }
 
     // Remove any remaining files from previous Editor run hot-reloads
