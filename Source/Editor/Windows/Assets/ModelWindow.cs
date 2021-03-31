@@ -399,9 +399,18 @@ namespace FlaxEditor.Windows.Assets
                             ShadowsCastingMode[] shadowsModes = new ShadowsCastingMode[value.Length];
                             for (int i = 0; i < value.Length; i++)
                             {
-                                materials[i] = value[i].Material;
-                                names[i] = value[i].Name;
-                                shadowsModes[i] = value[i].ShadowsMode;
+                                if (value[i] != null)
+                                {
+                                    materials[i] = value[i].Material;
+                                    names[i] = value[i].Name;
+                                    shadowsModes[i] = value[i].ShadowsMode;
+                                }
+                                else
+                                {
+                                    materials[i] = null;
+                                    names[i] = "Material " + i;
+                                    shadowsModes[i] = ShadowsCastingMode.All;
+                                }
                             }
 
                             Asset.SetupMaterialSlots(value.Length);
