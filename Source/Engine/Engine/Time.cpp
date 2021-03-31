@@ -17,7 +17,7 @@ namespace
 bool Time::_gamePaused = false;
 float Time::_physicsMaxDeltaTime = 0.1f;
 DateTime Time::StartupTime;
-float Time::UpdateFPS = 30.0f;
+float Time::UpdateFPS = 60.0f;
 float Time::PhysicsFPS = 60.0f;
 float Time::DrawFPS = 60.0f;
 float Time::TimeScale = 1.0f;
