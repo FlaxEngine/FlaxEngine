@@ -225,7 +225,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         while (!Engine::ShouldExit())
         {
             // Try to execute content tasks
-            while (task->IsQueued())
+            while (task->IsQueued() && !Engine::ShouldExit())
             {
                 // Pick this task from the queue
                 ContentLoadTask* tmp;
