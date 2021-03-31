@@ -34,17 +34,6 @@ SkinnedMesh::~SkinnedMesh()
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 }
 
-void SkinnedMesh::SetMaterialSlotIndex(int32 value)
-{
-    if (value < 0 || value >= _model->MaterialSlots.Count())
-    {
-        LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
-        return;
-    }
-
-    _materialSlotIndex = value;
-}
-
 bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, bool use16BitIndexBuffer)
 {
     // Cache data
@@ -101,6 +90,8 @@ void SkinnedMesh::Unload()
 
 bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, void* ib, bool use16BitIndices)
 {
+    auto model = (SkinnedModel*)_model;
+
     // Setup GPU resources
     const bool failed = Load(vertexCount, triangleCount, vb, ib, use16BitIndices);
     if (!failed)
@@ -109,7 +100,7 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0Skinne
         SetBounds(BoundingBox::FromPoints((Vector3*)vb, vertexCount));
 
         // Send event (actors using this model can update bounds, etc.)
-        _model->onLoaded();
+        model->onLoaded();
     }
 
     return failed;

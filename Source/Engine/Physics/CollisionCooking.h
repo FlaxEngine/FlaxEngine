@@ -42,6 +42,7 @@ public:
         ModelData* OverrideModelData = nullptr;
         AssetReference<ModelBase> Model;
         int32 ModelLodIndex = 0;
+        uint32 MaterialSlotsMask = MAX_uint32;
         ConvexMeshGenerationFlags ConvexFlags = ConvexMeshGenerationFlags::None;
         int32 ConvexVertexLimit = 255;
     };

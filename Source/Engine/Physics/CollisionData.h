@@ -205,9 +205,10 @@ public:
     /// <param name="type">The collision data type.</param>
     /// <param name="model">The source model.</param>
     /// <param name="modelLodIndex">The source model LOD index.</param>
+    /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
-    API_FUNCTION() bool CookCollision(CollisionDataType type, ModelBase* model, int32 modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
+    API_FUNCTION() bool CookCollision(CollisionDataType type, ModelBase* model, int32 modelLodIndex = 0, uint32 materialSlotsMask = MAX_uint32, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
     /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.

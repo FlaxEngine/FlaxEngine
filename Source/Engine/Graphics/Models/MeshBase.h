@@ -9,6 +9,7 @@
 #include "Engine/Scripting/ScriptingObject.h"
 
 class Task;
+class ModelBase;
 
 /// <summary>
 /// Base class for model resources meshes.
@@ -18,11 +19,13 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MeshBase : public PersistentSc
 DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
 protected:
 
+    ModelBase* _model;
     bool _use16BitIndexBuffer;
     BoundingBox _box;
     BoundingSphere _sphere;
     uint32 _vertices;
     uint32 _triangles;
+    int32 _materialSlotIndex;
 
     explicit MeshBase(const SpawnParams& params)
         : PersistentScriptingObject(params)
@@ -30,6 +33,14 @@ protected:
     }
 
 public:
+
+    /// <summary>
+    /// Gets the model owning this mesh.
+    /// </summary>
+    FORCE_INLINE ModelBase* GetModelBase() const
+    {
+        return _model;
+    }
 
     /// <summary>
     /// Gets the triangle count.
@@ -75,6 +86,19 @@ public:
     {
         return _use16BitIndexBuffer;
     }
+
+    /// <summary>
+    /// Gets the index of the material slot to use during this mesh rendering.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetMaterialSlotIndex() const
+    {
+        return _materialSlotIndex;
+    }
+
+    /// <summary>
+    /// Sets the index of the material slot to use during this mesh rendering.
+    /// </summary>
+    API_PROPERTY() void SetMaterialSlotIndex(int32 value);
 
     /// <summary>
     /// Sets the mesh bounds.

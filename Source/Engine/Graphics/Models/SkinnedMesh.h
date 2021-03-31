@@ -19,10 +19,8 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedMesh, MeshBase);
 protected:
 
-    SkinnedModel* _model;
     int32 _index;
     int32 _lodIndex;
-    int32 _materialSlotIndex;
     GPUBuffer* _vertexBuffer;
     GPUBuffer* _indexBuffer;
     mutable Array<byte> _cachedIndexBuffer;
@@ -33,7 +31,7 @@ public:
     SkinnedMesh(const SkinnedMesh& other)
         : SkinnedMesh()
     {
-#if !!BUILD_RELEASE
+#if !BUILD_RELEASE
         CRASH; // Not used
 #endif
     }
@@ -51,7 +49,7 @@ public:
     /// <returns>The skinned model</returns>
     FORCE_INLINE SkinnedModel* GetSkinnedModel() const
     {
-        return _model;
+        return (SkinnedModel*)_model;
     }
 
     /// <summary>
@@ -62,21 +60,6 @@ public:
     {
         return _index;
     }
-
-    /// <summary>
-    /// Gets the material slot index.
-    /// </summary>
-    /// <returns>The material slot index</returns>
-    API_PROPERTY() FORCE_INLINE int32 GetMaterialSlotIndex() const
-    {
-        return _materialSlotIndex;
-    }
-
-    /// <summary>
-    /// Sets the index of the material slot index.
-    /// </summary>
-    /// <param name="value">The value.</param>
-    API_PROPERTY() void SetMaterialSlotIndex(int32 value);
 
     /// <summary>
     /// Determines whether this mesh is initialized (has vertex and index buffers initialized).

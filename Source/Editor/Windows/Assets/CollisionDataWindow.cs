@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Create;
@@ -10,6 +11,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -20,6 +22,15 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class CollisionDataWindow : AssetEditorWindowBase<CollisionData>
     {
+        [Flags]
+        private enum MaterialSlotsMask : uint
+        {
+            // @formatter:off
+            Slot0=1u<<0,Slot1=1u<<1,Slot2=1u<<2,Slot3=1u<<3,Slot4=1u<<4,Slot5=1u<<5,Slot6=1u<<6,Slot7=1u<<7,Slot8=1u<<8,Slot9=1u<<9,Slot10=1u<<10,Slot11=1u<<11,Slot12=1u<<12,Slot13=1u<<13,Slot14=1u<<14,Slot15=1u<<15,Slot16=1u<<16,Slot17=1u<<17,Slot18=1u<<18,Slot19=1u<<19,Slot20=1u<<20,Slot21=1u<<21,Slot22=1u<<22,Slot23=1u<<23,Slot24=1u<<24,Slot25=1u<<25,Slot26=1u<<26,Slot27=1u<<27,Slot28=1u<<28,Slot29=1u<<29,Slot30=1u<<30,Slot31=1u<<31,
+            // @formatter:on
+            All = uint.MaxValue,
+        }
+
         /// <summary>
         /// The asset properties proxy object.
         /// </summary>
@@ -38,6 +49,9 @@ namespace FlaxEditor.Windows.Assets
 
             [EditorOrder(20), Limit(0, 5), EditorDisplay("General", "Model LOD Index"), Tooltip("Source model LOD index to use for collision data generation (will be clamped to the actual model LODs collection size)")]
             public int ModelLodIndex;
+
+            [EditorOrder(30), EditorDisplay("General"), Tooltip("The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.")]
+            public MaterialSlotsMask MaterialSlotsMask = MaterialSlotsMask.All;
 
             [EditorOrder(100), EditorDisplay("Convex Mesh", "Convex Flags"), Tooltip("Convex mesh generation flags")]
             public ConvexMeshGenerationFlags ConvexFlags;
@@ -88,28 +102,23 @@ namespace FlaxEditor.Windows.Assets
 
             private class CookData : CreateFileEntry
             {
-                private PropertiesProxy Proxy;
-                private CollisionDataType Type;
-                private ModelBase Model;
-                private int ModelLodIndex;
-                private ConvexMeshGenerationFlags ConvexFlags;
-                private int ConvexVertexLimit;
+                public PropertiesProxy Proxy;
+                public CollisionDataType Type;
+                public ModelBase Model;
+                public int ModelLodIndex;
+                public uint MaterialSlotsMask;
+                public ConvexMeshGenerationFlags ConvexFlags;
+                public int ConvexVertexLimit;
 
-                public CookData(PropertiesProxy proxy, string resultUrl, CollisionDataType type, ModelBase model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit)
+                public CookData(string resultUrl)
                 : base("Collision Data", resultUrl)
                 {
-                    Proxy = proxy;
-                    Type = type;
-                    Model = model;
-                    ModelLodIndex = modelLodIndex;
-                    ConvexFlags = convexFlags;
-                    ConvexVertexLimit = convexVertexLimit;
                 }
 
                 /// <inheritdoc />
                 public override bool Create()
                 {
-                    bool failed = FlaxEditor.Editor.CookMeshCollision(ResultUrl, Type, Model, ModelLodIndex, ConvexFlags, ConvexVertexLimit);
+                    bool failed = FlaxEditor.Editor.CookMeshCollision(ResultUrl, Type, Model, ModelLodIndex, MaterialSlotsMask, ConvexFlags, ConvexVertexLimit);
 
                     Proxy._isCooking = false;
                     Proxy.Window.UpdateWiresModel();
@@ -121,7 +130,16 @@ namespace FlaxEditor.Windows.Assets
             public void Cook()
             {
                 _isCooking = true;
-                Window.Editor.ContentImporting.Create(new CookData(this, Asset.Path, Type, Model, ModelLodIndex, ConvexFlags, ConvexVertexLimit));
+                Window.Editor.ContentImporting.Create(new CookData(Asset.Path)
+                {
+                    Proxy = this,
+                    Type = Type,
+                    Model = Model,
+                    ModelLodIndex = ModelLodIndex,
+                    MaterialSlotsMask = (uint)MaterialSlotsMask,
+                    ConvexFlags = ConvexFlags,
+                    ConvexVertexLimit = ConvexVertexLimit,
+                });
             }
 
             public void OnLoad(CollisionDataWindow window)

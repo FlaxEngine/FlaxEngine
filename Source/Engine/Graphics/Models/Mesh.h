@@ -22,10 +22,8 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
 
-    Model* _model;
     int32 _index;
     int32 _lodIndex;
-    int32 _materialSlotIndex;
     bool _hasLightmapUVs;
     GPUBuffer* _vertexBuffers[3];
     GPUBuffer* _indexBuffer;
@@ -55,7 +53,7 @@ public:
     /// </summary>
     FORCE_INLINE Model* GetModel() const
     {
-        return _model;
+        return (Model*)_model;
     }
 
     /// <summary>
@@ -73,19 +71,6 @@ public:
     {
         return _index;
     }
-
-    /// <summary>
-    /// Gets the index of the material slot to use during this mesh rendering.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetMaterialSlotIndex() const
-    {
-        return _materialSlotIndex;
-    }
-
-    /// <summary>
-    /// Sets the index of the material slot to use during this mesh rendering.
-    /// </summary>
-    API_PROPERTY() void SetMaterialSlotIndex(int32 value);
 
     /// <summary>
     /// Gets the index buffer.

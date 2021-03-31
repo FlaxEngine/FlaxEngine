@@ -118,15 +118,14 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto mesh = lod->Meshes[i];
+            if ((arg.MaterialSlotsMask & (1 << mesh->MaterialSlotIndex)) == 0)
+                continue;
             vCount += mesh->Positions.Count();
-
             if (needIndexBuffer)
-            {
                 iCount += mesh->Indices.Count() * 3;
-            }
         }
 
-        if (meshesCount == 1)
+        if (meshesCount == 1 && vCount != 0)
         {
             // Link a single mesh
             const auto mesh = lod->Meshes[0];
@@ -145,6 +144,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             for (int32 i = 0; i < meshesCount; i++)
             {
                 const auto mesh = lod->Meshes[i];
+                if ((arg.MaterialSlotsMask & (1 << mesh->MaterialSlotIndex)) == 0)
+                    continue;
 
                 const int32 firstVertexIndex = vertexCounter;
                 const int32 vertexCount = mesh->Positions.Count();
@@ -208,6 +209,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto& mesh = *meshes[i];
+            if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                continue;
 
             auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
             if (task == nullptr)
@@ -239,6 +242,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto& mesh = *meshes[i];
+            if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                continue;
             const auto& vData = vertexBuffers[i];
 
             const int32 firstVertexIndex = vertexCounter;
