@@ -39,6 +39,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             public bool IsSelected;
 
+            public bool SupportsShiftModulation;
+
             private void OnPresetsChanged()
             {
                 TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
@@ -77,6 +79,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     backgroundColor = BackgroundColorHighlighted;
                     borderColor = BorderColorHighlighted;
+                }
+
+                if (Input.GetKey(KeyboardKeys.Shift) && SupportsShiftModulation)
+                {
+                    backgroundColor = BackgroundColorSelected;
+                }
+                if (Input.GetKey(KeyboardKeys.Control) && SupportsShiftModulation)
+                {
+                    borderColor = BackgroundColorSelected;
                 }
 
                 // Calculate fill area
@@ -166,12 +177,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
             const float DialogWidth = ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
             const float DialogHeight = TitleHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
 
+            bool SupportsShiftModulation = false;
+
             /// <summary>
             /// Initializes a new instance of the <see cref="AnchorPresetsEditorPopup"/> class.
             /// </summary>
             /// <param name="presets">The initial value.</param>
-            public AnchorPresetsEditorPopup(AnchorPresets presets)
+            /// <param name="supportsShiftModulation">If the popup should react to shift</param>
+            public AnchorPresetsEditorPopup(AnchorPresets presets, bool supportsShiftModulation)
             {
+                SupportsShiftModulation = supportsShiftModulation;
+
                 var style = FlaxEngine.GUI.Style.Current;
                 Tag = presets;
                 Size = new Vector2(DialogWidth, DialogHeight);
@@ -219,6 +235,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = this,
                     Presets = presets,
                     IsSelected = presets == (AnchorPresets)Tag,
+                    SupportsShiftModulation = SupportsShiftModulation,
                     Tag = presets,
                 };
                 button.ButtonClicked += OnButtonClicked;
@@ -278,7 +295,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void OnButtonClicked()
         {
             var location = _button.Center + new Vector2(3.0f);
-            var editor = new AnchorPresetsEditorPopup(_button.Presets);
+            var editor = new AnchorPresetsEditorPopup(_button.Presets, true);
             editor.VisibleChanged += OnEditorVisibleChanged;
             editor.Show(_button.Parent, location);
         }
