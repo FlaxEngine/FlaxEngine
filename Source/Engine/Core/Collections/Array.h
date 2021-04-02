@@ -5,6 +5,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include <initializer_list>
 
 /// <summary>
 /// Template for dynamic array with variable capacity.
@@ -45,6 +46,16 @@ public:
     {
         if (capacity > 0)
             _allocation.Allocate(capacity);
+    }
+
+    Array(std::initializer_list<T> initList)
+    {
+        _count = _capacity = (int32)initList.size();
+        if (_count > 0)
+        {
+            _allocation.Allocate(_count);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
     }
 
     /// <summary>
@@ -121,6 +132,24 @@ public:
         other._count = 0;
         other._capacity = 0;
         _allocation.Swap(other._allocation);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="initList"></param>
+    /// <returns></returns>
+    Array& operator=(std::initializer_list<T> initList) noexcept
+    {
+        Memory::DestructItems(Get(), _count);
+
+        _count = _capacity = (int32)initList.size();
+        if (_capacity > 0)
+        {
+            _allocation.Allocate(_capacity);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
+        return *this;
     }
 
     /// <summary>
