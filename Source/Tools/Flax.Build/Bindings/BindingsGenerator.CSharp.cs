@@ -411,7 +411,7 @@ namespace Flax.Build.Bindings
             if (value.Contains("::"))
                 return false;
 
-            // Initializer lists (eg. Array<int> foo = {1, 2, 3, 4}
+            // Initializer lists (eg. Array<int> foo = {1, 2, 3, 4})
             if (value.Contains('{') && value.Contains('}'))
                 return false;
 
