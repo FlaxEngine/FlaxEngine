@@ -48,6 +48,10 @@ public:
             _allocation.Allocate(capacity);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// </summary>
+    /// <param name="initList">The initial values defined in the array.</param>
     Array(std::initializer_list<T> initList)
     {
         _count = _capacity = (int32)initList.size();
@@ -135,10 +139,10 @@ public:
     }
 
     /// <summary>
-    /// 
+    /// The assignment operator that deletes the current collection of items and the copies items from the initializer list.
     /// </summary>
-    /// <param name="initList"></param>
-    /// <returns></returns>
+    /// <param name="initList">The other collection to copy.</param>
+    /// <returns>The reference to this.</returns>
     Array& operator=(std::initializer_list<T> initList) noexcept
     {
         Memory::DestructItems(Get(), _count);
