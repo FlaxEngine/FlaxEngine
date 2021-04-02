@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
