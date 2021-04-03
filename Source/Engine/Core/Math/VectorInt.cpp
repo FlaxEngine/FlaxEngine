@@ -38,6 +38,22 @@ String Int3::ToString() const
 const Int4 Int4::Zero(0);
 const Int4 Int4::One(1);
 
+Int4::Int4(const Vector2& v, float z, float w)
+    : X(static_cast<int32>(v.X))
+    , Y(static_cast<int32>(v.Y))
+    , Z(static_cast<int32>(z))
+    , W(static_cast<int32>(w))
+{
+}
+
+Int4::Int4(const Vector3& v, float w)
+    : X(static_cast<int32>(v.X))
+    , Y(static_cast<int32>(v.Y))
+    , Z(static_cast<int32>(v.Z))
+    , W(static_cast<int32>(w))
+{
+}
+
 Int4::Int4(const Vector4& v)
     : X(static_cast<int32>(v.X))
     , Y(static_cast<int32>(v.Y))
