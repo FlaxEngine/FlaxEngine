@@ -15,6 +15,7 @@ struct Vector4;
 /// </summary>
 API_STRUCT(InBuild) struct FLAXENGINE_API Int4
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int4);
 public:
 
     union
