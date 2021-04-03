@@ -79,6 +79,26 @@ public:
     {
     }
 
+    Int4::Int4(const Int2& xy, float z, float w)
+        : X(xy.X)
+        , Y(xy.Y)
+        , Z(z)
+        , W(w)
+    {
+    }
+
+    Int4::Int4(const Int3& xyz, float w)
+        : X(xyz.X)
+        , Y(xyz.Y)
+        , Z(xyz.Z)
+        , W(w)
+    {
+    }
+
+    explicit Int4(const Vector2& v, float z, float w);
+
+    explicit Int4(const Vector3& v, float w);
+    
     // Init
     // @param v Vector to use X, Y, Z and W components
     explicit Int4(const Vector4& v);
