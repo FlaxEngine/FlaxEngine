@@ -11,6 +11,9 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Matrix.h"
@@ -1504,6 +1507,48 @@ Variant::operator Vector4() const
     }
 }
 
+Variant::operator Int4() const
+{
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+        return Int4(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int:
+        return Int4((float)AsInt);
+    case VariantType::Uint:
+        return Int4((float)AsUint);
+    case VariantType::Int64:
+        return Int4((float)AsInt64);
+    case VariantType::Uint64:
+    case VariantType::Enum:
+        return Int4((float)AsUint64);
+    case VariantType::Float:
+        return Int4(AsFloat);
+    case VariantType::Double:
+        return Int4((float)AsDouble);
+    case VariantType::Pointer:
+        return Int4((float)(intptr)AsPointer);
+    case VariantType::Vector2:
+        return Int4(*(Vector2*)AsData, 0.0f, 0.0f);
+    case VariantType::Vector3:
+        return Int4(*(Vector3*)AsData, 0.0f);
+    case VariantType::Vector4:
+        return Int4(*(Vector4*)AsData);
+    case VariantType::Int2:
+        return Int4(*(Int2*)AsData, 0.0f, 0.0f);
+    case VariantType::Int3:
+        return Int4(*(Int3*)AsData, 0.0f);
+    case VariantType::Int4:
+    case VariantType::Color:
+        return *(Int4*)AsData;
+    case VariantType::Structure:
+        if (StringUtils::Compare(Type.TypeName, Int4::TypeInitializer.GetType().Fullname.Get()) == 0)
+            return *(Int4*)AsBlob.Data;
+    default:
+        return Int4::Zero;
+    }
+}
+
 Variant::operator Color() const
 {
     switch (Type.Type)
@@ -1668,6 +1713,21 @@ const Vector3& Variant::AsVector3() const
 const Vector4& Variant::AsVector4() const
 {
     return *(const Vector4*)AsData;
+}
+
+const Int2& Variant::AsInt2() const
+{
+    return *(const Int2*)AsData;
+}
+
+const Int3& Variant::AsInt3() const
+{
+    return *(const Int3*)AsData;
+}
+
+const Int4& Variant::AsInt4() const
+{
+    return *(const Int4*)AsData;
 }
 
 const Color& Variant::AsColor() const
