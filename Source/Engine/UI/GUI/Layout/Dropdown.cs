@@ -9,6 +9,7 @@ namespace FlaxEngine.GUI
     /// Dropdown menu control allows to choose one item from the provided collection of options.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
+    [HideInEditor]
     public class Dropdown : Control
     {
         /// <summary>
@@ -344,12 +345,12 @@ namespace FlaxEngine.GUI
                     Parent = container,
                 };
 
-                var label = new Label
+                var label = new HighlightableLabel
                 {
                     X = itemsMargin,
                     Width = itemsWidth - itemsMargin,
                     Font = Font,
-                    TextColor = Color.White * 0.9f,
+                    Color = Color.White * 0.9f,
                     TextColorHighlighted = Color.White,
                     HorizontalAlignment = TextAlignment.Near,
                     AnchorPreset = AnchorPresets.VerticalStretchRight,

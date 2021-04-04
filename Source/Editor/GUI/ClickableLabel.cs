@@ -9,8 +9,8 @@ namespace FlaxEditor.GUI
     /// <summary>
     /// The label that contains events for mouse interaction.
     /// </summary>
-    /// <seealso cref="FlaxEngine.GUI.Label" />
-    public class ClickableLabel : Label
+    /// <seealso cref="FlaxEngine.GUI.HighlightableLabel" />
+    public class ClickableLabel : HighlightableLabel
     {
         private bool _leftClick;
         private bool _isRightDown;

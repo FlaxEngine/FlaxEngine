@@ -8,6 +8,7 @@ namespace FlaxEngine.GUI
     /// Panel UI control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ScrollableControl" />
+    [HideInEditor]
     public class Panel : ScrollableControl
     {
         private bool _layoutChanged;

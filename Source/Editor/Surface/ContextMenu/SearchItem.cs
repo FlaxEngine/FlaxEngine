@@ -70,7 +70,7 @@ namespace FlaxEditor.Surface.ContextMenu
             typeLabel.Location = new Vector2((height - nameLabel.Height) / 2, X + width - typeLabel.Width - 17);
             typeLabel.HorizontalAlignment = TextAlignment.Far;
             typeLabel.Text = Type;
-            typeLabel.TextColor = Style.Current.ForegroundGrey;
+            typeLabel.Color = Style.Current.ForegroundGrey;
         }
 
         /// <inheritdoc />

@@ -39,8 +39,10 @@ namespace FlaxEditor.CustomEditors.Editors
             else
             {
                 var enumType = Values.Type.Type != typeof(object) || Values[0] == null ? TypeUtils.GetType(Values.Type) : Values[0].GetType();
+                
                 element = layout.Enum(enumType, null, mode);
                 element.ComboBox.ValueChanged += OnValueChanged;
+                Debug.Log(element);
             }
         }
 
@@ -63,7 +65,8 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                element.ComboBox.EnumTypeValue = Values[0];
+                if(element != null)
+                    element.ComboBox.EnumTypeValue = Values[0];
             }
         }
     }
