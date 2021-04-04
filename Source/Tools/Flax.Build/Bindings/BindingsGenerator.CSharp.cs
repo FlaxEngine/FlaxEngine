@@ -50,7 +50,7 @@ namespace Flax.Build.Bindings
             { "MonoArray", "Array" },
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, FieldInfo fieldInfo ,string value, ApiTypeInfo caller)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
@@ -69,6 +69,64 @@ namespace Flax.Build.Bindings
             // Special case for Engine TEXT macro
             if (value.Contains("TEXT(\""))
                 return value.Replace("TEXT(\"", "(\"");
+
+            // List Initializer
+            if (value.StartsWith("{"))
+            {
+                // Get array type inside type param
+                string arrayType = fieldInfo.Type.ToString();
+                arrayType = arrayType.Substring(arrayType.IndexOf('<') + 1).TrimEnd('>');
+
+                if (arrayType.Contains("Array"))
+                    throw new NotImplementedException("Multi-dimensional arrays are not supported!");
+
+                // Some types are not instantiated with new, we can leave as is.
+                if (CSharpNativeToManagedBasicTypes.ContainsKey(arrayType))
+                    return value;
+
+                // Special case for String
+                // Move up  to L:70?
+                if (value.Contains("String(\""))
+                    return value.Replace("String(\"", "(\"");
+
+                //TODO: Handle n-Dimensional arrays
+                // 1. Extract end type
+                // 2. Get num of dimensions
+                // 3. For each dimension add ',' in arr
+                // 4. Result = <type>[,,,] <name> = new <type>[,,,]
+                // 5. Rename type for typeinfo via ref?
+
+                // No previous case applies, let the magic happen
+                // TODO: Use REGEX?
+                string ans = "{";
+                for (int i = 1; i < value.Length; i++)
+                {
+                    char tempvalue = value[i];
+
+                    if (char.IsWhiteSpace(tempvalue))
+                        continue;
+
+                    if (i + arrayType.Length <= value.Length - 1 && value.Substring(i, arrayType.Length) == arrayType)
+                    {
+                        ans += "new ";
+                    }
+
+                    if (tempvalue == '{')
+                    {
+                        ans += "new " + arrayType + "(";
+                        continue;
+                    }
+
+                    if (tempvalue == '}' && i != value.Length - 1)
+                    {
+                        ans += ")";
+                        continue;
+                    }
+
+                    ans += tempvalue;
+                }
+                return ans;
+            }
 
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
@@ -455,7 +513,7 @@ namespace Flax.Build.Bindings
             if (!string.IsNullOrEmpty(defaultValue) && writeDefaultValue && IsDefaultValueSupported(defaultValue))
             {
                 // Write default value attribute
-                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo);
+                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, null, defaultValue, apiTypeInfo);
                 contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
         }
@@ -648,7 +706,7 @@ namespace Flax.Build.Bindings
                 {
                     if (fieldInfo.DefaultValue != null)
                     {
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo, fieldInfo.DefaultValue, classInfo);
                         if (!string.IsNullOrEmpty(defaultValue))
                             contents.Append(" = ").Append(defaultValue);
                     }
@@ -779,7 +837,7 @@ namespace Flax.Build.Bindings
 
                         if (parameterInfo.DefaultValue != null)
                         {
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, null, parameterInfo.DefaultValue, classInfo);
                             if (!string.IsNullOrEmpty(defaultValue))
                                 contents.Append(" = ").Append(defaultValue);
                         }
