@@ -358,6 +358,51 @@ bool Physics::SphereCastAll(const Vector3& center, const float radius, const Vec
     return true;
 }
 
+bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_SWEEP_1();
+    const PxTransform pose(C2P(center), C2P(rotation));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
+
+    // Perform sweep test
+    return GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+}
+
+bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_SWEEP_1();
+    const PxTransform pose(C2P(center), C2P(rotation));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
+
+    // Perform sweep test
+    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
+        return false;
+
+    // Collect results
+    SCENE_QUERY_COLLECT_SINGLE();
+
+    return true;
+}
+
+bool Physics::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_SWEEP();
+    const PxTransform pose(C2P(center), C2P(rotation));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
+
+    // Perform sweep test
+    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
+        return false;
+
+    // Collect results
+    SCENE_QUERY_COLLECT_ALL();
+
+    return true;
+}
+
 bool Physics::CheckBox(const Vector3& center, const Vector3& halfExtents, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     // Prepare data
@@ -375,6 +420,17 @@ bool Physics::CheckSphere(const Vector3& center, const float radius, uint32 laye
     SCENE_QUERY_SETUP_OVERLAP_1();
     const PxTransform pose(C2P(center));
     const PxSphereGeometry geometry(radius);
+
+    // Perform overlap test
+    return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
+}
+
+bool Physics::CheckCapsule(const Vector3& center, const float radius, const float height, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_OVERLAP_1();
+    const PxTransform pose(C2P(center));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
 
     // Perform overlap test
     return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
@@ -414,6 +470,23 @@ bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Col
     return true;
 }
 
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_OVERLAP();
+    const PxTransform pose(C2P(center));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
+
+    // Perform overlap test
+    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
+        return false;
+
+    // Collect results
+    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
+
+    return true;
+}
+
 bool Physics::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     // Prepare data
@@ -437,6 +510,23 @@ bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Phy
     SCENE_QUERY_SETUP_OVERLAP();
     const PxTransform pose(C2P(center));
     const PxSphereGeometry geometry(radius);
+
+    // Perform overlap test
+    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
+        return false;
+
+    // Collect results
+    SCENE_QUERY_COLLECT_OVERLAP();
+
+    return true;
+}
+
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, uint32 layerMask, bool hitTriggers)
+{
+    // Prepare data
+    SCENE_QUERY_SETUP_OVERLAP();
+    const PxTransform pose(C2P(center));
+    const PxCapsuleGeometry geometry(radius, height * 0.5f);
 
     // Perform overlap test
     if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
