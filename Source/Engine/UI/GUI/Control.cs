@@ -193,7 +193,7 @@ namespace FlaxEngine.GUI
                 }
                 return result;
             }
-            set => SetAnchorPreset(value, Input.GetKey(KeyboardKeys.Shift), Input.GetKey(KeyboardKeys.Control));
+            set => SetAnchorPreset(value, true, false);
         }
 
         /// <summary>

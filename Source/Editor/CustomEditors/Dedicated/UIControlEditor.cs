@@ -306,6 +306,29 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             SetValue(control.Tag);
         }
+        /// <inheritdoc/>
+        protected override void SynchronizeValue(object value)
+        {
+            // Custom anchors editing for Control to handle bounds preservation via key modifiers
+            if (ParentEditor != null)
+            {
+                var centerToPosition = Input.GetKey(KeyboardKeys.Shift);
+                var setPivot = Input.GetKey(KeyboardKeys.Control);
+                var editedAny = false;
+                foreach (var parentValue in ParentEditor.Values)
+                {
+                    if (parentValue is Control parentControl)
+                    {
+                        parentControl.SetAnchorPreset((AnchorPresets)value, centerToPosition, setPivot);
+                        editedAny = true;
+                    }
+                }
+                if (editedAny)
+                    return;
+            }
+
+            base.SynchronizeValue(value);
+        }
 
         /// <inheritdoc />
         public override void Refresh()
