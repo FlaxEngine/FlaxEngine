@@ -288,7 +288,7 @@ public:
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule hits an matching object, otherwise false.</returns>
-    API_FUNCTION() static bool CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+    API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
     /// Performs a sweep test against objects in the scene using a capsule geometry.
@@ -303,7 +303,7 @@ public:
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule hits an matching object, otherwise false.</returns>
-    API_FUNCTION() static bool CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+    API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
     /// Performs a sweep test against objects in the scene using a capsule geometry.
@@ -318,8 +318,8 @@ public:
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule hits an matching object, otherwise false.</returns>
-    API_FUNCTION() static bool CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
-    
+    API_FUNCTION() static bool CapsuleCastAll(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
     /// <summary>
     /// Checks whether the given box overlaps with other colliders or not.
     /// </summary>
@@ -344,7 +344,7 @@ public:
     /// <summary>
     /// Checks whether the given capsule overlaps with other colliders or not.
     /// </summary>
-    /// <param name="center">The sphere center.</param>
+    /// <param name="center">The capsule center.</param>
     /// <param name="radius">The radius of the capsule.</param>
     /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
@@ -413,7 +413,7 @@ public:
     /// <summary>
     /// Finds all colliders touching or inside of the given sphere.
     /// </summary>
-    /// <param name="center">The sphere center.</param>
+    /// <param name="center">The capsule center.</param>
     /// <param name="radius">The radius of the capsule.</param>
     /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
     /// <param name="results">The result colliders that overlap with the given sphere. Valid only when method returns true.</param>
