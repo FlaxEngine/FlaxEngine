@@ -75,6 +75,7 @@ namespace FlaxEditor.Content
             }
         }
 
+        /// <inheritdoc />
         public int MetadataToken => 0;
 
         /// <inheritdoc />
