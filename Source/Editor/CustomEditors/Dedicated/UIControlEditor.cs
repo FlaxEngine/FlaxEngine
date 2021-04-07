@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (_presets != value)
                     {
                         _presets = value;
-                        OnPresetsChanged();
+                        TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
                     }
                 }
             }
@@ -463,9 +463,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void BuildLocationSizeOffsets(LayoutElementsContainer horUp, LayoutElementsContainer horDown, bool xEq, bool yEq, ScriptType[] valueTypes)
         {
-            ScriptMemberInfo xInfo = valueTypes[0].GetProperty("X");
+            ScriptMemberInfo xInfo = valueTypes[0].GetProperty("LocalX");
             ItemInfo xItem = new ItemInfo(xInfo);
-            ScriptMemberInfo yInfo = valueTypes[0].GetProperty("Y");
+            ScriptMemberInfo yInfo = valueTypes[0].GetProperty("LocalY");
             ItemInfo yItem = new ItemInfo(yInfo);
             ScriptMemberInfo widthInfo = valueTypes[0].GetProperty("Width");
             ItemInfo widthItem = new ItemInfo(widthInfo);
