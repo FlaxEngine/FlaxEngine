@@ -53,7 +53,7 @@ namespace FlaxEditor.CustomEditors.GUI
             bool check = CheckBox.Checked;
 
             // Update label text color
-            TextColor = check ? style.Foreground : style.ForegroundGrey;
+            Color = check ? style.Foreground : style.ForegroundGrey;
 
             // Update child controls enabled state
             if (FirstChildControlIndex >= 0 && Parent is PropertiesList propertiesList)

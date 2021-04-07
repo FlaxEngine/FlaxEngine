@@ -56,7 +56,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         : base(ref options)
         {
             const float buttonSize = 14;
-            var colorPickerButton = new Image
+            var colorPickerButton = new ClickableImage
             {
                 TooltipText = "Change folder color",
                 AutoFocus = true,

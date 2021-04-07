@@ -227,7 +227,7 @@ namespace FlaxEditor.Surface.Archetypes
 
         private class FunctionInputOutputNode : SurfaceNode
         {
-            protected Label _nameField;
+            protected HighlightableLabel _nameField;
 
             protected ScriptType SignatureType
             {
@@ -264,7 +264,7 @@ namespace FlaxEditor.Surface.Archetypes
             public FunctionInputOutputNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                _nameField = new Label
+                _nameField = new HighlightableLabel
                 {
                     Width = 140.0f,
                     TextColorHighlighted = Style.Current.ForegroundGrey,
@@ -1916,7 +1916,7 @@ namespace FlaxEditor.Surface.Archetypes
         private abstract class EventBaseNode : SurfaceNode, IFunctionsDependantNode
         {
             private ComboBoxElement _combobox;
-            private Image _helperButton;
+            private ClickableImage _helperButton;
             private bool _isBind;
             private bool _isUpdateLocked = true;
             private List<string> _tooltips = new List<string>();
@@ -1951,7 +1951,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox = (ComboBoxElement)_children[4];
                     _combobox.TooltipText = _isBind ? "Select the function to call when the event occurs" : "Select the function to unbind from the event";
                     _combobox.SelectedIndexChanged += OnSelectedChanged;
-                    _helperButton = new Image
+                    _helperButton = new ClickableImage
                     {
                         Location = _combobox.UpperRight + new Vector2(4, 3),
                         Size = new Vector2(12.0f),

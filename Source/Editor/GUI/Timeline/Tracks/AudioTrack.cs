@@ -314,7 +314,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             // Navigation buttons
             const float buttonSize = 14;
             var icons = Editor.Instance.Icons;
-            var rightKey = new Image
+            var rightKey = new ClickableImage
             {
                 TooltipText = "Sets the time to the next key",
                 AutoFocus = true,
@@ -327,7 +327,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Parent = this,
             };
             rightKey.Clicked += OnRightKeyClicked;
-            var addKey = new Image
+            var addKey = new ClickableImage
             {
                 TooltipText = "Adds a new key at the current time",
                 AutoFocus = true,
@@ -340,7 +340,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Parent = this,
             };
             addKey.Clicked += OnAddKeyClicked;
-            var leftKey = new Image
+            var leftKey = new ClickableImage
             {
                 TooltipText = "Sets the time to the previous key",
                 AutoFocus = true,
@@ -362,7 +362,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 AnchorPreset = AnchorPresets.MiddleRight,
                 IsScrollable = false,
                 HorizontalAlignment = TextAlignment.Near,
-                TextColor = Style.Current.ForegroundGrey,
+                Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
                 Offsets = new Margin(-previewWidth - 2 + leftKey.Offsets.Left, previewWidth, TextBox.DefaultHeight * -0.5f, TextBox.DefaultHeight),
                 Parent = this,

@@ -92,17 +92,17 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// The navigate right keyframe icon.
         /// </summary>
-        protected Image _rightKey;
+        protected ClickableImage _rightKey;
 
         /// <summary>
         /// The add keyframe icon.
         /// </summary>
-        protected Image _addKey;
+        protected ClickableImage _addKey;
 
         /// <summary>
         /// The navigate left keyframe icon.
         /// </summary>
-        protected Image _leftKey;
+        protected ClickableImage _leftKey;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MemberTrack"/> class.
@@ -120,7 +120,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 // Navigation buttons
                 const float buttonSize = 14;
                 var icons = Editor.Instance.Icons;
-                _rightKey = new Image
+                _rightKey = new ClickableImage
                 {
                     TooltipText = "Sets the time to the next key",
                     AutoFocus = true,
@@ -132,7 +132,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     Offsets = new Margin(-buttonSize - 2 + uiLeft, buttonSize, buttonSize * -0.5f, buttonSize),
                     Parent = this,
                 };
-                _addKey = new Image
+                _addKey = new ClickableImage
                 {
                     TooltipText = "Adds a new key at the current time",
                     AutoFocus = true,
@@ -144,7 +144,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     Offsets = new Margin(-buttonSize - 2 + _rightKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                     Parent = this,
                 };
-                _leftKey = new Image
+                _leftKey = new ClickableImage
                 {
                     TooltipText = "Sets the time to the previous key",
                     AutoFocus = true,
@@ -171,7 +171,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     IsScrollable = false,
                     AutoFitTextRange = new Vector2(0.01f, 1.0f),
                     AutoFitText = true,
-                    TextColor = Style.Current.ForegroundGrey,
+                    Color = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
                     Parent = this
                 };

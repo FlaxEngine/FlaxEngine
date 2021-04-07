@@ -49,7 +49,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// The select actor icon.
         /// </summary>
-        protected Image _selectActor;
+        protected ClickableImage _selectActor;
 
         /// <summary>
         /// The object ID.
@@ -72,7 +72,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             // Select Actor button
             const float buttonSize = 14;
             var icons = Editor.Instance.Icons;
-            _selectActor = new Image
+            _selectActor = new ClickableImage
             {
                 TooltipText = "Selects the actor animated by this track",
                 AutoFocus = true,

@@ -9,9 +9,9 @@ namespace FlaxEditor.CustomEditors.GUI
     /// <summary>
     /// Displays custom editor property name.
     /// </summary>
-    /// <seealso cref="FlaxEngine.GUI.Label" />
+    /// <seealso cref="FlaxEngine.GUI.HighlightableLabel" />
     [HideInEditor]
-    public class PropertyNameLabel : Label
+    public class PropertyNameLabel : HighlightableLabel
     {
         // TODO: if name is too long to show -> use tooltip to show it
 

@@ -116,7 +116,7 @@ namespace FlaxEditor.Windows.Assets
 
                 // Options button
                 const float buttonSize = 14;
-                var optionsButton = new Image
+                var optionsButton = new ClickableImage
                 {
                     TooltipText = "Script options",
                     AutoFocus = true,
@@ -202,7 +202,7 @@ namespace FlaxEditor.Windows.Assets
 
                 // New function button
                 const float groupPanelButtonSize = 14;
-                var addNewFunction = new Image
+                var addNewFunction = new ClickableImage
                 {
                     TooltipText = "Add new function",
                     AutoFocus = true,
@@ -217,7 +217,7 @@ namespace FlaxEditor.Windows.Assets
                 addNewFunction.Clicked += OnAddNewFunctionClicked;
 
                 // Override method button
-                var overrideMethod = new Image
+                var overrideMethod = new ClickableImage
                 {
                     TooltipText = "Override method",
                     AutoFocus = true,

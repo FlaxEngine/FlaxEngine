@@ -93,13 +93,13 @@ namespace FlaxEditor.GUI
                     Parent = this,
                 };
 
-                _title = new Label(0, 0, Width, Height)
+                _title = new HighlightableLabel(0, 0, Width, Height)
                 {
                     Text = _window.Title,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                     ClipText = true,
-                    TextColor = Style.Current.ForegroundGrey,
+                    Color = Style.Current.ForegroundGrey,
                     TextColorHighlighted = Style.Current.ForegroundGrey,
                     Parent = this,
                 };
