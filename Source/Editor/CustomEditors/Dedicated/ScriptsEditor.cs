@@ -470,7 +470,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             // Add settings button to the group
             const float settingsButtonSize = 14;
-            var settingsButton = new Image
+            var settingsButton = new ClickableImage
             {
                 TooltipText = "Settings",
                 AutoFocus = true,
@@ -676,7 +676,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 // Add settings button to the group
                 const float settingsButtonSize = 14;
-                var settingsButton = new Image
+                var settingsButton = new ClickableImage
                 {
                     TooltipText = "Settings",
                     AutoFocus = true,

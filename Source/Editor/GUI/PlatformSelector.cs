@@ -43,7 +43,7 @@ namespace FlaxEditor.GUI
                     bool isValid = false;
                     for (int i = 0; i < _children.Count; i++)
                     {
-                        if (_children[i] is Image img)
+                        if (_children[i] is ClickableImage img)
                         {
                             if ((PlatformType)img.Tag == value)
                             {
@@ -103,7 +103,7 @@ namespace FlaxEditor.GUI
 
             for (int i = 0; i < platforms.Length; i++)
             {
-                var tile = new Image
+                var tile = new ClickableImage
                 {
                     Brush = new SpriteBrush(platforms[i].Icon),
                     MouseOverColor = _mouseOverColor,
@@ -117,8 +117,8 @@ namespace FlaxEditor.GUI
 
             // Select the first platform
             _selected = platforms[0].PlatformType;
-            ((Image)Children[0]).Color = _selectedColor;
-            ((Image)Children[0]).MouseOverColor = _selectedColor;
+            ((ClickableImage)Children[0]).Color = _selectedColor;
+            ((ClickableImage)Children[0]).MouseOverColor = _selectedColor;
         }
 
         private void OnTileClicked(Image image, MouseButton mouseButton)

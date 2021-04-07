@@ -285,9 +285,9 @@ namespace FlaxEditor.GUI.Timeline
         private FloatValueBox _fpsCustomValue;
         private TracksPanelArea _tracksPanelArea;
         private VerticalPanel _tracksPanel;
-        private Image[] _playbackNavigation;
-        private Image _playbackStop;
-        private Image _playbackPlay;
+        private ClickableImage[] _playbackNavigation;
+        private ClickableImage _playbackStop;
+        private ClickableImage _playbackPlay;
         private Label _noTracksLabel;
         private PositionHandle _positionHandle;
         private bool _isRightMouseButtonDown;
@@ -733,9 +733,9 @@ namespace FlaxEditor.GUI.Timeline
                 };
                 if ((playbackButtons & PlaybackButtons.Navigation) == PlaybackButtons.Navigation)
                 {
-                    _playbackNavigation = new Image[6];
+                    _playbackNavigation = new ClickableImage[6];
 
-                    _playbackNavigation[0] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[0] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Rewind to timeline start (Home)",
                         Brush = new SpriteBrush(icons.Step32),
@@ -747,7 +747,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[0].Clicked += (image, button) => OnSeek(0);
                     playbackButtonsPanel.Width += playbackButtonsSize;
 
-                    _playbackNavigation[1] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[1] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Seek back to the previous keyframe (Page Down)",
                         Brush = new SpriteBrush(icons.Next32),
@@ -763,7 +763,7 @@ namespace FlaxEditor.GUI.Timeline
                     };
                     playbackButtonsPanel.Width += playbackButtonsSize;
 
-                    _playbackNavigation[2] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[2] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Move one frame back (Left Arrow)",
                         Brush = new SpriteBrush(icons.ArrowLeft32),
@@ -776,7 +776,7 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 if ((playbackButtons & PlaybackButtons.Stop) == PlaybackButtons.Stop)
                 {
-                    _playbackStop = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackStop = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Stop playback",
                         Brush = new SpriteBrush(icons.Stop32),
@@ -789,7 +789,7 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 if ((playbackButtons & PlaybackButtons.Play) == PlaybackButtons.Play)
                 {
-                    _playbackPlay = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackPlay = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Play/pause playback (Space)",
                         Brush = new SpriteBrush(icons.Play32),
@@ -802,7 +802,7 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 if ((playbackButtons & PlaybackButtons.Navigation) == PlaybackButtons.Navigation)
                 {
-                    _playbackNavigation[3] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[3] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Move one frame forward (Right Arrow)",
                         Brush = new SpriteBrush(icons.ArrowRight32),
@@ -813,7 +813,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[3].Clicked += (image, button) => OnSeek(CurrentFrame + 1);
                     playbackButtonsPanel.Width += playbackButtonsSize;
 
-                    _playbackNavigation[4] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[4] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Seek to the next keyframe (Page Up)",
                         Brush = new SpriteBrush(icons.Next32),
@@ -828,7 +828,7 @@ namespace FlaxEditor.GUI.Timeline
                     };
                     playbackButtonsPanel.Width += playbackButtonsSize;
 
-                    _playbackNavigation[5] = new Image(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
+                    _playbackNavigation[5] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Rewind to timeline end (End)",
                         Brush = new SpriteBrush(icons.Step32),
@@ -858,11 +858,11 @@ namespace FlaxEditor.GUI.Timeline
                 BottomMargin = 40.0f,
                 Parent = _tracksPanelArea
             };
-            _noTracksLabel = new Label
+            _noTracksLabel = new HighlightableLabel
             {
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = Margin.Zero,
-                TextColor = Color.Gray,
+                Color = Color.Gray,
                 TextColorHighlighted = Color.Gray * 1.1f,
                 Text = "No tracks",
                 Parent = _tracksPanelArea

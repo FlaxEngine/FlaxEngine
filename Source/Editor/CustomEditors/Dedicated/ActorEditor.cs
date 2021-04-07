@@ -92,7 +92,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "General")
                 {
                     const float settingsButtonSize = 14;
-                    var settingsButton = new Image
+                    var settingsButton = new ClickableImage
                     {
                         TooltipText = "Settings",
                         AutoFocus = true,
