@@ -55,6 +55,12 @@ public:
     // Vector with all components equal 1
     static const Int4 One;
 
+    // A minimum Int4
+    static const Int4 Minimum;
+
+    // A maximum Int4
+    static const Int4 Maximum;
+    
 public:
 
     /// <summary>
