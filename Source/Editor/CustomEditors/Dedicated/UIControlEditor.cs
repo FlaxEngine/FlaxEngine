@@ -38,13 +38,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             public bool IsSelected;
-
             public bool SupportsShiftModulation;
-
-            private void OnPresetsChanged()
-            {
-                TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
-            }
 
             /// <inheritdoc />
             public override void Draw()
@@ -168,7 +162,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
-        class AnchorPresetsEditorPopup : ContextMenuBase
+        /// <summary>
+        /// Context menu for anchors presets editing.
+        /// </summary>
+        /// <seealso cref="FlaxEditor.GUI.ContextMenu.ContextMenuBase" />
+        public sealed class AnchorPresetsEditorPopup : ContextMenuBase
         {
             const float ButtonsMargin = 10.0f;
             const float ButtonsMarginStretch = 8.0f;
@@ -177,16 +175,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             const float DialogWidth = ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
             const float DialogHeight = TitleHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
 
-            bool SupportsShiftModulation = false;
+            private readonly bool _supportsShiftModulation;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="AnchorPresetsEditorPopup"/> class.
             /// </summary>
             /// <param name="presets">The initial value.</param>
             /// <param name="supportsShiftModulation">If the popup should react to shift</param>
-            public AnchorPresetsEditorPopup(AnchorPresets presets, bool supportsShiftModulation)
+            public AnchorPresetsEditorPopup(AnchorPresets presets, bool supportsShiftModulation = true)
             {
-                SupportsShiftModulation = supportsShiftModulation;
+                _supportsShiftModulation = supportsShiftModulation;
 
                 var style = FlaxEngine.GUI.Style.Current;
                 Tag = presets;
@@ -235,7 +233,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = this,
                     Presets = presets,
                     IsSelected = presets == (AnchorPresets)Tag,
-                    SupportsShiftModulation = SupportsShiftModulation,
+                    SupportsShiftModulation = _supportsShiftModulation,
                     Tag = presets,
                 };
                 button.ButtonClicked += OnButtonClicked;
@@ -306,6 +304,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             SetValue(control.Tag);
         }
+
         /// <inheritdoc/>
         protected override void SynchronizeValue(object value)
         {
@@ -351,7 +350,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// Dedicated custom editor for <see cref="UIControl.Control"/> object.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
-    public sealed class UIControlControlEditor : GenericEditor
+    public class UIControlControlEditor : GenericEditor
     {
         private Type _cachedType;
 
