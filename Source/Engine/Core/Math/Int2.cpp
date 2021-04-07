@@ -10,6 +10,8 @@
 
 const Int2 Int2::Zero(0);
 const Int2 Int2::One(1);
+const Int2 Int2::Minimum(MIN_float);
+const Int2 Int2::Maximum(MAX_float);
 
 Int2::Int2(const Int3& xyz)
     : X(xyz.X)
