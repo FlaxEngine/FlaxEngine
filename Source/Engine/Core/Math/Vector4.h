@@ -13,6 +13,9 @@ struct Color;
 struct Matrix;
 struct Rectangle;
 class String;
+struct Int2;
+struct Int3;
+struct Int4;
 
 /// <summary>
 /// Represents a four dimensional mathematical vector.
@@ -133,9 +136,9 @@ public:
     // @param w W component value
     Vector4(const Vector3& xyz, float w);
 
-    Vector4(const Int2& xy, float z, float w);
+    explicit Vector4(const Int2& xy, float z, float w);
 
-    Vector4(const Int3& xyz, float w);
+    explicit Vector4(const Int3& xyz, float w);
     
     // Init
     // @param color Int4 value

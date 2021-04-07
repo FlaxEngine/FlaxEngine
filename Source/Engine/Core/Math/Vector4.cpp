@@ -52,26 +52,26 @@ Vector4::Vector4(const Vector3& xyz, float w)
 }
 
 Vector4::Vector4(const Int2& xy, float z, float w)
-    : X(xy.X)
-    , Y(xy.Y)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
     , Z(z)
     , W(w)
 {
 }
 
 Vector4::Vector4(const Int3& xyz, float w)
-    : X(xyz.X)
-    , Y(xyz.Y)
-    , Z(xyz.Z)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+    , Z(static_cast<float>(xyz.Z))
     , W(w)
 {
 }
 
 Vector4::Vector4(const Int4& xyzw)
-    : X((float)xyzw.X)
-    , Y((float)xyzw.Y)
-    , Z((float)xyzw.X)
-    , W((float)xyzw.Y)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.X))
+    , W(static_cast<float>(xyzw.Y))
 {
 }
 
