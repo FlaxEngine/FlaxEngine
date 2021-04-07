@@ -49,7 +49,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
-        [HideInEditor]
+        [Serialize, HideInEditor]
         public Vector2 AnchorMin
         {
             get => _anchorMin;
