@@ -89,23 +89,23 @@ public:
 
     // Init
     // @param v Int2 to use X and Y components
-    explicit Vector2(const Int2& v);
+    explicit Vector2(const Int2& xy);
 
     // Init
     // @param v Int3 to use X and Y components
-    explicit Vector2(const Int3& v);
+    explicit Vector2(const Int3& xyz);
 
     // Init
     // @param v Int4 to use X and Y components
-    explicit Vector2(const Int4& v);
+    explicit Vector2(const Int4& xyzw);
     
     // Init
     // @param v Vector3 to use X and Y components
-    explicit Vector2(const Vector3& v);
+    explicit Vector2(const Vector3& xyz);
 
     // Init
     // @param v Vector4 to use X and Y components
-    explicit Vector2(const Vector4& v);
+    explicit Vector2(const Vector4& xyzw);
 
     // Init
     // @param color Color value
