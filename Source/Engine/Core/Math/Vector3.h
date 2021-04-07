@@ -12,6 +12,8 @@ struct Vector2;
 struct Vector4;
 struct Color;
 class String;
+struct Int3;
+struct Int4;
 
 /// <summary>
 /// Represents a three dimensional mathematical vector.
@@ -139,8 +141,17 @@ public:
     explicit Vector3(const Vector2& xy);
 
     // Init
+    // @param xy Int22 with X and Y components values
+    // @param z Z component value
+    explicit  Vector3(const Int2& xy, float z);
+
+    // Init
     // @param xyz Int3 value
     explicit Vector3(const Int3& xyz);
+
+    // Init
+    // @param xyzw Int4 value
+    explicit  Vector3(const Int4& xyzw);
 
     // Init
     // @param xyz Vector4 value
