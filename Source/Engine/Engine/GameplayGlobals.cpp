@@ -67,7 +67,7 @@ Dictionary<String, Variant> GameplayGlobals::GetValues() const
 
 void GameplayGlobals::SetValues(const Dictionary<String, Variant>& values)
 {
-    for (auto& e : values)
+    for (auto& e : Variables)
     {
         bool hasKey = false;
         for (auto& q : values)
@@ -105,7 +105,7 @@ Dictionary<String, Variant> GameplayGlobals::GetDefaultValues() const
 
 void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values)
 {
-    for (auto& e : values)
+    for (auto& e : Variables)
     {
         bool hasKey = false;
         for (auto& q : values)
