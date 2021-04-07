@@ -9,12 +9,14 @@
 struct Vector2;
 struct Vector3;
 struct Vector4;
+struct Int2;
 
 /// <summary>
 /// Three-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int3
+API_STRUCT() struct FLAXENGINE_API Int3
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int3);
 public:
 
     union
@@ -72,10 +74,18 @@ public:
     {
     }
 
+    Int3(const Int2& xy, float z);
+
+    Int3(const Int4& xyzw);
+    
+    explicit Int3(const Vector2& xy, float z);
+    
     // Init
     // @param v Vector to use X, Y and Z components
-    explicit Int3(const Vector3& v);
+    explicit Int3(const Vector3& xyz);
 
+    explicit Int3(const Vector4& xyzw);
+    
 public:
 
     String ToString() const;
