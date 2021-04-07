@@ -217,9 +217,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             const float ButtonsMarginStretch = 8.0f;
             const float ButtonsSize = 32.0f;
             const float TitleHeight = 23.0f;
-            const float IntoHeight = 23.0f;
+            const float InfoHeight = 23.0f;
             const float DialogWidth = ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
-            const float DialogHeight = TitleHeight + IntoHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
+            const float DialogHeight = TitleHeight + InfoHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
 
             private readonly bool _supportsShiftModulation;
 
@@ -245,7 +245,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
 
                 // Info
-                var info = new Label(0, title.Bottom, DialogWidth, IntoHeight)
+                var info = new Label(0, title.Bottom, DialogWidth, InfoHeight)
                 {
                     Font = new FontReference(style.FontSmall),
                     Text = "Shift: also set bounds\nControl: also set pivot",
