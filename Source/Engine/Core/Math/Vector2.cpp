@@ -18,33 +18,33 @@ const Vector2 Vector2::UnitY(0, 1);
 const Vector2 Vector2::Minimum(MIN_float);
 const Vector2 Vector2::Maximum(MAX_float);
 
-Vector2::Vector2(const Int2& v)
-    : X(static_cast<float>(v.X))
-    , Y(static_cast<float>(v.Y))
+Vector2::Vector2(const Int2& xy)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
 {
 }
 
-Vector2::Vector2(const Int3& v)
-    : X(static_cast<float>(v.X))
-    , Y(static_cast<float>(v.Y))
+Vector2::Vector2(const Int3& xyz)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
 {
 }
 
-Vector2::Vector2(const Int4& v)
-    : X(static_cast<float>(v.X))
-    , Y(static_cast<float>(v.Y))
+Vector2::Vector2(const Int4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
 {
 }
 
-Vector2::Vector2(const Vector3& v)
-    : X(v.X)
-    , Y(v.Y)
+Vector2::Vector2(const Vector3& xyz)
+    : X(xyz.X)
+    , Y(xyz.Y)
 {
 }
 
-Vector2::Vector2(const Vector4& v)
-    : X(v.X)
-    , Y(v.Y)
+Vector2::Vector2(const Vector4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
 {
 }
 
