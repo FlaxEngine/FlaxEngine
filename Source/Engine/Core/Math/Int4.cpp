@@ -8,6 +8,8 @@
 #include "Vector4.h"
 #include "Engine/Core/Types/String.h"
 
+static_assert(sizeof(Int4) == 16, "Invalid Int4 type size.");
+
 const Int4 Int4::Zero(0);
 const Int4 Int4::One(1);
 const Int4 Int4::Minimum(MIN_float);
