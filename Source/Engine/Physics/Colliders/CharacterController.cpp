@@ -22,6 +22,7 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _radius(50.0f)
     , _height(150.0f)
     , _minMoveDistance(0.0f)
+    , _upDirection(Vector3::Up)
     , _isUpdatingTransform(false)
     , _nonWalkableMode(CharacterController::NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
@@ -86,6 +87,7 @@ void CharacterController::SetUpDirection(const Vector3& up)
 {
     if (_controller)
         _controller->setUpDirection(C2P(up));
+    _upDirection = up;
 }
 
 Vector3 CharacterController::GetUpDirection() const
@@ -191,6 +193,7 @@ void CharacterController::CreateActor()
     // Create controller
     _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
     ASSERT(_controller);
+    _controller->setUpDirection(C2P(_upDirection));
     const auto actor = _controller->getActor();
     ASSERT(actor && actor->getNbShapes() == 1);
     actor->getShapes(&_shape, 1);
@@ -374,6 +377,7 @@ void CharacterController::Serialize(SerializeStream& stream, const void* otherOb
     SERIALIZE_MEMBER(Radius, _radius);
     SERIALIZE_MEMBER(Height, _height);
     SERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
+    SERIALIZE_MEMBER(UpDirection, _upDirection);
 }
 
 void CharacterController::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -387,4 +391,5 @@ void CharacterController::Deserialize(DeserializeStream& stream, ISerializeModif
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE_MEMBER(Height, _height);
     DESERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
+    DESERIALIZE_MEMBER(UpDirection, _upDirection);
 }

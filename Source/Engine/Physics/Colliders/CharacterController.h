@@ -65,6 +65,7 @@ private:
     float _height;
     float _minMoveDistance;
     bool _isUpdatingTransform;
+    Vector3 _upDirection;
     NonWalkableModes _nonWalkableMode;
     CollisionFlags _lastFlags;
     uint32 _filterData[4];
