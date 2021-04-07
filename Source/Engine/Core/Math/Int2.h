@@ -308,7 +308,7 @@ public:
     /// <returns> True if the vector is one, otherwise false.</returns>
     bool IsOne() const
     {
-        return Math::IsOne(X) && Math::IsOne(Y);
+        return X == 1 && Y == 1;
     }
     
     /// <summary>
@@ -356,32 +356,6 @@ public:
         return Math::Max(X, Y);
     }
 
-    /// <summary>
-    /// Returns true if vector has one or more components is not a number (NaN)
-    /// </summary>
-    /// <returns>True if one or more components is not a number (NaN)</returns>
-    bool IsNaN() const
-    {
-        return isnan(X) || isnan(Y);
-    }
-
-    /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity
-    /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity</returns>
-    bool IsInfinity() const
-    {
-        return isinf(X) || isinf(Y);
-    }
-
-    /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity or NaN
-    /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
-    bool IsNanOrInfinity() const
-    {
-        return IsInfinity() || IsNaN();
-    }
     
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
