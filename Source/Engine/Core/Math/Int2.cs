@@ -12,9 +12,8 @@ namespace FlaxEngine
     /// Represents a two dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     [TypeConverter(typeof(TypeConverters.Int2Converter))]
-    public struct Int2 : IEquatable<Int2>, IFormattable
+    partial struct Int2 : IEquatable<Int2>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1}";
 

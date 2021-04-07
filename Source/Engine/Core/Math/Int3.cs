@@ -12,9 +12,8 @@ namespace FlaxEngine
     /// Represents a three dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     [TypeConverter(typeof(TypeConverters.Int3Converter))]
-    public struct Int3 : IEquatable<Int3>, IFormattable
+    partial struct Int3 : IEquatable<Int3>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2}";
 
