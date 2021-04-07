@@ -22,11 +22,15 @@ public:
     {
         struct
         {
-            // X component
-            int32 X;
+            /// <summary>
+            /// The X component.
+            /// </summary>
+            API_FIELD() int32 X;
 
-            // Y component
-            int32 Y;
+            /// <summary>
+            /// The Y component.
+            /// </summary>
+            API_FIELD() int32 Y;
         };
 
         // Raw values

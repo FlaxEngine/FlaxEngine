@@ -53,16 +53,6 @@ namespace FlaxEngine
         public static readonly Int2 Maximum = new Int2(int.MaxValue);
 
         /// <summary>
-        /// The X component of the vector.
-        /// </summary>
-        public int X;
-
-        /// <summary>
-        /// The Y component of the vector.
-        /// </summary>
-        public int Y;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Int2" /> struct.
         /// </summary>
         /// <param name="value">The value that will be assigned to all components.</param>
