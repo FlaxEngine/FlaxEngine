@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.Serialization;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
@@ -22,6 +23,7 @@ namespace FlaxEditor.Content.Settings
             navMesh.Agent.Height = 144.0f;
             navMesh.Agent.StepHeight = 35.0f;
             navMesh.Agent.MaxSlopeAngle = 60.0f;
+            navMesh.DefaultQueryExtent = new Vector3(50.0f, 250.0f, 50.0f);
 
             // Init nav areas
             NavAreas = new NavAreaProperties[2];
@@ -51,6 +53,7 @@ namespace FlaxEditor.Content.Settings
             navMesh.Agent.Height = 144.0f;
             navMesh.Agent.StepHeight = 35.0f;
             navMesh.Agent.MaxSlopeAngle = 60.0f;
+            navMesh.DefaultQueryExtent = new Vector3(50.0f, 250.0f, 50.0f);
         }
 
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
@@ -105,6 +108,23 @@ namespace FlaxEditor.Content.Settings
 
 namespace FlaxEngine
 {
+    partial struct NavMeshProperties
+    {
+        [OnDeserialized]
+        internal void OnDeserialized(StreamingContext context)
+        {
+            // [Deprecated on 07.04.2021, expires on 07.04.2022]
+            if (DefaultQueryExtent.IsZero)
+                DefaultQueryExtent = new Vector3(50.0f, 250.0f, 50.0f);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
     partial struct NavAgentProperties
     {
         /// <inheritdoc />
