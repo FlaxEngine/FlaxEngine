@@ -75,13 +75,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     borderColor = BorderColorHighlighted;
                 }
 
-                if (Input.GetKey(KeyboardKeys.Shift) && SupportsShiftModulation)
+                if (SupportsShiftModulation && Input.GetKey(KeyboardKeys.Shift))
                 {
                     backgroundColor = BackgroundColorSelected;
-                }
-                if (Input.GetKey(KeyboardKeys.Control) && SupportsShiftModulation)
-                {
-                    borderColor = BackgroundColorSelected;
                 }
 
                 // Calculate fill area
@@ -159,6 +155,55 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     Render2D.DrawRectangle(rect, style.BackgroundSelected.AlphaMultiplied(0.8f), 1.1f);
                 }
+
+                // Draw pivot point
+                if (SupportsShiftModulation && Input.GetKey(KeyboardKeys.Control))
+                {
+                    Vector2 pivotPoint;
+                    switch (_presets)
+                    {
+                    case AnchorPresets.Custom:
+                        pivotPoint = Vector2.Minimum;
+                        break;
+                    case AnchorPresets.TopLeft:
+                        pivotPoint = new Vector2(0, 0);
+                        break;
+                    case AnchorPresets.TopCenter:
+                    case AnchorPresets.HorizontalStretchTop:
+                        pivotPoint = new Vector2(rect.Width / 2, 0);
+                        break;
+                    case AnchorPresets.TopRight:
+                        pivotPoint = new Vector2(rect.Width, 0);
+                        break;
+                    case AnchorPresets.MiddleLeft:
+                    case AnchorPresets.VerticalStretchLeft:
+                        pivotPoint = new Vector2(0, rect.Height / 2);
+                        break;
+                    case AnchorPresets.MiddleCenter:
+                    case AnchorPresets.VerticalStretchCenter:
+                    case AnchorPresets.HorizontalStretchMiddle:
+                    case AnchorPresets.StretchAll:
+                        pivotPoint = new Vector2(rect.Width / 2, rect.Height / 2);
+                        break;
+                    case AnchorPresets.MiddleRight:
+                    case AnchorPresets.VerticalStretchRight:
+                        pivotPoint = new Vector2(rect.Width, rect.Height / 2);
+                        break;
+                    case AnchorPresets.BottomLeft:
+                        pivotPoint = new Vector2(0, rect.Height);
+                        break;
+                    case AnchorPresets.BottomCenter:
+                    case AnchorPresets.HorizontalStretchBottom:
+                        pivotPoint = new Vector2(rect.Width / 2, rect.Height);
+                        break;
+                    case AnchorPresets.BottomRight:
+                        pivotPoint = new Vector2(rect.Width, rect.Height);
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
+                    }
+                    var pivotPointSize = new Vector2(3.0f);
+                    Render2D.DrawRectangle(new Rectangle(pivotPoint - pivotPointSize * 0.5f, pivotPointSize), style.ProgressNormal, 1.1f);
+                }
             }
         }
 
@@ -172,8 +217,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             const float ButtonsMarginStretch = 8.0f;
             const float ButtonsSize = 32.0f;
             const float TitleHeight = 23.0f;
+            const float IntoHeight = 23.0f;
             const float DialogWidth = ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
-            const float DialogHeight = TitleHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
+            const float DialogHeight = TitleHeight + IntoHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
 
             private readonly bool _supportsShiftModulation;
 
@@ -198,9 +244,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = this
                 };
 
+                // Info
+                var info = new Label(0, title.Bottom, DialogWidth, IntoHeight)
+                {
+                    Font = new FontReference(style.FontSmall),
+                    Text = "Shift: also set bounds\nControl: also set pivot",
+                    Parent = this
+                };
+
                 // Buttons
                 var buttonsX = ButtonsMargin;
-                var buttonsY = title.Bottom + ButtonsMargin;
+                var buttonsY = info.Bottom + ButtonsMargin;
                 var buttonsSpacingX = ButtonsSize + ButtonsMargin;
                 var buttonsSpacingY = ButtonsSize + ButtonsMargin;
                 //
