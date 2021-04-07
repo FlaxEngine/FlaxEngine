@@ -491,7 +491,8 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="anchorPreset">The anchor preset to set.</param>
         /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>
-        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds)
+        /// <param name="setPivotToo">Whether or not we should set the pivot too, eg left-top 0,0, bottom-right 1,1</param>
+        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds, bool setPivotToo = false)
         {
             for (int i = 0; i < AnchorPresetsData.Length; i++)
             {
@@ -582,6 +583,10 @@ namespace FlaxEngine.GUI
                             bounds.Location += parentBounds.Location;
                         }
                         SetBounds(ref bounds);
+                    }
+                    if (setPivotToo)
+                    {
+                        Pivot = (anchorMin + anchorMax) / 2;
                     }
                     _parent?.PerformLayout();
                     return;
