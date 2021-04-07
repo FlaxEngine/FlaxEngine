@@ -12,8 +12,8 @@ static_assert(sizeof(Int3) == 12, "Invalid Int3 type size.");
 
 const Int3 Int3::Zero(0);
 const Int3 Int3::One(1);
-const Int3 Int3::Minimum(MIN_float);
-const Int3 Int3::Maximum(MAX_float);
+const Int3 Int3::Minimum(MIN_int32);
+const Int3 Int3::Maximum(MAX_int32);
 
 Int3::Int3(const Int2& xy, float z)
         : X(xy.X)

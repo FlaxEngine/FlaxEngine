@@ -12,8 +12,8 @@ static_assert(sizeof(Int2) == 8, "Invalid Int2 type size.");
 
 const Int2 Int2::Zero(0);
 const Int2 Int2::One(1);
-const Int2 Int2::Minimum(MIN_float);
-const Int2 Int2::Maximum(MAX_float);
+const Int2 Int2::Minimum(MIN_int32);
+const Int2 Int2::Maximum(MAX_int32);
 
 Int2::Int2(const Int3& xyz)
     : X(xyz.X)
