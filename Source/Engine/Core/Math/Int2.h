@@ -45,6 +45,12 @@ public:
     // Vector with all components equal 1
     static const Int2 One;
 
+    // A minimum Int2
+    static const Int2 Minimum;
+
+    // A maximum Int2
+    static const Int2 Maximum;
+
 public:
 
     /// <summary>
@@ -71,16 +77,24 @@ public:
     {
     }
 
+    // Init
+    // @param xyz Int3 to use X and Y components
     Int2(const Int3& xyz);
-    
+
+    // Init
+    // @param xyzw Int4 to use X and Y components
     Int2(const Int4& xyzw);
     
     // Init
-    // @param v Vector to use X and Y components
+    // @param xy Vector2 to use X and Y components
     explicit Int2(const Vector2& xy);
 
+    // Init
+    // @param xyz Vector3 to use X and Y components
     explicit Int2(const Vector3& xyz);
 
+    // Init
+    // @param xyzw Vector4 to use X and Y components
     explicit Int2(const Vector4& xyzw);
     
 public:
