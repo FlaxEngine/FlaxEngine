@@ -32,17 +32,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (_presets != value)
                     {
                         _presets = value;
-                        OnPresetsChanged();
+                        TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
                     }
                 }
             }
 
             public bool IsSelected;
-
-            private void OnPresetsChanged()
-            {
-                TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
-            }
 
             /// <inheritdoc />
             public override void Draw()
