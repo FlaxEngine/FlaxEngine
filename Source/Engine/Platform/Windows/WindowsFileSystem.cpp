@@ -260,7 +260,7 @@ bool WindowsFileSystem::ShowSaveFileDialog(Window* parentWindow, const StringVie
     of.lpstrFilter = filter.HasChars() ? filter.Get() : nullptr;
     of.lpstrFile = fileNamesBuffer.Get();
     of.nMaxFile = maxFilenamesSize;
-    of.Flags = OFN_EXPLORER | OFN_ENABLESIZING;
+    of.Flags = OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT;
     of.lpstrTitle = title.HasChars() ? title.Get() : nullptr;
     of.lpstrInitialDir = initialDirectory.HasChars() ? initialDirectory.Get() : nullptr;
     if (parentWindow)

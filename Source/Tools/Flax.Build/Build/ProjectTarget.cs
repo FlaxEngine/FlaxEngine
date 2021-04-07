@@ -45,7 +45,7 @@ namespace Flax.Build
                     throw new Exception($"Invalid or missing editor target {project.EditorTarget} specified in project {project.Name} (referenced by project {Project.Name}).");
                 return result;
             }
-            if (!IsEditor && !string.IsNullOrEmpty(project.GameTarget))
+            if (!string.IsNullOrEmpty(project.GameTarget))
             {
                 var result = projectTargets.FirstOrDefault(x => x.Name == project.GameTarget);
                 if (result == null)

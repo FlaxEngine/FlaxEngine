@@ -101,7 +101,7 @@ namespace Flax.Build
             }
 
             // Mono on Linux is using dynamic linking and needs additional link files
-            if (buildOptions.Platform.Target == TargetPlatform.Linux && Platform.BuildTargetPlatform == TargetPlatform.Linux)
+            if (buildOptions.Platform.Target == TargetPlatform.Linux && Platform.BuildTargetPlatform == TargetPlatform.Linux && !IsPreBuilt)
             {
                 var task = graph.Add<Task>();
                 task.PrerequisiteFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so"));
@@ -141,7 +141,7 @@ namespace Flax.Build
             // Build Main module
             var mainModule = rules.GetModule("Main");
             var mainModuleOutputPath = Path.Combine(exeBuildOptions.IntermediateFolder, mainModule.Name);
-            if (!IsPreBuilt && !Directory.Exists(mainModuleOutputPath))
+            if (!Directory.Exists(mainModuleOutputPath))
                 Directory.CreateDirectory(mainModuleOutputPath);
             var mainModuleOptions = new BuildOptions
             {
