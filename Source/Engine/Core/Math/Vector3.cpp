@@ -6,7 +6,9 @@
 #include "Color.h"
 #include "Quaternion.h"
 #include "Matrix.h"
+#include "Int2.h"
 #include "Int3.h"
+#include "Int4.h"
 #include "../Types/String.h"
 
 static_assert(sizeof(Vector3) == 12, "Invalid Vector3 type size.");
@@ -40,10 +42,24 @@ Vector3::Vector3(const Vector2& xy)
 {
 }
 
+Vector3::Vector3(const Int2& xy, float z)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+    , Z(static_cast<float>(z))
+{
+}
+
 Vector3::Vector3(const Int3& xyz)
-    : X((float)xyz.X)
-    , Y((float)xyz.Y)
-    , Z((float)xyz.Z)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+    , Z(static_cast<float>(xyz.Z))
+{
+}
+
+Vector3::Vector3(const Int4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.Z))
 {
 }
 
