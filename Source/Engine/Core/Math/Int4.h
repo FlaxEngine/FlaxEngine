@@ -133,21 +133,35 @@ public:
         return Math::Max(X, Y, Z, W);
     }
 
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int4 Max(const Int4& a, const Int4& b)
     {
         return Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
     }
 
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int4 Min(const Int4& a, const Int4& b)
     {
         return Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
     }
 
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
     static void Max(const Int4& a, const Int4& b, Int4* result)
     {
         *result = Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
     }
-   
+
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
     static void Min(const Int4& a, const Int4& b, Int4* result)
     {
         *result = Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
