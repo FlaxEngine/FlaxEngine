@@ -149,7 +149,7 @@ public:
 
     Int4 operator-() const
     {
-        return Int4(-X, -Y);
+        return Int4(-X, -Y, -Z, -W);
     }
 
     // op= operators with Int2
@@ -336,7 +336,7 @@ public:
     /// <returns> True if the vector is one, otherwise false.</returns>
     bool IsOne() const
     {
-        return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
+        return X == 1 && Y == 1 && Z == 1 && W == 1;
     }
     
     /// <summary>
@@ -382,33 +382,6 @@ public:
     int32 MaxValue() const
     {
         return Math::Max(X, Y, Z, W);
-    }
-
-    /// <summary>
-    /// Returns true if vector has one or more components is not a number (NaN)
-    /// </summary>
-    /// <returns>True if one or more components is not a number (NaN)</returns>
-    bool IsNaN() const
-    {
-        return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
-    }
-
-    /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity
-    /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity</returns>
-    bool IsInfinity() const
-    {
-        return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
-    }
-
-    /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity or NaN
-    /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
-    bool IsNanOrInfinity() const
-    {
-        return IsInfinity() || IsNaN();
     }
     
     // Returns a vector containing the largest components of the specified vectors

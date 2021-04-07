@@ -156,9 +156,9 @@ public:
     {
         StartObject();
         JKEY("X");
-        Float(value.X);
+        Int(value.X);
         JKEY("Y");
-        Float(value.Y);
+        Int(value.Y);
         EndObject();
     }
 
@@ -166,11 +166,11 @@ public:
     {
         StartObject();
         JKEY("X");
-        Float(value.X);
+        Int(value.X);
         JKEY("Y");
-        Float(value.Y);
+        Int(value.Y);
         JKEY("Z");
-        Float(value.Z);
+        Int(value.Z);
         EndObject();
     }
 
@@ -178,13 +178,13 @@ public:
     {
         StartObject();
         JKEY("X");
-        Float(value.X);
+        Int(value.X);
         JKEY("Y");
-        Float(value.Y);
+        Int(value.Y);
         JKEY("Z");
-        Float(value.Z);
+        Int(value.Z);
         JKEY("W");
-        Float(value.W);
+        Int(value.W);
         EndObject();
     }
     
