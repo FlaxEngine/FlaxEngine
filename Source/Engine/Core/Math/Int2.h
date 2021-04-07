@@ -270,6 +270,105 @@ public:
         return Int2(a.X / b, a.Y / b);
     }
 
+    /// <summary>
+    /// Gets a value indicting whether this vector is zero.
+    /// </summary>
+    /// <returns> True if the vector is zero, otherwise false.</returns>
+    bool IsZero() const
+    {
+        return X == 0 && Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether any vector component is zero.
+    /// </summary>
+    /// <returns> True if a component is zero, otherwise false.</returns>
+    bool IsAnyZero() const
+    {
+        return X == 0 || Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is one.
+    /// </summary>
+    /// <returns> True if the vector is one, otherwise false.</returns>
+    bool IsOne() const
+    {
+        return Math::IsOne(X) && Math::IsOne(Y);
+    }
+    
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector
+    /// </summary>
+    /// <returns>Negative vector</returns>
+    Int2 GetNegative() const
+    {
+        return Int2(-X, -Y);
+    }
+    
+    /// <summary>
+    /// Returns average arithmetic of all the components
+    /// </summary>
+    /// <returns>Average arithmetic of all the components</returns>
+    float AverageArithmetic() const
+    {
+        return (X + Y) * 0.5f;
+    }
+
+    /// <summary>
+    /// Gets sum of all vector components values
+    /// </summary>
+    /// <returns>Sum of X, Y, Z and W</returns>
+    int32 SumValues() const
+    {
+        return X + Y;
+    }
+
+    /// <summary>
+    /// Returns minimum value of all the components
+    /// </summary>
+    /// <returns>Minimum value</returns>
+    int32 MinValue() const
+    {
+        return Math::Min(X, Y);
+    }
+
+    /// <summary>
+    /// Returns maximum value of all the components
+    /// </summary>
+    /// <returns>Maximum value</returns>
+    int32 MaxValue() const
+    {
+        return Math::Max(X, Y);
+    }
+
+    /// <summary>
+    /// Returns true if vector has one or more components is not a number (NaN)
+    /// </summary>
+    /// <returns>True if one or more components is not a number (NaN)</returns>
+    bool IsNaN() const
+    {
+        return isnan(X) || isnan(Y);
+    }
+
+    /// <summary>
+    /// Returns true if vector has one or more components equal to +/- infinity
+    /// </summary>
+    /// <returns>True if one or more components equal to +/- infinity</returns>
+    bool IsInfinity() const
+    {
+        return isinf(X) || isinf(Y);
+    }
+
+    /// <summary>
+    /// Returns true if vector has one or more components equal to +/- infinity or NaN
+    /// </summary>
+    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
+    bool IsNanOrInfinity() const
+    {
+        return IsInfinity() || IsNaN();
+    }
+    
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
