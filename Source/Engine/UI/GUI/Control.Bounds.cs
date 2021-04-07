@@ -27,6 +27,26 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets the local X coordinate of the pivot of the control relative to the anchor in parent of its container.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public float LocalX
+        {
+            get => LocalLocation.X;
+            set => LocalLocation = new Vector2(value, LocalLocation.Y);
+        }
+
+        /// <summary>
+        /// Gets or sets the local Y coordinate of the pivot of the control relative to the anchor in parent of its container.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public float LocalY
+        {
+            get => LocalLocation.Y;
+            set => LocalLocation = new Vector2(LocalLocation.X, value);
+        }
+
+        /// <summary>
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
         [Serialize]
@@ -135,6 +155,17 @@ namespace FlaxEngine.GUI
         {
             get => _bounds.Location;
             set => Bounds = new Rectangle(value, _bounds.Size);
+        }
+
+        /// <summary>
+        /// The local position of the pivot of the control relative to the anchor in parent of its container.
+        /// </summary>
+        [NoSerialize]
+        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(1000), Tooltip("The local position of the pivot of the control relative to the anchor in parent of its container.")]
+        public Vector2 LocalLocation
+        {
+            get => _bounds.Location - (Parent.Size * (AnchorMax + AnchorMin) / 2) + Size * Pivot;
+            set => Bounds = new Rectangle(value + (Parent.Size * (AnchorMax + AnchorMin) / 2) - Size * Pivot, _bounds.Size);
         }
 
         /// <summary>
