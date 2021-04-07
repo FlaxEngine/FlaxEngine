@@ -8,6 +8,8 @@
 #include "Vector4.h"
 #include "Engine/Core/Types/String.h"
 
+static_assert(sizeof(Int2) == 8, "Invalid Int2 type size.");
+
 const Int2 Int2::Zero(0);
 const Int2 Int2::One(1);
 const Int2 Int2::Minimum(MIN_float);
