@@ -13,7 +13,7 @@ struct Vector4;
 /// <summary>
 /// Four-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int4
+API_STRUCT() struct FLAXENGINE_API Int4
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(Int4);
 public:
@@ -79,21 +79,9 @@ public:
     {
     }
 
-    Int4::Int4(const Int2& xy, float z, float w)
-        : X(xy.X)
-        , Y(xy.Y)
-        , Z(z)
-        , W(w)
-    {
-    }
+    Int4(const Int2& xy, float z, float w);
 
-    Int4::Int4(const Int3& xyz, float w)
-        : X(xyz.X)
-        , Y(xyz.Y)
-        , Z(xyz.Z)
-        , W(w)
-    {
-    }
+    Int4(const Int3& xyz, float w);
 
     explicit Int4(const Vector2& v, float z, float w);
 
@@ -143,6 +131,26 @@ public:
     int32 MaxValue() const
     {
         return Math::Max(X, Y, Z, W);
+    }
+
+    static Int4 Max(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
+    }
+
+    static Int4 Min(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
+    }
+
+    static void Max(const Int4& a, const Int4& b, Int4* result)
+    {
+        *result = Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
+    }
+   
+    static void Min(const Int4& a, const Int4& b, Int4* result)
+    {
+        *result = Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
     }
 };
 
