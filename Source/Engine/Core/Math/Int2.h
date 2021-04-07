@@ -13,8 +13,9 @@ struct Vector4;
 /// <summary>
 /// Two-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int2
+API_STRUCT() struct FLAXENGINE_API Int2
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int2);
 public:
 
     union
@@ -66,10 +67,18 @@ public:
     {
     }
 
+    Int2(const Int3& xyz);
+    
+    Int2(const Int4& xyzw);
+    
     // Init
     // @param v Vector to use X and Y components
-    explicit Int2(const Vector2& v);
+    explicit Int2(const Vector2& xy);
 
+    explicit Int2(const Vector3& xyz);
+
+    explicit Int2(const Vector4& xyzw);
+    
 public:
 
     String ToString() const;
@@ -267,6 +276,18 @@ public:
     static Int2 Max(const Int2& a, const Int2& b)
     {
         return Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+    }
+
+    // Creates vector from minimum components of two vectors
+    static void Min(const Int2& a, const Int2& b, Int2* result)
+    {
+        *result = Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+    }
+
+    // Creates vector from maximum components of two vectors
+    static void Max(const Int2& a, const Int2& b, Int2* result)
+    {
+        *result = Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 };
 
