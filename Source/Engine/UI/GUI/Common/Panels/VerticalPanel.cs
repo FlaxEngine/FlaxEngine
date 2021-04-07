@@ -46,6 +46,9 @@ namespace FlaxEngine.GUI
                 if (c.Visible)
                 {
                     var h = c.Height;
+                    if (_controlChildSize)
+                        h = Height / _children.Count;
+
                     if (Mathf.IsZero(c.AnchorMin.Y) && Mathf.IsZero(c.AnchorMax.Y))
                     {
                         c.Bounds = new Rectangle(_margin.Left + _offset.X, top + _offset.Y, w, h);
