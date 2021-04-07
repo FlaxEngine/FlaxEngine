@@ -10,6 +10,8 @@
 
 const Int4 Int4::Zero(0);
 const Int4 Int4::One(1);
+const Int4 Int4::Minimum(MIN_float);
+const Int4 Int4::Maximum(MAX_float);
 
 Int4::Int4(const Int2& xy, float z, float w)
         : X(xy.X)
