@@ -8,6 +8,9 @@
 
 struct Vector3;
 struct Vector4;
+struct Int2;
+struct Int3;
+struct Int4;
 struct Color;
 struct Matrix;
 
@@ -85,11 +88,19 @@ public:
     }
 
     // Init
-    // @param v Vector to use X and Y components
+    // @param v Int2 to use X and Y components
     explicit Vector2(const Int2& v);
 
     // Init
-    // @param v Vector to use X and Y components
+    // @param v Int3 to use X and Y components
+    explicit Vector2(const Int3& v);
+
+    // Init
+    // @param v Int4 to use X and Y components
+    explicit Vector2(const Int4& v);
+    
+    // Init
+    // @param v Vector3 to use X and Y components
     explicit Vector2(const Vector3& v);
 
     // Init
