@@ -319,7 +319,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (parentValue is Control parentControl)
                     {
-                        parentControl.SetAnchorPreset((AnchorPresets)value, centerToPosition, setPivot);
+                        parentControl.SetAnchorPreset((AnchorPresets)value, !centerToPosition, setPivot);
                         editedAny = true;
                     }
                 }

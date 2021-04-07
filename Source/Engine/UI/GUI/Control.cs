@@ -193,7 +193,7 @@ namespace FlaxEngine.GUI
                 }
                 return result;
             }
-            set => SetAnchorPreset(value, true, false);
+            set => SetAnchorPreset(value, false);
         }
 
         /// <summary>

@@ -490,9 +490,9 @@ namespace FlaxEngine.GUI
         /// Sets the anchor preset for the control. Can be use to auto-place the control for a given preset or can preserve the current control bounds.
         /// </summary>
         /// <param name="anchorPreset">The anchor preset to set.</param>
-        /// <param name="centerToPosition">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>
-        /// <param name="setPivotToo">True if pivot should be set too</param>
-        public void SetAnchorPreset(AnchorPresets anchorPreset, bool centerToPosition, bool setPivotToo)
+        /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>
+        /// <param name="setPivotToo">Whether or not we should set the pivot too, eg left-top 0,0, bottom-right 1,1</param>
+        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds, bool setPivotToo = false)
         {
             for (int i = 0; i < AnchorPresetsData.Length; i++)
             {
@@ -510,13 +510,13 @@ namespace FlaxEngine.GUI
 
                         _anchorMin = anchorMin;
                         _anchorMax = anchorMax;
-                        if (!centerToPosition)
+                        if (preserveBounds)
                         {
                             UpdateBounds();
                             Bounds = bounds;
                         }
                     }
-                    if (centerToPosition)
+                    if (!preserveBounds)
                     {
                         if (_parent != null)
                         {
