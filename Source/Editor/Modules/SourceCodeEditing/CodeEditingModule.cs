@@ -178,7 +178,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// <summary>
         /// The control types collection (for game UI).
         /// </summary>
-        public readonly CachedTypesCollection Controls = new CachedTypesCollection(64, new ScriptType(typeof(Control)), IsTypeValidScriptingTypeControls, HasAssemblyValidScriptingTypes);
+        public readonly CachedTypesCollection Controls = new CachedTypesCollection(64, new ScriptType(typeof(ContainerControl)), IsTypeValidScriptingTypeControls, HasAssemblyValidScriptingTypes);
 
         /// <summary>
         /// The Animation Graph custom nodes collection.
