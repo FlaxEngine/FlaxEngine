@@ -119,6 +119,229 @@ public:
 
 public:
 
+    // Arithmetic operators with Int2
+
+    Int4 operator+(const Int4& b) const
+    {
+        return Add(*this, b);
+    }
+
+    Int4 operator-(const Int4& b) const
+    {
+        return Subtract(*this, b);
+    }
+
+    Int4 operator*(const Int4& b) const
+    {
+        return Multiply(*this, b);
+    }
+
+    Int4 operator/(const Int4& b) const
+    {
+        return Divide(*this, b);
+    }
+
+    Int4 operator-() const
+    {
+        return Int4(-X, -Y);
+    }
+
+    // op= operators with Int2
+
+    Int4& operator+=(const Int4& b)
+    {
+        *this = Add(*this, b);
+        return *this;
+    }
+
+    Int4& operator-=(const Int4& b)
+    {
+        *this = Subtract(*this, b);
+        return *this;
+    }
+
+    Int4& operator*=(const Int4& b)
+    {
+        *this = Multiply(*this, b);
+        return *this;
+    }
+
+    Int4& operator/=(const Int4& b)
+    {
+        *this = Divide(*this, b);
+        return *this;
+    }
+
+    // Arithmetic operators with int32
+
+    Int4 operator+(int32 b) const
+    {
+        return Add(*this, b);
+    }
+
+    Int4 operator-(int32 b) const
+    {
+        return Subtract(*this, b);
+    }
+
+    Int4 operator*(int32 b) const
+    {
+        return Multiply(*this, b);
+    }
+
+    Int4 operator/(int32 b) const
+    {
+        return Divide(*this, b);
+    }
+
+    // op= operators with int32
+
+    Int4& operator+=(int32 b)
+    {
+        *this = Add(*this, b);
+        return *this;
+    }
+
+    Int4& operator-=(int32 b)
+    {
+        *this = Subtract(*this, b);
+        return *this;
+    }
+
+    Int4& operator*=(int32 b)
+    {
+        *this = Multiply(*this, b);
+        return *this;
+    }
+
+    Int4& operator/=(int32 b)
+    {
+        *this = Divide(*this, b);
+        return *this;
+    }
+
+    // Comparison operators
+
+    bool operator==(const Int4& b) const
+    {
+        return X == b.X && Y == b.Y;
+    }
+
+    bool operator!=(const Int4& b) const
+    {
+        return X != b.X || Y != b.Y;
+    }
+
+    bool operator>(const Int4& b) const
+    {
+        return X > b.X && Y > b.Y;
+    }
+
+    bool operator>=(const Int4& b) const
+    {
+        return X >= b.X && Y >= b.Y;
+    }
+
+    bool operator<(const Int4& b) const
+    {
+        return X < b.X && Y < b.Y;
+    }
+
+    bool operator<=(const Int4& b) const
+    {
+        return X <= b.X && Y <= b.Y;
+    }
+
+public:
+
+    static void Add(const Int4& a, const Int4& b, Int4* result)
+    {
+        result->X = a.X + b.X;
+        result->Y = a.Y + b.Y;
+        result->Z = a.Z + b.Z;
+        result->W = a.W + b.W;
+    }
+
+    static Int4 Add(const Int4& a, const Int4& b)
+    {
+        Int4 result;
+        Add(a, b, &result);
+        return result;
+    }
+
+    static void Subtract(const Int4& a, const Int4& b, Int4* result)
+    {
+        result->X = a.X - b.X;
+        result->Y = a.Y - b.Y;
+        result->Z = a.Z - b.Z;
+        result->W = a.W - b.W;
+    }
+
+    static Int4 Subtract(const Int4& a, const Int4& b)
+    {
+        Int4 result;
+        Subtract(a, b, &result);
+        return result;
+    }
+
+    static Int4 Multiply(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
+    }
+
+    static Int4 Multiply(const Int4& a, int32 b)
+    {
+        return Int4(a.X * b, a.Y * b, a.Z * b, a.W * b);
+    }
+
+    static Int4 Divide(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
+    }
+
+    static Int4 Divide(const Int4& a, int32 b)
+    {
+        return Int4(a.X / b, a.Y / b, a.Z / b, a.Y / b);
+    }
+    
+public:
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is zero.
+    /// </summary>
+    /// <returns> True if the vector is zero, otherwise false.</returns>
+    bool IsZero() const
+    {
+        return X == 0 && Y == 0 && Z == 0 && W == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether any vector component is zero.
+    /// </summary>
+    /// <returns> True if a component is zero, otherwise false.</returns>
+    bool IsAnyZero() const
+    {
+        return X == 0 || Y == 0 || Z == 0 || W == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is one.
+    /// </summary>
+    /// <returns> True if the vector is one, otherwise false.</returns>
+    bool IsOne() const
+    {
+        return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
+    }
+    
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector
+    /// </summary>
+    /// <returns>Negative vector</returns>
+    Int4 GetNegative() const
+    {
+        return Int4(-X, -Y, -Z, -W);
+    }
+    
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
@@ -155,6 +378,33 @@ public:
         return Math::Max(X, Y, Z, W);
     }
 
+    /// <summary>
+    /// Returns true if vector has one or more components is not a number (NaN)
+    /// </summary>
+    /// <returns>True if one or more components is not a number (NaN)</returns>
+    bool IsNaN() const
+    {
+        return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
+    }
+
+    /// <summary>
+    /// Returns true if vector has one or more components equal to +/- infinity
+    /// </summary>
+    /// <returns>True if one or more components equal to +/- infinity</returns>
+    bool IsInfinity() const
+    {
+        return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
+    }
+
+    /// <summary>
+    /// Returns true if vector has one or more components equal to +/- infinity or NaN
+    /// </summary>
+    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
+    bool IsNanOrInfinity() const
+    {
+        return IsInfinity() || IsNaN();
+    }
+    
     // Returns a vector containing the largest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
