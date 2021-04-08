@@ -83,9 +83,27 @@ public:
     }
 
     // Init
-    // @param v Vector to use X, Y and Z components
-    explicit Int3(const Vector3& v);
+    // @param v Int2 to use X and Y components
+    // @param z Z component value
+    Int3(const Int2& xy, int32 z);
 
+    // Init
+    // @param v Int4 to use X and Y components
+    Int3(const Int4& xyzw);
+
+    // Init
+    // @param v Vector2 to use X and Y components
+    // @param z Z component value
+    explicit Int3(const Vector2& xy, int32 z);
+    
+    // Init
+    // @param v Vector3 to use X, Y and Z components
+    explicit Int3(const Vector3& xyz);
+
+    // Init
+    // @param v Vector4 to use X and Y components
+    explicit Int3(const Vector4& xyzw);
+    
 public:
 
     String ToString() const;
