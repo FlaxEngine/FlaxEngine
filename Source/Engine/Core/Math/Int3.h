@@ -370,7 +370,6 @@ public:
     // Returns a vector containing the largest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
     static Int3 Max(const Int3& a, const Int3& b)
     {
         return Int3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
@@ -379,7 +378,6 @@ public:
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
     static Int3 Min(const Int3& a, const Int3& b)
     {
         return Int3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
@@ -389,18 +387,18 @@ public:
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
-    static void Max(const Int3& a, const Int3& b, Int3* result)
+    static void Max(const Int3& a, const Int3& b, Int3& result)
     {
-        *result = Int3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
+        result = Int3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
-    static void Min(const Int3& a, const Int3& b, Int3* result)
+    static void Min(const Int3& a, const Int3& b, Int3 result)
     {
-        *result = Int3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
+        result = Int3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 };
 
