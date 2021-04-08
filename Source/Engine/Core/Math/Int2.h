@@ -280,7 +280,82 @@ public:
         return Int2(a.X / b, a.Y / b);
     }
 
-    // Creates vector from minimum components of two vectors
+    /// <summary>
+    /// Gets a value indicting whether this vector is zero.
+    /// </summary>
+    /// <returns> True if the vector is zero, otherwise false.</returns>
+    bool IsZero() const
+    {
+        return X == 0 && Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether any vector component is zero.
+    /// </summary>
+    /// <returns> True if a component is zero, otherwise false.</returns>
+    bool IsAnyZero() const
+    {
+        return X == 0 || Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is one.
+    /// </summary>
+    /// <returns> True if the vector is one, otherwise false.</returns>
+    bool IsOne() const
+    {
+        return X == 1 && Y == 1;
+    }
+    
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector
+    /// </summary>
+    /// <returns>Negative vector</returns>
+    Int2 GetNegative() const
+    {
+        return Int2(-X, -Y);
+    }
+    
+    /// <summary>
+    /// Returns average arithmetic of all the components
+    /// </summary>
+    /// <returns>Average arithmetic of all the components</returns>
+    float AverageArithmetic() const
+    {
+        return (X + Y) * 0.5f;
+    }
+
+    /// <summary>
+    /// Gets sum of all vector components values
+    /// </summary>
+    /// <returns>Sum of X, Y, Z and W</returns>
+    int32 SumValues() const
+    {
+        return X + Y;
+    }
+
+    /// <summary>
+    /// Returns minimum value of all the components
+    /// </summary>
+    /// <returns>Minimum value</returns>
+    int32 MinValue() const
+    {
+        return Math::Min(X, Y);
+    }
+
+    /// <summary>
+    /// Returns maximum value of all the components
+    /// </summary>
+    /// <returns>Maximum value</returns>
+    int32 MaxValue() const
+    {
+        return Math::Max(X, Y);
+    }
+
+    
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int2 Min(const Int2& a, const Int2& b)
     {
         return Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
