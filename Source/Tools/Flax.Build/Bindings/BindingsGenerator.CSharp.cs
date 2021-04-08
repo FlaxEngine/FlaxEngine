@@ -50,10 +50,28 @@ namespace Flax.Build.Bindings
             { "MonoArray", "Array" },
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, bool attribute = false)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
+
+            // Special case for Engine TEXT macro
+            if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
+                return value.Substring(5, value.Length - 6);
+
+            if (attribute)
+            {
+                // Value constructors (eg. Vector2(1, 2))
+                // TODO: support value constructors for default value attribute
+                if (value.Contains('(') && value.Contains(')'))
+                    return null;
+
+                // Constants (eg. Vector2::Zero) 
+                // TODO: support constants for default value attribute
+                if (value.Contains("::"))
+                    return null;
+            }
+
             value = value.Replace("::", ".");
 
             // Skip constants unsupported in C#
@@ -65,10 +83,6 @@ namespace Flax.Build.Bindings
                 if (apiType != null && apiType.IsStruct)
                     return null;
             }
-
-            // Special case for Engine TEXT macro
-            if (value.Contains("TEXT(\""))
-                return value.Replace("TEXT(\"", "(\"");
 
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
@@ -394,26 +408,6 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static bool IsDefaultValueSupported(string value)
-        {
-            // TEXT macro (eg. TEXT("text"))
-            // TODO: support string for default value attribute
-            if (value.Contains("TEXT(\""))
-                return false;
-
-            // Value constructors (eg. Vector2(1, 2))
-            // TODO: support value constructors for default value attribute
-            if (value.Contains('(') && value.Contains(')'))
-                return false;
-
-            // Constants (eg. Vector2::Zero)
-            // TODO: support constants for default value attribute
-            if (value.Contains("::"))
-                return false;
-
-            return true;
-        }
-
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null)
         {
             var writeTooltip = true;
@@ -453,11 +447,12 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).Append("[Tooltip(\"").Append(tooltip).Append("\")]").AppendLine();
                 }
             }
-            if (!string.IsNullOrEmpty(defaultValue) && writeDefaultValue && IsDefaultValueSupported(defaultValue))
+            if (writeDefaultValue)
             {
                 // Write default value attribute
-                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo);
-                contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
+                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo, true);
+                if (defaultValue != null)
+                    contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
         }
 
@@ -647,12 +642,9 @@ namespace Flax.Build.Bindings
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
                 if (!useUnmanaged)
                 {
-                    if (fieldInfo.DefaultValue != null)
-                    {
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
-                        if (!string.IsNullOrEmpty(defaultValue))
-                            contents.Append(" = ").Append(defaultValue);
-                    }
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
                     continue;
                 }
@@ -778,12 +770,9 @@ namespace Flax.Build.Bindings
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
 
-                        if (parameterInfo.DefaultValue != null)
-                        {
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
-                            if (!string.IsNullOrEmpty(defaultValue))
-                                contents.Append(" = ").Append(defaultValue);
-                        }
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                        if (!string.IsNullOrEmpty(defaultValue))
+                            contents.Append(" = ").Append(defaultValue);
                     }
 
                     contents.Append(')').AppendLine().AppendLine(indent + "{");
