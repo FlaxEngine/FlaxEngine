@@ -13,22 +13,29 @@ struct Vector4;
 /// <summary>
 /// Three-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int3
+API_STRUCT() struct FLAXENGINE_API Int3
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int3);
 public:
 
     union
     {
         struct
         {
-            // X component
-            int32 X;
+            /// <summary>
+            /// The X component.
+            /// </summary>
+            API_FIELD() int32 X;
 
-            // Y component
-            int32 Y;
+            /// <summary>
+            /// The Y component.
+            /// </summary>
+            API_FIELD() int32 Y;
 
-            // Y component
-            int32 Z;
+            /// <summary>
+            /// The Z component.
+            /// </summary>
+            API_FIELD() int32 Z;
         };
 
         // Raw values
