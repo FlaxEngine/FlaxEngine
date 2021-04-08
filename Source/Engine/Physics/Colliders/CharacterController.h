@@ -143,14 +143,15 @@ public:
     API_PROPERTY() void SetStepOffset(float value);
 
     /// <summary>
+    /// Gets the character up vector.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(240), DefaultValue(true), EditorDisplay(\"Character Controller\")")
+    Vector3 GetUpDirection() const;
+    
+    /// <summary>
     /// Sets the character up vector.
     /// </summary>
     API_PROPERTY() void SetUpDirection(const Vector3& up);
-
-    /// <summary>
-    /// Gets the character up vector.
-    /// </summary>
-    API_PROPERTY() Vector3 GetUpDirection() const;
     
     /// <summary>
     /// Gets the minimum move distance of the character controller. The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.

@@ -92,7 +92,7 @@ void CharacterController::SetUpDirection(const Vector3& up)
 
 Vector3 CharacterController::GetUpDirection() const
 {
-    return _controller ? P2C(_controller->getUpDirection()) : Vector3::Up;
+    return _controller ? P2C(_controller->getUpDirection()) : _upDirection;
 }
 
 void CharacterController::SetMinMoveDistance(float value)
