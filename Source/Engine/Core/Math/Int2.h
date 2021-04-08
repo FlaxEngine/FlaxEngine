@@ -234,29 +234,29 @@ public:
 
 public:
 
-    static void Add(const Int2& a, const Int2& b, Int2* result)
+    static void Add(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X + b.X;
-        result->Y = a.Y + b.Y;
+        result.X = a.X + b.X;
+        result.Y = a.Y + b.Y;
     }
 
     static Int2 Add(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Add(a, b, &result);
+        Add(a, b, result);
         return result;
     }
 
-    static void Subtract(const Int2& a, const Int2& b, Int2* result)
+    static void Subtract(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X - b.X;
-        result->Y = a.Y - b.Y;
+        result.X = a.X - b.X;
+        result.Y = a.Y - b.Y;
     }
 
     static Int2 Subtract(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Subtract(a, b, &result);
+        Subtract(a, b, result);
         return result;
     }
 
@@ -373,18 +373,18 @@ public:
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
-    static void Min(const Int2& a, const Int2& b, Int2* result)
+    static void Min(const Int2& a, const Int2& b, Int2& result)
     {
-        *result = Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+        result = Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
     }
 
     // Returns a vector containing the largest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
-    static void Max(const Int2& a, const Int2& b, Int2* result)
+    static void Max(const Int2& a, const Int2& b, Int2& result)
     {
-        *result = Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+        result = Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 };
 
