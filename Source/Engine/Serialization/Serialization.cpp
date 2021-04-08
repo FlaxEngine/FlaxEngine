@@ -463,6 +463,51 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector
     v.W = mW != stream.MemberEnd() ? mW->value.GetFloat() : 0.0f;
 }
 
+bool Serialization::ShouldSerialize(const Int2& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int2*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int2& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+}
+
+bool Serialization::ShouldSerialize(const Int3& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int3*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int3& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetInt() : 0;
+}
+
+bool Serialization::ShouldSerialize(const Int4& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int4*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int4& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    const auto mW = SERIALIZE_FIND_MEMBER(stream, "W");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetInt() : 0;
+    v.W = mW != stream.MemberEnd() ? mW->value.GetInt() : 0;
+}
+
 bool Serialization::ShouldSerialize(const Quaternion& v, const void* otherObj)
 {
     return !otherObj || !Quaternion::NearEqual(v, *(Quaternion*)otherObj, SERIALIZE_EPSILON);
