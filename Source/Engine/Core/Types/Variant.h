@@ -202,6 +202,9 @@ public:
     Variant(const Vector2& v);
     Variant(const Vector3& v);
     Variant(const Vector4& v);
+    Variant(const Int2& v);
+    Variant(const Int3& v);
+    Variant(const Int4& v);
     Variant(const Color& v);
     Variant(const Quaternion& v);
     Variant(const BoundingSphere& v);

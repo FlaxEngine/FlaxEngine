@@ -11,6 +11,9 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Matrix.h"
@@ -549,6 +552,24 @@ Variant::Variant(const Vector4& v)
     : Type(VariantType::Vector4)
 {
     *(Vector4*)AsData = v;
+}
+
+Variant::Variant(const Int2& v)
+    : Type(VariantType::Int2)
+{
+    *(Int2*)AsData = v;
+}
+
+Variant::Variant(const Int3& v)
+    : Type(VariantType::Int3)
+{
+    *(Int3*)AsData = v;
+}
+
+Variant::Variant(const Int4& v)
+    : Type(VariantType::Int4)
+{
+    *(Int4*)AsData = v;
 }
 
 Variant::Variant(const Color& v)
