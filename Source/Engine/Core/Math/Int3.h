@@ -245,31 +245,31 @@ public:
 
 public:
 
-    static void Add(const Int3& a, const Int3& b, Int3* result)
+    static void Add(const Int3& a, const Int3& b, Int3& result)
     {
-        result->X = a.X + b.X;
-        result->Y = a.Y + b.Y;
-        result->Z = a.Z + b.Z;
+        result.X = a.X + b.X;
+        result.Y = a.Y + b.Y;
+        result.Z = a.Z + b.Z;
     }
 
     static Int3 Add(const Int3& a, const Int3& b)
     {
         Int3 result;
-        Add(a, b, &result);
+        Add(a, b, result);
         return result;
     }
 
-    static void Subtract(const Int3& a, const Int3& b, Int3* result)
+    static void Subtract(const Int3& a, const Int3& b, Int3& result)
     {
-        result->X = a.X - b.X;
-        result->Y = a.Y - b.Y;
-        result->Z = a.Z - b.Z;
+        result.X = a.X - b.X;
+        result.Y = a.Y - b.Y;
+        result.Z = a.Z - b.Z;
     }
 
     static Int3 Subtract(const Int3& a, const Int3& b)
     {
         Int3 result;
-        Subtract(a, b, &result);
+        Subtract(a, b, result);
         return result;
     }
 
@@ -387,18 +387,18 @@ public:
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
-    static void Max(const Int3& a, const Int3& b, Int3* result)
+    static void Max(const Int3& a, const Int3& b, Int3& result)
     {
-        *result = Int3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
+        result = Int3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
     // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
-    static void Min(const Int3& a, const Int3& b, Int3* result)
+    static void Min(const Int3& a, const Int3& b, Int3 result)
     {
-        *result = Int3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
+        result = Int3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 };
 

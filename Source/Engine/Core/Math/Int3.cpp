@@ -16,9 +16,9 @@ const Int3 Int3::Minimum(MIN_int32);
 const Int3 Int3::Maximum(MAX_int32);
 
 Int3::Int3(const Int2& xy, float z)
-        : X(xy.X)
-        , Y(xy.Y)
-        , Z(static_cast<int32>(z))
+    : X(xy.X)
+    , Y(xy.Y)
+    , Z(static_cast<int32>(z))
 {
 }
 
