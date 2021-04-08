@@ -925,6 +925,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector2: return stream.ReadVector2();
             case VariantType.Vector3: return stream.ReadVector3();
             case VariantType.Vector4: return stream.ReadVector4();
+            case VariantType.Int2: return stream.ReadInt2();
+            case VariantType.Int3: return stream.ReadInt3();
+            case VariantType.Int4: return stream.ReadInt4();
             case VariantType.Color: return stream.ReadColor();
             case VariantType.Guid: return stream.ReadGuid();
             case VariantType.BoundingBox: return stream.ReadBoundingBox();
