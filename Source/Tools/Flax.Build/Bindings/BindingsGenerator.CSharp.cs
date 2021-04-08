@@ -59,20 +59,42 @@ namespace Flax.Build.Bindings
             if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
                 return value.Substring(5, value.Length - 6);
 
+            value = value.Replace("::", ".");
+
             if (attribute)
             {
                 // Value constructors (eg. Vector2(1, 2))
-                // TODO: support value constructors for default value attribute
                 if (value.Contains('(') && value.Contains(')'))
-                    return null;
+                {
+                    // Support for in-built types
+                    if (value.StartsWith("Vector2("))
+                        return $"typeof(Vector2), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    if (value.StartsWith("Vector3("))
+                        return $"typeof(Vector3), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    if (value.StartsWith("Vector4("))
+                        return $"typeof(Vector4), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
 
-                // Constants (eg. Vector2::Zero) 
-                // TODO: support constants for default value attribute
-                if (value.Contains("::"))
                     return null;
+                }
+
+                // Constants (eg. Vector2::Zero)
+                if (value.Contains('.'))
+                {
+                    // Support for in-built constants
+                    switch (value)
+                    {
+                    case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
+                    case "Vector2.One": return "typeof(Vector2), \"1,1\"";
+                    case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
+                    case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
+                    case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
+                    case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
+                    case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
+                    }
+
+                    return null;
+                }
             }
-
-            value = value.Replace("::", ".");
 
             // Skip constants unsupported in C#
             var dot = value.LastIndexOf('.');
