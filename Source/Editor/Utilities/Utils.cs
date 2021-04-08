@@ -67,6 +67,10 @@ namespace FlaxEditor.Utilities
             Dictionary,
             ManagedObject,
             Typename,
+            
+            Int2,
+            Int3,
+            Int4
         }
 
         /// <summary>
