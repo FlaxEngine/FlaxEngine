@@ -1444,6 +1444,51 @@ namespace FlaxEditor.Utilities
                 stream.WriteEndObject();
                 break;
             }
+            case VariantType.Int2:
+            {
+                var asInt2 = (Int2)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt2.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt2.Y);
+
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Int3:
+            {
+                var asInt3 = (Int3)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt3.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt3.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asInt3.Z);
+                
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Int4:
+            {
+                var asInt4 = (Int4)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt4.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt4.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asInt4.Z);
+                stream.WritePropertyName("W");
+                stream.WriteValue(asInt4.W);
+                
+                stream.WriteEndObject();
+                break;
+            }
             case VariantType.Color:
             {
                 var asColor = (Color)value;
