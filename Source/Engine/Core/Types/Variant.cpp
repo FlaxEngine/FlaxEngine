@@ -1817,6 +1817,21 @@ const Vector4& Variant::AsVector4() const
     return *(const Vector4*)AsData;
 }
 
+const Int2& Variant::AsInt2() const
+{
+    return *(const Int2*)AsData;
+}
+
+const Int3& Variant::AsInt3() const
+{
+    return *(const Int3*)AsData;
+}
+
+const Int4& Variant::AsInt4() const
+{
+    return *(const Int4*)AsData;
+}
+
 const Color& Variant::AsColor() const
 {
     return *(const Color*)AsData;

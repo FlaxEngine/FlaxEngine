@@ -285,6 +285,9 @@ public:
     const Vector2& AsVector2() const;
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
+    const Int2& AsInt2() const;
+    const Int3& AsInt3() const;
+    const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
 
