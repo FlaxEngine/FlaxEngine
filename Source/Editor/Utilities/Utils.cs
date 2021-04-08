@@ -758,6 +758,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector2: return new ScriptType(typeof(Vector2));
             case VariantType.Vector3: return new ScriptType(typeof(Vector3));
             case VariantType.Vector4: return new ScriptType(typeof(Vector4));
+            case VariantType.Int2: return new ScriptType(typeof(Int2));
+            case VariantType.Int3: return new ScriptType(typeof(Int3));
+            case VariantType.Int4: return new ScriptType(typeof(Int4));
             case VariantType.Color: return new ScriptType(typeof(Color));
             case VariantType.Guid: return new ScriptType(typeof(Guid));
             case VariantType.BoundingBox: return new ScriptType(typeof(BoundingBox));
