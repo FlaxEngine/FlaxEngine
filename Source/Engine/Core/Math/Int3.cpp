@@ -15,10 +15,10 @@ const Int3 Int3::One(1);
 const Int3 Int3::Minimum(MIN_int32);
 const Int3 Int3::Maximum(MAX_int32);
 
-Int3::Int3(const Int2& xy, float z)
+Int3::Int3(const Int2& xy, int32 z)
     : X(xy.X)
     , Y(xy.Y)
-    , Z(static_cast<int32>(z))
+    , Z(z)
 {
 }
 
@@ -29,10 +29,10 @@ Int3::Int3(const Int4& xyzw)
 {
 }
 
-Int3::Int3(const Vector2& xy, float z)
+Int3::Int3(const Vector2& xy, int32 z)
     : X(static_cast<int32>(xy.X))
     , Y(static_cast<int32>(xy.Y))
-    , Z(static_cast<int32>(z))
+    , Z(z)
 {
 }
 
