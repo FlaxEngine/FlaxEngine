@@ -13,19 +13,24 @@ struct Vector4;
 /// <summary>
 /// Two-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int2
+API_STRUCT() struct FLAXENGINE_API Int2
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int2);
 public:
 
     union
     {
         struct
         {
-            // X component
-            int32 X;
+            /// <summary>
+            /// The X component.
+            /// </summary>
+            API_FIELD() int32 X;
 
-            // Y component
-            int32 Y;
+            /// <summary>
+            /// The Y component.
+            /// </summary>
+            API_FIELD() int32 Y;
         };
 
         // Raw values
