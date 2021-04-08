@@ -187,6 +187,8 @@ namespace Flax.Build
                 // Setup
                 var rules = GenerateRulesAssembly();
                 var rootProject = Globals.Project;
+                if (rootProject == null)
+                    throw new Exception("Missing project.");
                 var projectFiles = rootProject.GetAllProjects();
                 var targetGroups = rules.Targets.GroupBy(x => x.ProjectName);
                 var workspaceRoot = rootProject.ProjectFolderPath;
