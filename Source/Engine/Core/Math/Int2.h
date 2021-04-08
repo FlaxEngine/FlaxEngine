@@ -361,10 +361,30 @@ public:
         return Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
     }
 
-    // Creates vector from maximum components of two vectors
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int2 Max(const Int2& a, const Int2& b)
     {
         return Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+    }
+
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
+    static void Min(const Int2& a, const Int2& b, Int2& result)
+    {
+        result = Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+    }
+
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
+    static void Max(const Int2& a, const Int2& b, Int2& result)
+    {
+        result = Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 };
 
