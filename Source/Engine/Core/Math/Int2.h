@@ -234,29 +234,29 @@ public:
 
 public:
 
-    static void Add(const Int2& a, const Int2& b, Int2* result)
+    static void Add(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X + b.X;
-        result->Y = a.Y + b.Y;
+        result.X = a.X + b.X;
+        result.Y = a.Y + b.Y;
     }
 
     static Int2 Add(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Add(a, b, &result);
+        Add(a, b, result);
         return result;
     }
 
-    static void Subtract(const Int2& a, const Int2& b, Int2* result)
+    static void Subtract(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X - b.X;
-        result->Y = a.Y - b.Y;
+        result.X = a.X - b.X;
+        result.Y = a.Y - b.Y;
     }
 
     static Int2 Subtract(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Subtract(a, b, &result);
+        Subtract(a, b, result);
         return result;
     }
 
