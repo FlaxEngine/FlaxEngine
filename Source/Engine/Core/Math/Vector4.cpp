@@ -3,10 +3,12 @@
 #include "Vector4.h"
 #include "Vector2.h"
 #include "Vector3.h"
+#include "Int2.h"
+#include "Int3.h"
+#include "Int4.h"
 #include "Color.h"
 #include "Matrix.h"
 #include "Rectangle.h"
-#include "Int4.h"
 #include "../Types/String.h"
 
 static_assert(sizeof(Vector4) == 16, "Invalid Vector4 type size.");
@@ -49,11 +51,27 @@ Vector4::Vector4(const Vector3& xyz, float w)
 {
 }
 
+Vector4::Vector4(const Int2& xy, float z, float w)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+    , Z(z)
+    , W(w)
+{
+}
+
+Vector4::Vector4(const Int3& xyz, float w)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+    , Z(static_cast<float>(xyz.Z))
+    , W(w)
+{
+}
+
 Vector4::Vector4(const Int4& xyzw)
-    : X((float)xyzw.X)
-    , Y((float)xyzw.Y)
-    , Z((float)xyzw.X)
-    , W((float)xyzw.Y)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.X))
+    , W(static_cast<float>(xyzw.Y))
 {
 }
 
