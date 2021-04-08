@@ -241,6 +241,36 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Reads the Int2 from the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>The value.</returns>
+        public static Int2 ReadInt2(this BinaryReader stream)
+        {
+            return new Int2(stream.ReadInt32(), stream.ReadInt32());
+        }
+        
+        /// <summary>
+        /// Reads the Int3 from the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>The value.</returns>
+        public static Int3 ReadInt3(this BinaryReader stream)
+        {
+            return new Int3(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
+        }
+        
+        /// <summary>
+        /// Reads the Int4 from the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>The value.</returns>
+        public static Int4 ReadInt4(this BinaryReader stream)
+        {
+            return new Int4(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
+        }
+        
+        /// <summary>
         /// Reads the Quaternion from the binary stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
