@@ -269,6 +269,9 @@ public:
     explicit operator Vector2() const;
     explicit operator Vector3() const;
     explicit operator Vector4() const;
+    explicit operator Int2() const;
+    explicit operator Int3() const;
+    explicit operator Int4() const;
     explicit operator Color() const;
     explicit operator Quaternion() const;
     explicit operator Guid() const;
