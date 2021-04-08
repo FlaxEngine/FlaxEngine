@@ -6,9 +6,6 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
 
 /// <summary>
 /// Three-components vector (32 bit integer type).
