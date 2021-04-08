@@ -267,6 +267,15 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
     case VariantType::Vector4:
         Deserialize(value, *(Vector4*)v.AsData, modifier);
         break;
+    case VariantType::Int2:
+        Deserialize(value, *(Int2*)v.AsData, modifier);
+        break;
+    case VariantType::Int3:
+        Deserialize(value, *(Int3*)v.AsData, modifier);
+        break;
+    case VariantType::Int4:
+        Deserialize(value, *(Int4*)v.AsData, modifier);
+        break;
     case VariantType::Color:
         Deserialize(value, *(Color*)v.AsData, modifier);
         break;
