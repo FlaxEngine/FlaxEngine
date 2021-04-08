@@ -450,6 +450,12 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Vector3;
             else if (type == typeof(Vector4))
                 variantType = VariantType.Vector4;
+            else if (type == typeof(Int2))
+                variantType = VariantType.Int2;
+            else if (type == typeof(Int3))
+                variantType = VariantType.Int3;
+            else if (type == typeof(Int4))
+                variantType = VariantType.Int4;
             else if (type == typeof(Color))
                 variantType = VariantType.Color;
             else if (type == typeof(Guid))
