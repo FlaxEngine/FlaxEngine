@@ -11,6 +11,9 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Ray.h"
@@ -149,6 +152,42 @@ public:
         EndObject();
     }
 
+    void Int2(const Int2& value)
+    {
+        StartObject();
+        JKEY("X");
+        Int(value.X);
+        JKEY("Y");
+        Int(value.Y);
+        EndObject();
+    }
+
+    void Int3(const Int3& value)
+    {
+        StartObject();
+        JKEY("X");
+        Int(value.X);
+        JKEY("Y");
+        Int(value.Y);
+        JKEY("Z");
+        Int(value.Z);
+        EndObject();
+    }
+
+    void Int4(const Int4& value)
+    {
+        StartObject();
+        JKEY("X");
+        Int(value.X);
+        JKEY("Y");
+        Int(value.Y);
+        JKEY("Z");
+        Int(value.Z);
+        JKEY("W");
+        Int(value.W);
+        EndObject();
+    }
+    
     void Color(const Color& value)
     {
         StartObject();
