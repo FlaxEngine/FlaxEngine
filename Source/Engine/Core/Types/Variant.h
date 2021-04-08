@@ -39,9 +39,6 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Vector2,
         Vector3,
         Vector4,
-        Int2,
-        Int3,
-        Int4,
         Color,
         Guid,
         BoundingBox,
@@ -57,6 +54,9 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         ManagedObject,
         Typename,
 
+        Int2,
+        Int3,
+        Int4,
         MAX
     };
 
