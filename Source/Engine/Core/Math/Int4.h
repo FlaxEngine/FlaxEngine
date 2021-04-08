@@ -90,8 +90,30 @@ public:
     }
 
     // Init
+    // @param v Int2 to use X and Y components
+    // @param z Z component value
+    // @param w W component value
+    Int4(const Int2& xy, int32 z, int32 w);
+
+    // Init
+    // @param v Int3 to use X , Y and Z components
+    // @param w W component value
+    Int4(const Int3& xyz, int32 w);
+
+    // Init
+    // @param v Vector2 to use X and Y components
+    // @param z Z component value
+    // @param w W component value
+    explicit Int4(const Vector2& xy, int32 z, int32 w);
+
+    // Init
+    // @param v Vector3 to use X , Y and Z components
+    // @param w W component value
+    explicit Int4(const Vector3& xyz, int32 w);
+    
+    // Init
     // @param v Vector to use X, Y, Z and W components
-    explicit Int4(const Vector4& v);
+    explicit Int4(const Vector4& xyzw);
 
 public:
 
