@@ -67,6 +67,10 @@ namespace FlaxEditor.Utilities
             Dictionary,
             ManagedObject,
             Typename,
+            
+            Int2,
+            Int3,
+            Int4
         }
 
         /// <summary>
@@ -446,6 +450,12 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Vector3;
             else if (type == typeof(Vector4))
                 variantType = VariantType.Vector4;
+            else if (type == typeof(Int2))
+                variantType = VariantType.Int2;
+            else if (type == typeof(Int3))
+                variantType = VariantType.Int3;
+            else if (type == typeof(Int4))
+                variantType = VariantType.Int4;
             else if (type == typeof(Color))
                 variantType = VariantType.Color;
             else if (type == typeof(Guid))
@@ -682,6 +692,21 @@ namespace FlaxEditor.Utilities
                                 new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
                 break;
             }
+            case 19: // CommonType::Int2
+            {
+                value = stream.ReadInt2();
+                break;
+            }
+            case 20: // CommonType::Int3
+            {
+                value = stream.ReadInt3();
+                break;
+            }
+            case 21: // CommonType::Int4
+            {
+                value = stream.ReadInt4();
+                break;
+            }
             default: throw new SystemException();
             }
         }
@@ -733,6 +758,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector2: return new ScriptType(typeof(Vector2));
             case VariantType.Vector3: return new ScriptType(typeof(Vector3));
             case VariantType.Vector4: return new ScriptType(typeof(Vector4));
+            case VariantType.Int2: return new ScriptType(typeof(Int2));
+            case VariantType.Int3: return new ScriptType(typeof(Int3));
+            case VariantType.Int4: return new ScriptType(typeof(Int4));
             case VariantType.Color: return new ScriptType(typeof(Color));
             case VariantType.Guid: return new ScriptType(typeof(Guid));
             case VariantType.BoundingBox: return new ScriptType(typeof(BoundingBox));
@@ -797,6 +825,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector2: return typeof(Vector2);
             case VariantType.Vector3: return typeof(Vector3);
             case VariantType.Vector4: return typeof(Vector4);
+            case VariantType.Int2: return typeof(Int2);
+            case VariantType.Int3: return typeof(Int3);
+            case VariantType.Int4: return typeof(Int4);
             case VariantType.Color: return typeof(Color);
             case VariantType.Guid: return typeof(Guid);
             case VariantType.BoundingBox: return typeof(BoundingBox);
@@ -894,6 +925,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector2: return stream.ReadVector2();
             case VariantType.Vector3: return stream.ReadVector3();
             case VariantType.Vector4: return stream.ReadVector4();
+            case VariantType.Int2: return stream.ReadInt2();
+            case VariantType.Int3: return stream.ReadInt3();
+            case VariantType.Int4: return stream.ReadInt4();
             case VariantType.Color: return stream.ReadColor();
             case VariantType.Guid: return stream.ReadGuid();
             case VariantType.BoundingBox: return stream.ReadBoundingBox();
@@ -1087,6 +1121,21 @@ namespace FlaxEditor.Utilities
                 stream.Write(asRay.Direction.Y);
                 stream.Write(asRay.Direction.Z);
             }
+            else if (value is Int2 asInt2)
+            {
+                stream.Write((byte)19);
+                stream.Write(asInt2);
+            }
+            else if (value is Int3 asInt3)
+            {
+                stream.Write((byte)20);
+                stream.Write(asInt3);
+            }
+            else if (value is Int4 asInt4)
+            {
+                stream.Write((byte)21);
+                stream.Write(asInt4);
+            }
             else
             {
                 throw new NotSupportedException(string.Format("Invalid Common Value type {0}", value != null ? value.GetType().ToString() : "null"));
@@ -1193,6 +1242,15 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Vector4:
                 stream.Write((Vector4)value);
+                break;
+            case VariantType.Int2:
+                stream.Write((Int2)value);
+                break;
+            case VariantType.Int3:
+                stream.Write((Int3)value);
+                break;
+            case VariantType.Int4:
+                stream.Write((Int4)value);
                 break;
             case VariantType.Color:
                 stream.Write((Color)value);
@@ -1383,6 +1441,51 @@ namespace FlaxEditor.Utilities
                 stream.WritePropertyName("W");
                 stream.WriteValue(asVector4.W);
 
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Int2:
+            {
+                var asInt2 = (Int2)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt2.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt2.Y);
+
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Int3:
+            {
+                var asInt3 = (Int3)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt3.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt3.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asInt3.Z);
+                
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Int4:
+            {
+                var asInt4 = (Int4)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asInt4.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asInt4.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asInt4.Z);
+                stream.WritePropertyName("W");
+                stream.WriteValue(asInt4.W);
+                
                 stream.WriteEndObject();
                 break;
             }
