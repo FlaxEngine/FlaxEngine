@@ -692,6 +692,21 @@ namespace FlaxEditor.Utilities
                                 new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
                 break;
             }
+            case 19: // CommonType::Int2
+            {
+                value = stream.ReadInt2();
+                break;
+            }
+            case 20: // CommonType::Int3
+            {
+                value = stream.ReadInt3();
+                break;
+            }
+            case 21: // CommonType::Int4
+            {
+                value = stream.ReadInt4();
+                break;
+            }
             default: throw new SystemException();
             }
         }
