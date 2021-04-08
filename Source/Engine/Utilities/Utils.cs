@@ -393,6 +393,42 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Writes the Int2 to the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="value">The value to write.</param>
+        public static void Write(this BinaryWriter stream, Int2 value)
+        {
+            stream.Write(value.X);
+            stream.Write(value.Y);
+        }
+        
+        /// <summary>
+        /// Writes the Int3 to the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="value">The value to write.</param>
+        public static void Write(this BinaryWriter stream, Int3 value)
+        {
+            stream.Write(value.X);
+            stream.Write(value.Y);
+            stream.Write(value.Z);
+        }
+
+        /// <summary>
+        /// Writes the Int4 to the binary stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="value">The value to write.</param>
+        public static void Write(this BinaryWriter stream, Int4 value)
+        {
+            stream.Write(value.X);
+            stream.Write(value.Y);
+            stream.Write(value.Z);
+            stream.Write(value.W);
+        }
+
+        /// <summary>
         /// Writes the Quaternion to the binary stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
