@@ -138,6 +138,15 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     case VariantType::Vector4:
         stream.Vector4(*(Vector4*)v.AsData);
         break;
+    case VariantType::Int2:
+        stream.Int2(*(Int2*)v.AsData);
+        break;
+    case VariantType::Int3:
+        stream.Int3(*(Int3*)v.AsData);
+        break;
+    case VariantType::Int4:
+        stream.Int4(*(Int4*)v.AsData);
+        break;
     case VariantType::Color:
         stream.Color(*(Color*)v.AsData);
         break;
