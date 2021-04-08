@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext curl libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libcurl4
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Checkout LFS
