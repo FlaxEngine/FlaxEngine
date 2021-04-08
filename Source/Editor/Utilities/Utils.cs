@@ -1121,6 +1121,21 @@ namespace FlaxEditor.Utilities
                 stream.Write(asRay.Direction.Y);
                 stream.Write(asRay.Direction.Z);
             }
+            else if (value is Int2 asInt2)
+            {
+                stream.Write((byte)19);
+                stream.Write(asInt2);
+            }
+            else if (value is Int3 asInt3)
+            {
+                stream.Write((byte)20);
+                stream.Write(asInt3);
+            }
+            else if (value is Int4 asInt4)
+            {
+                stream.Write((byte)21);
+                stream.Write(asInt4);
+            }
             else
             {
                 throw new NotSupportedException(string.Format("Invalid Common Value type {0}", value != null ? value.GetType().ToString() : "null"));
