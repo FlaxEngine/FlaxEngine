@@ -1243,6 +1243,15 @@ namespace FlaxEditor.Utilities
             case VariantType.Vector4:
                 stream.Write((Vector4)value);
                 break;
+            case VariantType.Int2:
+                stream.Write((Int2)value);
+                break;
+            case VariantType.Int3:
+                stream.Write((Int3)value);
+                break;
+            case VariantType.Int4:
+                stream.Write((Int4)value);
+                break;
             case VariantType.Color:
                 stream.Write((Color)value);
                 break;
