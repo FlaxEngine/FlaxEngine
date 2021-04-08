@@ -41,6 +41,12 @@ public:
     // Vector with all components equal 1
     static const Int2 One;
 
+    // A minimum Int2
+    static const Int2 Minimum;
+
+    // A maximum Int2
+    static const Int2 Maximum;
+
 public:
 
     /// <summary>
