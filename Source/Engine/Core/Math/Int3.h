@@ -47,6 +47,12 @@ public:
     // Vector with all components equal 1
     static const Int3 One;
 
+    // A minimum Int3
+    static const Int3 Minimum;
+
+    // A maximum Int3
+    static const Int3 Maximum;
+
 public:
 
     /// <summary>
