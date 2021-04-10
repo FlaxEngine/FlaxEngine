@@ -138,11 +138,10 @@ void SplineModel::OnSplineUpdated()
                 Vector3 tmp = corners[i] * _preTransform.Scale;
                 double rotation[4] = { (double)_preTransform.Orientation.X, (double)_preTransform.Orientation.Y, (double)_preTransform.Orientation.Z, (double)_preTransform.Orientation.W };
                 const double length = sqrt(rotation[0] * rotation[0] + rotation[1] * rotation[1] + rotation[2] * rotation[2] + rotation[3] * rotation[3]);
-                const double inv = 1.0 / length;
-                rotation[0] *= inv;
-                rotation[1] *= inv;
-                rotation[2] *= inv;
-                rotation[3] *= inv;
+                rotation[0] /= length;
+                rotation[1] /= length;
+                rotation[2] /= length;
+                rotation[3] /= length;
                 double pos[3] = { (double)tmp.X, (double)tmp.Y, (double)tmp.Z };
                 const double x = rotation[0] + rotation[0];
                 const double y = rotation[1] + rotation[1];
@@ -251,7 +250,7 @@ void SplineModel::UpdateDeformationBuffer()
         AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
         for (int32 chunk = 0; chunk < chunksPerSegment; chunk++)
         {
-            const float alpha = (float)chunk * chunksPerSegmentInv;
+            const float alpha = (chunk == chunksPerSegment - 1)? 1.0f : ((float)chunk * chunksPerSegmentInv);
 
             // Evaluate transformation at the curve
             AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, alpha, transform);
