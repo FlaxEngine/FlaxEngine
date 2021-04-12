@@ -153,6 +153,13 @@ public:
     /// <param name="surfaces">Surfaces</param>
     void GetSurfaces(CSG::Surface surfaces[6]);
 
+    /// <summary>
+    /// Sets the brush surface material.
+    /// </summary>
+    /// <param name="surfaceIndex">The brush surface index.</param>
+    /// <param name="material">The material.</param>
+    API_FUNCTION() void SetMaterial(int32 surfaceIndex, MaterialBase* material);
+
 public:
 
     /// <summary>
@@ -169,7 +176,7 @@ public:
     /// Otherwise performs simple <see cref="BoundingBox"/> vs <see cref="Ray"/> test.
     /// For more efficient collisions detection and ray casting use physics.
     /// </summary>
-    /// <param name="surfaceIndex">The brush surface index..</param>
+    /// <param name="surfaceIndex">The brush surface index.</param>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
@@ -179,7 +186,7 @@ public:
     /// <summary>
     /// Gets the brush surface triangles array (group by 3 vertices).
     /// </summary>
-    /// <param name="surfaceIndex">The brush surface index..</param>
+    /// <param name="surfaceIndex">The brush surface index.</param>
     /// <param name="outputData">The output vertices buffer with triangles or empty if no data loaded.</param>
     API_FUNCTION() void GetVertices(int32 surfaceIndex, API_PARAM(Out) Array<Vector3>& outputData) const;
 
@@ -204,32 +211,12 @@ public:
 #endif
 
     // [CSG::Brush]
-    Scene* GetBrushScene() const override
-    {
-        return GetScene();
-    }
-
-    Guid GetBrushID() const override
-    {
-        return GetID();
-    }
-
-    bool CanUseCSG() const override
-    {
-        return IsActiveInHierarchy();
-    }
-
-    CSG::Mode GetBrushMode() const override
-    {
-        return _mode;
-    }
-
+    Scene* GetBrushScene() const override;
+    Guid GetBrushID() const override;
+    bool CanUseCSG() const override;
+    CSG::Mode GetBrushMode() const override;
     void GetSurfaces(Array<CSG::Surface>& surfaces) override;
-
-    int32 GetSurfacesCount() override
-    {
-        return 6;
-    }
+    int32 GetSurfacesCount() override;
 
 protected:
 
