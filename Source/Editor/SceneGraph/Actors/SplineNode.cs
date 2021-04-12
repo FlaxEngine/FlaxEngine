@@ -29,7 +29,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool CanBeSelectedDirectly => true;
 
-            public override bool CanDuplicate => true;
+            public override bool CanDuplicate => !Root?.Selection.Contains(ParentNode) ?? true;
 
             public override bool CanDelete => true;
 
