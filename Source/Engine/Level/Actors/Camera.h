@@ -28,7 +28,7 @@ DECLARE_SCENE_OBJECT(Camera);
     static Camera* CutSceneCamera;
 
     // The overriden main camera.
-    API_FIELD() static Camera* OverrideMainCamera;
+    API_FIELD() static ScriptingObjectReference<Camera> OverrideMainCamera;
 
     // Gets the main camera.
     API_PROPERTY() static Camera* GetMainCamera();
