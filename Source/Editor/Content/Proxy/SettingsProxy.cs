@@ -3,7 +3,6 @@
 using System;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Settings;
-using FlaxEditor.Modules;
 
 namespace FlaxEditor.Content
 {

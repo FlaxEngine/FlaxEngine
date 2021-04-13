@@ -92,6 +92,7 @@ namespace FlaxEditor
         public SpriteHandle Scene64;
 
         // 128px
+        public SpriteHandle ColorWheel;
         public SpriteHandle Logo128;
 
         // Visject
@@ -103,7 +104,6 @@ namespace FlaxEditor
         // Platforms
         public SpriteHandle Android;
         public SpriteHandle AssetShadow;
-        public SpriteHandle ColorWheel;
         public SpriteHandle Linux;
         public SpriteHandle PS4;
         public SpriteHandle WindowsStore;
