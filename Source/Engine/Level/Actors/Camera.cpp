@@ -17,12 +17,13 @@
 
 Array<Camera*> Camera::Cameras;
 Camera* Camera::CutSceneCamera = nullptr;
-Camera* Camera::OverrideMainCamera = nullptr;
+ScriptingObjectReference<Camera> Camera::OverrideMainCamera;
 
 Camera* Camera::GetMainCamera()
 {
-    if (OverrideMainCamera)
-        return OverrideMainCamera;
+    Camera* overrideMainCamera = OverrideMainCamera.Get();
+    if (overrideMainCamera)
+        return overrideMainCamera;
     if (CutSceneCamera)
         return CutSceneCamera;
     return Cameras.HasItems() ? Cameras.First() : nullptr;

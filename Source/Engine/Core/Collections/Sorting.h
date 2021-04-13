@@ -17,7 +17,7 @@ public:
     /// <summary>
     /// Helper collection used by the sorting algorithms. Implements stack using single linear allocation with variable capacity.
     /// </summary>
-    class SortingStack
+    class FLAXENGINE_API SortingStack
     {
     public:
 

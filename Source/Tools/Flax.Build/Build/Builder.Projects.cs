@@ -248,7 +248,7 @@ namespace Flax.Build
                             // Get all modules aggregated into all binary modules used in all configurations of this target
                             foreach (var configurationData in mainProject.Configurations)
                             {
-                                var configurationBinaryModules = GetBinaryModules(rootProject, configurationData.Target, configurationData.Modules);
+                                var configurationBinaryModules = GetBinaryModules(projectInfo, configurationData.Target, configurationData.Modules);
                                 foreach (var configurationBinaryModule in configurationBinaryModules)
                                 {
                                     // Skip if none of the included binary modules is inside the project workspace (eg. merged external binary modules from engine to game project)
@@ -274,7 +274,7 @@ namespace Flax.Build
                                         {
                                             var referenceBuildOptions = GetBuildOptions(referenceTarget, configurationData.TargetBuildOptions.Platform, configurationData.TargetBuildOptions.Toolchain, configurationData.Architecture, configurationData.Configuration, reference.Project.ProjectFolderPath);
                                             var referenceModules = CollectModules(rules, referenceBuildOptions.Platform, referenceTarget, referenceBuildOptions, referenceBuildOptions.Toolchain, referenceBuildOptions.Architecture, referenceBuildOptions.Configuration);
-                                            var referenceBinaryModules = GetBinaryModules(rootProject, referenceTarget, referenceModules);
+                                            var referenceBinaryModules = GetBinaryModules(projectInfo, referenceTarget, referenceModules);
                                             foreach (var binaryModule in referenceBinaryModules)
                                             {
                                                 project.Defines.Add(binaryModule.Key.ToUpperInvariant() + "_API=");

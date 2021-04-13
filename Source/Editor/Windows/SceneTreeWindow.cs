@@ -209,9 +209,11 @@ namespace FlaxEditor.Windows
         public override void Draw()
         {
             var style = Style.Current;
+
             // Draw overlay
             string overlayText = null;
             var state = Editor.StateMachine.CurrentState;
+            var textWrap = TextWrapping.NoWrap;
             if (state is LoadingState)
             {
                 overlayText = "Loading...";
@@ -223,10 +225,11 @@ namespace FlaxEditor.Windows
             else if (((ContainerControl)_tree.GetChild(0)).ChildrenCount == 0)
             {
                 overlayText = "No scene\nOpen one from the content window";
+                textWrap = TextWrapping.WrapWords;
             }
             if (overlayText != null)
             {
-                Render2D.DrawText(Style.Current.FontLarge, overlayText, GetClientArea(), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, overlayText, GetClientArea(), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center, textWrap);
             }
 
             base.Draw();

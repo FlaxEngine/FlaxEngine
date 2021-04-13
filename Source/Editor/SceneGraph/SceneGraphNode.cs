@@ -57,7 +57,9 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual RootNode Root => ParentNode?.Root;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets or sets the transform of the node.
+        /// </summary>
         public abstract Transform Transform { get; set; }
 
         /// <summary>
