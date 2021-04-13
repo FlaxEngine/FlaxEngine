@@ -251,6 +251,7 @@ void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)
     auto& shadowView = _shadowContext.View;
     shadowView.Flags = view.Flags;
     shadowView.StaticFlagsMask = view.StaticFlagsMask;
+    shadowView.RenderLayersMask = view.RenderLayersMask;
     shadowView.IsOfflinePass = view.IsOfflinePass;
     shadowView.ModelLODBias = view.ModelLODBias + view.ShadowModelLODBias;
     shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor * view.ShadowModelLODDistanceFactor;
