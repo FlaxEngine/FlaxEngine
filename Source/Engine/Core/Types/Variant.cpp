@@ -712,7 +712,7 @@ Variant::Variant(const CommonValue& value)
         *this = Variant(value.AsRay);
         break;
     default:
-    CRASH;
+        CRASH;
     }
 }
 
@@ -1572,7 +1572,7 @@ Variant::operator Int3() const
     switch (Type.Type)
     {
     case VariantType::Bool:
-        return Int3((int32)(AsBool ? 1.0f : 0.0f));
+        return Int3((int32)(AsBool ? 1 : 0));
     case VariantType::Int:
         return Int3((int32)AsInt);
     case VariantType::Uint:
@@ -1589,13 +1589,13 @@ Variant::operator Int3() const
     case VariantType::Pointer:
         return Int3((int32)(intptr)AsPointer);
     case VariantType::Vector2:
-        return Int3(*(Vector2*)AsData, 0.0f);
+        return Int3(*(Vector2*)AsData, 0);
     case VariantType::Vector3:
         return Int3(*(Vector3*)AsData);
     case VariantType::Vector4:
         return Int3(*(Vector4*)AsData);
     case VariantType::Int2:
-        return Int3(*(Int2*)AsData, 0.0f);
+        return Int3(*(Int2*)AsData, 0);
     case VariantType::Int3:
         return Int3(*(Int3*)AsData);
     case VariantType::Int4:
@@ -1614,9 +1614,9 @@ Variant::operator Int4() const
     switch (Type.Type)
     {
     case VariantType::Bool:
-        return Int4((int32)(AsBool ? 1.0f : 0.0f));
+        return Int4((int32)(AsBool ? 1 : 0));
     case VariantType::Int:
-        return Int4((int32)AsInt);
+        return Int4(AsInt);
     case VariantType::Uint:
         return Int4((int32)AsUint);
     case VariantType::Int64:
@@ -1631,15 +1631,15 @@ Variant::operator Int4() const
     case VariantType::Pointer:
         return Int4((int32)(intptr)AsPointer);
     case VariantType::Vector2:
-        return Int4(*(Vector2*)AsData, 0.0f, 0.0f);
+        return Int4(*(Vector2*)AsData, 0, 0);
     case VariantType::Vector3:
-        return Int4(*(Vector3*)AsData, 0.0f);
+        return Int4(*(Vector3*)AsData, 0);
     case VariantType::Vector4:
         return Int4(*(Vector4*)AsData);
     case VariantType::Int2:
-        return Int4(*(Int2*)AsData, 0.0f, 0.0f);
+        return Int4(*(Int2*)AsData, 0, 0);
     case VariantType::Int3:
-        return Int4(*(Int3*)AsData, 0.0f);
+        return Int4(*(Int3*)AsData, 0);
     case VariantType::Int4:
     case VariantType::Color:
         return *(Int4*)AsData;
