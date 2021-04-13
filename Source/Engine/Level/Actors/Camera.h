@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Types/LayersMask.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 #if USE_EDITOR
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
