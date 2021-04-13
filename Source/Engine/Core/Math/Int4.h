@@ -6,32 +6,37 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
-
 /// <summary>
 /// Four-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int4
+API_STRUCT() struct FLAXENGINE_API Int4
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int4);
 public:
 
     union
     {
         struct
         {
-            // X component
-            int32 X;
+            /// <summary>
+            /// The X component.
+            /// </summary>
+            API_FIELD() int32 X;
 
-            // Y component
-            int32 Y;
+            /// <summary>
+            /// The Y component.
+            /// </summary>
+            API_FIELD() int32 Y;
 
-            // Z component
-            int32 Z;
+            /// <summary>
+            /// The Z component.
+            /// </summary>
+            API_FIELD() int32 Z;
 
-            // W component
-            int32 W;
+            /// <summary>
+            /// The W component.
+            /// </summary>
+            API_FIELD() int32 W;
         };
 
         // Raw values
@@ -46,6 +51,12 @@ public:
     // Vector with all components equal 1
     static const Int4 One;
 
+    // A minimum Int4
+    static const Int4 Minimum;
+
+    // A maximum Int4
+    static const Int4 Maximum;
+    
 public:
 
     /// <summary>
@@ -79,8 +90,30 @@ public:
     }
 
     // Init
+    // @param v Int2 to use X and Y components
+    // @param z Z component value
+    // @param w W component value
+    Int4(const Int2& xy, int32 z, int32 w);
+
+    // Init
+    // @param v Int3 to use X , Y and Z components
+    // @param w W component value
+    Int4(const Int3& xyz, int32 w);
+
+    // Init
+    // @param v Vector2 to use X and Y components
+    // @param z Z component value
+    // @param w W component value
+    explicit Int4(const Vector2& xy, int32 z, int32 w);
+
+    // Init
+    // @param v Vector3 to use X , Y and Z components
+    // @param w W component value
+    explicit Int4(const Vector3& xyz, int32 w);
+    
+    // Init
     // @param v Vector to use X, Y, Z and W components
-    explicit Int4(const Vector4& v);
+    explicit Int4(const Vector4& xyzw);
 
 public:
 
@@ -88,6 +121,229 @@ public:
 
 public:
 
+    // Arithmetic operators with Int2
+
+    Int4 operator+(const Int4& b) const
+    {
+        return Add(*this, b);
+    }
+
+    Int4 operator-(const Int4& b) const
+    {
+        return Subtract(*this, b);
+    }
+
+    Int4 operator*(const Int4& b) const
+    {
+        return Multiply(*this, b);
+    }
+
+    Int4 operator/(const Int4& b) const
+    {
+        return Divide(*this, b);
+    }
+
+    Int4 operator-() const
+    {
+        return Int4(-X, -Y, -Z, -W);
+    }
+
+    // op= operators with Int2
+
+    Int4& operator+=(const Int4& b)
+    {
+        *this = Add(*this, b);
+        return *this;
+    }
+
+    Int4& operator-=(const Int4& b)
+    {
+        *this = Subtract(*this, b);
+        return *this;
+    }
+
+    Int4& operator*=(const Int4& b)
+    {
+        *this = Multiply(*this, b);
+        return *this;
+    }
+
+    Int4& operator/=(const Int4& b)
+    {
+        *this = Divide(*this, b);
+        return *this;
+    }
+
+    // Arithmetic operators with int32
+
+    Int4 operator+(int32 b) const
+    {
+        return Add(*this, b);
+    }
+
+    Int4 operator-(int32 b) const
+    {
+        return Subtract(*this, b);
+    }
+
+    Int4 operator*(int32 b) const
+    {
+        return Multiply(*this, b);
+    }
+
+    Int4 operator/(int32 b) const
+    {
+        return Divide(*this, b);
+    }
+
+    // op= operators with int32
+
+    Int4& operator+=(int32 b)
+    {
+        *this = Add(*this, b);
+        return *this;
+    }
+
+    Int4& operator-=(int32 b)
+    {
+        *this = Subtract(*this, b);
+        return *this;
+    }
+
+    Int4& operator*=(int32 b)
+    {
+        *this = Multiply(*this, b);
+        return *this;
+    }
+
+    Int4& operator/=(int32 b)
+    {
+        *this = Divide(*this, b);
+        return *this;
+    }
+
+    // Comparison operators
+
+    bool operator==(const Int4& b) const
+    {
+        return X == b.X && Y == b.Y;
+    }
+
+    bool operator!=(const Int4& b) const
+    {
+        return X != b.X || Y != b.Y;
+    }
+
+    bool operator>(const Int4& b) const
+    {
+        return X > b.X && Y > b.Y;
+    }
+
+    bool operator>=(const Int4& b) const
+    {
+        return X >= b.X && Y >= b.Y;
+    }
+
+    bool operator<(const Int4& b) const
+    {
+        return X < b.X && Y < b.Y;
+    }
+
+    bool operator<=(const Int4& b) const
+    {
+        return X <= b.X && Y <= b.Y;
+    }
+
+public:
+
+    static void Add(const Int4& a, const Int4& b, Int4& result)
+    {
+        result.X = a.X + b.X;
+        result.Y = a.Y + b.Y;
+        result.Z = a.Z + b.Z;
+        result.W = a.W + b.W;
+    }
+
+    static Int4 Add(const Int4& a, const Int4& b)
+    {
+        Int4 result;
+        Add(a, b, result);
+        return result;
+    }
+
+    static void Subtract(const Int4& a, const Int4& b, Int4& result)
+    {
+        result.X = a.X - b.X;
+        result.Y = a.Y - b.Y;
+        result.Z = a.Z - b.Z;
+        result.W = a.W - b.W;
+    }
+
+    static Int4 Subtract(const Int4& a, const Int4& b)
+    {
+        Int4 result;
+        Subtract(a, b, result);
+        return result;
+    }
+
+    static Int4 Multiply(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
+    }
+
+    static Int4 Multiply(const Int4& a, int32 b)
+    {
+        return Int4(a.X * b, a.Y * b, a.Z * b, a.W * b);
+    }
+
+    static Int4 Divide(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
+    }
+
+    static Int4 Divide(const Int4& a, int32 b)
+    {
+        return Int4(a.X / b, a.Y / b, a.Z / b, a.Y / b);
+    }
+    
+public:
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is zero.
+    /// </summary>
+    /// <returns> True if the vector is zero, otherwise false.</returns>
+    bool IsZero() const
+    {
+        return X == 0 && Y == 0 && Z == 0 && W == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether any vector component is zero.
+    /// </summary>
+    /// <returns> True if a component is zero, otherwise false.</returns>
+    bool IsAnyZero() const
+    {
+        return X == 0 || Y == 0 || Z == 0 || W == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is one.
+    /// </summary>
+    /// <returns> True if the vector is one, otherwise false.</returns>
+    bool IsOne() const
+    {
+        return X == 1 && Y == 1 && Z == 1 && W == 1;
+    }
+    
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector
+    /// </summary>
+    /// <returns>Negative vector</returns>
+    Int4 GetNegative() const
+    {
+        return Int4(-X, -Y, -Z, -W);
+    }
+    
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
@@ -122,6 +378,40 @@ public:
     int32 MaxValue() const
     {
         return Math::Max(X, Y, Z, W);
+    }
+    
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    static Int4 Max(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
+    }
+
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    static Int4 Min(const Int4& a, const Int4& b)
+    {
+        return Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
+    }
+
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
+    static void Max(const Int4& a, const Int4& b, Int4& result)
+    {
+        result = Int4(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z, a.W > b.W ? a.W : b.W);
+    }
+
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
+    static void Min(const Int4& a, const Int4& b, Int4& result)
+    {
+        result = Int4(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z, a.W < b.W ? a.W : b.W);
     }
 };
 
