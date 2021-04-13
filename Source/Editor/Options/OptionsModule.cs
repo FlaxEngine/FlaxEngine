@@ -249,6 +249,7 @@ namespace FlaxEditor.Options
                 Translate = Editor.Icons.Translate16,
                 Rotate = Editor.Icons.Rotate16,
                 Scale = Editor.Icons.Scale16,
+                Scalar = Editor.Icons.Scalar16,
 
                 SharedTooltip = new Tooltip()
             };

@@ -40,6 +40,7 @@ namespace FlaxEditor
         public SpriteHandle ScaleStep16;
         public SpriteHandle Translate16;
         public SpriteHandle World16;
+        public SpriteHandle Scalar16;
 
         // 32px
         public SpriteHandle AddDoc32;
@@ -124,6 +125,8 @@ namespace FlaxEditor
         public SpriteHandle TimeSettings;
         public SpriteHandle UWPSettings;
         public SpriteHandle WindowsSettings;
+        public SpriteHandle PlaystationSettings;
+        public SpriteHandle XboxSettings;
 
         internal void LoadIcons()
         {
