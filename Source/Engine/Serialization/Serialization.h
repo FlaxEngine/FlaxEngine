@@ -268,6 +268,27 @@ namespace Serialization
     }
     FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier);
 
+    FLAXENGINE_API bool ShouldSerialize(const Int2& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int2& v, const void* otherObj)
+    {
+        stream.Int2(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int2& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Int3& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int3& v, const void* otherObj)
+    {
+        stream.Int3(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int3& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Int4& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int4& v, const void* otherObj)
+    {
+        stream.Int4(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int4& v, ISerializeModifier* modifier);
+    
     FLAXENGINE_API bool ShouldSerialize(const Quaternion& v, const void* otherObj);
     inline void Serialize(ISerializable::SerializeStream& stream, const Quaternion& v, const void* otherObj)
     {
