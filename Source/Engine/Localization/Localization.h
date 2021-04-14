@@ -40,5 +40,5 @@ public:
     /// <summary>
     /// Occurs when current culture or language gets changed. Can be used to refresh UI to reflect language changes.
     /// </summary>
-    API_EVENT() static Delegate<> CurrentLanguageCultureChanged;
+    API_EVENT() static Delegate<> LocalizationChanged;
 };

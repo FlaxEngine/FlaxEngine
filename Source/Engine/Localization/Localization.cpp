@@ -29,7 +29,7 @@ bool LocalizationService::Init()
     return false;
 }
 
-Delegate<> Localization::CurrentLanguageCultureChanged;
+Delegate<> Localization::LocalizationChanged;
 
 const CultureInfo& Localization::GetCurrentCulture()
 {
@@ -43,7 +43,7 @@ void Localization::SetCurrentCulture(const CultureInfo& value)
 
     LOG(Info, "Changing current culture to: {0} ({1})", value.GetName(), value.GetLCID());
     CurrentCulture = value;
-    CurrentLanguageCultureChanged();
+    LocalizationChanged();
 }
 
 const CultureInfo& Localization::GetCurrentLanguage()
@@ -58,7 +58,7 @@ void Localization::SetCurrentLanguage(const CultureInfo& value)
 
     LOG(Info, "Changing current language to: {0} ({1})", value.GetName(), value.GetLCID());
     CurrentLanguage = value;
-    CurrentLanguageCultureChanged();
+    LocalizationChanged();
 }
 
 void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
@@ -69,5 +69,5 @@ void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
     LOG(Info, "Changing current language and culture to: {0} ({1})", value.GetName(), value.GetLCID());
     CurrentCulture = value;
     CurrentLanguage = value;
-    CurrentLanguageCultureChanged();
+    LocalizationChanged();
 }
