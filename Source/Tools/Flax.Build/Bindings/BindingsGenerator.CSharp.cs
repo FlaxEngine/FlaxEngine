@@ -1059,6 +1059,7 @@ namespace Flax.Build.Bindings
             // Using declarations
             contents.AppendLine("using System;");
             contents.AppendLine("using System.ComponentModel;");
+            contents.AppendLine("using System.Globalization;"); // TODO: using declarations based on actual types usage
             contents.AppendLine("using System.Runtime.CompilerServices;");
             contents.AppendLine("using System.Runtime.InteropServices;");
             foreach (var e in moduleInfo.Children)

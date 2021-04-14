@@ -307,6 +307,9 @@ namespace Flax.Build.Bindings
             case "MClass":
                 type = "MonoReflectionType*";
                 return "MUtils::GetType({0})";
+            case "CultureInfo":
+                type = "void*";
+                return "MUtils::ToManaged({0})";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
@@ -448,6 +451,9 @@ namespace Flax.Build.Bindings
             case "VariantType":
                 type = "MonoReflectionType*";
                 return "MUtils::UnboxVariantType({0})";
+            case "CultureInfo":
+                type = "void*";
+                return "MUtils::ToNative({0})";
             default:
                 // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
                 if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
