@@ -136,6 +136,8 @@ namespace Flax.Build.Bindings
         private static string GenerateCSharpNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
         {
             string result;
+            if (typeInfo?.Type == null)
+                throw new ArgumentNullException();
 
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
