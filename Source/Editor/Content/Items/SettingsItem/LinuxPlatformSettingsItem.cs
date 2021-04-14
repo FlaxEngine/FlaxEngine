@@ -16,7 +16,7 @@ namespace FlaxEditor.Content
         /// </summary>
         /// <param name="path">The asset path.</param>
         /// <param name="id">The asset identifier.</param>
-        /// <param name="typeName">Name of the resource type.</param>
+        /// <param name="typeName">The Name of the resource type.</param>
         public LinuxPlatformSettingsItem(string path, Guid id, string typeName)
         : base(path, id, typeName)
         {
