@@ -1609,6 +1609,8 @@ bool LinuxPlatform::Init()
 
     // Get user locale string
     char* locale = setlocale(LC_ALL, NULL);
+    if (strcmp (locale, "C") == 0)
+        locale = "";
     UserLocale = String(locale);
 
     // Get computer name string
