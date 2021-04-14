@@ -1136,6 +1136,7 @@ namespace Flax.Build.Bindings
 
                 // C# event invoking wrapper (calls C# event from C++ delegate)
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
+                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
                 contents.Append("    ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
@@ -1150,7 +1151,7 @@ namespace Flax.Build.Bindings
                 contents.Append("    {").AppendLine();
                 contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
                 contents.Append("        if (!mmethod)").AppendLine();
-                contents.AppendFormat("            mmethod = {1}::GetStaticClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
+                contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                 contents.Append("        CHECK(mmethod);").AppendLine();
                 contents.Append("        MonoObject* exception = nullptr;").AppendLine();
                 if (paramsCount == 0)
