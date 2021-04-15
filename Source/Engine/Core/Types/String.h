@@ -225,9 +225,7 @@ public:
         const T* start = _data;
         if (startPosition != -1)
             start += startPosition < Length() ? startPosition : Length();
-        const T* tmp = searchCase == StringSearchCase::IgnoreCase
-                           ? StringUtils::FindIgnoreCase(start, subStr)
-                           : StringUtils::Find(start, subStr);
+        const T* tmp = searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(start, subStr) : StringUtils::Find(start, subStr);
         return tmp ? static_cast<int32>(tmp - **this) : -1;
     }
 

@@ -64,6 +64,12 @@ public:
         Key(str.Get(), static_cast<unsigned>(str.Length()));
     }
 
+    FORCE_INLINE void Key(const StringView& str)
+    {
+        const StringAsUTF8<256> buf(*str, str.Length());
+        Key(buf.Get(), buf.Length());
+    }
+
     FORCE_INLINE void String(const char* str)
     {
         String(str, StringUtils::Length(str));
