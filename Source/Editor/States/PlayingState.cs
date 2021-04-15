@@ -158,6 +158,8 @@ namespace FlaxEditor.States
         public override void OnExit(State nextState)
         {
             IsPaused = true;
+            
+            PluginManager.DeinitializeGamePlugins();
 
             // Remove references to the scene objects
             Editor.Scene.ClearRefsToSceneObjects();
@@ -176,8 +178,6 @@ namespace FlaxEditor.States
                 win.Cursor = CursorType.Default;
             IsPaused = true;
             RestoreSelection();
-
-            PluginManager.DeinitializeGamePlugins();
             
             Editor.OnPlayEnd();
         }
