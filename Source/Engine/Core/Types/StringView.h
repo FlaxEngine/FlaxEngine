@@ -160,16 +160,16 @@ public:
     {
         const int32 length = Length();
         if (searchCase == StringSearchCase::IgnoreCase)
-            return length > 0 && _data[0] == c;
-        return length > 0 && StringUtils::ToLower(_data[0]) == StringUtils::ToLower(c);
+            return length > 0 && StringUtils::ToLower(_data[0]) == StringUtils::ToLower(c);
+        return length > 0 && _data[0] == c;
     }
 
     bool EndsWith(T c, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
     {
         const int32 length = Length();
         if (searchCase == StringSearchCase::IgnoreCase)
-            return length > 0 && _data[length - 1] == c;
-        return length > 0 && StringUtils::ToLower(_data[length - 1]) == StringUtils::ToLower(c);
+            return length > 0 && StringUtils::ToLower(_data[length - 1]) == StringUtils::ToLower(c);
+        return length > 0 && _data[length - 1] == c;
     }
 
     bool StartsWith(const StringViewBase& prefix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
