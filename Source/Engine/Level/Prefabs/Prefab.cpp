@@ -11,7 +11,7 @@
 #include "Engine/Scripting/Scripting.h"
 #endif
 
-REGISTER_JSON_ASSET(Prefab, "FlaxEngine.Prefab");
+REGISTER_JSON_ASSET(Prefab, "FlaxEngine.Prefab", false);
 
 Prefab::Prefab(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)

@@ -7,7 +7,7 @@
 /// <summary>
 /// The assets upgrading objects interface.
 /// </summary>
-class IAssetUpgrader
+class FLAXENGINE_API IAssetUpgrader
 {
 public:
 

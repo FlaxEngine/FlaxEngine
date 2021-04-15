@@ -15,7 +15,7 @@ class IAssetUpgrader;
 /// <summary>
 /// The asset objects factory.
 /// </summary>
-class IAssetFactory
+class FLAXENGINE_API IAssetFactory
 {
 public:
 
