@@ -21,9 +21,9 @@ namespace FlaxEditor.Content.Import
         public string OutputPath;
 
         /// <summary>
-        /// Flag set to true for binary assets handled by the engine internally.
+        /// Flag set to true for the assets handled by the engine internally.
         /// </summary>
-        public bool IsBinaryAsset;
+        public bool IsInBuilt;
 
         /// <summary>
         /// Flag used to skip showing import settings dialog to used. Can be used for importing assets from code by plugins.

@@ -193,12 +193,10 @@ namespace FlaxEditor.Modules
             var extension = System.IO.Path.GetExtension(inputPath) ?? string.Empty;
 
             // Check if given file extension is a binary asset (.flax files) and can be imported by the engine
-            bool isBinaryAsset = Editor.CanImport(extension);
-            string outputExtension;
-            if (isBinaryAsset)
+            bool isBuilt = Editor.CanImport(extension, out var outputExtension);
+            if (isBuilt)
             {
-                // Flax it up!
-                outputExtension = ".flax";
+                outputExtension = '.' + outputExtension;
 
                 if (!targetLocation.CanHaveAssets)
                 {
@@ -234,7 +232,7 @@ namespace FlaxEditor.Modules
             var shortName = System.IO.Path.GetFileNameWithoutExtension(inputPath);
             var outputPath = System.IO.Path.Combine(targetLocation.Path, shortName + outputExtension);
 
-            Import(inputPath, outputPath, isBinaryAsset, skipSettingsDialog, settings);
+            Import(inputPath, outputPath, isBuilt, skipSettingsDialog, settings);
         }
 
         /// <summary>
@@ -243,10 +241,10 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="inputPath">The input path.</param>
         /// <param name="outputPath">The output path.</param>
-        /// <param name="isBinaryAsset">True if output file is a binary asset.</param>
+        /// <param name="isInBuilt">True if use in-built importer (engine backend).</param>
         /// <param name="skipSettingsDialog">True if skip any popup dialogs showing for import options adjusting. Can be used when importing files from code.</param>
         /// <param name="settings">Import settings to override. Use null to skip this value.</param>
-        private void Import(string inputPath, string outputPath, bool isBinaryAsset, bool skipSettingsDialog = false, object settings = null)
+        private void Import(string inputPath, string outputPath, bool isInBuilt, bool skipSettingsDialog = false, object settings = null)
         {
             lock (_requests)
             {
@@ -254,7 +252,7 @@ namespace FlaxEditor.Modules
                 {
                     InputPath = inputPath,
                     OutputPath = outputPath,
-                    IsBinaryAsset = isBinaryAsset,
+                    IsInBuilt = isInBuilt,
                     SkipSettingsDialog = skipSettingsDialog,
                     Settings = settings,
                 });

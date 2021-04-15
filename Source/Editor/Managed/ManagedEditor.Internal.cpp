@@ -521,13 +521,14 @@ public:
         return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
     }
 
-    static bool CanImport(MonoString* extensionObj)
+    static MonoString* CanImport(MonoString* extensionObj)
     {
         String extension;
         MUtils::ToString(extensionObj, extension);
         if (extension.Length() > 0 && extension[0] == '.')
             extension.Remove(0, 1);
-        return AssetsImportingManager::GetImporter(extension) != nullptr;
+        const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
+        return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
     }
 
     static bool Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)
