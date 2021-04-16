@@ -14,5 +14,10 @@ public class Localization : EngineModule
         base.Setup(options);
 
         options.PublicDependencies.Add("Scripting");
+
+        if (options.Target.IsEditor)
+        {
+            options.PrivateDependencies.Add("ContentImporters");
+        }
     }
 }
