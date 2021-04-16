@@ -8,11 +8,6 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConne
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConnection);
 public:
+    API_FIELD();
     uint32 ConnectionId;
-
-public:
-    explicit NetworkConnection(const uint32 id)
-    {
-        ConnectionId = id;
-    }
 };

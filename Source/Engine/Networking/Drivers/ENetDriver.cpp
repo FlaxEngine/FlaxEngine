@@ -55,7 +55,7 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
 void ENetDriver::Initialize(const NetworkConfig& config)
 {
     _config = config;
-    _peerMap = Dictionary<NetworkConnection, void*>();
+    _peerMap = Dictionary<uint32_t, void*>();
 
     if (enet_initialize () != 0) {
         LOG(Error, "Failed to initialize ENet driver!");
@@ -154,7 +154,9 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
     if(result > 0)
     {
         // Copy sender data
-        eventPtr->Sender = NetworkConnection(enet_peer_get_id(event.peer));
+        const uint32_t connectionId = enet_peer_get_id(event.peer);
+        eventPtr->Sender = NetworkConnection();
+        eventPtr->Sender.ConnectionId = connectionId;
         
         switch(event.type)
         {
@@ -162,20 +164,23 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
             eventPtr->EventType = NetworkEventType::Connected;
 
             if(IsServer())
-                _peerMap.Add(eventPtr->Sender, event.peer);
+                _peerMap.Add(connectionId, event.peer);
             break;
+            
         case ENET_EVENT_TYPE_DISCONNECT:
             eventPtr->EventType = NetworkEventType::Disconnected;
             
-            if(IsServer() && _peerMap.ContainsKey(eventPtr->Sender))
-                _peerMap.Remove(eventPtr->Sender);
+            if(IsServer() && _peerMap.ContainsKey(connectionId))
+                _peerMap.Remove(connectionId);
             break;
+            
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             eventPtr->EventType = NetworkEventType::Timeout;
             
-            if(IsServer() && _peerMap.ContainsKey(eventPtr->Sender))
-                _peerMap.Remove(eventPtr->Sender);
+            if(IsServer() && _peerMap.ContainsKey(connectionId))
+                _peerMap.Remove(connectionId);
             break;
+            
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;
 
@@ -204,12 +209,11 @@ void ENetDriver::SendMessage(const NetworkChannelType channelType, const Network
 {
     ASSERT(IsServer());
     
-    for(NetworkConnection connection&& : targets)
+    for(NetworkConnection connection : targets)
     {
-        ASSERT(_peerMap.ContainsKey(connection));
-        
-        ENetPeer* peer = (ENetPeer*)_peerMap.TryGet(connection);
+        ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(connection.ConnectionId);
         ASSERT(peer != nullptr);
+        ASSERT(peer->state == ENET_PEER_STATE_CONNECTED);
         
         SendPacketToPeer(peer, channelType, message);
     }

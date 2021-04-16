@@ -4,6 +4,7 @@
 
 #include "Engine/Networking/Types.h"
 #include "Engine/Networking/INetworkDriver.h"
+#include "Engine/Networking/NetworkConnection.h"
 #include "Engine/Networking/NetworkConfig.h"
 
 #include "Engine/Core/Collections/Dictionary.h"
@@ -37,6 +38,6 @@ private:
     void* _host = nullptr;
     void* _peer = nullptr;
     
-    Dictionary<NetworkConnection, void*> _peerMap;
+    Dictionary<uint32_t, void*> _peerMap;
 };
 
