@@ -153,3 +153,41 @@ void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
     Instance.CurrentLanguage = value;
     Instance.OnLocalizationChanged();
 }
+
+String Localization::GetString(const String& id, const String& fallback)
+{
+    String result;
+    for (auto& e : Instance.LocalizedStringTables)
+    {
+        const auto table = e.Get();
+        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
+        if (messages && messages->Count() != 0)
+        {
+            result = messages->At(0);
+            break;
+        }
+    }
+    if (result.IsEmpty())
+        result = fallback;
+    return result;
+}
+
+String Localization::GetPluralString(const String& id, int32 n, const String& fallback)
+{
+    CHECK_RETURN(n >= 1, fallback);
+    n--;
+    String result;
+    for (auto& e : Instance.LocalizedStringTables)
+    {
+        const auto table = e.Get();
+        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
+        if (messages && messages->Count() > n)
+        {
+            result = messages->At(n);
+            break;
+        }
+    }
+    if (result.IsEmpty())
+        result = fallback;
+    return result;
+}

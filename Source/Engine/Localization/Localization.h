@@ -41,4 +41,22 @@ public:
     /// Occurs when current culture or language gets changed. Can be used to refresh UI to reflect language changes.
     /// </summary>
     API_EVENT() static Delegate<> LocalizationChanged;
+
+public:
+    /// <summary>
+    /// Gets the localized string for the current language by using string id lookup.
+    /// </summary>
+    /// <param name="id">The message identifier.</param>
+    /// <param name="fallback">The optional fallback string value to use if localized string is missing.</param>
+    /// <returns>The localized text.</returns>
+    API_FUNCTION() static String GetString(const String& id, const String& fallback = String::Empty);
+
+    /// <summary>
+    /// Gets the localized plural string for the current language by using string id lookup.
+    /// </summary>
+    /// <param name="id">The message identifier.</param>
+    /// <param name="n">The value count for plural message selection.</param>
+    /// <param name="fallback">The optional fallback string value to use if localized string is missing.</param>
+    /// <returns>The localized text.</returns>
+    API_FUNCTION() static String GetPluralString(const String& id, int32 n, const String& fallback = String::Empty);
 };
