@@ -159,8 +159,8 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
             LOG(Info, "Disconnected"); // TODO
             break;
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
-            eventPtr->EventType = NetworkEventType::Disconnected;
             LOG(Info, "Disconnected (timeout)"); // TODO
+            eventPtr->EventType = NetworkEventType::Timeout;
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;

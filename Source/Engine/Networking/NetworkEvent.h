@@ -12,6 +12,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkEventType
 
     Connected,
     Disconnected,
+    Timeout,
     Message
 };
 
