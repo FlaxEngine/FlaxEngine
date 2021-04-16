@@ -195,11 +195,15 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
+    ASSERT(IsServer() == false);
+    
     SendPacketToPeer((ENetPeer*)_peer, channelType, message);
 }
 
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
 {
+    ASSERT(IsServer());
+    
     for(NetworkConnection connection&& : targets)
     {
         ASSERT(_peerMap.ContainsKey(connection));
