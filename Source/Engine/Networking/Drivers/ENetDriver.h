@@ -29,5 +29,7 @@ private:
     NetworkConfig _config;
     void* _host = nullptr;
     void* _peer = nullptr;
+    
+    Dictionary<NetworkConnection, void*> _peerMap;
 };
 

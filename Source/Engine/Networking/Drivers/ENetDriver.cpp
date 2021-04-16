@@ -55,6 +55,7 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
 void ENetDriver::Initialize(const NetworkConfig& config)
 {
     _config = config;
+    _peerMap = Dictionary<NetworkConnection, void*>();
 
     if (enet_initialize () != 0) {
         LOG(Error, "Failed to initialize ENet driver!");
@@ -70,6 +71,10 @@ void ENetDriver::Dispose()
     enet_host_destroy((ENetHost*)_host);
     
     enet_deinitialize();
+    
+    _peerMap.Clear();
+    _peerMap = {};
+    
     _peer = nullptr;
     _host = nullptr;
 }
@@ -152,15 +157,21 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
         {
         case ENET_EVENT_TYPE_CONNECT:
             eventPtr->EventType = NetworkEventType::Connected;
-            LOG(Info, "Connected. Peer id={0}", enet_peer_get_id(event.peer)); // TODO
+
+            if(IsServer())
+                _peerMap.Add(eventPtr->Sender, event.peer);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             eventPtr->EventType = NetworkEventType::Disconnected;
-            LOG(Info, "Disconnected"); // TODO
+            
+            if(IsServer() && _peerMap.ContainsKey(eventPtr->Sender))
+                _peerMap.Remove(eventPtr->Sender);
             break;
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
-            LOG(Info, "Disconnected (timeout)"); // TODO
             eventPtr->EventType = NetworkEventType::Timeout;
+            
+            if(IsServer() && _peerMap.ContainsKey(eventPtr->Sender))
+                _peerMap.Remove(eventPtr->Sender);
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;
