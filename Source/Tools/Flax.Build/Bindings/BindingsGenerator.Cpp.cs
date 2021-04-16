@@ -262,6 +262,66 @@ namespace Flax.Build.Bindings
             return "Scripting::FindClassNative(\"" + managedType + "\")";
         }
 
+        private static string GenerateCppGetNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo)
+        {
+            // Optimal path for in-build types
+            var managedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller);
+            switch (managedType)
+            {
+            case "bool":
+            case "sbyte":
+            case "byte":
+            case "short":
+            case "ushort":
+            case "int":
+            case "uint":
+            case "long":
+            case "ulong":
+            case "float":
+            case "double":
+            case "string":
+            case "object":
+            case "void":
+            case "char":
+            case "IntPtr":
+            case "UIntPtr": return "mono_class_get_type(" + GenerateCppGetNativeClass(buildData, typeInfo, caller, null) + ')';
+            }
+
+            // Find API type
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null)
+            {
+                CppReferencesFiles.Add(apiType.File);
+                if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
+                    CppUsedNonPodTypes.Add(apiType);
+                if (!apiType.IsInBuild && !apiType.IsEnum)
+                {
+                    // Use declared type initializer
+                    return $"mono_class_get_type({apiType.FullNameNative}::TypeInitializer.GetType().ManagedClass->GetNative())";
+                }
+            }
+
+            // Pass it from C# in glue parameter if used inside the wrapper function
+            if (functionInfo != null)
+            {
+                var customParam = new FunctionInfo.ParameterInfo
+                {
+                    Name = "resultArrayItemType" + functionInfo.Glue.CustomParameters.Count,
+                    DefaultValue = "typeof(" + managedType + ')',
+                    Type = new TypeInfo
+                    {
+                        Type = "MonoReflectionType",
+                        IsPtr = true,
+                    },
+                };
+                functionInfo.Glue.CustomParameters.Add(customParam);
+                return "mono_reflection_type_get_type(" + customParam.Name + ')';
+            }
+
+            // Convert MonoClass* into MonoType*
+            return "mono_class_get_type" + GenerateCppGetNativeClass(buildData, typeInfo, caller, null) + ')';
+        }
+
         private static string GenerateCppWrapperNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo)
         {
             // Use dynamic array as wrapper container for fixed-size native arrays
@@ -371,8 +431,8 @@ namespace Flax.Build.Bindings
                 {
                     CppIncludeFiles.Add("Engine/Scripting/InternalCalls/ManagedDictionary.h");
                     type = "MonoObject*";
-                    var keyClass = GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
-                    var valueClass = GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[1], caller, functionInfo);
+                    var keyClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
+                    var valueClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller, functionInfo);
                     return "ManagedDictionary::ToManaged({0}, " + keyClass + ", " + valueClass + ")";
                 }
 
