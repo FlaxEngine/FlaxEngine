@@ -44,7 +44,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool IsProxyFor(ContentItem item)
         {
-            return item is JsonAssetItem;
+            return item is JsonAssetItem json && json.TypeName == TypeName;
         }
 
         /// <inheritdoc />
