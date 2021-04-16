@@ -205,13 +205,24 @@ void ENetDriver::SendMessage(const NetworkChannelType channelType, const Network
     SendPacketToPeer((ENetPeer*)_peer, channelType, message);
 }
 
+void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
+{
+    ASSERT(IsServer());
+
+    ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(target.ConnectionId);
+    ASSERT(peer != nullptr);
+    ASSERT(peer->state == ENET_PEER_STATE_CONNECTED);
+    
+    SendPacketToPeer(peer, channelType, message);
+}
+
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
 {
     ASSERT(IsServer());
     
-    for(NetworkConnection connection : targets)
+    for(NetworkConnection target : targets)
     {
-        ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(connection.ConnectionId);
+        ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(target.ConnectionId);
         ASSERT(peer != nullptr);
         ASSERT(peer->state == ENET_PEER_STATE_CONNECTED);
         

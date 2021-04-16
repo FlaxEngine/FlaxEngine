@@ -19,6 +19,7 @@ public:
     virtual bool PopEvent(NetworkEvent* eventPtr) = 0;
     
     virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) = 0;
+    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target) = 0;
     virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) = 0;
 
     // TODO: Stats API
