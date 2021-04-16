@@ -6,6 +6,7 @@
 #include "Engine/Networking/INetworkDriver.h"
 #include "Engine/Networking/NetworkConfig.h"
 
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public INetworkDriver
@@ -25,6 +26,12 @@ public:
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) override;
 
+private:
+    bool IsServer() const
+    {
+        return _host != nullptr && _peer == nullptr;
+    }
+    
 private:
     NetworkConfig _config;
     void* _host = nullptr;

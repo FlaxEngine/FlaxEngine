@@ -153,6 +153,9 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
     
     if(result > 0)
     {
+        // Copy sender data
+        eventPtr->Sender = NetworkConnection(enet_peer_get_id(event.peer));
+        
         switch(event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
@@ -180,8 +183,6 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
             eventPtr->Message = NetworkManager::CreateMessage(eventPtr->HostId);
             eventPtr->Message.Length = event.packet->dataLength;
             Memory::CopyItems(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
-
-            // TODO: Copy sender info
             break;
             
         default: break;
@@ -197,7 +198,15 @@ void ENetDriver::SendMessage(const NetworkChannelType channelType, const Network
     SendPacketToPeer((ENetPeer*)_peer, channelType, message);
 }
 
-void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
+void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
 {
-    // TODO: Send messages
+    for(NetworkConnection connection&& : targets)
+    {
+        ASSERT(_peerMap.ContainsKey(connection));
+        
+        ENetPeer* peer = (ENetPeer*)_peerMap.TryGet(connection);
+        ASSERT(peer != nullptr);
+        
+        SendPacketToPeer(peer, channelType, message);
+    }
 }
