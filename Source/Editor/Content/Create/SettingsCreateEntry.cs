@@ -54,6 +54,11 @@ namespace FlaxEditor.Content.Create
             NavigationSettings,
 
             /// <summary>
+            /// The localization settings.
+            /// </summary>
+            LocalizationSettings,
+
+            /// <summary>
             /// The build settings.
             /// </summary>
             BuildSettings,
@@ -108,6 +113,7 @@ namespace FlaxEditor.Content.Create
             typeof(PhysicsSettings),
             typeof(GraphicsSettings),
             typeof(NavigationSettings),
+            typeof(LocalizationSettings),
             typeof(BuildSettings),
             typeof(InputSettings),
             typeof(WindowsPlatformSettings),

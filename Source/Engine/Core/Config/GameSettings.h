@@ -68,6 +68,7 @@ public:
     Guid Input;
     Guid Graphics;
     Guid Navigation;
+    Guid Localization;
     Guid GameCooking;
 
     // Per-platform settings containers

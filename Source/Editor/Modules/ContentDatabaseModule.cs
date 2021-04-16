@@ -934,6 +934,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(PhysicsSettings)));
             Proxy.Add(new SettingsProxy(typeof(GraphicsSettings)));
             Proxy.Add(new SettingsProxy(typeof(NavigationSettings)));
+            Proxy.Add(new SettingsProxy(typeof(LocalizationSettings)));
             Proxy.Add(new SettingsProxy(typeof(BuildSettings)));
             Proxy.Add(new SettingsProxy(typeof(InputSettings)));
             Proxy.Add(new SettingsProxy(typeof(WindowsPlatformSettings)));

@@ -2,8 +2,12 @@
 
 #include "Localization.h"
 #include "CultureInfo.h"
+#include "LocalizationSettings.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Serialization/Serialization.h"
 
 class LocalizationService : public EngineService
 {
@@ -21,6 +25,18 @@ namespace
     CultureInfo CurrentCulture(0);
     CultureInfo CurrentLanguage(0);
     LocalizationService LocalizationServiceInstance;
+
+IMPLEMENT_SETTINGS_GETTER(LocalizationSettings, Localization);
+
+void LocalizationSettings::Apply()
+{
+}
+
+void LocalizationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(LocalizedStringTables);
+}
+
 }
 
 bool LocalizationService::Init()
