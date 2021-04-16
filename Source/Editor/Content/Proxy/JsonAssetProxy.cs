@@ -2,7 +2,6 @@
 
 using System;
 using FlaxEditor.Content.Create;
-using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Windows;
@@ -50,12 +49,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override Color AccentColor => Color.FromRGB(0xd14f67);
-
-        /// <inheritdoc />
-        public override bool AcceptsAsset(string typeName, string path)
-        {
-            return typeName == TypeName && base.AcceptsAsset(typeName, path);
-        }
 
         /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
