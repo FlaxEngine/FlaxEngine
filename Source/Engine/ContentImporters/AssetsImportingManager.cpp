@@ -31,6 +31,7 @@
 #include "CreateParticleEmitterFunction.h"
 #include "CreateAnimationGraphFunction.h"
 #include "CreateVisualScript.h"
+#include "CreateJson.h"
 
 // Tags used to detect asset creation mode
 const String AssetsImportingManager::CreateTextureTag(TEXT("Texture"));
@@ -412,6 +413,9 @@ bool AssetsImportingManagerService::Init()
         { TEXT("dae"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
         { TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
         { TEXT("glb"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+
+        // gettext PO files
+        { TEXT("po"), TEXT("json"), CreateJson::ImportPo },
 
         // Models (untested formats - may fail :/)
         { TEXT("blend"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
