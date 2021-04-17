@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -24,6 +25,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -76,7 +82,37 @@ namespace Flax.Deps.Dependencies
                         foreach (var filename in binariesToCopyWin)
                             Utilities.FileCopy(Path.Combine(root, "build", "Win64", vcVersion, configuration, filename), Path.Combine(depsFolder, Path.GetFileName(filename)));
                     }
-
+                    break;
+                }
+                case TargetPlatform.Linux:
+                {
+                    // Build for Linux
+                    var settings = new []
+                    {
+                        "-without-librtmp",
+                        "--without-ssl",
+                        "--with-gnutls",
+                        "--disable-ipv6",
+                        "--disable-manual",
+                        "--disable-verbose",
+                        "--disable-shared",
+                        "--enable-static",
+                        "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
+                    };
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CC", "clang-7" },
+                        { "CC_FOR_BUILD", "clang-7" }
+                    };
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.None);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    var filename = "libcurl.a";
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
                     break;
                 }
                 }

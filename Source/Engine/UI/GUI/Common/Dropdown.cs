@@ -8,8 +8,8 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Dropdown menu control allows to choose one item from the provided collection of options.
     /// </summary>
-    /// <seealso cref="FlaxEngine.GUI.Control" />
-    public class Dropdown : Control
+    /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    public class Dropdown : ContainerControl
     {
         /// <summary>
         /// The root control used by the <see cref="Dropdown"/> to show the items collections and track item selecting event.
@@ -18,7 +18,7 @@ namespace FlaxEngine.GUI
         [HideInEditor]
         protected class DropdownRoot : Panel
         {
-            private bool isMouseDown;
+            private bool _isMouseDown;
 
             /// <summary>
             /// Occurs when item gets clicked. Argument is item index.
@@ -38,9 +38,9 @@ namespace FlaxEngine.GUI
             /// <inheritdoc />
             public override bool OnMouseDown(Vector2 location, MouseButton button)
             {
-                isMouseDown = true;
+                _isMouseDown = true;
                 var result = base.OnMouseDown(location, button);
-                isMouseDown = false;
+                _isMouseDown = false;
 
                 if (!result)
                     return false;
@@ -57,8 +57,10 @@ namespace FlaxEngine.GUI
             {
                 base.OnLostFocus();
 
-                if (!isMouseDown)
-                    LostFocus();
+                if (!_isMouseDown)
+                {
+                    LostFocus?.Invoke();
+                }
             }
 
             /// <inheritdoc />
@@ -82,7 +84,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         protected DropdownRoot _popup;
 
-        private bool _mouseDown;
+        private bool _touchDown;
 
         /// <summary>
         /// The selected index of the item (-1 for no selection).
@@ -118,13 +120,9 @@ namespace FlaxEngine.GUI
             get => _selectedIndex;
             set
             {
-                // Clamp index
                 value = Mathf.Min(value, _items.Count - 1);
-
-                // Check if index will change
                 if (value != _selectedIndex)
                 {
-                    // Select
                     _selectedIndex = value;
                     OnSelectedIndexChanged();
                 }
@@ -225,6 +223,8 @@ namespace FlaxEngine.GUI
         public Dropdown()
         : base(0, 0, 120, 18.0f)
         {
+            AutoFocus = false;
+
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
@@ -334,6 +334,7 @@ namespace FlaxEngine.GUI
             }
             */
             var itemsWidth = Width;
+            var height = container.Margin.Height;
 
             for (int i = 0; i < _items.Count; i++)
             {
@@ -347,33 +348,49 @@ namespace FlaxEngine.GUI
                 var label = new Label
                 {
                     X = itemsMargin,
-                    Width = itemsWidth - itemsMargin,
+                    Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
                     Font = Font,
                     TextColor = Color.White * 0.9f,
                     TextColorHighlighted = Color.White,
                     HorizontalAlignment = TextAlignment.Near,
-                    AnchorPreset = AnchorPresets.VerticalStretchRight,
                     Text = _items[i],
                     Parent = item,
                 };
+                height += itemsHeight;
+                if (i != 0)
+                    height += container.Spacing;
 
                 if (_selectedIndex == i)
                 {
                     var icon = new Image
                     {
                         Brush = CheckedImage,
-                        Width = itemsMargin,
+                        Size = new Vector2(itemsMargin, itemsHeight),
                         Margin = new Margin(4.0f, 6.0f, 4.0f, 4.0f),
-                        AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                        //AnchorPreset = AnchorPresets.VerticalStretchLeft,
                         Parent = item,
                     };
                 }
             }
 
-            popup.Size = new Vector2(itemsWidth, (itemsHeight + container.Spacing) * _items.Count + container.Margin.Height);
+            popup.Size = new Vector2(itemsWidth, height);
             popup.ItemsContainer = container;
 
             return popup;
+        }
+
+        /// <summary>
+        /// Called when popup menu gets shown.
+        /// </summary>
+        protected virtual void OnPopupShow()
+        {
+        }
+
+        /// <summary>
+        /// Called when popup menu gets hidden.
+        /// </summary>
+        protected virtual void OnPopupHide()
+        {
         }
 
         /// <summary>
@@ -383,9 +400,57 @@ namespace FlaxEngine.GUI
         {
             if (_popup != null)
             {
+                OnPopupHide();
                 _popup.Dispose();
                 _popup = null;
             }
+        }
+
+        /// <summary>
+        /// Shows the popup.
+        /// </summary>
+        public void ShowPopup()
+        {
+            var root = Root;
+            if (_items.Count == 0 || root == null)
+                return;
+
+            // Setup popup
+            DestroyPopup();
+            _popup = CreatePopup();
+
+            // Update layout
+            _popup.UnlockChildrenRecursive();
+            _popup.PerformLayout();
+
+            // Bind events
+            _popup.ItemClicked += index =>
+            {
+                OnItemClicked(index);
+                DestroyPopup();
+            };
+            _popup.LostFocus += DestroyPopup;
+
+            // Show dropdown popup
+            Vector2 locationRootSpace = Location + new Vector2(0, Height);
+            var parent = Parent;
+            while (parent != null && parent != Root)
+            {
+                locationRootSpace = parent.PointToParent(ref locationRootSpace);
+                parent = parent.Parent;
+            }
+            _popup.Location = locationRootSpace;
+            _popup.Parent = root;
+            _popup.Focus();
+            OnPopupShow();
+        }
+
+        /// <summary>
+        /// Hides the popup.
+        /// </summary>
+        public void HidePopup()
+        {
+            DestroyPopup();
         }
 
         /// <inheritdoc />
@@ -397,7 +462,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             // Cache data
             var clientRect = new Rectangle(Vector2.Zero, Size);
@@ -413,7 +478,7 @@ namespace FlaxEngine.GUI
                 backgroundColor *= 0.5f;
                 arrowColor *= 0.7f;
             }
-            else if (isOpened || _mouseDown)
+            else if (isOpened || _touchDown)
             {
                 backgroundColor = BackgroundColorSelected;
                 borderColor = BorderColorSelected;
@@ -448,17 +513,15 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            base.OnLostFocus();
+            _touchDown = false;
 
-            // Clear flags
-            _mouseDown = false;
+            base.OnLostFocus();
         }
 
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            // Clear flags
-            _mouseDown = false;
+            _touchDown = false;
 
             base.OnMouseLeave();
         }
@@ -466,59 +529,60 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            // Check mouse buttons
+            if (base.OnMouseDown(location, button))
+                return true;
+
             if (button == MouseButton.Left)
             {
-                // Set flag
-                _mouseDown = true;
+                _touchDown = true;
+                return true;
             }
 
-            return base.OnMouseDown(location, button);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            // Check flags
-            if (_mouseDown)
+            if (_touchDown && button == MouseButton.Left)
             {
-                // Clear flag
-                _mouseDown = false;
-
-                var root = Root;
-                if (_items.Count > 0 && root != null)
-                {
-                    // Setup popup
-                    DestroyPopup();
-                    _popup = CreatePopup();
-
-                    // Update layout
-                    _popup.UnlockChildrenRecursive();
-                    _popup.PerformLayout();
-
-                    // Bind events
-                    _popup.ItemClicked += (index) =>
-                    {
-                        OnItemClicked(index);
-                        DestroyPopup();
-                    };
-                    _popup.LostFocus += DestroyPopup;
-
-                    // Show dropdown popup
-                    Vector2 locationRootSpace = Location + new Vector2(0, Height);
-                    var parent = Parent;
-                    while (parent != null && parent != Root)
-                    {
-                        locationRootSpace = parent.PointToParent(ref location);
-                        parent = parent.Parent;
-                    }
-                    _popup.Location = locationRootSpace;
-                    _popup.Parent = root;
-                    _popup.Focus();
-                }
+                _touchDown = false;
+                ShowPopup();
+                return true;
             }
 
+            return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchDown(Vector2 location, int pointerId)
+        {
+            if (base.OnTouchDown(location, pointerId))
+                return true;
+
+            _touchDown = true;
             return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchUp(Vector2 location, int pointerId)
+        {
+            if (base.OnTouchUp(location, pointerId))
+                return true;
+
+            if (_touchDown)
+            {
+                ShowPopup();
+            }
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnTouchLeave(int pointerId)
+        {
+            _touchDown = false;
+
+            base.OnTouchLeave(pointerId);
         }
     }
 }
