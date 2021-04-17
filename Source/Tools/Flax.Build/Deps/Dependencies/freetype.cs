@@ -31,6 +31,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
+                        TargetPlatform.Switch,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -204,6 +205,17 @@ namespace Flax.Deps.Dependencies
                     // Build for Android
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release");
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    break;
+                }
+                case TargetPlatform.Switch:
+                {
+                    // Build for Switch
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));

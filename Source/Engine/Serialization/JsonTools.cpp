@@ -100,6 +100,8 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
 
 void JsonTools::ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping)
 {
+    if (mapping.IsEmpty())
+        return;
     ::ChangeIds(doc, doc, mapping);
 }
 

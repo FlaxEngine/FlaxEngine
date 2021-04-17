@@ -714,6 +714,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         case PlatformType::Android:
             boxId = 8;
             break;
+        case PlatformType::Switch:
+            boxId = 9;
+            break;
         default: ;
         }
         value = tryGetValue(node->GetBox(node->GetBox(boxId)->HasConnection() ? boxId : 1), Value::Zero);

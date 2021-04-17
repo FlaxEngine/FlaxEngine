@@ -67,9 +67,8 @@ API_CLASS(Static) class FLAXENGINE_API Physics
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
 
     /// <summary>
-    /// Gets master physics object
+    /// Gets the master physics object.
     /// </summary>
-    /// <returns>Physics object</returns>
     static PxPhysics* GetPhysics();
 
 #if COMPILE_WITH_PHYSICS_COOKING
@@ -77,7 +76,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
     /// <summary>
     /// Gets physics cooking object
     /// </summary>
-    /// <returns>Physics cooking object</returns>
     static PxCooking* GetCooking();
 
 #endif
@@ -85,37 +83,31 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
     /// <summary>
     /// Gets PhysX scene object
     /// </summary>
-    /// <returns>Scene object</returns>
     static PxScene* GetScene();
 
     /// <summary>
     /// Gets PhysX characters controller manager object
     /// </summary>
-    /// <returns>Controller manager object</returns>
     static PxControllerManager* GetControllerManager();
 
     /// <summary>
     /// Gets the physics tolerances scale.
     /// </summary>
-    /// <returns>The tolerances scale.</returns>
     static PxTolerancesScale* GetTolerancesScale();
 
     /// <summary>
     /// Gets the default query filter callback used for the scene queries.
     /// </summary>
-    /// <returns>The query filter callback.</returns>
     static PxQueryFilterCallback* GetQueryFilterCallback();
 
     /// <summary>
     /// Gets the default query filter callback used for the character controller collisions detection.
     /// </summary>
-    /// <returns>The query filter callback.</returns>
     static PxQueryFilterCallback* GetCharacterQueryFilterCallback();
 
     /// <summary>
     /// Gets the default physical material.
     /// </summary>
-    /// <returns>The native material resource.</returns>
     static PxMaterial* GetDefaultMaterial();
 
 public:
@@ -277,6 +269,50 @@ public:
     API_FUNCTION() static bool SphereCastAll(const Vector3& center, float radius, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
+    /// Performs a sweep test against objects in the scene using a capsule geometry.
+    /// </summary>
+    /// <param name="center">The box center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="direction">The normalized direction in which cast a box.</param>
+    /// <param name="rotation">The capsule rotation.</param>
+    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
+    /// Performs a sweep test against objects in the scene using a capsule geometry.
+    /// </summary>
+    /// <param name="center">The box center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="direction">The normalized direction in which cast a box.</param>
+    /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
+    /// <param name="rotation">The capsule rotation.</param>
+    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
+    /// Performs a sweep test against objects in the scene using a capsule geometry.
+    /// </summary>
+    /// <param name="center">The box center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="direction">The normalized direction in which cast a box.</param>
+    /// <param name="results">The result hits. Valid only when method returns true.</param>
+    /// <param name="rotation">The capsule rotation.</param>
+    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    API_FUNCTION() static bool CapsuleCastAll(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
     /// Checks whether the given box overlaps with other colliders or not.
     /// </summary>
     /// <param name="center">The box center.</param>
@@ -296,6 +332,17 @@ public:
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if sphere overlaps any matching object, otherwise false.</returns>
     API_FUNCTION() static bool CheckSphere(const Vector3& center, float radius, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
+    /// Checks whether the given capsule overlaps with other colliders or not.
+    /// </summary>
+    /// <param name="center">The capsule center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
+    API_FUNCTION() static bool CheckCapsule(const Vector3& center, float radius, float height, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
     /// Finds all colliders touching or inside of the given box.
@@ -321,6 +368,18 @@ public:
     API_FUNCTION() static bool OverlapSphere(const Vector3& center, float radius, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
+    /// Finds all colliders touching or inside of the given sphere.
+    /// </summary>
+    /// <param name="center">The sphere center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="results">The result colliders that overlap with the given sphere. Valid only when method returns true.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
+    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
     /// Finds all colliders touching or inside of the given box.
     /// </summary>
     /// <param name="center">The box center.</param>
@@ -342,6 +401,18 @@ public:
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if sphere overlaps any matching object, otherwise false.</returns>
     API_FUNCTION() static bool OverlapSphere(const Vector3& center, float radius, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
+    /// Finds all colliders touching or inside of the given sphere.
+    /// </summary>
+    /// <param name="center">The capsule center.</param>
+    /// <param name="radius">The radius of the capsule.</param>
+    /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="results">The result colliders that overlap with the given sphere. Valid only when method returns true.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
+    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
 public:
 

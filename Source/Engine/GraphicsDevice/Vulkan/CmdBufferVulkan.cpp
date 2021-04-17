@@ -43,7 +43,7 @@ void CmdBufferVulkan::End()
 {
     ASSERT(IsOutsideRenderPass());
 
-#if GPU_ALLOW_PROFILE_EVENTS
+#if GPU_ALLOW_PROFILE_EVENTS && VK_EXT_debug_utils
     // End remaining events
     while (_eventsBegin--)
         vkCmdEndDebugUtilsLabelEXT(GetHandle());
@@ -89,6 +89,7 @@ void CmdBufferVulkan::AcquirePoolSet()
 
 void CmdBufferVulkan::BeginEvent(const Char* name)
 {
+#if VK_EXT_debug_utils
     if (!vkCmdBeginDebugUtilsLabelEXT)
         return;
 
@@ -108,15 +109,18 @@ void CmdBufferVulkan::BeginEvent(const Char* name)
     RenderToolsVulkan::ZeroStruct(label, VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
     label.pLabelName = buffer;
     vkCmdBeginDebugUtilsLabelEXT(GetHandle(), &label);
+#endif
 }
 
 void CmdBufferVulkan::EndEvent()
 {
+#if VK_EXT_debug_utils
     if (_eventsBegin == 0 || !vkCmdEndDebugUtilsLabelEXT)
         return;
     _eventsBegin--;
 
     vkCmdEndDebugUtilsLabelEXT(GetHandle());
+#endif
 }
 
 #endif

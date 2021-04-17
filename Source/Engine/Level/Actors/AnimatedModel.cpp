@@ -383,7 +383,7 @@ void AnimatedModel::UpdateLocalBounds()
     }
     else
     {
-        box = BoundingBox(Vector3::Zero, Vector3::Zero);
+        box = BoundingBox(Vector3::Zero);
     }
 
     // Scale bounds

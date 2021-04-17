@@ -262,6 +262,8 @@ namespace FlaxEngine.GUI
                 // Change order
                 _children.Insert(newIndex, child);
             }
+
+            PerformLayout();
         }
 
         /// <summary>
@@ -614,25 +616,32 @@ namespace FlaxEngine.GUI
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Draw the control and the children.
+        /// </summary>
         public override void Draw()
         {
-            base.Draw();
+            DrawSelf();
 
-            // Push clipping mask
             if (ClipChildren)
             {
                 GetDesireClientArea(out var clientArea);
                 Render2D.PushClip(ref clientArea);
-            }
-
-            DrawChildren();
-
-            // Pop clipping mask
-            if (ClipChildren)
-            {
+                DrawChildren();
                 Render2D.PopClip();
             }
+            else
+            {
+                DrawChildren();
+            }
+        }
+
+        /// <summary>
+        /// Draws the control.
+        /// </summary>
+        public virtual void DrawSelf()
+        {
+            base.Draw();
         }
 
         /// <summary>

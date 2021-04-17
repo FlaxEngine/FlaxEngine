@@ -122,6 +122,18 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            if (_instance != null)
+            {
+                // Link UI canvases to the preview (eg. after canvas added to the prefab)
+                LinkCanvas(_instance);
+            }
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             Prefab = null;

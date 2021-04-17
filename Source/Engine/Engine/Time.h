@@ -22,7 +22,7 @@ public:
     /// Engine subsystem updating data.
     /// Used to invoke game logic updates, physics updates and rendering with possibly different frequencies.
     /// </summary>
-    class TickData
+    class FLAXENGINE_API TickData
     {
     public:
 

@@ -236,7 +236,7 @@ public:
             return;
         ASSERT(capacity >= 0);
         const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1), _count, count);
+        _allocation.Relocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1), _count / sizeof(ItemType), count / sizeof(ItemType));
         _capacity = capacity;
         _count = count;
     }

@@ -64,6 +64,9 @@ public class Main : EngineModule
         case TargetPlatform.Android:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
             break;
+        case TargetPlatform.Switch:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Main"));
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }

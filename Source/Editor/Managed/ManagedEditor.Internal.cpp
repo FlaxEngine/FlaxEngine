@@ -715,7 +715,7 @@ public:
         return str;
     }
 
-    static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, Model* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+    static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
     {
 #if COMPILE_WITH_PHYSICS_COOKING
         CollisionCooking::Argument arg;
@@ -725,9 +725,9 @@ public:
         arg.Type = type;
         arg.Model = modelObj;
         arg.ModelLodIndex = modelLodIndex;
+        arg.MaterialSlotsMask = materialSlotsMask;
         arg.ConvexFlags = convexFlags;
         arg.ConvexVertexLimit = convexVertexLimit;
-
         return CreateCollisionData::CookMeshCollision(path, arg);
 #else
 		LOG(Warning, "Collision cooking is disabled.");
@@ -743,8 +743,8 @@ public:
         const auto& debugLines = collisionData->GetDebugLines();
 
         const int32 linesCount = debugLines.Count() / 2;
-        *triangles = mono_array_new(mono_domain_get(), StdTypesContainer::Instance()->Vector3Class->GetNative(), debugLines.Count());
-        *indices = mono_array_new(mono_domain_get(), mono_get_int32_class(), linesCount * 3);
+        mono_gc_wbarrier_generic_store(triangles, (MonoObject*)mono_array_new(mono_domain_get(), StdTypesContainer::Instance()->Vector3Class->GetNative(), debugLines.Count()));
+        mono_gc_wbarrier_generic_store(indices, (MonoObject*)mono_array_new(mono_domain_get(), mono_get_int32_class(), linesCount * 3));
 
         // Use one triangle per debug line
         for (int32 i = 0; i < debugLines.Count(); i++)

@@ -73,8 +73,6 @@ public class mono : DepsModule
         case TargetPlatform.Linux:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
-            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1"));
-            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so.1.0.0"));
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             break;
         case TargetPlatform.PS4:
@@ -87,6 +85,9 @@ public class mono : DepsModule
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
+            break;
+        case TargetPlatform.Switch:
+            // TODO: mono for Switch
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

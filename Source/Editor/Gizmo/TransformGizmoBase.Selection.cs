@@ -81,7 +81,7 @@ namespace FlaxEditor.Gizmo
                 // Quad planes collision
                 if (closestIntersection >= float.MaxValue)
                     closestIntersection = float.MinValue;
-
+              
                 if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.XY;
@@ -141,16 +141,19 @@ namespace FlaxEditor.Gizmo
             case Mode.Scale:
             {
                 // Spheres collision
+
                 if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
                     closestIntersection = intersection;
                 }
+
                 if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
                     closestIntersection = intersection;
                 }
+
                 if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
@@ -160,6 +163,7 @@ namespace FlaxEditor.Gizmo
                 // Quad planes collision
                 if (closestIntersection >= float.MaxValue)
                     closestIntersection = float.MinValue;
+              
                 if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.XY;

@@ -7,7 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Button control
     /// </summary>
-    public class Button : Control
+    public class Button : ContainerControl
     {
         /// <summary>
         /// The default height fro the buttons.
@@ -171,7 +171,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             // Cache data
             Rectangle clientRect = new Rectangle(Vector2.Zero, Size);

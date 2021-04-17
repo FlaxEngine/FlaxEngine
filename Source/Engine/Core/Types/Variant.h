@@ -54,6 +54,10 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         ManagedObject,
         Typename,
 
+        Int2,
+        Int3,
+        Int4,
+
         MAX
     };
 
@@ -198,6 +202,9 @@ public:
     Variant(const Vector2& v);
     Variant(const Vector3& v);
     Variant(const Vector4& v);
+    Variant(const Int2& v);
+    Variant(const Int3& v);
+    Variant(const Int4& v);
     Variant(const Color& v);
     Variant(const Quaternion& v);
     Variant(const BoundingSphere& v);
@@ -262,6 +269,9 @@ public:
     explicit operator Vector2() const;
     explicit operator Vector3() const;
     explicit operator Vector4() const;
+    explicit operator Int2() const;
+    explicit operator Int3() const;
+    explicit operator Int4() const;
     explicit operator Color() const;
     explicit operator Quaternion() const;
     explicit operator Guid() const;
@@ -275,6 +285,9 @@ public:
     const Vector2& AsVector2() const;
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
+    const Int2& AsInt2() const;
+    const Int3& AsInt3() const;
+    const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
 

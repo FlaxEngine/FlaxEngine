@@ -20,6 +20,13 @@ namespace Flax.Build.Platforms
         /// </summary>
         public UWPPlatform()
         {
+            // Skip if running on non-Windows system
+            if (Platform.BuildTargetPlatform != TargetPlatform.Windows)
+            {
+                _hasRequiredSDKsInstalled = false;
+                return;
+            }
+
             // Visual Studio 2017+ supported only
             var visualStudio = VisualStudioInstance.GetInstances().FirstOrDefault(x => x.Version == VisualStudioVersion.VisualStudio2017 || x.Version == VisualStudioVersion.VisualStudio2019);
             if (visualStudio == null)

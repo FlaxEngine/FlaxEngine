@@ -33,6 +33,7 @@ public class TextureTool : EngineModule
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
             useStb = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
@@ -47,6 +48,11 @@ public class TextureTool : EngineModule
         {
             options.PrivateDependencies.Add("stb");
             options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.stb.cpp"));
+            if (options.Target.IsEditor)
+            {
+                // Use helper lib for decompression
+                options.PrivateDependencies.Add("detex");
+            }
         }
 
         options.PublicDefinitions.Add("COMPILE_WITH_TEXTURE_TOOL");

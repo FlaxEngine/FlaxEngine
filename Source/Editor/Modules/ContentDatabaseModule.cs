@@ -945,6 +945,9 @@ namespace FlaxEditor.Modules
             if (typeXboxScarlettPlatformSettings != null)
                 Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings));
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings)));
+            var typeSwitchPlatformSettings = TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename);
+            if (typeSwitchPlatformSettings != null)
+                Proxy.Add(new SettingsProxy(typeSwitchPlatformSettings));
             Proxy.Add(new SettingsProxy(typeof(AudioSettings)));
 
             // Last add generic json (won't override other json proxies)

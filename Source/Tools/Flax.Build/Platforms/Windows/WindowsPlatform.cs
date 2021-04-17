@@ -61,6 +61,7 @@ namespace Flax.Build.Platforms
             case TargetPlatform.PS4: return Sdk.HasValid("PS4Sdk");
             case TargetPlatform.XboxScarlett: return GetSDKs().ContainsKey(WindowsPlatformSDK.v10_0_19041_0) && Sdk.HasValid("GDK");
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
+            case TargetPlatform.Switch: return Sdk.HasValid("SwitchSdk");
             default: return false;
             }
         }

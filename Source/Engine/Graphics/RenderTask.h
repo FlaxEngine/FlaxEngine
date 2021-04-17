@@ -251,7 +251,7 @@ public:
     /// <summary>
     /// The scene rendering camera. Can be used to override the rendering view properties based on the current camera setup.
     /// </summary>
-    API_FIELD() Camera* Camera = nullptr;
+    API_FIELD() ScriptingObjectReference<Camera> Camera;
 
     /// <summary>
     /// The render view description.

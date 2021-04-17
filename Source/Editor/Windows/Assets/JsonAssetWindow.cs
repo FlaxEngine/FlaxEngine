@@ -18,6 +18,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly CustomEditorPresenter _presenter;
         private readonly ToolStripButton _saveButton;
         private object _object;
+        private bool _isRegisteredForScriptsReload;
 
         /// <inheritdoc />
         public JsonAssetWindow(Editor editor, AssetItem item)
@@ -43,7 +44,6 @@ namespace FlaxEditor.Windows.Assets
         private void OnScriptsReloadBegin()
         {
             Close();
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
         }
 
         /// <inheritdoc />
@@ -83,8 +83,11 @@ namespace FlaxEditor.Windows.Assets
             ClearEditedFlag();
 
             // Auto-close on scripting reload if json asset is from game scripts (it might be reloaded)
-            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()))
+            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()) && !_isRegisteredForScriptsReload)
+            {
+                _isRegisteredForScriptsReload = true;
                 ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            }
 
             base.OnAssetLoaded();
         }
@@ -97,6 +100,18 @@ namespace FlaxEditor.Windows.Assets
             ClearEditedFlag();
 
             base.OnItemReimported(item);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_isRegisteredForScriptsReload)
+            {
+                _isRegisteredForScriptsReload = false;
+                ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            }
+
+            base.OnDestroy();
         }
     }
 }

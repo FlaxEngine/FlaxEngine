@@ -41,6 +41,11 @@ namespace Flax.Build
         /// Running on Android.
         /// </summary>
         Android = 7,
+
+        /// <summary>
+        /// Running on Switch.
+        /// </summary>
+        Switch = 8,
     }
 
     /// <summary>

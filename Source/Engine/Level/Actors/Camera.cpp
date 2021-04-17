@@ -17,12 +17,13 @@
 
 Array<Camera*> Camera::Cameras;
 Camera* Camera::CutSceneCamera = nullptr;
-Camera* Camera::OverrideMainCamera = nullptr;
+ScriptingObjectReference<Camera> Camera::OverrideMainCamera;
 
 Camera* Camera::GetMainCamera()
 {
-    if (OverrideMainCamera)
-        return OverrideMainCamera;
+    Camera* overrideMainCamera = OverrideMainCamera.Get();
+    if (overrideMainCamera)
+        return overrideMainCamera;
     if (CutSceneCamera)
         return CutSceneCamera;
     return Cameras.HasItems() ? Cameras.First() : nullptr;
@@ -101,12 +102,12 @@ void Camera::SetOrthographicScale(float value)
     }
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpaceLocation) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& gameWindowSpaceLocation) const
 {
-    ProjectPoint(worldSpaceLocation, screenSpaceLocation, GetViewport());
+    ProjectPoint(worldSpaceLocation, gameWindowSpaceLocation, GetViewport());
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpaceLocation, const Viewport& viewport) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& cameraViewportSpaceLocation, const Viewport& viewport) const
 {
     Matrix v, p, vp;
     GetMatrices(v, p, viewport);
@@ -114,7 +115,7 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& screenSpac
     Vector3 clipSpaceLocation;
     Vector3::Transform(worldSpaceLocation, vp, clipSpaceLocation);
     viewport.Project(worldSpaceLocation, vp, clipSpaceLocation);
-    screenSpaceLocation = Vector2(clipSpaceLocation);
+    cameraViewportSpaceLocation = Vector2(clipSpaceLocation);
 }
 
 Ray Camera::ConvertMouseToRay(const Vector2& mousePosition) const

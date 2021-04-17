@@ -767,6 +767,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         PLATFORM_CASE(6, "PLATFORM_PS4");
         PLATFORM_CASE(7, "PLATFORM_XBOX_SCARLETT");
         PLATFORM_CASE(8, "PLATFORM_ANDROID");
+        PLATFORM_CASE(9, "PLATFORM_SWITCH");
 #undef PLATFORM_CASE
         break;
     }
@@ -1117,7 +1118,8 @@ ShaderGenerator::Value ShaderGenerator::writeLocal(ValueType type, const String&
 
 ShaderGenerator::Value ShaderGenerator::writeOperation2(Node* caller, const Value& valueA, const Value& valueB, Char op1)
 {
-    const String value = String::Format(TEXT("{0} {1} {2}"), valueA.Value, op1, Value::Cast(valueB, valueA.Type).Value);
+    const Char op1Str[2] = { op1, 0};
+    const String value = String::Format(TEXT("{0} {1} {2}"), valueA.Value, op1Str, Value::Cast(valueB, valueA.Type).Value);
     return writeLocal(valueA.Type, value, caller);
 }
 

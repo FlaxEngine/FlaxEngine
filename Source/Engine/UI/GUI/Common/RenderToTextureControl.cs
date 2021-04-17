@@ -105,7 +105,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             // Draw cached texture
             if (_texture && !_invalid && !_isDuringTextureDraw)
@@ -119,7 +119,7 @@ namespace FlaxEngine.GUI
             }
 
             // Draw default UI directly
-            base.Draw();
+            base.DrawSelf();
         }
 
         /// <inheritdoc />

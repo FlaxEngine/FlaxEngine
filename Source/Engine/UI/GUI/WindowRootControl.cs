@@ -55,11 +55,6 @@ namespace FlaxEngine.GUI
         /// </summary>
         public bool IsMaximized => _window.IsMaximized;
 
-        /// <summary>
-        /// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
-        /// </summary>
-        public float DpiScale => _window.DpiScale;
-
         internal WindowRootControl(Window window)
         {
             _window = window;

@@ -203,6 +203,13 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
         return;
     }
+#if USE_EDITOR || !BUILD_RELEASE
+    if (Is<Scene>())
+    {
+        LOG(Error, "Cannot change parent of the Scene. Use Level to manage scenes.");
+        return;
+    }
+#endif
 
     // Peek the previous state
     const Transform prevTransform = _transform;
@@ -945,28 +952,34 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Name, _name);
     DESERIALIZE_MEMBER(Transform, _localTransform);
 
-    Guid parentId = Guid::Empty;
-    DESERIALIZE_MEMBER(ParentID, parentId);
-    const auto parent = Scripting::FindObject<Actor>(parentId);
-    if (_parent != parent)
     {
-        if (IsDuringPlay())
+        const auto member = SERIALIZE_FIND_MEMBER(stream, "ParentID");
+        if (member != stream.MemberEnd())
         {
-            SetParent(parent, false, false);
+            Guid parentId;
+            Serialization::Deserialize(member->value, parentId, modifier);
+            const auto parent = Scripting::FindObject<Actor>(parentId);
+            if (_parent != parent)
+            {
+                if (IsDuringPlay())
+                {
+                    SetParent(parent, false, false);
+                }
+                else
+                {
+                    if (_parent)
+                        _parent->Children.RemoveKeepOrder(this);
+                    _parent = parent;
+                    if (_parent)
+                        _parent->Children.Add(this);
+                    OnParentChanged();
+                }
+            }
+            else if (!parent && parentId.IsValid())
+            {
+                LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+            }
         }
-        else
-        {
-            if (_parent)
-                _parent->Children.RemoveKeepOrder(this);
-            _parent = parent;
-            if (_parent)
-                _parent->Children.Add(this);
-            OnParentChanged();
-        }
-    }
-    else if (!parent && parentId.IsValid())
-    {
-        LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
     }
 
     // StaticFlags update - added StaticFlags::Navigation
@@ -1133,19 +1146,27 @@ BoundingBox Actor::GetBoxWithChildren() const
 
 #if USE_EDITOR
 
+BoundingBox Actor::GetEditorBox() const
+{
+    return GetBox();
+}
+
 BoundingBox Actor::GetEditorBoxChildren() const
 {
     BoundingBox result = GetEditorBox();
-
     for (int32 i = 0; i < Children.Count(); i++)
     {
         BoundingBox::Merge(result, Children[i]->GetEditorBoxChildren(), result);
     }
-
     return result;
 }
 
 #endif
+
+bool Actor::HasContentLoaded() const
+{
+    return true;
+}
 
 void Actor::UnregisterObjectHierarchy()
 {
@@ -1162,6 +1183,10 @@ void Actor::UnregisterObjectHierarchy()
     {
         Children[i]->UnregisterObjectHierarchy();
     }
+}
+
+void Actor::Draw(RenderContext& renderContext)
+{
 }
 
 void Actor::DrawGeneric(RenderContext& renderContext)

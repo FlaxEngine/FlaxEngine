@@ -153,20 +153,6 @@ public:
     /// <returns>True if game viewport is focused, otherwise false.</returns>
     static bool HasGameViewportFocus();
 
-    /// <summary>
-    /// Converts the screen-space position to the game viewport position.
-    /// </summary>
-    /// <param name="screenPos">The screen-space position.</param>
-    /// <returns>The game viewport position.</returns>
-    static Vector2 ScreenToGameViewport(const Vector2& screenPos);
-
-    /// <summary>
-    /// Converts the game viewport position to the screen-space position.
-    /// </summary>
-    /// <param name="viewportPos">The game viewport position.</param>
-    /// <returns>The screen-space position.</returns>
-    static Vector2 GameViewportToScreen(const Vector2& viewportPos);
-
 private:
 
     static void OnPause();

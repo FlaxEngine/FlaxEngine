@@ -16,144 +16,6 @@ using Newtonsoft.Json.Serialization;
 namespace FlaxEngine.Json
 {
     /// <summary>
-    /// Serialize references to the FlaxEngine.Object as Guid.
-    /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
-    internal class FlaxObjectConverter : JsonConverter
-    {
-        /// <inheritdoc />
-        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            Guid id = Guid.Empty;
-            if (value is Object obj)
-                id = obj.ID;
-            writer.WriteValue(JsonSerializer.GetStringID(&id));
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.String)
-            {
-                JsonSerializer.ParseID((string)reader.Value, out var id);
-                return Object.Find(ref id, objectType);
-            }
-            return null;
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType)
-        {
-            // Skip serialization as reference id for the root object serialization (eg. Script)
-            var cache = JsonSerializer.Current.Value;
-            if (cache != null && cache.IsDuringSerialization && cache.SerializerWriter.SerializeStackSize == 0)
-            {
-                return false;
-            }
-            return typeof(Object).IsAssignableFrom(objectType);
-        }
-    }
-
-    /// <summary>
-    /// Serialize SceneReference as Guid in internal format.
-    /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
-    internal class SceneReferenceConverter : JsonConverter
-    {
-        /// <inheritdoc />
-        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            Guid id = ((SceneReference)value).ID;
-            writer.WriteValue(JsonSerializer.GetStringID(&id));
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            SceneReference result = new SceneReference();
-
-            if (reader.TokenType == JsonToken.String)
-            {
-                JsonSerializer.ParseID((string)reader.Value, out result.ID);
-            }
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(SceneReference);
-        }
-    }
-
-    /// <summary>
-    /// Serialize SoftObjectReference as Guid in internal format.
-    /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
-    internal class SoftObjectReferenceConverter : JsonConverter
-    {
-        /// <inheritdoc />
-        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            var id = ((SoftObjectReference)value).ID;
-            writer.WriteValue(JsonSerializer.GetStringID(&id));
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            var result = new SoftObjectReference();
-            if (reader.TokenType == JsonToken.String)
-            {
-                JsonSerializer.ParseID((string)reader.Value, out var id);
-                result.ID = id;
-            }
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(SoftObjectReference);
-        }
-    }
-
-    /*
-    /// <summary>
-    /// Serialize Guid values using `N` format
-    /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
-    internal class GuidConverter : JsonConverter
-    {
-        /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            Guid id = (Guid)value;
-            writer.WriteValue(id.ToString("N"));
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.String)
-            {
-                var id = Guid.Parse((string)reader.Value);
-                return id;
-            }
-
-            return Guid.Empty;
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(Guid);
-        }
-    }
-    */
-
-    /// <summary>
     /// Objects serialization tool (json format).
     /// </summary>
     public static class JsonSerializer
@@ -165,17 +27,19 @@ namespace FlaxEngine.Json
             public StringWriter StringWriter;
             public JsonTextWriter JsonWriter;
             public JsonSerializerInternalWriter SerializerWriter;
-            public UnmanagedStringReader StringReader;
+            public UnmanagedMemoryStream MemoryStream;
+            public StreamReader Reader;
             public bool IsDuringSerialization;
 
-            public SerializerCache(JsonSerializerSettings settings)
+            public unsafe SerializerCache(JsonSerializerSettings settings)
             {
                 JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(settings);
                 JsonSerializer.Formatting = Formatting.Indented;
                 StringBuilder = new StringBuilder(256);
                 StringWriter = new StringWriter(StringBuilder, CultureInfo.InvariantCulture);
                 SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
-                StringReader = new UnmanagedStringReader();
+                MemoryStream = new UnmanagedMemoryStream((byte*)0, 0);
+                Reader = new StreamReader(MemoryStream, Encoding.UTF8, false);
                 JsonWriter = new JsonTextWriter(StringWriter)
                 {
                     IndentChar = '\t',
@@ -217,6 +81,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(ObjectConverter);
             settings.Converters.Add(new SceneReferenceConverter());
             settings.Converters.Add(new SoftObjectReferenceConverter());
+            settings.Converters.Add(new MarginConverter());
             settings.Converters.Add(new VersionConverter());
             //settings.Converters.Add(new GuidConverter());
             return settings;
@@ -404,14 +269,15 @@ namespace FlaxEngine.Json
         /// <param name="input">The object.</param>
         /// <param name="jsonBuffer">The input json data buffer (raw, fixed memory buffer).</param>
         /// <param name="jsonLength">The input json data buffer length (characters count).</param>
-        public static unsafe void Deserialize(object input, void* jsonBuffer, int jsonLength)
+        public static unsafe void Deserialize(object input, byte* jsonBuffer, int jsonLength)
         {
             var cache = Cache.Value;
             cache.IsDuringSerialization = false;
             Current.Value = cache;
 
-            cache.StringReader.Initialize(jsonBuffer, jsonLength);
-            var jsonReader = new JsonTextReader(cache.StringReader);
+            cache.MemoryStream.Initialize(jsonBuffer, jsonLength);
+            cache.Reader.DiscardBufferedData();
+            var jsonReader = new JsonTextReader(cache.Reader);
             cache.JsonSerializer.Populate(jsonReader, input);
 
             if (!cache.JsonSerializer.CheckAdditionalContent)

@@ -9,7 +9,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Base class for all text box controls which can gather text input from the user.
     /// </summary>
-    public abstract class TextBoxBase : Control
+    public abstract class TextBoxBase : ContainerControl
     {
         /// <summary>
         /// The text separators (used for words skipping).
@@ -539,6 +539,12 @@ namespace FlaxEngine.GUI
                 return;
             }
 
+            // If it's not selected
+            if (_selectionStart == -1 && _selectionEnd == -1)
+            {
+                return;
+            }
+
             Rectangle caretBounds = CaretBounds;
             Rectangle textArea = TextRectangle;
 
@@ -804,6 +810,19 @@ namespace FlaxEngine.GUI
                 spaceLoc++;
 
             return spaceLoc;
+        }
+
+        private int FindPrevLineBegin()
+        {
+            int caretPos = CaretPosition;
+            if (caretPos - 2 < 0)
+                return 0;
+            int newLineLoc = _text.LastIndexOf('\n', caretPos - 2);
+            if (newLineLoc == -1)
+                newLineLoc = 0;
+            else
+                newLineLoc++;
+            return newLineLoc;
         }
 
         private int FindLineDownChar(int index)
@@ -1175,7 +1194,6 @@ namespace FlaxEngine.GUI
                 return true;
             }
             case KeyboardKeys.Return:
-            {
                 if (IsMultiline)
                 {
                     // Insert new line
@@ -1186,15 +1204,22 @@ namespace FlaxEngine.GUI
                     // End editing
                     Defocus();
                 }
-
                 return true;
-            }
             case KeyboardKeys.Home:
-            {
-                // Move caret to the first character
-                SetSelection(0);
+                if (shiftDown)
+                {
+                    // Select text from the current cursor point back to the beginning of the line
+                    if (_selectionStart != -1)
+                    {
+                        SetSelection(FindPrevLineBegin(), _selectionStart);
+                    }
+                }
+                else
+                {
+                    // Move caret to the first character
+                    SetSelection(0);
+                }
                 return true;
-            }
             case KeyboardKeys.End:
             {
                 // Move caret after last character

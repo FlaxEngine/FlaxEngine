@@ -57,7 +57,9 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual RootNode Root => ParentNode?.Root;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets or sets the transform of the node.
+        /// </summary>
         public abstract Transform Transform { get; set; }
 
         /// <summary>
@@ -307,6 +309,20 @@ namespace FlaxEditor.SceneGraph
             distance = 0;
             normal = Vector3.Up;
             return false;
+        }
+
+        /// <summary>
+        /// Gets the object bounding sphere (including child actors).
+        /// </summary>
+        /// <param name="sphere">The bounding sphere.</param>
+        public virtual void GetEditorSphere(out BoundingSphere sphere)
+        {
+            sphere = new BoundingSphere(Transform.Translation, 15.0f);
+            for (int i = 0; i < ChildNodes.Count; i++)
+            {
+                ChildNodes[i].GetEditorSphere(out var childSphere);
+                BoundingSphere.Merge(ref sphere, ref childSphere, out sphere);
+            }
         }
 
         /// <summary>

@@ -38,7 +38,7 @@ public class PhysX : DepsModule
 
         bool useDynamicLinking = false;
         bool usePVD = false;
-        bool useVehicle = false;
+        bool useVehicle = true;
         bool usePhysicsCooking = Physics.WithCooking;
 
         var depsRoot = options.DepsFolder;
@@ -96,7 +96,7 @@ public class PhysX : DepsModule
 
             if (useVehicle)
             {
-                AddLib(options, depsRoot, string.Format("PhysXVehicle_static_{0}", archPostFix));
+                AddLib(options, depsRoot, string.Format("PhysXVehicle_static{0}", archPostFix));
             }
         }
     }

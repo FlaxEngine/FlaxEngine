@@ -496,14 +496,8 @@ public:
         // - load scenes (from temporary files)
         // Note: we don't want to override original scene files
 
-        // If no scene loaded just reload scripting
-        if (!Level::IsAnySceneLoaded())
-        {
-            // Reload scripting
-            LOG(Info, "No scenes loaded, performing fast scripts reload");
-            Scripting::Reload(false);
-            return false;
-        }
+        LOG(Info, "Scripts reloading start");
+        const auto startTime = DateTime::NowUTC();
 
         // Cache data
         struct SceneData
@@ -538,8 +532,6 @@ public:
             scenes[i].Init(Level::Scenes[i]);
 
         // Fire event
-        LOG(Info, "Scripts reloading start");
-        const auto startTime = DateTime::NowUTC();
         Level::ScriptsReloadStart();
 
         // Save scenes (to memory)
@@ -566,9 +558,10 @@ public:
         Scripting::Reload();
 
         // Restore scenes (from memory)
-        LOG(Info, "Loading temporary scenes");
         for (int32 i = 0; i < scenesCount; i++)
         {
+            LOG(Info, "Restoring scene {0}", scenes[i].Name);
+
             // Parse json
             const auto& sceneData = scenes[i].Data;
             ISerializable::SerializeDocument document;
@@ -590,8 +583,9 @@ public:
         scenes.Resize(0);
 
         // Initialize scenes (will link references and create managed objects using new assembly)
-        LOG(Info, "Prepare scene objects");
+        if (Level::Scenes.HasItems())
         {
+            LOG(Info, "Prepare scene objects");
             SceneBeginData beginData;
             for (int32 i = 0; i < Level::Scenes.Count(); i++)
             {
@@ -601,8 +595,7 @@ public:
         }
 
         // Fire event
-        const auto endTime = DateTime::NowUTC();
-        LOG(Info, "Scripts reloading end. Total time: {0}ms", static_cast<int32>((endTime - startTime).GetTotalMilliseconds()));
+        LOG(Info, "Scripts reloading end. Total time: {0}ms", static_cast<int32>((DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
         Level::ScriptsReloadEnd();
 
         return false;
@@ -1037,9 +1030,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-    Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
-    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
     // Delete objects without parent
     for (int32 i = 1; i < objectsCount; i++)

@@ -103,9 +103,10 @@ namespace Flax.Deploy
 
         private static void BuildEditor()
         {
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", TargetPlatform.Windows, TargetArchitecture.x64, TargetConfiguration.Debug);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", TargetPlatform.Windows, TargetArchitecture.x64, TargetConfiguration.Development);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", TargetPlatform.Windows, TargetArchitecture.x64, TargetConfiguration.Release);
+            var targetPlatform = Platform.BuildPlatform.Target;
+            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Debug);
+            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Development);
+            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Release);
         }
 
         private static bool CannotBuildPlatform(TargetPlatform platform)

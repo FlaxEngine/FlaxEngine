@@ -298,6 +298,8 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     context->SetViewportAndScissors(_cache.Data.GridSize.X, _cache.Data.GridSize.Y);
 
     // Setup data
+    perLight.SliceToDepth.X = _cache.Data.GridSize.Z;
+    perLight.SliceToDepth.Y = _cache.Data.VolumetricFogMaxDistance;
     perLight.MinZ = volumeZBoundsMin;
     perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
     perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
@@ -355,6 +357,8 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
         bool withShadow = false;
 
         // Setup data
+        perLight.SliceToDepth.X = cache.Data.GridSize.Z;
+        perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
         perLight.MinZ = volumeZBoundsMin;
         perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
         perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);

@@ -368,6 +368,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     // Compile for a target platform
     switch (data.Data.Platform)
     {
+#if PLATFORM_TOOLS_WINDOWS
     case BuildPlatform::Windows32:
     case BuildPlatform::Windows64:
     {
@@ -391,6 +392,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         }
         break;
     }
+#endif
 #if PLATFORM_TOOLS_UWP
     case BuildPlatform::UWPx86:
     case BuildPlatform::UWPx64:
@@ -408,12 +410,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_UWP
     case BuildPlatform::XboxOne:
     {
         const char* platformDefineName = "PLATFORM_XBOX_ONE";
         COMPILE_PROFILE(DirectX_SM4, SHADER_FILE_CHUNK_INTERNAL_D3D_SM4_CACHE);
         break;
     }
+#endif
 #if PLATFORM_TOOLS_LINUX
     case BuildPlatform::LinuxX64:
     {
@@ -426,24 +430,38 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_PS4
     case BuildPlatform::PS4:
     {
         const char* platformDefineName = "PLATFORM_PS4";
         COMPILE_PROFILE(PS4, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
         break;
     }
+#endif
+#if PLATFORM_TOOLS_XBOX_SCARLETT
     case BuildPlatform::XboxScarlett:
     {
         const char* platformDefineName = "PLATFORM_XBOX_SCARLETT";
         COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
     }
+#endif
+#if PLATFORM_TOOLS_ANDROID
     case BuildPlatform::AndroidARM64:
     {
         const char* platformDefineName = "PLATFORM_ANDROID";
         COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
         break;
     }
+#endif
+#if PLATFORM_TOOLS_SWITCH
+    case BuildPlatform::Switch:
+    {
+        const char* platformDefineName = "PLATFORM_SWITCH";
+        COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+        break;
+    }
+#endif
     default:
     {
         LOG(Warning, "Not implemented platform or shaders not supported.");
@@ -851,7 +869,7 @@ public:
         // Create package
         // Note: FlaxStorage::Create overrides chunks locations in file so don't use files anymore (only readonly)
         const String localPath = String::Format(TEXT("Content/Data_{0}.{1}"), _packageIndex, PACKAGE_FILES_EXTENSION);
-        const String path = data.OutputPath / localPath;
+        const String path = data.DataOutputPath / localPath;
         if (FlaxStorage::Create(path, assetsData, false, &CustomData))
         {
             data.Error(TEXT("Failed to create assets package."));
@@ -895,21 +913,27 @@ bool CookAssetsStep::Perform(CookingData& data)
     cache.Load(data);
 
     // Update build settings
+#if PLATFORM_TOOLS_WINDOWS
     {
         const auto settings = WindowsPlatformSettings::Get();
         cache.Settings.Windows.SupportDX11 = settings->SupportDX11;
         cache.Settings.Windows.SupportDX10 = settings->SupportDX10;
         cache.Settings.Windows.SupportVulkan = settings->SupportVulkan;
     }
+#endif
+#if PLATFORM_TOOLS_UWP
     {
         const auto settings = UWPPlatformSettings::Get();
         cache.Settings.UWP.SupportDX11 = settings->SupportDX11;
         cache.Settings.UWP.SupportDX10 = settings->SupportDX10;
     }
+#endif
+#if PLATFORM_TOOLS_LINUX
     {
         const auto settings = LinuxPlatformSettings::Get();
         cache.Settings.Linux.SupportVulkan = settings->SupportVulkan;
     }
+#endif
     {
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
@@ -1011,7 +1035,7 @@ bool CookAssetsStep::Perform(CookingData& data)
             gameFlags |= GameHeaderFlags::ShowSplashScreen;
 
         // Open file
-        auto stream = FileWriteStream::Open(data.OutputPath / TEXT("Content/head"));
+        auto stream = FileWriteStream::Open(data.DataOutputPath / TEXT("Content/head"));
         if (stream == nullptr)
         {
             data.Error(TEXT("Failed to create game data file."));
@@ -1105,7 +1129,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     BUILD_STEP_CANCEL_CHECK;
 
     // Save assets cache
-    if (AssetsCache::Save(data.OutputPath / TEXT("Content/AssetsCache.dat"), AssetsRegistry, AssetPathsMapping, AssetsCacheFlags::RelativePaths))
+    if (AssetsCache::Save(data.DataOutputPath / TEXT("Content/AssetsCache.dat"), AssetsRegistry, AssetPathsMapping, AssetsCacheFlags::RelativePaths))
     {
         data.Error(TEXT("Failed to create assets registry."));
         return true;

@@ -261,7 +261,10 @@ namespace Flax.Build.Bindings
         {
             if (typeInfo == null)
                 return null;
-            if (buildData.TypeCache.TryGetValue(typeInfo, out var result))
+            var result = FindApiTypeInfoInner(typeInfo, caller);
+            if (result != null)
+                return result;
+            if (buildData.TypeCache.TryGetValue(typeInfo, out result))
                 return result;
 
             // Find across in-build types

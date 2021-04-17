@@ -15,6 +15,7 @@ DECLARE_SCENE_OBJECT(Spline);
 private:
 
     bool _loop = false;
+    BoundingBox _localBounds;
 
 public:
 
@@ -377,6 +378,8 @@ public:
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;
 #endif
+    void OnTransformChanged() override;
+    void PostLoad() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };

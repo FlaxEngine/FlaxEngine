@@ -54,6 +54,7 @@ namespace
 {
     // Loaded and parsed features data cache
     Dictionary<StringAnsi, FeatureData> Features;
+    CriticalSection FeaturesLock;
 }
 
 bool FeatureData::Init()
@@ -174,6 +175,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         features.Add(typeName); \
         if (!Features.ContainsKey(typeName)) \
         { \
+            ScopeLock lock(FeaturesLock); \
             auto& feature = Features[typeName]; \
             type::Generate(feature.Data); \
             if (feature.Init()) \
@@ -388,7 +390,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Update material usage based on material generator outputs
     materialInfo.UsageFlags = baseLayer->UsageFlags;
 
-#define WRITE_FEATURES(input) for (auto f : features) _writer.Write(Features[f].Inputs[(int32)FeatureTemplateInputsMapping::input]);
+#define WRITE_FEATURES(input) FeaturesLock.Lock(); for (auto f : features) _writer.Write(Features[f].Inputs[(int32)FeatureTemplateInputsMapping::input]); FeaturesLock.Unlock();
     // Defines
     {
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);

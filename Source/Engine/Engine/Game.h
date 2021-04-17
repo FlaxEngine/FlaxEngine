@@ -16,6 +16,8 @@
 #include "Platforms/XboxScarlett/Engine/Engine/XboxScarlettGame.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidGame.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Engine/SwitchGame.h"
 #else
 #error Missing Game implementation!
 #endif

@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// Progress bar control shows visual progress of the action or set of actions.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
-    public class ProgressBar : Control
+    public class ProgressBar : ContainerControl
     {
         /// <summary>
         /// The value.
@@ -160,9 +160,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             float progressNormalized = (_current - _minimum) / _maximum;
             if (progressNormalized > 0.001f)

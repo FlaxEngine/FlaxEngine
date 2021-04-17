@@ -50,11 +50,51 @@ namespace Flax.Build.Bindings
             { "MonoArray", "Array" },
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, bool attribute = false)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
+
+            // Special case for Engine TEXT macro
+            if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
+                return value.Substring(5, value.Length - 6);
+
             value = value.Replace("::", ".");
+
+            if (attribute)
+            {
+                // Value constructors (eg. Vector2(1, 2))
+                if (value.Contains('(') && value.Contains(')'))
+                {
+                    // Support for in-built types
+                    if (value.StartsWith("Vector2("))
+                        return $"typeof(Vector2), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    if (value.StartsWith("Vector3("))
+                        return $"typeof(Vector3), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    if (value.StartsWith("Vector4("))
+                        return $"typeof(Vector4), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+
+                    return null;
+                }
+
+                // Constants (eg. Vector2::Zero)
+                if (value.Contains('.'))
+                {
+                    // Support for in-built constants
+                    switch (value)
+                    {
+                    case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
+                    case "Vector2.One": return "typeof(Vector2), \"1,1\"";
+                    case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
+                    case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
+                    case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
+                    case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
+                    case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
+                    }
+
+                    return null;
+                }
+            }
 
             // Skip constants unsupported in C#
             var dot = value.LastIndexOf('.');
@@ -65,10 +105,6 @@ namespace Flax.Build.Bindings
                 if (apiType != null && apiType.IsStruct)
                     return null;
             }
-
-            // Special case for Engine TEXT macro
-            if (value.Contains("TEXT(\""))
-                return value.Replace("TEXT(\"", "(\"");
 
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
@@ -394,26 +430,6 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static bool IsDefaultValueSupported(string value)
-        {
-            // TEXT macro (eg. TEXT("text"))
-            // TODO: support string for default value attribute
-            if (value.Contains("TEXT(\""))
-                return false;
-
-            // Value constructors (eg. Vector2(1, 2))
-            // TODO: support value constructors for default value attribute
-            if (value.Contains('(') && value.Contains(')'))
-                return false;
-
-            // Constants (eg. Vector2::Zero)
-            // TODO: support constants for default value attribute
-            if (value.Contains("::"))
-                return false;
-
-            return true;
-        }
-
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null)
         {
             var writeTooltip = true;
@@ -438,21 +454,27 @@ namespace Flax.Build.Bindings
                 if (comment.Length >= 3 &&
                     comment[0] == "/// <summary>" &&
                     comment[1].StartsWith("/// ") &&
-                    comment[2] == "/// </summary>")
+                    comment[comment.Length - 1] == "/// </summary>")
                 {
                     var tooltip = comment[1].Substring(4);
                     if (tooltip.StartsWith("Gets the "))
                         tooltip = "The " + tooltip.Substring(9);
+                    for (int i = 3; i < comment.Length; i++)
+                    {
+                        if (comment[i - 1].StartsWith("/// "))
+                            tooltip += " " + comment[i - 1].Substring(4);
+                    }
                     if (tooltip.IndexOf('\"') != -1)
                         tooltip = tooltip.Replace("\"", "\\\"");
                     contents.Append(indent).Append("[Tooltip(\"").Append(tooltip).Append("\")]").AppendLine();
                 }
             }
-            if (!string.IsNullOrEmpty(defaultValue) && writeDefaultValue && IsDefaultValueSupported(defaultValue))
+            if (writeDefaultValue)
             {
                 // Write default value attribute
-                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo);
-                contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
+                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo, true);
+                if (defaultValue != null)
+                    contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
         }
 
@@ -642,12 +664,9 @@ namespace Flax.Build.Bindings
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
                 if (!useUnmanaged)
                 {
-                    if (fieldInfo.DefaultValue != null)
-                    {
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
-                        if (!string.IsNullOrEmpty(defaultValue))
-                            contents.Append(" = ").Append(defaultValue);
-                    }
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
                     continue;
                 }
@@ -773,12 +792,9 @@ namespace Flax.Build.Bindings
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
 
-                        if (parameterInfo.DefaultValue != null)
-                        {
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
-                            if (!string.IsNullOrEmpty(defaultValue))
-                                contents.Append(" = ").Append(defaultValue);
-                        }
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                        if (!string.IsNullOrEmpty(defaultValue))
+                            contents.Append(" = ").Append(defaultValue);
                     }
 
                     contents.Append(')').AppendLine().AppendLine(indent + "{");
@@ -1092,7 +1108,7 @@ namespace Flax.Build.Bindings
         private static unsafe void GenerateCSharp(BuildData buildData, IGrouping<string, Module> binaryModule)
         {
             // Skip generating C# bindings code for native-only modules
-            if (binaryModule.Any(x => !x.BuildCSharp))
+            if (binaryModule.All(x => !x.BuildCSharp))
                 return;
 
             var contents = new StringBuilder();

@@ -12,6 +12,9 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(Quaternion)), DefaultEditor]
     public class QuaternionEditor : CustomEditor
     {
+        private Vector3 _cachedAngles = Vector3.Zero;
+        private object _cachedToken;
+
         /// <summary>
         /// The X component element
         /// </summary>
@@ -58,13 +61,34 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
 
-            float x = XElement.FloatValue.Value;
-            float y = YElement.FloatValue.Value;
-            float z = ZElement.FloatValue.Value;
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
+            var useCachedAngles = isSliding && token == _cachedToken;
+
+            float x = (useCachedAngles && !XElement.IsSliding) ? _cachedAngles.X : XElement.FloatValue.Value;
+            float y = (useCachedAngles && !YElement.IsSliding) ? _cachedAngles.Y : YElement.FloatValue.Value;
+            float z = (useCachedAngles && !ZElement.IsSliding) ? _cachedAngles.Z : ZElement.FloatValue.Value;
+
+            x = Mathf.UnwindDegrees(x);
+            y = Mathf.UnwindDegrees(y);
+            z = Mathf.UnwindDegrees(z);
+
+            if (!useCachedAngles)
+            {
+                _cachedAngles = new Vector3(x, y, z);
+            }
+
+            _cachedToken = token;
+
             Quaternion.Euler(x, y, z, out Quaternion value);
             SetValue(value, token);
+        }
+
+        /// <inheritdoc />
+        protected override void ClearToken()
+        {
+            _cachedToken = null;
+            base.ClearToken();
         }
 
         /// <inheritdoc />

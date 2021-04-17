@@ -64,7 +64,7 @@ void SplineCollider::OnSplineUpdated()
 {
     if (!_spline || !IsActiveInHierarchy() || _spline->GetSplinePointsCount() < 2 || !CollisionData || !CollisionData->IsLoaded())
     {
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
         BoundingSphere::FromBox(_box, _sphere);
         return;
     }
@@ -178,7 +178,7 @@ void SplineCollider::UpdateBounds()
 void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
 {
     // Reset bounds
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
 
     // Skip if sth is missing

@@ -109,7 +109,7 @@ void FontManagerService::Dispose()
 
 FontTextureAtlas* FontManager::GetAtlas(int32 index)
 {
-    return Atlases[index];
+    return index >= 0 && index < Atlases.Count() ? Atlases.Get()[index] : nullptr;
 }
 
 bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
@@ -206,6 +206,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     // End for empty glyphs
     if (GlyphImageData.IsEmpty())
     {
+        entry.TextureIndex = MAX_uint8;
         if (bitmap == &tmpBitmap)
         {
             FT_Bitmap_Done(Library, bitmap);

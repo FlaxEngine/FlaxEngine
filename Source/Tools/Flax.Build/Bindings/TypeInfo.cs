@@ -80,35 +80,55 @@ namespace Flax.Build.Bindings
             GenericArgs = BindingsGenerator.Read(reader, GenericArgs);
         }
 
-        public override string ToString()
+        public string GetFullNameNative(Builder.BuildData buildData, ApiTypeInfo caller)
         {
-            var sb = new StringBuilder(64);
+            var type = BindingsGenerator.FindApiTypeInfo(buildData, this, caller);
+            if (type == null)
+                return ToString();
 
+            var sb = new StringBuilder(64);
             if (IsConst)
                 sb.Append("const ");
-
-            sb.Append(Type);
-
+            sb.Append(type.FullNameNative);
             if (GenericArgs != null)
             {
                 sb.Append('<');
-
                 for (var i = 0; i < GenericArgs.Count; i++)
                 {
                     if (i != 0)
                         sb.Append(", ");
                     sb.Append(GenericArgs[i]);
                 }
-
                 sb.Append('>');
             }
-
             if (IsRef)
                 sb.Append('&');
-
             if (IsPtr)
                 sb.Append('*');
+            return sb.ToString();
+        }
 
+        public override string ToString()
+        {
+            var sb = new StringBuilder(64);
+            if (IsConst)
+                sb.Append("const ");
+            sb.Append(Type);
+            if (GenericArgs != null)
+            {
+                sb.Append('<');
+                for (var i = 0; i < GenericArgs.Count; i++)
+                {
+                    if (i != 0)
+                        sb.Append(", ");
+                    sb.Append(GenericArgs[i]);
+                }
+                sb.Append('>');
+            }
+            if (IsRef)
+                sb.Append('&');
+            if (IsPtr)
+                sb.Append('*');
             return sb.ToString();
         }
 

@@ -14,6 +14,8 @@
 #include "Win32/Win32Thread.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidThread.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchThread.h"
 #else
 #error Missing Thread implementation!
 #endif

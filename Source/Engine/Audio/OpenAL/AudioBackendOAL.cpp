@@ -18,7 +18,7 @@
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
 
-#define FLAX_POS_TO_OAL(vec) -vec.X * 0.01f,  vec.Y *  0.01f, vec.Z * 0.01f
+#define FLAX_POS_TO_OAL(vec) -vec.X * 0.01f,  vec.Y *  0.01f, -vec.Z * 0.01f
 
 namespace ALC
 {

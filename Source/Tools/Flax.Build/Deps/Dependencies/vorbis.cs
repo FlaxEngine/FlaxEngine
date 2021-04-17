@@ -31,6 +31,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
+                        TargetPlatform.Switch,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -291,7 +292,8 @@ namespace Flax.Deps.Dependencies
 
                     // Get the source
                     CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
-                    CloneGitRepoFast(oggRoot, "https://github.com/xiph/ogg.git");
+                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
 
                     // Build for Android
                     SetupDirectory(oggBuildDir, true);
@@ -301,6 +303,33 @@ namespace Flax.Deps.Dependencies
                     RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Android, TargetArchitecture.ARM64);
+                    foreach (var file in binariesToCopyUnix)
+                        Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
+                    break;
+                }
+                case TargetPlatform.Switch:
+                {
+                    var oggRoot = Path.Combine(root, "ogg");
+                    var oggBuildDir = Path.Combine(oggRoot, "build");
+                    var buildDir = Path.Combine(root, "build");
+
+                    // Get the source
+                    CloneGitRepo(root, "https://github.com/xiph/vorbis.git");
+                    GitCheckout(root, "master", "98eddc72d36e3421519d54b101c09b57e4d4d10d");
+                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "ogg"), oggRoot, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "vorbis"), buildDir, true, true);
+
+                    // Build for Switch
+                    SetupDirectory(oggBuildDir, true);
+                    RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
+                    Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.None);
+                    Utilities.FileCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "ogg", "include", "ogg", "config_types.h"), Path.Combine(oggRoot, "install", "include", "ogg", "config_types.h"));
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopyUnix)
                         Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
                     break;

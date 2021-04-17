@@ -7,6 +7,8 @@
 #include "Engine/Graphics/Models/MaterialSlot.h"
 #include "Engine/Streaming/StreamableResource.h"
 
+class MeshBase;
+
 /// <summary>
 /// Base class for asset types that can contain a model resource.
 /// </summary>
@@ -44,38 +46,23 @@ public:
     /// <summary>
     /// Resizes the material slots collection. Updates meshes that were using removed slots.
     /// </summary>
-    API_FUNCTION() virtual void SetupMaterialSlots(int32 slotsCount)
-    {
-        CHECK(slotsCount >= 0 && slotsCount < 4096);
-        if (!IsVirtual() && WaitForLoaded())
-            return;
-
-        ScopeLock lock(Locker);
-
-        const int32 prevCount = MaterialSlots.Count();
-        MaterialSlots.Resize(slotsCount, false);
-
-        // Initialize slot names
-        for (int32 i = prevCount; i < slotsCount; i++)
-            MaterialSlots[i].Name = String::Format(TEXT("Material {0}"), i + 1);
-    }
+    API_FUNCTION() virtual void SetupMaterialSlots(int32 slotsCount);
 
     /// <summary>
     /// Gets the material slot by the name.
     /// </summary>
     /// <param name="name">The slot name.</param>
     /// <returns>The material slot with the given name or null if cannot find it (asset may be not loaded yet).</returns>
-    API_FUNCTION() MaterialSlot* GetSlot(const StringView& name)
-    {
-        MaterialSlot* result = nullptr;
-        for (auto& slot : MaterialSlots)
-        {
-            if (slot.Name == name)
-            {
-                result = &slot;
-                break;
-            }
-        }
-        return result;
-    }
+    API_FUNCTION() MaterialSlot* GetSlot(const StringView& name);
+
+    /// <summary>
+    /// Gets amount of the level of details in the model.
+    /// </summary>
+    /// <returns>Amount of the level of details in the model.</returns>
+    virtual int32 GetLODsCount() const = 0;
+
+    /// <summary>
+    /// Gets the meshes for a particular LOD index.
+    /// </summary>
+    virtual void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
 };

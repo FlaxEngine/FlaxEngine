@@ -12,9 +12,8 @@ namespace FlaxEngine
     /// Represents a four dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     [TypeConverter(typeof(TypeConverters.Int4Converter))]
-    public struct Int4 : IEquatable<Int4>, IFormattable
+    partial struct Int4 : IEquatable<Int4>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2} W:{3}";
 
@@ -62,26 +61,6 @@ namespace FlaxEngine
         /// A <see cref="Int4" /> with all components equal to <see cref="int.MaxValue"/>.
         /// </summary>
         public static readonly Int4 Maximum = new Int4(int.MaxValue);
-
-        /// <summary>
-        /// The X component of the vector.
-        /// </summary>
-        public int X;
-
-        /// <summary>
-        /// The Y component of the vector.
-        /// </summary>
-        public int Y;
-
-        /// <summary>
-        /// The Z component of the vector.
-        /// </summary>
-        public int Z;
-
-        /// <summary>
-        /// The W component of the vector.
-        /// </summary>
-        public int W;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Int4" /> struct.

@@ -163,6 +163,19 @@ void PlatformBase::Exit()
 {
 }
 
+void* PlatformBase::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    // Fallback to the default memory allocation
+    const uint64 numBytes = numPages * pageSize;
+    return Platform::Allocate(numBytes, pageSize);
+}
+
+void PlatformBase::FreePages(void* ptr)
+{
+    // Fallback to free
+    Platform::Free(ptr);
+}
+
 PlatformType PlatformBase::GetPlatformType()
 {
     return PLATFORM_TYPE;
@@ -407,6 +420,11 @@ ScreenOrientationType PlatformBase::GetScreenOrientationType()
     return ScreenOrientationType::Unknown;
 }
 
+bool PlatformBase::GetIsPaused()
+{
+    return false;
+}
+
 void PlatformBase::CreateGuid(Guid& result)
 {
     static uint16 guidCounter = 0;
@@ -534,6 +552,8 @@ const Char* ToString(PlatformType type)
         return TEXT("Xbox Scarlett");
     case PlatformType::Android:
         return TEXT("Android");
+    case PlatformType::Switch:
+        return TEXT("Switch");
     default:
         return TEXT("");
     }

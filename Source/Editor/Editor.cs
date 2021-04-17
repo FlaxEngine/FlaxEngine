@@ -752,10 +752,11 @@ namespace FlaxEditor
         /// <param name="type">The collision data type.</param>
         /// <param name="model">The source model.</param>
         /// <param name="modelLodIndex">The source model LOD index.</param>
+        /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.</param>
         /// <param name="convexFlags">The convex mesh generation flags.</param>
         /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
         /// <returns>True if failed, otherwise false.</returns>
-        public static bool CookMeshCollision(string path, CollisionDataType type, Model model, int modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
+        public static bool CookMeshCollision(string path, CollisionDataType type, ModelBase model, int modelLodIndex = 0, uint materialSlotsMask = uint.MaxValue, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
@@ -764,7 +765,7 @@ namespace FlaxEditor
             if (type == CollisionDataType.None)
                 throw new ArgumentException(nameof(type));
 
-            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, convexFlags, convexVertexLimit);
+            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, materialSlotsMask, convexFlags, convexVertexLimit);
         }
 
         /// <summary>
@@ -816,9 +817,16 @@ namespace FlaxEditor
         /// <param name="sphere">The bounding sphere.</param>
         public static void GetActorEditorSphere(Actor actor, out BoundingSphere sphere)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
-            BoundingSphere.FromBox(ref box, out sphere);
-            sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
+                BoundingSphere.FromBox(ref box, out sphere);
+                sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            }
+            else
+            {
+                sphere = BoundingSphere.Empty;
+            }
         }
 
         /// <summary>
@@ -828,7 +836,14 @@ namespace FlaxEditor
         /// <param name="box">The bounding box.</param>
         public static void GetActorEditorBox(Actor actor, out BoundingBox box)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            }
+            else
+            {
+                box = BoundingBox.Zero;
+            }
         }
 
         /// <summary>
@@ -1166,7 +1181,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     return true;
                 }
@@ -1179,7 +1194,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
@@ -1199,7 +1214,7 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
@@ -1330,7 +1345,7 @@ namespace FlaxEditor
         internal static extern string Internal_GetShaderAssetSourceCode(IntPtr obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
+        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Vector3[] triangles, out int[] indices);

@@ -1016,6 +1016,8 @@ void NavMeshBuilder::Update()
         {
             NavBuildQueue.RemoveAt(i--);
             const auto scene = req.Scene.Get();
+            if (!scene)
+                continue;
 
             // Early out if scene has no bounds volumes to define nav mesh area
             if (scene->NavigationVolumes.IsEmpty())

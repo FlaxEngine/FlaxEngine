@@ -29,7 +29,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool CanBeSelectedDirectly => true;
 
-            public override bool CanDuplicate => true;
+            public override bool CanDuplicate => !Root?.Selection.Contains(ParentNode) ?? true;
 
             public override bool CanDelete => true;
 
@@ -282,7 +282,13 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 // Remove unused points
                 while (srcCount > dstCount)
-                    ActorChildNodes[srcCount-- - 1].Dispose();
+                {
+                    var node = ActorChildNodes[srcCount-- - 1];
+                    // TODO: support selection interface inside SceneGraph nodes (eg. on Root) so prefab editor can handle this too
+                    if (Editor.Instance.SceneEditing.Selection.Contains(node))
+                        Editor.Instance.SceneEditing.Deselect();
+                    node.Dispose();
+                }
 
                 // Add new points
                 var id = ID;
@@ -359,6 +365,15 @@ namespace FlaxEditor.SceneGraph.Actors
                     Navigation.BuildNavMesh(collider.Scene, collider.Box, options.AutoRebuildNavMeshTimeoutMs);
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+        {
+            // Select only spline points
+            normal = Vector3.Up;
+            distance = float.MaxValue;
+            return false;
         }
 
         /// <inheritdoc />

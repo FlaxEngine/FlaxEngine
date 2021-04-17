@@ -68,8 +68,8 @@ class LinuxThread;
 typedef LinuxThread Thread;
 class LinuxWindow;
 typedef LinuxWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class UnixNetwork;
+typedef UnixNetwork Network;
 
 #elif PLATFORM_PS4
 
@@ -137,6 +137,29 @@ class AndroidThread;
 typedef AndroidThread Thread;
 class AndroidWindow;
 typedef AndroidWindow Window;
+class UnixNetwork;
+typedef UnixNetwork Network;
+
+#elif PLATFORM_SWITCH
+
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class SwitchCriticalSection;
+typedef SwitchCriticalSection CriticalSection;
+class SwitchConditionVariable;
+typedef SwitchConditionVariable ConditionVariable;
+class SwitchFileSystem;
+typedef SwitchFileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class SwitchFile;
+typedef SwitchFile File;
+class SwitchPlatform;
+typedef SwitchPlatform Platform;
+class SwitchThread;
+typedef SwitchThread Thread;
+class SwitchWindow;
+typedef SwitchWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
 

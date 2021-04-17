@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+#if PLATFORM_WIN32
+
 #include "Win32Network.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -7,10 +9,8 @@
 #include <WS2ipdef.h>
 #include <WS2tcpip.h>
 
-#define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) case OPTENUM: *level = OPTLEVEL; *name = OPTNAME; break;
-
-static_assert(sizeof NetworkSocket::Data >= sizeof SOCKET, "NetworkSocket::Data is not big enough to contains SOCKET !");
-static_assert(sizeof NetworkEndPoint::Data >= sizeof sockaddr_in6, "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
+static_assert(sizeof(NetworkSocket::Data) >= sizeof(SOCKET), "NetworkSocket::Data is not big enough to contains SOCKET !");
+static_assert(sizeof(NetworkEndPoint::Data) >= sizeof(sockaddr_in6), "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
 static_assert(SOCKGROUP_ITEMSIZE >= sizeof(pollfd), "SOCKGROUP_ITEMSIZE macro is not big enough to contains pollfd !");
 
 // @formatter:off
@@ -44,12 +44,12 @@ static String GetLastErrorMessage()
 
 static int GetAddrSize(const sockaddr& addr)
 {
-    return addr.sa_family == AF_INET6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
+    return addr.sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
 }
 
 static int GetAddrSizeFromEP(NetworkEndPoint& endPoint)
 {
-    return endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
+    return endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
 }
 
 static NetworkIPVersion GetIPVersionFromAddr(const sockaddr& addr)
@@ -118,6 +118,7 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
 {
     switch (option)
     {
+#define SOCKOPT(OPTENUM, OPTLEVEL, OPTNAME) case OPTENUM: *level = OPTLEVEL; *name = OPTNAME; break;
     SOCKOPT(NetworkSocketOption::Debug, SOL_SOCKET, SO_DEBUG)
     SOCKOPT(NetworkSocketOption::ReuseAddr, SOL_SOCKET, SO_REUSEADDR)
     SOCKOPT(NetworkSocketOption::KeepAlive, SOL_SOCKET, SO_KEEPALIVE)
@@ -135,6 +136,11 @@ static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, i
     SOCKOPT(NetworkSocketOption::IPv6Only, IPPROTO_IPV6, IPV6_V6ONLY)
     SOCKOPT(NetworkSocketOption::Mtu, IPPROTO_IP, IP_MTU)
     SOCKOPT(NetworkSocketOption::Type, SOL_SOCKET, SO_TYPE)
+#undef SOCKOPT
+    default:
+        *level = 0;
+        *name = 0;
+        break;
     }
 }
 
@@ -152,7 +158,7 @@ bool Win32Network::CreateSocket(NetworkSocket& socket, NetworkProtocol proto, Ne
         LOG(Error, "Can't create native socket! Error : {0}", GetLastErrorMessage());
         return true;
     }
-    memcpy(socket.Data, &sock, sizeof sock);
+    memcpy(socket.Data, &sock, sizeof(sock));
     unsigned long value = 1;
     if (ioctlsocket(sock, FIONBIO, &value) == SOCKET_ERROR)
     {
@@ -187,7 +193,7 @@ bool Win32Network::SetSocketOption(NetworkSocket& socket, NetworkSocketOption op
 
     TranslateSockOptToNative(option, &optlvl, &optnme);
 
-    if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, sizeof value) == SOCKET_ERROR)
+    if (setsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, sizeof(value)) == SOCKET_ERROR)
     {
         LOG(Warning, "Unable to set socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
         return true;
@@ -241,7 +247,7 @@ bool Win32Network::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
         return true;
     }
 
-    const uint16 size = endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof sockaddr_in6 : sizeof sockaddr_in;
+    const uint16 size = GetAddrSizeFromEP(endPoint);
     if (bind(*(SOCKET*)socket.Data, (const sockaddr*)endPoint.Data, size) == SOCKET_ERROR)
     {
         LOG(Error, "Unable to bind socket! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
@@ -260,28 +266,28 @@ bool Win32Network::Listen(NetworkSocket& socket, uint16 queueSize)
     return false;
 }
 
-bool Win32Network::Accept(NetworkSocket& serverSock, NetworkSocket& newSock, NetworkEndPoint& newEndPoint)
+bool Win32Network::Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, NetworkEndPoint& newEndPoint)
 {
-    if (serverSock.Protocol != NetworkProtocol::Tcp)
+    if (serverSocket.Protocol != NetworkProtocol::Tcp)
     {
-        LOG(Warning, "Can't accept connection on UDP socket! Socket : {0}", *(SOCKET*)serverSock.Data);
+        LOG(Warning, "Can't accept connection on UDP socket! Socket : {0}", *(SOCKET*)serverSocket.Data);
         return true;
     }
     SOCKET sock;
     sockaddr_in6 addr;
-    int32 size = sizeof sockaddr_in6;
-    if ((sock = accept(*(SOCKET*)serverSock.Data, (sockaddr*)&addr, &size)) == INVALID_SOCKET)
+    int32 size = sizeof(sockaddr_in6);
+    if ((sock = accept(*(SOCKET*)serverSocket.Data, (sockaddr*)&addr, &size)) == INVALID_SOCKET)
     {
         int32 error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
             return false;
-        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSock.Data, GetErrorMessage(error));
+        LOG(Warning, "Unable to accept incoming connection! Socket : {0} Error : {1}", *(SOCKET*)serverSocket.Data, GetErrorMessage(error));
         return true;
     }
-    memcpy(newSock.Data, &sock, sizeof sock);
+    memcpy(newSocket.Data, &sock, sizeof(sock));
     memcpy(newEndPoint.Data, &addr, size);
-    newSock.Protocol = serverSock.Protocol;
-    newSock.IPVersion = serverSock.IPVersion;
+    newSocket.Protocol = serverSocket.Protocol;
+    newSocket.IPVersion = serverSocket.IPVersion;
     if (CreateEndPointFromAddr((sockaddr*)&addr, newEndPoint))
         return true;
     return false;
@@ -305,7 +311,7 @@ bool Win32Network::IsReadable(NetworkSocket& socket)
     return false;
 }
 
-bool Win32Network::IsWriteable(NetworkSocket& socket)
+bool Win32Network::IsWritable(NetworkSocket& socket)
 {
     pollfd entry;
     entry.fd = *(SOCKET*)socket.Data;
@@ -358,7 +364,7 @@ bool Win32Network::GetSocketState(NetworkSocketGroup& group, uint32 index, Netwo
     if (index >= group.Capacity)
         return true;
     pollfd* pollptr = (pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE];
-    memset(&state, 0, sizeof state);
+    memset(&state, 0, sizeof(state));
     if (pollptr->revents & POLLERR)
         state.Error = true;
     if (pollptr->revents & POLLHUP)
@@ -398,7 +404,7 @@ bool Win32Network::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, N
     if (index >= group.Capacity)
         return true;
     SOCKET s = ((pollfd*)&group.Data[index * SOCKGROUP_ITEMSIZE])->fd;
-    memcpy(socket->Data, &s, sizeof s);
+    memcpy(socket->Data, &s, sizeof(s));
     int32 value;
     if (GetSocketOption(*socket, NetworkSocketOption::Type, &value))
         return true;
@@ -490,7 +496,7 @@ int32 Win32Network::ReadSocket(NetworkSocket socket, byte* buffer, uint32 buffer
     }
     else
     {
-        int32 addrsize = sizeof sockaddr_in6;
+        int32 addrsize = sizeof(sockaddr_in6);
         sockaddr_in6 addr;
         if ((size = recvfrom(*(SOCKET*)socket.Data, (char*)buffer, bufferSize, 0, (sockaddr*)&addr, &addrsize)) == SOCKET_ERROR)
         {
@@ -508,7 +514,7 @@ bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv,
     int status;
     addrinfoW hints;
     addrinfoW* info;
-    memset(&hints, 0, sizeof hints);
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = ipv == NetworkIPVersion::IPv6 ? AF_INET6 : ipv == NetworkIPVersion::IPv4 ? AF_INET : AF_UNSPEC;
     hints.ai_flags |= AI_ADDRCONFIG;
     hints.ai_flags |= AI_V4MAPPED;
@@ -518,13 +524,13 @@ bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv,
     // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
     if ((status = GetAddrInfoW(address.Address == String::Empty ? nullptr : address.Address.Get(), address.Port == String::Empty ? nullptr : address.Port.Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? address.Address : String("ANY"), gai_strerror(status));
+        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? *address.Address : TEXT("ANY"), gai_strerror(status));
         return true;
     }
 
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? address.Address : String("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? *address.Address : TEXT("ANY"));
         return true;
     }
 
@@ -534,7 +540,6 @@ bool Win32Network::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv,
         return true;
     }
     FreeAddrInfoW(info);
-
     return false;
 }
 
@@ -552,7 +557,7 @@ NetworkEndPoint Win32Network::RemapEndPointToIPv6(NetworkEndPoint endPoint)
     const SCOPE_ID scope = SCOPEID_UNSPECIFIED_INIT;
 
     // Can be replaced by windows built-in macro IN6ADDR_SETV4MAPPED()
-    memset(addr6, 0, sizeof sockaddr_in6);
+    memset(addr6, 0, sizeof(sockaddr_in6));
     addr6->sin6_family = AF_INET6;
     addr6->sin6_scope_struct = scope;
     addr6->sin6_addr = v4MappedPrefix;
@@ -562,3 +567,5 @@ NetworkEndPoint Win32Network::RemapEndPointToIPv6(NetworkEndPoint endPoint)
 
     return pv6;
 }
+
+#endif

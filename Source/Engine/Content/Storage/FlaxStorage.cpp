@@ -194,13 +194,13 @@ void FlaxStorage::AddRef()
 
 void FlaxStorage::RemoveRef()
 {
-    ASSERT(_refCount > 0);
-
-    _refCount--;
-
-    if (_refCount == 0)
+    if (_refCount > 0)
     {
-        _lastRefLostTime = DateTime::NowUTC();
+        _refCount--;
+        if (_refCount == 0)
+        {
+            _lastRefLostTime = DateTime::NowUTC();
+        }
     }
 }
 

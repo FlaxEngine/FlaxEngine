@@ -22,10 +22,9 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             element = layout.ComboBox();
-            element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
-
-            // Set layer names
             element.ComboBox.SetItems(LayersAndTagsSettings.GetCurrentLayers());
+            element.ComboBox.SelectedIndex = (int)Values[0];
+            element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
         private void GetActorsTree(List<Actor> list, Actor a)

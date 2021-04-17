@@ -80,9 +80,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             if (Brush == null)
                 return;

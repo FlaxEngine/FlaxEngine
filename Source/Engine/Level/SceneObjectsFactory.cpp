@@ -204,6 +204,8 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
 {
     PROFILE_CPU_NAMED("SynchronizePrefabInstances");
 
+    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
+
     // Check all objects with prefab linkage for moving to a proper parent
     const int32 objectsToCheckCount = sceneObjects.Count();
     for (int32 i = 0; i < objectsToCheckCount; i++)
@@ -257,6 +259,16 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
             // Reparent
             obj->SetParent(actualParent, false);
         }
+
+        // Preserve order in parent (values from prefab are used)
+        if (i != 0)
+        {
+            const auto defaultInstance = prefab->GetDefaultInstance(obj->GetPrefabObjectID());
+            if (defaultInstance)
+            {
+                obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+            }
+        }
     }
 
     // Check all actors with prefab linkage for adding missing objects
@@ -305,6 +317,7 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
                 continue;
 
             // Create instance (including all children)
+            Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
             SynchronizeNewPrefabInstance(prefab, actor, prefabObjectId, sceneObjects, modifier);
         }
     }
@@ -313,8 +326,19 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
     for (int32 i = objectsToCheckCount; i < sceneObjects.Count(); i++)
     {
         SceneObject* obj = sceneObjects[i];
+
+        // Preserve order in parent (values from prefab are used)
+        auto prefab = Content::LoadAsync<Prefab>(obj->GetPrefabID());
+        const auto defaultInstance = prefab && prefab->IsLoaded() ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+        if (defaultInstance)
+        {
+            obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+        }
+
         obj->PostLoad();
     }
+
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 }
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
@@ -414,6 +438,7 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Prefab* prefab, Actor* ac
 
     // Map prefab object ID to the new prefab object instance
     modifier->IdsMapping[prefabObjectId] = Guid::New();
+    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
 
     // Create prefab instance (recursive prefab loading to support nested prefabs)
     auto child = Spawn(*(ISerializable::DeserializeStream*)prefabData, modifier);

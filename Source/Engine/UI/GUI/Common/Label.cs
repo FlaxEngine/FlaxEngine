@@ -77,7 +77,19 @@ namespace FlaxEngine.GUI
         public FontReference Font
         {
             get => _font;
-            set => _font = value;
+            set
+            {
+                if (_font != value)
+                {
+                    _font = value;
+
+                    if (_autoWidth || _autoHeight || _autoFitText)
+                    {
+                        _textSize = Vector2.Zero;
+                        PerformLayout();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -200,8 +212,8 @@ namespace FlaxEngine.GUI
                 color *= 0.6f;
 
             var scale = 1.0f;
-            var hAlignment = _autoWidth ? TextAlignment.Near : HorizontalAlignment;
-            var wAlignment = _autoHeight ? TextAlignment.Near : VerticalAlignment;
+            var hAlignment = HorizontalAlignment;
+            var wAlignment = VerticalAlignment;
             if (_autoFitText)
             {
                 hAlignment = TextAlignment.Center;
@@ -239,7 +251,13 @@ namespace FlaxEngine.GUI
                 if (font)
                 {
                     // Calculate text size
-                    _textSize = font.MeasureText(_text);
+                    var layout = TextLayoutOptions.Default;
+                    layout.TextWrapping = Wrapping;
+                    if (_autoHeight && !_autoWidth)
+                        layout.Bounds.Size.X = Width - Margin.Width;
+                    else if (_autoWidth && !_autoHeight)
+                        layout.Bounds.Size.Y = Height - Margin.Height;
+                    _textSize = font.MeasureText(_text, ref layout);
 
                     // Check if size is controlled via text
                     if (_autoWidth || _autoHeight)

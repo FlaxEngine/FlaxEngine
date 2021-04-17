@@ -66,6 +66,26 @@ void Screen::SetSize(const Vector2& value)
     Size = value;
 }
 
+Vector2 Screen::ScreenToGameViewport(const Vector2& screenPos)
+{
+#if USE_EDITOR
+    return Editor::Managed->ScreenToGameViewport(screenPos);
+#else
+    auto win = Engine::MainWindow;
+    return win ? win->ScreenToClient(screenPos) : Vector2::Minimum;
+#endif
+}
+
+Vector2 Screen::GameViewportToScreen(const Vector2& viewportPos)
+{
+#if USE_EDITOR
+    return Editor::Managed->GameViewportToScreen(viewportPos);
+#else
+    auto win = Engine::MainWindow;
+    return win ? win->ClientToScreen(viewportPos) : Vector2::Minimum;
+#endif
+}
+
 bool Screen::GetCursorVisible()
 {
 #if USE_EDITOR

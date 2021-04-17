@@ -15,6 +15,7 @@ MMethod* UICanvas_PostDeserialize = nullptr;
 MMethod* UICanvas_OnEnable = nullptr;
 MMethod* UICanvas_OnDisable = nullptr;
 MMethod* UICanvas_EndPlay = nullptr;
+MMethod* UICanvas_ParentChanged = nullptr;
 
 #define UICANVAS_INVOKE(event) \
     auto instance = GetManagedInstance(); \
@@ -43,6 +44,7 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_OnEnable = mclass->GetMethod("OnEnable");
         UICanvas_OnDisable = mclass->GetMethod("OnDisable");
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
+        UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
     }
 }
 
@@ -133,6 +135,14 @@ void UICanvas::EndPlay()
     Actor::EndPlay();
 }
 
+void UICanvas::OnParentChanged()
+{
+    // Base
+    Actor::OnParentChanged();
+
+    UICANVAS_INVOKE(ParentChanged);
+}
+
 void UICanvas::OnEnable()
 {
     UICANVAS_INVOKE(OnEnable);
@@ -154,6 +164,6 @@ void UICanvas::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }

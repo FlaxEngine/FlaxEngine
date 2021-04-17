@@ -5,6 +5,9 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#if USE_EDITOR
+#include "Engine/Debug/DebugLog.h"
+#endif
 
 MeshCollider::MeshCollider(const SpawnParams& params)
     : Collider(params)
@@ -39,6 +42,12 @@ bool MeshCollider::CanAttach(RigidBody* rigidBody) const
     CollisionDataType type = CollisionDataType::None;
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
+#if USE_EDITOR
+    if (type == CollisionDataType::TriangleMesh)
+    {
+        LOG(Warning, "Cannot attach {0} using Triangle Mesh collider {1} to RigidBody (not supported)", GetNamePath(), CollisionData->ToString());
+    }
+#endif
     return type != CollisionDataType::TriangleMesh;
 }
 

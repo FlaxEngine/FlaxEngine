@@ -32,13 +32,13 @@ namespace FlaxEditor.Surface.Elements
             Width = archetype.Size.X;
             ParentNode = parentNode;
             Archetype = archetype;
-            Value = (int)ParentNode.Values[Archetype.ValueIndex];
+            Value = (ulong)(int)ParentNode.Values[Archetype.ValueIndex];
         }
 
         /// <inheritdoc />
         protected override void OnValueChanged()
         {
-            if ((int)ParentNode.Values[Archetype.ValueIndex] != Value)
+            if ((int)ParentNode.Values[Archetype.ValueIndex] != (int)Value)
             {
                 // Edit value
                 ParentNode.SetValue(Archetype.ValueIndex, Value);
