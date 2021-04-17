@@ -50,6 +50,20 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
+    /// <param name="initList">The initial values defined in the array.</param>
+    Array(std::initializer_list<T> initList)
+    {
+        _count = _capacity = (int32)initList.size();
+        if (_count > 0)
+        {
+            _allocation.Allocate(_count);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
     Array(const T* data, int32 length)
@@ -121,6 +135,24 @@ public:
         other._count = 0;
         other._capacity = 0;
         _allocation.Swap(other._allocation);
+    }
+
+    /// <summary>
+    /// The assignment operator that deletes the current collection of items and the copies items from the initializer list.
+    /// </summary>
+    /// <param name="initList">The other collection to copy.</param>
+    /// <returns>The reference to this.</returns>
+    Array& operator=(std::initializer_list<T> initList) noexcept
+    {
+        Memory::DestructItems(Get(), _count);
+
+        _count = _capacity = (int32)initList.size();
+        if (_capacity > 0)
+        {
+            _allocation.Allocate(_capacity);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
+        return *this;
     }
 
     /// <summary>
