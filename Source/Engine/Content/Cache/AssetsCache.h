@@ -31,7 +31,7 @@ DECLARE_ENUM_OPERATORS(AssetsCacheFlags);
 /// <summary>
 /// Flax Game Engine assets cache container
 /// </summary>
-class AssetsCache
+class FLAXENGINE_API AssetsCache
 {
 public:
 
