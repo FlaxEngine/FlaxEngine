@@ -43,7 +43,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     const auto uwpDataPath = platformDataPath / (isXboxOne ? TEXT("XboxOne") : TEXT("UWP")) / TEXT("Binaries");
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = UWPPlatformSettings::Get();
-    Array<byte> fileTemplate;
+    StringAnsi fileTemplate;
 
     // Copy binaries
     const auto binPath = data.GetGameBinariesPath();
@@ -149,12 +149,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     if (!FileSystem::FileExists(dstAssemblyInfoPath))
     {
         // Get template
-        if (File::ReadAllBytes(srcAssemblyInfoPath, fileTemplate))
+        if (File::ReadAllText(srcAssemblyInfoPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load AssemblyInfo.cs template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Write data to file
         auto file = FileWriteStream::Open(dstAssemblyInfoPath);
@@ -163,7 +162,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         {
             auto now = DateTime::Now();
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , gameSettings->ProductName.ToStringAnsi()
                 , gameSettings->CompanyName.ToStringAnsi()
                 , now.GetYear()
@@ -182,12 +181,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     if (!FileSystem::FileExists(dstAppPath))
     {
         // Get template
-        if (File::ReadAllBytes(srcAppPath, fileTemplate))
+        if (File::ReadAllText(srcAppPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load App.cs template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Write data to file
         auto file = FileWriteStream::Open(dstAppPath);
@@ -195,7 +193,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , defaultNamespace.ToStringAnsi() // {0} Default Namespace
             );
             hasError = file->HasError();
@@ -211,12 +209,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     const auto srcFlaxGeneratedPath = uwpDataPath / TEXT("FlaxGenerated.cs");
     {
         // Get template
-        if (File::ReadAllBytes(srcFlaxGeneratedPath, fileTemplate))
+        if (File::ReadAllText(srcFlaxGeneratedPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load FlaxGenerated.cs template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Prepare
         StringAnsi autoRotationPreferences;
@@ -252,7 +249,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , autoRotationPreferences.Get()
                 , preferredLaunchWindowingMode.Get()
             );
@@ -272,12 +269,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     if (!FileSystem::FileExists(dstSolutionPath))
     {
         // Get template
-        if (File::ReadAllBytes(srcSolutionPath, fileTemplate))
+        if (File::ReadAllText(srcSolutionPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load Solution.sln template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Write data to file
         auto file = FileWriteStream::Open(dstSolutionPath);
@@ -285,7 +281,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.ToStringAnsi() // {2} Project ID
@@ -305,12 +301,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     const auto srcProjectPath = uwpDataPath / TEXT("Project.csproj");
     {
         // Get template
-        if (File::ReadAllBytes(srcProjectPath, fileTemplate))
+        if (File::ReadAllText(srcProjectPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load Project.csproj template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Build included files data
         StringBuilder filesInclude(2048);
@@ -334,7 +329,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.Get() // {2} Project ID
@@ -357,12 +352,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     if (!FileSystem::FileExists(dstManifestPath))
     {
         // Get template
-        if (File::ReadAllBytes(srcManifestPath, fileTemplate))
+        if (File::ReadAllText(srcManifestPath, fileTemplate))
         {
             data.Error(TEXT("Failed to load Package.appxmanifest template."));
             return true;
         }
-        fileTemplate[fileTemplate.Count() - 1] = 0;
 
         // Build included files data
         StringBuilder filesInclude(2048);
@@ -385,7 +379,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             file->WriteTextFormatted(
-                (char*)fileTemplate.Get()
+                fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Display Name
                 , gameSettings->CompanyName.ToStringAnsi() // {1} Company Name
                 , productId.ToStringAnsi() // {2} Product ID
