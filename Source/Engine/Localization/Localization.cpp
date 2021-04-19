@@ -2,6 +2,7 @@
 
 #include "Localization.h"
 #include "CultureInfo.h"
+#include "LocalizedString.h"
 #include "LocalizationSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Config/GameSettings.h"
@@ -44,6 +45,72 @@ void LocalizationSettings::Apply()
 void LocalizationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(LocalizedStringTables);
+}
+
+LocalizedString::LocalizedString(const LocalizedString& other)
+    : Id(other.Id)
+    , Value(other.Value)
+{
+}
+
+LocalizedString::LocalizedString(LocalizedString&& other) noexcept
+    : Id(MoveTemp(other.Id))
+    , Value(MoveTemp(other.Value))
+{
+}
+
+LocalizedString::LocalizedString(const StringView& value)
+    : Value(value)
+{
+}
+
+LocalizedString::LocalizedString(String&& value) noexcept
+    : Value(MoveTemp(value))
+{
+}
+
+LocalizedString& LocalizedString::operator=(const LocalizedString& other)
+{
+    if (this != &other)
+    {
+        Id = other.Id;
+        Value = other.Value;
+    }
+    return *this;
+}
+
+LocalizedString& LocalizedString::operator=(LocalizedString&& other) noexcept
+{
+    if (this != &other)
+    {
+        Id = MoveTemp(other.Id);
+        Value = MoveTemp(other.Value);
+    }
+    return *this;
+}
+
+LocalizedString& LocalizedString::operator=(const StringView& value)
+{
+    Id.Clear();
+    Value = value;
+    return *this;
+}
+
+LocalizedString& LocalizedString::operator=(String&& value) noexcept
+{
+    Id.Clear();
+    Value = MoveTemp(value);
+    return *this;
+}
+
+String LocalizedString::ToString() const
+{
+    return Localization::GetString(Id, Value);
+}
+
+String LocalizedString::ToStringPlural(int32 n) const
+{
+    return Localization::GetPluralString(Id, n, Value);
 }
 
 void LocalizationService::OnLocalizationChanged()
