@@ -143,8 +143,8 @@ bool DepthOfFieldPass::setupResources()
             _bokehBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Buffer"));
         if (_bokehIndirectArgsBuffer == nullptr)
             _bokehIndirectArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Indirect Args Buffer"));
-        uint32 indirectArgsBufferInitData[4] = { 0, 1, 0, 0 };
-        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
+        GPUDrawIndirectArgs indirectArgsBufferInitData{0, 1, 0, 0};
+        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(&indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
             return true;
     }
 
