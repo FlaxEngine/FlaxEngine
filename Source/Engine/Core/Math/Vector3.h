@@ -901,6 +901,17 @@ public:
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
     static float TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3& v2);
+
+    /// <summary>
+    /// Given two points, will return the unit direction.
+    /// </summary>
+    /// <param name="a">The start position.</param>
+    /// <param name="b">The target position.</param>
+    /// <returns>The unit direction from a to b.</returns>
+    static Vector3 UnitDirection(const Vector3& a, const Vector3& b)
+    {
+        return (b - a).GetNormalized();
+    }
 };
 
 inline Vector3 operator+(float a, const Vector3& b)
