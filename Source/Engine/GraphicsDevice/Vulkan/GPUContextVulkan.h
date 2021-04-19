@@ -199,8 +199,8 @@ public:
     void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
     void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
     void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
-    void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
-    void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
+    void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) override;
+    void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) override;
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rectangle& scissorRect) override;
     GPUPipelineState* GetState() const override;

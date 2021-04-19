@@ -1090,13 +1090,13 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
-void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
+void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
 {
     // TODO: implement it
     MISSING_CODE("GPUContextVulkan::DrawInstancedIndirect");
 }
 
-void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
+void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
 {
     // TODO: implement it
     MISSING_CODE("GPUContextVulkan::DrawIndexedInstancedIndirect");
