@@ -82,10 +82,8 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.PS4:
                 case TargetPlatform.XboxScarlett:
                 {
-                    foreach (var file in outputFileNames)
-                    {
-                        Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, platform.ToString(), file));
-                    }
+                    var file = "Newtonsoft.Json.dll";
+                    Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", file));
                     break;
                 }
                 }
