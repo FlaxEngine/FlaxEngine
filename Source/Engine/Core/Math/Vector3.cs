@@ -1246,17 +1246,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Given two points, will return the unit direction.
-        /// </summary>
-        /// <param name="a">The start position.</param>
-        /// <param name="b">The target position.</param>
-        /// <returns>The unit direction from a to b.</returns>
-        public static Vector3 UnitDirection(Vector3 a, Vector3 b)
-        {
-            return (b - a).Normalized;
-        }
-
-        /// <summary>
         /// Projects a vector onto another vector.
         /// </summary>
         /// <param name="vector">The vector to project.</param>
