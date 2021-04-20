@@ -178,7 +178,6 @@ void Script::SetupType()
 {
     // Enable tick functions based on the method overriden in C# or Visual Script
     ScriptingTypeHandle typeHandle = GetTypeHandle();
-    _tickUpdate = _tickLateUpdate = _tickFixedUpdate = 0;
     while (typeHandle != Script::TypeInitializer)
     {
         auto& type = typeHandle.GetType();
