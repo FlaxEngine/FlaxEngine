@@ -7,7 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Base class for all possible UIInputModules
     /// </summary>
-    public abstract class UIInputModule : Script
+    public abstract class UIInputModule
     {
         /// <summary>
         /// The delay to start before holding the button start repeating
@@ -21,23 +21,8 @@ namespace FlaxEngine.GUI
         public float MoveRepeatRate = 0.2f;
 
         /// <summary>
-        /// The internal UIInputSystem
+        /// The internal Update Loop
         /// </summary>
-        [Serialize]
-        protected UIInputSystem cachedInputSystem;
-        /// <summary>
-        /// Actual UIInputSystem available to use internally
-        /// </summary>
-        public UIInputSystem InputSystem
-        {
-            get
-            {
-                if(cachedInputSystem == null)
-                {
-                    cachedInputSystem = Actor.GetScript<UIInputSystem>();
-                }
-                return cachedInputSystem;
-            }
-        }
+        protected virtual void OnUpdate(RootControl rootCcontrol) { };
     }
 }

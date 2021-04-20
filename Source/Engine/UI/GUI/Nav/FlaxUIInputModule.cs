@@ -62,7 +62,7 @@ namespace FlaxEngine.GUI
         float verticalRateTime = 0;
 
         /// <inheritdoc/>
-        public override void OnUpdate()
+        protected override void OnUpdate(RootControl InputSystem)
         {
             actualState = GatherInput();
 
