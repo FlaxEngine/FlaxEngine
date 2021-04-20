@@ -192,10 +192,7 @@ public:
     /// </summary>
     /// <param name="index">The child actor index.</param>
     /// <returns>The child actor (always valid).</returns>
-    API_FUNCTION() FORCE_INLINE Actor* GetChild(int32 index) const
-    {
-        return Children[index];
-    }
+    API_FUNCTION() Actor* GetChild(int32 index) const;
 
     /// <summary>
     /// Gets the child actor with the given name.
@@ -266,10 +263,7 @@ public:
     /// </summary>
     /// <param name="index">The script index.</param>
     /// <returns>The script (always valid).</returns>
-    API_FUNCTION() FORCE_INLINE Script* GetScript(int32 index) const
-    {
-        return Scripts[index];
-    }
+    API_FUNCTION() Script* GetScript(int32 index) const;
 
     /// <summary>
     /// Gets the script of the given type from this actor.
