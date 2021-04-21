@@ -155,7 +155,7 @@ namespace FlaxEngine.GUI
         /// <param name="dt">The delta time.</param>
         public void OnMouseOverControl(Control target, float dt)
         {
-            if (!Visible)
+            if (!Visible && _timeToPopupLeft > 0.0f)
             {
                 _lastTarget = target;
                 _timeToPopupLeft -= dt;
