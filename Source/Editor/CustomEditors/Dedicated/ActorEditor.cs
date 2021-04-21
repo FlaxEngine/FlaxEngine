@@ -45,6 +45,36 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
+        {  
+            GroupElement group = layout.Group("General");
+            group.Panel.Open(false);
+
+            const float settingsButtonSize = 14;
+            var settingsButton = new Image
+            {
+                TooltipText = "Settings",
+                AutoFocus = true,
+                AnchorPreset = AnchorPresets.TopRight,
+                Parent = group.Panel,
+                Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
+                IsScrollable = false,
+                Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
+                Margin = new Margin(1),
+                Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
+            };
+            settingsButton.Clicked += OnSettingsButtonClicked;
+
+            VerticalPanelElement vert = group.VerticalPanel();
+            vert.Panel.Margin = Margin.Zero;
+
+            BetterGeneralEditor(vert);
+
+            DrawPrefabEditingIfNeeded(vert);
+
+            base.Initialize(layout);
+
+        }
+        private void DrawPrefabEditingIfNeeded(LayoutElementsContainer layout)
         {
             // Check for prefab link
             if (Values.IsSingleObject && Values[0] is Actor actor && actor.HasPrefabLink)
@@ -63,10 +93,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         Values.SetReferenceValue(prefabInstance);
 
                         // Add some UI
-                        var panel = layout.CustomContainer<UniformGridPanel>();
-                        panel.CustomControl.Height = 20.0f;
-                        panel.CustomControl.SlotsVertically = 1;
-                        panel.CustomControl.SlotsHorizontally = 2;
+                        var panel = UniformGridTwoByOne(layout);
+                        panel.Control.Height = TextBoxBase.DefaultHeight;
+                        panel.CustomControl.SlotPadding = new Margin(2, 2, 0, 0);
 
                         // Selecting actor prefab asset
                         var selectPrefab = panel.Button("Select Prefab");
@@ -83,31 +112,93 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     }
                 }
             }
+        }
 
-            base.Initialize(layout);
 
-            // Add custom settings button to General group
-            for (int i = 0; i < layout.Children.Count; i++)
-            {
-                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "General")
-                {
-                    const float settingsButtonSize = 14;
-                    var settingsButton = new Image
-                    {
-                        TooltipText = "Settings",
-                        AutoFocus = true,
-                        AnchorPreset = AnchorPresets.TopRight,
-                        Parent = group.Panel,
-                        Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
-                        IsScrollable = false,
-                        Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                        Margin = new Margin(1),
-                        Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
-                    };
-                    settingsButton.Clicked += OnSettingsButtonClicked;
-                    break;
-                }
-            }
+        private void BetterGeneralEditor(LayoutElementsContainer group)
+        {
+            HorizontalPanelElement hor = group.HorizontalPanel();
+            hor.Panel.Margin = Margin.Zero;
+            hor.Control.Height = TextBoxBase.DefaultHeight * 2 + 2 + 2 + 2;
+
+            ImageElement img = hor.Image(Editor.Instance.Icons.Logo128);
+            img.Control.Width = TextBoxBase.DefaultHeight * 2;
+            img.Image.Margin = new Margin(2);
+
+            VerticalPanelElement vert = hor.VerticalPanel();
+            vert.Panel.Margin = Margin.Zero;
+            vert.Panel.AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            vert.Panel.Offsets = new Margin(img.Control.Width+2, 0, 0, 0);
+
+
+            HorizontalPanelElement horUp = vert.HorizontalPanel();
+            horUp.Panel.Margin = Margin.Zero;
+            horUp.Control.Height = TextBoxBase.DefaultHeight;
+
+            ScriptMemberInfo anchorInfo = ValuesTypes[0].GetProperty("IsActive");
+            ItemInfo anchorItem = new ItemInfo(anchorInfo);
+            Padding(horUp).Object(anchorItem.GetValues(Values));
+
+            CustomElementsContainer<GridPanel> top = horUp.CustomContainer<GridPanel>();
+            top.CustomControl.SlotPadding = new Margin(2,2,0,0);
+            top.CustomControl.ColumnFill = new float[]{ 0.7f, 0.3f };
+            top.CustomControl.RowFill = new float[] { 1 };
+
+            top.CustomControl.AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            top.CustomControl.Offsets = new Margin(TextBoxBase.DefaultHeight, 0, 0, 0);
+
+            ScriptMemberInfo nameInfo = ValuesTypes[0].GetProperty("Name");
+            ItemInfo nameItem = new ItemInfo(nameInfo);
+            (top).Object(nameItem.GetValues(Values));
+
+            ScriptMemberInfo staticFlagsInfo = ValuesTypes[0].GetProperty("StaticFlags");
+            ItemInfo staticFlagsItem = new ItemInfo(staticFlagsInfo);
+            (top).Object(staticFlagsItem.GetValues(Values));
+            
+
+            vert.Space(0);
+            
+            
+            CustomElementsContainer<UniformGridPanel> bott = UniformGridTwoByOne(vert);
+            bott.Control.Height = TextBoxBase.DefaultHeight;
+
+            ScriptMemberInfo tagInfo = ValuesTypes[0].GetProperty("Tag");
+            ItemInfo tagItem = new ItemInfo(tagInfo);
+            UniformPanelCapsuleForObjectWithText(bott, "Tag:", tagItem.GetValues(Values), (CustomEditor)TypeUtils.CreateInstance("FlaxEditor.CustomEditors.Editors.ActorTagEditor"));
+
+            ScriptMemberInfo layerInfo = ValuesTypes[0].GetProperty("Layer");
+            ItemInfo layerItem = new ItemInfo(layerInfo);
+            UniformPanelCapsuleForObjectWithText(bott, "Layer:", layerItem.GetValues(Values), (CustomEditor)TypeUtils.CreateInstance("FlaxEditor.CustomEditors.Editors.ActorLayerEditor"));
+
+            hor.Control.PerformLayout();
+        }
+        private CustomElementsContainer<UniformGridPanel> UniformGridTwoByOne(LayoutElementsContainer cont)
+        {
+            var horUp = cont.CustomContainer<UniformGridPanel>();
+            horUp.CustomControl.SlotsHorizontally = 2;
+            horUp.CustomControl.SlotsVertically = 1;
+            horUp.CustomControl.SlotPadding = Margin.Zero;
+            return horUp;
+        }
+
+        private CustomElementsContainer<UniformGridPanel> Padding(LayoutElementsContainer cont)
+        {
+            var horUp = cont.CustomContainer<UniformGridPanel>();
+            horUp.CustomControl.SlotsHorizontally = 1;
+            horUp.CustomControl.SlotsVertically = 1;
+            horUp.CustomControl.SlotPadding = new Margin(2, 2, 0, 0);
+            return horUp;
+        }
+
+        private CustomElementsContainer<GridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, CustomEditor overrideEditor = null)
+        {
+            CustomElementsContainer<GridPanel> hor = el.CustomContainer<GridPanel>();
+            hor.CustomControl.ColumnFill = new float[] { 0.3f, 0.7f };
+            hor.CustomControl.RowFill = new float[] { 1 };
+            hor.CustomControl.SlotPadding = new Margin(2, 2, 0, 0);
+            LabelElement lab = hor.Label(text);
+            hor.Object(values, overrideEditor);
+            return hor;
         }
 
         private void OnSettingsButtonClicked(Image image, MouseButton mouseButton)
