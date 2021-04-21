@@ -73,13 +73,18 @@ namespace FlaxEngine.GUI
             Vector2 locationWS = target.PointToWindow(location);
             Vector2 locationSS = parentWin.PointToScreen(locationWS);
             Vector2 screenSize = Platform.VirtualDesktopSize;
+            Vector2 parentWinLocation = parentWin.PointToScreen(Vector2.Zero);
+            float parentWinAbsoluteRight = parentWinLocation.Y + parentWin.Size.Y;
+            float parentWinAbsoluteBottom = parentWinLocation.X + parentWin.Size.X;
             Vector2 rightBottomLocationSS = locationSS + dpiSize;
-            if (screenSize.Y < rightBottomLocationSS.Y)
+
+            // Prioritize tooltip placement within parent window, fall back to virtual desktop
+            if (parentWinAbsoluteRight < rightBottomLocationSS.Y || screenSize.Y < rightBottomLocationSS.Y)
             {
                 // Direction: up
                 locationSS.Y -= dpiSize.Y;
             }
-            if (screenSize.X < rightBottomLocationSS.X)
+            if (parentWinAbsoluteBottom < rightBottomLocationSS.X || screenSize.X < rightBottomLocationSS.X)
             {
                 // Direction: left
                 locationSS.X -= dpiSize.X;
