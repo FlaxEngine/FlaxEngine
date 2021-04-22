@@ -45,6 +45,21 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
+        /// Checks if the text is multiline.
+        /// </summary>
+        /// <param name="str">Text to check.</param>
+        /// <returns>True if text is a multiline, otherwise false.</returns>
+        public static bool IsMultiline(this string str)
+        {
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (str[i] == '\n')
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Splits string into lines
         /// </summary>
         /// <param name="str">Text to split</param>

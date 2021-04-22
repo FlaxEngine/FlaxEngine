@@ -262,6 +262,11 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets a value indicating whether user is editing the text.
+        /// </summary>
+        public bool IsEditing => _isEditing;
+
+        /// <summary>
         /// Gets or sets text property.
         /// </summary>
         [EditorOrder(0), MultilineText, Tooltip("The entered text.")]
