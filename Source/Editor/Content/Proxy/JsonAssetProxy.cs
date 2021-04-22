@@ -137,6 +137,12 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool IsProxyFor(ContentItem item)
+        {
+            return item is JsonAssetItem;
+        }
+
+        /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
         {
             return targetLocation.CanHaveAssets;
