@@ -61,7 +61,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var keyType = _editor.Values.Type.GetGenericArguments()[0];
                 if (keyType == typeof(string) || keyType.IsPrimitive)
                 {
-                    var popup = RenamePopup.Show(Parent, Bounds, Text, false);
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     popup.Validate += (renamePopup, value) =>
                     {
                         object newKey;
@@ -86,7 +86,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else if (keyType.IsEnum)
                 {
-                    var popup = RenamePopup.Show(Parent, Bounds, Text, false);
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     var picker = new EnumComboBox(keyType)
                     {
                         AnchorPreset = AnchorPresets.StretchAll,
@@ -220,9 +220,20 @@ namespace FlaxEditor.CustomEditors.Editors
                     if (i != 0 && spacing > 0f)
                     {
                         if (layout.Children.Count > 0 && layout.Children[layout.Children.Count - 1] is PropertiesListElement propertiesListElement)
+                        {
+                            if (propertiesListElement.Labels.Count > 0)
+                            {
+                                var label = propertiesListElement.Labels[propertiesListElement.Labels.Count - 1];
+                                var margin = label.Margin;
+                                margin.Bottom += spacing;
+                                label.Margin = margin;
+                            }
                             propertiesListElement.Space(spacing);
+                        }
                         else
+                        {
                             layout.Space(spacing);
+                        }
                     }
 
                     var key = keys.ElementAt(i);
