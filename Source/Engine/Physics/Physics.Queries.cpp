@@ -425,11 +425,11 @@ bool Physics::CheckSphere(const Vector3& center, const float radius, uint32 laye
     return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
 }
 
-bool Physics::CheckCapsule(const Vector3& center, const float radius, const float height, uint32 layerMask, bool hitTriggers)
+bool Physics::CheckCapsule(const Vector3& center, const float radius, const float height, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     // Prepare data
     SCENE_QUERY_SETUP_OVERLAP_1();
-    const PxTransform pose(C2P(center));
+    const PxTransform pose(C2P(center), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
 
     // Perform overlap test
@@ -470,11 +470,11 @@ bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Col
     return true;
 }
 
-bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     // Prepare data
     SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center));
+    const PxTransform pose(C2P(center), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
 
     // Perform overlap test
@@ -521,11 +521,11 @@ bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Phy
     return true;
 }
 
-bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, uint32 layerMask, bool hitTriggers)
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     // Prepare data
     SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center));
+    const PxTransform pose(C2P(center), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
 
     // Perform overlap test
