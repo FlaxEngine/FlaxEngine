@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        public static void UpdateFilter(TreeNode node, string filterText)
+        private static void UpdateFilter(TreeNode node, string filterText)
         {
             // Update children
             bool isAnyChildVisible = false;
@@ -106,6 +106,12 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private void ShowPicker()
+        {
+            var menu = CreatePicker(Culture, value => { Culture = value; });
+            menu.Show(_label, new Vector2(0, _label.Height));
+        }
+
+        internal static ContextMenuBase CreatePicker(CultureInfo value, Action<CultureInfo> changed)
         {
             var menu = new ContextMenuBase
             {
@@ -150,7 +156,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 node.Parent = parent;
                 lcidToNode[culture.LCID] = node;
             }
-            var value = Culture;
             if (value != null)
                 tree.Select((TreeNode)lcidToNode[value.LCID]);
             tree.SelectedChanged += delegate(List<TreeNode> before, List<TreeNode> after)
@@ -158,7 +163,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (after.Count == 1)
                 {
                     menu.Hide();
-                    Culture = (CultureInfo)after[0].Tag;
+                    changed((CultureInfo)after[0].Tag);
                 }
             };
             searchBox.TextChanged += delegate
@@ -172,10 +177,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 menu.PerformLayout();
             };
             root.ExpandAll(true);
-            menu.Show(_label, new Vector2(0, _label.Height));
+            return menu;
         }
 
-        private static string GetName(CultureInfo value)
+        internal static string GetName(CultureInfo value)
         {
             return value != null ? string.Format("{0} - {1}", value.Name, value.EnglishName) : null;
         }
