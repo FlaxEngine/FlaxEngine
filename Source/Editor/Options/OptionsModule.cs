@@ -150,7 +150,10 @@ namespace FlaxEditor.Options
         private void Save()
         {
             // Update file
-            Editor.SaveJsonAsset(_optionsFilePath, Options);
+            if (Editor.SaveJsonAsset(_optionsFilePath, Options))
+            {
+                MessageBox.Show(string.Format("Failed to save editor option to '{0}'. Ensure that directory exists and program has access to it.", _optionsFilePath), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
 
             // Special case for editor analytics
             var editorAnalyticsTrackingFile = Path.Combine(Editor.LocalCachePath, "noTracking");

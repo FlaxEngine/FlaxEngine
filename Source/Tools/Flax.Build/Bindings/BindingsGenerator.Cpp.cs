@@ -1225,6 +1225,7 @@ namespace Flax.Build.Bindings
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
 
                 // C# event invoking wrapper (calls C# event from C++ delegate)
+                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
                 contents.Append("    ");

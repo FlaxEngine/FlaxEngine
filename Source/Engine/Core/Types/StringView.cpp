@@ -27,6 +27,18 @@ bool StringView::operator!=(const String& other) const
     return StringUtils::Compare(this->GetText(), *other) != 0;
 }
 
+String StringView::Left(int32 count) const
+{
+    const int32 countClamped = count < 0 ? 0 : count < Length() ? count : Length();
+    return String(**this, countClamped);
+}
+
+String StringView::Right(int32 count) const
+{
+    const int32 countClamped = count < 0 ? 0 : count < Length() ? count : Length();
+    return String(**this + Length() - countClamped);
+}
+
 String StringView::Substring(int32 startIndex) const
 {
     ASSERT(startIndex >= 0 && startIndex < Length());

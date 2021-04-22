@@ -347,6 +347,12 @@ void Actor::SetOrderInParent(int32 index)
     }
 }
 
+Actor* Actor::GetChild(int32 index) const
+{
+    CHECK_RETURN(index >= 0 && index < Children.Count(), nullptr);
+    return Children[index];
+}
+
 Actor* Actor::GetChild(const StringView& name) const
 {
     for (int32 i = 0; i < Children.Count(); i++)
@@ -354,7 +360,6 @@ Actor* Actor::GetChild(const StringView& name) const
         if (Children[i]->GetName() == name)
             return Children[i];
     }
-
     return nullptr;
 }
 
@@ -480,6 +485,12 @@ void Actor::SetName(const StringView& value)
     // Fire events
     if (GetScene())
         Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, this, nullptr);
+}
+
+Script* Actor::GetScript(int32 index) const
+{
+    CHECK_RETURN(index >= 0 && index < Scripts.Count(), nullptr);
+    return Scripts[index];
 }
 
 Script* Actor::GetScript(const MClass* type) const
