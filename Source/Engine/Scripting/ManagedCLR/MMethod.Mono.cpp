@@ -33,6 +33,9 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
     case MONO_METHOD_ATTR_PRIVATE:
         _visibility = MVisibility::Private;
         break;
+    case MONO_METHOD_ATTR_FAM_AND_ASSEM:
+        _visibility = MVisibility::PrivateProtected;
+        break;
     case MONO_METHOD_ATTR_ASSEM:
         _visibility = MVisibility::Internal;
         break;
