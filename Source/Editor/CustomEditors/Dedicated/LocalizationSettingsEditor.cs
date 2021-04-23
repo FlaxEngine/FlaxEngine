@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,6 +12,8 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.CustomEditors.Dedicated
@@ -224,40 +227,42 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     var files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cs", SearchOption.AllDirectories);
                     var filesCount = files.Length;
                     foreach (var file in files)
-                        FindNewKeysCSharp(file, newKeys);
+                        FindNewKeysCSharp(file, newKeys, allKeys);
 
                     // C++
                     files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cpp", SearchOption.AllDirectories);
                     filesCount += files.Length;
                     foreach (var file in files)
-                        FindNewKeysCpp(file, newKeys);
+                        FindNewKeysCpp(file, newKeys, allKeys);
                     files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories);
                     filesCount += files.Length;
                     foreach (var file in files)
-                        FindNewKeysCpp(file, newKeys);
+                        FindNewKeysCpp(file, newKeys, allKeys);
 
-                    Editor.Log($"Found {newKeys.Count} new localized strings in {filesCount} files");
-                    if (newKeys.Count == 0)
-                        return;
-                    foreach (var e in newKeys)
-                        Editor.Log(e.Key + (e.Value != null ? " = " + e.Value : string.Empty));
-                    foreach (var locale in locales)
-                    {
-                        var table = locale.First();
-                        var entries = tableEntries[table];
-                        if (table.Locale == "en")
-                        {
-                            foreach (var e in newKeys)
-                                entries[e.Key] = new[] { e.Value };
-                        }
-                        else
-                        {
-                            foreach (var e in newKeys)
-                                entries[e.Key] = new[] { string.Empty };
-                        }
-                        table.Entries = entries;
-                        table.Save();
-                    }
+                    AddNewKeys(newKeys, filesCount, locales, tableEntries);
+                };
+
+                // Find localized strings in content button
+                var findStringsContent = group.Button("Find localized strings in content").Button;
+                findStringsContent.TooltipText = "Searches for localized string usage in inside a project content files (scenes, prefabs)";
+                findStringsContent.Height = 16.0f;
+                findStringsContent.Clicked += delegate
+                {
+                    var newKeys = new Dictionary<string, string>();
+
+                    // Scenes
+                    var files = Directory.GetFiles(Globals.ProjectContentFolder, "*.scene", SearchOption.AllDirectories);
+                    var filesCount = files.Length;
+                    foreach (var file in files)
+                        FindNewKeysJson(file, newKeys, allKeys);
+
+                    // Prefabs
+                    files = Directory.GetFiles(Globals.ProjectContentFolder, "*.prefab", SearchOption.AllDirectories);
+                    filesCount += files.Length;
+                    foreach (var file in files)
+                        FindNewKeysJson(file, newKeys, allKeys);
+
+                    AddNewKeys(newKeys, filesCount, locales, tableEntries);
                 };
             }
 
@@ -268,21 +273,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
-        private static void FindNewKeysCSharp(string file, Dictionary<string, string> newKeys)
+        private static void FindNewKeysCSharp(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys)
         {
             var startToken = "Localization.GetString";
             var textToken = "\"";
-            FindNewKeys(file, newKeys, startToken, textToken);
+            FindNewKeys(file, newKeys, allKeys, startToken, textToken);
         }
 
-        private static void FindNewKeysCpp(string file, Dictionary<string, string> newKeys)
+        private static void FindNewKeysCpp(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys)
         {
             var startToken = "Localization::GetString";
             var textToken = "TEXT(\"";
-            FindNewKeys(file, newKeys, startToken, textToken);
+            FindNewKeys(file, newKeys, allKeys, startToken, textToken);
         }
 
-        private static void FindNewKeys(string file, Dictionary<string, string> newKeys, string startToken, string textToken)
+        private static void FindNewKeys(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys, string startToken, string textToken)
         {
             var contents = File.ReadAllText(file);
             var idx = contents.IndexOf(startToken);
@@ -329,11 +334,85 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         value = inside.Substring(textStart, textEnd - textStart);
                     }
 
-                    newKeys[id] = value;
+                    if (!allKeys.Contains(id))
+                        newKeys[id] = value;
                 }
 
                 idx = contents.IndexOf(startToken, idx);
             }
+        }
+
+        private static void FindNewKeysJson(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys, JToken token)
+        {
+            if (token is JObject o)
+            {
+                foreach (var p in o)
+                {
+                    if (string.Equals(p.Key, "Id", StringComparison.Ordinal) && p.Value is JValue i && i.Value is string id && !allKeys.Contains(id))
+                    {
+                        var count = o.Properties().Count();
+                        if (count == 1)
+                        {
+                            newKeys[id] = null;
+                            return;
+                        }
+                        if (count == 2)
+                        {
+                            var v = o.Property("Value")?.Value as JValue;
+                            if (v?.Value is string value)
+                            {
+                                newKeys[id] = value;
+                                return;
+                            }
+                        }
+                    }
+                    FindNewKeysJson(file, newKeys, allKeys, p.Value);
+                }
+            }
+            else if (token is JArray a)
+            {
+                foreach (var p in a)
+                {
+                    FindNewKeysJson(file, newKeys, allKeys, p);
+                }
+            }
+        }
+
+        private static void FindNewKeysJson(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys)
+        {
+            using (var reader = new StreamReader(file))
+            using (var jsonReader = new JsonTextReader(reader))
+            {
+                var token = JToken.ReadFrom(jsonReader);
+                FindNewKeysJson(file, newKeys, allKeys, token);
+            }
+        }
+
+        private void AddNewKeys(Dictionary<string, string> newKeys, int filesCount, IEnumerable<IGrouping<string, LocalizedStringTable>> locales, Dictionary<LocalizedStringTable, Dictionary<string, string[]>> tableEntries)
+        {
+            Editor.Log($"Found {newKeys.Count} new localized strings in {filesCount} files");
+            if (newKeys.Count == 0)
+                return;
+            foreach (var e in newKeys)
+                Editor.Log(e.Key + (e.Value != null ? " = " + e.Value : string.Empty));
+            foreach (var locale in locales)
+            {
+                var table = locale.First();
+                var entries = tableEntries[table];
+                if (table.Locale == "en")
+                {
+                    foreach (var e in newKeys)
+                        entries[e.Key] = new[] { e.Value };
+                }
+                else
+                {
+                    foreach (var e in newKeys)
+                        entries[e.Key] = new[] { string.Empty };
+                }
+                table.Entries = entries;
+                table.Save();
+            }
+            RebuildLayout();
         }
     }
 }
