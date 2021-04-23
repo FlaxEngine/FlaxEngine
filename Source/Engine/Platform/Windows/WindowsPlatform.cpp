@@ -38,7 +38,7 @@ namespace
     CriticalSection SymLocker;
     bool SymInitialized = false;
     bool SymModulesDirty = true;
-    char* SymPath = nullptr;
+    Array<String> SymbolsPath;
 #endif
 }
 
@@ -617,9 +617,8 @@ void WindowsPlatform::Exit()
     {
         SymInitialized = false;
         SymCleanup(GetCurrentProcess());
-        free(SymPath);
-        SymPath = nullptr;
     }
+    SymbolsPath.Resize(0);
     SymLocker.Unlock();
 #endif
 
@@ -1116,7 +1115,13 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
     SymLocker.Lock();
-    SymModulesDirty = true;
+    const auto folder = StringUtils::GetDirectoryName(filename);
+    if (!SymbolsPath.Contains(folder))
+        SymbolsPath.Add(folder);
+    if (SymInitialized)
+    {
+        SymModulesDirty = true;
+    }
     SymLocker.Unlock();
 #endif
 
@@ -1137,80 +1142,43 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
         SymInitialized = true;
 
         // Build search path
-        const size_t nSymPathLen = 4096;
-        SymPath = (char*)malloc(nSymPathLen);
-        SymPath[0] = 0;
-        strcat_s(SymPath, nSymPathLen, ".;");
-        const size_t nTempLen = 1024;
-        char szTemp[nTempLen];
-
-        // Current directory path
-        if (GetCurrentDirectoryA(nTempLen, szTemp) > 0)
+        String symbolSearchPath;
+        TCHAR ModulePath[MAX_PATH] = { 0 };
+        if (::GetModuleFileName(::GetModuleHandle(nullptr), ModulePath, MAX_PATH))
         {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
+            symbolSearchPath += StringUtils::GetDirectoryName(ModulePath);
+            symbolSearchPath += ";";
         }
-
-        // Main module path
-        if (GetModuleFileNameA(nullptr, szTemp, nTempLen) > 0)
+        for (auto& path : SymbolsPath)
         {
-            szTemp[nTempLen - 1] = 0;
-            for (char* p = (szTemp + strlen(szTemp) - 1); p >= szTemp; --p)
-            {
-                // Locate the rightmost path separator
-                if ((*p == '\\') || (*p == '/') || (*p == ':'))
-                {
-                    *p = 0;
-                    break;
-                }
-            }
-            if (strlen(szTemp) > 0)
-            {
-                strcat_s(SymPath, nSymPathLen, szTemp);
-                strcat_s(SymPath, nSymPathLen, ";");
-            }
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
         }
-
-        // System symbols paths
-        if (GetEnvironmentVariableA("_NT_SYMBOL_PATH", szTemp, nTempLen) > 0)
+        String _NT_SYMBOL_PATH;
+        if (!Platform::GetEnvironmentVariable(TEXT("_NT_SYMBOL_PATH"), _NT_SYMBOL_PATH))
         {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
+            symbolSearchPath += _NT_SYMBOL_PATH;
+            symbolSearchPath += ";";
         }
-        if (GetEnvironmentVariableA("_NT_ALTERNATE_SYMBOL_PATH", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-        if (GetEnvironmentVariableA("SYSTEMROOT", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-
-            strcat_s(szTemp, nTempLen, "\\system32");
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-
-        SymInitialize(process, SymPath, FALSE);
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        symbolSearchPath += ";";
 
         DWORD options = SymGetOptions();
         options |= SYMOPT_LOAD_LINES;
         options |= SYMOPT_FAIL_CRITICAL_ERRORS;
+        options |= SYMOPT_DEFERRED_LOADS;
+        options |= SYMOPT_EXACT_SYMBOLS;
         SymSetOptions(options);
+
+        SymInitializeW(process, *symbolSearchPath, TRUE);
     }
 
-    // Load modules
+    // Refresh modules if needed
     if (SymModulesDirty)
     {
         SymModulesDirty = false;
-        GetModuleListPSAPI(process);
+        SymRefreshModuleList(process);
     }
-    SymRefreshModuleList(process);
 
     // Capture the context if missing
     /*EXCEPTION_POINTERS exceptionPointers;
