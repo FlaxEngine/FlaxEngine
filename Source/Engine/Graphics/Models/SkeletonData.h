@@ -5,6 +5,8 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Describes a single skeleton node data. Used by the runtime.

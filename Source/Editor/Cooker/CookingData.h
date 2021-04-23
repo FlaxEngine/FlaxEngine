@@ -7,6 +7,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Types/Guid.h"
 
 class GameCooker;
 class PlatformTools;

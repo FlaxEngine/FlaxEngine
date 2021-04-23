@@ -4,6 +4,7 @@
 
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Platform/Platform.h"
+#include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 
 /// <summary>
 /// Material Asset and Shader Asset Upgrader
