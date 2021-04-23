@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -208,12 +209,127 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         }
                     }
                 };
+
+                // Find localized strings in code button
+                var findStringsCode = group.Button("Find localized strings in code").Button;
+                findStringsCode.Height = 16.0f;
+                findStringsCode.Clicked += delegate
+                {
+                    var newKeys = new Dictionary<string, string>();
+
+                    // C#
+                    var files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cs", SearchOption.AllDirectories);
+                    var filesCount = files.Length;
+                    foreach (var file in files)
+                        FindNewKeysCSharp(file, newKeys);
+
+                    // C++
+                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cpp", SearchOption.AllDirectories);
+                    filesCount += files.Length;
+                    foreach (var file in files)
+                        FindNewKeysCpp(file, newKeys);
+                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories);
+                    filesCount += files.Length;
+                    foreach (var file in files)
+                        FindNewKeysCpp(file, newKeys);
+
+                    Editor.Log($"Found {newKeys.Count} new localized strings in {filesCount} files");
+                    if (newKeys.Count == 0)
+                        return;
+                    foreach (var e in newKeys)
+                        Editor.Log(e.Key + (e.Value != null ? " = " + e.Value : string.Empty));
+                    foreach (var locale in locales)
+                    {
+                        var table = locale.First();
+                        var entries = tableEntries[table];
+                        if (table.Locale == "en")
+                        {
+                            foreach (var e in newKeys)
+                                entries[e.Key] = new[] { e.Value };
+                        }
+                        else
+                        {
+                            foreach (var e in newKeys)
+                                entries[e.Key] = new[] { string.Empty };
+                        }
+                        table.Entries = entries;
+                        table.Save();
+                    }
+                };
             }
 
             {
                 // Raw asset data editing
                 var group = layout.Group("Data");
                 base.Initialize(group);
+            }
+        }
+
+        private static void FindNewKeysCSharp(string file, Dictionary<string, string> newKeys)
+        {
+            var startToken = "Localization.GetString";
+            var textToken = "\"";
+            FindNewKeys(file, newKeys, startToken, textToken);
+        }
+
+        private static void FindNewKeysCpp(string file, Dictionary<string, string> newKeys)
+        {
+            var startToken = "Localization::GetString";
+            var textToken = "TEXT(\"";
+            FindNewKeys(file, newKeys, startToken, textToken);
+        }
+
+        private static void FindNewKeys(string file, Dictionary<string, string> newKeys, string startToken, string textToken)
+        {
+            var contents = File.ReadAllText(file);
+            var idx = contents.IndexOf(startToken);
+            while (idx != -1)
+            {
+                idx += startToken.Length + 1;
+                int braces = 1;
+                int start = idx;
+                while (idx < contents.Length && braces != 0)
+                {
+                    if (contents[idx] == '(')
+                        braces++;
+                    if (contents[idx] == ')')
+                        braces--;
+                    idx++;
+                }
+                if (idx == contents.Length)
+                    break;
+                var inside = contents.Substring(start, idx - start - 1);
+                var textStart = inside.IndexOf(textToken);
+                if (textStart != -1)
+                {
+                    textStart += textToken.Length;
+                    var textEnd = textStart;
+                    while (textEnd < inside.Length && inside[textEnd] != '\"')
+                    {
+                        if (inside[textEnd] == '\\')
+                            textEnd++;
+                        textEnd++;
+                    }
+                    var id = inside.Substring(textStart, textEnd - textStart);
+                    textStart = inside.Length > textEnd + 2 ? inside.IndexOf(textToken, textEnd + 2) : -1;
+                    string value = null;
+                    if (textStart != -1)
+                    {
+                        textStart += textToken.Length;
+                        textEnd = textStart;
+                        while (textEnd < inside.Length && inside[textEnd] != '\"')
+                        {
+                            if (inside[textEnd] == '\\')
+                                textEnd++;
+                            textEnd++;
+                        }
+                        value = inside.Substring(textStart, textEnd - textStart);
+                    }
+
+                    newKeys[id] = value;
+                }
+
+                idx = contents.IndexOf(startToken, idx);
             }
         }
     }
