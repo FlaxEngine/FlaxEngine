@@ -120,7 +120,7 @@ Asset::LoadResult LocalizedStringTable::loadAsset()
             {
                 e.Resize(value.Size());
                 for (int32 q = 0; q < e.Count(); q++)
-                    e[q] = value[q].GetString();
+                    e[q] = value[q].GetText();
             }
         }
     }

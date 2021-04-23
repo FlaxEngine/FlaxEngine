@@ -99,10 +99,10 @@ namespace Serialization
         {
             auto e = SERIALIZE_FIND_MEMBER(stream, "Id");
             if (e != stream.MemberEnd())
-                v.Id = e->value.GetString();
+                v.Id.SetUTF8(e->value.GetString(), e->value.GetStringLength());
             e = SERIALIZE_FIND_MEMBER(stream, "Value");
             if (e != stream.MemberEnd())
-                v.Value = e->value.GetString();
+                v.Value.SetUTF8(e->value.GetString(), e->value.GetStringLength());
         }
         else
         {
