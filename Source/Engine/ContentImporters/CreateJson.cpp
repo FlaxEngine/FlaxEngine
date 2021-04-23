@@ -9,6 +9,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Storage/JsonStorageProxy.h"
+#include "Engine/Content/Cache/AssetsCache.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Localization/LocalizedStringTable.h"
@@ -54,7 +55,7 @@ bool CreateJson::Create(const StringView& path, StringAnsiView& data, StringAnsi
                 LOG(Warning, "Failed to create directory");
                 return true;
             }
-        }   
+        }
     }
 
     rapidjson_flax::StringBuffer buffer;
@@ -90,6 +91,10 @@ bool CreateJson::Create(const StringView& path, StringAnsiView& data, StringAnsi
     if (asset)
     {
         asset->Reload();
+    }
+    else
+    {
+        Content::GetRegistry()->RegisterAsset(id, String(dataTypename), path);
     }
 
     return false;
