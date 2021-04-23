@@ -82,8 +82,11 @@ namespace Serialization
             stream.StartObject();
             stream.JKEY("Id");
             stream.String(v.Id);
-            stream.JKEY("Value");
-            stream.String(v.Value);
+            if (v.Value.HasChars())
+            {
+                stream.JKEY("Value");
+                stream.String(v.Value);
+            }
             stream.EndObject();
         }
     }
@@ -103,6 +106,8 @@ namespace Serialization
             e = SERIALIZE_FIND_MEMBER(stream, "Value");
             if (e != stream.MemberEnd())
                 v.Value.SetUTF8(e->value.GetString(), e->value.GetStringLength());
+            else if (v.Id.HasChars())
+                v.Value.Clear();
         }
         else
         {
