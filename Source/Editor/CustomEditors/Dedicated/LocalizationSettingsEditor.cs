@@ -1,9 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Scripting;
@@ -85,7 +87,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
 
                 // New locale add button
-                var addLocale = group.Button("Add Locale..").Button;
+                var addLocale = group.Button("Add Locale...").Button;
                 addLocale.Height = 16.0f;
                 addLocale.ButtonClicked += delegate(Button button)
                 {
@@ -145,6 +147,62 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         RebuildLayout();
                     });
                     menu.Show(button, new Vector2(0, button.Height));
+                };
+
+                // Export button
+                var exportLocalization = group.Button("Export...").Button;
+                exportLocalization.Height = 16.0f;
+                exportLocalization.Clicked += delegate
+                {
+                    if (FileSystem.ShowSaveFileDialog(null, null, "*.pot", false, "Export localization for translation to .pot file", out var filenames))
+                        return;
+                    if (!filenames[0].EndsWith(".pot"))
+                        filenames[0] += ".pot";
+                    var nplurals = 1;
+                    foreach (var e in tableEntries)
+                    {
+                        foreach (var value in e.Value.Values)
+                        {
+                            if (value != null && value.Length > nplurals)
+                                nplurals = value.Length;
+                        }
+                    }
+                    using (var writer = new StreamWriter(filenames[0], false, Encoding.UTF8))
+                    {
+                        writer.WriteLine("msgid \"\"");
+                        writer.WriteLine("msgstr \"\"");
+                        writer.WriteLine("\"Language: English\\n\"");
+                        writer.WriteLine("\"MIME-Version: 1.0\\n\"");
+                        writer.WriteLine("\"Content-Type: text/plain; charset=UTF-8\\n\"");
+                        writer.WriteLine("\"Content-Transfer-Encoding: 8bit\\n\"");
+                        writer.WriteLine($"\"Plural-Forms: nplurals={nplurals}; plural=(n != 1);\\n\"");
+                        writer.WriteLine("\"X-Generator: FlaxEngine\\n\"");
+                        var written = new HashSet<string>();
+                        foreach (var e in tableEntries)
+                        {
+                            foreach (var pair in e.Value)
+                            {
+                                if (written.Contains(pair.Key))
+                                    continue;
+                                written.Add(pair.Key);
+
+                                writer.WriteLine("");
+                                writer.WriteLine($"msgid \"{pair.Key}\"");
+                                if (pair.Value == null || pair.Value.Length < 2)
+                                {
+                                    writer.WriteLine("msgstr \"\"");
+                                }
+                                else
+                                {
+                                    writer.WriteLine("msgid_plural \"\"");
+                                    for (int i = 0; i < pair.Value.Length; i++)
+                                        writer.WriteLine($"msgstr[{i}] \"\"");
+                                }
+                            }
+                            if (written.Count == allKeys.Count)
+                                break;
+                        }
+                    }
                 };
             }
 
