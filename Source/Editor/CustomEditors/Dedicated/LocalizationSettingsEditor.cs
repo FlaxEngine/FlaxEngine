@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -85,6 +84,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     }
                     group.Space(10);
                 }
+
+                // Update add button
+                var update = group.Button("Update").Button;
+                update.Height = 16.0f;
+                update.Clicked += RebuildLayout;
 
                 // New locale add button
                 var addLocale = group.Button("Add Locale...").Button;
