@@ -289,7 +289,7 @@ void RemoveLongPathPrefix(const String& path, String& result)
     result.Remove(2, 6);
 }
 
-String StringUtils::GetDirectoryName(const String& path)
+String StringUtils::GetDirectoryName(const StringView& path)
 {
     const int32 lastFrontSlash = path.FindLast('\\');
     const int32 lastBackSlash = path.FindLast('/');
@@ -297,24 +297,22 @@ String StringUtils::GetDirectoryName(const String& path)
     return splitIndex != INVALID_INDEX ? path.Left(splitIndex) : String::Empty;
 }
 
-String StringUtils::GetFileName(const String& path)
+String StringUtils::GetFileName(const StringView& path)
 {
     Char chr;
     const int32 length = path.Length();
     int32 num = length;
-
     do
     {
         num--;
         if (num < 0)
-            return path;
+            return String(path);
         chr = path[num];
     } while (chr != DirectorySeparatorChar && chr != AltDirectorySeparatorChar && chr != VolumeSeparatorChar);
-
     return path.Substring(num + 1, length - num - 1);
 }
 
-String StringUtils::GetFileNameWithoutExtension(const String& path)
+String StringUtils::GetFileNameWithoutExtension(const StringView& path)
 {
     String filename = GetFileName(path);
     const int32 num = filename.FindLast('.');
@@ -325,14 +323,14 @@ String StringUtils::GetFileNameWithoutExtension(const String& path)
     return filename;
 }
 
-String StringUtils::GetPathWithoutExtension(const String& path)
+String StringUtils::GetPathWithoutExtension(const StringView& path)
 {
     const int32 num = path.FindLast('.');
     if (num != -1)
     {
         return path.Substring(0, num);
     }
-    return path;
+    return String(path);
 }
 
 void StringUtils::PathRemoveRelativeParts(String& path)

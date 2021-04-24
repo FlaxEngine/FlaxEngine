@@ -65,22 +65,6 @@ void Game::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs
 
 void Game::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
 {
-    /*
-    // Save app state asynchronously after requesting a deferral. Holding a deferral
-    // indicates that the application is busy performing suspending operations. Be
-    // aware that a deferral may not be held indefinitely. After about five seconds,
-    // the app will be forced to exit.
-    SuspendingDeferral^ deferral = args->SuspendingOperation->GetDeferral();
-
-    create_task([this, deferral]()
-    {
-        m_deviceResources->Trim();
-
-        m_main->Suspend();
-
-        deferral->Complete();
-    });
-    */
 }
 
 void Game::OnResuming(Platform::Object^ sender, Platform::Object^ args)
@@ -396,9 +380,10 @@ int PlatformImpl::GetSpecialFolderPath(const SpecialFolder type, wchar_t* buffer
         path = Windows::Storage::ApplicationData::Current->LocalFolder->Path;
         break;
     case SpecialFolder::ProgramData:
+        path = Windows::Storage::ApplicationData::Current->RoamingFolder->Path;
         break;
-        //case SpecialFolder::Temporary: path = Windows::Storage::ApplicationData::Current->TemporaryFolder->Path; break;
     case SpecialFolder::Temporary:
+        //path = Windows::Storage::ApplicationData::Current->TemporaryFolder->Path;
         path = Windows::Storage::ApplicationData::Current->LocalFolder->Path;
         break;
     }
@@ -409,7 +394,7 @@ int PlatformImpl::GetSpecialFolderPath(const SpecialFolder type, wchar_t* buffer
         if (length >= bufferLength)
             length = bufferLength - 1;
         const wchar_t* data = path->Data();
-        for (int i = 0; i<length; i++)
+        for (int i = 0; i < length; i++)
             buffer[i] = data[i];
         buffer[length] = 0;
         return length;

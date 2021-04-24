@@ -118,10 +118,7 @@ public:
     /// Gets the non-walkable mode for the character controller.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(215), DefaultValue(NonWalkableModes.PreventClimbing), EditorDisplay(\"Character Controller\")")
-    FORCE_INLINE NonWalkableModes GetNonWalkableMode() const
-    {
-        return _nonWalkableMode;
-    }
+    NonWalkableModes GetNonWalkableMode() const;
 
     /// <summary>
     /// Sets the non-walkable mode for the character controller.
@@ -132,10 +129,7 @@ public:
     /// Gets the step height. The character will step up a stair only if it is closer to the ground than the indicated value. This should not be greater than the Character Controller’s height or it will generate an error.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(220), DefaultValue(30.0f), Limit(0), EditorDisplay(\"Character Controller\")")
-    FORCE_INLINE float GetStepOffset() const
-    {
-        return _stepOffset;
-    }
+    float GetStepOffset() const;
 
     /// <summary>
     /// Sets the step height. The character will step up a stair only if it is closer to the ground than the indicated value. This should not be greater than the Character Controller’s height or it will generate an error.

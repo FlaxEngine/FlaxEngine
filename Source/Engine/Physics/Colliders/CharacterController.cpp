@@ -22,9 +22,9 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _radius(50.0f)
     , _height(150.0f)
     , _minMoveDistance(0.0f)
-    , _upDirection(Vector3::Up)
     , _isUpdatingTransform(false)
-    , _nonWalkableMode(CharacterController::NonWalkableModes::PreventClimbing)
+    , _upDirection(Vector3::Up)
+    , _nonWalkableMode(NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
     static_assert(sizeof(_filterData) == sizeof(PxFilterData), "Invalid filter data size.");
@@ -61,7 +61,12 @@ void CharacterController::SetSlopeLimit(float value)
     _slopeLimit = value;
 
     if (_controller)
-        _controller->setSlopeLimit(cosf(value * DegreesToRadians));
+        _controller->setSlopeLimit(Math::Cos(value * DegreesToRadians));
+}
+
+CharacterController::NonWalkableModes CharacterController::GetNonWalkableMode() const
+{
+    return _nonWalkableMode;
 }
 
 void CharacterController::SetNonWalkableMode(NonWalkableModes value)
@@ -70,6 +75,11 @@ void CharacterController::SetNonWalkableMode(NonWalkableModes value)
 
     if (_controller)
         _controller->setNonWalkableMode(static_cast<PxControllerNonWalkableMode::Enum>(value));
+}
+
+float CharacterController::GetStepOffset() const
+{
+    return _stepOffset;
 }
 
 void CharacterController::SetStepOffset(float value)

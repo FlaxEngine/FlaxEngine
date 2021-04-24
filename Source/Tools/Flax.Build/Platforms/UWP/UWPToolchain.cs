@@ -67,10 +67,10 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_UWP");
             options.CompileEnv.PreprocessorDefinitions.Add("WINAPI_FAMILY=WINAPI_FAMILY_PC_APP");
             options.CompileEnv.PreprocessorDefinitions.Add("_WINRT_DLL");
+            options.CompileEnv.PreprocessorDefinitions.Add("_WINDLL");
             options.CompileEnv.PreprocessorDefinitions.Add("__WRL_NO_DEFAULT_LIB__");
 
             options.LinkEnv.InputLibraries.Add("WindowsApp.lib");
-            options.LinkEnv.InputLibraries.Add("dloadhelper.lib");
         }
     }
 }

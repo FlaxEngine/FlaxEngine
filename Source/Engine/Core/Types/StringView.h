@@ -322,6 +322,20 @@ public:
 public:
 
     /// <summary>
+    /// Gets the left most given number of characters.
+    /// </summary>
+    /// <param name="count">The characters count.</param>
+    /// <returns>The substring.</returns>
+    String Left(int32 count) const;
+
+    /// <summary>
+    /// Gets the string of characters from the right (end of the string).
+    /// </summary>
+    /// <param name="count">The characters count.</param>
+    /// <returns>The substring.</returns>
+    String Right(int32 count) const;
+
+    /// <summary>
     /// Retrieves substring created from characters starting from startIndex to the String end.
     /// </summary>
     /// <param name="startIndex">The index of the first character to subtract.</param>

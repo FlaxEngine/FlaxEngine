@@ -326,6 +326,24 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
             mono_debug_open_image_from_memory(assemblyImage, _debugData.Get(), _debugData.Count());
         }
     }
+
+#if 0
+    // Hack to load debug information for Newtonsoft.Json (enable it to debug C# code of json lib)
+    if (assemblyPath.EndsWith(TEXT("FlaxEngine.CSharp.dll")))
+    {
+        static Array<byte> NewtonsoftJsonDebugData;
+        File::ReadAllBytes(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
+        if (NewtonsoftJsonDebugData.HasItems())
+        {
+            StringAnsi tmp(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.dll"));
+            MonoAssembly* a = mono_assembly_open(tmp.Get(), &status);
+            if (a)
+            {
+                mono_debug_open_image_from_memory(mono_assembly_get_image(a), NewtonsoftJsonDebugData.Get(), NewtonsoftJsonDebugData.Count());
+            }
+        }
+    }
+#endif
 #endif
 
     // Set state
