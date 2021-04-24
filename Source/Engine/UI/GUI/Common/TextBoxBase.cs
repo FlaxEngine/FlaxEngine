@@ -504,9 +504,7 @@ namespace FlaxEngine.GUI
             if (string.IsNullOrEmpty(clipboardText))
                 return;
 
-            var right = SelectionRight;
             Insert(clipboardText);
-            SetSelection(Mathf.Max(right, 0) + clipboardText.Length);
         }
 
         /// <summary>
@@ -626,7 +624,7 @@ namespace FlaxEngine.GUI
 
                 _text = _text.Insert(left, str);
 
-                SetSelection(left + 1);
+                SetSelection(left + str.Length);
             }
 
             OnTextChanged();
