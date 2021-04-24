@@ -26,6 +26,7 @@ namespace FlaxEditor.Viewport
     /// <seealso cref="IGizmoOwner" />
     public class PrefabWindowViewport : PrefabPreview, IEditorPrimitivesOwner
     {
+        [HideInEditor]
         private sealed class PrefabSpritesRenderer : MainEditorGizmoViewport.EditorSpritesRenderer
         {
             public PrefabWindowViewport Viewport;

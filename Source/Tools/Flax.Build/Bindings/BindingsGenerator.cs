@@ -623,9 +623,6 @@ namespace Flax.Build.Bindings
 
                 if (!fieldInfo.IsReadOnly)
                 {
-                    if (fieldInfo.Type.IsArray)
-                        throw new NotImplementedException("Use ReadOnly on field. TODO: add support for setter for fixed-array fields.");
-
                     fieldInfo.Setter = new FunctionInfo
                     {
                         Name = "Set" + fieldInfo.Name,

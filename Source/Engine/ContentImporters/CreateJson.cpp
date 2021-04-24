@@ -41,6 +41,18 @@ bool CreateJson::Create(const StringView& path, StringAnsiView& data, StringAnsi
             LOG(Warning, "Asset will have different type name {0} -> {1}", typeName, String(dataTypename.Get()));
         }
     }
+    else
+    {
+        const String directory = StringUtils::GetDirectoryName(path);
+        if (!FileSystem::DirectoryExists(directory))
+        {
+            if (FileSystem::CreateDirectory(directory))
+            {
+                LOG(Warning, "Failed to create directory");
+                return true;
+            }
+        }   
+    }
 
     rapidjson_flax::StringBuffer buffer;
 

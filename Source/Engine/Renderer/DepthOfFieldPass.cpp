@@ -34,6 +34,8 @@ bool DepthOfFieldPass::Init()
     _platformSupportsDoF = limits.HasCompute;
     _platformSupportsBokeh = _platformSupportsDoF && limits.HasGeometryShaders && limits.HasDrawIndirect && limits.HasAppendConsumeBuffers;
 
+    _platformSupportsBokeh &= GPUDevice::Instance->GetRendererType() != RendererType::DirectX12; // TODO: fix bokeh crash on d3d12 (driver issue probably - started to happen recently)
+
     // Create pipeline states
     if (_platformSupportsDoF)
     {

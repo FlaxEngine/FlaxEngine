@@ -1040,7 +1040,7 @@ void StagingManagerVulkan::Dispose()
     ScopeLock lock(_locker);
 
 #if !BUILD_RELEASE
-    LOG(Info, "Vulakn staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
+    LOG(Info, "Vulkan staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
 #endif
 
     // Release buffers and clear memory
