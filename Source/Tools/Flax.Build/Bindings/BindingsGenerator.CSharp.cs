@@ -1041,25 +1041,30 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Using declarations
-            contents.AppendLine("using System;");
-            contents.AppendLine("using System.ComponentModel;");
-            contents.AppendLine("using System.Runtime.CompilerServices;");
-            contents.AppendLine("using System.Runtime.InteropServices;");
+            HashSet<string> AddedNamespaces = new HashSet<string>() { "System", "System.ComponentModel", "System.Runtime.CompilerServices", "System.Runtime.InteropServices" };
             foreach (var e in moduleInfo.Children)
             {
-                bool tmp = false;
                 foreach (var apiTypeInfo in e.Children)
                 {
+                    if (apiTypeInfo is ClassInfo classinfo)
+                    {
+                        foreach (FieldInfo apifield in classinfo.Fields)
+                        {
+                            ApiTypeInfo ApiFieldInfo = FindApiTypeInfo(buildData, apifield.Type, classinfo);
+                            if (ApiFieldInfo != null && !string.IsNullOrWhiteSpace(ApiFieldInfo.Namespace) && ApiFieldInfo.Namespace != apiTypeInfo.Namespace)
+                            {
+                                AddedNamespaces.Add(ApiFieldInfo.Namespace);
+                            }
+                        }
+                    }
                     if (apiTypeInfo.Namespace != "FlaxEngine")
                     {
-                        tmp = true;
-                        contents.AppendLine("using FlaxEngine;");
-                        break;
+                        AddedNamespaces.Add("FlaxEngine");
                     }
                 }
-                if (tmp)
-                    break;
             }
+            foreach (string Namespace in AddedNamespaces)
+                contents.AppendLine($"using {Namespace};");
             // TODO: custom using declarations support
             // TODO: generate using declarations based on references modules (eg. using FlaxEngine, using Plugin1 in game API)
 
