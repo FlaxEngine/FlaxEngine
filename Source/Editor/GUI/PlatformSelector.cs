@@ -11,6 +11,33 @@ namespace FlaxEditor.GUI
     /// </summary>
     public class PlatformSelector : TilesPanel
     {
+        /// <summary>
+        /// Simple button just for platform.
+        /// </summary>
+        public class PlatformImage : Image
+        {
+            /// <summary>
+            /// Gets or sets the color used when mouse is over the image.
+            /// </summary>
+            [EditorDisplay("Style"), EditorOrder(2000)]
+            public Color MouseOverColor { get; set; } = Color.Gray;
+
+            /// <summary>
+            /// Gets or sets the color used.
+            /// </summary>
+            [EditorDisplay("Style"), EditorOrder(2000)]
+            public Color NormalColor { get; set; } = Color.White;
+
+            /// <summary>
+            /// Changing color on Mouse Enter.
+            /// </summary>
+            public override void Draw()
+            {
+                Color = IsMouseOver ? MouseOverColor : NormalColor;
+                base.Draw();
+            }
+        }
+
         private struct PlatformData
         {
             public PlatformType PlatformType;
@@ -43,17 +70,17 @@ namespace FlaxEditor.GUI
                     bool isValid = false;
                     for (int i = 0; i < _children.Count; i++)
                     {
-                        if (_children[i] is Image img)
+                        if (_children[i] is PlatformImage img)
                         {
                             if ((PlatformType)img.Tag == value)
                             {
                                 isValid = true;
-                                img.Color = _selectedColor;
+                                img.NormalColor = _selectedColor;
                                 img.MouseOverColor = _selectedColor;
                             }
                             else
                             {
-                                img.Color = _defaultColor;
+                                img.NormalColor = _defaultColor;
                                 img.MouseOverColor = _mouseOverColor;
                             }
                         }
@@ -102,11 +129,11 @@ namespace FlaxEditor.GUI
 
             for (int i = 0; i < platforms.Length; i++)
             {
-                var tile = new Image
+                var tile = new PlatformImage
                 {
                     Brush = new SpriteBrush(platforms[i].Icon),
                     MouseOverColor = _mouseOverColor,
-                    Color = _defaultColor,
+                    NormalColor = _defaultColor,
                     Tag = platforms[i].PlatformType,
                     TooltipText = platforms[i].PlatformName,
                     Parent = this,
@@ -116,8 +143,8 @@ namespace FlaxEditor.GUI
 
             // Select the first platform
             _selected = platforms[0].PlatformType;
-            ((Image)Children[0]).Color = _selectedColor;
-            ((Image)Children[0]).MouseOverColor = _selectedColor;
+            ((PlatformImage)Children[0]).NormalColor = _selectedColor;
+            ((PlatformImage)Children[0]).MouseOverColor = _selectedColor;
         }
 
         private void OnTileClicked(Image image, MouseButton mouseButton)
