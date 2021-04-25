@@ -70,6 +70,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public VisibleIfAttribute VisibleIf;
 
             /// <summary>
+            /// The hide if attribute.
+            /// </summary>
+            public HideIfAttribute HideIf;
+
+            /// <summary>
             /// The read-only attribute usage flag.
             /// </summary>
             public bool IsReadOnly;
@@ -134,6 +139,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Space = (SpaceAttribute)attributes.FirstOrDefault(x => x is SpaceAttribute);
                 Header = (HeaderAttribute)attributes.FirstOrDefault(x => x is HeaderAttribute);
                 VisibleIf = (VisibleIfAttribute)attributes.FirstOrDefault(x => x is VisibleIfAttribute);
+                HideIf = (HideIfAttribute)attributes.FirstOrDefault(x => x is HideIfAttribute);
                 IsReadOnly = attributes.FirstOrDefault(x => x is ReadOnlyAttribute) != null;
                 ExpandGroups = attributes.FirstOrDefault(x => x is ExpandGroupsAttribute) != null;
 
@@ -226,7 +232,25 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        private struct HideIfCache
+        {
+            public ScriptMemberInfo Target;
+            public ScriptMemberInfo Source;
+            public PropertiesListElement PropertiesList;
+            public bool Invert;
+            public int LabelIndex;
+
+            public bool GetValue(object instance)
+            {
+                var value = (bool)Source.GetValue(instance);
+                if (Invert)
+                    value = !value;
+                return value;
+            }
+        }
+
         private VisibleIfCache[] _visibleIfCaches;
+        private HideIfCache[] _hideIfCaches;
 
         /// <summary>
         /// Gets the items for the type
@@ -330,6 +354,42 @@ namespace FlaxEditor.CustomEditors.Editors
             return ScriptMemberInfo.Null;
         }
 
+        private static ScriptMemberInfo GetHideIfSource(ScriptType type, HideIfAttribute hideIf)
+        {
+            var property = type.GetProperty(hideIf.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            if (property != ScriptMemberInfo.Null)
+            {
+                if (!property.HasGet)
+                {
+                    Debug.LogError("Invalid HideIf rule. Property has missing getter " + hideIf.MemberName);
+                    return ScriptMemberInfo.Null;
+                }
+
+                if (property.ValueType.Type != typeof(bool))
+                {
+                    Debug.LogError("Invalid HideIf rule. Property has to return bool type " + hideIf.MemberName);
+                    return ScriptMemberInfo.Null;
+                }
+
+                return property;
+            }
+
+            var field = type.GetField(hideIf.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            if (field != ScriptMemberInfo.Null)
+            {
+                if (field.ValueType.Type != typeof(bool))
+                {
+                    Debug.LogError("Invalid HideIf rule. Field has to be bool type " + hideIf.MemberName);
+                    return ScriptMemberInfo.Null;
+                }
+
+                return field;
+            }
+
+            Debug.LogError("Invalid HideIf rule. Cannot find member " + hideIf.MemberName);
+            return ScriptMemberInfo.Null;
+        }
+
         /// <summary>
         /// Spawns the property for the given item.
         /// </summary>
@@ -339,7 +399,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected virtual void SpawnProperty(LayoutElementsContainer itemLayout, ValueContainer itemValues, ItemInfo item)
         {
             int labelIndex = 0;
-            if ((item.IsReadOnly || item.VisibleIf != null) &&
+            if ((item.IsReadOnly || item.VisibleIf != null || item.HideIf != null) &&
                 itemLayout.Children.Count > 0 &&
                 itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement propertiesListElement)
             {
@@ -418,12 +478,53 @@ namespace FlaxEditor.CustomEditors.Editors
                     Invert = item.VisibleIf.Invert,
                 };
             }
+
+            if (item.HideIf != null)
+            {
+                PropertiesListElement list;
+                if (itemLayout.Children.Count > 0 && itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement list1)
+                {
+                    list = list1;
+                }
+                else
+                {
+                    // TODO: support inlined objects hiding?
+                    return;
+                }
+
+                // Get source member used to check rule
+                var sourceMember = GetHideIfSource(item.Info.DeclaringType, item.HideIf);
+                if (sourceMember == ScriptType.Null)
+                    return;
+
+                // Find the target control to show/hide
+
+                // Resize cache
+                if (_hideIfCaches == null)
+                    _hideIfCaches = new HideIfCache[8];
+                int count = 0;
+                while (count < _hideIfCaches.Length && _hideIfCaches[count].Target != ScriptType.Null)
+                    count++;
+                if (count >= _hideIfCaches.Length)
+                    Array.Resize(ref _hideIfCaches, count * 2);
+
+                // Add item
+                _hideIfCaches[count] = new HideIfCache
+                {
+                    Target = item.Info,
+                    Source = sourceMember,
+                    PropertiesList = list,
+                    LabelIndex = labelIndex,
+                    Invert = item.HideIf.Invert,
+                };
+            }
         }
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             _visibleIfCaches = null;
+            _hideIfCaches = null;
 
             // Collect items to edit
             List<ItemInfo> items;
@@ -608,6 +709,54 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     // Remove rules to prevent error in loop
                     _visibleIfCaches = null;
+                }
+            }
+
+            if (_hideIfCaches != null)
+            {
+                try
+                {
+                    for (int i = 0; i < _hideIfCaches.Length; i++)
+                    {
+                        var c = _hideIfCaches[i];
+
+                        if (c.Target == ScriptMemberInfo.Null)
+                            break;
+
+                        // Check rule (all objects must allow to show this property)
+                        bool visible = true;
+                        for (int j = 0; j < Values.Count; j++)
+                        {
+                            if (Values[j] != null && c.GetValue(Values[j]))
+                            {
+                                visible = false;
+                                break;
+                            }
+                        }
+
+                        // Apply the visibility (note: there may be no label)
+                        if (c.LabelIndex != -1 && c.PropertiesList.Labels.Count > c.LabelIndex)
+                        {
+                            var label = c.PropertiesList.Labels[c.LabelIndex];
+                            label.Visible = visible;
+                            for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
+                            {
+                                var child = c.PropertiesList.Properties.Children[j];
+                                if (child is PropertyNameLabel)
+                                    break;
+
+                                child.Visible = visible;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Editor.LogWarning(ex);
+                    Editor.LogError("Failed to update HideIf rules. " + ex.Message);
+
+                    // Remove rules to prevent error in loop
+                    _hideIfCaches = null;
                 }
             }
 
