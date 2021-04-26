@@ -284,10 +284,11 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Sets the text.
+        /// Sets the text (forced, even if user is editing it).
         /// </summary>
         /// <param name="value">The value.</param>
-        protected void SetText(string value)
+        [NoAnimate]
+        public void SetText(string value)
         {
             // Prevent from null problems
             if (value == null)
@@ -317,6 +318,18 @@ namespace FlaxEngine.GUI
 
                 OnTextChanged();
             }
+        }
+
+        /// <summary>
+        /// Sets the text as it was entered by user (focus, change value, defocus).
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [NoAnimate]
+        public void SetTextAsUser(string value)
+        {
+            Focus();
+            SetText(value);
+            Defocus();
         }
 
         /// <summary>
@@ -1005,7 +1018,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
-            // Check if user is selecting
+            base.OnMouseMove(location);
+
             if (_isSelecting)
             {
                 // Find char index at current mouse location
@@ -1019,6 +1033,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseDown(location, button))
+                return true;
+
             if (button == MouseButton.Left && _text.Length > 0)
             {
                 Focus();
@@ -1055,6 +1072,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (button == MouseButton.Left)
             {
                 OnSelectingEnd();
@@ -1084,6 +1104,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
+            if (base.OnCharInput(c))
+                return true;
             Insert(c);
             return true;
         }
