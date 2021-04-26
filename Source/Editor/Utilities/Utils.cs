@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -1879,6 +1881,42 @@ namespace FlaxEditor.Utilities
                     property.SetValue(obj, attr.Value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates the search popup with a tree.
+        /// </summary>
+        /// <param name="searchBox">The search box.</param>
+        /// <param name="tree">The tree control.</param>
+        /// <returns>The created menu to setup and show.</returns>
+        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree)
+        {
+            var menu = new ContextMenuBase
+            {
+                Size = new Vector2(320, 220),
+            };
+            searchBox = new TextBox(false, 1, 1)
+            {
+                Width = menu.Width - 3,
+                WatermarkText = "Search...",
+                Parent = menu,
+            };
+            var panel1 = new Panel(ScrollBars.Vertical)
+            {
+                Bounds = new Rectangle(0, searchBox.Bottom + 1, menu.Width, menu.Height - searchBox.Bottom - 2),
+                Parent = menu
+            };
+            var panel2 = new VerticalPanel
+            {
+                Parent = panel1,
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                IsScrollable = true,
+            };
+            tree = new Tree(false)
+            {
+                Parent = panel2,
+            };
+            return menu;
         }
     }
 }

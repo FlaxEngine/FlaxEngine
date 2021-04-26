@@ -113,32 +113,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
         internal static ContextMenuBase CreatePicker(CultureInfo value, Action<CultureInfo> changed)
         {
-            var menu = new ContextMenuBase
-            {
-                Size = new Vector2(320, 220),
-            };
-            var searchBox = new TextBox(false, 1, 1)
-            {
-                Width = menu.Width - 3,
-                WatermarkText = "Search...",
-                Parent = menu
-            };
-            var panel1 = new Panel(ScrollBars.Vertical)
-            {
-                Bounds = new Rectangle(0, searchBox.Bottom + 1, menu.Width, menu.Height - searchBox.Bottom - 2),
-                Parent = menu
-            };
-            var panel2 = new VerticalPanel
-            {
-                Parent = panel1,
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
-            };
-            var tree = new Tree(false)
-            {
-                Parent = panel2,
-                Margin = new Margin(-16.0f, 0.0f, -16.0f, -0.0f), // Hide root node
-            };
+            var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree);
+            tree.Margin = new Margin(-16.0f, 0.0f, -16.0f, -0.0f); // Hide root node
             var root = tree.AddChild<TreeNode>();
             var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
             Array.Sort(cultures, 1, cultures.Length - 2, new CultureInfoComparer()); // at 0 there is Invariant Culture
