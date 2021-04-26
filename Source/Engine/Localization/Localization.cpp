@@ -243,7 +243,7 @@ String Localization::GetPluralString(const String& id, int32 n, const String& fa
 {
     CHECK_RETURN(n >= 1, fallback);
     n--;
-    String result;
+    StringView result;
     for (auto& e : Instance.LocalizedStringTables)
     {
         const auto table = e.Get();
@@ -256,5 +256,5 @@ String Localization::GetPluralString(const String& id, int32 n, const String& fa
     }
     if (result.IsEmpty())
         result = fallback;
-    return result;
+    return String::Format(result.GetText(), n);
 }
