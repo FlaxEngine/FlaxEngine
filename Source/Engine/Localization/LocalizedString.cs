@@ -1,9 +1,23 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Globalization;
 
 namespace FlaxEngine
 {
+    partial class Localization
+    {
+        /// <summary>
+        /// Creates new culture.
+        /// </summary>
+        /// <param name="name">The name (eg. en, pl-PL).</param>
+        /// <returns>The culture.</returns>
+        public static CultureInfo NewCulture(string name)
+        {
+            return new CultureInfo(name);
+        }
+    }
+
     partial class LocalizedString : IEquatable<LocalizedString>, IEquatable<string>, IComparable, IComparable<LocalizedString>, IComparable<string>
     {
         /// <summary>
