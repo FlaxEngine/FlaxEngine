@@ -27,6 +27,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
+            Profiler.BeginEvent("LocalizationSettingsEditor.Initialize");
             var settings = (LocalizationSettings)Values[0];
             var tablesLength = settings.LocalizedStringTables?.Length ?? 0;
             var tables = new List<LocalizedStringTable>(tablesLength);
@@ -108,6 +109,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             MessageBox.Show($"Culture '{displayName}' is already added.");
                             return;
                         }
+                        Profiler.BeginEvent("LocalizationSettingsEditor.AddLocale");
                         Editor.Log($"Adding culture '{displayName}' to localization settings");
                         var newTables = settings.LocalizedStringTables.ToList();
                         if (_theMostTranslatedCulture != null)
@@ -154,6 +156,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         settings.LocalizedStringTables = newTables.ToArray();
                         Presenter.OnModified();
                         RebuildLayout();
+                        Profiler.EndEvent();
                     });
                     menu.Show(button, new Vector2(0, button.Height));
                 };
@@ -166,6 +169,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (FileSystem.ShowSaveFileDialog(null, null, "*.pot", false, "Export localization for translation to .pot file", out var filenames))
                         return;
+                    Profiler.BeginEvent("LocalizationSettingsEditor.Export");
                     if (!filenames[0].EndsWith(".pot"))
                         filenames[0] += ".pot";
                     var nplurals = 1;
@@ -213,6 +217,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                 break;
                         }
                     }
+                    Profiler.EndEvent();
                 };
 
                 // Find localized strings in code button
@@ -222,6 +227,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 findStringsCode.Clicked += delegate
                 {
                     var newKeys = new Dictionary<string, string>();
+                    Profiler.BeginEvent("LocalizationSettingsEditor.FindLocalizedStringsInSource");
 
                     // C#
                     var files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cs", SearchOption.AllDirectories);
@@ -240,6 +246,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         FindNewKeysCpp(file, newKeys, allKeys);
 
                     AddNewKeys(newKeys, filesCount, locales, tableEntries);
+                    Profiler.EndEvent();
                 };
 
                 // Find localized strings in content button
@@ -249,6 +256,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 findStringsContent.Clicked += delegate
                 {
                     var newKeys = new Dictionary<string, string>();
+                    Profiler.BeginEvent("LocalizationSettingsEditor.FindLocalizedStringsInContent");
 
                     // Scenes
                     var files = Directory.GetFiles(Globals.ProjectContentFolder, "*.scene", SearchOption.AllDirectories);
@@ -263,6 +271,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         FindNewKeysJson(file, newKeys, allKeys);
 
                     AddNewKeys(newKeys, filesCount, locales, tableEntries);
+                    Profiler.EndEvent();
                 };
             }
 
@@ -271,6 +280,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var group = layout.Group("Data");
                 base.Initialize(group);
             }
+
+            Profiler.EndEvent();
         }
 
         private static void FindNewKeysCSharp(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys)
