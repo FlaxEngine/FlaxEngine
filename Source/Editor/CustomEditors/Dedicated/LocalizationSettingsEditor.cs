@@ -353,7 +353,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
-        private static void FindNewKeysJson(string file, Dictionary<string, string> newKeys, HashSet<string> allKeys, JToken token)
+        private static void FindNewKeysJson(Dictionary<string, string> newKeys, HashSet<string> allKeys, JToken token)
         {
             if (token is JObject o)
             {
@@ -377,14 +377,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             }
                         }
                     }
-                    FindNewKeysJson(file, newKeys, allKeys, p.Value);
+                    FindNewKeysJson(newKeys, allKeys, p.Value);
                 }
             }
             else if (token is JArray a)
             {
                 foreach (var p in a)
                 {
-                    FindNewKeysJson(file, newKeys, allKeys, p);
+                    FindNewKeysJson(newKeys, allKeys, p);
                 }
             }
         }
@@ -395,7 +395,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             using (var jsonReader = new JsonTextReader(reader))
             {
                 var token = JToken.ReadFrom(jsonReader);
-                FindNewKeysJson(file, newKeys, allKeys, token);
+                FindNewKeysJson(newKeys, allKeys, token);
             }
         }
 

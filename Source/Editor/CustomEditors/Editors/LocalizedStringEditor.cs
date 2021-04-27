@@ -30,9 +30,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Initialize(layout);
 
-            if (layout.Children.Count != 1)
+            if (layout.Children.Count == 0)
                 return;
-            var propList = layout.Children[0] as PropertiesListElement;
+            var propList = layout.Children[layout.Children.Count - 1] as PropertiesListElement;
             if (propList == null || propList.Children.Count != 2)
                 return;
             var idElement = propList.Children[0] as TextBoxElement;
@@ -66,6 +66,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Text = "+",
                 TooltipText = "Add new localized text to Localization Settings (all used locales)",
                 Parent = _valueElement.TextBox,
+                Enabled = IsSingleObject,
             };
             addString.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
             addString.ButtonClicked += OnAddStringClicked;
@@ -175,6 +176,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         allKeys.Add(e.Key);
                 }
             }
+            _valueElement.TextBox.SetTextAsUser(null);
             string newKey = null;
             if (string.IsNullOrEmpty(_idElement.Text))
             {

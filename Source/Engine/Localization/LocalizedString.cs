@@ -51,7 +51,9 @@ namespace FlaxEngine
         /// <returns>The string.</returns>
         public static implicit operator string(LocalizedString str)
         {
-            return str.ToString();
+            if ((object)str == null)
+                return null;
+            return string.IsNullOrEmpty(str.Value) ? Localization.GetString(str.Id) : str.Value;
         }
 
         /// <summary>
@@ -61,7 +63,33 @@ namespace FlaxEngine
         /// <returns>The localized string.</returns>
         public static implicit operator LocalizedString(string str)
         {
+            if (str == null)
+                return null;
             return new LocalizedString(str);
+        }
+
+        /// <summary>
+        /// Compares two localized strings.
+        /// </summary>
+        /// <param name="left">The lft string.</param>
+        /// <param name="right">The right string.</param>
+        /// <returns>True if both values are equal, otherwise false.</returns>
+        public static bool operator ==(LocalizedString left, LocalizedString right)
+        {
+            return left?.Equals(right) ?? (object)right == null;
+        }
+
+        /// <summary>
+        /// Compares two localized strings.
+        /// </summary>
+        /// <param name="left">The lft string.</param>
+        /// <param name="right">The right string.</param>
+        /// <returns>True if both values are not equal, otherwise false.</returns>
+        public static bool operator !=(LocalizedString left, LocalizedString right)
+        {
+            if ((object)left == null)
+                return (object)right != null;
+            return !left.Equals(right);
         }
 
         /// <inheritdoc />
@@ -77,7 +105,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public bool Equals(LocalizedString other)
         {
-            return Id == other.Id && Value == other.Value;
+            return (object)other != null && Id == other.Id && Value == other.Value;
         }
 
         /// <inheritdoc />
@@ -101,7 +129,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            return ReferenceEquals(this, obj) || obj is LocalizedString other && Equals(other);
+            return (object)this == (object)obj || obj is LocalizedString other && Equals(other);
         }
 
         /// <inheritdoc />
