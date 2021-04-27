@@ -4,7 +4,6 @@ using System;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
 using Newtonsoft.Json;
-using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor
 {
@@ -28,7 +27,6 @@ namespace FlaxEditor
                 var id = Guid.Parse((string)reader.Value);
                 return SceneGraphFactory.FindNode(id);
             }
-
             return null;
         }
 
@@ -56,19 +54,11 @@ namespace FlaxEditor
         /// <summary>
         /// Gets or sets the serialized undo data.
         /// </summary>
-        /// <value>
-        /// The data.
-        /// </value>
         [NoSerialize]
-        public TData Data
+        public virtual TData Data
         {
-            get => JsonConvert.DeserializeObject<TData>(_data, JsonSerializer.Settings);
-            protected set => _data = JsonConvert.SerializeObject(value, Formatting.None, JsonSerializer.Settings);
-            /*protected set
-            {
-                _data = JsonConvert.SerializeObject(value, Formatting.Indented, JsonSerializer.Settings);
-                Debug.Info(_data);
-            }*/
+            get => JsonConvert.DeserializeObject<TData>(_data, FlaxEngine.Json.JsonSerializer.Settings);
+            protected set => _data = JsonConvert.SerializeObject(value, Formatting.None, FlaxEngine.Json.JsonSerializer.Settings);
         }
 
         /// <inheritdoc />

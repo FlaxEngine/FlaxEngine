@@ -374,6 +374,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Gets or sets the node state.
         /// </summary>
+        [NoSerialize]
         public virtual StateData State
         {
             get => throw new NotImplementedException();

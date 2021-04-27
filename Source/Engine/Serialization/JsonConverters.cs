@@ -236,6 +236,13 @@ namespace FlaxEngine.Json
             else
             {
                 writer.WriteStartObject();
+#if FLAX_EDITOR
+                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                {
+                    writer.WritePropertyName("$type");
+                    writer.WriteValue("FlaxEngine.LocalizedString, FlaxEngine.CSharp");
+                }
+#endif
                 writer.WritePropertyName("Id");
                 writer.WriteValue(str.Id);
                 writer.WritePropertyName("Value");
