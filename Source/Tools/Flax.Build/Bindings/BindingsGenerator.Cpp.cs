@@ -1349,7 +1349,13 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
                 if (fieldInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Setter, "{0} = {1}");
+                {
+                    var callFormat = "{0} = {1}";
+                    var type = fieldInfo.Setter.Parameters[0].Type;
+                    if (type.IsArray)
+                        callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Setter, callFormat);
+                }
             }
 
             // Properties
