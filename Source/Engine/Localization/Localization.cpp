@@ -10,6 +10,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
+#include <locale>
 
 class LocalizationService : public EngineService
 {
@@ -161,6 +162,31 @@ void LocalizationService::OnLocalizationChanged()
         }
         LOG(Info, "Using localization for {0}", locale);
         Instance.LocalizedStringTables.Add(table->Get(), table->Count());
+    }
+
+    // Change C++ locale (eg. used by fmt lib for values formatting)
+    {
+        char localeName[100];
+        const auto& currentCulture = Instance.CurrentCulture.GetName();
+        if (currentCulture.IsEmpty())
+        {
+            localeName[0] = 0;
+        }
+        else
+        {
+            StringUtils::ConvertUTF162ANSI(currentCulture.GetText(), localeName, currentCulture.Length());
+            for (int32 i = 0; i < currentCulture.Length(); i++)
+                if (localeName[i] == '-')
+                    localeName[i] = '_';
+            localeName[currentCulture.Length() + 0] = '.';
+            localeName[currentCulture.Length() + 1] = 'U';
+            localeName[currentCulture.Length() + 2] = 'T';
+            localeName[currentCulture.Length() + 3] = 'F';
+            localeName[currentCulture.Length() + 4] = '-';
+            localeName[currentCulture.Length() + 5] = '8';
+            localeName[currentCulture.Length() + 6] = 0;
+        }
+        std::locale::global(std::locale(localeName));
     }
 
     // Send event
