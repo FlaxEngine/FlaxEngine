@@ -942,7 +942,7 @@ bool initFlaxEngine()
         if (exception)
         {
             MException ex(exception);
-            ex.Log(LogType::Fatal, TEXT("FlaxEngine.ClassLibraryInitializer.Init"));
+            ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.Init"));
             return true;
         }
 

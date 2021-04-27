@@ -622,7 +622,7 @@ void EngineImpl::InitMainWindow()
     if (exception)
     {
         MException ex(exception);
-        ex.Log(LogType::Fatal, TEXT("FlaxEngine.ClassLibraryInitializer.SetWindow"));
+        ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.SetWindow"));
     }
 #endif
 }
