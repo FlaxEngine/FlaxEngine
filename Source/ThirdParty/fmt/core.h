@@ -22,7 +22,7 @@
 #define FMT_ASSERT(condition, message) \
     if (!(condition)) \
     { \
-        Platform::Assert(message, __FILE__, __LINE__); \
+        Platform::CheckFailed(message, __FILE__, __LINE__); \
     }
 #else
 #define FMT_ASSERT(condition, message) ((void)0)
