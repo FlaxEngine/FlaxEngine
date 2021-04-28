@@ -52,6 +52,7 @@ CultureInfo::CultureInfo(int32 lcid)
 #endif
     if (!_data)
     {
+        _englishName = TEXT("Invariant Culture");
         LOG(Error, "Unknown LCID {0} for CultureInfo", lcid);
     }
 }
@@ -66,7 +67,7 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
     _data = nullptr;
     if (name.IsEmpty())
     {
-        _lcid = 0;
+        _lcid = 127;
         _lcidParent = 0;
         _englishName = TEXT("Invariant Culture");
         return;
@@ -93,6 +94,9 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
 #endif
     if (!_data)
     {
+        _lcid = 127;
+        _lcidParent = 0;
+        _englishName = TEXT("Invariant Culture");
         LOG(Error, "Unknown name {0} for CultureInfo", String(name));
     }
 }
