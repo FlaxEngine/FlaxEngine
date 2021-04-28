@@ -1059,26 +1059,30 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Using declarations
-            contents.AppendLine("using System;");
-            contents.AppendLine("using System.ComponentModel;");
-            contents.AppendLine("using System.Globalization;"); // TODO: using declarations based on actual types usage
-            contents.AppendLine("using System.Runtime.CompilerServices;");
-            contents.AppendLine("using System.Runtime.InteropServices;");
+            HashSet<string> usedNamespaces = new HashSet<string>() { "System", "System.ComponentModel", "System.ComponentModel", "System.Runtime.CompilerServices", "System.Runtime.InteropServices" };
             foreach (var e in moduleInfo.Children)
             {
-                bool tmp = false;
                 foreach (var apiTypeInfo in e.Children)
                 {
+                    if (apiTypeInfo is ClassInfo classinfo)
+                    {
+                        foreach (var apifield in classinfo.Fields)
+                        {
+                            var fieldInfo = FindApiTypeInfo(buildData, apifield.Type, classinfo);
+                            if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiTypeInfo.Namespace)
+                            {
+                                usedNamespaces.Add(fieldInfo.Namespace);
+                            }
+                        }
+                    }
                     if (apiTypeInfo.Namespace != "FlaxEngine")
                     {
-                        tmp = true;
-                        contents.AppendLine("using FlaxEngine;");
-                        break;
+                        usedNamespaces.Add("FlaxEngine");
                     }
                 }
-                if (tmp)
-                    break;
             }
+            foreach (var e in usedNamespaces)
+                contents.AppendLine($"using {e};");
             // TODO: custom using declarations support
             // TODO: generate using declarations based on references modules (eg. using FlaxEngine, using Plugin1 in game API)
 
