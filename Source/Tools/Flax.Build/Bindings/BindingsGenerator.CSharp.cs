@@ -11,6 +11,9 @@ namespace Flax.Build.Bindings
 {
     partial class BindingsGenerator
     {
+        private static readonly HashSet<string> CSharpUsedNamespaces = new HashSet<string>();
+        private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
+
         private static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
@@ -1045,6 +1048,30 @@ namespace Flax.Build.Bindings
             return true;
         }
 
+        private static void GenerateCSharpCollectNamespaces(BuildData buildData, ApiTypeInfo apiType, HashSet<string> usedNamespaces)
+        {
+            if (apiType is ClassInfo classInfo)
+            {
+                foreach (var field in classInfo.Fields)
+                {
+                    var fieldInfo = FindApiTypeInfo(buildData, field.Type, classInfo);
+                    if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiType.Namespace)
+                        usedNamespaces.Add(fieldInfo.Namespace);
+                }
+            }
+            else if (apiType is StructureInfo structureInfo)
+            {
+                foreach (var field in structureInfo.Fields)
+                {
+                    var fieldInfo = FindApiTypeInfo(buildData, field.Type, structureInfo);
+                    if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiType.Namespace)
+                        usedNamespaces.Add(fieldInfo.Namespace);
+                }
+            }
+            foreach (var child in apiType.Children)
+                GenerateCSharpCollectNamespaces(buildData, child, usedNamespaces);
+        }
+
         private static void GenerateCSharp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
             var contents = new StringBuilder();
@@ -1059,29 +1086,24 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Using declarations
-            HashSet<string> usedNamespaces = new HashSet<string>() { "System", "System.ComponentModel", "System.ComponentModel", "System.Runtime.CompilerServices", "System.Runtime.InteropServices" };
+            CSharpUsedNamespaces.Clear();
+            CSharpUsedNamespaces.Add("System");
+            CSharpUsedNamespaces.Add("System.ComponentModel");
+            CSharpUsedNamespaces.Add("System.Globalization");
+            CSharpUsedNamespaces.Add("System.Runtime.CompilerServices");
+            CSharpUsedNamespaces.Add("System.Runtime.InteropServices");
+            CSharpUsedNamespaces.Add("FlaxEngine");
             foreach (var e in moduleInfo.Children)
             {
                 foreach (var apiTypeInfo in e.Children)
                 {
-                    if (apiTypeInfo is ClassInfo classinfo)
-                    {
-                        foreach (var apifield in classinfo.Fields)
-                        {
-                            var fieldInfo = FindApiTypeInfo(buildData, apifield.Type, classinfo);
-                            if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiTypeInfo.Namespace)
-                            {
-                                usedNamespaces.Add(fieldInfo.Namespace);
-                            }
-                        }
-                    }
-                    if (apiTypeInfo.Namespace != "FlaxEngine")
-                    {
-                        usedNamespaces.Add("FlaxEngine");
-                    }
+                    GenerateCSharpCollectNamespaces(buildData, apiTypeInfo, CSharpUsedNamespaces);
                 }
             }
-            foreach (var e in usedNamespaces)
+            CSharpUsedNamespacesSorted.Clear();
+            CSharpUsedNamespacesSorted.AddRange(CSharpUsedNamespaces);
+            CSharpUsedNamespacesSorted.Sort();
+            foreach (var e in CSharpUsedNamespacesSorted)
                 contents.AppendLine($"using {e};");
             // TODO: custom using declarations support
             // TODO: generate using declarations based on references modules (eg. using FlaxEngine, using Plugin1 in game API)
