@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
+#include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Layers and objects tags settings.
