@@ -339,10 +339,11 @@ public:
     /// <param name="center">The capsule center.</param>
     /// <param name="radius">The radius of the capsule.</param>
     /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
+    /// <param name="rotation">The capsule rotation.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
-    API_FUNCTION() static bool CheckCapsule(const Vector3& center, float radius, float height, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+    API_FUNCTION() static bool CheckCapsule(const Vector3& center, float radius, float height, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
     /// Finds all colliders touching or inside of the given box.
@@ -374,10 +375,11 @@ public:
     /// <param name="radius">The radius of the capsule.</param>
     /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
     /// <param name="results">The result colliders that overlap with the given sphere. Valid only when method returns true.</param>
+    /// <param name="rotation">The capsule rotation.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
-    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
     /// Finds all colliders touching or inside of the given box.
@@ -409,10 +411,11 @@ public:
     /// <param name="radius">The radius of the capsule.</param>
     /// <param name="height">The height of the capsule, excluding the top and bottom spheres.</param>
     /// <param name="results">The result colliders that overlap with the given sphere. Valid only when method returns true.</param>
+    /// <param name="rotation">The capsule rotation.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if capsule overlaps any matching object, otherwise false.</returns>
-    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+    API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
 public:
 
