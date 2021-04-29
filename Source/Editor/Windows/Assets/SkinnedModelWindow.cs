@@ -114,9 +114,9 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override void Draw()
+            public override void DrawSelf()
             {
-                base.Draw();
+                base.DrawSelf();
 
                 var style = Style.Current;
                 var asset = _window.Asset;
@@ -676,7 +676,6 @@ namespace FlaxEditor.Windows.Assets
                 public UVsLayoutPreviewControl()
                 {
                     Offsets = new Margin(4);
-                    AnchorPreset = AnchorPresets.HorizontalStretchMiddle;
                     AutomaticInvalidate = false;
                 }
 

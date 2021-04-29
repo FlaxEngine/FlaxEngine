@@ -86,6 +86,10 @@ namespace FlaxEditor.SceneGraph.GUI
                 }
                 parent.SortChildren();
             }
+            else if (Actor)
+            {
+                _orderInParent = Actor.OrderInParent;
+            }
         }
 
         internal void OnNameChanged()

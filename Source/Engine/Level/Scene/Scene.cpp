@@ -14,7 +14,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
 
-REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset");
+REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset", false);
 
 SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAsset(params, info)

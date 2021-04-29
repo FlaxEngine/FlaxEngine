@@ -25,7 +25,7 @@ bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
 {
     // Override Newtonsoft.Json.dll for some platforms (that don't support runtime code generation)
     const String customBinPath = data.GetPlatformBinariesRoot() / TEXT("Newtonsoft.Json.dll");
-    const String assembliesPath = data.OutputPath;
+    const String assembliesPath = data.CodeOutputPath;
     if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
     {
         data.Error(TEXT("Failed to copy deploy custom assembly."));
@@ -64,7 +64,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             return true;
         }
 
-        if (FileSystem::CopyFile(data.OutputPath / StringUtils::GetFileName(files[i]), files[i]))
+        if (FileSystem::CopyFile(data.DataOutputPath / StringUtils::GetFileName(files[i]), files[i]))
         {
             data.Error(TEXT("Failed to setup output directory."));
             return true;
@@ -92,7 +92,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
 
     // Prepare certificate
     const auto srcCertificatePath = Globals::ProjectFolder / platformSettings->CertificateLocation;
-    const auto dstCertificatePath = data.OutputPath / TEXT("WSACertificate.pfx");
+    const auto dstCertificatePath = data.DataOutputPath / TEXT("WSACertificate.pfx");
     if (platformSettings->CertificateLocation.HasChars() && FileSystem::FileExists(srcCertificatePath))
     {
         // Use cert from settings
@@ -115,7 +115,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     }
 
     // Copy assets
-    const auto dstAssetsPath = data.OutputPath / TEXT("Assets");
+    const auto dstAssetsPath = data.DataOutputPath / TEXT("Assets");
     const auto srcAssetsPath = uwpDataPath / TEXT("Assets");
     if (!FileSystem::DirectoryExists(dstAssetsPath))
     {
@@ -125,7 +125,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             return true;
         }
     }
-    const auto dstPropertiesPath = data.OutputPath / TEXT("Properties");
+    const auto dstPropertiesPath = data.DataOutputPath / TEXT("Properties");
     if (!FileSystem::DirectoryExists(dstPropertiesPath))
     {
         if (FileSystem::CreateDirectory(dstPropertiesPath))
@@ -176,7 +176,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             return true;
         }
     }
-    const auto dstAppPath = data.OutputPath / TEXT("App.cs");
+    const auto dstAppPath = data.DataOutputPath / TEXT("App.cs");
     const auto srcAppPath = uwpDataPath / TEXT("App.cs");
     if (!FileSystem::FileExists(dstAppPath))
     {
@@ -205,7 +205,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             return true;
         }
     }
-    const auto dstFlaxGeneratedPath = data.OutputPath / TEXT("FlaxGenerated.cs");
+    const auto dstFlaxGeneratedPath = data.DataOutputPath / TEXT("FlaxGenerated.cs");
     const auto srcFlaxGeneratedPath = uwpDataPath / TEXT("FlaxGenerated.cs");
     {
         // Get template
@@ -264,7 +264,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     }
 
     // Create solution
-    const auto dstSolutionPath = data.OutputPath / projectName + TEXT(".sln");
+    const auto dstSolutionPath = data.DataOutputPath / projectName + TEXT(".sln");
     const auto srcSolutionPath = uwpDataPath / TEXT("Solution.sln");
     if (!FileSystem::FileExists(dstSolutionPath))
     {
@@ -297,7 +297,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     }
 
     // Create project
-    const auto dstProjectPath = data.OutputPath / projectName + TEXT(".csproj");
+    const auto dstProjectPath = data.DataOutputPath / projectName + TEXT(".csproj");
     const auto srcProjectPath = uwpDataPath / TEXT("Project.csproj");
     {
         // Get template
@@ -347,7 +347,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     }
 
     // Create manifest
-    const auto dstManifestPath = data.OutputPath / TEXT("Package.appxmanifest");
+    const auto dstManifestPath = data.DataOutputPath / TEXT("Package.appxmanifest");
     const auto srcManifestPath = uwpDataPath / TEXT("Package.appxmanifest");
     if (!FileSystem::FileExists(dstManifestPath))
     {
@@ -484,8 +484,8 @@ bool UWPPlatformTools::OnPostProcess(CookingData& data)
     // Special case for UWP
     // FlaxEngine.dll cannot be added to the solution as `Content` item (due to conflicts with C++ /CX FlaxEngine.dll)
     // Use special directory for it (generated UWP project handles this case and copies lib to the output)
-    const String assembliesPath = data.OutputPath;
-    const auto dstPath1 = data.OutputPath / TEXT("DataSecondary");
+    const String assembliesPath = data.DataOutputPath;
+    const auto dstPath1 = data.DataOutputPath / TEXT("DataSecondary");
     if (!FileSystem::DirectoryExists(dstPath1))
     {
         if (FileSystem::CreateDirectory(dstPath1))

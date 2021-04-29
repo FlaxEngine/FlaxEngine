@@ -39,6 +39,7 @@ public class ogg : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libogg.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

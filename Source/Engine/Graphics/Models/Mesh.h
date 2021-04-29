@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/BoundingSphere.h"
-#include "Engine/Scripting/ScriptingObject.h"
+#include "MeshBase.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "ModelInstanceEntry.h"
@@ -19,21 +17,14 @@ class GPUBuffer;
 /// <summary>
 /// Represents part of the model that is made of vertices and can be rendered using custom material and transformation.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public PersistentScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
 
-    Model* _model;
     int32 _index;
     int32 _lodIndex;
-    int32 _materialSlotIndex;
-    bool _use16BitIndexBuffer;
     bool _hasLightmapUVs;
-    BoundingBox _box;
-    BoundingSphere _sphere;
-    uint32 _vertices;
-    uint32 _triangles;
     GPUBuffer* _vertexBuffers[3];
     GPUBuffer* _indexBuffer;
 #if USE_PRECISE_MESH_INTERSECTS
@@ -62,7 +53,7 @@ public:
     /// </summary>
     FORCE_INLINE Model* GetModel() const
     {
-        return _model;
+        return (Model*)_model;
     }
 
     /// <summary>
@@ -79,35 +70,6 @@ public:
     FORCE_INLINE int32 GetIndex() const
     {
         return _index;
-    }
-
-    /// <summary>
-    /// Gets the index of the material slot to use during this mesh rendering.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetMaterialSlotIndex() const
-    {
-        return _materialSlotIndex;
-    }
-
-    /// <summary>
-    /// Sets the index of the material slot to use during this mesh rendering.
-    /// </summary>
-    API_PROPERTY() void SetMaterialSlotIndex(int32 value);
-
-    /// <summary>
-    /// Gets the triangle count.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetTriangleCount() const
-    {
-        return _triangles;
-    }
-
-    /// <summary>
-    /// Gets the vertex count.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetVertexCount() const
-    {
-        return _vertices;
     }
 
     /// <summary>
@@ -139,15 +101,6 @@ public:
     }
 
     /// <summary>
-    /// Determines whether this mesh is using 16 bit index buffer, otherwise it's 32 bit.
-    /// </summary>
-    /// <returns>True if this mesh is using 16 bit index buffer, otherwise 32 bit index buffer.</returns>
-    API_PROPERTY() FORCE_INLINE bool Use16BitIndexBuffer() const
-    {
-        return _use16BitIndexBuffer;
-    }
-
-    /// <summary>
     /// Determines whether this mesh has a vertex colors buffer.
     /// </summary>
     /// <returns>True if this mesh has a vertex colors buffers.</returns>
@@ -163,34 +116,6 @@ public:
     API_PROPERTY() FORCE_INLINE bool HasLightmapUVs() const
     {
         return _hasLightmapUVs;
-    }
-
-    /// <summary>
-    /// Sets the mesh bounds.
-    /// </summary>
-    /// <param name="box">The bounding box.</param>
-    void SetBounds(const BoundingBox& box)
-    {
-        _box = box;
-        BoundingSphere::FromBox(box, _sphere);
-    }
-
-    /// <summary>
-    /// Gets the box.
-    /// </summary>
-    /// <returns>The bounding box.</returns>
-    API_PROPERTY() FORCE_INLINE const BoundingBox& GetBox() const
-    {
-        return _box;
-    }
-
-    /// <summary>
-    /// Gets the sphere.
-    /// </summary>
-    /// <returns>The bounding sphere.</returns>
-    API_PROPERTY() FORCE_INLINE const BoundingSphere& GetSphere() const
-    {
-        return _sphere;
     }
 
 #if USE_PRECISE_MESH_INTERSECTS
@@ -473,21 +398,10 @@ public:
 
 public:
 
-    /// <summary>
-    /// Extract mesh buffer data (cannot be called from the main thread!).
-    /// </summary>
-    /// <param name="type">Buffer type</param>
-    /// <param name="result">The result data</param>
-    /// <returns>True if failed, otherwise false</returns>
-    bool ExtractData(MeshBufferType type, BytesContainer& result) const;
-
-    /// <summary>
-    /// Extracts mesh buffer data in the async task.
-    /// </summary>
-    /// <param name="type">Buffer type</param>
-    /// <param name="result">The result data</param>
-    /// <returns>Created async task used to gather the buffer data.</returns>
-    Task* ExtractDataAsync(MeshBufferType type, BytesContainer& result) const;
+    // [MeshBase]
+    bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
+    Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
+    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result) const override;
 
 private:
 

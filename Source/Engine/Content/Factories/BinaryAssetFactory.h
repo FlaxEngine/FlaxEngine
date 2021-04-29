@@ -14,7 +14,7 @@ class FlaxStorage;
 /// The binary assets factory base class.
 /// </summary>
 /// <seealso cref="IAssetFactory" />
-class BinaryAssetFactoryBase : public IAssetFactory
+class FLAXENGINE_API BinaryAssetFactoryBase : public IAssetFactory
 {
 public:
 

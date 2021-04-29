@@ -25,10 +25,19 @@ namespace FlaxEngine.GUI
         protected FontReference _font;
 
         /// <summary>
+        /// The text.
+        /// </summary>
+        protected LocalizedString _text = new LocalizedString();
+
+        /// <summary>
         /// Button text property.
         /// </summary>
         [EditorOrder(10), Tooltip("The button label text.")]
-        public string Text { get; set; }
+        public LocalizedString Text
+        {
+            get => _text;
+            set => _text = value;
+        }
 
         /// <summary>
         /// Gets or sets the font used to draw button text.
@@ -201,7 +210,7 @@ namespace FlaxEngine.GUI
             Render2D.DrawRectangle(clientRect, borderColor);
 
             // Draw text
-            Render2D.DrawText(_font.GetFont(), TextMaterial, Text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

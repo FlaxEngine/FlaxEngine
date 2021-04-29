@@ -40,6 +40,7 @@ public class freetype : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libfreetype.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

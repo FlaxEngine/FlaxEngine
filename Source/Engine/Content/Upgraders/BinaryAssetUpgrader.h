@@ -9,7 +9,7 @@
 /// <summary>
 /// Binary asset upgrading context structure.
 /// </summary>
-struct AssetMigrationContext
+struct FLAXENGINE_API AssetMigrationContext
 {
     /// <summary>
     /// The input data.
@@ -63,7 +63,7 @@ typedef bool (*UpgradeHandler)(AssetMigrationContext& context);
 /// Binary Assets Upgrader base class
 /// </summary>
 /// <seealso cref="IAssetUpgrader" />
-class BinaryAssetUpgrader : public IAssetUpgrader
+class FLAXENGINE_API BinaryAssetUpgrader : public IAssetUpgrader
 {
 public:
 

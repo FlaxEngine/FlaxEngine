@@ -150,12 +150,6 @@ public:
 public:
 
     /// <summary>
-    /// Determines whether this collider is attached to the body.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is attached; otherwise, <c>false</c>.</returns>
-    API_PROPERTY() bool IsAttached() const;
-
-    /// <summary>
     /// Determines whether this collider can be attached the specified rigid body.
     /// </summary>
     /// <param name="rigidBody">The rigid body.</param>

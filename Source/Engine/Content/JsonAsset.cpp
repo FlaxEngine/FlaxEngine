@@ -176,7 +176,7 @@ void JsonAssetBase::onRename(const StringView& newPath)
 
 #endif
 
-REGISTER_JSON_ASSET(JsonAsset, "FlaxEngine.JsonAsset");
+REGISTER_JSON_ASSET(JsonAsset, "FlaxEngine.JsonAsset", true);
 
 JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)

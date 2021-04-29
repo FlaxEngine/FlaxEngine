@@ -14,6 +14,8 @@
 #include "Win32/Win32Network.h"
 #elif PLATFORM_ANDROID
 #include "Unix/UnixNetwork.h"
+#elif PLATFORM_SWITCH
+#include "Base/NetworkBase.h"
 #else
 #error Missing Network implementation!
 #endif

@@ -36,7 +36,7 @@ ArchitectureType WindowsPlatformTools::GetArchitecture() const
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto platformSettings = WindowsPlatformSettings::Get();
-    const auto& outputPath = data.OutputPath;
+    const auto& outputPath = data.CodeOutputPath;
 
     // Apply executable icon
     Array<String> files;

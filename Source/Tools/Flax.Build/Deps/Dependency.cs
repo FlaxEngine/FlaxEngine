@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
@@ -239,6 +240,11 @@ namespace Flax.Deps
             case TargetPlatform.PS4:
             {
                 cmdLine = "CMakeLists.txt";
+                break;
+            }
+            case TargetPlatform.Switch:
+            {
+                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}..\\..\\VC\\bin\\nmake.exe\"", Environment.GetEnvironmentVariable("VS140COMNTOOLS"), Globals.EngineRoot);
                 break;
             }
             case TargetPlatform.Android:

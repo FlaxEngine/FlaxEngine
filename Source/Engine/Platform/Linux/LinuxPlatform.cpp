@@ -1382,6 +1382,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
     X11::Window previousWindow = 0;
     DragDropEffect result = DragDropEffect::None;
     float lastDraw = Platform::GetTimeSeconds();
+    float startTime = lastDraw;
     while (true)
     {
         X11::XNextEvent(xDisplay, &event);
@@ -1559,7 +1560,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
             if (!(event.xclient.data.l[1]&1) && status != Unaware)
                 status = Unreceptive;
         }
-        else if (event.type == ButtonRelease && event.xbutton.button == 1)
+        else if (event.type == ButtonRelease && event.xbutton.button == Button1)
         {
             if (status == CanDrop)
             {
@@ -1597,10 +1598,45 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
 
         // Redraw
         const float time = Platform::GetTimeSeconds();
-        if (time - lastDraw >= 1.0f / 60.0f)
+        if (time - lastDraw >= 1.0f / 20.0f)
         {
             lastDraw = time;
             Engine::OnDraw();
+        }
+
+        // Prevent dead-loop
+        if (time - startTime >= 10.0f)
+        {
+            break;
+        }
+    }
+
+    // Drag end
+    if (previousWindow != 0 && previousVersion != -1)
+    {
+        // Send drag left event
+        auto ww = WindowsManager::GetByNativePtr((void*)previousWindow);
+        if (ww)
+        {
+            ww->_dragOver = false;
+            ww->OnDragLeave();
+        }
+        else
+        {
+            X11::XClientMessageEvent m;
+            memset(&m, 0, sizeof(m));
+            m.type = ClientMessage;
+            m.display = event.xclient.display;
+            m.window = previousWindow;
+            m.message_type = xAtomXdndLeave;
+            m.format = 32;
+            m.data.l[0] = _window;
+            m.data.l[1] = 0;
+            m.data.l[2] = 0;
+            m.data.l[3] = 0;
+            m.data.l[4] = 0;
+            X11::XSendEvent(xDisplay, previousWindow, 0, NoEventMask, (X11::XEvent*)&m);
+            X11::XFlush(xDisplay);
         }
     }
 
@@ -1996,6 +2032,8 @@ bool LinuxPlatform::Init()
 
     // Get user locale string
     char* locale = setlocale(LC_ALL, NULL);
+    if (strcmp (locale, "C") == 0)
+        locale = "";
     UserLocale = String(locale);
 
     // Get computer name string

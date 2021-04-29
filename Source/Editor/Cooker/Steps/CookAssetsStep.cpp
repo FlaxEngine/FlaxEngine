@@ -454,6 +454,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_SWITCH
+    case BuildPlatform::Switch:
+    {
+        const char* platformDefineName = "PLATFORM_SWITCH";
+        COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+        break;
+    }
+#endif
     default:
     {
         LOG(Warning, "Not implemented platform or shaders not supported.");
@@ -861,7 +869,7 @@ public:
         // Create package
         // Note: FlaxStorage::Create overrides chunks locations in file so don't use files anymore (only readonly)
         const String localPath = String::Format(TEXT("Content/Data_{0}.{1}"), _packageIndex, PACKAGE_FILES_EXTENSION);
-        const String path = data.OutputPath / localPath;
+        const String path = data.DataOutputPath / localPath;
         if (FlaxStorage::Create(path, assetsData, false, &CustomData))
         {
             data.Error(TEXT("Failed to create assets package."));
@@ -1027,7 +1035,7 @@ bool CookAssetsStep::Perform(CookingData& data)
             gameFlags |= GameHeaderFlags::ShowSplashScreen;
 
         // Open file
-        auto stream = FileWriteStream::Open(data.OutputPath / TEXT("Content/head"));
+        auto stream = FileWriteStream::Open(data.DataOutputPath / TEXT("Content/head"));
         if (stream == nullptr)
         {
             data.Error(TEXT("Failed to create game data file."));
@@ -1121,7 +1129,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     BUILD_STEP_CANCEL_CHECK;
 
     // Save assets cache
-    if (AssetsCache::Save(data.OutputPath / TEXT("Content/AssetsCache.dat"), AssetsRegistry, AssetPathsMapping, AssetsCacheFlags::RelativePaths))
+    if (AssetsCache::Save(data.DataOutputPath / TEXT("Content/AssetsCache.dat"), AssetsRegistry, AssetPathsMapping, AssetsCacheFlags::RelativePaths))
     {
         data.Error(TEXT("Failed to create assets registry."));
         return true;

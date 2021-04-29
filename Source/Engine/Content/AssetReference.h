@@ -274,3 +274,9 @@ public:
         OnSet(asset);
     }
 };
+
+template<typename T>
+uint32 GetHash(const AssetReference<T>& key)
+{
+    return GetHash(key.GetID());
+}

@@ -752,10 +752,11 @@ namespace FlaxEditor
         /// <param name="type">The collision data type.</param>
         /// <param name="model">The source model.</param>
         /// <param name="modelLodIndex">The source model LOD index.</param>
+        /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.</param>
         /// <param name="convexFlags">The convex mesh generation flags.</param>
         /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
         /// <returns>True if failed, otherwise false.</returns>
-        public static bool CookMeshCollision(string path, CollisionDataType type, Model model, int modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
+        public static bool CookMeshCollision(string path, CollisionDataType type, ModelBase model, int modelLodIndex = 0, uint materialSlotsMask = uint.MaxValue, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
@@ -764,7 +765,7 @@ namespace FlaxEditor
             if (type == CollisionDataType.None)
                 throw new ArgumentException(nameof(type));
 
-            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, convexFlags, convexVertexLimit);
+            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, materialSlotsMask, convexFlags, convexVertexLimit);
         }
 
         /// <summary>
@@ -877,10 +878,12 @@ namespace FlaxEditor
         /// Checks if can import asset with the given extension.
         /// </summary>
         /// <param name="extension">The file extension.</param>
+        /// <param name="outputExtension">The output file extension (flax, json, etc.).</param>
         /// <returns>True if can import files with given extension, otherwise false.</returns>
-        public static bool CanImport(string extension)
+        public static bool CanImport(string extension, out string outputExtension)
         {
-            return Internal_CanImport(extension);
+            outputExtension = Internal_CanImport(extension);
+            return outputExtension != null;
         }
 
         /// <summary>
@@ -1344,7 +1347,7 @@ namespace FlaxEditor
         internal static extern string Internal_GetShaderAssetSourceCode(IntPtr obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
+        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Vector3[] triangles, out int[] indices);
@@ -1368,7 +1371,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanImport(string extension);
+        internal static extern string Internal_CanImport(string extension);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool Internal_CanExport(string path);

@@ -3,7 +3,6 @@
 #include "../WindowsManager.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Engine/EngineService.h"
 
 class WindowsManagerService : public EngineService
@@ -39,11 +38,6 @@ Window* WindowsManager::GetByNativePtr(void* handle)
     WindowsLocker.Unlock();
 
     return result;
-}
-
-Vector2 WindowsManager::CalcCenteredWinPos(const Vector2& size)
-{
-    return (Platform::GetDesktopSize() - size) * 0.5f;
 }
 
 void WindowsManager::Register(Window* win)

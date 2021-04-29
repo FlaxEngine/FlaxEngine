@@ -75,6 +75,9 @@ public class Graphics : EngineModule
         case TargetPlatform.Android:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
+        case TargetPlatform.Switch:
+            options.PrivateDependencies.Add("GraphicsDeviceVulkan");
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

@@ -20,6 +20,8 @@
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettPlatform.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidPlatform.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchPlatform.h"
 #else
 #error Missing Platform implementation!
 #endif

@@ -2183,6 +2183,9 @@ void TerrainPatch::CreateCollision()
     _physicsActor = CPhysX->createRigidStatic(trans);
     ASSERT(_physicsActor);
     _physicsActor->userData = _terrain;
+#if WITH_PVD
+    _physicsActor->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+#endif
     _physicsActor->attachShape(*_physicsShape);
 
     Physics::AddActor(_physicsActor);

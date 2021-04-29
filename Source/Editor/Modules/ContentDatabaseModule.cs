@@ -923,6 +923,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SkeletonMaskProxy());
             Proxy.Add(new GameplayGlobalsProxy());
             Proxy.Add(new VisualScriptProxy());
+            Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
 
@@ -933,6 +934,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(PhysicsSettings)));
             Proxy.Add(new SettingsProxy(typeof(GraphicsSettings)));
             Proxy.Add(new SettingsProxy(typeof(NavigationSettings)));
+            Proxy.Add(new SettingsProxy(typeof(LocalizationSettings)));
             Proxy.Add(new SettingsProxy(typeof(BuildSettings)));
             Proxy.Add(new SettingsProxy(typeof(InputSettings)));
             Proxy.Add(new SettingsProxy(typeof(WindowsPlatformSettings)));
@@ -945,6 +947,9 @@ namespace FlaxEditor.Modules
             if (typeXboxScarlettPlatformSettings != null)
                 Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings));
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings)));
+            var typeSwitchPlatformSettings = TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename);
+            if (typeSwitchPlatformSettings != null)
+                Proxy.Add(new SettingsProxy(typeSwitchPlatformSettings));
             Proxy.Add(new SettingsProxy(typeof(AudioSettings)));
 
             // Last add generic json (won't override other json proxies)

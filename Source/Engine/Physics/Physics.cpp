@@ -9,6 +9,9 @@
 #include "Utilities.h"
 #include "PhysicsStepper.h"
 #include "SimulationEventCallback.h"
+#if WITH_VEHICLE
+#include "Actors/WheeledVehicle.h"
+#endif
 #include "Engine/Level/Level.h"
 #include "Actors/PhysicsActor.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -18,6 +21,9 @@
 #include "Engine/Engine/Time.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxActor.h>
+#if WITH_VEHICLE
+#include <ThirdParty/PhysX/vehicle/PxVehicleUpdate.h>
+#endif
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
 #endif
@@ -61,7 +67,7 @@ public:
     }
 };
 
-PxFilterFlags PhysiXFilterShader(
+PxFilterFlags FilterShader(
     PxFilterObjectAttributes attributes0, PxFilterData filterData0,
     PxFilterObjectAttributes attributes1, PxFilterData filterData1,
     PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
@@ -146,8 +152,22 @@ namespace
     PxMaterial* DefaultMaterial = nullptr;
     PxControllerManager* ControllerManager = nullptr;
     PxCpuDispatcher* CpuDispatcher = nullptr;
+    float LastDeltaTime = 0.0f;
+#if WITH_VEHICLE
+    bool VehicleSDKInitialized = false;
+    Array<PxVehicleWheels*> WheelVehiclesCache;
+    Array<PxRaycastQueryResult> WheelQueryResults;
+    Array<PxRaycastHit> WheelHitResults;
+    Array<PxWheelQueryResult> WheelVehiclesResultsPerWheel;
+    Array<PxVehicleWheelQueryResult> WheelVehiclesResultsPerVehicle;
+    PxBatchQuery* WheelRaycastBatchQuery = nullptr;
+    PxVehicleDrivableSurfaceToTireFrictionPairs* WheelTireFrictions = nullptr;
+#endif
 }
 
+#if WITH_VEHICLE
+Array<WheeledVehicle*> WheelVehicles;
+#endif
 bool Physics::AutoSimulation = true;
 uint32 Physics::LayerMasks[32];
 
@@ -172,7 +192,7 @@ PhysicsService PhysicsServiceInstance;
 PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
 {
 #if WITH_PVD
-	PxShapeFlags flags = PxShapeFlag::eVISUALIZATION;
+    PxShapeFlags flags = PxShapeFlag::eVISUALIZATION;
 #else
     PxShapeFlags flags = static_cast<PxShapeFlags>(0);
 #endif
@@ -193,6 +213,38 @@ PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
 
     return flags;
 }
+
+#if WITH_VEHICLE
+
+void InitVehicleSDK()
+{
+    if (!VehicleSDKInitialized)
+    {
+        VehicleSDKInitialized = true;
+        PxInitVehicleSDK(*CPhysX);
+        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(1, 0, 0));
+        PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
+    }
+}
+
+static PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData filterData0, PxFilterData filterData1, const void* constantBlock, PxU32 constantBlockSize, PxHitFlags& queryFlags)
+{
+    // Hardcoded id for vehicle shapes masking
+    if (filterData0.word3 == filterData1.word3)
+    {
+        return PxQueryHitType::eNONE;
+    }
+
+    // Collide for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
+    if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
+    {
+        return PxQueryHitType::eBLOCK;
+    }
+
+    return PxQueryHitType::eNONE;
+}
+
+#endif
 
 void PhysicsSettings::Apply()
 {
@@ -317,13 +369,6 @@ bool PhysicsService::Init()
     _foundation = PxCreateFoundation(PX_PHYSICS_VERSION, PhysXAllocatorCallback, PhysXErrorCallback);
     CHECK_INIT(_foundation, "PxCreateFoundation failed!");
 
-    // Recording memory allocations is necessary if you want to 
-    // use the memory facilities in PVD effectively.  Since PVD isn't necessarily connected
-    // right away, we add a mechanism that records all outstanding memory allocations and
-    // forwards them to PVD when it does connect.
-    // This certainly has a performance and memory profile effect and thus should be used
-    // only in non-production builds.
-
 #if PHYSX_MEMORY_STATS
 	_foundation->setReportAllocationNames(true);
 #endif
@@ -334,64 +379,56 @@ bool PhysicsService::Init()
 
     PxPvd* pvd = nullptr;
 #if WITH_PVD
-	{
-		// Connection parameters
-		const char*  pvd_host_ip = "127.0.0.1";  // IP of the PC which is running PVD
-		int          port = 5425;                // TCP port to connect to, where PVD is listening
-		unsigned int timeout = 100;              // Timeout in milliseconds to wait for PVD to respond, consoles and remote PCs need a higher timeout.
-
-		// Init PVD
-		pvd = PxCreatePvd(*_foundation);
-		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(pvd_host_ip, port, timeout);
-		const bool isConnected = pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-		if (isConnected)
-		{
-			LOG(Info, "Connected to PhysX Visual Debugger (PVD)"));
-		}
-
-		CPVD = pvd;
-	}
+    {
+        // Init PVD
+        pvd = PxCreatePvd(*_foundation);
+        PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
+        //PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("D:\\physx_sample.pxd2");
+        if (transport)
+        {
+            const bool isConnected = pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+            if (isConnected)
+            {
+                LOG(Info, "Connected to PhysX Visual Debugger (PVD)");
+            }
+        }
+        CPVD = pvd;
+    }
 
 #endif
 
-    // Init top-level PhysX objects
+    // Init PhysX
     CPhysX = PxCreatePhysics(PX_PHYSICS_VERSION, *_foundation, ToleranceScale, false, pvd);
     CHECK_INIT(CPhysX, "PxCreatePhysics failed!");
 
-    // Init Extensions
+    // Init extensions
     const bool extensionsInit = PxInitExtensions(*CPhysX, pvd);
     CHECK_INIT(extensionsInit, "PxInitExtensions failed!");
-#if WITH_VEHICLE
-	PxInitVehicleSDK(*Physics);
-#endif
 
+    // Init collision cooking
 #if COMPILE_WITH_PHYSICS_COOKING
-
 #if !USE_EDITOR
     if (settings.SupportCookingAtRuntime)
 #endif
     {
-        // Init cooking
         PxCookingParams cookingParams(ToleranceScale);
         cookingParams.meshWeldTolerance = 0.1f; // Weld to 1mm precision
         cookingParams.meshPreprocessParams = PxMeshPreprocessingFlags(PxMeshPreprocessingFlag::eWELD_VERTICES);
         Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *_foundation, cookingParams);
         CHECK_INIT(Cooking, "PxCreateCooking failed!");
     }
-
 #endif
 
     // Create scene description
     PxSceneDesc sceneDesc(CPhysX->getTolerancesScale());
     sceneDesc.gravity = C2P(settings.DefaultGravity);
     sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
-    //sceneDesc.flags |= PxSceneFlag::eEXCLUDE_KINEMATICS_FROM_ACTIVE_ACTORS; // TODO: set it?
     if (!settings.DisableCCD)
         sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
     if (settings.EnableAdaptiveForce)
         sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE;
     sceneDesc.simulationEventCallback = &EventsCallback;
-    sceneDesc.filterShader = PhysiXFilterShader;
+    sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
@@ -407,6 +444,17 @@ bool PhysicsService::Init()
     // Create scene
     PhysicsScene = CPhysX->createScene(sceneDesc);
     CHECK_INIT(PhysicsScene, "createScene failed!");
+#if WITH_PVD
+    auto pvdClient = PhysicsScene->getScenePvdClient();
+    if (pvdClient)
+    {
+        pvdClient->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES | PxPvdSceneFlag::eTRANSMIT_CONTACTS);
+    }
+    else
+    {
+        LOG(Info, "Missing PVD client scene.");
+    }
+#endif
 
     // Init characters controller
     ControllerManager = PxCreateControllerManager(*PhysicsScene);
@@ -428,10 +476,24 @@ void PhysicsService::Dispose()
 {
     // Ensure to finish (wait for simulation end)
     Physics::CollectResults();
-
-    // Cleanup
     if (CPhysX)
         Physics::FlushRequests();
+
+#if WITH_VEHICLE
+    if (VehicleSDKInitialized)
+    {
+        VehicleSDKInitialized = false;
+        PxCloseVehicleSDK();
+    }
+    RELEASE_PHYSX(WheelRaycastBatchQuery);
+    RELEASE_PHYSX(WheelTireFrictions);
+    WheelQueryResults.Resize(0);
+    WheelHitResults.Resize(0);
+    WheelVehiclesResultsPerWheel.Resize(0);
+    WheelVehiclesResultsPerVehicle.Resize(0);
+#endif
+
+    // Cleanup
     RELEASE_PHYSX(DefaultMaterial);
     SAFE_DELETE(Stepper);
     Allocator::Free(ScratchMemory);
@@ -463,15 +525,12 @@ void PhysicsService::Dispose()
 
     if (CPhysX)
     {
-#if WITH_VEHICLE
-		PxCloseVehicleSDK();
-#endif
         PxCloseExtensions();
     }
 
     RELEASE_PHYSX(CPhysX);
 #if WITH_PVD
-	RELEASE_PHYSX(CPVD);
+    RELEASE_PHYSX(CPVD);
 #endif
     RELEASE_PHYSX(_foundation);
 }
@@ -571,6 +630,7 @@ void Physics::Simulate(float dt)
     if (Stepper->advance(PhysicsScene, dt, ScratchMemory, SCRATCH_BLOCK_SIZE) == false)
         return;
     EventsCallback.Clear();
+    LastDeltaTime = dt;
 
     // TODO: move this call after rendering done
     Stepper->renderDone();
@@ -589,6 +649,210 @@ void Physics::CollectResults()
         // Gather results (with waiting for the end)
         Stepper->wait(PhysicsScene);
     }
+
+#if WITH_VEHICLE
+    if (WheelVehicles.HasItems())
+    {
+        PROFILE_CPU_NAMED("Physics.Vehicles");
+
+        // Update vehicles steering
+        WheelVehiclesCache.Clear();
+        WheelVehiclesCache.EnsureCapacity(WheelVehicles.Count());
+        int32 wheelsCount = 0;
+        for (auto wheelVehicle : WheelVehicles)
+        {
+            auto drive = (PxVehicleWheels*)wheelVehicle->_drive;
+            ASSERT(drive);
+            WheelVehiclesCache.Add(drive);
+            wheelsCount += drive->mWheelsSimData.getNbWheels();
+
+            float throttle = wheelVehicle->_throttle;
+            float brake = wheelVehicle->_brake;
+            if (wheelVehicle->UseReverseAsBrake)
+            {
+                const float invalidDirectionThreshold = 80.0f;
+                const float breakThreshold = 8.0f;
+                const float forwardSpeed = wheelVehicle->GetForwardSpeed();
+
+                // Automatic gear change when changing driving direction
+                if (Math::Abs(forwardSpeed) < invalidDirectionThreshold)
+                {
+                    if (throttle < -ZeroTolerance && wheelVehicle->GetCurrentGear() >= 0 && wheelVehicle->GetTargetGear() >= 0)
+                    {
+                        wheelVehicle->SetCurrentGear(-1);
+                    }
+                    else if (throttle > ZeroTolerance && wheelVehicle->GetCurrentGear() <= 0 && wheelVehicle->GetTargetGear() <= 0)
+                    {
+                        wheelVehicle->SetCurrentGear(1);
+                    }
+                }
+
+                // Automatic break when changing driving direction
+                if (throttle > 0.0f)
+                {
+                    if (forwardSpeed < -invalidDirectionThreshold)
+                    {
+                        brake = 1.0f;
+                    }
+                }
+                else if (throttle < 0.0f)
+                {
+                    if (forwardSpeed > invalidDirectionThreshold)
+                    {
+                        brake = 1.0f;
+                    }
+                }
+                else
+                {
+                    if (forwardSpeed < breakThreshold && forwardSpeed > -breakThreshold)
+                    {
+                        brake = 1.0f;
+                    }
+                }
+
+                // Block throttle if user is changing driving direction
+                if ((throttle > 0.0f && wheelVehicle->GetTargetGear() < 0) || (throttle < 0.0f && wheelVehicle->GetTargetGear() > 0))
+                {
+                    throttle = 0.0f;
+                }
+
+                throttle = Math::Abs(throttle);
+            }
+            else
+            {
+                throttle = Math::Max(throttle, 0.0f);
+            }
+            // @formatter:off
+            // Reference: PhysX SDK docs
+            // TODO: expose input control smoothing data
+            static constexpr PxVehiclePadSmoothingData padSmoothing =
+            {
+	            {
+		            6.0f,  // rise rate eANALOG_INPUT_ACCEL
+		            6.0f,  // rise rate eANALOG_INPUT_BRAKE
+		            12.0f, // rise rate eANALOG_INPUT_HANDBRAKE
+		            2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
+		            2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
+	            },
+	            {
+		            10.0f, // fall rate eANALOG_INPUT_ACCEL
+		            10.0f, // fall rate eANALOG_INPUT_BRAKE
+		            12.0f, // fall rate eANALOG_INPUT_HANDBRAKE
+		            5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
+		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
+	            }
+            };
+            // Reference: PhysX SDK docs
+            // TODO: expose steer vs forward curve into per-vehicle (up to 8 points, values clamped into 0/1 range)
+            static constexpr PxF32 steerVsForwardSpeedData[] =
+            {
+	            0.0f,		1.0f,
+	            20.0f,		0.9f,
+	            65.0f,		0.8f,
+	            120.0f,		0.7f,
+	            PX_MAX_F32, PX_MAX_F32,
+	            PX_MAX_F32, PX_MAX_F32,
+	            PX_MAX_F32, PX_MAX_F32,
+	            PX_MAX_F32, PX_MAX_F32,
+            };
+            const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
+            // @formatter:on
+            switch (wheelVehicle->_driveTypeCurrent)
+            {
+            case WheeledVehicle::DriveTypes::Drive4W:
+            {
+                PxVehicleDrive4WRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::DriveNW:
+            {
+                PxVehicleDriveNWRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                break;
+            }
+            }
+        }
+
+        // Update batches queries cache
+        if (wheelsCount > WheelQueryResults.Count())
+        {
+            if (WheelRaycastBatchQuery)
+                WheelRaycastBatchQuery->release();
+            WheelQueryResults.Resize(wheelsCount);
+            WheelQueryResults.Resize(WheelQueryResults.Capacity());
+            PxBatchQueryDesc desc(wheelsCount, 0, 0);
+            desc.queryMemory.userRaycastResultBuffer = WheelQueryResults.Get();
+            desc.queryMemory.userRaycastTouchBuffer = WheelHitResults.Get();
+            desc.queryMemory.raycastTouchBufferSize = wheelsCount;
+            desc.preFilterShader = WheelRaycastPreFilter;
+            WheelRaycastBatchQuery = PhysicsScene->createBatchQuery(desc);
+        }
+
+        // TODO: expose vehicle tires configuration
+        if (!WheelTireFrictions)
+        {
+            PxVehicleDrivableSurfaceType surfaceTypes[1];
+            surfaceTypes[0].mType = 0;
+            const PxMaterial* surfaceMaterials[1];
+            surfaceMaterials[0] = DefaultMaterial;
+            WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(1, 1);
+            WheelTireFrictions->setup(1, 1, surfaceMaterials, surfaceTypes);
+            WheelTireFrictions->setTypePairFriction(0, 0, 5.0f);
+        }
+
+        // Setup cache for wheel states
+        WheelVehiclesResultsPerVehicle.Resize(WheelVehicles.Count(), false);
+        WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
+        wheelsCount = 0;
+        for (int32 i = 0; i < WheelVehicles.Count(); i++)
+        {
+            auto drive = (PxVehicleWheels*)WheelVehicles[i]->_drive;
+            auto& perVehicle = WheelVehiclesResultsPerVehicle[i];
+            perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
+            perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;
+            wheelsCount += perVehicle.nbWheelQueryResults;
+        }
+
+        // Update vehicles
+        PxVehicleSuspensionRaycasts(WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelQueryResults.Count(), WheelQueryResults.Get());
+        PxVehicleUpdates(LastDeltaTime, PhysicsScene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
+
+        // Synchronize state
+        for (int32 i = 0; i < WheelVehicles.Count(); i++)
+        {
+            auto wheelVehicle = WheelVehicles[i];
+            auto drive = WheelVehiclesCache[i];
+            auto& perVehicle = WheelVehiclesResultsPerVehicle[i];
+
+            // Update wheels
+            for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
+            {
+                auto& wheelData = wheelVehicle->_wheelsData[j];
+                auto& perWheel = perVehicle.wheelQueryResults[j];
+
+                auto& state = wheelData.State;
+                state.IsInAir = perWheel.isInAir;
+                state.TireContactCollider = perWheel.tireContactShape ? static_cast<PhysicsColliderActor*>(perWheel.tireContactShape->userData) : nullptr;
+                state.TireContactPoint = P2C(perWheel.tireContactPoint);
+                state.TireContactNormal = P2C(perWheel.tireContactNormal);
+                state.TireFriction = perWheel.tireFriction;
+
+                const float wheelRotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
+                const float wheelSteerAngle = RadiansToDegrees * perWheel.steerAngle;
+                wheelData.Collider->SetLocalOrientation(Quaternion::Euler(0, wheelSteerAngle, wheelRotationAngle) * wheelData.LocalOrientation);
+            }
+        }
+    }
+#endif
 
     {
         PROFILE_CPU_NAMED("Physics.FlushActiveTransforms");

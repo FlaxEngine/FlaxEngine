@@ -133,20 +133,22 @@ namespace
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices)
 {
+    auto model = (Model*)_model;
+
     Unload();
 
     // Setup GPU resources
-    _model->LODs[_lodIndex]._verticesCount -= _vertices;
+    model->LODs[_lodIndex]._verticesCount -= _vertices;
     const bool failed = Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
     if (!failed)
     {
-        _model->LODs[_lodIndex]._verticesCount += _vertices;
+        model->LODs[_lodIndex]._verticesCount += _vertices;
 
         // Calculate mesh bounds
         SetBounds(BoundingBox::FromPoints((Vector3*)vb0, vertexCount));
 
         // Send event (actors using this model can update bounds, etc.)
-        _model->onLoaded();
+        model->onLoaded();
     }
 
     return failed;
@@ -212,17 +214,6 @@ Mesh::~Mesh()
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
-}
-
-void Mesh::SetMaterialSlotIndex(int32 value)
-{
-    if (value < 0 || value >= _model->MaterialSlots.Count())
-    {
-        LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
-        return;
-    }
-
-    _materialSlotIndex = value;
 }
 
 bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* vb2, void* ib, bool use16BitIndexBuffer)
@@ -443,7 +434,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         // TODO: cache vertexOffset within the model LOD per-mesh
         uint32 vertexOffset = 0;
         for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
-            vertexOffset += _model->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
+            vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
     }
@@ -464,7 +455,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 
-bool Mesh::ExtractData(MeshBufferType type, BytesContainer& result) const
+bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const
 {
     GPUBuffer* buffer = nullptr;
     switch (type)
@@ -485,7 +476,7 @@ bool Mesh::ExtractData(MeshBufferType type, BytesContainer& result) const
     return buffer && buffer->DownloadData(result);
 }
 
-Task* Mesh::ExtractDataAsync(MeshBufferType type, BytesContainer& result) const
+Task* Mesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
 {
     GPUBuffer* buffer = nullptr;
     switch (type)
@@ -504,6 +495,15 @@ Task* Mesh::ExtractDataAsync(MeshBufferType type, BytesContainer& result) const
         break;
     }
     return buffer ? buffer->DownloadDataAsync(result) : nullptr;
+}
+
+bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) const
+{
+#if !BUILD_RELEASE
+    // TODO: implement this
+    LOG(Error, "Mesh::DownloadDataCPU not implemented.");
+#endif
+    return true;
 }
 
 ScriptingObject* Mesh::GetParentModel()
@@ -661,7 +661,7 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
 
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
         BytesContainer data;
-        auto task = mesh->ExtractDataAsync(bufferType, data);
+        auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
             return true;
 

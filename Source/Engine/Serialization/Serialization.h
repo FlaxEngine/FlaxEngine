@@ -9,6 +9,7 @@
 #include "Engine/Scripting/SoftObjectReference.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Utilities/Encryption.h"
 
 struct Version;
 struct VariantType;
@@ -268,6 +269,27 @@ namespace Serialization
     }
     FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier);
 
+    FLAXENGINE_API bool ShouldSerialize(const Int2& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int2& v, const void* otherObj)
+    {
+        stream.Int2(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int2& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Int3& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int3& v, const void* otherObj)
+    {
+        stream.Int3(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int3& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Int4& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Int4& v, const void* otherObj)
+    {
+        stream.Int4(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Int4& v, ISerializeModifier* modifier);
+    
     FLAXENGINE_API bool ShouldSerialize(const Quaternion& v, const void* otherObj);
     inline void Serialize(ISerializable::SerializeStream& stream, const Quaternion& v, const void* otherObj)
     {
@@ -500,6 +522,24 @@ namespace Serialization
         v.Resize(streamArray.Size());
         for (int32 i = 0; i < v.Count(); i++)
             Deserialize(streamArray[i], (T&)v[i], modifier);
+    }
+    template<typename AllocationType = HeapAllocation>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, Array<byte, AllocationType>& v, ISerializeModifier* modifier)
+    {
+        if (stream.IsArray())
+        {
+            const auto& streamArray = stream.GetArray();
+            v.Resize(streamArray.Size());
+            for (int32 i = 0; i < v.Count(); i++)
+                Deserialize(streamArray[i], v[i], modifier);
+        }
+        else if (stream.IsString())
+        {
+            // byte[] encoded as Base64
+            const StringAnsiView streamView(stream.GetString(), stream.GetStringLength());
+            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
+            Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
+        }
     }
 
     // Dictionary

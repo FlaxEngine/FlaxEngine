@@ -56,15 +56,6 @@ public:
     }
 
     /// <summary>
-    /// Gets amount of the level of details in the model
-    /// </summary>
-    /// <returns>Amount of the level of details in the model</returns>
-    FORCE_INLINE int32 GetLODsCount() const
-    {
-        return LODs.Count();
-    }
-
-    /// <summary>
     /// Gets the amount of loaded model LODs.
     /// </summary>
     /// <returns>Loaded LODs count</returns>
@@ -237,18 +228,11 @@ public:
 
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
+    int32 GetLODsCount() const override;
+    void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        for (int32 i = 0; i < MaterialSlots.Count(); i++)
-        {
-            output.Add(MaterialSlots[i].Material.GetID());
-        }
-    }
+    void GetReferences(Array<Guid>& output) const override;
 #endif
 
     // [StreamableResource]

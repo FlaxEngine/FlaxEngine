@@ -14,6 +14,8 @@
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettWindow.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidWindow.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchWindow.h"
 #else
 #error Missing Window implementation!
 #endif

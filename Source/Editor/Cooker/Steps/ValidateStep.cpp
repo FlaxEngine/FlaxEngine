@@ -11,9 +11,17 @@ bool ValidateStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Performing validation"), 0);
 
     // Ensure output and cache directories exist
-    if (!FileSystem::DirectoryExists(data.OutputPath))
+    if (!FileSystem::DirectoryExists(data.CodeOutputPath))
     {
-        if (FileSystem::CreateDirectory(data.OutputPath))
+        if (FileSystem::CreateDirectory(data.CodeOutputPath))
+        {
+            data.Error(TEXT("Failed to create build output directory."));
+            return true;
+        }
+    }
+    if (!FileSystem::DirectoryExists(data.DataOutputPath))
+    {
+        if (FileSystem::CreateDirectory(data.DataOutputPath))
         {
             data.Error(TEXT("Failed to create build output directory."));
             return true;

@@ -636,7 +636,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
 
         // Skip if no change will be performed
-        if (boneIndex < 0 || boneIndex >= _skeletonBonesCount || transformMode == BoneTransformMode::None || transform.IsIdentity())
+        if (boneIndex < 0 || boneIndex >= _skeletonBonesCount || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
         {
             // Pass through the input
             value = Value::Null;
@@ -1628,7 +1628,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
 
         // Skip if no change will be performed
-        if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || transformMode == BoneTransformMode::None || transform.IsIdentity())
+        if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
         {
             // Pass through the input
             value = Value::Null;

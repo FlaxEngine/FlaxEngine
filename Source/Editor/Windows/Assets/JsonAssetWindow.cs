@@ -17,6 +17,9 @@ namespace FlaxEditor.Windows.Assets
     {
         private readonly CustomEditorPresenter _presenter;
         private readonly ToolStripButton _saveButton;
+        private readonly ToolStripButton _undoButton;
+        private readonly ToolStripButton _redoButton;
+        private readonly Undo _undo;
         private object _object;
         private bool _isRegisteredForScriptsReload;
 
@@ -24,8 +27,16 @@ namespace FlaxEditor.Windows.Assets
         public JsonAssetWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            // Undo
+            _undo = new Undo();
+            _undo.UndoDone += OnUndoRedo;
+            _undo.RedoDone += OnUndoRedo;
+
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
+            _toolstrip.AddSeparator();
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo32, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo32, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)
@@ -36,9 +47,19 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Properties
-            _presenter = new CustomEditorPresenter(null, "Loading...");
+            _presenter = new CustomEditorPresenter(_undo, "Loading...");
             _presenter.Panel.Parent = panel;
             _presenter.Modified += MarkAsEdited;
+
+            // Setup input actions
+            InputActions.Add(options => options.Undo, _undo.PerformUndo);
+            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+        }
+
+        private void OnUndoRedo(IUndoAction action)
+        {
+            MarkAsEdited();
+            UpdateToolstrip();
         }
 
         private void OnScriptsReloadBegin()
@@ -64,13 +85,14 @@ namespace FlaxEditor.Windows.Assets
             }
 
             ClearEditedFlag();
-            _item.RefreshThumbnail();
         }
 
         /// <inheritdoc />
         protected override void UpdateToolstrip()
         {
             _saveButton.Enabled = IsEdited;
+            _undoButton.Enabled = _undo.CanUndo;
+            _redoButton.Enabled = _undo.CanRedo;
 
             base.UpdateToolstrip();
         }
@@ -80,6 +102,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _object = Asset.CreateInstance();
             _presenter.Select(_object);
+            _undo.Clear();
             ClearEditedFlag();
 
             // Auto-close on scripting reload if json asset is from game scripts (it might be reloaded)

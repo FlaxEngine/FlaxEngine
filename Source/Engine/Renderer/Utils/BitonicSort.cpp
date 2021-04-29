@@ -6,10 +6,22 @@
 
 #define INDIRECT_ARGS_STRIDE 12
 
-BitonicSort::BitonicSort()
-    : _dispatchArgsBuffer(nullptr)
+// The sorting keys buffer item structure template. Matches the shader type.
+struct Item
 {
-}
+    float Key;
+    uint32 Value;
+};
+
+PACK_STRUCT(struct Data {
+    Item NullItem;
+    uint32 CounterOffset;
+    uint32 MaxIterations;
+    uint32 LoopK;
+    float KeySign;
+    uint32 LoopJ;
+    float Dummy0;
+    });
 
 String BitonicSort::ToString() const
 {

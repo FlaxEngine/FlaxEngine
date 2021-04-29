@@ -31,6 +31,7 @@
 #include "CreateParticleEmitterFunction.h"
 #include "CreateAnimationGraphFunction.h"
 #include "CreateVisualScript.h"
+#include "CreateJson.h"
 
 // Tags used to detect asset creation mode
 const String AssetsImportingManager::CreateTextureTag(TEXT("Texture"));
@@ -91,6 +92,10 @@ CreateAssetResult CreateAssetContext::Run(const CreateAssetFunction& callback)
     if (result != CreateAssetResult::Ok)
         return result;
 
+    // Skip for non-flax assets (eg. json resource or custom asset type)
+    if (!TargetAssetPath.EndsWith(ASSET_FILES_EXTENSION))
+        return CreateAssetResult::Ok;
+
     // Validate assigned TypeID
     if (Data.Header.TypeName.IsEmpty())
     {
@@ -112,8 +117,7 @@ CreateAssetResult CreateAssetContext::Run(const CreateAssetFunction& callback)
     }
 
     // Save file
-    result = Save();
-
+    result = FlaxStorage::Create(OutputPath, Data) ? CreateAssetResult::CannotSaveFile : CreateAssetResult::Ok;
     if (result == CreateAssetResult::Ok)
     {
         _applyChangesResult = CreateAssetResult::Abort;
@@ -159,11 +163,6 @@ void CreateAssetContext::AddMeta(JsonWriter& writer) const
     writer.String(InputPath);
     writer.JKEY("ImportUsername");
     writer.String(Platform::GetUserName());
-}
-
-CreateAssetResult CreateAssetContext::Save()
-{
-    return FlaxStorage::Create(OutputPath, Data) ? CreateAssetResult::CannotSaveFile : CreateAssetResult::Ok;
 }
 
 void CreateAssetContext::ApplyChanges()
@@ -231,8 +230,6 @@ bool AssetsImportingManager::Create(const String& tag, const StringView& outputP
 
 bool AssetsImportingManager::Import(const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)
 {
-    ASSERT(outputPath.EndsWith(StringView(ASSET_FILES_EXTENSION)));
-
     LOG(Info, "Importing file '{0}' to '{1}'...", inputPath, outputPath);
 
     // Check if input file exists
@@ -246,8 +243,7 @@ bool AssetsImportingManager::Import(const StringView& inputPath, const StringVie
     const String extension = FileSystem::GetExtension(inputPath).ToLower();
 
     // Special case for raw assets
-    const String assetExtension = ASSET_FILES_EXTENSION;
-    if (assetExtension.Compare(extension, StringSearchCase::IgnoreCase) == 0)
+    if (StringView(ASSET_FILES_EXTENSION).Compare(StringView(extension), StringSearchCase::IgnoreCase) == 0)
     {
         // Simply copy file (content layer will resolve duplicated IDs, etc.)
         return FileSystem::CopyFile(outputPath, inputPath);
@@ -266,8 +262,6 @@ bool AssetsImportingManager::Import(const StringView& inputPath, const StringVie
 
 bool AssetsImportingManager::ImportIfEdited(const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)
 {
-    ASSERT(outputPath.EndsWith(StringView(ASSET_FILES_EXTENSION)));
-
     // Check if asset not exists
     if (!FileSystem::FileExists(outputPath))
     {
@@ -383,64 +377,67 @@ bool AssetsImportingManagerService::Init()
     AssetImporter InBuildImporters[] =
     {
         // Textures and Cube Textures
-        { TEXT("tga"), ImportTexture::Import },
-        { TEXT("dds"), ImportTexture::Import },
-        { TEXT("png"), ImportTexture::Import },
-        { TEXT("bmp"), ImportTexture::Import },
-        { TEXT("gif"), ImportTexture::Import },
-        { TEXT("tiff"), ImportTexture::Import },
-        { TEXT("tif"), ImportTexture::Import },
-        { TEXT("jpeg"), ImportTexture::Import },
-        { TEXT("jpg"), ImportTexture::Import },
-        { TEXT("hdr"), ImportTexture::Import },
-        { TEXT("raw"), ImportTexture::Import },
+        { TEXT("tga"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("dds"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("png"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("bmp"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("gif"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("tiff"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("tif"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("jpeg"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("jpg"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("hdr"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("raw"), ASSET_FILES_EXTENSION, ImportTexture::Import },
 
         // IES Profiles
-        { TEXT("ies"), ImportTexture::ImportIES },
+        { TEXT("ies"), ASSET_FILES_EXTENSION, ImportTexture::ImportIES },
 
         // Shaders
-        { TEXT("shader"), ImportShader::Import },
+        { TEXT("shader"), ASSET_FILES_EXTENSION, ImportShader::Import },
 
         // Audio
-        { TEXT("wav"), ImportAudio::ImportWav },
-        { TEXT("mp3"), ImportAudio::ImportMp3 },
+        { TEXT("wav"), ASSET_FILES_EXTENSION, ImportAudio::ImportWav },
+        { TEXT("mp3"), ASSET_FILES_EXTENSION, ImportAudio::ImportMp3 },
 #if COMPILE_WITH_OGG_VORBIS
-        { TEXT("ogg"), ImportAudio::ImportOgg },
+        { TEXT("ogg"), ASSET_FILES_EXTENSION, ImportAudio::ImportOgg },
 #endif
 
         // Fonts
-        { TEXT("ttf"), ImportFont::Import },
-        { TEXT("otf"), ImportFont::Import },
+        { TEXT("ttf"), ASSET_FILES_EXTENSION, ImportFont::Import },
+        { TEXT("otf"), ASSET_FILES_EXTENSION, ImportFont::Import },
 
         // Models
-        { TEXT("obj"), ImportModelFile::Import },
-        { TEXT("fbx"), ImportModelFile::Import },
-        { TEXT("x"), ImportModelFile::Import },
-        { TEXT("dae"), ImportModelFile::Import },
-        { TEXT("gltf"), ImportModelFile::Import },
-        { TEXT("glb"), ImportModelFile::Import },
+        { TEXT("obj"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("fbx"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("x"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("dae"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("glb"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+
+        // gettext PO files
+        { TEXT("po"), TEXT("json"), CreateJson::ImportPo },
 
         // Models (untested formats - may fail :/)
-        { TEXT("blend"), ImportModelFile::Import },
-        { TEXT("bvh"), ImportModelFile::Import },
-        { TEXT("ase"), ImportModelFile::Import },
-        { TEXT("ply"), ImportModelFile::Import },
-        { TEXT("dxf"), ImportModelFile::Import },
-        { TEXT("ifc"), ImportModelFile::Import },
-        { TEXT("nff"), ImportModelFile::Import },
-        { TEXT("smd"), ImportModelFile::Import },
-        { TEXT("vta"), ImportModelFile::Import },
-        { TEXT("mdl"), ImportModelFile::Import },
-        { TEXT("md2"), ImportModelFile::Import },
-        { TEXT("md3"), ImportModelFile::Import },
-        { TEXT("md5mesh"), ImportModelFile::Import },
-        { TEXT("q3o"), ImportModelFile::Import },
-        { TEXT("q3s"), ImportModelFile::Import },
-        { TEXT("ac"), ImportModelFile::Import },
-        { TEXT("stl"), ImportModelFile::Import },
-        { TEXT("lwo"), ImportModelFile::Import },
-        { TEXT("lws"), ImportModelFile::Import },
-        { TEXT("lxo"), ImportModelFile::Import },
+        { TEXT("blend"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("bvh"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("ase"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("ply"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("dxf"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("ifc"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("nff"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("smd"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("vta"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("mdl"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("md2"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("md3"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("md5mesh"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("q3o"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("q3s"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("ac"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("stl"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("lwo"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("lws"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("lxo"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
     };
     AssetsImportingManager::Importers.Add(InBuildImporters, ARRAY_COUNT(InBuildImporters));
 

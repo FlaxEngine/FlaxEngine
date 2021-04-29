@@ -672,6 +672,24 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private class ThisNode : SurfaceNode
+        {
+            /// <inheritdoc />
+            public ThisNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {}
+
+            /// <inheritdoc />
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+                var vss = (VisualScriptSurface)this.Context.Surface;
+                var type = TypeUtils.GetType(vss.Script.ScriptTypeName);
+                var box = (OutputBox)GetBox(0);
+                box.CurrentType = type ? type : new ScriptType(typeof(VisualScript));
+            }
+        }
+        
         private class AssetReferenceNode : SurfaceNode
         {
             /// <inheritdoc />
@@ -1326,9 +1344,9 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Platform Switch",
                 Description = "Gets the input value based on the runtime-platform type",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 160),
+                Size = new Vector2(220, 180),
                 ConnectionsHints = ConnectionsHint.Value,
-                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8 },
+                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
                 DependentBoxes = new[] { 0 },
                 Elements = new[]
                 {
@@ -1341,6 +1359,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(5, "PlayStation 4", true, null, 6),
                     NodeElementArchetype.Factory.Input(6, "Xbox Scarlett", true, null, 7),
                     NodeElementArchetype.Factory.Input(7, "Android", true, null, 8),
+                    NodeElementArchetype.Factory.Input(8, "Switch", true, null, 9),
                 }
             },
             new NodeArchetype
@@ -1365,6 +1384,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 19,
                 Title = "This Instance",
+                Create = (id, context, arch, groupArch) => new ThisNode(id, context, arch, groupArch),
                 Description = "Gets the reference to this script object instance (self).",
                 Flags = NodeFlags.VisualScriptGraph,
                 Size = new Vector2(140, 20),

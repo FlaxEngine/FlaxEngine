@@ -15,7 +15,7 @@ bool DeployDataStep::Perform(CookingData& data)
     const auto gameSettings = GameSettings::Get();
 
     // Setup output folders and copy required data
-    const auto contentDir = data.OutputPath / TEXT("Content");
+    const auto contentDir = data.DataOutputPath / TEXT("Content");
     if (FileSystem::DirectoryExists(contentDir))
     {
         // Remove old content files
@@ -26,7 +26,7 @@ bool DeployDataStep::Perform(CookingData& data)
     }
     FileSystem::CreateDirectory(contentDir);
     const auto srcMono = depsRoot / TEXT("Mono");
-    const auto dstMono = data.OutputPath / TEXT("Mono");
+    const auto dstMono = data.DataOutputPath / TEXT("Mono");
     if (!FileSystem::DirectoryExists(dstMono))
     {
         if (!FileSystem::DirectoryExists(srcMono))

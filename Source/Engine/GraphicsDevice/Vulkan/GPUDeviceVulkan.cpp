@@ -52,6 +52,8 @@ VkDebugReportCallbackEXT MsgCallback = VK_NULL_HANDLE;
 
 extern VulkanValidationLevel ValidationLevel;
 
+#if VK_EXT_debug_report
+
 static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT msgFlags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32 msgCode, const char* layerPrefix, const char* msg, void* userData)
 {
     const Char* msgPrefix = TEXT("UNKNOWN");
@@ -126,6 +128,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     return VK_FALSE;
 }
 
+#endif
+
 #if VK_EXT_debug_utils
 
 static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity, VkDebugUtilsMessageTypeFlagsEXT msgType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData)
@@ -140,8 +144,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 2: // Fragment shader writes to output location 0 with no matching attachment
         case 3: // Attachment 2 not written by fragment shader
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
-#if PLATFORM_ANDROID
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
+#if PLATFORM_ANDROID
         case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
 #endif
             return VK_FALSE;
@@ -270,6 +274,7 @@ void SetupDebugLayerCallback()
 	if (SupportsDebugCallbackExt)
 #endif
     {
+#if VK_EXT_debug_report
         if (vkCreateDebugReportCallbackEXT)
         {
             VkDebugReportCallbackCreateInfoEXT createInfo;
@@ -303,6 +308,7 @@ void SetupDebugLayerCallback()
         {
             LOG(Warning, "GetProcAddr: Unable to find vkDbgCreateMsgCallback; debug reporting skipped!");
         }
+#endif
     }
     else
     {
@@ -324,8 +330,10 @@ void RemoveDebugLayerCallback()
 	if (MsgCallback != VK_NULL_HANDLE)
 #endif
     {
+#if VK_EXT_debug_report
         if (vkDestroyDebugReportCallbackEXT)
             vkDestroyDebugReportCallbackEXT(GPUDeviceVulkan::Instance, MsgCallback, nullptr);
+#endif
         MsgCallback = VK_NULL_HANDLE;
     }
 }
@@ -1085,13 +1093,17 @@ GPUDevice* GPUDeviceVulkan::Create()
 	}
 #endif
 
+    VkResult result;
+
+#if !PLATFORM_SWITCH
     // Initialize bindings
-    VkResult result = volkInitialize();
+    result = volkInitialize();
     if (result != VK_SUCCESS)
     {
         LOG(Warning, "Graphics Device init failed with error {0}", RenderToolsVulkan::GetVkErrorString(result));
         return nullptr;
     }
+#endif
 
     // Engine registration
     const StringAsANSI<256> appName(*Globals::ProductName);
@@ -1170,10 +1182,12 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
 
+#if !PLATFORM_SWITCH
     // Setup bindings
     volkLoadInstance(Instance);
+#endif
 
-    // Setup debug layer
+// Setup debug layer
 #if VULKAN_USE_DEBUG_LAYER
     SetupDebugLayerCallback();
 #endif
@@ -1658,8 +1672,10 @@ bool GPUDeviceVulkan::Init()
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
 
+#if !PLATFORM_SWITCH
     // Optimize bindings
     volkLoadDevice(Device);
+#endif
 
     // Create queues
     if (graphicsQueueFamilyIndex == -1)

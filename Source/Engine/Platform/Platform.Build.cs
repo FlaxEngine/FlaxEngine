@@ -65,6 +65,9 @@ public class Platform : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
             options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
             break;
+        case TargetPlatform.Switch:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform"));
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
         if (options.Target.IsEditor)
@@ -76,6 +79,7 @@ public class Platform : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "Android", "AndroidPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform", "XboxScarlettPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform", "PS4PlatformSettings.h"));
+            AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform", "SwitchPlatformSettings.h"));
         }
     }
 }

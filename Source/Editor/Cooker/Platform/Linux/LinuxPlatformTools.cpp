@@ -38,7 +38,7 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = LinuxPlatformSettings::Get();
-    const auto outputPath = data.OutputPath;
+    const auto outputPath = data.DataOutputPath;
 
     // Copy binaries
     {

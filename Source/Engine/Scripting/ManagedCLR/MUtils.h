@@ -297,6 +297,41 @@ struct MConverter<AssetReference<T>>
     }
 };
 
+// Converter for Array.
+template<typename T>
+struct MConverter<Array<T>>
+{
+    MonoObject* Box(const Array<T>& data, MonoClass* klass)
+    {
+        if (!klass)
+            return nullptr;
+        // TODO: use shared empty arrays cache
+        auto result = mono_array_new(mono_domain_get(), klass, data.Count());
+        MConverter<T> converter;
+        converter.ToManagedArray(result, Span<T>(data.Get(), data.Count()));
+        return (MonoObject*)result;
+    }
+
+    void Unbox(Array<T>& result, MonoObject* data)
+    {
+        auto length = data ? (int32)mono_array_length((MonoArray*)data) : 0;
+        result.EnsureCapacity(length);
+        MConverter<T> converter;
+        converter.ToNativeArray(result, (MonoArray*)data, length);
+    }
+
+    void ToManagedArray(MonoArray* result, const Span<Array<T>>& data)
+    {
+        CRASH; // Not implemented
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    void ToNativeArray(Array<Array<T>, AllocationType>& result, MonoArray* data, int32 length)
+    {
+        CRASH; // Not implemented
+    }
+};
+
 namespace MUtils
 {
     // Outputs the full typename for the type of the specified object.

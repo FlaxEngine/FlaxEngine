@@ -405,11 +405,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
 void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const StringView& path)
 {
     PROFILE_CPU();
-
     ScopeLock lock(_locker);
-
-    // Mark registry as draft
-    _isDirty = true;
 
     // Check if asset has been already added to the registry
     bool isMissing = true;
@@ -417,26 +413,34 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
     {
         auto& e = i->Value;
 
-        // Compare IDs
         if (e.Info.ID == id)
         {
-            // Update registry entry
-            e.Info.Path = path;
-            e.Info.TypeName = typeName;
-
-            // Back
+            if (e.Info.Path != path)
+            {
+                e.Info.Path = path;
+                _isDirty = true;
+            }
+            if (e.Info.TypeName != typeName)
+            {
+                e.Info.TypeName = typeName;
+                _isDirty = true;
+            }
             isMissing = false;
             break;
         }
 
-        // Compare paths
         if (e.Info.Path == path)
         {
-            // Update registry entry
-            e.Info.ID = id;
-            e.Info.TypeName = typeName;
-
-            // Back
+            if (e.Info.ID != id)
+            {
+                e.Info.Path = path;
+                _isDirty = true;
+            }
+            if (e.Info.TypeName != typeName)
+            {
+                e.Info.TypeName = typeName;
+                _isDirty = true;
+            }
             isMissing = false;
             break;
         }
@@ -445,9 +449,8 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
     if (isMissing)
     {
         LOG(Info, "Register asset {0}:{1} \'{2}\'", id, typeName, path);
-
-        // Add new asset entry
         _registry.Add(id, Entry(id, typeName, path));
+        _isDirty = true;
     }
 }
 
