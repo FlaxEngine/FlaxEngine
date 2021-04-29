@@ -288,6 +288,13 @@ namespace FlaxEditor.SceneGraph
         {
         }
 
+        /// <summary>
+        /// Action called after pasting actor in editor.
+        /// </summary>
+        public virtual void PostPaste()
+        {
+        }
+
         /// <inheritdoc />
         protected override void OnParentChanged()
         {
