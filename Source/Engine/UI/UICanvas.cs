@@ -428,7 +428,10 @@ namespace FlaxEngine
                 }
 #if FLAX_EDITOR
                 if (_editorRoot != null && IsActiveInHierarchy)
+                {
                     _guiRoot.Parent = _editorRoot;
+                    _guiRoot.IndexInParent = 0;
+                }
 #endif
                 if (_isRegisteredForTick)
                 {
@@ -637,6 +640,7 @@ namespace FlaxEngine
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
                 _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.IndexInParent = 0;
             }
 #endif
         }
@@ -644,7 +648,15 @@ namespace FlaxEngine
         internal void OnEnable()
         {
 #if FLAX_EDITOR
-            _guiRoot.Parent = _editorRoot ?? RootControl.CanvasRoot;
+            if (_editorRoot != null)
+            {
+                _guiRoot.Parent = _editorRoot;
+                _guiRoot.IndexInParent = 0;
+            }
+            else
+            {
+                _guiRoot.Parent = RootControl.CanvasRoot;
+            }
 #else
             _guiRoot.Parent = RootControl.CanvasRoot;
 #endif
@@ -677,7 +689,8 @@ namespace FlaxEngine
         {
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
-                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.IndexInParent = 0;
             }
         }
 #endif
@@ -717,7 +730,10 @@ namespace FlaxEngine
             Setup();
 
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null && IsActiveInHierarchy)
+            {
                 _guiRoot.Parent = _editorRoot;
+                _guiRoot.IndexInParent = 0;
+            }
         }
 #endif
     }
