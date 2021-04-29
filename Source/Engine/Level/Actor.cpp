@@ -1597,7 +1597,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         // Order in parent
         int32 orderInParent;
         stream.ReadInt32(&orderInParent);
-        order.At(i) = orderInParent;
+        order[i] = orderInParent;
 
         // Load JSON 
         rapidjson_flax::Document document;
@@ -1637,7 +1637,6 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         // Order in parent
         int32 orderInParent;
         stream.ReadInt32(&orderInParent);
-        order.Add(orderInParent);
 
         // Load JSON 
         rapidjson_flax::Document document;

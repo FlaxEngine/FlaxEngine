@@ -112,18 +112,9 @@ namespace FlaxEditor.SceneGraph
             {
                 if (parentNode != value)
                 {
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Remove(this);
-                    }
-
+                    parentNode?.ChildNodes.Remove(this);
                     parentNode = value;
-
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Add(this);
-                    }
-
+                    parentNode?.ChildNodes.Add(this);
                     OnParentChanged();
                 }
             }

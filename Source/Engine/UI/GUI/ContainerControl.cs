@@ -249,6 +249,8 @@ namespace FlaxEngine.GUI
         internal void ChangeChildIndex(Control child, int newIndex)
         {
             int oldIndex = _children.IndexOf(child);
+            if (oldIndex == newIndex)
+                return;
             _children.RemoveAt(oldIndex);
 
             // Check if index is invalid
