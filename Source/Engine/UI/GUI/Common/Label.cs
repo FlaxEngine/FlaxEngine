@@ -13,7 +13,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The text.
         /// </summary>
-        protected LocalizedString _text;
+        protected LocalizedString _text = new LocalizedString();
 
         private bool _autoWidth;
         private bool _autoHeight;
