@@ -106,7 +106,7 @@ public:
 public:
 
     /// <summary>
-    /// Gets the path to the asset storage.
+    /// Gets the path to the asset storage file. In Editor it reflects the actual file, in cooked Game, it fakes the Editor path to be informative for developers.
     /// </summary>
     API_PROPERTY() virtual const String& GetPath() const = 0;
 

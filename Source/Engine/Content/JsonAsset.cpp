@@ -7,7 +7,9 @@
 #else
 #include "Storage/ContentStorageManager.h"
 #endif
+#include "Content.h"
 #include "FlaxEngine.Gen.h"
+#include "Cache/AssetsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
@@ -39,7 +41,12 @@ String JsonAssetBase::GetData() const
 
 const String& JsonAssetBase::GetPath() const
 {
+#if USE_EDITOR
     return _path;
+#else
+    // In build all assets are packed into packages so use ID for original path lookup
+    return Content::GetRegistry()->GetAssetPath(_id);
+#endif
 }
 
 #if USE_EDITOR
@@ -94,7 +101,6 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 {
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
-
     BytesContainer data;
     if (File::ReadAllBytes(GetPath(), data))
     {
@@ -105,9 +111,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     {
         return LoadResult::MissingDataChunk;
     }
-
 #else
-
     // Get the asset storage container but don't load it now
     const auto storage = ContentStorageManager::GetStorage(GetPath(), true);
     if (!storage)
@@ -125,7 +129,6 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     if (storage->LoadAssetChunk(chunk))
         return LoadResult::CannotLoadData;
     auto& data = chunk->Data;
-
 #endif
 
     // Parse json document
