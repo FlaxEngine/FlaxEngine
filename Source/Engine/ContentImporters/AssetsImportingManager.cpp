@@ -332,7 +332,7 @@ bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAsset
         else
         {
             // Ensure that path exists
-            const String outputDirectory = StringUtils::GetDirectoryName(*outputPath);
+            const String outputDirectory = StringUtils::GetDirectoryName(outputPath);
             if (FileSystem::CreateDirectory(outputDirectory))
             {
                 LOG(Warning, "Cannot create directory '{0}'", outputDirectory);

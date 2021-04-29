@@ -77,16 +77,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
     return (dpiX + dpiY) / 2;
 }
 
-int32 CalculateDpi()
-{
-    if (const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll"))
-    {
-        return CalculateDpi(shCoreDll);
-    }
-
-    return 96;
-}
-
 LONG GetStringRegKey(HKEY hKey, const Char* strValueName, String& strValue, const String& strDefaultValue)
 {
     strValue = strDefaultValue;

@@ -2132,7 +2132,7 @@ BytesContainer VisualScript::LoadSurface()
         return result;
     }
 
-    LOG(Warning, "\'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "\'{0}\' surface data is missing.", ToString());
     return BytesContainer();
 }
 

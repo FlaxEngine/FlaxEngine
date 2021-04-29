@@ -301,7 +301,12 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks)
 
 #if USE_EDITOR
 
-bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode)
+bool BinaryAsset::SaveAsset(AssetInitData& data, bool silentMode) const
+{
+    return SaveAsset(GetPath(), data, silentMode);
+}
+
+bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode) const
 {
     data.Header = _header;
     data.Metadata.Link(Metadata);

@@ -270,10 +270,7 @@ public:
     /// <param name="data">Asset data.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool SaveAsset(AssetInitData& data, bool silentMode = false)
-    {
-        return SaveAsset(GetPath(), data, silentMode);
-    }
+    bool SaveAsset(AssetInitData& data, bool silentMode = false) const;
 
     /// <summary>
     /// Saves this asset to the file.
@@ -282,7 +279,7 @@ public:
     /// <param name="path">Asset path (will be used to override the asset or create a new one).</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool SaveAsset(const StringView& path, AssetInitData& data, bool silentMode = false);
+    bool SaveAsset(const StringView& path, AssetInitData& data, bool silentMode = false) const;
 
     /// <summary>
     /// Saves asset data to the storage container. Asset unique ID is handled by auto.

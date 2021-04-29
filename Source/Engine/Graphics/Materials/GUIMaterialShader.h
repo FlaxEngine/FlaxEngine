@@ -33,7 +33,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    GUIMaterialShader(const String& name)
+    GUIMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

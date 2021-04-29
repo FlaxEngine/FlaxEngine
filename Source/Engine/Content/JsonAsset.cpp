@@ -1,10 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
-#include "Storage/ContentStorageManager.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#else
+#include "Storage/ContentStorageManager.h"
 #endif
 #include "FlaxEngine.Gen.h"
 #include "Engine/Core/Log.h"

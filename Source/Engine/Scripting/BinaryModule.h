@@ -396,7 +396,7 @@ private:
 
 public:
 
-    static Array<GetBinaryModuleFunc>& GetStaticallyLinkedBinaryModules();
+    static Array<GetBinaryModuleFunc, InlinedAllocation<64>>& GetStaticallyLinkedBinaryModules();
     explicit StaticallyLinkedBinaryModuleInitializer(GetBinaryModuleFunc getter);
     ~StaticallyLinkedBinaryModuleInitializer();
 };

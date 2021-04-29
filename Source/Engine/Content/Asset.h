@@ -82,7 +82,6 @@ public:
     /// <summary>
     /// Gets asset's reference count. Asset will be automatically unloaded when this reaches zero.
     /// </summary>
-    /// <returns>The amount of references to that asset.</returns>
     API_PROPERTY() int32 GetReferencesCount() const
     {
         return (int32)Platform::AtomicRead(const_cast<int64 volatile*>(&_refCount));
@@ -109,19 +108,16 @@ public:
     /// <summary>
     /// Gets the path to the asset storage.
     /// </summary>
-    /// <returns>The asset file.</returns>
     API_PROPERTY() virtual const String& GetPath() const = 0;
 
     /// <summary>
     /// Gets the asset type name.
     /// </summary>
-    /// <returns>The typename.</returns>
     virtual const String& GetTypeName() const = 0;
 
     /// <summary>
     /// Returns true if asset is loaded, otherwise false.
     /// </summary>
-    /// <returns><c>true</c> if this asset is loaded; otherwise, <c>false</c>.</returns>
     API_PROPERTY() FORCE_INLINE bool IsLoaded() const
     {
         return _isLoaded != 0;
@@ -130,16 +126,11 @@ public:
     /// <summary>
     /// Returns true if last asset loading failed, otherwise false.
     /// </summary>
-    /// <returns><c>true</c> if last asset loading failed; otherwise, <c>false</c>.</returns>
-    API_PROPERTY() FORCE_INLINE bool LastLoadFailed() const
-    {
-        return _loadFailed != 0;
-    }
+    API_PROPERTY() bool LastLoadFailed() const;
 
     /// <summary>
     /// Determines whether this asset is virtual (generated or temporary, has no storage so it won't be saved).
     /// </summary>
-    /// <returns><c>true</c> if this asset is virtual; otherwise, <c>false</c>.</returns>
     API_PROPERTY() FORCE_INLINE bool IsVirtual() const
     {
         return _isVirtual != 0;
@@ -150,11 +141,7 @@ public:
     /// <summary>
     /// Determines whether this asset was marked to be deleted on unload.
     /// </summary>
-    /// <returns><c>true</c> if this asset file was marked to be deleted on asset unload; otherwise, <c>false</c>.</returns>
-    API_PROPERTY() FORCE_INLINE bool ShouldDeleteFileOnUnload() const
-    {
-        return _deleteFileOnUnload != 0;
-    }
+    API_PROPERTY() bool ShouldDeleteFileOnUnload() const;
 
 #endif
 

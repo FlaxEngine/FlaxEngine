@@ -26,10 +26,7 @@ namespace AllocatorExt
             return nullptr;
         }
         if (!ptr)
-        {
             return Allocator::Allocate(newSize);
-        }
-
         void* result = Allocator::Allocate(newSize);
         if (result)
         {
@@ -55,14 +52,9 @@ namespace AllocatorExt
             return nullptr;
         }
         if (!ptr)
-        {
             return Allocator::Allocate(newSize);
-        }
         if (newSize <= oldSize)
-        {
             return ptr;
-        }
-
         void* result = Allocator::Allocate(newSize);
         if (result)
         {

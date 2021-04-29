@@ -318,7 +318,7 @@ public:
     /// <summary>
     /// The registered threads.
     /// </summary>
-    static Array<Thread*> Threads;
+    static Array<Thread*, InlinedAllocation<64>> Threads;
 
     /// <summary>
     /// The profiling tools usage flag. Can be used to disable profiler. Engine turns it down before the exit and before platform startup.

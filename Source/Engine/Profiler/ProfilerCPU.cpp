@@ -7,7 +7,7 @@
 #include "Engine/Threading/ThreadRegistry.h"
 
 THREADLOCAL ProfilerCPU::Thread* ProfilerCPU::Thread::Current = nullptr;
-Array<ProfilerCPU::Thread*> ProfilerCPU::Threads(64);
+Array<ProfilerCPU::Thread*, InlinedAllocation<64>> ProfilerCPU::Threads;
 bool ProfilerCPU::Enabled = false;
 
 void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)

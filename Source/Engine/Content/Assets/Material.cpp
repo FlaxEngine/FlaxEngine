@@ -311,7 +311,12 @@ Asset::LoadResult Material::load()
     {
         // Load material (load shader from cache, load params, setup pipeline stuff)
         MemoryReadStream shaderCacheStream(shaderCache.Data.Get(), shaderCache.Data.Length());
-        _materialShader = MaterialShader::Create(GetPath(), shaderCacheStream, _shaderHeader.Material.Info);
+#if GPU_ENABLE_RESOURCE_NAMING
+        const StringView name(GetPath());
+#else
+        const StringView name;
+#endif
+        _materialShader = MaterialShader::Create(name, shaderCacheStream, _shaderHeader.Material.Info);
         if (_materialShader == nullptr)
         {
             LOG(Warning, "Cannot load material.");
@@ -483,7 +488,7 @@ BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
         }
     }
 
-    LOG(Warning, "Material \'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "Material \'{0}\' surface data is missing.", ToString());
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 

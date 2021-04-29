@@ -9,7 +9,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 
 ProfilingTools::MainStats ProfilingTools::Stats;
-Array<ProfilingTools::ThreadStats> ProfilingTools::EventsCPU(128);
+Array<ProfilingTools::ThreadStats, InlinedAllocation<64>> ProfilingTools::EventsCPU;
 Array<ProfilerGPU::Event> ProfilingTools::EventsGPU;
 
 class ProfilingToolsService : public EngineService
