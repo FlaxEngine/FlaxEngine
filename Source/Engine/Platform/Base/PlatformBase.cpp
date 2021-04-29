@@ -261,7 +261,7 @@ void PlatformBase::Fatal(const Char* msg, void* context)
         }
 
         // Create separate folder with crash info
-        const String crashDataFolder = StringUtils::GetDirectoryName(Log::Logger::LogFilePath) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
+        const String crashDataFolder = String(StringUtils::GetDirectoryName(Log::Logger::LogFilePath)) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
         FileSystem::CreateDirectory(crashDataFolder);
 
         // Capture the platform-dependant crash info (eg. memory dump)

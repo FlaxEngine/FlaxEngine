@@ -320,21 +320,21 @@ public:
     /// </summary>
     /// <param name="count">The characters count.</param>
     /// <returns>The substring.</returns>
-    String Left(int32 count) const;
+    StringView Left(int32 count) const;
 
     /// <summary>
     /// Gets the string of characters from the right (end of the string).
     /// </summary>
     /// <param name="count">The characters count.</param>
     /// <returns>The substring.</returns>
-    String Right(int32 count) const;
+    StringView Right(int32 count) const;
 
     /// <summary>
     /// Retrieves substring created from characters starting from startIndex to the String end.
     /// </summary>
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <returns>The substring created from String data.</returns>
-    String Substring(int32 startIndex) const;
+    StringView Substring(int32 startIndex) const;
 
     /// <summary>
     /// Retrieves substring created from characters starting from start index.
@@ -342,7 +342,7 @@ public:
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <param name="count">The amount of characters to retrieve.</param>
     /// <returns>The substring created from String data.</returns>
-    String Substring(int32 startIndex, int32 count) const;
+    StringView Substring(int32 startIndex, int32 count) const;
 
 public:
 

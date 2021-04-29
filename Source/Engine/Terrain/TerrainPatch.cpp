@@ -1684,7 +1684,7 @@ bool TerrainPatch::ModifySplatMap(int32 index, const Color32* samples, const Int
         else
         {
             // Prepare asset path for the non-virtual asset
-            const String cacheDir = StringUtils::GetDirectoryName(Heightmap->GetPath()) / _terrain->GetID().ToString(Guid::FormatType::N);
+            const String cacheDir = String(StringUtils::GetDirectoryName(Heightmap->GetPath())) / _terrain->GetID().ToString(Guid::FormatType::N);
             const String splatMapPath = cacheDir + String::Format(TEXT("_{0:2}_{1:2}_Splatmap{3}.{2}"), _x, _z, ASSET_FILES_EXTENSION, index);
 
             // Import data to the asset file

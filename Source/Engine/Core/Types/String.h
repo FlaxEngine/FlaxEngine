@@ -539,6 +539,7 @@ public:
     /// </summary>
     /// <param name="str">The reference to the string.</param>
     String(const String& str)
+        : String()
     {
         Set(str.Get(), str.Length());
     }
@@ -576,6 +577,7 @@ public:
     /// <param name="str">The ANSI string.</param>
     /// <param name="length">The ANSI string length.</param>
     explicit String(const char* str, int32 length)
+        : String()
     {
         Set(str, length);
     }
@@ -585,8 +587,9 @@ public:
     /// </summary>
     /// <param name="str">The UTF-16 string.</param>
     String(const Char* str)
-        : String(str, StringUtils::Length(str))
+        : String()
     {
+        Set(str, StringUtils::Length(str));
     }
 
     /// <summary>
@@ -595,6 +598,7 @@ public:
     /// <param name="str">The UTF-16 string.</param>
     /// <param name="length">The UTF-16 string length.</param>
     String(const Char* str, int32 length)
+        : String()
     {
         Set(str, length);
     }
@@ -603,7 +607,7 @@ public:
     /// Initializes a new instance of the <see cref="String"/> class.
     /// </summary>
     /// <param name="str">The other string.</param>
-    explicit String(const StringView& str);
+    String(const StringView& str);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="String"/> class.
@@ -1110,7 +1114,17 @@ public:
     /// <returns>The combined path.</returns>
     FORCE_INLINE String operator/(const String& str) const
     {
-        return operator/(*str);
+        return String(*this) /= str;
+    }
+
+    /// <summary>
+    /// Concatenates this path with given path ensuring the '/' character is used between them.
+    /// </summary>
+    /// <param name="str">The string to be concatenated onto the end of this.</param>
+    /// <returns>The combined path.</returns>
+    FORCE_INLINE String operator/(const StringView& str) const
+    {
+        return String(*this) /= str;
     }
 
 public:
