@@ -672,6 +672,16 @@ namespace FlaxEngine
             }
         }
 
+#if FLAX_EDITOR
+        internal void OnActiveInTreeChanged()
+        {
+            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
+            {
+                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
+            }
+        }
+#endif
+
         internal void EndPlay()
         {
             if (_isRegisteredForTick)
