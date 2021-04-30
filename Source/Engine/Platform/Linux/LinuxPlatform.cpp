@@ -2031,8 +2031,8 @@ bool LinuxPlatform::Init()
     char buffer[UNIX_APP_BUFF_SIZE];
 
     // Get user locale string
-    char* locale = setlocale(LC_ALL, NULL);
-    if (strcmp (locale, "C") == 0)
+    const char* locale = setlocale(LC_ALL, NULL);
+    if (strcmp(locale, "C") == 0)
         locale = "";
     UserLocale = String(locale);
 

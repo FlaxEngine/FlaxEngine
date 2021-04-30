@@ -15,6 +15,8 @@
 #include <cctype>
 #include <cerrno>
 #include <climits>
+#include <limits>
+#include <limits.h>
 #include <math.h>
 #include <cstdarg>
 #include <cstddef>  // for std::ptrdiff_t
@@ -303,13 +305,11 @@ class fp {
 
   // All sizes are in bits.
   static FMT_CONSTEXPR_DECL const int char_size =
-    8;
-    //std::numeric_limits<unsigned char>::digits;
+    std::numeric_limits<unsigned char>::digits;
   // Subtract 1 to account for an implicit most significant bit in the
   // normalized form.
   static FMT_CONSTEXPR_DECL const int double_significand_size =
-    52 - 1;
-    //std::numeric_limits<double>::digits - 1;
+    std::numeric_limits<double>::digits - 1;
   static FMT_CONSTEXPR_DECL const uint64_t implicit_bit =
     1ull << double_significand_size;
 
