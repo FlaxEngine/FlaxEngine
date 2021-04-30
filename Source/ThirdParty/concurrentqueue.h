@@ -61,10 +61,10 @@
 #endif
 #include <stdint.h>
 #include <stdlib.h>
-//#include <array>
 #include <type_traits>
 #include <utility>
 #include <limits>
+#include <limits.h>
 
 // Platform-specific definitions of a numeric thread ID type and an invalid value
 namespace moodycamel { namespace details {
