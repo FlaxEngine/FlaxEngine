@@ -154,43 +154,6 @@ int safe_strerror(
   };
   return dispatcher(error_code, buffer, buffer_size).run();
 }
-
-void format_error_code(internal::buffer &out, int error_code,
-                       string_view message) FMT_NOEXCEPT {
-  // Report error code making sure that the output fits into
-  // inline_buffer_size to avoid dynamic memory allocation and potential
-  // bad_alloc.
-  out.resize(0);
-  static const char SEP[] = ": ";
-  static const char ERROR_STR[] = "error ";
-  // Subtract 2 to account for terminating null characters in SEP and ERROR_STR.
-  std::size_t error_code_size = sizeof(SEP) + sizeof(ERROR_STR) - 2;
-  typedef internal::int_traits<int>::main_type main_type;
-  main_type abs_value = static_cast<main_type>(error_code);
-  if (internal::is_negative(error_code)) {
-    abs_value = 0 - abs_value;
-    ++error_code_size;
-  }
-  error_code_size += internal::to_unsigned(internal::count_digits(abs_value));
-  writer w(out);
-  if (message.size() <= inline_buffer_size - error_code_size) {
-    w.write(message);
-    w.write(SEP);
-  }
-  w.write(ERROR_STR);
-  w.write(error_code);
-  FMT_ASSERT(out.size() <= inline_buffer_size, "invalid buffer size");
-}
-
-void report_error(FormatFunc func, int error_code,
-                  string_view message) FMT_NOEXCEPT {
-  memory_buffer full_message;
-  func(full_message, error_code, message);
-  // Use Writer::data instead of Writer::c_str to avoid potential memory
-  // allocation.
-  std::fwrite(full_message.data(), full_message.size(), 1, stderr);
-  std::fputc('\n', stderr);
-}
 }  // namespace
 
 FMT_FUNC size_t internal::count_code_points(basic_string_view<char8_t> s) {

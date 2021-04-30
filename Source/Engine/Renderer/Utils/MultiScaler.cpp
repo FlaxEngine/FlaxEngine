@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MultiScaler.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Content/Content.h"
 
 MultiScaler::MultiScaler()

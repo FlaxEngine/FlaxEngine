@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Serialization/ISerializable.h"
 #include "ManagedCLR/MAssemblyOptions.h"
 
@@ -131,10 +132,7 @@ public:
     /// <param name="typeHandle">The type to find method inside it.</param>
     /// <param name="signature">The method signature.</param>
     /// <returns>The method or null if failed to get it.</returns>
-    virtual void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature)
-    {
-        return FindMethod(typeHandle, signature.Name, signature.Params.Count());
-    }
+    virtual void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature);
 
     /// <summary>
     /// Invokes a given scripting method.

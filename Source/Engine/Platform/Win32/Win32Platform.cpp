@@ -17,6 +17,7 @@
 #include <oleauto.h>
 #include <WinBase.h>
 #include <xmmintrin.h>
+#include <intrin.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace

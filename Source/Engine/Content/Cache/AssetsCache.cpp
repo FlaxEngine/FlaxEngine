@@ -3,6 +3,7 @@
 #include "AssetsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/DeleteMe.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Serialization/FileReadStream.h"
@@ -10,6 +11,7 @@
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/Content/Storage/JsonStorageProxy.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
 
 AssetsCache::AssetsCache()
@@ -400,6 +402,16 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
 
     // Mark registry as draft
     _isDirty = true;
+}
+
+void AssetsCache::RegisterAsset(const AssetHeader& header, const StringView& path)
+{
+    RegisterAsset(header.ID, header.TypeName, path);
+}
+
+void AssetsCache::RegisterAssets(const FlaxStorageReference& storage)
+{
+    RegisterAssets(storage.Get());
 }
 
 void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const StringView& path)

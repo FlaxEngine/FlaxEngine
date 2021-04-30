@@ -12,7 +12,7 @@
 
 const SpriteHandle SpriteHandle::Invalid = { nullptr, INVALID_INDEX };
 
-REGISTER_BINARY_ASSET(SpriteAtlas, "FlaxEngine.SpriteAtlas", ::New<TextureAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(SpriteAtlas, "FlaxEngine.SpriteAtlas", TextureAssetUpgrader, true);
 
 bool SpriteHandle::GetSprite(Sprite* result) const
 {

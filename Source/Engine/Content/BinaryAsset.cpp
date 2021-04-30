@@ -132,6 +132,13 @@ void BinaryAsset::GetImportMetadata(String& path, String& username) const
     }
 }
 
+String BinaryAsset::GetImportPath() const
+{
+    String path, username;
+    GetImportMetadata(path, username);
+    return path;
+}
+
 void BinaryAsset::ClearDependencies()
 {
     for (auto& e : Dependencies)
@@ -492,7 +499,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _dataLock.Release();

@@ -6,6 +6,7 @@
 #include "MAssemblyOptions.h"
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CriticalSection.h"
 

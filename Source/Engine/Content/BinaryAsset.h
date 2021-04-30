@@ -109,13 +109,7 @@ public:
     /// <summary>
     /// Gets the imported file path from the asset metadata (can be empty if not available).
     /// </summary>
-    /// <returns>The imported source file path.</returns>
-    API_PROPERTY() String GetImportPath() const
-    {
-        String path, username;
-        GetImportMetadata(path, username);
-        return path;
-    }
+    API_PROPERTY() String GetImportPath() const;
 
     /// <summary>
     /// Clears the asset dependencies list and unregisters from tracking their changes.
@@ -131,7 +125,6 @@ public:
     /// <summary>
     /// Determines whether any of the dependency assets was modified after last modification time of this asset (last file write time check).
     /// </summary>
-    /// <returns><c>true</c> if one or more dependencies were modified; otherwise, <c>false</c>.</returns>
     bool HasDependenciesModified() const;
 
 protected:

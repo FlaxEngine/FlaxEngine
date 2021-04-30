@@ -9,9 +9,6 @@ struct AssetInfo;
 class Asset;
 class IAssetUpgrader;
 
-// Enables upgrading asset files from the older version format
-#define COMPILE_WITH_ASSET_UPGRADERS (USE_EDITOR)
-
 /// <summary>
 /// The asset objects factory.
 /// </summary>

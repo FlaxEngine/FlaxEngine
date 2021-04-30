@@ -9,7 +9,7 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
-REGISTER_BINARY_ASSET(AnimationGraph, "FlaxEngine.AnimationGraph", nullptr, false);
+REGISTER_BINARY_ASSET(AnimationGraph, "FlaxEngine.AnimationGraph", false);
 
 AnimationGraph::AnimationGraph(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -423,3 +425,5 @@ private:
         return false;
     }
 };
+
+#endif

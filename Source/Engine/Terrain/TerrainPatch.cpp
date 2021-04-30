@@ -3,7 +3,6 @@
 #include "TerrainPatch.h"
 #include "Terrain.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Graphics/RenderView.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Utilities.h"
@@ -15,6 +14,8 @@
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"

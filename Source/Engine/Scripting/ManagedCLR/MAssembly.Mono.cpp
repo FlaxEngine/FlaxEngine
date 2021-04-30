@@ -8,6 +8,7 @@
 #include "MDomain.h"
 #include "MUtils.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
@@ -16,6 +17,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
 #include <ThirdParty/mono-2.0/mono/metadata/tokentype.h>

@@ -2,11 +2,13 @@
 
 #include "Shader.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
-REGISTER_BINARY_ASSET(Shader, "FlaxEngine.Shader", ::New<ShaderAssetUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Shader, "FlaxEngine.Shader", ShaderAssetUpgrader, false);
 
 Shader::Shader(const SpawnParams& params, const AssetInfo* info)
     : ShaderAssetTypeBase<BinaryAsset>(params, info)
@@ -25,7 +27,7 @@ Shader::~Shader()
 Asset::LoadResult Shader::load()
 {
     // Special case for Null renderer that doesn't need shaders
-    if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
+    if (IsNullRenderer())
     {
         return LoadResult::Ok;
     }

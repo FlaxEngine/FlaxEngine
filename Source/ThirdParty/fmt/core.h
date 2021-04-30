@@ -11,6 +11,7 @@
 // Custom configuration for Flax
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/StringUtils.h"
+#include "Engine/Core/Memory/StlWrapper.h"
 #define FMT_USE_CONSTEXPR11 0
 #define FMT_USE_USER_DEFINED_LITERALS 0
 #define FMT_USE_WINDOWS_H 0
@@ -38,10 +39,9 @@ namespace fmt {
   using back_inserter = std::back_inserter<_Container>;
 };
 #else
-#include <memory>
 namespace fmt {
 // std::back_insert_iterator impl to not include <iterator>
-template<class _Category, class _Ty, class _Diff = std::ptrdiff_t, class _Pointer = _Ty *, class _Reference = _Ty&>
+template<class _Category, class _Ty, class _Diff = intptr, class _Pointer = _Ty *, class _Reference = _Ty&>
 struct iterator
 {
     typedef _Category iterator_category;

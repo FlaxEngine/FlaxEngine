@@ -6,6 +6,7 @@
 
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Cache.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Serialization/Json.h"

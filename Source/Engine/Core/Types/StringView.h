@@ -66,7 +66,6 @@ public:
     /// <summary>
     /// Returns true if string is empty.
     /// </summary>
-    /// <returns>True if string is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _length == 0;
@@ -75,7 +74,6 @@ public:
     /// <summary>
     /// Returns true if string isn't empty.
     /// </summary>
-    /// <returns>True if string isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasChars() const
     {
         return _length != 0;
@@ -84,7 +82,6 @@ public:
     /// <summary>
     /// Gets the length of the string.
     /// </summary>
-    /// <returns>The string length.</returns>
     FORCE_INLINE int32 Length() const
     {
         return _length;
@@ -93,7 +90,6 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    /// <returns>The string.</returns>
     FORCE_INLINE const T* operator*() const
     {
         return _data;
@@ -102,7 +98,6 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    /// <returns>The string.</returns>
     FORCE_INLINE const T* Get() const
     {
         return _data;
@@ -111,7 +106,6 @@ public:
     /// <summary>
     /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always valid (read-only).
     /// </summary>
-    /// <returns>The string handle.</returns>
     FORCE_INLINE const T* GetText() const
     {
         return _data ? _data : (const T*)TEXT("");

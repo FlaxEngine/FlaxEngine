@@ -4,6 +4,7 @@
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"

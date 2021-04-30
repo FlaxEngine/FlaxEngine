@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -12,6 +14,7 @@
 class MaterialInstance;
 class MaterialParams;
 class GPUContext;
+class GPUTextureView;
 class RenderBuffers;
 
 struct MaterialParamsLink
@@ -143,10 +146,9 @@ struct SerializedMaterialParam
         float AsFloat;
         Vector2 AsVector2;
         Vector3 AsVector3;
-        Vector4 AsVector4;
         Color AsColor;
         Guid AsGuid;
-        Matrix AsMatrix;
+        byte AsData[16 * 4];
     };
 
     byte RegisterIndex;
@@ -181,9 +183,8 @@ private:
         float _asFloat;
         Vector2 _asVector2;
         Vector3 _asVector3;
-        Vector4 _asVector4;
         Color _asColor;
-        Matrix _asMatrix;
+        byte AsData[16 * 4];
     };
 
     AssetReference<Asset> _asAsset;

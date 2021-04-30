@@ -5,10 +5,15 @@
 #include "FlaxPackage.h"
 #include "ContentStorageManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#if USE_EDITOR
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonWriters.h"
+#else
+#include "Engine/Engine/Globals.h"
+#endif
 #include <ThirdParty/LZ4/lz4.h>
 
 String AssetHeader::ToString() const

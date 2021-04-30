@@ -4,9 +4,10 @@
 #include "GBufferPass.h"
 #include "VolumetricFogPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Content/Content.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Content/Content.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif

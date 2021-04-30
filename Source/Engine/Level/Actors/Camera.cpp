@@ -5,14 +5,16 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Platform/Window.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Level/Scene/SceneRendering.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #else
 #include "Engine/Engine/Engine.h"
+#include "Engine/Platform/Window.h"
 #endif
 
 Array<Camera*> Camera::Cameras;

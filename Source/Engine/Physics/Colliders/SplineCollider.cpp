@@ -3,6 +3,7 @@
 #include "SplineCollider.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Level/Actors/Spline.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"

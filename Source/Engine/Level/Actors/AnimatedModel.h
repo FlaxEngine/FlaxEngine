@@ -6,6 +6,7 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/AnimationGraph.h"
 #include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
+#include "Engine/Renderer/DrawCall.h"
 
 /// <summary>
 /// Performs an animation and renders a skinned model.

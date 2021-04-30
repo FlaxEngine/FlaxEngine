@@ -15,6 +15,7 @@
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"

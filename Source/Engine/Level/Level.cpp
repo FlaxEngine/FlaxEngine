@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Config/LayersTagsSettings.h"
+#include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"

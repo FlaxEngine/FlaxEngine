@@ -8,7 +8,7 @@
 #endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
-REGISTER_BINARY_ASSET(ParticleEmitterFunction, "FlaxEngine.ParticleEmitterFunction", nullptr, false);
+REGISTER_BINARY_ASSET(ParticleEmitterFunction, "FlaxEngine.ParticleEmitterFunction", false);
 
 ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

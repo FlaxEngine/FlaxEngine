@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>

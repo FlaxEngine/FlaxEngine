@@ -12,7 +12,7 @@
 #include <ThirdParty/PhysX/geometry/PxConvexMesh.h>
 #include <ThirdParty/PhysX/PxPhysics.h>
 
-REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", nullptr, true);
+REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", true);
 
 CollisionData::CollisionData(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

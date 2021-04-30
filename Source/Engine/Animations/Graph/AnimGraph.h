@@ -3,9 +3,9 @@
 #pragma once
 
 #include "Engine/Visject/VisjectGraph.h"
-#include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "../Config.h"
 
 #define ANIM_GRAPH_PARAM_BASE_MODEL_ID Guid(1000, 0, 0, 0)
@@ -21,6 +21,8 @@ class AnimSubGraph;
 class AnimGraphBase;
 class AnimGraphNode;
 class AnimGraphExecutor;
+class SkinnedModel;
+class SkeletonData;
 
 /// <summary>
 /// The root motion data container. Supports displacement and rotation (no scale component).
@@ -777,22 +779,14 @@ public:
     /// <summary>
     /// Determines whether this graph is ready for the animation evaluation.
     /// </summary>
-    /// <returns>True if is ready and can be used for the animation evaluation, otherwise false.</returns>
-    bool IsReady() const
-    {
-        return BaseModel && BaseModel->IsLoaded();
-    }
+    bool IsReady() const;
 
     /// <summary>
     /// Determines whether this graph can be used with the specified skeleton.
     /// </summary>
     /// <param name="other">The other skinned model to check.</param>
     /// <returns>True if can perform the update, otherwise false.</returns>
-    bool CanUseWithSkeleton(SkinnedModel* other) const
-    {
-        // All data loaded and bones count the same
-        return IsReady() && other && other->IsLoaded() && other->Skeleton.Bones.Count() == BaseModel->Skeleton.Bones.Count();
-    }
+    bool CanUseWithSkeleton(SkinnedModel* other) const;
 
 private:
 

@@ -5,6 +5,8 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -129,6 +131,11 @@ namespace
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
+}
+
+bool Mesh::HasVertexColors() const
+{
+    return _vertexBuffers[2] != nullptr && _vertexBuffers[2]->IsAllocated();
 }
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices)

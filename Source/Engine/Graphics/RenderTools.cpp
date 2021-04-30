@@ -6,6 +6,7 @@
 #include "PixelFormat.h"
 #include "RenderView.h"
 #include "GPUDevice.h"
+#include "RenderTask.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Engine/Time.h"

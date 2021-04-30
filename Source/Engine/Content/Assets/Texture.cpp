@@ -10,7 +10,7 @@
 #include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 
-REGISTER_BINARY_ASSET(Texture, "FlaxEngine.Texture", ::New<TextureAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Texture, "FlaxEngine.Texture", TextureAssetUpgrader, true);
 
 Texture::Texture(const SpawnParams& params, const AssetInfo* info)
     : TextureBase(params, info)

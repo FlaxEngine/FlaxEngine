@@ -10,6 +10,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/Thread.h"

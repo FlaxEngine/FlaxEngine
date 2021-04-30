@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Renderer/Renderer.h"
 #include "Engine/Level/Scene/Lightmap.h"
@@ -8,9 +9,10 @@
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/RenderTargetPool.h"
-#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/TerrainManager.h"

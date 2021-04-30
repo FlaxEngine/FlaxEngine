@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Engine/Core/Templates.h"
+#include "Engine/Platform/Platform.h"
+#include <new>
 
 #include "CrtAllocator.h"
 typedef CrtAllocator Allocator;

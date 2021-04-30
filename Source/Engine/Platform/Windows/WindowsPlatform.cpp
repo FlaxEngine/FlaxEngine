@@ -11,6 +11,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "../Win32/IncludeWindowsHeaders.h"

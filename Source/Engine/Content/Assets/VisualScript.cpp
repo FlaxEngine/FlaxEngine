@@ -1276,7 +1276,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
     }
 }
 
-REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", nullptr, false);
+REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", false);
 
 VisualScript::VisualScript(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

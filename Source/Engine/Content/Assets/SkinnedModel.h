@@ -103,10 +103,7 @@ public:
     /// Determines whether any LOD has been initialized.
     /// </summary>
     /// <returns>True if any LOD has been initialized, otherwise false.</returns>
-    FORCE_INLINE bool HasAnyLODInitialized() const
-    {
-        return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
-    }
+    bool HasAnyLODInitialized() const;
 
     /// <summary>
     /// Determines whether this model can be rendered.

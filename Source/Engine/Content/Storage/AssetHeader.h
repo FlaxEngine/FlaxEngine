@@ -5,7 +5,9 @@
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Types/DataContainer.h"
+#if USE_EDITOR
+#include "Engine/Core/Collections/Array.h"
+#endif
 #include "FlaxChunk.h"
 
 /// <summary>
@@ -54,7 +56,8 @@ public:
     /// Gets the chunks.
     /// </summary>
     /// <param name="output">The output data.</param>
-    void GetChunks(Array<FlaxChunk*>& output) const
+    template<typename AllocationType = HeapAllocation>
+    void GetChunks(Array<FlaxChunk*, AllocationType>& output) const
     {
         for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
         {
@@ -67,7 +70,8 @@ public:
     /// Gets the chunks that are loaded.
     /// </summary>
     /// <param name="output">The output data.</param>
-    void GetLoadedChunks(Array<FlaxChunk*>& output) const
+    template<typename AllocationType = HeapAllocation>
+    void GetLoadedChunks(Array<FlaxChunk*, AllocationType>& output) const
     {
         for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
         {
@@ -130,7 +134,7 @@ struct FLAXENGINE_API AssetInitData
     /// <summary>
     /// The serialized asset version
     /// </summary>
-    uint32 SerializedVersion;
+    uint32 SerializedVersion = 0;
 
     /// <summary>
     /// The custom asset data (should be small, for eg. texture description structure).
@@ -138,7 +142,6 @@ struct FLAXENGINE_API AssetInitData
     BytesContainer CustomData;
 
 #if USE_EDITOR
-
     /// <summary>
     /// The asset metadata information. Stored in a Json format.
     /// </summary>
@@ -148,24 +151,16 @@ struct FLAXENGINE_API AssetInitData
     /// Asset dependencies list used by the asset for tracking (eg. material functions used by material asset). The pair of asset ID and cached file edit time (for tracking modification).
     /// </summary>
     Array<Pair<Guid, DateTime>> Dependencies;
-
 #endif
 
 public:
 
-    AssetInitData()
-        : SerializedVersion(0)
-    {
-    }
-
     /// <summary>
     /// Gets the hash code.
     /// </summary>
-    /// <returns>Hash Code</returns>
     uint32 GetHashCode() const
     {
         // Note: do not use Metadata/Dependencies because it may not be loaded (it's optional)
-
         uint32 hashCode = GetHash(Header.ID);
         hashCode = (hashCode * 397) ^ SerializedVersion;
         hashCode = (hashCode * 397) ^ CustomData.Length();

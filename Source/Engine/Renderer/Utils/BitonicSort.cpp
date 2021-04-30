@@ -2,6 +2,7 @@
 
 #include "BitonicSort.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPULimits.h"
 
 #define INDIRECT_ARGS_STRIDE 12

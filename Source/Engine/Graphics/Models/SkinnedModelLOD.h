@@ -33,12 +33,7 @@ public:
     /// <summary>
     /// Determines whether any mesh has been initialized.
     /// </summary>
-    /// <returns>True if any mesh has been initialized, otherwise false.</returns>
-    FORCE_INLINE bool HasAnyMeshInitialized() const
-    {
-        // Note: we initialize all meshes at once so the last one can be used to check it.
-        return Meshes.HasItems() && Meshes.Last().IsInitialized();
-    }
+    bool HasAnyMeshInitialized() const;
 
 public:
 

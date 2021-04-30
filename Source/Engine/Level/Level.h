@@ -5,6 +5,7 @@
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Serialization/JsonFwd.h"

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Level/Actor.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 #include "SceneAnimation.h"

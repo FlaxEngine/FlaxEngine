@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
@@ -27,3 +29,5 @@ public:
     /// <returns>True if perform conversion, otherwise false.</returns>
     virtual bool ShouldUpgrade(uint32 serializedVersion) const = 0;
 };
+
+#endif

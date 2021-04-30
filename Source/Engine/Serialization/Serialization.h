@@ -165,7 +165,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const float& v, const void* otherObj)
     {
-        return !otherObj || Math::Abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
+        return !otherObj || abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const float& v, const void* otherObj)
     {

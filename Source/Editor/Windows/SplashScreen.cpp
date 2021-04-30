@@ -2,7 +2,9 @@
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/TextLayoutOptions.h"

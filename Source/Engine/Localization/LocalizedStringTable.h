@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Content/JsonAsset.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 
 /// <summary>

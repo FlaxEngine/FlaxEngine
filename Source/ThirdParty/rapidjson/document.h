@@ -23,7 +23,6 @@
 #include "memorystream.h"
 #include "encodedstream.h"
 #include <new>      // placement new
-#include <limits>
 
 RAPIDJSON_DIAG_PUSH
 #ifdef _MSC_VER
@@ -948,42 +947,12 @@ public:
     bool IsDouble() const { return (data_.f.flags & kDoubleFlag) != 0; }
     bool IsString() const { return (data_.f.flags & kStringFlag) != 0; }
 
-    // Checks whether a number can be losslessly converted to a double.
-    bool IsLosslessDouble() const {
-        if (!IsNumber()) return false;
-        if (IsUint64()) {
-            uint64_t u = GetUint64();
-            volatile double d = static_cast<double>(u);
-            return (d >= 0.0)
-                && (d < static_cast<double>(std::numeric_limits<uint64_t>::max()))
-                && (u == static_cast<uint64_t>(d));
-        }
-        if (IsInt64()) {
-            int64_t i = GetInt64();
-            volatile double d = static_cast<double>(i);
-            return (d >= static_cast<double>(std::numeric_limits<int64_t>::min()))
-                && (d < static_cast<double>(std::numeric_limits<int64_t>::max()))
-                && (i == static_cast<int64_t>(d));
-        }
-        return true; // double, int, uint are always lossless
-    }
-
     // Checks whether a number is a float (possible lossy).
     bool IsFloat() const  {
         if ((data_.f.flags & kDoubleFlag) == 0)
             return false;
         double d = GetDouble();
         return d >= -3.4028234e38 && d <= 3.4028234e38;
-    }
-    // Checks whether a number can be losslessly converted to a float.
-    bool IsLosslessFloat() const {
-        if (!IsNumber()) return false;
-        double a = GetDouble();
-        if (a < static_cast<double>(-std::numeric_limits<float>::max())
-                || a > static_cast<double>(std::numeric_limits<float>::max()))
-            return false;
-        double b = static_cast<double>(static_cast<float>(a));
-        return a >= b && a <= b;    // Prevent -Wfloat-equal
     }
 
     //@}

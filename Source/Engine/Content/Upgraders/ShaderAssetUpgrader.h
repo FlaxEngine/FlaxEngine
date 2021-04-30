@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
@@ -86,3 +88,5 @@ private:
         return CopyChunks(context);
     }
 };
+
+#endif

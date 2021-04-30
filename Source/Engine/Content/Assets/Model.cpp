@@ -8,9 +8,11 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Renderer/DrawCall.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask
@@ -113,7 +115,7 @@ protected:
     }
 };
 
-REGISTER_BINARY_ASSET(Model, "FlaxEngine.Model", ::New<ModelAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())

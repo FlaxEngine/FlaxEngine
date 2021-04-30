@@ -6,6 +6,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTask.h"
 
 bool SMAA::setupResources()
 {

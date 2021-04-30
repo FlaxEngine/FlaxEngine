@@ -8,7 +8,7 @@
 #endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
-REGISTER_BINARY_ASSET(MaterialFunction, "FlaxEngine.MaterialFunction", nullptr, false);
+REGISTER_BINARY_ASSET(MaterialFunction, "FlaxEngine.MaterialFunction", false);
 
 MaterialFunction::MaterialFunction(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

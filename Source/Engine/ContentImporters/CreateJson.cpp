@@ -5,6 +5,7 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"

@@ -1,12 +1,16 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ForwardPass.h"
+#include "RenderList.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 ForwardPass::ForwardPass()
     : _shader(nullptr)

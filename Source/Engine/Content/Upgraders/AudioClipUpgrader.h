@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
@@ -130,3 +132,5 @@ private:
         return false;
     }
 };
+
+#endif

@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
-#include "Engine/Engine/Time.h"
+#include "Engine/Content/Assets/SkinnedModel.h"
+#include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Engine/Time.h"
 
 RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
 

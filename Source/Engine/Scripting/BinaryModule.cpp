@@ -417,6 +417,11 @@ BinaryModule::BinaryModule()
     GetModules().Add(this);
 }
 
+void* BinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature)
+{
+    return FindMethod(typeHandle, signature.Name, signature.Params.Count());
+}
+
 void BinaryModule::Destroy(bool isReloading)
 {
     // Unregister

@@ -1,10 +1,12 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ColorGradingPass.h"
+#include "RenderList.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct Data {
     Vector4 ColorSaturationShadows;

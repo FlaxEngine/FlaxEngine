@@ -63,9 +63,8 @@
 #include <stdlib.h>
 //#include <array>
 #include <type_traits>
-#include <algorithm>
 #include <utility>
-#include <limits.h>		// for CHAR_BIT
+#include <limits>
 
 // Platform-specific definitions of a numeric thread ID type and an invalid value
 namespace moodycamel { namespace details {
@@ -154,7 +153,7 @@ namespace moodycamel { namespace details {
 #define MOODYCAMEL_EXCEPTIONS_ENABLED
 #endif
 #endif
-#ifdef MOODYCAMEL_EXCEPTIONS_ENABLED
+#if MOODYCAMEL_EXCEPTIONS_ENABLED
 #define MOODYCAMEL_TRY try
 #define MOODYCAMEL_CATCH(...) catch(__VA_ARGS__)
 #define MOODYCAMEL_RETHROW throw

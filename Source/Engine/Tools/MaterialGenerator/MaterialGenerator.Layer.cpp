@@ -3,6 +3,8 @@
 #if COMPILE_WITH_MATERIAL_GRAPH
 
 #include "MaterialGenerator.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -250,7 +252,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
             break;
         case VariantType::Vector4:
             mp.Type = MaterialParameterType::Vector4;
-            mp.AsVector4 = param->Value.AsVector4();
+            *(Vector4*)&mp.AsData = param->Value.AsVector4();
             break;
         case VariantType::Color:
             mp.Type = MaterialParameterType::Color;
@@ -258,7 +260,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
             break;
         case VariantType::Matrix:
             mp.Type = MaterialParameterType::Matrix;
-            mp.AsMatrix = *(Matrix*)param->Value.AsBlob.Data;
+            *(Matrix*)&mp.AsData = *(Matrix*)param->Value.AsBlob.Data;
             break;
         case VariantType::Asset:
             if (!param->Type.TypeName)

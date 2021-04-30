@@ -1,11 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Renderer/Renderer.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Engine/Globals.h"
 
 #define STEPS_SLEEP_TIME 20
 #define RUN_STEP(handler) handler(); if (checkBuildCancelled()) return true; Platform::Sleep(STEPS_SLEEP_TIME)

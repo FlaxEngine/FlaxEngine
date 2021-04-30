@@ -92,7 +92,7 @@ public:
     template<typename... Args>
     void WriteLine(const CharType* format, const Args& ... args)
     {
-        fmt::basic_memory_buffer<CharType> w;
+        fmt::basic_memory_buffer<CharType, fmt::inline_buffer_size, std_flax::allocator<CharType>> w;
         format_to(w, format, args...);
         const int32 len = (int32)w.size();
         _buffer.WriteBytes((void*)w.data(), len * sizeof(CharType));
@@ -132,7 +132,7 @@ public:
     template<typename... Args>
     void Write(const CharType* format, const Args& ... args)
     {
-        fmt::basic_memory_buffer<CharType> w;
+        fmt::basic_memory_buffer<CharType, fmt::inline_buffer_size, std_flax::allocator<CharType>> w;
         format_to(w, format, args...);
         const int32 len = (int32)w.size();
         _buffer.WriteBytes((void*)w.data(), len * sizeof(CharType));

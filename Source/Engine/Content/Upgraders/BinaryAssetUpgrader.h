@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "IAssetUpgrader.h"
 #include "Engine/Content/Storage/AssetHeader.h"
 #include "Engine/Core/Log.h"
@@ -205,3 +207,5 @@ public:
         return false;
     }
 };
+
+#endif

@@ -5,6 +5,7 @@
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Graphics/Models/SkeletonUpdater.h"
 #include "Engine/Graphics/Models/SkeletonMapping.h"

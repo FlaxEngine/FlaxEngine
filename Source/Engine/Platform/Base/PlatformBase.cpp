@@ -7,6 +7,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -18,6 +19,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include <iostream>

@@ -3,10 +3,9 @@
 #pragma once
 
 #include "Span.h"
-#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Templates.h"
+#include "Engine/Core/Memory/Memory.h"
 #include "Engine/Platform/Platform.h"
-#include "Engine/Serialization/WriteStream.h"
-#include "Engine/Serialization/ReadStream.h"
 
 /// <summary>
 /// Universal utility class that can store the chunk of data or just reference to the memory.
@@ -49,7 +48,8 @@ public:
     /// Initializes a new instance of the <see cref="DataContainer"/> class.
     /// </summary>
     /// <param name="data">The data array to link.</param>
-    DataContainer(const Array<T>& data)
+    template<typename AllocationType>
+    DataContainer(const Array<T, AllocationType>& data)
         : Base((T*)data.Get(), data.Count())
         , _isAllocated(false)
     {
@@ -147,7 +147,8 @@ public:
     /// Link external data
     /// </summary>
     /// <param name="data">Data array to link</param>
-    void Link(const Array<T>& data)
+    template<typename AllocationType>
+    void Link(const Array<T, AllocationType>& data)
     {
         Link(data.Get(), data.Count());
     }
@@ -217,7 +218,8 @@ public:
     /// Copies the data to a new allocated chunk
     /// </summary>
     /// <param name="data">Data array to copy</param>
-    FORCE_INLINE void Copy(const Array<T>& data)
+    template<typename AllocationType>
+    FORCE_INLINE void Copy(const Array<T, AllocationType>& data)
     {
         if (data.HasItems())
             Copy(data.Get(), data.Count());
@@ -347,10 +349,9 @@ public:
 
 public:
 
+    template<typename ReadStream>
     void Read(ReadStream* stream, int32 length)
     {
-        // Note: this may not work for the objects, use with primitive types and structures
-
         ASSERT(stream != nullptr);
         Allocate(length);
         if (length > 0)
@@ -359,10 +360,9 @@ public:
         }
     }
 
+    template<typename WriteStream>
     void Write(WriteStream* stream) const
     {
-        // Note: this may not work for the objects, use with primitive types and structures
-
         ASSERT(stream != nullptr);
         if (Base::_length > 0)
         {

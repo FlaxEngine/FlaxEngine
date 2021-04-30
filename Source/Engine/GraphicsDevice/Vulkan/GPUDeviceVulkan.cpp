@@ -27,6 +27,7 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -352,7 +353,7 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
 
 void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 {
-    ScopeLock lock(&_locker);
+    ScopeLock lock(_locker);
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
     for (int32 i = 0; i < _entries.Count(); i++)
     {

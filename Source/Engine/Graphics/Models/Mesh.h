@@ -3,15 +3,16 @@
 #pragma once
 
 #include "MeshBase.h"
-#include "Engine/Renderer/RenderList.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "ModelInstanceEntry.h"
 #include "Config.h"
 #include "Types.h"
+#include "Engine/Level/Types.h"
 #if USE_PRECISE_MESH_INTERSECTS
 #include "CollisionProxy.h"
 #endif
 
+struct GeometryDrawStateData;
+class Lightmap;
 class GPUBuffer;
 
 /// <summary>
@@ -21,7 +22,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
-
     int32 _index;
     int32 _lodIndex;
     bool _hasLightmapUVs;
@@ -32,7 +32,6 @@ protected:
 #endif
 
 public:
-
     Mesh(const Mesh& other)
         : Mesh()
     {
@@ -47,7 +46,6 @@ public:
     ~Mesh();
 
 public:
-
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>
@@ -104,10 +102,7 @@ public:
     /// Determines whether this mesh has a vertex colors buffer.
     /// </summary>
     /// <returns>True if this mesh has a vertex colors buffers.</returns>
-    API_PROPERTY() FORCE_INLINE bool HasVertexColors() const
-    {
-        return _vertexBuffers[2] != nullptr && _vertexBuffers[2]->IsAllocated();
-    }
+    API_PROPERTY() bool HasVertexColors() const;
 
     /// <summary>
     /// Determines whether this mesh contains valid lightmap texture coordinates data.
@@ -132,7 +127,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -211,7 +205,6 @@ public:
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
 
 public:
-
     /// <summary>
     /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -244,7 +237,6 @@ public:
     bool UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices);
 
 public:
-
     /// <summary>
     /// Initializes instance of the <see cref="Mesh"/> class.
     /// </summary>
@@ -276,7 +268,6 @@ public:
     void Unload();
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the mesh and a ray in given world
     /// </summary>
@@ -297,7 +288,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
     /// </summary>
@@ -397,14 +387,12 @@ public:
     void Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const;
 
 public:
-
     // [MeshBase]
     bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
     Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result) const override;
 
 private:
-
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
     API_FUNCTION(NoProxy) bool UpdateMeshInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);

@@ -4,6 +4,7 @@
 #include "../BinaryAsset.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #if USE_EDITOR
@@ -30,7 +31,7 @@ bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)
         return true;
     }
 
-#if COMPILE_WITH_ASSET_UPGRADERS
+#if USE_EDITOR
     // Check if need to perform data conversion to the newer version (only in Editor)
     const auto upgrader = GetUpgrader();
     if (storage->AllowDataModifications() && upgrader && upgrader->ShouldUpgrade(initData.SerializedVersion))
@@ -113,7 +114,7 @@ bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)
     return false;
 }
 
-#if COMPILE_WITH_ASSET_UPGRADERS
+#if USE_EDITOR
 
 bool BinaryAssetFactoryBase::UpgradeAsset(const AssetInfo& info, FlaxStorage* storage, AssetMigrationContext& context)
 {

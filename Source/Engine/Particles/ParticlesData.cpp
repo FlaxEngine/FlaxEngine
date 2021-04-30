@@ -3,6 +3,8 @@
 #include "ParticlesData.h"
 #include "ParticleEmitter.h"
 #include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/DynamicBuffer.h"
 
 ParticleBuffer::ParticleBuffer()
 {

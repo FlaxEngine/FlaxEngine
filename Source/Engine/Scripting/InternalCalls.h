@@ -5,11 +5,11 @@
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Core/Log.h"
 #include "ScriptingType.h"
-#include <ThirdParty/mono-2.0/mono/metadata/loader.h>
 
+extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
 #define ADD_INTERNAL_CALL(fullName, method) mono_add_internal_call(fullName, (const void*)method)
 
-#if BUILD_RELEASE
+#if BUILD_RELEASE && 0
 
 // Using invalid handle will crash engine in Release build
 #define INTERNAL_CALL_CHECK(obj)

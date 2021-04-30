@@ -6,6 +6,7 @@
 #include "ScriptingType.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/ThreadLocal.h"
 #include "Engine/Threading/IRunnable.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
@@ -21,10 +22,12 @@
 #include "MException.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Core/ObjectsRemovalService.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Serialization/JsonTools.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
@@ -109,7 +112,7 @@ Action Scripting::ScriptsLoaded;
 Action Scripting::ScriptsUnload;
 Action Scripting::ScriptsReloading;
 Action Scripting::ScriptsReloaded;
-ThreadLocal<Scripting::IdsMappingTable*, 32> Scripting::ObjectsLookupIdMapping;
+ThreadLocal<Scripting::IdsMappingTable*, 32, true> Scripting::ObjectsLookupIdMapping;
 ScriptingService ScriptingServiceInstance;
 
 bool initFlaxEngine();
@@ -222,12 +225,6 @@ void ScriptingService::BeforeExit()
 MDomain* Scripting::GetRootDomain()
 {
     return _monoRootDomain;
-}
-
-MonoDomain* Scripting::GetMonoScriptsDomain()
-{
-    ASSERT(_monoScriptsDomain != nullptr);
-    return _monoScriptsDomain->GetNative();
 }
 
 MDomain* Scripting::GetScriptsDomain()

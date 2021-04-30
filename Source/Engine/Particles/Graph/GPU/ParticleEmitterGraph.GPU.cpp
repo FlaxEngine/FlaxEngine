@@ -5,6 +5,7 @@
 #include "ParticleEmitterGraph.GPU.h"
 #include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Visject/ShaderGraphUtilities.h"
+#include "Engine/Engine/Globals.h"
 
 /// <summary>
 /// GPU particles shader source code template has special marks for generated code.
@@ -456,7 +457,7 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
             break;
         case VariantType::Vector4:
             mp.Type = MaterialParameterType::Vector4;
-            mp.AsVector4 = param->Value.AsVector4();
+            *(Vector4*)&mp.AsData = param->Value.AsVector4();
             break;
         case VariantType::Color:
             mp.Type = MaterialParameterType::Color;
@@ -490,7 +491,7 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
             break;
         case VariantType::Matrix:
             mp.Type = MaterialParameterType::Matrix;
-            mp.AsMatrix = (Matrix)param->Value;
+            *(Matrix*)&mp.AsData = (Matrix)param->Value;
             break;
         default:
             OnError(nullptr, nullptr, String::Format(TEXT("Invalid or unsupported particle parameter type {0}."), param->Type));
