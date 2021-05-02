@@ -82,7 +82,7 @@ bool LocalizedStringTable::Save(const StringView& path)
     writer.EndObject();
 
     // Save asset
-    const bool saveResult = CreateJson::Create(path.HasChars() ? path : GetPath(), outputData, TypeName);
+    const bool saveResult = CreateJson::Create(path.HasChars() ? path : StringView(GetPath()), outputData, TypeName);
     if (saveResult)
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
