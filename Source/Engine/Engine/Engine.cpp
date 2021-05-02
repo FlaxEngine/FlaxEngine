@@ -166,6 +166,7 @@ int32 Engine::Main(const Char* cmdLine)
 			}
 		}
 #endif
+
         // App paused logic
         if (Platform::GetIsPaused())
         {
@@ -202,6 +203,7 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnDraw();
             Time::OnEndDraw();
+            FrameMark;
             canDraw = false;
         }
 

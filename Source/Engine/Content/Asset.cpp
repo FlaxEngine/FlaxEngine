@@ -357,7 +357,15 @@ bool Asset::onLoad(LoadAssetTask* task)
     Locker.Lock();
 
     // Load asset
-    const LoadResult result = loadAsset();
+    LoadResult result;
+    {
+#if TRACY_ENABLE
+        ZoneScoped;
+        const StringView name(GetPath());
+        ZoneName(*name, name.Length());
+#endif
+        result = loadAsset();
+    }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
     _loadFailed = failed;

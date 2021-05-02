@@ -8,6 +8,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Scripting/ScriptingType.h"
+#include <ThirdParty/tracy/Tracy.h>
 
 #if COMPILE_WITH_PROFILER
 
@@ -393,12 +394,22 @@ struct TIsPODType<ProfilerCPU::Event>
 };
 
 // Shortcut macros for profiling a single code block execution on CPU
-#define PROFILE_CPU_NAMED(name) ScopeProfileBlockCPU ProfileBlockCPU(TEXT(name))
+// Use ZoneTransient for Tracy for code that can be hot-reloaded (eg. in Editor)
+
+#if USE_EDITOR
+#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(name))
+#else
+#define PROFILE_CPU_NAMED(name) ZoneNamedN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(name))
+#endif
 
 #if defined(_MSC_VER)
-#define PROFILE_CPU() ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
+#if USE_EDITOR
+#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
 #else
-#define PROFILE_CPU() \
+#define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
+#endif
+#else
+#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); \
 	const char* _functionName = __FUNCTION__; \
 	const int32 _functionNameLength = ARRAY_COUNT(__FUNCTION__); \
 	Char _functionNameBuffer[_functionNameLength + 1]; \

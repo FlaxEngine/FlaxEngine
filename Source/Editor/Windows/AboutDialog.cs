@@ -131,6 +131,7 @@ namespace FlaxEditor.Windows
                 "LZ4 Library - Copyright (c) Yann Collet. All rights reserved.",
                 "fmt - www.fmtlib.net",
                 "minimp3 - www.github.com/lieff/minimp3",
+                "Tracy Profiler - www.github.com/wolfpld/tracy",
                 "Ogg and Vorbis - Xiph.org Foundation",
                 "OpenAL Soft - www.github.com/kcat/openal-soft",
                 "OpenFBX - www.github.com/nem0/OpenFBX",

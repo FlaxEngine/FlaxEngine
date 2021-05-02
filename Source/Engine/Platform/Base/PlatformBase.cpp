@@ -14,7 +14,7 @@
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Utilities.h"
 #if COMPILE_WITH_PROFILER
-#include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #endif
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
@@ -164,6 +164,44 @@ void PlatformBase::BeforeExit()
 void PlatformBase::Exit()
 {
 }
+
+#if COMPILE_WITH_PROFILER
+
+void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE
+    // Track memory allocation in Tracy
+    //tracy::Profiler::MemAlloc(ptr, size, false);
+    tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
+#endif
+
+    // Register allocation during the current CPU event
+    auto thread = ProfilerCPU::GetCurrentThread();
+    if (thread != nullptr && thread->Buffer.GetCount() != 0)
+    {
+        auto& activeEvent = thread->Buffer.Last().Event();
+        if (activeEvent.End < ZeroTolerance)
+        {
+            activeEvent.NativeMemoryAllocation += (int32)size;
+        }
+    }
+}
+
+void PlatformBase::OnMemoryFree(void* ptr)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE
+    // Track memory allocation in Tracy
+    tracy::Profiler::MemFree(ptr, false);
+#endif
+}
+
+#endif
 
 void* PlatformBase::AllocatePages(uint64 numPages, uint64 pageSize)
 {
@@ -459,15 +497,6 @@ Vector2 PlatformBase::GetVirtualDesktopSize()
 {
     return Platform::GetVirtualDesktopBounds().Size;
 }
-
-#if COMPILE_WITH_PROFILER
-
-void PlatformBase::TrackAllocation(uint64 size)
-{
-    ProfilerMemory::OnAllocation((uint32)size, false);
-}
-
-#endif
 
 void PlatformBase::GetEnvironmentVariables(Dictionary<String, String>& result)
 {

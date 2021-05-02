@@ -305,14 +305,18 @@ void Win32Platform::Prefetch(void const* ptr)
 
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)
 {
+    void* ptr = _aligned_malloc((size_t)size, (size_t)alignment);
 #if COMPILE_WITH_PROFILER
-    TrackAllocation(size);
+    OnMemoryAlloc(ptr, size);
 #endif
-    return _aligned_malloc((size_t)size, (size_t)alignment);
+    return ptr;
 }
 
 void Win32Platform::Free(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     _aligned_free(ptr);
 }
 
