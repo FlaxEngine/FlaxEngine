@@ -4,6 +4,7 @@
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#include "Engine/Core/Types/DataContainer.h"
 #else
 #include "Storage/ContentStorageManager.h"
 #endif

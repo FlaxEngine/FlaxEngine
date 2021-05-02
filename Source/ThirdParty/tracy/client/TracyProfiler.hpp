@@ -189,6 +189,7 @@ public:
     static void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name );
     static void SendCallstack( int depth );
     static void ParameterRegister( ParameterCallback cb );
+    static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
 
     void SendCallstack( int depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );

@@ -161,9 +161,9 @@ FMT_END_NAMESPACE
 // __builtin_clz and __builtin_clzll, so only define FMT_BUILTIN_CLZ using the
 // MSVC intrinsics if the clz and clzll builtins are not available.
 #if FMT_MSC_VER && !defined(FMT_BUILTIN_CLZLL) && !defined(_MANAGED)
-unsigned char _BitScanReverse(unsigned long* Index, unsigned long Mask);
+extern "C" unsigned char _BitScanReverse(unsigned long* Index, unsigned long Mask);
 # ifdef _WIN64
-unsigned char _BitScanReverse64(unsigned long* Index, unsigned __int64 Mask);
+extern "C" unsigned char _BitScanReverse64(unsigned long* Index, unsigned __int64 Mask);
 #endif
 
 FMT_BEGIN_NAMESPACE
