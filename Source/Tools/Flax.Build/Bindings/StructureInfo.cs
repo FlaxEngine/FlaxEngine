@@ -37,7 +37,7 @@ namespace Flax.Build.Bindings
             for (int i = 0; _isPod && i < Fields.Count; i++)
             {
                 var field = Fields[i];
-                if (!field.IsStatic && !field.Type.IsPod(buildData, this))
+                if (!field.IsStatic && !field.IsPod(buildData, this))
                 {
                     _isPod = false;
                 }

@@ -18,6 +18,18 @@ namespace Flax.Build.Bindings
 
         public bool HasDefaultValue => !string.IsNullOrEmpty(DefaultValue);
 
+        /// <summary>
+        /// Gets a value indicating whether this type is POD (plain old data).
+        /// </summary>
+        public bool IsPod(Builder.BuildData buildData, ApiTypeInfo caller)
+        {
+            // Fixed array in C++ is converted into managed array in C# by default (char Data[100] -> char[] Data)
+            if (Type.IsArray && !NoArray)
+                return false;
+
+            return Type.IsPod(buildData, caller);
+        }
+
         public override void Write(BinaryWriter writer)
         {
             BindingsGenerator.Write(writer, Type);

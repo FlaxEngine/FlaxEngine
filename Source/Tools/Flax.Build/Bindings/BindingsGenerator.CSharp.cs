@@ -886,7 +886,7 @@ namespace Flax.Build.Bindings
                     contents.Append("static ");
                 string type;
 
-                if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
+                if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                 {
                     // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
                     fieldInfo.Type.IsArray = false;
