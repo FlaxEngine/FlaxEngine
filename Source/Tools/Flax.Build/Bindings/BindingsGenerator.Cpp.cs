@@ -1002,7 +1002,7 @@ namespace Flax.Build.Bindings
                 contents.Append($"        params[{i}] = {paramValue};").AppendLine();
             }
 
-            contents.AppendLine("        auto __result = method->Invoke(object->GetOrCreateManagedInstance(), params, &exception);");
+            contents.AppendLine("        auto __result = mono_runtime_invoke(method->GetNative(), object->GetOrCreateManagedInstance(), params, &exception);");
             contents.AppendLine("#else");
 
             var thunkParams = string.Empty;
@@ -1260,7 +1260,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine("        MonoObject* instance = nullptr;");
                 else
                     contents.AppendLine($"        MonoObject* instance = (({classTypeNameNative}*)this)->GetManagedInstance();");
-                contents.Append("        mmethod->Invoke(instance, params, &exception);").AppendLine();
+                contents.Append("        mono_runtime_invoke(mmethod->GetNative(), instance, params, &exception);").AppendLine();
                 contents.Append("        if (exception)").AppendLine();
                 contents.Append("            DebugLog::LogException(exception);").AppendLine();
                 contents.Append("    }").AppendLine().AppendLine();
