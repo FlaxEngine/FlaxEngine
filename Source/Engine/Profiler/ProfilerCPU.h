@@ -5,16 +5,12 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/NonCopyable.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include <ThirdParty/tracy/Tracy.h>
 
 #if COMPILE_WITH_PROFILER
-
-// Profiler events buffers capacity (tweaked manually)
-#define PROFILER_CPU_EVENTS_FRAMES 10
-#define PROFILER_CPU_EVENTS_PER_FRAME 1000
 
 /// <summary>
 /// Provides CPU performance measuring methods.
@@ -56,10 +52,7 @@ public:
         /// </summary>
         API_FIELD() int32 ManagedMemoryAllocation;
 
-        /// <summary>
-        /// The name of the event.
-        /// </summary>
-        API_FIELD() const Char* Name;
+        API_FIELD(Private, NoArray) Char Name[100];
     };
 
     /// <summary>
@@ -77,26 +70,14 @@ public:
 
     public:
 
-        EventBuffer()
-        {
-            _capacity = Math::RoundUpToPowerOf2(PROFILER_CPU_EVENTS_FRAMES * PROFILER_CPU_EVENTS_PER_FRAME);
-            _capacityMask = _capacity - 1;
-            _data = NewArray<Event>(_capacity);
-            _head = 0;
-            _count = 0;
-        }
-
-        ~EventBuffer()
-        {
-            DeleteArray(_data, _capacity);
-        }
+        EventBuffer();
+        ~EventBuffer();
 
     public:
 
         /// <summary>
         /// Gets the amount of the events in the buffer.
         /// </summary>
-        /// <returns>The events count.</returns>
         FORCE_INLINE int32 GetCount() const
         {
             return _count;
@@ -170,9 +151,8 @@ public:
         public:
 
             /// <summary>
-            /// Checks if iterator is in the end of the collection
+            /// Checks if iterator is in the end of the collection.
             /// </summary>
-            /// <returns>True if is in the end, otherwise false</returns>
             bool IsEnd() const
             {
                 ASSERT(_buffer);
@@ -180,9 +160,8 @@ public:
             }
 
             /// <summary>
-            /// Checks if iterator is not in the end of the collection
+            /// Checks if iterator is not in the end of the collection.
             /// </summary>
-            /// <returns>True if is not in the end, otherwise false</returns>
             bool IsNotEnd() const
             {
                 ASSERT(_buffer);
@@ -287,7 +266,6 @@ public:
         /// <summary>
         /// Gets the name.
         /// </summary>
-        /// <returns>The name.</returns>
         FORCE_INLINE const String& GetName() const
         {
             return _name;
@@ -303,9 +281,8 @@ public:
         /// <summary>
         /// Begins the event running on a this thread. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
         /// </summary>
-        /// <param name="name">The event name.</param>
         /// <returns>The event token.</returns>
-        int32 BeginEvent(const Char* name);
+        int32 BeginEvent();
 
         /// <summary>
         /// Ends the event running on a this thread.
@@ -331,21 +308,34 @@ public:
     /// <summary>
     /// Determines whether the current (calling) thread is being profiled by the service (it may has no active profile block but is registered).
     /// </summary>
-    /// <returns><c>true</c> if service is profiling the current thread; otherwise, <c>false</c>.</returns>
     static bool IsProfilingCurrentThread();
 
     /// <summary>
     /// Gets the current thread (profiler service shadow object).
     /// </summary>
-    /// <returns>The current thread object or null if not profiled yet.</returns>
     static Thread* GetCurrentThread();
 
     /// <summary>
     /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
     /// </summary>
-    /// <param name="name">The event name.</param>
     /// <returns>The event token.</returns>
-    static int32 BeginEvent(const Char* name);
+    static int32 BeginEvent();
+
+    /// <summary>
+    /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
+    /// </summary>
+    /// <param name="name">The event name.</param>
+    /// <param name="transient">True if name is transient and should be cached by allocator (not static).</param>
+    /// <returns>The event token.</returns>
+    static int32 BeginEvent(const Char* name, bool transient = false);
+
+    /// <summary>
+    /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
+    /// </summary>
+    /// <param name="name">The event name.</param>
+    /// <param name="transient">True if name is transient and should be cached by allocator (not static).</param>
+    /// <returns>The event token.</returns>
+    static int32 BeginEvent(const char* name, bool transient = false);
 
     /// <summary>
     /// Ends the event.
@@ -354,7 +344,7 @@ public:
     static void EndEvent(int32 index);
 
     /// <summary>
-    /// Releases resources. Calls to the profiling API after Dispose are not valid
+    /// Releases resources. Calls to the profiling API after Dispose are not valid.
     /// </summary>
     static void Dispose();
 };
@@ -364,24 +354,19 @@ public:
 /// </summary>
 struct ScopeProfileBlockCPU
 {
-    /// <summary>
-    /// The event token index.
-    /// </summary>
     int32 Index;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ScopeProfileBlockCPU"/> struct.
-    /// </summary>
-    /// <param name="name">The event name.</param>
-    ScopeProfileBlockCPU(const Char* name)
+    FORCE_INLINE ScopeProfileBlockCPU(const Char* name, bool transient = false)
     {
-        Index = ProfilerCPU::BeginEvent(name);
+        Index = ProfilerCPU::BeginEvent(name, transient);
     }
 
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ScopeProfileBlockCPU"/> class.
-    /// </summary>
-    ~ScopeProfileBlockCPU()
+    FORCE_INLINE ScopeProfileBlockCPU(const char* name, bool transient = false)
+    {
+        Index = ProfilerCPU::BeginEvent(name, transient);
+    }
+
+    FORCE_INLINE ~ScopeProfileBlockCPU()
     {
         ProfilerCPU::EndEvent(Index);
     }
@@ -394,28 +379,27 @@ struct TIsPODType<ProfilerCPU::Event>
 };
 
 // Shortcut macros for profiling a single code block execution on CPU
-// Use ZoneTransient for Tracy for code that can be hot-reloaded (eg. in Editor)
+// Use ZoneTransient for Tracy for code that can be hot-reloaded (eg. in Editor) or if name can be a variable
 
-#if USE_EDITOR
-#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(name))
-#else
-#define PROFILE_CPU_NAMED(name) ZoneNamedN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(name))
-#endif
+#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name, true)
 
 #if defined(_MSC_VER)
+
 #if USE_EDITOR
-#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
+#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__), false)
 #else
 #define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
+
 #endif
+
 #else
-#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); \
-	const char* _functionName = __FUNCTION__; \
-	const int32 _functionNameLength = ARRAY_COUNT(__FUNCTION__); \
-	Char _functionNameBuffer[_functionNameLength + 1]; \
-	StringUtils::ConvertANSI2UTF16(_functionName, _functionNameBuffer, _functionNameLength); \
-	_functionNameBuffer[_functionNameLength] = 0; \
-	ScopeProfileBlockCPU ProfileBlockCPU(_functionNameBuffer)
+
+#if USE_EDITOR
+#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(__FUNCTION__)
+#else
+#define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(_functionNameBuffer)
+#endif
+
 #endif
 
 #else
