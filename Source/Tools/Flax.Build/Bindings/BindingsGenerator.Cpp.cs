@@ -952,6 +952,8 @@ namespace Flax.Build.Bindings
                 contents.Append(parameterInfo.Name);
             }
 
+            CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
+
             contents.Append(')');
             contents.AppendLine();
             contents.AppendLine("    {");
@@ -985,6 +987,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
             contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
             contents.AppendLine($"        auto method = scriptVTable[{scriptVTableIndex}];");
+            contents.AppendLine("        PROFILE_CPU_NAMED(*method->ProfilerName);");
             contents.AppendLine("        MonoObject* exception = nullptr;");
 
             contents.AppendLine("        IsDuringWrapperCall = true;");
@@ -1228,6 +1231,7 @@ namespace Flax.Build.Bindings
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
                 CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
                 contents.Append("    ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
@@ -1244,6 +1248,7 @@ namespace Flax.Build.Bindings
                 contents.Append("        if (!mmethod)").AppendLine();
                 contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                 contents.Append("        CHECK(mmethod);").AppendLine();
+                contents.Append("        PROFILE_CPU_NAMED(*mmethod->ProfilerName);").AppendLine();
                 contents.Append("        MonoObject* exception = nullptr;").AppendLine();
                 if (paramsCount == 0)
                     contents.AppendLine("        void** params = nullptr;");
