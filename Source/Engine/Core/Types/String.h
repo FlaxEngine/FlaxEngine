@@ -497,18 +497,19 @@ public:
     }
 
     /// <summary>
-    /// Resizes string contents, works like: *this = Left(length) but is faster.
+    /// Resizes string contents.
     /// </summary>
-    /// <param name="length">New length of the string (amount of characters from left side to preserve).</param>
+    /// <param name="length">New length of the string.</param>
     void Resize(int32 length)
     {
-        ASSERT(length >= 0 && length <= _length);
+        ASSERT(length >= 0);
         if (_length != length)
         {
             const auto oldData = _data;
+            const auto minLength = _length < length ? _length : length;
             _length = length;
             _data = (T*)Platform::Allocate((length + 1) * sizeof(T), 16);
-            Platform::MemoryCopy(_data, oldData, length * sizeof(T));
+            Platform::MemoryCopy(_data, oldData, minLength * sizeof(T));
             _data[length] = 0;
             Platform::Free(oldData);
         }
