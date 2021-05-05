@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// The basic GUI label control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    public class Label : ContainerControl
+    public class Label : Colorable
     {
         /// <summary>
         /// The text.
@@ -43,18 +43,6 @@ namespace FlaxEngine.GUI
                 }
             }
         }
-
-        /// <summary>
-        /// Gets or sets the color of the text.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text.")]
-        public Color TextColor { get; set; }
-
-        /// <summary>
-        /// Gets or sets the color of the text when it is highlighted (mouse is over).
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text when it is highlighted (mouse is over).")]
-        public Color TextColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the horizontal text alignment within the control bounds.
@@ -185,8 +173,7 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            Color = Style.Current.Foreground;
         }
 
         /// <inheritdoc />
@@ -196,8 +183,7 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            Color = Style.Current.Foreground;
         }
 
         /// <inheritdoc />
@@ -210,7 +196,7 @@ namespace FlaxEngine.GUI
             if (ClipText)
                 Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
 
-            var color = IsMouseOver ? TextColorHighlighted : TextColor;
+            var color = GetColorToDraw();
 
             if (!EnabledInHierarchy)
                 color *= 0.6f;

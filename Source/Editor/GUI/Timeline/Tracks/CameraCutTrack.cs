@@ -646,7 +646,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        private Image _pilotCamera;
+        private ClickableImage _pilotCamera;
 
         /// <summary>
         /// Gets the camera object instance (it might be missing).
@@ -687,7 +687,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             // Pilot Camera button
             const float buttonSize = 14;
             var icons = Editor.Instance.Icons;
-            _pilotCamera = new Image
+            _pilotCamera = new ClickableImage
             {
                 TooltipText = "Starts piloting camera (in scene edit window)",
                 AutoFocus = true,

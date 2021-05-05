@@ -357,12 +357,12 @@ namespace FlaxEngine.GUI
                     Parent = container,
                 };
 
-                var label = new Label
+                var label = new HighlightableLabel
                 {
                     X = itemsMargin,
                     Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
                     Font = Font,
-                    TextColor = Color.White * 0.9f,
+                    Color = Color.White * 0.9f,
                     TextColorHighlighted = Color.White,
                     HorizontalAlignment = TextAlignment.Near,
                     Text = _items[i],
