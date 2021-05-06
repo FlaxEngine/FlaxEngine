@@ -36,24 +36,35 @@ ArchitectureType WindowsPlatformTools::GetArchitecture() const
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto platformSettings = WindowsPlatformSettings::Get();
+    const auto gameSettings = GameSettings::Get();
     const auto& outputPath = data.CodeOutputPath;
 
     // Apply executable icon
-    Array<String> files;
-    FileSystem::DirectoryGetFiles(files, outputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
-    if (files.HasItems())
+    const String outputExePath = outputPath / TEXT("FlaxGame.exe");
+    if (FileSystem::FileExists(outputExePath))
     {
         TextureData iconData;
         if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
         {
-            if (EditorUtilities::UpdateExeIcon(files[0], iconData))
+            if (EditorUtilities::UpdateExeIcon(outputExePath, iconData))
             {
                 data.Error(TEXT("Failed to change output executable file icon."));
                 return true;
             }
         }
-    }
+      
+#if !BUILD_DEBUG
+        const String gameExePath = outputPath / gameSettings->ProductName / TEXT(".exe");
+        if (gameExePath.Compare(outputExePath, StringSearchCase::IgnoreCase) != 0) {
+            if (FileSystem::MoveFile(gameExePath, outputExePath, true))
+            {
+                data.Error(TEXT("Failed to rename output executable file."));
+                return true;
+            }
+        }
+#endif
 
+    }
     return false;
 }
 
