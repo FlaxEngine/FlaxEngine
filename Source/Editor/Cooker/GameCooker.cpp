@@ -337,7 +337,8 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     data.OriginalOutputPath = outputPath;
     FileSystem::NormalizePath(data.OriginalOutputPath);
     data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OriginalOutputPath);
-    data.CodeOutputPath = data.DataOutputPath = data.OriginalOutputPath;
+    data.DataOutputPath = data.OriginalOutputPath;
+    data.CodeOutputPath = data.OriginalOutputPath / TEXT("Assembly");
     data.CacheDirectory = Globals::ProjectCacheFolder / TEXT("Cooker") / tools->GetName();
     if (!FileSystem::DirectoryExists(data.CacheDirectory))
     {
