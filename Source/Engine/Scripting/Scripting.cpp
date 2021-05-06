@@ -443,7 +443,7 @@ bool Scripting::Load()
         LOG(Info, "Missing EditorTarget in project. Not using game script modules.");
         return false;
     }
-    const String targetBuildInfo = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
+    const String targetBuildInfo = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration / TEXT("Assembly") / target + TEXT(".Build.json");
 
     // Call compilation if game target build info is missing
     if (!FileSystem::FileExists(targetBuildInfo))
@@ -453,11 +453,11 @@ bool Scripting::Load()
         return false;
     }
 #else
-    const String targetBuildInfo = Globals::BinariesFolder / TEXT("Game.Build.json");
+    const String targetBuildInfo = Globals::BinariesFolder / TEXT("Assembly") / TEXT("Game.Build.json");
 #endif
 
     // Load game binary modules
-    if (LoadBinaryModules(targetBuildInfo, Globals::ProjectFolder))
+    if (LoadBinaryModules(targetBuildInfo, Globals::ProjectFolder / TEXT("Assembly")))
     {
         LOG(Error, "Failed to load Game assemblies.");
         return true;
