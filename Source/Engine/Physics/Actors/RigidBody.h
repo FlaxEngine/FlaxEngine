@@ -428,7 +428,7 @@ public:
     /// Applies a force (or impulse) defined in the world space to the rigidbody at its center of mass.
     /// </summary>
     /// <remarks>
-    /// This will not induce a torque
+    /// This will not induce any torque
     /// <para>
     /// ForceMode determines if the force is to be conventional or impulsive.
     /// </para>
@@ -444,10 +444,30 @@ public:
     API_FUNCTION() void AddForce(const Vector3& force, ForceMode mode = ForceMode::Force) const;
 
     /// <summary>
+    /// Applies a force (or impulse) defined in the world space to the rigidbody at given position in the world space.
+    /// </summary>
+    /// <remarks>
+    /// Also applies appropriate amount of torque
+    /// <para>
+    /// ForceMode determines if the force is to be conventional or impulsive.
+    /// </para>
+    /// <para>
+    /// Each actor has an acceleration and a velocity change accumulator which are directly modified using the modes ForceMode::Acceleration
+    /// and ForceMode::VelocityChange respectively. The modes ForceMode::Force and ForceMode::Impulse also modify these same
+    /// accumulators and are just short hand for multiplying the vector parameter by inverse mass and then using ForceMode::Acceleration and
+    /// ForceMode::VelocityChange respectively.
+    /// </para>
+    /// </remarks>
+    /// <param name="force">The force/impulse to apply defined in the world space.</param>
+    /// <param name="position">The position of the force/impulse in the world space.</param>
+    /// <param name="mode">The mode to use when applying the force/impulse.</param>
+    API_FUNCTION() void AddForceAtPosition(const Vector3& force, const Vector3& position, ForceMode mode = ForceMode::Force) const;
+
+    /// <summary>
     /// Applies a force (or impulse) defined in the local space of the rigidbody (relative to its coordinate system) at its center of mass.
     /// </summary>
     /// <remarks>
-    /// This will not induce a torque
+    /// This will not induce any torque
     /// <para>
     /// ForceMode determines if the force is to be conventional or impulsive.
     /// </para>
