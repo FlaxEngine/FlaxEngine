@@ -274,6 +274,12 @@ void ReadStream::ReadVariant(Variant* data)
     case VariantType::Bool:
         data->AsBool = ReadBool();
         break;
+    case VariantType::Int16:
+        ReadInt16(&data->AsInt16);
+        break;
+    case VariantType::Uint16:
+        ReadUint16(&data->AsUint16);
+        break;
     case VariantType::Int:
         ReadInt32(&data->AsInt);
         break;
@@ -572,6 +578,12 @@ void WriteStream::WriteVariant(const Variant& data)
         break;
     case VariantType::Bool:
         WriteBool(data.AsBool);
+        break;
+    case VariantType::Int16:
+        WriteInt16(data.AsInt16);
+        break;
+    case VariantType::Uint16:
+        WriteUint16(data.AsUint16);
         break;
     case VariantType::Int:
         WriteInt32(data.AsInt);
