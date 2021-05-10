@@ -2317,9 +2317,30 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
     case VariantType::Bool:
         switch (to.Type)
         {
+        case VariantType::Int16:
+        case VariantType::Uint16:
         case VariantType::Int:
         case VariantType::Uint:
         case VariantType::Int64:
+        case VariantType::Uint64:
+        case VariantType::Float:
+        case VariantType::Double:
+        case VariantType::Vector2:
+        case VariantType::Vector3:
+        case VariantType::Vector4:
+        case VariantType::Color:
+            return true;
+        default:
+            return false;
+        }
+    case VariantType::Int16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+        case VariantType::Int:
+        case VariantType::Int64:
+        case VariantType::Uint16:
+        case VariantType::Uint:
         case VariantType::Uint64:
         case VariantType::Float:
         case VariantType::Double:
@@ -2335,6 +2356,27 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
+        case VariantType::Int64:
+        case VariantType::Uint16:
+        case VariantType::Uint:
+        case VariantType::Uint64:
+        case VariantType::Float:
+        case VariantType::Double:
+        case VariantType::Vector2:
+        case VariantType::Vector3:
+        case VariantType::Vector4:
+        case VariantType::Color:
+            return true;
+        default:
+            return false;
+        }
+    case VariantType::Uint16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+        case VariantType::Int16:
+        case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Uint:
         case VariantType::Uint64:
@@ -2352,7 +2394,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint64:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2369,7 +2413,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
+        case VariantType::Uint16:
         case VariantType::Uint:
         case VariantType::Uint64:
         case VariantType::Float:
@@ -2386,7 +2432,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2403,7 +2451,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
+        case VariantType::Uint16:
         case VariantType::Uint:
         case VariantType::Int64:
         case VariantType::Uint64:
@@ -2420,8 +2470,10 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Uint:
+        case VariantType::Uint16:
         case VariantType::Int64:
         case VariantType::Uint64:
         case VariantType::Float:
@@ -2437,7 +2489,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2454,6 +2508,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2469,7 +2524,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2486,6 +2543,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
