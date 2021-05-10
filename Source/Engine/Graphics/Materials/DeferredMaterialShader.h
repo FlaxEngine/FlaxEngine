@@ -56,7 +56,7 @@ private:
 
 public:
 
-    DeferredMaterialShader(const String& name)
+    DeferredMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

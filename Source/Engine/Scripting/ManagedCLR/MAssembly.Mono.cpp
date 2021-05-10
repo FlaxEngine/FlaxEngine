@@ -316,7 +316,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
 
 #if MONO_DEBUG_ENABLE
     // Try to load debug symbols (use portable PDB format)
-    const auto pdbPath = StringUtils::GetPathWithoutExtension(assemblyPath) + TEXT(".pdb");
+    const auto pdbPath = String(StringUtils::GetPathWithoutExtension(assemblyPath)) + TEXT(".pdb");
     if (FileSystem::FileExists(pdbPath))
     {
         // Load .pdb file
@@ -334,10 +334,10 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     if (assemblyPath.EndsWith(TEXT("FlaxEngine.CSharp.dll")))
     {
         static Array<byte> NewtonsoftJsonDebugData;
-        File::ReadAllBytes(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
+        File::ReadAllBytes(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
         if (NewtonsoftJsonDebugData.HasItems())
         {
-            StringAnsi tmp(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.dll"));
+            StringAnsi tmp(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.dll"));
             MonoAssembly* a = mono_assembly_open(tmp.Get(), &status);
             if (a)
             {

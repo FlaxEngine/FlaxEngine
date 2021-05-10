@@ -13,7 +13,18 @@ String::String(const StringAnsi& str)
 
 String::String(const StringView& str)
 {
-    Set(str.Get(), str.Length());
+    _length = str.Length();
+    if (_length != 0)
+    {
+        ASSERT(_length > 0);
+        _data = (Char*)Platform::Allocate((_length + 1) * sizeof(Char), 16);
+        _data[_length] = 0;
+        Platform::MemoryCopy(_data, str.Get(), _length * sizeof(Char));
+    }
+    else
+    {
+        _data = nullptr;
+    }
 }
 
 String::String(const StringAnsiView& str)
@@ -38,7 +49,6 @@ void String::Set(const Char* chars, int32 length)
         }
         _length = length;
     }
-
     Platform::MemoryCopy(_data, chars, length * sizeof(Char));
 }
 
@@ -58,7 +68,6 @@ void String::Set(const char* chars, int32 length)
         }
         _length = length;
     }
-
     if (chars)
         StringUtils::ConvertANSI2UTF16(chars, _data, length);
 }

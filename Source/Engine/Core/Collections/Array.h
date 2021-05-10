@@ -758,7 +758,6 @@ public:
     /// <summary>
     /// Performs pop from stack operation (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     T Pop()
     {
         T item(Last());
@@ -769,19 +768,19 @@ public:
     /// <summary>
     /// Peeks items which is at the top of the stack (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     FORCE_INLINE T& Peek()
     {
-        return Last();
+        ASSERT(_count > 0);
+        return Get()[_count - 1];
     }
 
     /// <summary>
     /// Peeks items which is at the top of the stack (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     FORCE_INLINE const T& Peek() const
     {
-        return Last();
+        ASSERT(_count > 0);
+        return Get()[_count - 1];
     }
 
 public:

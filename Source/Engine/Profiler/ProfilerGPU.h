@@ -62,20 +62,8 @@ public:
     {
     private:
 
-        bool _isResolved;
+        bool _isResolved = true;
         Array<Event> _data;
-
-    public:
-
-        EventBuffer()
-            : _data(256)
-        {
-            _isResolved = true;
-        }
-
-        ~EventBuffer()
-        {
-        }
 
     public:
 
@@ -87,7 +75,6 @@ public:
         /// <summary>
         /// Determines whether this buffer has ready data (resolved and not empty).
         /// </summary>
-        /// <returns><c>true</c> if this buffer has data; otherwise, <c>false</c>.</returns>
         FORCE_INLINE bool HasData() const
         {
             return _isResolved && _data.HasItems();
@@ -134,12 +121,7 @@ public:
         /// <summary>
         /// Clears this buffer.
         /// </summary>
-        void Clear()
-        {
-            _data.Clear();
-            _isResolved = false;
-            FrameIndex = 0;
-        }
+        void Clear();
     };
 
 private:

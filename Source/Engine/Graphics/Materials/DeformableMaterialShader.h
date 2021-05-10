@@ -44,7 +44,7 @@ private:
 
 public:
 
-    DeformableMaterialShader(const String& name)
+    DeformableMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

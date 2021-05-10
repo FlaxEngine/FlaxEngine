@@ -233,6 +233,11 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     return false;
 }
 
+const String& AssetsCache::GetAssetPath(const Guid& id) const
+{
+    return _registry[id].Info.Path;
+}
+
 bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
 {
     PROFILE_CPU();

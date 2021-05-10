@@ -60,6 +60,7 @@ public:
     /// </summary>
     /// <param name="other">Other container to copy</param>
     DataContainer(const DataContainer& other)
+        : DataContainer()
     {
         if (other.IsAllocated())
             Copy(other);
@@ -71,12 +72,11 @@ public:
     /// Initializes a new instance of the <see cref="DataContainer"/> class.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
-    FORCE_INLINE DataContainer(DataContainer&& other)
+    DataContainer(DataContainer&& other) noexcept
     {
         Base::_data = other._data;
         Base::_length = other._length;
         _isAllocated = other._isAllocated;
-
         other._data = nullptr;
         other._length = 0;
         other._isAllocated = false;
@@ -87,16 +87,14 @@ public:
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     /// <returns>The reference to this.</returns>
-    DataContainer& operator=(DataContainer&& other)
+    DataContainer& operator=(DataContainer&& other) noexcept
     {
         if (this != &other)
         {
             Release();
-
             Base::_data = other._data;
             Base::_length = other._length;
             _isAllocated = other._isAllocated;
-
             other._data = nullptr;
             other._length = 0;
             other._isAllocated = false;
@@ -122,7 +120,7 @@ public:
     }
 
     /// <summary>
-    /// Destructor
+    /// Releases any allocated memory.
     /// </summary>
     ~DataContainer()
     {
@@ -133,18 +131,15 @@ public:
 public:
 
     /// <summary>
-    /// Returns true if data is allocated by container itself
+    /// Returns true if data is allocated by container itself, otherwise it's just linked.
     /// </summary>
-    /// <returns>True if is allocated by container, otherwise false</returns>
     FORCE_INLINE bool IsAllocated() const
     {
         return _isAllocated;
     }
 
-public:
-
     /// <summary>
-    /// Link external data
+    /// Links the external data.
     /// </summary>
     /// <param name="data">Data array to link</param>
     template<typename AllocationType>
@@ -154,27 +149,27 @@ public:
     }
 
     /// <summary>
-    /// Link external data
+    /// Links the external data.
     /// </summary>
-    /// <param name="data">Data to link</param>
+    /// <param name="data">Data to link.</param>
     FORCE_INLINE void Link(const Span<T>& data)
     {
         Link(data.Get(), data.Length());
     }
 
     /// <summary>
-    /// Link external data
+    /// Links the external data.
     /// </summary>
-    /// <param name="data">Data to link</param>
+    /// <param name="data">Data to link.</param>
     FORCE_INLINE void Link(const DataContainer& data)
     {
         Link(data.Get(), data.Length());
     }
 
     /// <summary>
-    /// Link external data
+    /// Links external data.
     /// </summary>
-    /// <param name="data">Data to link</param>
+    /// <param name="data">Data to link.</param>
     template<typename U>
     FORCE_INLINE void Link(const U* data)
     {
@@ -182,30 +177,27 @@ public:
     }
 
     /// <summary>
-    /// Link external data
+    /// Links the external data.
     /// </summary>
-    /// <param name="data">Data pointer</param>
-    /// <param name="length">Data length</param>
+    /// <param name="data">Data pointer.</param>
+    /// <param name="length">Data length.</param>
     void Link(const T* data, int32 length)
     {
         Release();
-
         _isAllocated = false;
         Base::_length = length;
         Base::_data = (T*)data;
     }
 
     /// <summary>
-    /// Allocate new memory chunk
+    /// Allocate a new memory chunk.
     /// </summary>
-    /// <param name="length">Length of the data (amount of T elements)</param>
+    /// <param name="length">Length of the data (amount of T elements).</param>
     void Allocate(const int32 length)
     {
         if (_isAllocated && Base::_length == length)
             return;
-
         Release();
-
         if (length > 0)
         {
             _isAllocated = true;
@@ -215,9 +207,9 @@ public:
     }
 
     /// <summary>
-    /// Copies the data to a new allocated chunk
+    /// Copies the data to a new allocated chunk.
     /// </summary>
-    /// <param name="data">Data array to copy</param>
+    /// <param name="data">Data array to copy.</param>
     template<typename AllocationType>
     FORCE_INLINE void Copy(const Array<T, AllocationType>& data)
     {
@@ -228,10 +220,10 @@ public:
     }
 
     /// <summary>
-    /// Copies the data to a new allocated chunk
+    /// Copies the data to a new allocated chunk.
     /// </summary>
-    /// <param name="data">Data to copy</param>
-    FORCE_INLINE void Copy(const DataContainer& data)
+    /// <param name="data">Data to copy.</param>
+    void Copy(const DataContainer& data)
     {
         if (data.IsValid())
             Copy(data.Get(), data.Length());
@@ -240,10 +232,10 @@ public:
     }
 
     /// <summary>
-    /// Copies the data to a new allocated chunk
+    /// Copies the data to a new allocated chunk.
     /// </summary>
-    /// <param name="data">Data to copy</param>
-    FORCE_INLINE void Copy(const Span<T>& data)
+    /// <param name="data">Data to copy.</param>
+    void Copy(const Span<T>& data)
     {
         if (data.IsValid())
             Copy(data.Get(), data.Length());
@@ -252,9 +244,9 @@ public:
     }
 
     /// <summary>
-    /// Copies the data to a new allocated chunk
+    /// Copies the data to a new allocated chunk.
     /// </summary>
-    /// <param name="data">Pointer to data to copy</param>
+    /// <param name="data">Pointer to data to copy.</param>
     template<typename U>
     FORCE_INLINE void Copy(const U* data)
     {
@@ -262,14 +254,13 @@ public:
     }
 
     /// <summary>
-    /// Copies the data to a new allocated chunk
+    /// Copies the data to a new allocated chunk.
     /// </summary>
-    /// <param name="data">Pointer to data to copy</param>
-    /// <param name="length">Length of the data (amount of T elements)</param>
+    /// <param name="data">Pointer to data to copy.</param>
+    /// <param name="length">Length of the data (amount of T elements).</param>
     void Copy(const T* data, int32 length)
     {
         ASSERT(data && length > 0);
-
         Allocate(length);
         ASSERT(Base::_data);
         Platform::MemoryCopy(Base::_data, data, length * sizeof(T));

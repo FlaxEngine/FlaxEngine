@@ -189,35 +189,35 @@ bool ScriptingService::Init()
 
 void ScriptingService::Update()
 {
-    PROFILE_CPU_NAMED("Scripting.Update");
+    PROFILE_CPU_NAMED("Scripting::Update");
 
     INVOKE_EVENT(Update);
 }
 
 void ScriptingService::LateUpdate()
 {
-    PROFILE_CPU_NAMED("Scripting.LateUpdate");
+    PROFILE_CPU_NAMED("Scripting::LateUpdate");
 
     INVOKE_EVENT(LateUpdate);
 }
 
 void ScriptingService::FixedUpdate()
 {
-    PROFILE_CPU_NAMED("Scripting.FixedUpdate");
+    PROFILE_CPU_NAMED("Scripting::FixedUpdate");
 
     INVOKE_EVENT(FixedUpdate);
 }
 
 void ScriptingService::Draw()
 {
-    PROFILE_CPU_NAMED("Scripting.Draw");
+    PROFILE_CPU_NAMED("Scripting::Draw");
 
     INVOKE_EVENT(Draw);
 }
 
 void ScriptingService::BeforeExit()
 {
-    PROFILE_CPU_NAMED("Scripting.BeforeExit");
+    PROFILE_CPU_NAMED("Scripting::BeforeExit");
 
     INVOKE_EVENT(Exit);
 }
@@ -639,7 +639,7 @@ MClass* Scripting::FindClass(MonoClass* monoClass)
     if (monoClass == nullptr)
         return nullptr;
 
-    PROFILE_CPU_NAMED("FindClass");
+    PROFILE_CPU();
 
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
@@ -661,7 +661,7 @@ MClass* Scripting::FindClass(const StringAnsiView& fullname)
     if (fullname.IsEmpty())
         return nullptr;
 
-    PROFILE_CPU_NAMED("FindClass");
+    PROFILE_CPU();
 
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
@@ -683,7 +683,7 @@ MonoClass* Scripting::FindClassNative(const StringAnsiView& fullname)
     if (fullname.IsEmpty())
         return nullptr;
 
-    PROFILE_CPU_NAMED("FindClassNative");
+    PROFILE_CPU();
 
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
@@ -705,7 +705,7 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
     if (fullname.IsEmpty())
         return ScriptingTypeHandle();
 
-    PROFILE_CPU_NAMED("FindScriptingType");
+    PROFILE_CPU();
 
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
@@ -730,7 +730,7 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     if (!id.IsValid())
         return nullptr;
 
-    PROFILE_CPU_NAMED("FindObject");
+    PROFILE_CPU();
 
     // Try to map object id
     const auto idsMapping = ObjectsLookupIdMapping.Get();
@@ -810,7 +810,7 @@ ScriptingObject* Scripting::FindObject(const MonoObject* managedInstance)
     if (managedInstance == nullptr)
         return nullptr;
 
-    PROFILE_CPU_NAMED("FindObject");
+    PROFILE_CPU();
 
     // TODO: optimize it by reading the unmanagedPtr or _internalId from managed Object property
 
@@ -827,7 +827,7 @@ ScriptingObject* Scripting::FindObject(const MonoObject* managedInstance)
 
 void Scripting::OnManagedInstanceDeleted(ScriptingObject* obj)
 {
-    PROFILE_CPU_NAMED("OnManagedInstanceDeleted");
+    PROFILE_CPU();
     ASSERT(obj);
 
     // Validate if object still exists

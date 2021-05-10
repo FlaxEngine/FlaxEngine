@@ -129,6 +129,13 @@ public:
 public:
 
     /// <summary>
+    /// Finds the asset path by id.
+    /// </summary>
+    /// <param name="id">The asset id.</param>
+    /// <returns>The asset path, or empty if failed to find.</returns>
+    const String& GetAssetPath(const Guid& id) const;
+
+    /// <summary>
     /// Finds the asset info by path.
     /// </summary>
     /// <param name="path">The asset path.</param>

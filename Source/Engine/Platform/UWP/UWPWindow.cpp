@@ -474,7 +474,7 @@ void UWPWindow::onDpiChanged(float dpi)
 {
     if (_dpi != dpi)
     {
-        _dpi = dpi;
+        _dpi = (int)dpi;
         _dpiScale = _dpi / 96.0f;
 
         // When the display DPI changes, the logical size of the window (measured in Dips) also changes and needs to be updated
@@ -584,8 +584,8 @@ void UWPWindow::onPointerExited(UWPWindowImpl::PointerData* pointer)
 void UWPWindow::OnSizeChange()
 {
     // Update the actual rendering output resolution
-    _clientSize.X = ConvertDipsToPixels(_logicalSize.X, _dpi);
-    _clientSize.Y = ConvertDipsToPixels(_logicalSize.Y, _dpi);
+    _clientSize.X = ConvertDipsToPixels(_logicalSize.X, (float)_dpi);
+    _clientSize.Y = ConvertDipsToPixels(_logicalSize.Y, (float)_dpi);
 
     // Check if output has been created
     if (_swapChain != nullptr)

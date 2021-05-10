@@ -101,8 +101,8 @@ FORCE_INLINE bool GuidParse(const StringViewType& text, Guid& value)
         // FormatType::D
     case 36:
     {
-        StringType b = text.Substring(9, 4) + text.Substring(14, 4);
-        StringType c = text.Substring(19, 4) + text.Substring(24, 4);
+        StringType b = StringType(text.Substring(9, 4)) + text.Substring(14, 4);
+        StringType c = StringType(text.Substring(19, 4)) + text.Substring(24, 4);
         return
                 StringUtils::ParseHex(*text + 0, 8, &value.A) ||
                 StringUtils::ParseHex(*b, &value.B) ||
@@ -113,8 +113,8 @@ FORCE_INLINE bool GuidParse(const StringViewType& text, Guid& value)
         // FormatType::P
     case 38:
     {
-        StringType b = text.Substring(10, 4) + text.Substring(15, 4);
-        StringType c = text.Substring(20, 4) + text.Substring(25, 4);
+        StringType b = StringType(text.Substring(10, 4)) + text.Substring(15, 4);
+        StringType c = StringType(text.Substring(20, 4)) + text.Substring(25, 4);
         return
                 text[0] != text[text.Length() - 1] ||
                 StringUtils::ParseHex(*text + 1, 8, &value.A) ||

@@ -203,7 +203,7 @@ void LayersAndTagsSettings::Apply()
 
 void LevelService::Update()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::Update");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -232,7 +232,7 @@ void LevelService::Update()
 
 void LevelService::LateUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::LateUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -264,7 +264,7 @@ void LevelService::LateUpdate()
 
 void LevelService::FixedUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::FixedUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -643,7 +643,7 @@ public:
 
 void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::CallSceneEvent");
 
     // Call event
     const auto scriptsDomain = Scripting::GetScriptsDomain();

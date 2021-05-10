@@ -821,7 +821,7 @@ Asset::LoadResult Model::load()
         const auto thisSS = LODs[lodIndex].ScreenSize;
         if (prevSS <= thisSS)
         {
-            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, GetPath());
+            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, ToString());
         }
     }
 #endif

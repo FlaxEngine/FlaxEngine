@@ -33,7 +33,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    DecalMaterialShader(const String& name)
+    DecalMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }
