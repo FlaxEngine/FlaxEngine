@@ -417,6 +417,18 @@ Variant::Variant(bool v)
     AsBool = v;
 }
 
+Variant::Variant(int16 v)
+    : Type(VariantType::Int16)
+{
+    AsInt16 = v;
+}
+
+Variant::Variant(uint16 v)
+    : Type(VariantType::Uint16)
+{
+    AsUint16 = v;
+}
+
 Variant::Variant(int32 v)
     : Type(VariantType::Int)
 {

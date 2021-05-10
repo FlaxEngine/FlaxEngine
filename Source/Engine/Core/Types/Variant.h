@@ -189,6 +189,8 @@ public:
     Variant(Variant&& other) noexcept;
 
     Variant(bool v);
+    Variant(int16 v);
+    Variant(uint16 v);
     Variant(int32 v);
     Variant(uint32 v);
     Variant(int64 v);
