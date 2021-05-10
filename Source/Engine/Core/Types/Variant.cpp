@@ -1139,6 +1139,10 @@ Variant::operator int8() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int8)AsInt16;
+    case VariantType::Uint16:
+        return (int8)AsUint16;
     case VariantType::Int:
         return (int8)AsInt;
     case VariantType::Uint:
@@ -1165,6 +1169,10 @@ Variant::operator int16() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return AsInt16;
+    case VariantType::Uint16:
+        return (int16)AsUint16;
     case VariantType::Int:
         return (int16)AsInt;
     case VariantType::Uint:
@@ -1191,6 +1199,10 @@ Variant::operator int32() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int32)AsInt16;
+    case VariantType::Uint16:
+        return (int32)AsUint16;
     case VariantType::Int:
         return AsInt;
     case VariantType::Uint:
@@ -1217,6 +1229,10 @@ Variant::operator int64() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int64)AsInt16;
+    case VariantType::Uint16:
+        return (int64)AsUint16;
     case VariantType::Int:
         return (int64)AsInt;
     case VariantType::Uint:
@@ -1243,6 +1259,10 @@ Variant::operator uint8() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint8)AsInt16;
+    case VariantType::Uint16:
+        return (uint8)AsUint16;
     case VariantType::Int:
         return (uint8)AsInt;
     case VariantType::Uint:
@@ -1269,6 +1289,10 @@ Variant::operator uint16() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint16)AsInt16;
+    case VariantType::Uint16:
+        return AsUint16;
     case VariantType::Int:
         return (uint16)AsInt;
     case VariantType::Uint:
@@ -1295,6 +1319,10 @@ Variant::operator uint32() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint32)AsInt16;
+    case VariantType::Uint16:
+        return (uint32)AsUint16;
     case VariantType::Int:
         return (uint32)AsInt;
     case VariantType::Uint:
@@ -1321,6 +1349,10 @@ Variant::operator uint64() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint64)AsInt16;
+    case VariantType::Uint16:
+        return (uint64)AsUint16;
     case VariantType::Int:
         return (uint64)AsInt;
     case VariantType::Uint:
@@ -1347,6 +1379,10 @@ Variant::operator float() const
     {
     case VariantType::Bool:
         return AsBool ? 1.0f : 0.0f;
+    case VariantType::Int16:
+        return (float)AsInt16;
+    case VariantType::Uint16:
+        return (float)AsUint16;
     case VariantType::Int:
         return (float)AsInt;
     case VariantType::Uint:
@@ -1371,6 +1407,10 @@ Variant::operator double() const
     {
     case VariantType::Bool:
         return AsBool ? 1.0 : 0.0;
+    case VariantType::Int16:
+        return (double)AsInt16;
+    case VariantType::Uint16:
+        return (double)AsUint16;
     case VariantType::Int:
         return (double)AsInt;
     case VariantType::Uint:
