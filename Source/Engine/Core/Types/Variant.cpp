@@ -1501,6 +1501,10 @@ Variant::operator Vector2() const
     {
     case VariantType::Bool:
         return Vector2(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector2((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector2((float)AsUint16);
     case VariantType::Int:
         return Vector2((float)AsInt);
     case VariantType::Uint:
@@ -1537,6 +1541,10 @@ Variant::operator Vector3() const
     {
     case VariantType::Bool:
         return Vector3(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector3((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector3((float)AsUint16);
     case VariantType::Int:
         return Vector3((float)AsInt);
     case VariantType::Uint:
@@ -1573,6 +1581,10 @@ Variant::operator Vector4() const
     {
     case VariantType::Bool:
         return Vector4(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector4((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector4((float)AsUint16);
     case VariantType::Int:
         return Vector4((float)AsInt);
     case VariantType::Uint:
@@ -1609,6 +1621,10 @@ Variant::operator Int2() const
     {
     case VariantType::Bool:
         return Int2((int32)(AsBool ? 1.0f : 0.0f));
+    case VariantType::Int16:
+        return Int2((int32)AsInt16);
+    case VariantType::Uint16:
+        return Int2((int32)AsUint16);
     case VariantType::Int:
         return Int2((int32)AsInt);
     case VariantType::Uint:
@@ -1651,6 +1667,10 @@ Variant::operator Int3() const
     {
     case VariantType::Bool:
         return Int3((int32)(AsBool ? 1 : 0));
+    case VariantType::Int16:
+        return Int3((int32)AsInt16);
+    case VariantType::Uint16:
+        return Int3((int32)AsUint16);
     case VariantType::Int:
         return Int3((int32)AsInt);
     case VariantType::Uint:
@@ -1693,6 +1713,10 @@ Variant::operator Int4() const
     {
     case VariantType::Bool:
         return Int4((int32)(AsBool ? 1 : 0));
+    case VariantType::Int16:
+        return Int4(AsInt16);
+    case VariantType::Uint16:
+        return Int4((int32)AsUint16);
     case VariantType::Int:
         return Int4(AsInt);
     case VariantType::Uint:
@@ -1735,6 +1759,10 @@ Variant::operator Color() const
     {
     case VariantType::Bool:
         return Color(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Color((float)AsInt16);
+    case VariantType::Uint16:
+        return Color((float)AsUint16);
     case VariantType::Int:
         return Color((float)AsInt);
     case VariantType::Uint:
