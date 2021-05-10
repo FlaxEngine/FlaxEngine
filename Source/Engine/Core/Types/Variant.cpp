@@ -2970,6 +2970,8 @@ bool Variant::NearEqual(const Variant& a, const Variant& b, float epsilon)
         return false;
     switch (a.Type.Type)
     {
+    case VariantType::Int16:
+        return Math::Abs(a.AsInt16 - b.AsInt16) <= (int32)epsilon;
     case VariantType::Int:
         return Math::Abs(a.AsInt - b.AsInt) <= (int32)epsilon;
     case VariantType::Int64:
@@ -3011,8 +3013,12 @@ Variant Variant::Lerp(const Variant& a, const Variant& b, float alpha)
     {
     case VariantType::Bool:
         return alpha < 0.5f ? a : b;
+    case VariantType::Int16:
+        return Math::Lerp(a.AsInt16, b.AsInt16, alpha);
     case VariantType::Int:
         return Math::Lerp(a.AsInt, b.AsInt, alpha);
+    case VariantType::Uint16:
+        return Math::Lerp(a.AsUint16, b.AsUint16, alpha);
     case VariantType::Uint:
         return Math::Lerp(a.AsUint, b.AsUint, alpha);
     case VariantType::Int64:
@@ -3118,8 +3124,12 @@ uint32 GetHash(const Variant& key)
     {
     case VariantType::Bool:
         return GetHash(key.AsBool);
+    case VariantType::Int16:
+        return GetHash(key.AsInt16);
     case VariantType::Int:
         return GetHash(key.AsInt);
+    case VariantType::Uint16:
+        return GetHash(key.AsUint16);
     case VariantType::Uint:
         return GetHash(key.AsUint);
     case VariantType::Int64:
