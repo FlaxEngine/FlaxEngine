@@ -725,6 +725,10 @@ namespace FlaxEditor.Scripting
                     return "Int";
                 if (_managed == typeof(uint))
                     return "Uint";
+                if (_managed == typeof(short))
+                    return "Int16";
+                if (_managed == typeof(ushort))
+                    return "Uint16";
                 if (_managed == typeof(bool))
                     return "Bool";
                 return _managed.Name;
