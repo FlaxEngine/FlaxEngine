@@ -118,6 +118,13 @@ namespace FlaxEditor.Modules
                     return false;
                 }
 
+                // Scripts cannot start with digit. 
+                if (Char.IsDigit(shortName[0]))
+                {
+                    hint = "Name cannot start with a digit.";
+                    return false;
+                }
+
                 // Cache data
                 string sourcePath = item.Path;
                 string sourceFolder = System.IO.Path.GetDirectoryName(sourcePath);
