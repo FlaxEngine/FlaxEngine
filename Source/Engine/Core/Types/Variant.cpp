@@ -918,6 +918,10 @@ bool Variant::operator==(const Variant& other) const
             return true;
         case VariantType::Bool:
             return AsBool == other.AsBool;
+        case VariantType::Int16:
+            return AsInt16 == other.AsInt16;
+        case VariantType::Uint16:
+            return AsUint16 == other.AsUint16;
         case VariantType::Int:
             return AsInt == other.AsInt;
         case VariantType::Uint:
@@ -1026,6 +1030,10 @@ bool Variant::operator<(const Variant& other) const
             return true;
         case VariantType::Bool:
             return AsBool < other.AsBool;
+        case VariantType::Int16:
+            return AsInt16 < other.AsInt16;
+        case VariantType::Uint16:
+            return AsUint16 < other.AsUint16;
         case VariantType::Int:
             return AsInt < other.AsInt;
         case VariantType::Uint:
@@ -1062,6 +1070,10 @@ Variant::operator bool() const
     {
     case VariantType::Bool:
         return AsBool;
+    case VariantType::Int16:
+        return AsInt16 != 0;
+    case VariantType::Uint16:
+        return AsUint16 != 0;
     case VariantType::Int:
         return AsInt != 0;
     case VariantType::Uint:
@@ -1097,6 +1109,10 @@ Variant::operator Char() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (Char)AsInt16;
+    case VariantType::Uint16:
+        return (Char)AsUint16;
     case VariantType::Int:
         return (Char)AsInt;
     case VariantType::Uint:
