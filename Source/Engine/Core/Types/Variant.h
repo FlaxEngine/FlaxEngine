@@ -58,6 +58,9 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Int3,
         Int4,
 
+        Int16,
+        Uint16,
+
         MAX
     };
 
@@ -135,6 +138,8 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
     union
     {
         bool AsBool;
+        int16 AsInt16;
+        uint16 AsUint16;
         int32 AsInt;
         uint32 AsUint;
         int64 AsInt64;
