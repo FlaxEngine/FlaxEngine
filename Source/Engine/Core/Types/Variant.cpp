@@ -2543,6 +2543,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
         case VariantType::Int16:
         case VariantType::Int:
