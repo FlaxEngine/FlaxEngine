@@ -15,5 +15,5 @@ public:
     /// </summary>
     /// <param name="data">Vector4 parameter</param>
     /// <returns>void</returns>
-    API_FUNCTION() void RunNativeAction(Vector4 data);
+    API_FUNCTION() static void RunNativeAction(Vector4 data);
 };
