@@ -160,6 +160,10 @@ const char* VariantType::GetTypeName() const
         return "System.Void";
     case Bool:
         return "System.Boolean";
+    case Int16:
+        return "System.Int16";
+    case Uint16:
+        return "System.UInt16";
     case Int:
         return "System.Int32";
     case Uint:
@@ -224,6 +228,12 @@ const char* VariantType::GetTypeName() const
         break;
     case Bool:
         result = TEXT("Bool");
+        break;
+    case Int16:
+        result = TEXT("Int16");
+        break;
+    case Uint16:
+        result = TEXT("Uint16");
         break;
     case Int:
         result = TEXT("Int");
