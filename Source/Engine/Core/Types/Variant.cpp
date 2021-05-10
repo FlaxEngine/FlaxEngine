@@ -2245,6 +2245,10 @@ String Variant::ToString() const
         return TEXT("null");
     case VariantType::Bool:
         return AsBool ? TEXT("true") : TEXT("false");
+    case VariantType::Int16:
+        return StringUtils::ToString(AsInt16);
+    case VariantType::Uint16:
+        return StringUtils::ToString(AsUint16);
     case VariantType::Int:
         return StringUtils::ToString(AsInt);
     case VariantType::Uint:
