@@ -259,13 +259,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     var p = properties[i];
                     var attributes = p.GetAttributes(true);
+                    var showInEditor = attributes.Any(x => x is ShowInEditorAttribute);
 
                     // Skip properties without getter or setter
-                    if (!p.HasGet || (!p.HasSet && !attributes.Any(x => x is ShowInEditorAttribute)))
+                    if (!p.HasGet || (!p.HasSet && !showInEditor))
                         continue;
                     
                     // Skip hidden fields, handle special attributes
-                    if ((!p.IsPublic && !attributes.Any(x => x is ShowInEditorAttribute)) || attributes.Any(x => x is HideInEditorAttribute))
+                    if ((!p.IsPublic && !showInEditor) || showInEditor)
                         continue;
 
                     items.Add(new ItemInfo(p, attributes));
