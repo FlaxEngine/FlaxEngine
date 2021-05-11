@@ -266,7 +266,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         continue;
                     
                     // Skip hidden fields, handle special attributes
-                    if ((!p.IsPublic && !showInEditor) || showInEditor)
+                    if ((!p.IsPublic && !showInEditor) || attributes.Any(x => x is HideInEditorAttribute))
                         continue;
 
                     items.Add(new ItemInfo(p, attributes));
