@@ -1,7 +1,7 @@
 %copyright%
 #pragma once
 
-#include "Engine/Scripting/Script.h"
+#include <Engine/Scripting/Script.h>
 
 API_CLASS() class %module%%class% : public Script
 {

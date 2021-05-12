@@ -4,7 +4,5 @@
 
 void %class%::RunNativeAction(Vector4 data)
 {
-    LOG(Warning, "Data in RunNativeAction: {0}", data.ToString());
+    LOG(Warning, "Data in RunNativeAction: {0}", data);
 }
-
-
