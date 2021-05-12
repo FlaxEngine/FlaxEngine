@@ -316,6 +316,14 @@ void RigidBody::AddForce(const Vector3& force, ForceMode mode) const
     }
 }
 
+void RigidBody::AddForceAtPosition(const Vector3& force, const Vector3& position, ForceMode mode) const
+{
+    if (_actor && GetEnableSimulation())
+    {
+        PxRigidBodyExt::addForceAtPos(*_actor, C2P(force), C2P(position), static_cast<PxForceMode::Enum>(mode));
+    }
+}
+
 void RigidBody::AddRelativeForce(const Vector3& force, ForceMode mode) const
 {
     AddForce(Vector3::Transform(force, _transform.Orientation), mode);
