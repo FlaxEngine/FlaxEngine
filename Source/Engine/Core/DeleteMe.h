@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Core/Compiler.h"
+
 /// <summary>
 /// Helper class used to delete another object.
 /// </summary>
