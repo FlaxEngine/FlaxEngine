@@ -1,8 +1,8 @@
 %copyright%
 #pragma once
 
-#include <Engine/Scripting/Script.h>
-#include <Engine/Core/Math/Vector4.h>
+#include "Engine/Scripting/Script.h"
+#include "Engine/Core/Math/Vector4.h"
 
 /// <summary>
 /// %class% Function Library

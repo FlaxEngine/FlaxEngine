@@ -1,10 +1,10 @@
 %copyright%
 #pragma once
 
-#include <Engine/Core/ISerializable.h>
-#include <Engine/Core/Types/BaseTypes.h>
-#include <Engine/Content/Assets/Model.h>
-#include <Engine/Scripting/ScriptingType.h>
+#include "Engine/Core/ISerializable.h"
+#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Content/Assets/Model.h"
+#include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
 /// %class% Json Asset. 
