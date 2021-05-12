@@ -54,13 +54,12 @@ Sprite SpriteAtlas::GetSprite(int32 index) const
 void SpriteAtlas::SetSprite(int32 index, const Sprite& value)
 {
     CHECK(index >= 0 && index < Sprites.Count());
-    Sprites[index] = value;
+    Sprites.Get()[index] = value;
 }
 
 SpriteHandle SpriteAtlas::FindSprite(const StringView& name) const
 {
     SpriteHandle result(const_cast<SpriteAtlas*>(this), -1);
-
     for (int32 i = 0; i < Sprites.Count(); i++)
     {
         if (name == Sprites[i].Name)
@@ -69,16 +68,13 @@ SpriteHandle SpriteAtlas::FindSprite(const StringView& name) const
             break;
         }
     }
-
     return result;
 }
 
 SpriteHandle SpriteAtlas::AddSprite(const Sprite& sprite)
 {
     const int32 index = Sprites.Count();
-
     Sprites.Add(sprite);
-
     return SpriteHandle(this, index);
 }
 
@@ -108,10 +104,8 @@ bool SpriteAtlas::SaveSprites()
     MemoryWriteStream stream(1024);
     stream.WriteInt32(1); // Version
     stream.WriteInt32(Sprites.Count()); // Sprites Count
-    for (int32 i = 0; i < Sprites.Count(); i++)
+    for (Sprite& t : Sprites)
     {
-        // Save sprite
-        Sprite t = Sprites[i];
         stream.Write(&t.Area);
         stream.WriteString(t.Name, 49);
     }
@@ -122,7 +116,7 @@ bool SpriteAtlas::SaveSprites()
 
     // Save (use silent mode to prevent asset reloading)
     bool saveResult = SaveAsset(data, true);
-    dataChunk->Data.Release();
+    dataChunk->Data.Unlink();
     if (saveResult)
     {
         LOG(Warning, "Failed to save sprite atlas \'{0}\'.", GetPath());
@@ -136,53 +130,50 @@ bool SpriteAtlas::SaveSprites()
 
 bool SpriteAtlas::LoadSprites(ReadStream& stream)
 {
-#if USE_EDITOR
+    ScopeLock lock(Locker);
+
     // Sprites may be used on rendering thread so lock drawing for a while
-    if (GPUDevice::Instance)
-        GPUDevice::Instance->Locker.Lock();
+#if USE_EDITOR
+    GPUDevice* gpuDevice = GPUDevice::Instance;
+    if (gpuDevice)
+        gpuDevice->Locker.Lock();
 #endif
 
-    // Cleanup first
     Sprites.Clear();
 
-    // Load tiles data
     int32 tilesVersion, tilesCount;
     stream.ReadInt32(&tilesVersion);
     if (tilesVersion != 1)
     {
 #if USE_EDITOR
-        if (GPUDevice::Instance)
-            GPUDevice::Instance->Locker.Unlock();
+        if (gpuDevice)
+            gpuDevice->Locker.Unlock();
 #endif
         LOG(Warning, "Invalid tiles version.");
         return true;
     }
     stream.ReadInt32(&tilesCount);
     Sprites.Resize(tilesCount);
-    for (int32 i = 0; i < tilesCount; i++)
+    for (Sprite& t : Sprites)
     {
-        // Load sprite
-        Sprite& t = Sprites[i];
         stream.Read(&t.Area);
         stream.ReadString(&t.Name, 49);
     }
 
 #if USE_EDITOR
-    if (GPUDevice::Instance)
-        GPUDevice::Instance->Locker.Unlock();
+    if (gpuDevice)
+        gpuDevice->Locker.Unlock();
 #endif
     return false;
 }
 
 Asset::LoadResult SpriteAtlas::load()
 {
-    // Get sprites data
     auto spritesDataChunk = GetChunk(15);
     if (spritesDataChunk == nullptr || spritesDataChunk->IsMissing())
         return LoadResult::MissingDataChunk;
     MemoryReadStream spritesData(spritesDataChunk->Get(), spritesDataChunk->Size());
 
-    // Load sprites
     if (LoadSprites(spritesData))
     {
         LOG(Warning, "Cannot load sprites atlas data.");
@@ -194,7 +185,6 @@ Asset::LoadResult SpriteAtlas::load()
 
 void SpriteAtlas::unload(bool isReloading)
 {
-    // Release sprites
     Sprites.Resize(0);
 
     // Base

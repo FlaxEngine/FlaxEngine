@@ -100,18 +100,16 @@ namespace FlaxEditor.Windows.Assets
             }
 
             [EditorOrder(0), EditorDisplay("Sprites")]
-            [CustomEditor(typeof(SpritesColelctionEditor))]
+            [CustomEditor(typeof(SpritesCollectionEditor))]
             public SpriteEntry[] Sprites;
 
             [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
-            public TextureImportSettings ImportSettings { get; set; } = new TextureImportSettings();
+            public TextureImportSettings ImportSettings = new TextureImportSettings();
 
             public sealed class ProxyEditor : GenericEditor
             {
                 public override void Initialize(LayoutElementsContainer layout)
                 {
-                    var window = ((PropertiesProxy)Values[0])._window;
-
                     base.Initialize(layout);
 
                     layout.Space(10);
@@ -120,14 +118,13 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
-            public sealed class SpritesColelctionEditor : CustomEditor
+            public sealed class SpritesCollectionEditor : CustomEditor
             {
                 public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
 
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var sprites = (SpriteEntry[])Values[0];
-
                     if (sprites != null)
                     {
                         var elementType = new ScriptType(typeof(SpriteEntry));
@@ -186,6 +183,7 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void Reimport()
             {
+                ImportSettings.Sprites = null; // Don't override sprites (use sprites from asset)
                 Editor.Instance.ContentImporting.Reimport((BinaryAssetItem)_window.Item, ImportSettings, true);
             }
 

@@ -96,10 +96,9 @@ struct InternalTextureOptions
             to->Sprites.EnsureCapacity(count);
             for (int32 i = 0; i < count; i++)
             {
-                Sprite sprite;
+                Sprite& sprite = to->Sprites.AddOne();
                 sprite.Area = mono_array_get(from->SpriteAreas, Rectangle, i);
                 sprite.Name = MUtils::ToString(mono_array_get(from->SpriteNames, MonoString*, i));
-                to->Sprites.Add(sprite);
             }
         }
     }
@@ -125,7 +124,7 @@ struct InternalTextureOptions
         {
             const auto domain = mono_domain_get();
             int32 count = from->Sprites.Count();
-            auto rectClass = Scripting::FindClass("FlaxEngine.Rectangle");
+            auto rectClass = Rectangle::TypeInitializer.GetType().ManagedClass;
             ASSERT(rectClass != nullptr);
             to->SpriteAreas = mono_array_new(domain, rectClass->GetNative(), count);
             to->SpriteNames = mono_array_new(domain, mono_get_string_class(), count);
