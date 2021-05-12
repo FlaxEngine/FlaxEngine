@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
@@ -248,7 +249,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 var sprite = new Sprite
                 {
-                    Name = "New Sprite",
+                    Name = StringUtils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
                     Area = new Rectangle(Vector2.Zero, Vector2.One),
                 };
                 Asset.AddSprite(sprite);
