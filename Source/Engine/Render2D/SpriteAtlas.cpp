@@ -40,6 +40,23 @@ SpriteAtlas::SpriteAtlas(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+int32 SpriteAtlas::GetSpritesCount() const
+{
+    return Sprites.Count();
+}
+
+Sprite SpriteAtlas::GetSprite(int32 index) const
+{
+    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite())
+    return Sprites.Get()[index];
+}
+
+void SpriteAtlas::SetSprite(int32 index, const Sprite& value)
+{
+    CHECK(index >= 0 && index < Sprites.Count());
+    Sprites[index] = value;
+}
+
 SpriteHandle SpriteAtlas::FindSprite(const StringView& name) const
 {
     SpriteHandle result(const_cast<SpriteAtlas*>(this), -1);
