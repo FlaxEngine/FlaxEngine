@@ -73,7 +73,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         else
             v.Type = VariantType::Null;
         const auto mTypeName = SERIALIZE_FIND_MEMBER(stream, "TypeName");
-        if (mTypeName != stream.MemberEnd())
+        if (mTypeName != stream.MemberEnd() && mTypeName->value.IsString())
             v.SetTypeName(StringAnsiView(mTypeName->value.GetString(), mTypeName->value.GetStringLength()));
     }
     else
@@ -256,6 +256,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         v.AsPointer = (void*)(uintptr)value.GetUint64();
         break;
     case VariantType::String:
+        CHECK(value.IsString());
         v.SetString(StringAnsiView(value.GetString(), value.GetStringLength()));
         break;
     case VariantType::Object:
@@ -269,6 +270,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         break;
     case VariantType::Structure:
     case VariantType::Blob:
+        CHECK(value.IsString());
         id.A = value.GetStringLength();
         v.SetBlob(id.A);
         Encryption::Base64Decode(value.GetString(), id.A, (byte*)v.AsBlob.Data);
@@ -325,6 +327,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, *v.AsDictionary, modifier);
         break;
     case VariantType::Typename:
+        CHECK(value.IsString());
         v.SetTypename(StringAnsiView(value.GetString(), value.GetStringLength()));
         break;
     default:
@@ -344,7 +347,7 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Guid
 
 void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Guid& v, ISerializeModifier* modifier)
 {
-    if (stream.GetStringLength() != 32)
+    if (!stream.IsString() || stream.GetStringLength() != 32)
     {
         v = Guid::Empty;
         return;
