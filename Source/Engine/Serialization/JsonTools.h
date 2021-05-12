@@ -386,6 +386,8 @@ public:
     DECLARE_GETTER(Plane);
     DECLARE_GETTER(DateTime);
 
+#undef DECLARE_GETTER
+
 #define DECLARE_GETTER(type) \
 	FORCE_INLINE static void Get##type(type& result, const Value& node, const char* name) \
 	{ \
