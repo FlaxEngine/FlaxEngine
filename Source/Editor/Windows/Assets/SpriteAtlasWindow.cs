@@ -7,6 +7,7 @@ using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -131,9 +132,32 @@ namespace FlaxEditor.Windows.Assets
                         for (int i = 0; i < sprites.Length; i++)
                         {
                             var group = layout.Group(sprites[i].Name);
+                            group.Panel.Tag = i;
+                            group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
                         }
                     }
+                }
+
+                private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+                {
+                    var menu = new ContextMenu();
+
+                    var deleteSprite = menu.AddButton("Delete sprite");
+                    deleteSprite.Tag = groupPanel.Tag;
+                    deleteSprite.ButtonClicked += OnDeleteSpriteClicked;
+
+                    menu.Show(groupPanel, location);
+                }
+
+                private void OnDeleteSpriteClicked(ContextMenuButton button)
+                {
+                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var index = (int)button.Tag;
+                    window.Asset.RemoveSprite(index);
+                    window.MarkAsEdited();
+                    window._properties.UpdateSprites();
+                    window._propertiesEditor.BuildLayout();
                 }
             }
 
