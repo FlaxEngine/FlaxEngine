@@ -817,12 +817,10 @@ private:
     AnimGraph& _graph;
     float _deltaTime = 0.0f;
     uint64 _currentFrameIndex = 0;
-    int32 _skeletonBonesCount = 0;
     int32 _skeletonNodesCount = 0;
     RootMotionMode _rootMotionMode = RootMotionMode::NoExtraction;
     AnimGraphInstanceData* _data = nullptr;
     AnimGraphImpulse _emptyNodes;
-    Array<Matrix> _bonesTransformations;
     AnimGraphTransitionData _transitionData;
     Array<Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> _callStack;
     Array<Graph*, FixedAllocation<32>> _graphStack;
@@ -853,18 +851,13 @@ public:
     /// </summary>
     /// <param name="data">The instance data.</param>
     /// <param name="dt">The delta time (in seconds).</param>
-    /// <returns>The pointer to the final bones structure as a result of the animation evaluation.</returns>
-    const Matrix* Update(AnimGraphInstanceData& data, float dt);
+    void Update(AnimGraphInstanceData& data, float dt);
 
-    void GetInputValue(Box* box, Value& result)
-    {
-        result = eatBox(box->GetParent<Node>(), box->FirstConnection());
-    }
+    void GetInputValue(Box* box, Value& result);
 
     /// <summary>
     /// Gets the skeleton nodes transformations structure containing identity matrices.
     /// </summary>
-    /// <returns>The data.</returns>
     FORCE_INLINE const AnimGraphImpulse* GetEmptyNodes() const
     {
         return &_emptyNodes;
@@ -914,11 +907,7 @@ public:
     /// Resets the state bucket.
     /// </summary>
     /// <param name="bucketIndex">The zero-based index of the bucket.</param>
-    FORCE_INLINE void ResetBucket(int32 bucketIndex)
-    {
-        auto& stateBucket = _data->State[bucketIndex];
-        _graph._bucketInitializerList[bucketIndex](stateBucket);
-    }
+    void ResetBucket(int32 bucketIndex);
 
     /// <summary>
     /// Resets all the state bucket used by the given graph including sub-graphs (total). Can eb used to reset the animation state of the nested graph (including children).
