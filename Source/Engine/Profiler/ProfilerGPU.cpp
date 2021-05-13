@@ -16,6 +16,11 @@ bool ProfilerGPU::Enabled = true;
 int32 ProfilerGPU::CurrentBuffer = 0;
 ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
 
+bool ProfilerGPU::EventBuffer::HasData() const
+{
+    return _isResolved && _data.HasItems();
+}
+
 void ProfilerGPU::EventBuffer::EndAll()
 {
     for (int32 i = 0; i < _data.Count(); i++)
@@ -41,7 +46,7 @@ void ProfilerGPU::EventBuffer::TryResolve()
     {
         auto& e = _data[i];
         e.Time = e.Timer->GetResult();
-        FreeTimerQuery(e.Timer);
+        _timerQueriesFree.Add(e.Timer);
         e.Timer = nullptr;
     }
 
@@ -53,6 +58,13 @@ int32 ProfilerGPU::EventBuffer::Add(const Event& e)
     const int32 index = _data.Count();
     _data.Add(e);
     return index;
+}
+
+void ProfilerGPU::EventBuffer::Extract(Array<Event>& data) const
+{
+    // Don't use unresolved data
+    ASSERT(_isResolved);
+    data = _data;
 }
 
 void ProfilerGPU::EventBuffer::Clear()
