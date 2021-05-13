@@ -147,6 +147,24 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
 }
 
+int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
+{
+    const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
+    int32 result = -1;
+    float closest = MAX_float;
+    for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
+    {
+        const Vector3 node = GraphInstance.NodesPose[nodeIndex].GetTranslation();
+        const float dst = Vector3::DistanceSquared(node, pos);
+        if (dst < closest)
+        {
+            closest = dst;
+            result = nodeIndex;
+        }
+    }
+    return result;
+}
+
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
     if (!AnimationGraph) \
     { \
@@ -233,6 +251,8 @@ void AnimatedModel::SetParameterValue(const Guid& id, const Variant& value)
     }
     LOG(Warning, "Failed to set animated model '{0}' missing parameter '{1}'", ToString(), id.ToString());
 }
+
+#undef CHECK_ANIM_GRAPH_PARAM_ACCESS
 
 float AnimatedModel::GetBlendShapeWeight(const StringView& name)
 {

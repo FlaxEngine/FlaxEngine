@@ -208,6 +208,14 @@ public:
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
 
+    /// <summary>
+    /// Finds the closest node to a given location.
+    /// </summary>
+    /// <param name="location">The text location (in local-space of the actor or world-space depending on <paramref name="worldSpace"/>).</param>
+    /// <param name="worldSpace">True if convert input location is in world-space, otherwise it's in local-space of the actor.</param>
+    /// <returns>The zero-based index of the found node. Returns -1 if skeleton is missing.</returns>
+    API_FUNCTION() int32 FindClosestNode(const Vector3& location, bool worldSpace = false) const;
+
 public:
 
     /// <summary>
