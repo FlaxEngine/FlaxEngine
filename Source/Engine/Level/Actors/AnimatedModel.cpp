@@ -422,12 +422,13 @@ void AnimatedModel::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void AnimatedModel::OnAnimUpdate()
+void AnimatedModel::OnAnimationUpdated()
 {
     UpdateBounds();
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
     _blendShapes.Update(SkinnedModel.Get());
+    AnimationUpdated();
 }
 
 void AnimatedModel::OnSkinnedModelChanged()

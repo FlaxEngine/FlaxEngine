@@ -86,7 +86,7 @@ void AnimationManagerService::Update()
             // Update gameplay
             const bool usePrevFrameBones = animatedModel->PerBoneMotionBlur;
             animatedModel->_skinningData.SetData(UpdateBones.Get(), !usePrevFrameBones);
-            animatedModel->OnAnimUpdate();
+            animatedModel->OnAnimationUpdated();
         }
     }
     UpdateList.Clear();

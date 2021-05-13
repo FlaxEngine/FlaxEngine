@@ -7,6 +7,7 @@
 #include "Engine/Content/Assets/AnimationGraph.h"
 #include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Core/Delegate.h"
 
 /// <summary>
 /// Performs an animation and renders a skinned model.
@@ -166,9 +167,14 @@ public:
     API_FUNCTION() void ResetAnimation();
 
     /// <summary>
-    /// Performs the full animation update.
+    /// Performs the full animation update. The actual update will be performed during gameplay tick.
     /// </summary>
     API_FUNCTION() void UpdateAnimation();
+    
+    /// <summary>
+    /// Called after animation gets updated (new skeleton pose).
+    /// </summary>
+    API_EVENT() Action AnimationUpdated;
 
     /// <summary>
     /// Validates and creates a proper skinning data.
@@ -179,11 +185,6 @@ public:
     /// Creates and setups the skinning data (writes the identity bones transformations).
     /// </summary>
     API_FUNCTION() void PreInitSkinningData();
-
-    /// <summary>
-    /// Updates the child bone socket actors.
-    /// </summary>
-    API_FUNCTION() void UpdateSockets();
 
     /// <summary>
     /// Gets the per-node final transformations.
@@ -284,35 +285,20 @@ public:
 
 private:
 
-    /// <summary>
-    /// Applies the root motion delta to the target actor.
-    /// </summary>
     void ApplyRootMotion(const RootMotionData& rootMotionDelta);
-
-    /// <summary>
-    /// Synchronizes the parameters collection (may lost existing params data on collection change detected).
-    /// </summary>
     void SyncParameters();
 
-    /// <summary>
-    /// Updates the local bounds of the actor.
-    /// </summary>
+    void Update();
     void UpdateLocalBounds();
-
     void UpdateBounds();
-
-    /// <summary>
-    /// Called after animation graph update.
-    /// </summary>
-    void OnAnimUpdate();
+    void UpdateSockets();
+    void OnAnimationUpdated();
 
     void OnSkinnedModelChanged();
     void OnSkinnedModelLoaded();
 
     void OnGraphChanged();
     void OnGraphLoaded();
-
-    void Update();
 
 public:
 
