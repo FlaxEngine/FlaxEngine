@@ -23,6 +23,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.NavigationSettings;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.NavigationSettings128;
     }
 }

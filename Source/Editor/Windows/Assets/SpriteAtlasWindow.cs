@@ -241,10 +241,10 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Modified += MarkAsEdited;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
-            _toolstrip.AddButton(editor.Icons.Import32, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
+            _toolstrip.AddButton(editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.AddDoc32, () =>
+            _toolstrip.AddButton(editor.Icons.AddFile64, () =>
             {
                 var sprite = new Sprite
                 {
@@ -257,7 +257,7 @@ namespace FlaxEditor.Windows.Assets
                 _propertiesEditor.BuildLayout();
             }).LinkTooltip("Add a new sprite");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.PageScale32, _preview.CenterView).LinkTooltip("Center view");
+            _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
         }
 
         /// <inheritdoc />

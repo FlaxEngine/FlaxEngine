@@ -164,7 +164,7 @@ namespace FlaxEditor.Windows.Assets
         {
             // Toolstrip
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/physics/colliders/collision-data.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/physics/colliders/collision-data.html")).LinkTooltip("See documentation to learn more");
 
             // Split Panel
             _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)

@@ -104,7 +104,7 @@ namespace FlaxEditor.Surface.Archetypes
                         color *= 1.3f;
                     color.A = 1.0f;
                     var icons = Editor.Instance.Icons;
-                    var icon = isSelected ? icons.VisjectArrowClose : icons.VisjectArrowOpen;
+                    var icon = isSelected ? icons.VisjectArrowClosed32 : icons.VisjectArrowOpen32;
 
                     Render2D.PushTransform(ref arrowTransform);
                     Render2D.DrawSprite(icon, arrowRect, color);

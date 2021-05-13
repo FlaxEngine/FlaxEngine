@@ -23,6 +23,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.PhysicsSettings;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.PhysicsSettings128;
     }
 }

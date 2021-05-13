@@ -695,7 +695,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.Camera32),
+                Brush = new SpriteBrush(icons.Camera64),
                 Offsets = new Margin(-buttonSize - 2 + _selectActor.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };

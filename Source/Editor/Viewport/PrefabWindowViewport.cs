@@ -117,7 +117,7 @@ namespace FlaxEditor.Viewport
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.World16, null, true)
+            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
@@ -128,7 +128,7 @@ namespace FlaxEditor.Viewport
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.ScaleStep16, null, true)
+            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.ScaleSnap32, null, true)
             {
                 Checked = TransformGizmo.ScaleSnapEnabled,
                 TooltipText = "Enable scale snapping",
@@ -155,7 +155,7 @@ namespace FlaxEditor.Viewport
 
             // Rotation snapping widget
             var rotateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.RotateStep16, null, true)
+            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.RotateSnap32, null, true)
             {
                 Checked = TransformGizmo.RotationSnapEnabled,
                 TooltipText = "Enable rotation snapping",
@@ -182,7 +182,7 @@ namespace FlaxEditor.Viewport
 
             // Translation snapping widget
             var translateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Grid16, null, true)
+            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Grid32, null, true)
             {
                 Checked = TransformGizmo.TranslationSnapEnable,
                 TooltipText = "Enable position snapping",
@@ -209,7 +209,7 @@ namespace FlaxEditor.Viewport
 
             // Gizmo mode widget
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate16, null, true)
+            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
@@ -217,14 +217,14 @@ namespace FlaxEditor.Viewport
                 Parent = gizmoMode
             };
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
-            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate16, null, true)
+            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
-            _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale16, null, true)
+            _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",

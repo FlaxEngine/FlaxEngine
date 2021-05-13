@@ -23,6 +23,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.AudioSettings;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.AudioSettings128;
     }
 }

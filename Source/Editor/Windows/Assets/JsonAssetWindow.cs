@@ -25,7 +25,7 @@ namespace FlaxEditor.Windows.Assets
         : base(editor, item)
         {
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)

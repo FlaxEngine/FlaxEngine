@@ -111,7 +111,7 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_proxy);
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
         }
 
         private void OnTextChanged()
