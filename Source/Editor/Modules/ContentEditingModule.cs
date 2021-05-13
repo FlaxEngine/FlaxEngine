@@ -118,11 +118,22 @@ namespace FlaxEditor.Modules
                     return false;
                 }
 
-                // Scripts cannot start with digit. 
-                if (Char.IsDigit(shortName[0]))
+                if (item is NewItem ni)
                 {
-                    hint = "Name cannot start with a digit.";
-                    return false;
+                    if (!ni.Proxy.IsFileNameValid(shortName))
+                    { 
+                        hint = "Name does not follow " + ni.Proxy.Name + " name restrictions !";
+                        return false;
+                    }
+                }
+                else
+                {
+                    var proxy = Editor.ContentDatabase.GetProxy(item);
+                    if (proxy != null && !proxy.IsFileNameValid(shortName))
+                    { 
+                        hint = "Name does not follow " + proxy.Name + " name restrictions !";
+                        return false;
+                    }
                 }
 
                 // Cache data
