@@ -154,7 +154,7 @@ int32 ProfilerCPU::BeginEvent()
     return thread->BeginEvent();
 }
 
-int32 ProfilerCPU::BeginEvent(const Char* name, bool transient)
+int32 ProfilerCPU::BeginEvent(const Char* name)
 {
     if (!Enabled)
         return -1;
@@ -165,7 +165,7 @@ int32 ProfilerCPU::BeginEvent(const Char* name, bool transient)
     auto src = name;
     if (src)
     {
-        auto end = dst + ARRAY_COUNT(e.Name) - 1;
+        const auto end = dst + ARRAY_COUNT(e.Name) - 1;
         while (*src && dst != end)
             *dst++ = *src++;
     }
@@ -173,7 +173,7 @@ int32 ProfilerCPU::BeginEvent(const Char* name, bool transient)
     return index;
 }
 
-int32 ProfilerCPU::BeginEvent(const char* name, bool transient)
+int32 ProfilerCPU::BeginEvent(const char* name)
 {
     if (!Enabled)
         return -1;
@@ -184,7 +184,7 @@ int32 ProfilerCPU::BeginEvent(const char* name, bool transient)
     auto src = name;
     if (src)
     {
-        auto end = dst + ARRAY_COUNT(e.Name) - 1;
+        const auto end = dst + ARRAY_COUNT(e.Name) - 1;
         while (*src && dst != end)
             *dst++ = *src++;
     }

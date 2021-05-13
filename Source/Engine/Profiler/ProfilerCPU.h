@@ -325,17 +325,15 @@ public:
     /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
     /// </summary>
     /// <param name="name">The event name.</param>
-    /// <param name="transient">True if name is transient and should be cached by allocator (not static).</param>
     /// <returns>The event token.</returns>
-    static int32 BeginEvent(const Char* name, bool transient = false);
+    static int32 BeginEvent(const Char* name);
 
     /// <summary>
     /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
     /// </summary>
     /// <param name="name">The event name.</param>
-    /// <param name="transient">True if name is transient and should be cached by allocator (not static).</param>
     /// <returns>The event token.</returns>
-    static int32 BeginEvent(const char* name, bool transient = false);
+    static int32 BeginEvent(const char* name);
 
     /// <summary>
     /// Ends the event.
@@ -356,14 +354,14 @@ struct ScopeProfileBlockCPU
 {
     int32 Index;
 
-    FORCE_INLINE ScopeProfileBlockCPU(const Char* name, bool transient = false)
+    FORCE_INLINE ScopeProfileBlockCPU(const Char* name)
     {
-        Index = ProfilerCPU::BeginEvent(name, transient);
+        Index = ProfilerCPU::BeginEvent(name);
     }
 
-    FORCE_INLINE ScopeProfileBlockCPU(const char* name, bool transient = false)
+    FORCE_INLINE ScopeProfileBlockCPU(const char* name)
     {
-        Index = ProfilerCPU::BeginEvent(name, transient);
+        Index = ProfilerCPU::BeginEvent(name);
     }
 
     FORCE_INLINE ~ScopeProfileBlockCPU()
@@ -381,12 +379,12 @@ struct TIsPODType<ProfilerCPU::Event>
 // Shortcut macros for profiling a single code block execution on CPU
 // Use ZoneTransient for Tracy for code that can be hot-reloaded (eg. in Editor) or if name can be a variable
 
-#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name, true)
+#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name)
 
 #if defined(_MSC_VER)
 
 #if USE_EDITOR
-#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__), false)
+#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
 #else
 #define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
 
