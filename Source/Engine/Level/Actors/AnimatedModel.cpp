@@ -132,6 +132,21 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     }
 }
 
+void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
+{
+    if (GraphInstance.NodesPose.Count() == 0)
+        return;
+    CHECK(nodesTransformation.Count() == GraphInstance.NodesPose.Count());
+    GraphInstance.NodesPose = nodesTransformation;
+    if (worldSpace)
+    {
+        Matrix invWorld;
+        Matrix::Invert(_world, invWorld);
+        for (auto& m : GraphInstance.NodesPose)
+            m = invWorld * m;
+    }
+}
+
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
 {
     if (nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count())

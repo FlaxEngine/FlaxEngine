@@ -187,11 +187,18 @@ public:
     API_FUNCTION() void PreInitSkinningData();
 
     /// <summary>
-    /// Gets the per-node final transformations.
+    /// Gets the per-node final transformations (skeleton pose).
     /// </summary>
     /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     API_FUNCTION() void GetCurrentPose(API_PARAM(Out) Array<Matrix>& nodesTransformation, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Sets the per-node final transformations (skeleton pose).
+    /// </summary>
+    /// <param name="nodesTransformation">The per-node final transformation matrices.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values are in local-space of the actor.</param>
+    API_FUNCTION() void SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace = false);
 
     /// <summary>
     /// Gets the node final transformation.
