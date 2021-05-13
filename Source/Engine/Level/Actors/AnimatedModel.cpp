@@ -13,6 +13,8 @@
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
 
+extern Array<Matrix> UpdateBones;
+
 AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
     , _actualMode(AnimationUpdateMode::Never)
@@ -145,6 +147,7 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
         for (auto& m : GraphInstance.NodesPose)
             m = invWorld * m;
     }
+    OnAnimationUpdated();
 }
 
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
@@ -439,6 +442,21 @@ void AnimatedModel::UpdateBounds()
 
 void AnimatedModel::OnAnimationUpdated()
 {
+    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+
+    // Calculate the final bones transformations and update skinning
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Final Pose");
+        auto& skeleton = SkinnedModel->Skeleton;
+        UpdateBones.Resize(skeleton.Bones.Count(), false);
+        for (int32 boneIndex = 0; boneIndex < skeleton.Bones.Count(); boneIndex++)
+        {
+            auto& bone = skeleton.Bones[boneIndex];
+            UpdateBones[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+        }
+    }
+    _skinningData.SetData(UpdateBones.Get(), !PerBoneMotionBlur);
+
     UpdateBounds();
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
