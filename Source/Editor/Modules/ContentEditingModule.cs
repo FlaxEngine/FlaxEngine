@@ -118,6 +118,7 @@ namespace FlaxEditor.Modules
                     return false;
                 }
 
+                // Check proxy name restrictions
                 if (item is NewItem ni)
                 {
                     if (!ni.Proxy.IsFileNameValid(shortName))
