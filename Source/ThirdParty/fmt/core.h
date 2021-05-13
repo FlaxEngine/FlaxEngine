@@ -11,6 +11,7 @@
 // Custom configuration for Flax
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/StringUtils.h"
+#include "Engine/Core/Templates.h"
 #include "Engine/Core/Memory/StlWrapper.h"
 #define FMT_USE_CONSTEXPR11 0
 #define FMT_USE_USER_DEFINED_LITERALS 0
@@ -966,7 +967,7 @@ FMT_CONSTEXPR typename internal::result_of<Visitor(int)>::type
 template <typename Visitor, typename Context>
 FMT_CONSTEXPR typename internal::result_of<Visitor(int)>::type
     visit(Visitor &&vis, const basic_format_arg<Context> &arg) {
-  return visit_format_arg(std::forward<Visitor>(vis), arg);
+  return visit_format_arg(::Forward<Visitor>(vis), arg);
 }
 
 // Parsing context consisting of a format string range being parsed and an
@@ -1391,12 +1392,12 @@ class basic_format_args {
 struct format_args : basic_format_args<format_context> {
   template <typename ...Args>
   format_args(Args &&... arg)
-  : basic_format_args<format_context>(std::forward<Args>(arg)...) {}
+  : basic_format_args<format_context>(::Forward<Args>(arg)...) {}
 };
 struct wformat_args : basic_format_args<wformat_context> {
   template <typename ...Args>
   wformat_args(Args &&... arg)
-  : basic_format_args<wformat_context>(std::forward<Args>(arg)...) {}
+  : basic_format_args<wformat_context>(::Forward<Args>(arg)...) {}
 };
 
 #define FMT_ENABLE_IF_T(B, T) typename std::enable_if<B, T>::type

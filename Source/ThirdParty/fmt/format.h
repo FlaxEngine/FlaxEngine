@@ -2784,8 +2784,8 @@ struct udl_formatter {
 
   template <typename... Args>
   auto operator()(Args &&... args) const
-                  -> decltype(format(str, std::forward<Args>(args)...)) {
-    return format(str, std::forward<Args>(args)...);
+                  -> decltype(format(str, ::Forward<Args>(args)...)) {
+    return format(str, ::Forward<Args>(args)...);
   }
 };
 # endif // FMT_UDL_TEMPLATE
@@ -2796,7 +2796,7 @@ struct udl_arg {
 
   template <typename T>
   named_arg<T, Char> operator=(T &&value) const {
-    return {str, std::forward<T>(value)};
+    return {str, ::Forward<T>(value)};
   }
 };
 

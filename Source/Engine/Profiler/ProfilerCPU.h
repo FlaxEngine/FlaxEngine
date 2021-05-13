@@ -387,7 +387,6 @@ struct TIsPODType<ProfilerCPU::Event>
 #define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
 #else
 #define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
-
 #endif
 
 #else
@@ -395,7 +394,7 @@ struct TIsPODType<ProfilerCPU::Event>
 #if USE_EDITOR
 #define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(__FUNCTION__)
 #else
-#define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(_functionNameBuffer)
+#define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(__FUNCTION__)
 #endif
 
 #endif
