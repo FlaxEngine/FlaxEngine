@@ -759,6 +759,15 @@ void Actor::PostLoad()
     // Use lazy creation for the managed instance, just register the object
     if (!IsRegistered())
         RegisterObject();
+    
+    // Fire events for scripting
+    for (auto* script : Scripts)
+    {
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            script->OnAwake();
+        }
+    }
 }
 
 void Actor::PostSpawn()
@@ -821,14 +830,6 @@ void Actor::BeginPlay(SceneBeginData* data)
             Children[i]->BeginPlay(data);
     }
 
-    // Fire events for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnAwake();
-        }
-    }
     if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
         OnEnable();
