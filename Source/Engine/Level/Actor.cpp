@@ -794,6 +794,15 @@ void Actor::PostSpawn()
     {
         Children[i]->PostSpawn();
     }
+        
+    // Fire events for scripting
+    for (auto* script : Scripts)
+    {
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            script->OnAwake();
+        }
+    }
 }
 
 void Actor::BeginPlay(SceneBeginData* data)
