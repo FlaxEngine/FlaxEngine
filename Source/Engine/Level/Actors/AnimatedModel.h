@@ -65,6 +65,7 @@ private:
     float _lastMinDstSqr;
     uint64 _lastUpdateFrame;
     BlendShapesInstance _blendShapes;
+    ScriptingObjectReference<AnimatedModel> _masterPose;
 
 public:
 
@@ -223,6 +224,12 @@ public:
     /// <param name="worldSpace">True if convert input location is in world-space, otherwise it's in local-space of the actor.</param>
     /// <returns>The zero-based index of the found node. Returns -1 if skeleton is missing.</returns>
     API_FUNCTION() int32 FindClosestNode(const Vector3& location, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Sets the master pose model that will be used to copy the skeleton nodes animation. Useful for modular characters.
+    /// </summary>
+    /// <param name="masterPose">The master pose actor to use.</param>
+    API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
 
 public:
 

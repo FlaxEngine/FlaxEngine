@@ -44,7 +44,8 @@ void AnimatedModel::UpdateAnimation()
         || !IsActiveInHierarchy()
         || SkinnedModel == nullptr
         || !SkinnedModel->IsLoaded()
-        || _lastUpdateFrame == Engine::FrameCount)
+        || _lastUpdateFrame == Engine::FrameCount
+        || _masterPose)
         return;
     _lastUpdateFrame = Engine::FrameCount;
 
@@ -181,6 +182,17 @@ int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) c
         }
     }
     return result;
+}
+
+void AnimatedModel::SetMasterPoseModel(AnimatedModel* masterPose)
+{
+    if (masterPose == _masterPose)
+        return;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Unbind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
+    _masterPose = masterPose;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Bind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
 }
 
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
@@ -378,6 +390,7 @@ void AnimatedModel::BeginPlay(SceneBeginData* data)
 void AnimatedModel::EndPlay()
 {
     AnimationManager::RemoveFromUpdate(this);
+    SetMasterPoseModel(nullptr);
 
     // Base
     ModelInstanceActor::EndPlay();
@@ -443,11 +456,21 @@ void AnimatedModel::UpdateBounds()
 void AnimatedModel::OnAnimationUpdated()
 {
     ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    auto& skeleton = SkinnedModel->Skeleton;
+
+    // Copy pose from the master
+    if (_masterPose && _masterPose->SkinnedModel->Skeleton.Nodes.Count() == skeleton.Nodes.Count())
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Copy Master Pose");
+        const auto& masterInstance = _masterPose->GraphInstance;
+        GraphInstance.NodesPose = masterInstance.NodesPose;
+        GraphInstance.RootTransform = masterInstance.RootTransform;
+        GraphInstance.RootMotion = masterInstance.RootMotion;
+    }
 
     // Calculate the final bones transformations and update skinning
     {
         ANIM_GRAPH_PROFILE_EVENT("Final Pose");
-        auto& skeleton = SkinnedModel->Skeleton;
         UpdateBones.Resize(skeleton.Bones.Count(), false);
         for (int32 boneIndex = 0; boneIndex < skeleton.Bones.Count(); boneIndex++)
         {
