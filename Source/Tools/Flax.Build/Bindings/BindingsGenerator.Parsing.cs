@@ -213,7 +213,9 @@ namespace Flax.Build.Bindings
                 type.GenericArgs = new List<TypeInfo>();
                 do
                 {
-                    type.GenericArgs.Add(ParseType(ref context));
+                    var argType = ParseType(ref context);
+                    if (argType.Type != null)
+                        type.GenericArgs.Add(argType);
                     token = context.Tokenizer.NextToken();
                 } while (token.Type != TokenType.RightAngleBracket);
 

@@ -7,12 +7,14 @@
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/SkinnedModelAssetUpgrader.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Renderer/DrawCall.h"
 
 #define CHECK_INVALID_BUFFER(buffer) \
     if (buffer->IsValidFor(this) == false) \
@@ -106,7 +108,7 @@ protected:
     }
 };
 
-REGISTER_BINARY_ASSET(SkinnedModel, "FlaxEngine.SkinnedModel", ::New<SkinnedModelAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(SkinnedModel, "FlaxEngine.SkinnedModel", SkinnedModelAssetUpgrader, true);
 
 SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->SkinnedModels())
@@ -118,6 +120,11 @@ SkinnedModel::~SkinnedModel()
     // Ensure to be fully disposed
     ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
+}
+
+bool SkinnedModel::HasAnyLODInitialized() const
+{
+    return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
 }
 
 Array<String> SkinnedModel::GetBlendShapes()
@@ -135,6 +142,18 @@ Array<String> SkinnedModel::GetBlendShapes()
         }
     }
     return result;
+}
+
+ContentLoadTask* SkinnedModel::RequestLODDataAsync(int32 lodIndex)
+{
+    const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
+    return RequestChunkDataAsync(chunkIndex);
+}
+
+void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
+{
+    const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
+    GetChunkData(chunkIndex, data);
 }
 
 bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
@@ -389,7 +408,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
         {
             auto& slot = MaterialSlots[materialSlotIndex];
 
-            const auto id =slot.Material.GetID();
+            const auto id = slot.Material.GetID();
             stream->Write(&id);
             stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
             stream->WriteString(slot.Name, 11);
@@ -505,14 +524,14 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 auto& meshData = meshesData[meshIndex];
 
                 // Vertex Buffer 0 (required)
-                auto task = mesh.DownloadDataAsyncGPU(MeshBufferType::Vertex0, meshData.VB0);
+                auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, meshData.VB0);
                 if (task == nullptr)
                     return true;
                 task->Start();
                 tasks.Add(task);
 
                 // Index Buffer (required)
-                task = mesh.DownloadDataAsyncGPU(MeshBufferType::Index, meshData.IB);
+                task = mesh.DownloadDataGPUAsync(MeshBufferType::Index, meshData.IB);
                 if (task == nullptr)
                     return true;
                 task->Start();
@@ -701,6 +720,19 @@ void SkinnedModel::SetupMaterialSlots(int32 slotsCount)
     }
 }
 
+int32 SkinnedModel::GetLODsCount() const
+{
+    return LODs.Count();
+}
+
+void SkinnedModel::GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex)
+{
+    auto& lod = LODs[lodIndex];
+    meshes.Resize(lod.Meshes.Count());
+    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+        meshes[meshIndex] = &lod.Meshes[meshIndex];
+}
+
 void SkinnedModel::InitAsVirtual()
 {
     // Init with one mesh and single bone
@@ -722,6 +754,21 @@ void SkinnedModel::InitAsVirtual()
     // Base
     BinaryAsset::InitAsVirtual();
 }
+
+#if USE_EDITOR
+
+void SkinnedModel::GetReferences(Array<Guid>& output) const
+{
+    // Base
+    BinaryAsset::GetReferences(output);
+
+    for (int32 i = 0; i < MaterialSlots.Count(); i++)
+    {
+        output.Add(MaterialSlots[i].Material.GetID());
+    }
+}
+
+#endif
 
 int32 SkinnedModel::GetMaxResidency() const
 {

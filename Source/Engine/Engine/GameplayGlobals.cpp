@@ -8,6 +8,8 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/BinaryAssetUpgrader.h"
 
+#if USE_EDITOR
+
 class GameplayGlobalsUpgrader : public BinaryAssetUpgrader
 {
 public:
@@ -50,7 +52,9 @@ private:
     }
 };
 
-REGISTER_BINARY_ASSET(GameplayGlobals, "FlaxEngine.GameplayGlobals", ::New<GameplayGlobalsUpgrader>(), true);
+#endif
+
+REGISTER_BINARY_ASSET_WITH_UPGRADER(GameplayGlobals, "FlaxEngine.GameplayGlobals", GameplayGlobalsUpgrader, true);
 
 GameplayGlobals::GameplayGlobals(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

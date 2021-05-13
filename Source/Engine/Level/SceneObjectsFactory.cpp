@@ -10,6 +10,7 @@
 #include "Engine/Serialization/ISerializeModifier.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/ThreadLocal.h"
 
 SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier)
 {

@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Collections/Array.h"
+
+class WriteStream;
 
 struct NavMeshTileDataHeader
 {

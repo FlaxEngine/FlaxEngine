@@ -11,6 +11,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "../Win32/IncludeWindowsHeaders.h"
@@ -36,9 +37,30 @@ namespace
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
     CriticalSection SymLocker;
+#if TRACY_ENABLE
+    bool SymInitialized = true;
+#else
     bool SymInitialized = false;
-    bool SymModulesDirty = true;
-    char* SymPath = nullptr;
+#endif
+    Array<String> SymbolsPath;
+
+    void OnSymbolsPathModified()
+    {
+        if (!SymInitialized)
+            return;
+        HANDLE process = GetCurrentProcess();
+        SymCleanup(process);
+        String symbolSearchPath;
+        for (auto& path : SymbolsPath)
+        {
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
+        }
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        SymInitializeW(process, *symbolSearchPath, TRUE);
+        //SymSetSearchPathW(process, *symbolSearchPath);
+        //SymRefreshModuleList(process);
+    }
 #endif
 }
 
@@ -74,16 +96,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
     }
 
     return (dpiX + dpiY) / 2;
-}
-
-int32 CalculateDpi()
-{
-    if (const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll"))
-    {
-        return CalculateDpi(shCoreDll);
-    }
-
-    return 96;
 }
 
 LONG GetStringRegKey(HKEY hKey, const Char* strValueName, String& strValue, const String& strDefaultValue)
@@ -387,6 +399,20 @@ void WindowsPlatform::PreInit(void* hInstance)
         Error(TEXT("OLE initalization failed!"));
         exit(-1);
     }
+
+#if CRASH_LOG_ENABLE
+    TCHAR buffer[MAX_PATH] = { 0 };
+    SymLocker.Lock();
+    if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    if (::GetEnvironmentVariableW(TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    DWORD options = SymGetOptions();
+    options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
+    SymSetOptions(options);
+    OnSymbolsPathModified();
+    SymLocker.Unlock();
+#endif
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -613,13 +639,14 @@ void WindowsPlatform::Exit()
 {
 #if CRASH_LOG_ENABLE
     SymLocker.Lock();
+#if !TRACY_ENABLE
     if (SymInitialized)
     {
         SymInitialized = false;
         SymCleanup(GetCurrentProcess());
-        free(SymPath);
-        SymPath = nullptr;
     }
+#endif
+    SymbolsPath.Resize(0);
     SymLocker.Unlock();
 #endif
 
@@ -660,25 +687,20 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll");
     if (!shCoreDll)
         return;
-
     typedef enum _PROCESS_DPI_AWARENESS
     {
         PROCESS_DPI_UNAWARE = 0,
         PROCESS_SYSTEM_DPI_AWARE = 1,
         PROCESS_PER_MONITOR_DPI_AWARE = 2
     } PROCESS_DPI_AWARENESS;
-
     typedef HRESULT (STDAPICALLTYPE *SetProcessDpiAwarenessProc)(PROCESS_DPI_AWARENESS Value);
     const SetProcessDpiAwarenessProc setProcessDpiAwareness = (SetProcessDpiAwarenessProc)GetProcAddress(shCoreDll, "SetProcessDpiAwareness");
-
     if (setProcessDpiAwareness)
     {
         setProcessDpiAwareness(enable ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE);
     }
-
     SystemDpi = CalculateDpi(shCoreDll);
-
-    FreeLibrary(shCoreDll);
+    ::FreeLibrary(shCoreDll);
 }
 
 BatteryInfo WindowsPlatform::GetBatteryInfo()
@@ -1116,7 +1138,12 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
     SymLocker.Lock();
-    SymModulesDirty = true;
+    const auto folder = StringUtils::GetDirectoryName(filename);
+    if (!SymbolsPath.Contains(folder))
+    {
+        SymbolsPath.Add(folder);
+        OnSymbolsPathModified();
+    }
     SymLocker.Unlock();
 #endif
 
@@ -1135,82 +1162,15 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
     if (!SymInitialized)
     {
         SymInitialized = true;
-
-        // Build search path
-        const size_t nSymPathLen = 4096;
-        SymPath = (char*)malloc(nSymPathLen);
-        SymPath[0] = 0;
-        strcat_s(SymPath, nSymPathLen, ".;");
-        const size_t nTempLen = 1024;
-        char szTemp[nTempLen];
-
-        // Current directory path
-        if (GetCurrentDirectoryA(nTempLen, szTemp) > 0)
+        String symbolSearchPath;
+        for (auto& path : SymbolsPath)
         {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
         }
-
-        // Main module path
-        if (GetModuleFileNameA(nullptr, szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            for (char* p = (szTemp + strlen(szTemp) - 1); p >= szTemp; --p)
-            {
-                // Locate the rightmost path separator
-                if ((*p == '\\') || (*p == '/') || (*p == ':'))
-                {
-                    *p = 0;
-                    break;
-                }
-            }
-            if (strlen(szTemp) > 0)
-            {
-                strcat_s(SymPath, nSymPathLen, szTemp);
-                strcat_s(SymPath, nSymPathLen, ";");
-            }
-        }
-
-        // System symbols paths
-        if (GetEnvironmentVariableA("_NT_SYMBOL_PATH", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-        if (GetEnvironmentVariableA("_NT_ALTERNATE_SYMBOL_PATH", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-        if (GetEnvironmentVariableA("SYSTEMROOT", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-
-            strcat_s(szTemp, nTempLen, "\\system32");
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-
-        SymInitialize(process, SymPath, FALSE);
-
-        DWORD options = SymGetOptions();
-        options |= SYMOPT_LOAD_LINES;
-        options |= SYMOPT_FAIL_CRITICAL_ERRORS;
-        SymSetOptions(options);
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        SymInitializeW(process, *symbolSearchPath, TRUE);
     }
-
-    // Load modules
-    if (SymModulesDirty)
-    {
-        SymModulesDirty = false;
-        GetModuleListPSAPI(process);
-    }
-    SymRefreshModuleList(process);
 
     // Capture the context if missing
     /*EXCEPTION_POINTERS exceptionPointers;

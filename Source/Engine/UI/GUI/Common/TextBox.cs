@@ -10,10 +10,19 @@ namespace FlaxEngine.GUI
         private TextLayoutOptions _layout;
 
         /// <summary>
+        /// The watermark text.
+        /// </summary>
+        protected LocalizedString _watermarkText;
+
+        /// <summary>
         /// Gets or sets the watermark text to show grayed when textbox is empty.
         /// </summary>
         [EditorOrder(20), Tooltip("The watermark text to show grayed when textbox is empty.")]
-        public string WatermarkText { get; set; }
+        public LocalizedString WatermarkText
+        {
+            get => _watermarkText;
+            set => _watermarkText = value;
+        }
 
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
@@ -201,9 +210,9 @@ namespace FlaxEngine.GUI
                     color *= 0.6f;
                 Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
             }
-            else if (!string.IsNullOrEmpty(WatermarkText) && !IsFocused)
+            else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                Render2D.DrawText(font, WatermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
 
             // Caret

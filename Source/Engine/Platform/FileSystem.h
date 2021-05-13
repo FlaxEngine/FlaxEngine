@@ -14,6 +14,8 @@
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettFileSystem.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidFileSystem.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchFileSystem.h"
 #else
 #error Missing File System implementation!
 #endif

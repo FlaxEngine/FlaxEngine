@@ -52,7 +52,6 @@ namespace FlaxEngine
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
                     _control.Location = new Vector2(LocalPosition);
-                    // TODO: sync control order in parent with actor order in parent (think about special cases like Panel with scroll bars used as internal controls)
                     _control.LocationChanged += OnControlLocationChanged;
 
                     // Link children UI controls
@@ -353,6 +352,7 @@ namespace FlaxEngine
             if (_control != null)
             {
                 _control.Parent = GetParent();
+                _control.IndexInParent = OrderInParent;
             }
         }
 

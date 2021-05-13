@@ -5,6 +5,29 @@ using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
+namespace FlaxEngine
+{
+    partial class ProfilerCPU
+    {
+        partial struct Event
+        {
+            /// <summary>
+            /// Gets the event name.
+            /// </summary>
+            public unsafe string Name
+            {
+                get
+                {
+                    fixed (char* name = &Name0)
+                    {
+                        return new string(name);
+                    }
+                }
+            }
+        }
+    }
+}
+
 namespace FlaxEditor.Windows.Profiler
 {
     /// <summary>
@@ -204,7 +227,7 @@ namespace FlaxEditor.Windows.Profiler
                             {
                                 var e = events[i];
 
-                                if (e.Depth == 0 && new string(e.Name) == "Update")
+                                if (e.Depth == 0 && e.Name == "Update")
                                 {
                                     return new ViewRange(ref e);
                                 }
@@ -225,7 +248,7 @@ namespace FlaxEditor.Windows.Profiler
             double scale = 100.0;
             float x = (float)((e.Start - startTime) * scale);
             float width = (float)(length * scale);
-            string name = new string(e.Name).Replace("::", ".");
+            string name = e.Name.Replace("::", ".");
 
             var control = new Timeline.Event(x + xOffset, e.Depth + depthOffset, width)
             {
@@ -399,7 +422,7 @@ namespace FlaxEditor.Windows.Profiler
                         subEventsMemoryTotal += sub.ManagedMemoryAllocation + e.NativeMemoryAllocation;
                     }
 
-                    string name = new string(e.Name).Replace("::", ".");
+                    string name = e.Name.Replace("::", ".");
 
                     var row = new Row
                     {

@@ -12,9 +12,8 @@ namespace FlaxEngine
     /// Represents a three dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     [TypeConverter(typeof(TypeConverters.Int3Converter))]
-    public struct Int3 : IEquatable<Int3>, IFormattable
+    partial struct Int3 : IEquatable<Int3>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2}";
 
@@ -57,21 +56,6 @@ namespace FlaxEngine
         /// A <see cref="Int3" /> with all components equal to <see cref="int.MaxValue"/>.
         /// </summary>
         public static readonly Int3 Maximum = new Int3(int.MaxValue);
-
-        /// <summary>
-        /// The X component of the vector.
-        /// </summary>
-        public int X;
-
-        /// <summary>
-        /// The Y component of the vector.
-        /// </summary>
-        public int Y;
-
-        /// <summary>
-        /// The Z component of the vector.
-        /// </summary>
-        public int Z;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Int3" /> struct.

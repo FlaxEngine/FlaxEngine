@@ -17,14 +17,17 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
     Buffer = buffer;
     Size = size;
 
-    VkBufferViewCreateInfo viewInfo;
-    RenderToolsVulkan::ZeroStruct(viewInfo, VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO);
-    viewInfo.buffer = Buffer;
-    viewInfo.format = RenderToolsVulkan::ToVulkanFormat(format);
-    viewInfo.offset = 0;
-    viewInfo.range = Size;
-
-    VALIDATE_VULKAN_RESULT(vkCreateBufferView(device->Device, &viewInfo, nullptr, &View));
+    if (owner->IsShaderResource() && !(owner->GetDescription().Flags & GPUBufferFlags::Structured))
+    {
+        VkBufferViewCreateInfo viewInfo;
+        RenderToolsVulkan::ZeroStruct(viewInfo, VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO);
+        viewInfo.buffer = Buffer;
+        viewInfo.format = RenderToolsVulkan::ToVulkanFormat(format);
+        viewInfo.offset = 0;
+        viewInfo.range = Size;
+        ASSERT_LOW_LAYER(viewInfo.format != VK_FORMAT_UNDEFINED);
+        VALIDATE_VULKAN_RESULT(vkCreateBufferView(device->Device, &viewInfo, nullptr, &View));
+    }
 }
 
 void GPUBufferViewVulkan::Release()
@@ -32,19 +35,18 @@ void GPUBufferViewVulkan::Release()
     if (View != VK_NULL_HANDLE)
     {
         Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::BufferView, View);
-
         View = VK_NULL_HANDLE;
-
-#if BUILD_DEBUG
-        Device = nullptr;
-        Owner = nullptr;
-        Buffer = VK_NULL_HANDLE;
-#endif
     }
+#if BUILD_DEBUG
+    Device = nullptr;
+    Owner = nullptr;
+    Buffer = VK_NULL_HANDLE;
+#endif
 }
 
 void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
 {
+    ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
     bufferView = &View;
 
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
@@ -52,6 +54,7 @@ void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* conte
 
 void GPUBufferViewVulkan::DescriptorAsStorageBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range)
 {
+    ASSERT_LOW_LAYER(Buffer);
     buffer = Buffer;
     offset = 0;
     range = Size;
@@ -88,7 +91,7 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.size = _desc.Size;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    if (useSRV)
+    if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
     if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -165,7 +168,7 @@ bool GPUBufferVulkan::OnInit()
         }
     }
         // Check if need to bind buffer to the shaders
-    else if (useSRV)
+    else if (useSRV || useUAV)
     {
         // Create buffer view
         _view.Init(_device, this, _buffer, _desc.Size, _desc.Format);

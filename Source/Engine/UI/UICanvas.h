@@ -28,4 +28,7 @@ protected:
     void OnEnable() override;
     void OnDisable() override;
     void OnTransformChanged() final override;
+#if USE_EDITOR
+    void OnActiveInTreeChanged() override;
+#endif
 };

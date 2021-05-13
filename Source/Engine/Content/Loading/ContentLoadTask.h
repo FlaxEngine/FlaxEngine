@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Threading/Task.h"
+#include "Engine/Core/Types/String.h"
 
 class Asset;
 class LoadingThread;

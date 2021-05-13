@@ -43,6 +43,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.PS4, new PS4() },
                 { PlatformType.XboxScarlett, new XboxScarlett() },
                 { PlatformType.Android, new Android() },
+                { PlatformType.Switch, new Switch() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -57,6 +58,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.PS4].Init("Output/PS4", "PS4");
                 PerPlatformOptions[PlatformType.XboxScarlett].Init("Output/XboxScarlett", "XboxScarlett");
                 PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
+                PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
             }
 
             public abstract class Platform
@@ -188,6 +190,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.AndroidARM64;
             }
 
+            public class Switch : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
+            }
+
             public class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -228,6 +235,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Android:
                             name = "Android";
+                            break;
+                        case PlatformType.Switch:
+                            name = "Switch";
                             break;
                         default:
                             name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());

@@ -229,3 +229,9 @@ public:
         OnSet(asset);
     }
 };
+
+template<typename T>
+uint32 GetHash(const WeakAssetReference<T>& key)
+{
+    return GetHash(key.GetID());
+}

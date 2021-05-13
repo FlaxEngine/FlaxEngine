@@ -14,6 +14,8 @@
 #include "Win32/Win32CriticalSection.h"
 #elif PLATFORM_ANDROID
 #include "Unix/UnixCriticalSection.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchCriticalSection.h"
 #else
 #error Missing Critical Section implementation!
 #endif

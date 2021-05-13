@@ -680,6 +680,8 @@ namespace Flax.Build.Platforms
                     args.Add("/WINMD");
                     args.Add(string.Format("/WINMDFILE:\"{0}\"", Path.ChangeExtension(outputFilePath, "winmd")));
                     args.Add("/APPCONTAINER");
+                    if (linkEnvironment.Output == LinkerOutput.SharedLibrary)
+                        args.Add("/DYNAMICBASE");
                 }
 
                 if (linkEnvironment.LinkTimeCodeGeneration)
@@ -937,7 +939,7 @@ namespace Flax.Build.Platforms
                                 xmlTextWriter.WriteStartElement("Properties");
 
                                 // TODO: better logo handling
-                                var logoSrcPath = Path.Combine(Environment.CurrentDirectory, "Source", "Logo.png");
+                                var logoSrcPath = Path.Combine(Globals.EngineRoot, "Source", "Logo.png");
                                 var logoDstPath = Path.Combine(options.IntermediateFolder, "Logo.png");
                                 if (!File.Exists(logoDstPath))
                                     Utilities.FileCopy(logoSrcPath, logoDstPath);

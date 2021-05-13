@@ -4,11 +4,10 @@
 
 #include "BaseTypes.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
 /// <summary>
-/// Represents the version number made of major, minor, patch and build numbers.
+/// Represents the version number made of major, minor, build and revision numbers.
 /// </summary>
 struct FLAXENGINE_API Version
 {

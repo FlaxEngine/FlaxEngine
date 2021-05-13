@@ -94,7 +94,4 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
     /// The content data keycode.
     /// </summary>
     static int32 ContentKey;
-
-    // True if convert all loaded material by force
-    static bool ConvertLoadedMaterialsByForce;
 };

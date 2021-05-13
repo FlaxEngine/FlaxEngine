@@ -289,20 +289,19 @@ void RemoveLongPathPrefix(const String& path, String& result)
     result.Remove(2, 6);
 }
 
-String StringUtils::GetDirectoryName(const String& path)
+StringView StringUtils::GetDirectoryName(const StringView& path)
 {
     const int32 lastFrontSlash = path.FindLast('\\');
     const int32 lastBackSlash = path.FindLast('/');
     const int32 splitIndex = Math::Max(lastBackSlash, lastFrontSlash);
-    return splitIndex != INVALID_INDEX ? path.Left(splitIndex) : String::Empty;
+    return splitIndex != INVALID_INDEX ? path.Left(splitIndex) : StringView::Empty;
 }
 
-String StringUtils::GetFileName(const String& path)
+StringView StringUtils::GetFileName(const StringView& path)
 {
     Char chr;
     const int32 length = path.Length();
     int32 num = length;
-
     do
     {
         num--;
@@ -310,28 +309,23 @@ String StringUtils::GetFileName(const String& path)
             return path;
         chr = path[num];
     } while (chr != DirectorySeparatorChar && chr != AltDirectorySeparatorChar && chr != VolumeSeparatorChar);
-
     return path.Substring(num + 1, length - num - 1);
 }
 
-String StringUtils::GetFileNameWithoutExtension(const String& path)
+StringView StringUtils::GetFileNameWithoutExtension(const StringView& path)
 {
-    String filename = GetFileName(path);
+    StringView filename = GetFileName(path);
     const int32 num = filename.FindLast('.');
     if (num != -1)
-    {
         return filename.Substring(0, num);
-    }
     return filename;
 }
 
-String StringUtils::GetPathWithoutExtension(const String& path)
+StringView StringUtils::GetPathWithoutExtension(const StringView& path)
 {
     const int32 num = path.FindLast('.');
     if (num != -1)
-    {
         return path.Substring(0, num);
-    }
     return path;
 }
 
@@ -371,7 +365,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
         }
     }
 
-    bool isRooted = path.StartsWith(TEXT('/'));
+    const bool isRooted = path.StartsWith(TEXT('/'));
     path.Clear();
     for (auto& e : stack)
         path /= e;
@@ -379,7 +373,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
         path.Insert(0, TEXT("/"));
 }
 
-const char digit_pairs[201] = {
+const char DigitPairs[201] = {
     "00010203040506070809"
     "10111213141516171819"
     "20212223242526272829"
@@ -416,21 +410,17 @@ String StringUtils::ToString(int32 value)
 {
     char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
     char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-
     int32 div = value / 100;
-
     if (value >= 0)
     {
         while (div)
         {
-            Platform::MemoryCopy(it, &digit_pairs[2 * (value - div * 100)], 2);
+            Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
             value = div;
             it -= 2;
             div = value / 100;
         }
-
-        Platform::MemoryCopy(it, &digit_pairs[2 * value], 2);
-
+        Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
         if (value < 10)
             it++;
     }
@@ -438,20 +428,16 @@ String StringUtils::ToString(int32 value)
     {
         while (div)
         {
-            Platform::MemoryCopy(it, &digit_pairs[-2 * (value - div * 100)], 2);
+            Platform::MemoryCopy(it, &DigitPairs[-2 * (value - div * 100)], 2);
             value = div;
             it -= 2;
             div = value / 100;
         }
-
-        Platform::MemoryCopy(it, &digit_pairs[-2 * value], 2);
-
+        Platform::MemoryCopy(it, &DigitPairs[-2 * value], 2);
         if (value <= -10)
             it--;
-
         *it = '-';
     }
-
     return String(it, (int32)(&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - it));
 }
 
@@ -459,21 +445,17 @@ String StringUtils::ToString(int64 value)
 {
     char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
     char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-
     int64 div = value / 100;
-
     if (value >= 0)
     {
         while (div)
         {
-            Platform::MemoryCopy(it, &digit_pairs[2 * (value - div * 100)], 2);
+            Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
             value = div;
             it -= 2;
             div = value / 100;
         }
-
-        Platform::MemoryCopy(it, &digit_pairs[2 * value], 2);
-
+        Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
         if (value < 10)
             it++;
     }
@@ -481,20 +463,16 @@ String StringUtils::ToString(int64 value)
     {
         while (div)
         {
-            Platform::MemoryCopy(it, &digit_pairs[-2 * (value - div * 100)], 2);
+            Platform::MemoryCopy(it, &DigitPairs[-2 * (value - div * 100)], 2);
             value = div;
             it -= 2;
             div = value / 100;
         }
-
-        Platform::MemoryCopy(it, &digit_pairs[-2 * value], 2);
-
+        Platform::MemoryCopy(it, &DigitPairs[-2 * value], 2);
         if (value <= -10)
             it--;
-
         *it = '-';
     }
-
     return String(it, (int32)(&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - it));
 }
 
@@ -502,21 +480,17 @@ String StringUtils::ToString(uint32 value)
 {
     char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
     char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-
     int32 div = value / 100;
     while (div)
     {
-        Platform::MemoryCopy(it, &digit_pairs[2 * (value - div * 100)], 2);
+        Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
         value = div;
         it -= 2;
         div = value / 100;
     }
-
-    Platform::MemoryCopy(it, &digit_pairs[2 * value], 2);
-
+    Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
     if (value < 10)
         it++;
-
     return String((char*)it, (int32)((char*)&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - (char*)it));
 }
 
@@ -524,21 +498,17 @@ String StringUtils::ToString(uint64 value)
 {
     char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
     char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-
     int64 div = value / 100;
     while (div)
     {
-        Platform::MemoryCopy(it, &digit_pairs[2 * (value - div * 100)], 2);
+        Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
         value = div;
         it -= 2;
         div = value / 100;
     }
-
-    Platform::MemoryCopy(it, &digit_pairs[2 * value], 2);
-
+    Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
     if (value < 10)
         it++;
-
     return String((char*)it, (int32)((char*)&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - (char*)it));
 }
 

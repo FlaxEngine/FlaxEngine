@@ -104,7 +104,8 @@ PixelFormat AndroidPlatformTools::GetTextureFormat(CookingData& data, TextureBas
 void AndroidPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folder to be located inside the Gradle assets directory
-    data.OutputPath /= TEXT("app/assets");
+    data.DataOutputPath /= TEXT("app/assets");
+    data.CodeOutputPath /= TEXT("app/assets");
 
     PlatformTools::OnBuildStarted(data);
 }
@@ -114,7 +115,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = AndroidPlatformSettings::Get();
     const auto platformDataPath = data.GetPlatformBinariesRoot();
-    const auto assetsPath = data.OutputPath;
+    const auto assetsPath = data.DataOutputPath;
     const auto jniLibsPath = data.OriginalOutputPath / TEXT("app/jniLibs");
     const auto projectVersion = Editor::Project->Version.ToString();
     const Char* abi;

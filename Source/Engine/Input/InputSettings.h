@@ -5,6 +5,7 @@
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "VirtualInput.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Input settings container.

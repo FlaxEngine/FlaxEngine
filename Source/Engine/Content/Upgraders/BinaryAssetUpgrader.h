@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "IAssetUpgrader.h"
 #include "Engine/Content/Storage/AssetHeader.h"
 #include "Engine/Core/Log.h"
@@ -9,7 +11,7 @@
 /// <summary>
 /// Binary asset upgrading context structure.
 /// </summary>
-struct AssetMigrationContext
+struct FLAXENGINE_API AssetMigrationContext
 {
     /// <summary>
     /// The input data.
@@ -63,7 +65,7 @@ typedef bool (*UpgradeHandler)(AssetMigrationContext& context);
 /// Binary Assets Upgrader base class
 /// </summary>
 /// <seealso cref="IAssetUpgrader" />
-class BinaryAssetUpgrader : public IAssetUpgrader
+class FLAXENGINE_API BinaryAssetUpgrader : public IAssetUpgrader
 {
 public:
 
@@ -205,3 +207,5 @@ public:
         return false;
     }
 };
+
+#endif

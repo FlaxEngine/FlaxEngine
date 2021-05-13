@@ -23,7 +23,8 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _height(150.0f)
     , _minMoveDistance(0.0f)
     , _isUpdatingTransform(false)
-    , _nonWalkableMode(CharacterController::NonWalkableModes::PreventClimbing)
+    , _upDirection(Vector3::Up)
+    , _nonWalkableMode(NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
     static_assert(sizeof(_filterData) == sizeof(PxFilterData), "Invalid filter data size.");
@@ -60,7 +61,12 @@ void CharacterController::SetSlopeLimit(float value)
     _slopeLimit = value;
 
     if (_controller)
-        _controller->setSlopeLimit(cosf(value * DegreesToRadians));
+        _controller->setSlopeLimit(Math::Cos(value * DegreesToRadians));
+}
+
+CharacterController::NonWalkableModes CharacterController::GetNonWalkableMode() const
+{
+    return _nonWalkableMode;
 }
 
 void CharacterController::SetNonWalkableMode(NonWalkableModes value)
@@ -69,6 +75,11 @@ void CharacterController::SetNonWalkableMode(NonWalkableModes value)
 
     if (_controller)
         _controller->setNonWalkableMode(static_cast<PxControllerNonWalkableMode::Enum>(value));
+}
+
+float CharacterController::GetStepOffset() const
+{
+    return _stepOffset;
 }
 
 void CharacterController::SetStepOffset(float value)
@@ -80,6 +91,18 @@ void CharacterController::SetStepOffset(float value)
 
     if (_controller)
         _controller->setStepOffset(value);
+}
+
+void CharacterController::SetUpDirection(const Vector3& up)
+{
+    if (_controller)
+        _controller->setUpDirection(C2P(up));
+    _upDirection = up;
+}
+
+Vector3 CharacterController::GetUpDirection() const
+{
+    return _controller ? P2C(_controller->getUpDirection()) : _upDirection;
 }
 
 void CharacterController::SetMinMoveDistance(float value)
@@ -180,6 +203,7 @@ void CharacterController::CreateActor()
     // Create controller
     _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
     ASSERT(_controller);
+    _controller->setUpDirection(C2P(_upDirection));
     const auto actor = _controller->getActor();
     ASSERT(actor && actor->getNbShapes() == 1);
     actor->getShapes(&_shape, 1);
@@ -363,6 +387,7 @@ void CharacterController::Serialize(SerializeStream& stream, const void* otherOb
     SERIALIZE_MEMBER(Radius, _radius);
     SERIALIZE_MEMBER(Height, _height);
     SERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
+    SERIALIZE_MEMBER(UpDirection, _upDirection);
 }
 
 void CharacterController::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -376,4 +401,5 @@ void CharacterController::Deserialize(DeserializeStream& stream, ISerializeModif
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE_MEMBER(Height, _height);
     DESERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
+    DESERIALIZE_MEMBER(UpDirection, _upDirection);
 }

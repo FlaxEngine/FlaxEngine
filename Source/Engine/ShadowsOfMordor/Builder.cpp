@@ -6,10 +6,13 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Threading/ThreadSpawner.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 namespace ShadowsOfMordor
 {

@@ -33,6 +33,23 @@ StreamingTexture::~StreamingTexture()
     ASSERT(_streamingTasksCount == 0);
 }
 
+Vector2 StreamingTexture::Size() const
+{
+    return _texture->Size();
+}
+
+int32 StreamingTexture::TextureMipIndexToTotalIndex(int32 textureMipIndex) const
+{
+    const int32 missingMips = TotalMipLevels() - _texture->MipLevels();
+    return textureMipIndex + missingMips;
+}
+
+int32 StreamingTexture::TotalIndexToTextureMipIndex(int32 mipIndex) const
+{
+    const int32 missingMips = TotalMipLevels() - _texture->MipLevels();
+    return mipIndex - missingMips;
+}
+
 bool StreamingTexture::Create(const TextureHeader& header)
 {
     // Validate header (further validation is performed by the Texture.Init)
@@ -90,13 +107,27 @@ uint64 StreamingTexture::GetTotalMemoryUsage() const
     return CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
 }
 
+String StreamingTexture::ToString() const
+{
+    return _texture->ToString();
+}
+
+int32 StreamingTexture::GetCurrentResidency() const
+{
+    return _texture->ResidentMipLevels();
+}
+
+int32 StreamingTexture::GetAllocatedResidency() const
+{
+    return _texture->MipLevels();
+}
+
 bool StreamingTexture::CanBeUpdated() const
 {
     // Streaming Texture cannot be updated if:
     // - is not initialized
     // - mip data uploading job running
     // - resize texture job running
-
     return IsInitialized() && Platform::AtomicRead(&_streamingTasksCount) == 0;
 }
 
@@ -146,7 +177,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         Platform::InterlockedDecrement(&_streamingTexture->_streamingTasksCount);
@@ -154,7 +184,6 @@ protected:
         // Base
         GPUTask::OnEnd();
     }
-
     void OnSync() override
     {
         Swap(_streamingTexture->_texture, _newTexture);
@@ -298,7 +327,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _dataLock.Release();

@@ -45,6 +45,21 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
+        /// Checks if the text is multiline.
+        /// </summary>
+        /// <param name="str">Text to check.</param>
+        /// <returns>True if text is a multiline, otherwise false.</returns>
+        public static bool IsMultiline(this string str)
+        {
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (str[i] == '\n')
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Splits string into lines
         /// </summary>
         /// <param name="str">Text to split</param>
@@ -212,15 +227,26 @@ namespace FlaxEngine.Utilities
         public static bool NextBool(this Random random, float weight = 0.5f) => random.NextDouble() < weight;
 
         /// <summary>
+        /// Generates a random <see cref="byte"/> value up until an exclusive maximum.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="max">The maximum value. If it's zero, a maximum of 256 is used</param>
+        /// <returns>A random <see cref="byte"/> between min and max.</returns>
+        public static byte NextByte(this Random random, byte max = 0)
+        {
+            return max == 0 ? (byte)(random.Next() % 256) : (byte)random.Next(max);
+        }
+
+        /// <summary>
         /// Generates a random <see cref="byte"/> value between min and max.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>A random <see cref="byte"/> between min and max.</returns>
-        public static byte NextByte(this Random random, byte min = 0, byte max = byte.MaxValue)
+        public static byte NextByte(this Random random, byte min, byte max)
         {
-            return (byte)random.Next(min, max == byte.MaxValue ? byte.MaxValue + 1 : max);
+            return (byte)random.Next(min, max);
         }
 
         /// <summary>

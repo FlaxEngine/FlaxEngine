@@ -112,7 +112,7 @@ namespace FlaxEditor.CustomEditors
             OnAddElement(element);
             return element;
         }
-        
+
         /// <summary>
         /// Adds new horizontal panel element.
         /// </summary>
@@ -688,6 +688,17 @@ namespace FlaxEditor.CustomEditors
             var element = AddPropertyItem();
             element.OnAddProperty(label, tooltip);
             return element;
+        }
+
+        /// <summary>
+        /// Adds custom element to the layout.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        public void AddElement(LayoutElement element)
+        {
+            if (element == null)
+                throw new ArgumentNullException();
+            OnAddElement(element);
         }
 
         /// <summary>

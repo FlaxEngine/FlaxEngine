@@ -12,7 +12,7 @@
 #include "Engine/Platform/FileSystem.h"
 #endif
 
-REGISTER_BINARY_ASSET(FontAsset, "FlaxEngine.FontAsset", ::New<FontAssetUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(FontAsset, "FlaxEngine.FontAsset", FontAssetUpgrader, false);
 
 FontAsset::FontAsset(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

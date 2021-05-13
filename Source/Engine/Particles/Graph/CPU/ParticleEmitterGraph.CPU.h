@@ -6,7 +6,9 @@
 #include "Engine/Particles/ParticlesSimulation.h"
 #include "Engine/Particles/ParticlesData.h"
 #include "Engine/Visject/VisjectGraph.h"
+#include "Engine/Core/Collections/Dictionary.h"
 
+struct RenderContext;
 class ParticleEffect;
 class ParticleEmitterGraphCPU;
 class ParticleEmitterGraphCPUBase;

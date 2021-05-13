@@ -40,6 +40,10 @@ public:
 
 public:
 
+#if COMPILE_WITH_PROFILER
+    MString ProfilerName;
+#endif
+
 #if USE_MONO
 
     /// <summary>
@@ -91,7 +95,6 @@ public:
     /// <summary>
     /// Gets the method name.
     /// </summary>
-    /// <returns>The name.</returns>
     FORCE_INLINE const MString& GetName() const
     {
         return _name;
@@ -100,7 +103,6 @@ public:
     /// <summary>
     /// Returns the parent class that this method is contained with.
     /// </summary>
-    /// <returns>The parent class.</returns>
     FORCE_INLINE MClass* GetParentClass() const
     {
         return _parentClass;
@@ -109,13 +111,11 @@ public:
     /// <summary>
     /// Returns the type of the return value. Returns null if method has no return value.
     /// </summary>
-    /// <returns>Returns method return type</returns>
     MType GetReturnType() const;
 
     /// <summary>
     /// Returns the number of parameters the method expects.
     /// </summary>
-    /// <returns>The amount of the method parameters.</returns>
     int32 GetParametersCount() const;
 
     /// <summary>
@@ -123,19 +123,18 @@ public:
     /// </summary>
     /// <param name="paramIdx">The parameter type.</param>
     /// <returns>The parameter type.</returns>
-    MType GetParameterType(int32 paramIdx);
+    MType GetParameterType(int32 paramIdx) const;
 
     /// <summary>
     /// Returns the value indicating whenever the method parameter  at the specified index is marked as output parameter.
     /// </summary>
     /// <param name="paramIdx">The parameter type.</param>
     /// <returns>True if parameter is marked as output, otherwise false.</returns>
-    bool GetParameterIsOut(int32 paramIdx);
+    bool GetParameterIsOut(int32 paramIdx) const;
 
     /// <summary>
     /// Gets method visibility in the class.
     /// </summary>
-    /// <returns>The method visibility.</returns>
     FORCE_INLINE MVisibility GetVisibility() const
     {
         return _visibility;
@@ -144,7 +143,6 @@ public:
     /// <summary>
     /// Returns true if the method doesn't require a class instance.
     /// </summary>
-    /// <returns>True if the method is static, otherwise false.</returns>
     FORCE_INLINE bool IsStatic() const
     {
         return _isStatic != 0;
@@ -155,7 +153,6 @@ public:
     /// <summary>
     /// Gets the Mono method handle.
     /// </summary>
-    /// <returns>The native Mono method handle.</returns>
     FORCE_INLINE MonoMethod* GetNative() const
     {
         return _monoMethod;

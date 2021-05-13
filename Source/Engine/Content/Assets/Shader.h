@@ -3,8 +3,9 @@
 #pragma once
 
 #include "../BinaryAsset.h"
-#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderAssetBase.h"
+
+class GPUShader;
 
 /// <summary>
 /// The shader asset. Contains a program that runs on the GPU and is able to perform rendering calculation using textures, vertices and other resources.
@@ -33,7 +34,6 @@ public:
     /// <summary>
     /// Gets the GPU shader object.
     /// </summary>
-    /// <returns>The GPU shader object.</returns>
     FORCE_INLINE GPUShader* GetShader() const
     {
         return GPU;

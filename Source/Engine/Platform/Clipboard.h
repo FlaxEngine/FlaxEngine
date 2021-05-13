@@ -14,6 +14,8 @@
 #include "Base/ClipboardBase.h"
 #elif PLATFORM_ANDROID
 #include "Base/ClipboardBase.h"
+#elif PLATFORM_SWITCH
+#include "Base/ClipboardBase.h"
 #else
 #error Missing Clipboard implementation!
 #endif

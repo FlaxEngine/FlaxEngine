@@ -3,6 +3,7 @@
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 
 #include "ParticleEmitterGraph.GPU.h"
+#include "Engine/Graphics/Materials/MaterialInfo.h"
 
 bool ParticleEmitterGPUGenerator::loadTexture(Node* caller, Box* box, const SerializedMaterialParam& texture, Value& result)
 {

@@ -276,7 +276,8 @@ void RigidBody::UpdateMass()
     float raiseMassToPower = 0.75f;
     // TODO: link physical material or expose density parameter
 
-    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU);
+    PxVec3 centerOfMassOffset = C2P(_centerOfMassOffset);
+    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU, &centerOfMassOffset);
 
     // Grab old mass so we can apply new mass while maintaining inertia tensor
     const float oldMass = _actor->getMass();
@@ -382,6 +383,15 @@ void RigidBody::OnTriggerExit(PhysicsColliderActor* c)
     TriggerExit(c);
 }
 
+void RigidBody::OnColliderChanged(Collider* c)
+{
+    UpdateMass();
+
+    // TODO: maybe wake up only if one ore more shapes attached is active?
+    //if (GetStartAwake())
+    //	WakeUp();
+}
+
 void RigidBody::CreateActor()
 {
     ASSERT(_actor == nullptr);
@@ -393,7 +403,7 @@ void RigidBody::CreateActor()
 
     // Setup flags
 #if WITH_PVD
-	PxActorFlags actorFlags = PxActorFlag::eVISUALIZATION;
+    PxActorFlags actorFlags = PxActorFlag::eVISUALIZATION;
 #else
     PxActorFlags actorFlags = static_cast<PxActorFlags>(0);
 #endif

@@ -89,6 +89,8 @@ namespace FlaxEditor.GUI
                 new PlatformData(PlatformType.PS4, icons.PS4Icon128, "PlayStation 4"),
                 new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
                 new PlatformData(PlatformType.Android, icons.AndroidIcon128, "Android"),
+                new PlatformData(PlatformType.Switch, icons.ColorWheel128, "Switch"),
+
             };
 
             const float IconSize = 48.0f;

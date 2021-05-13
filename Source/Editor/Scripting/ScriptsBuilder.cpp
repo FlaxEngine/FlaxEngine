@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Threading/ThreadPool.h"

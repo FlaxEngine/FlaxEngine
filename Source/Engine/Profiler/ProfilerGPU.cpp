@@ -55,6 +55,13 @@ int32 ProfilerGPU::EventBuffer::Add(const Event& e)
     return index;
 }
 
+void ProfilerGPU::EventBuffer::Clear()
+{
+    _data.Clear();
+    _isResolved = false;
+    FrameIndex = 0;
+}
+
 GPUTimerQuery* ProfilerGPU::GetTimerQuery()
 {
     GPUTimerQuery* result;

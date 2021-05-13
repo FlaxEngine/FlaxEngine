@@ -29,7 +29,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The cached value from the UI.
         /// </summary>
-        protected int _cachedValue;
+        protected long _cachedValue;
 
         /// <summary>
         /// True if has value cached, otherwise false.
@@ -54,7 +54,7 @@ namespace FlaxEditor.GUI
             /// <summary>
             /// The value.
             /// </summary>
-            public int Value;
+            public long Value;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> struct.
@@ -62,7 +62,7 @@ namespace FlaxEditor.GUI
             /// <param name="name">The name.</param>
             /// <param name="tooltip">The tooltip.</param>
             /// <param name="value">The value.</param>
-            public Entry(string name, int value, string tooltip = null)
+            public Entry(string name, long value, string tooltip = null)
             {
                 Name = name;
                 Tooltip = tooltip;
@@ -88,13 +88,13 @@ namespace FlaxEditor.GUI
         public object EnumTypeValue
         {
             get => Enum.ToObject(_enumType, Value);
-            set => Value = Convert.ToInt32(value);
+            set => Value = Convert.ToInt64(value);
         }
 
         /// <summary>
         /// Gets or sets the value.
         /// </summary>
-        public int Value
+        public long Value
         {
             get => _cachedValue;
             set
@@ -209,13 +209,13 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected void CacheValue()
         {
-            int value = 0;
+            long value = 0;
             if (IsFlags)
             {
                 var selection = Selection;
                 for (int i = 0; i < selection.Count; i++)
                 {
-                    int index = selection[i];
+                    var index = selection[i];
                     value |= _entries[index].Value;
                 }
             }
@@ -276,7 +276,7 @@ namespace FlaxEditor.GUI
                     tooltip = tooltipAttr.Text;
                 }
 
-                entries.Add(new Entry(name, Convert.ToInt32(field.GetRawConstantValue()), tooltip));
+                entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip));
             }
         }
 
@@ -295,9 +295,9 @@ namespace FlaxEditor.GUI
                 }
 
                 // Calculate value that will be set after change
-                int valueAfter = 0;
+                long valueAfter = 0;
                 bool isSelected = _selectedIndices.Contains(index);
-                int selectedValue = entries[index].Value;
+                long selectedValue = entries[index].Value;
                 for (int i = 0; i < _selectedIndices.Count; i++)
                 {
                     int selectedIndex = _selectedIndices[i];

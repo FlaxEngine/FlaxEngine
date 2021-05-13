@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 
@@ -146,5 +147,10 @@ namespace FlaxEditor.SceneGraph
         /// Gets the undo.
         /// </summary>
         public abstract Undo Undo { get; }
+
+        /// <summary>
+        /// Gets the list of selected scene graph nodes in the editor context.
+        /// </summary>
+        public abstract List<SceneGraphNode> Selection { get; }
     }
 }

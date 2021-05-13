@@ -9,6 +9,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Parser/ShaderProcessing.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"

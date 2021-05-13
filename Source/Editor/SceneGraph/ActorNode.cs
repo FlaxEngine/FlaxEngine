@@ -194,7 +194,7 @@ namespace FlaxEditor.SceneGraph
         {
             get
             {
-                var scene = _actor.Scene;
+                var scene = _actor ? _actor.Scene : null;
                 return scene != null ? SceneGraphFactory.FindNode(scene.ID) as SceneNode : null;
             }
         }
@@ -235,7 +235,6 @@ namespace FlaxEditor.SceneGraph
             {
                 if (!(value is ActorNode))
                     throw new InvalidOperationException("ActorNode can have only ActorNode as a parent node.");
-
                 base.ParentNode = value;
             }
         }
@@ -289,6 +288,13 @@ namespace FlaxEditor.SceneGraph
         {
         }
 
+        /// <summary>
+        /// Action called after pasting actor in editor.
+        /// </summary>
+        public virtual void PostPaste()
+        {
+        }
+
         /// <inheritdoc />
         protected override void OnParentChanged()
         {
@@ -299,6 +305,7 @@ namespace FlaxEditor.SceneGraph
             // (eg. we build new node for spawned actor and link it to the game)
             if (_treeNode.Parent != null && !_treeNode.Parent.IsLayoutLocked)
             {
+                _treeNode.IndexInParent = _actor.OrderInParent;
                 _treeNode.Parent.SortChildren();
 
                 // Update UI

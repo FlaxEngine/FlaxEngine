@@ -146,7 +146,7 @@ bool NavAreaProperties::operator==(const NavAreaProperties& other) const
 
 bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 {
-    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent;
+    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent && Vector3::NearEqual(DefaultQueryExtent, other.DefaultQueryExtent);
 }
 
 class NavigationService : public EngineService

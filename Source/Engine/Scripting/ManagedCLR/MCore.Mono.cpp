@@ -10,11 +10,11 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Scripting/MException.h"
-#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/mono-2.0/mono/jit/jit.h>
 #include <ThirdParty/mono-2.0/mono/utils/mono-counters.h>
@@ -181,7 +181,16 @@ void OnGCAllocation(MonoProfiler* profiler, MonoObject* obj)
 #endif
 
 #if COMPILE_WITH_PROFILER
-    ProfilerMemory::OnAllocation(size, true);
+    // Register allocation during the current CPU event
+    auto thread = ProfilerCPU::GetCurrentThread();
+    if (thread != nullptr && thread->Buffer.GetCount() != 0)
+    {
+        auto& activeEvent = thread->Buffer.Last().Event();
+        if (activeEvent.End < ZeroTolerance)
+        {
+            activeEvent.ManagedMemoryAllocation += size;
+        }
+    }
 #endif
 }
 
@@ -510,7 +519,7 @@ bool MCore::LoadEngine()
     // Info
     char* buildInfo = mono_get_runtime_build_info();
     LOG(Info, "Mono version: {0}", String(buildInfo));
-	mono_free(buildInfo);
+    mono_free(buildInfo);
 
     return false;
 }

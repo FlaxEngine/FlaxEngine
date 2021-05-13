@@ -6,8 +6,8 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Math/Math.h"
 
-const int32 DateTime::CachedDaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-const int32 DateTime::CachedDaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+const int32 CachedDaysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+const int32 CachedDaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
@@ -23,6 +23,11 @@ DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute,
             + minute * Constants::TicksPerMinute
             + second * Constants::TicksPerSecond
             + millisecond * Constants::TicksPerMillisecond;
+}
+
+DateTime DateTime::GetDate() const
+{
+    return DateTime(Ticks - Ticks % Constants::TicksPerDay);
 }
 
 void DateTime::GetDate(int32& year, int32& month, int32& day) const
@@ -68,6 +73,11 @@ int32 DateTime::GetDayOfYear() const
     return day;
 }
 
+int32 DateTime::GetHour() const
+{
+    return static_cast<int32>(Ticks / Constants::TicksPerHour % 24);
+}
+
 int32 DateTime::GetHour12() const
 {
     const int32 hour = GetHour();
@@ -78,6 +88,26 @@ int32 DateTime::GetHour12() const
     return hour;
 }
 
+double DateTime::GetJulianDay() const
+{
+    return 1721425.5 + static_cast<double>(Ticks) / Constants::TicksPerDay;
+}
+
+double DateTime::GetModifiedJulianDay() const
+{
+    return GetJulianDay() - 2400000.5;
+}
+
+int32 DateTime::GetMillisecond() const
+{
+    return static_cast<int32>(Ticks / Constants::TicksPerMillisecond % 1000);
+}
+
+int32 DateTime::GetMinute() const
+{
+    return static_cast<int32>(Ticks / Constants::TicksPerMinute % 60);
+}
+
 int32 DateTime::GetMonth() const
 {
     int32 year, month, day;
@@ -85,11 +115,31 @@ int32 DateTime::GetMonth() const
     return month;
 }
 
+MonthOfYear DateTime::GetMonthOfYear() const
+{
+    return static_cast<MonthOfYear>(GetMonth());
+}
+
+int32 DateTime::GetSecond() const
+{
+    return static_cast<int32>(Ticks / Constants::TicksPerSecond % 60);
+}
+
+TimeSpan DateTime::GetTimeOfDay() const
+{
+    return TimeSpan(Ticks % Constants::TicksPerDay);
+}
+
 int32 DateTime::GetYear() const
 {
     int32 year, month, day;
     GetDate(year, month, day);
     return year;
+}
+
+int32 DateTime::ToUnixTimestamp() const
+{
+    return static_cast<int32>((Ticks - DateTime(1970, 1, 1).Ticks) / Constants::TicksPerSecond);
 }
 
 int32 DateTime::DaysInMonth(int32 year, int32 month)
@@ -105,6 +155,16 @@ int32 DateTime::DaysInYear(int32 year)
     return IsLeapYear(year) ? 366 : 365;
 }
 
+DateTime DateTime::FromJulianDay(double julianDay)
+{
+    return DateTime(static_cast<int64>((julianDay - 1721425.5) * Constants::TicksPerDay));
+}
+
+DateTime DateTime::FromUnixTimestamp(int32 unixTime)
+{
+    return DateTime(1970, 1, 1) + TimeSpan(static_cast<int64>(unixTime) * Constants::TicksPerSecond);
+}
+
 bool DateTime::IsLeapYear(int32 year)
 {
     if ((year % 4) == 0)
@@ -112,6 +172,11 @@ bool DateTime::IsLeapYear(int32 year)
         return (((year % 100) != 0) || ((year % 400) == 0));
     }
     return false;
+}
+
+DateTime DateTime::MaxValue()
+{
+    return DateTime(3652059 * Constants::TicksPerDay - 1);
 }
 
 DateTime DateTime::Now()
@@ -143,4 +208,31 @@ String DateTime::ToFileNameString() const
     int32 year, month, day;
     GetDate(year, month, day);
     return String::Format(TEXT("{0}_{1:0>2}_{2:0>2}_{3:0>2}_{4:0>2}_{5:0>2}"), year, month, day, GetHour(), GetMinute(), GetSecond());
+}
+
+DateTime DateTime::operator+(const TimeSpan& other) const
+{
+    return DateTime(Ticks + other.Ticks);
+}
+
+DateTime& DateTime::operator+=(const TimeSpan& other)
+{
+    Ticks += other.Ticks;
+    return *this;
+}
+
+TimeSpan DateTime::operator-(const DateTime& other) const
+{
+    return TimeSpan(Ticks - other.Ticks);
+}
+
+DateTime DateTime::operator-(const TimeSpan& other) const
+{
+    return DateTime(Ticks - other.Ticks);
+}
+
+DateTime& DateTime::operator-=(const TimeSpan& other)
+{
+    Ticks -= other.Ticks;
+    return *this;
 }

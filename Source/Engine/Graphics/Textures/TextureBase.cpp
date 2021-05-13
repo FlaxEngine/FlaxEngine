@@ -3,10 +3,11 @@
 #include "TextureBase.h"
 #include "TextureData.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
-#include "Engine/Debug/Exceptions/InvalidOperationException.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
@@ -20,6 +21,36 @@ TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)
     , _customData(nullptr)
     , _parent(this)
 {
+}
+
+Vector2 TextureBase::Size() const
+{
+    return Vector2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
+}
+
+int32 TextureBase::GetArraySize() const
+{
+    return StreamingTexture()->TotalArraySize();
+}
+
+int32 TextureBase::GetMipLevels() const
+{
+    return StreamingTexture()->TotalMipLevels();
+}
+
+int32 TextureBase::GetResidentMipLevels() const
+{
+    return GetTexture()->ResidentMipLevels();
+}
+
+uint64 TextureBase::GetCurrentMemoryUsage() const
+{
+    return GetTexture()->GetMemoryUsage();
+}
+
+uint64 TextureBase::GetTotalMemoryUsage() const
+{
+    return StreamingTexture()->GetTotalMemoryUsage();
 }
 
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
@@ -193,9 +224,9 @@ int32 TextureBase::calculateChunkIndex(int32 mipIndex) const
     return mipIndex;
 }
 
-CriticalSection* TextureBase::GetOwnerLocker() const
+CriticalSection& TextureBase::GetOwnerLocker() const
 {
-    return &_parent->Locker;
+    return _parent->Locker;
 }
 
 void TextureBase::unload(bool isReloading)

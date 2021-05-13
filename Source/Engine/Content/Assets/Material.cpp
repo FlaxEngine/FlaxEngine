@@ -16,6 +16,9 @@
 #include "Engine/Utilities/Encryption.h"
 #include "Engine/Tools/MaterialGenerator/MaterialGenerator.h"
 #include "Engine/ShadersCompilation/Config.h"
+#if BUILD_DEBUG
+#include "Engine/Engine/Globals.h"
+#endif
 #endif
 
 /// <summary>
@@ -23,7 +26,7 @@
 /// </summary>
 #define MATERIAL_AUTO_GENERATE_MISSING_SOURCE (USE_EDITOR)
 
-REGISTER_BINARY_ASSET(Material, "FlaxEngine.Material", ::New<ShaderAssetUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Material, "FlaxEngine.Material", ShaderAssetUpgrader, false);
 
 Material::Material(const SpawnParams& params, const AssetInfo* info)
     : ShaderAssetTypeBase<MaterialBase>(params, info)
@@ -116,7 +119,7 @@ Asset::LoadResult Material::load()
     FlaxChunk* materialParamsChunk;
 
     // Special case for Null renderer
-    if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
+    if (IsNullRenderer())
     {
         // Hack loading
         MemoryReadStream shaderCacheStream(nullptr, 0);
@@ -152,18 +155,16 @@ Asset::LoadResult Material::load()
     // - If material version is not supported then material cannot be loaded
 #if COMPILE_WITH_SHADER_COMPILER
 
-#if BUILD_DEBUG
-    // Materials force reload!
-    Globals::ConvertLoadedMaterialsByForce = false;
-#endif
-
     // Check if current engine has different materials version or convert it by force or has no source generated at all
     if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION
-        || Globals::ConvertLoadedMaterialsByForce
 #if MATERIAL_AUTO_GENERATE_MISSING_SOURCE
         || !HasChunk(SHADER_FILE_CHUNK_SOURCE)
 #endif
         || HasDependenciesModified()
+#if COMPILE_WITH_DEV_ENV
+        // Set to true to enable force GPU shader regeneration (don't commit it)
+        || false
+#endif
     )
     {
         // Prepare
@@ -310,7 +311,12 @@ Asset::LoadResult Material::load()
     {
         // Load material (load shader from cache, load params, setup pipeline stuff)
         MemoryReadStream shaderCacheStream(shaderCache.Data.Get(), shaderCache.Data.Length());
-        _materialShader = MaterialShader::Create(GetPath(), shaderCacheStream, _shaderHeader.Material.Info);
+#if GPU_ENABLE_RESOURCE_NAMING
+        const StringView name(GetPath());
+#else
+        const StringView name;
+#endif
+        _materialShader = MaterialShader::Create(name, shaderCacheStream, _shaderHeader.Material.Info);
         if (_materialShader == nullptr)
         {
             LOG(Warning, "Cannot load material.");
@@ -482,7 +488,7 @@ BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
         }
     }
 
-    LOG(Warning, "Material \'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "Material \'{0}\' surface data is missing.", ToString());
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 

@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using Newtonsoft.Json;
+using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.History
 {
@@ -114,6 +116,8 @@ namespace FlaxEditor.History
             public object TargetInstance;
         }
 
+        internal static JsonSerializerSettings JsonSettings;
+
         // For objects that cannot be referenced in undo action like: FlaxEngine.Object or SceneGraphNode we store them in DataStorage,
         // otherwise here:
         private readonly object TargetInstance;
@@ -175,6 +179,24 @@ namespace FlaxEditor.History
                 Diff = diff,
                 TargetInstance = data.Instance.Value ?? TargetInstance,
             };
+        }
+
+        /// <inheritdoc />
+        public override DataStorage Data
+        {
+            protected set
+            {
+                // Inject objects typename serialization to prevent data type mismatch when loading from saved state
+                var settings = JsonSettings;
+                if (settings == null)
+                {
+                    settings = JsonSerializer.CreateDefaultSettings(false);
+                    settings.TypeNameHandling = TypeNameHandling.All;
+                    JsonSettings = settings;
+                }
+                _data = JsonConvert.SerializeObject(value, Formatting.Indented, settings);
+                //Editor.Log(_data);
+            }
         }
 
         /// <inheritdoc />

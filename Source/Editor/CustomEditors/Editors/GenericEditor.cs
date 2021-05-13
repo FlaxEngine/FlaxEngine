@@ -214,6 +214,7 @@ namespace FlaxEditor.CustomEditors.Editors
             public ScriptMemberInfo Target;
             public ScriptMemberInfo Source;
             public PropertiesListElement PropertiesList;
+            public GroupElement Group;
             public bool Invert;
             public int LabelIndex;
 
@@ -379,25 +380,21 @@ namespace FlaxEditor.CustomEditors.Editors
                     }
                 }
             }
-            if (item.VisibleIf != null)
+            if (item.VisibleIf != null && itemLayout.Children.Count > 0)
             {
-                PropertiesListElement list;
-                if (itemLayout.Children.Count > 0 && itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement list1)
-                {
+                PropertiesListElement list = null;
+                GroupElement group = null;
+                if (itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement list1)
                     list = list1;
-                }
+                else if (itemLayout.Children[itemLayout.Children.Count - 1] is GroupElement group1)
+                    group = group1;
                 else
-                {
-                    // TODO: support inlined objects hiding?
                     return;
-                }
 
                 // Get source member used to check rule
                 var sourceMember = GetVisibleIfSource(item.Info.DeclaringType, item.VisibleIf);
                 if (sourceMember == ScriptType.Null)
                     return;
-
-                // Find the target control to show/hide
 
                 // Resize cache
                 if (_visibleIfCaches == null)
@@ -414,6 +411,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Target = item.Info,
                     Source = sourceMember,
                     PropertiesList = list,
+                    Group = group,
                     LabelIndex = labelIndex,
                     Invert = item.VisibleIf.Invert,
                 };
@@ -569,8 +567,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     for (int i = 0; i < _visibleIfCaches.Length; i++)
                     {
-                        var c = _visibleIfCaches[i];
-
+                        ref var c = ref _visibleIfCaches[i];
                         if (c.Target == ScriptMemberInfo.Null)
                             break;
 
@@ -586,7 +583,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
 
                         // Apply the visibility (note: there may be no label)
-                        if (c.LabelIndex != -1 && c.PropertiesList.Labels.Count > c.LabelIndex)
+                        if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
                         {
                             var label = c.PropertiesList.Labels[c.LabelIndex];
                             label.Visible = visible;
@@ -598,6 +595,10 @@ namespace FlaxEditor.CustomEditors.Editors
 
                                 child.Visible = visible;
                             }
+                        }
+                        if (c.Group != null)
+                        {
+                            c.Group.Panel.Visible = visible;
                         }
                     }
                 }

@@ -31,13 +31,6 @@ public:
     /// <returns>Found window or null if cannot find it.</returns>
     static Window* GetByNativePtr(void* handle);
 
-    /// <summary>
-    /// Calculates the position for window that has given size and should be placed in the center of the primary screen.
-    /// </summary>
-    /// <param name="size">The size.</param>
-    /// <returns>window location.</returns>
-    static Vector2 CalcCenteredWinPos(const Vector2& size);
-
 public:
 
     // Used by WindowBase

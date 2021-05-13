@@ -10,6 +10,7 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Threading/ThreadSpawner.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Steps/ValidateStep.h"
@@ -39,13 +40,15 @@
 #endif
 #if PLATFORM_TOOLS_PS4
 #include "Platforms/PS4/Editor/PlatformTools/PS4PlatformTools.h"
-#include "Platforms/PS4/Engine/Platform/PS4PlatformSettings.h"
 #endif
 #if PLATFORM_TOOLS_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Editor/PlatformTools/XboxScarlettPlatformTools.h"
 #endif
 #if PLATFORM_TOOLS_ANDROID
 #include "Platform/Android/AndroidPlatformTools.h"
+#endif
+#if PLATFORM_TOOLS_SWITCH
+#include "Platforms/Switch/Editor/PlatformTools/SwitchPlatformTools.h"
 #endif
 
 namespace GameCookerImpl
@@ -88,6 +91,50 @@ using namespace GameCookerImpl;
 
 Delegate<GameCooker::EventType> GameCooker::OnEvent;
 Delegate<const String&, float> GameCooker::OnProgress;
+
+const Char* ToString(const BuildPlatform platform)
+{
+    switch (platform)
+    {
+    case BuildPlatform::Windows32:
+        return TEXT("Windows x86");
+    case BuildPlatform::Windows64:
+        return TEXT("Windows x64");
+    case BuildPlatform::UWPx86:
+        return TEXT("Windows Store x86");
+    case BuildPlatform::UWPx64:
+        return TEXT("Windows Store x64");
+    case BuildPlatform::XboxOne:
+        return TEXT("Xbox One");
+    case BuildPlatform::LinuxX64:
+        return TEXT("Linux x64");
+    case BuildPlatform::PS4:
+        return TEXT("PlayStation 4");
+    case BuildPlatform::XboxScarlett:
+        return TEXT("Xbox Scarlett");
+    case BuildPlatform::AndroidARM64:
+        return TEXT("Android ARM64");
+    case BuildPlatform::Switch:
+        return TEXT("Switch");
+    default:
+        return TEXT("?");
+    }
+}
+
+const Char* ToString(const BuildConfiguration configuration)
+{
+    switch (configuration)
+    {
+    case BuildConfiguration::Debug:
+        return TEXT("Debug");
+    case BuildConfiguration::Development:
+        return TEXT("Development");
+    case BuildConfiguration::Release:
+        return TEXT("Release");
+    default:
+        return TEXT("?");
+    }
+}
 
 bool CookingData::AssetTypeStatistics::operator<(const AssetTypeStatistics& other) const
 {
@@ -251,6 +298,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
             result = New<AndroidPlatformTools>(ArchitectureType::ARM64);
             break;
 #endif
+#if PLATFORM_TOOLS_SWITCH
+        case BuildPlatform::Switch:
+            result = New<SwitchPlatformTools>();
+            break;
+#endif
         }
         Tools.Add(platform, result);
     }
@@ -282,9 +334,10 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     data.Configuration = configuration;
     data.Options = options;
     data.CustomDefines = customDefines;
-    data.OutputPath = outputPath;
-    FileSystem::NormalizePath(data.OutputPath);
-    data.OutputPath = data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OutputPath);
+    data.OriginalOutputPath = outputPath;
+    FileSystem::NormalizePath(data.OriginalOutputPath);
+    data.OriginalOutputPath = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, data.OriginalOutputPath);
+    data.CodeOutputPath = data.DataOutputPath = data.OriginalOutputPath;
     data.CacheDirectory = Globals::ProjectCacheFolder / TEXT("Cooker") / tools->GetName();
     if (!FileSystem::DirectoryExists(data.CacheDirectory))
     {
@@ -367,7 +420,7 @@ bool GameCookerImpl::Build()
     CookingData& data = Data;
     LOG(Info, "Starting Game Cooker...");
     LOG(Info, "Platform: {0}, Configuration: {2}, Options: {1}", ::ToString(data.Platform), (int32)data.Options, ::ToString(data.Configuration));
-    LOG(Info, "Output Path: {0}", data.OutputPath);
+    LOG(Info, "Output Path: {0}", data.OriginalOutputPath);
 
     // Late init feature
     if (Steps.IsEmpty())

@@ -14,6 +14,8 @@
 #include "Win32/Win32ConditionVariable.h"
 #elif PLATFORM_ANDROID
 #include "Unix/UnixConditionVariable.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchConditionVariable.h"
 #else
 #error Missing Condition Variable implementation!
 #endif

@@ -250,6 +250,15 @@ namespace FlaxEditor.CustomEditors
                 _children[i].RefreshInternal();
         }
 
+        /// <summary>
+        /// Synchronizes the value of the <see cref="Values"/> container. Called during Refresh to flush property after editing it in UI.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
+        protected virtual void SynchronizeValue(object value)
+        {
+            _values.Set(_parent.Values, value);
+        }
+
         internal virtual void RefreshInternal()
         {
             if (_values == null)
@@ -264,7 +273,7 @@ namespace FlaxEditor.CustomEditors
                 _valueToSet = null;
 
                 // Assign value
-                _values.Set(_parent.Values, val);
+                SynchronizeValue(val);
 
                 // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
                 var obj = _parent;

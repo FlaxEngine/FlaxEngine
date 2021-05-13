@@ -62,15 +62,6 @@ public:
     }
 
     /// <summary>
-    /// Gets amount of the level of details in the model
-    /// </summary>
-    /// <returns>Amount of the level of details in the model</returns>
-    FORCE_INLINE int32 GetLODsCount() const
-    {
-        return LODs.Count();
-    }
-
-    /// <summary>
     /// Gets the amount of loaded model LODs.
     /// </summary>
     /// <returns>Loaded LODs count</returns>
@@ -112,10 +103,7 @@ public:
     /// Determines whether any LOD has been initialized.
     /// </summary>
     /// <returns>True if any LOD has been initialized, otherwise false.</returns>
-    FORCE_INLINE bool HasAnyLODInitialized() const
-    {
-        return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
-    }
+    bool HasAnyLODInitialized() const;
 
     /// <summary>
     /// Determines whether this model can be rendered.
@@ -184,22 +172,14 @@ public:
     /// </summary>
     /// <param name="lodIndex">Index of the LOD.</param>
     /// <returns>Task that will gather chunk data or null if already here.</returns>
-    ContentLoadTask* RequestLODDataAsync(int32 lodIndex)
-    {
-        const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-        return RequestChunkDataAsync(chunkIndex);
-    }
+    ContentLoadTask* RequestLODDataAsync(int32 lodIndex);
 
     /// <summary>
     /// Gets the model LOD data (links bytes).
     /// </summary>
     /// <param name="lodIndex">Index of the LOD.</param>
     /// <param name="data">The data (may be missing if failed to get it).</param>
-    void GetLODData(int32 lodIndex, BytesContainer& data) const
-    {
-        const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-        GetChunkData(chunkIndex, data);
-    }
+    void GetLODData(int32 lodIndex, BytesContainer& data) const;
 
 public:
 
@@ -300,18 +280,11 @@ public:
 
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
+    int32 GetLODsCount() const override;
+    void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        for (int32 i = 0; i < MaterialSlots.Count(); i++)
-        {
-            output.Add(MaterialSlots[i].Material.GetID());
-        }
-    }
+    void GetReferences(Array<Guid>& output) const override;
 #endif
 
     // [StreamableResource]

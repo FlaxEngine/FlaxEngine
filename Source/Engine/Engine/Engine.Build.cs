@@ -35,12 +35,16 @@ public class Engine : EngineModule
         options.PublicDependencies.Add("UI");
         options.PublicDependencies.Add("Utilities");
         options.PublicDependencies.Add("Visject");
+        options.PublicDependencies.Add("Localization");
 
         // Use source folder per platform group
         switch (options.Platform.Target)
         {
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Engine"));
+            break;
+        case TargetPlatform.Switch:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Engine"));
             break;
         }
     }

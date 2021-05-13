@@ -250,66 +250,66 @@ namespace Flax.Build.Bindings
             var path = GetCachePath(moduleInfo.Module, moduleOptions);
             if (!File.Exists(path))
                 return false;
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var reader = new BinaryReader(stream, Encoding.UTF8))
+            try
             {
-                // Version
-                var version = reader.ReadInt32();
-                if (version != CacheVersion)
-                    return false;
-                if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
-                    return false;
-
-                // Build options
-                if (reader.ReadString() != moduleOptions.IntermediateFolder ||
-                    reader.ReadInt32() != (int)moduleOptions.Platform.Target ||
-                    reader.ReadInt32() != (int)moduleOptions.Architecture ||
-                    reader.ReadInt32() != (int)moduleOptions.Configuration)
-                    return false;
-                var publicDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (publicDefinitions.Length != moduleOptions.PublicDefinitions.Count || publicDefinitions.Any(x => !moduleOptions.PublicDefinitions.Contains(x)))
-                    return false;
-                var privateDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (privateDefinitions.Length != moduleOptions.PrivateDefinitions.Count || privateDefinitions.Any(x => !moduleOptions.PrivateDefinitions.Contains(x)))
-                    return false;
-                var preprocessorDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (preprocessorDefinitions.Length != moduleOptions.CompileEnv.PreprocessorDefinitions.Count || preprocessorDefinitions.Any(x => !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(x)))
-                    return false;
-
-                // Header files
-                var headerFilesCount = reader.ReadInt32();
-                if (headerFilesCount != headerFiles.Count)
-                    return false;
-                for (int i = 0; i < headerFilesCount; i++)
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
                 {
-                    var headerFile = headerFiles[i];
-                    if (headerFile != reader.ReadString())
+                    // Version
+                    var version = reader.ReadInt32();
+                    if (version != CacheVersion)
                         return false;
-                    if (File.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
+                    if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
                         return false;
-                }
 
-                // Info
-                var newModuleInfo = new ModuleInfo
-                {
-                    Module = moduleInfo.Module,
-                    Name = moduleInfo.Name,
-                    Namespace = moduleInfo.Namespace,
-                    IsFromCache = true,
-                };
-                try
-                {
+                    // Build options
+                    if (reader.ReadString() != moduleOptions.IntermediateFolder ||
+                        reader.ReadInt32() != (int)moduleOptions.Platform.Target ||
+                        reader.ReadInt32() != (int)moduleOptions.Architecture ||
+                        reader.ReadInt32() != (int)moduleOptions.Configuration)
+                        return false;
+                    var publicDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (publicDefinitions.Length != moduleOptions.PublicDefinitions.Count || publicDefinitions.Any(x => !moduleOptions.PublicDefinitions.Contains(x)))
+                        return false;
+                    var privateDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (privateDefinitions.Length != moduleOptions.PrivateDefinitions.Count || privateDefinitions.Any(x => !moduleOptions.PrivateDefinitions.Contains(x)))
+                        return false;
+                    var preprocessorDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (preprocessorDefinitions.Length != moduleOptions.CompileEnv.PreprocessorDefinitions.Count || preprocessorDefinitions.Any(x => !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(x)))
+                        return false;
+
+                    // Header files
+                    var headerFilesCount = reader.ReadInt32();
+                    if (headerFilesCount != headerFiles.Count)
+                        return false;
+                    for (int i = 0; i < headerFilesCount; i++)
+                    {
+                        var headerFile = headerFiles[i];
+                        if (headerFile != reader.ReadString())
+                            return false;
+                        if (File.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
+                            return false;
+                    }
+
+                    // Info
+                    var newModuleInfo = new ModuleInfo
+                    {
+                        Module = moduleInfo.Module,
+                        Name = moduleInfo.Name,
+                        Namespace = moduleInfo.Namespace,
+                        IsFromCache = true,
+                    };
                     newModuleInfo.Read(reader);
 
                     // Skip parsing and use data loaded from cache
                     moduleInfo = newModuleInfo;
                     return true;
                 }
-                catch
-                {
-                    // Skip loading cache
-                    return false;
-                }
+            }
+            catch
+            {
+                // Skip loading cache
+                return false;
             }
         }
     }

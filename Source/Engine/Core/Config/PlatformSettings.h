@@ -23,3 +23,6 @@
 #if PLATFORM_ANDROID
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"
 #endif
+#if PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchPlatformSettings.h"
+#endif

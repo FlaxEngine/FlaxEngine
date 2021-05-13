@@ -4,6 +4,10 @@
 #include "Engine/Threading/IRunnable.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Core/Log.h"
+#if TRACY_ENABLE
+#include "Engine/Core/Math/Math.h"
+#include <ThirdParty/tracy/Tracy.h>
+#endif
 
 Delegate<Thread*> ThreadBase::ThreadStarting;
 Delegate<Thread*, int32> ThreadBase::ThreadExiting;
@@ -70,6 +74,13 @@ int32 ThreadBase::Run()
     ASSERT(_runnable);
     const auto thread = static_cast<Thread*>(this);
     _id = Platform::GetCurrentThreadID();
+#if TRACY_ENABLE
+    char threadName[100];
+    const int32 threadNameLength = Math::Min<int32>(ARRAY_COUNT(threadName) - 1, _name.Length());
+    StringUtils::ConvertUTF162ANSI(*_name, threadName, threadNameLength);
+    threadName[threadNameLength] = 0;
+    tracy::SetThreadName(threadName);
+#endif
     ThreadRegistry::Add(thread);
     ThreadStarting(thread);
     int32 exitCode = 1;

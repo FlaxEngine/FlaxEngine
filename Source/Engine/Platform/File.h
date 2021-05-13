@@ -14,6 +14,8 @@
 #include "Win32/Win32File.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidFile.h"
+#elif PLATFORM_SWITCH
+#include "Platforms/Switch/Engine/Platform/SwitchFile.h"
 #else
 #error Missing File implementation!
 #endif

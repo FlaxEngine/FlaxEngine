@@ -17,6 +17,7 @@
 #include <oleauto.h>
 #include <WinBase.h>
 #include <xmmintrin.h>
+#include <intrin.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace
@@ -304,28 +305,33 @@ void Win32Platform::Prefetch(void const* ptr)
 
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)
 {
+    void* ptr = _aligned_malloc((size_t)size, (size_t)alignment);
 #if COMPILE_WITH_PROFILER
-    TrackAllocation(size);
+    OnMemoryAlloc(ptr, size);
 #endif
-    return _aligned_malloc((size_t)size, (size_t)alignment);
+    return ptr;
 }
 
 void Win32Platform::Free(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     _aligned_free(ptr);
 }
 
 void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
-
-    // Use VirtualAlloc to allocate page-aligned memory
+#if PLATFORM_UWP
+    return VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
     return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#endif
 }
 
 void Win32Platform::FreePages(void* ptr)
 {
-    // Free page-aligned memory
     VirtualFree(ptr, 0, MEM_RELEASE);
 }
 

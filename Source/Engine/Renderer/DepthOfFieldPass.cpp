@@ -1,15 +1,19 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "DepthOfFieldPass.h"
+#include "RenderList.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/GPUBuffer.h"
-#include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/PostProcessBase.h"
-#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/PostProcessBase.h"
+#include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 // This must match hlsl defines
 #define DOF_MAX_SAMPLE_RADIUS 10
@@ -33,6 +37,8 @@ bool DepthOfFieldPass::Init()
     auto& limits = GPUDevice::Instance->Limits;
     _platformSupportsDoF = limits.HasCompute;
     _platformSupportsBokeh = _platformSupportsDoF && limits.HasGeometryShaders && limits.HasDrawIndirect && limits.HasAppendConsumeBuffers;
+
+    _platformSupportsBokeh &= GPUDevice::Instance->GetRendererType() != RendererType::DirectX12; // TODO: fix bokeh crash on d3d12 (driver issue probably - started to happen recently)
 
     // Create pipeline states
     if (_platformSupportsDoF)

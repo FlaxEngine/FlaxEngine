@@ -14,7 +14,7 @@ class PhysicsColliderActor;
 API_CLASS() class FLAXENGINE_API RigidBody : public PhysicsActor
 {
 DECLARE_SCENE_OBJECT(RigidBody);
-private:
+protected:
 
     PxRigidDynamic* _actor;
     Vector3 _cachedScale;
@@ -550,6 +550,9 @@ public:
 
     void OnTriggerEnter(PhysicsColliderActor* c);
     void OnTriggerExit(PhysicsColliderActor* c);
+
+    // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
+    virtual void OnColliderChanged(Collider* c);
 
 protected:
 

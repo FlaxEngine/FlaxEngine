@@ -48,7 +48,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    TerrainMaterialShader(const String& name)
+    TerrainMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

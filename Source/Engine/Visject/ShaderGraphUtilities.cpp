@@ -5,8 +5,10 @@
 #include "ShaderGraphUtilities.h"
 #include "ShaderGraphValue.h"
 #include "Engine/Core/Types/StringBuilder.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/GameplayGlobals.h"
+#include "Engine/Graphics/Config.h"
 
 void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters)
 {

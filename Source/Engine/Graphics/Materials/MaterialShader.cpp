@@ -54,7 +54,7 @@ GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool
     return ps;
 }
 
-MaterialShader::MaterialShader(const String& name)
+MaterialShader::MaterialShader(const StringView& name)
     : _isLoaded(false)
     , _shader(nullptr)
 {
@@ -68,7 +68,7 @@ MaterialShader::~MaterialShader()
     SAFE_DELETE_GPU_RESOURCE(_shader);
 }
 
-MaterialShader* MaterialShader::Create(const String& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
+MaterialShader* MaterialShader::Create(const StringView& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
 {
     MaterialShader* material;
     switch (info.Domain)

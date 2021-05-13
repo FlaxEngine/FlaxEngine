@@ -6,6 +6,7 @@
 #include "PixelFormat.h"
 #include "RenderView.h"
 #include "GPUDevice.h"
+#include "RenderTask.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Engine/Time.h"
@@ -552,4 +553,21 @@ float ViewToCenterLessRadius(const RenderView& view, const Vector3& center, floa
 
     // Calculate result
     return viewToCenter - radius;
+}
+
+void MeshBase::SetMaterialSlotIndex(int32 value)
+{
+    if (value < 0 || value >= _model->MaterialSlots.Count())
+    {
+        LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
+        return;
+    }
+
+    _materialSlotIndex = value;
+}
+
+void MeshBase::SetBounds(const BoundingBox& box)
+{
+    _box = box;
+    BoundingSphere::FromBox(box, _sphere);
 }

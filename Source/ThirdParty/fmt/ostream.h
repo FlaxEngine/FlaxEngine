@@ -78,7 +78,7 @@ void write(std::basic_ostream<Char> &os, basic_buffer<Char> &buf) {
   typedef std::make_unsigned<std::streamsize>::type UnsignedStreamSize;
   UnsignedStreamSize size = buf.size();
   UnsignedStreamSize max_size =
-      internal::to_unsigned((std::numeric_limits<std::streamsize>::max)());
+      internal::to_unsigned(MAX_int32);
   do {
     UnsignedStreamSize n = size <= max_size ? size : max_size;
     os.write(data, static_cast<std::streamsize>(n));

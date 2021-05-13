@@ -2,18 +2,12 @@
 
 #pragma once
 
-#include "Engine/Platform/Platform.h"
 #include "Engine/Platform/CriticalSection.h"
-#include "Engine/Engine/Globals.h"
 
 /// <summary>
 /// Checks if current execution in on the main thread.
 /// </summary>
-/// <returns>True if running on the main thread, otherwise false.</returns>
-inline bool IsInMainThread()
-{
-    return Globals::MainThreadID == Platform::GetCurrentThreadID();
-}
+FLAXENGINE_API bool IsInMainThread();
 
 /// <summary>
 /// Scope locker for critical section.
@@ -31,20 +25,9 @@ private:
 public:
 
     /// <summary>
-    /// Init, enters critical section
+    /// Init, enters critical section.
     /// </summary>
-    /// <param name="section">The synchronization object to manage</param>
-    ScopeLock(const CriticalSection* section)
-        : _section(section)
-    {
-        ASSERT_LOW_LAYER(_section);
-        _section->Lock();
-    }
-
-    /// <summary>
-    /// Init, enters critical section
-    /// </summary>
-    /// <param name="section">The synchronization object to manage</param>
+    /// <param name="section">The synchronization object to lock.</param>
     ScopeLock(const CriticalSection& section)
         : _section(&section)
     {
@@ -52,7 +35,7 @@ public:
     }
 
     /// <summary>
-    /// Destructor, releases critical section
+    /// Destructor, releases critical section.
     /// </summary>
     ~ScopeLock()
     {

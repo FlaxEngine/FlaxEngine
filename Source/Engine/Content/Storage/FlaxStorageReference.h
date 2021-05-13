@@ -5,7 +5,7 @@
 #include "FlaxStorage.h"
 
 /// <summary>
-/// Flax Storage Container Reference
+/// Flax Storage container reference.
 /// </summary>
 struct FLAXENGINE_API FlaxStorageReference
 {
@@ -44,10 +44,8 @@ public:
 
 public:
 
-    // Assignment operator
     FlaxStorageReference& operator=(const FlaxStorageReference& other)
     {
-        // Protect against invalid self-assignment
         if (this != &other)
         {
             if (_storage)
@@ -56,7 +54,6 @@ public:
             if (_storage)
                 _storage->AddRef();
         }
-
         return *this;
     }
 

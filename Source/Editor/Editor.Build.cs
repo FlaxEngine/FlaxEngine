@@ -59,6 +59,7 @@ public class Editor : EditorModule
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Switch", "PLATFORM_TOOLS_SWITCH");
         }
         AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
 

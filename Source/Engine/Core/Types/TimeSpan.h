@@ -3,7 +3,6 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "Engine/Platform/Platform.h"
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 

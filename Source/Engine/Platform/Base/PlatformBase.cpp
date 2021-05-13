@@ -7,17 +7,19 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Utilities.h"
 #if COMPILE_WITH_PROFILER
-#include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #endif
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include <iostream>
@@ -163,6 +165,57 @@ void PlatformBase::Exit()
 {
 }
 
+#if COMPILE_WITH_PROFILER
+
+void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE
+    // Track memory allocation in Tracy
+    //tracy::Profiler::MemAlloc(ptr, size, false);
+    tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
+#endif
+
+    // Register allocation during the current CPU event
+    auto thread = ProfilerCPU::GetCurrentThread();
+    if (thread != nullptr && thread->Buffer.GetCount() != 0)
+    {
+        auto& activeEvent = thread->Buffer.Last().Event();
+        if (activeEvent.End < ZeroTolerance)
+        {
+            activeEvent.NativeMemoryAllocation += (int32)size;
+        }
+    }
+}
+
+void PlatformBase::OnMemoryFree(void* ptr)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE
+    // Track memory allocation in Tracy
+    tracy::Profiler::MemFree(ptr, false);
+#endif
+}
+
+#endif
+
+void* PlatformBase::AllocatePages(uint64 numPages, uint64 pageSize)
+{
+    // Fallback to the default memory allocation
+    const uint64 numBytes = numPages * pageSize;
+    return Platform::Allocate(numBytes, pageSize);
+}
+
+void PlatformBase::FreePages(void* ptr)
+{
+    // Fallback to free
+    Platform::Free(ptr);
+}
+
 PlatformType PlatformBase::GetPlatformType()
 {
     return PLATFORM_TYPE;
@@ -246,7 +299,7 @@ void PlatformBase::Fatal(const Char* msg, void* context)
         }
 
         // Create separate folder with crash info
-        const String crashDataFolder = StringUtils::GetDirectoryName(Log::Logger::LogFilePath) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
+        const String crashDataFolder = String(StringUtils::GetDirectoryName(Log::Logger::LogFilePath)) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
         FileSystem::CreateDirectory(crashDataFolder);
 
         // Capture the platform-dependant crash info (eg. memory dump)
@@ -407,6 +460,11 @@ ScreenOrientationType PlatformBase::GetScreenOrientationType()
     return ScreenOrientationType::Unknown;
 }
 
+bool PlatformBase::GetIsPaused()
+{
+    return false;
+}
+
 void PlatformBase::CreateGuid(Guid& result)
 {
     static uint16 guidCounter = 0;
@@ -439,15 +497,6 @@ Vector2 PlatformBase::GetVirtualDesktopSize()
 {
     return Platform::GetVirtualDesktopBounds().Size;
 }
-
-#if COMPILE_WITH_PROFILER
-
-void PlatformBase::TrackAllocation(uint64 size)
-{
-    ProfilerMemory::OnAllocation((uint32)size, false);
-}
-
-#endif
 
 void PlatformBase::GetEnvironmentVariables(Dictionary<String, String>& result)
 {
@@ -534,6 +583,8 @@ const Char* ToString(PlatformType type)
         return TEXT("Xbox Scarlett");
     case PlatformType::Android:
         return TEXT("Android");
+    case PlatformType::Switch:
+        return TEXT("Switch");
     default:
         return TEXT("");
     }

@@ -5,6 +5,12 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
+bool SkinnedModelLOD::HasAnyMeshInitialized() const
+{
+    // Note: we initialize all meshes at once so the last one can be used to check it.
+    return Meshes.HasItems() && Meshes.Last().IsInitialized();
+}
+
 bool SkinnedModelLOD::Load(MemoryReadStream& stream)
 {
     // Load LOD for each mesh

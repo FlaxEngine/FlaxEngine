@@ -11,16 +11,18 @@
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/Profiler.h"
-#include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineState.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Engine/EngineService.h"
-#include "Engine/Graphics/GPUPipelineState.h"
-#include "Engine/Graphics/RenderTargetPool.h"
 
 #if USE_EDITOR
 

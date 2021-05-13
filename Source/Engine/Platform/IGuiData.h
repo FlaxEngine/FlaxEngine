@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Interface for GUI data object container.

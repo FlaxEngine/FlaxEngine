@@ -143,6 +143,7 @@
     <Compile Include="Platforms\Windows\*.cs" />
     <Compile Include="Platforms\XboxOne\*.cs" />
     <Compile Include="..\..\Platforms\XboxScarlett\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\Switch\Flax.Build\*.cs" />
     <Compile Include="Projects\IProjectCustomizer.cs" />
     <Compile Include="Projects\Project.cs" />
     <Compile Include="Projects\ProjectFormat.cs" />

@@ -68,6 +68,7 @@ public:
     Guid Input;
     Guid Graphics;
     Guid Navigation;
+    Guid Localization;
     Guid GameCooking;
 
     // Per-platform settings containers
@@ -77,6 +78,7 @@ public:
     Guid PS4Platform;
     Guid XboxScarlettPlatform;
     Guid AndroidPlatform;
+    Guid SwitchPlatform;
 
 public:
 

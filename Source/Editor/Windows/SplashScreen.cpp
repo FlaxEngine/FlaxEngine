@@ -2,7 +2,9 @@
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/TextLayoutOptions.h"
@@ -120,6 +122,17 @@ const Char* SplashScreenQuotes[] =
     TEXT("All we had to do was follow the damn train, CJ"),
     TEXT("28 stab wounds"),
     TEXT("Here we go again"),
+    TEXT("@everyone"),
+    TEXT("uwu some spiders on the ceiling"),
+    TEXT("There you are you little shit"),
+    TEXT("potato"),
+    TEXT("python is a programming snek"),
+    TEXT("Flax will start when pigs will fly"),
+    TEXT("I'm the android sent by CyberLife"),
+    TEXT("fancy-ass ray tracing rtx on lighting"),
+    TEXT("ZOINKS"),
+    TEXT("Scooby dooby doo"),
+    TEXT("You shall not load"),
 };
 
 SplashScreen::~SplashScreen()

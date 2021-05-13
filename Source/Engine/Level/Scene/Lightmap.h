@@ -96,14 +96,7 @@ public:
     /// <summary>
     /// Determines whether this lightmap is ready (textures can be used by the renderer).
     /// </summary>
-    /// <returns>True if lightmap textures are ready to use by renderer, otherwise false.</returns>
-    FORCE_INLINE bool IsReady() const
-    {
-        // TODO: link for events and cache this to be a boolean value
-        return _textures[0] && _textures[0]->GetTexture()->ResidentMipLevels() > 0
-                && _textures[1] && _textures[1]->GetTexture()->ResidentMipLevels() > 0
-                && _textures[2] && _textures[2]->GetTexture()->ResidentMipLevels() > 0;
-    }
+    bool IsReady() const;
 
 private:
 

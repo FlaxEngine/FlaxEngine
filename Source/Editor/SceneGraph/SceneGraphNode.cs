@@ -57,7 +57,9 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual RootNode Root => ParentNode?.Root;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets or sets the transform of the node.
+        /// </summary>
         public abstract Transform Transform { get; set; }
 
         /// <summary>
@@ -110,18 +112,9 @@ namespace FlaxEditor.SceneGraph
             {
                 if (parentNode != value)
                 {
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Remove(this);
-                    }
-
+                    parentNode?.ChildNodes.Remove(this);
                     parentNode = value;
-
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Add(this);
-                    }
-
+                    parentNode?.ChildNodes.Add(this);
                     OnParentChanged();
                 }
             }
@@ -372,6 +365,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Gets or sets the node state.
         /// </summary>
+        [NoSerialize]
         public virtual StateData State
         {
             get => throw new NotImplementedException();

@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
-#include "Engine/Serialization/ISerializable.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/Collections/Array.h"
 
 class SceneTicking;
 class ScriptsFactory;

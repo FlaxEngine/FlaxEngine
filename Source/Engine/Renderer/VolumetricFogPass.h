@@ -6,6 +6,10 @@
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "RendererPass.h"
 
+struct VolumetricFogOptions;
+struct RendererSpotLightData;
+struct RendererPointLightData;
+
 /// <summary>
 /// Volumetric fog rendering service.
 /// </summary>

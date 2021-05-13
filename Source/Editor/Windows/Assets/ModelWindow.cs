@@ -565,7 +565,6 @@ namespace FlaxEditor.Windows.Assets
                 public UVsLayoutPreviewControl()
                 {
                     Offsets = new Margin(4);
-                    AnchorPreset = AnchorPresets.HorizontalStretchMiddle;
                     AutomaticInvalidate = false;
                 }
 
@@ -619,9 +618,9 @@ namespace FlaxEditor.Windows.Assets
                 }
 
                 /// <inheritdoc />
-                protected override void DrawChildren()
+                public override void DrawSelf()
                 {
-                    base.DrawChildren();
+                    base.DrawSelf();
 
                     var size = Size;
                     if (_channel == UVChannel.None || size.MaxValue < 5.0f)

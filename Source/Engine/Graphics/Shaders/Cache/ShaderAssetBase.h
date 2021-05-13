@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Content/BinaryAsset.h"
-#include "Engine/Graphics/GPUDevice.h"
 #include "ShaderStorage.h"
 
 /// <summary>
@@ -18,17 +17,15 @@ protected:
 
 public:
 
-    /// <summary>
-    /// Gets internal shader cache chunk index
-    /// </summary>
-    /// <returns>Chunk index</returns>
-    FORCE_INLINE static int32 GetCacheChunkIndex()
-    {
-        return GetCacheChunkIndex(GPUDevice::Instance->GetShaderProfile());
-    }
+    static bool IsNullRenderer();
 
     /// <summary>
-    /// Gets internal shader cache chunk index
+    /// Gets internal shader cache chunk index (for current GPU device shader profile).
+    /// </summary>
+    static int32 GetCacheChunkIndex();
+
+    /// <summary>
+    /// Gets internal shader cache chunk index.
     /// </summary>
     /// <param name="profile">Shader profile</param>
     /// <returns>Chunk index</returns>
@@ -47,11 +44,12 @@ public:
 #endif
 
 protected:
-    
+
+    bool initBase(AssetInitData& initData);
+
     /// <summary>
     /// Gets the parent asset.
     /// </summary>
-    /// <returns>The asset.</returns>
     virtual BinaryAsset* GetShaderAsset() const = 0;
 
 #if USE_EDITOR
@@ -110,7 +108,7 @@ protected:
 };
 
 /// <summary>
-/// Base class for assets that can contain shader
+/// Base class for binary assets that can contain shader.
 /// </summary>
 template<typename BaseType>
 class ShaderAssetTypeBase : public BaseType, public ShaderAssetBase
@@ -121,11 +119,6 @@ public:
 
 protected:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="params">Asset scripting class metadata</param>
-    /// <param name="info">Asset information</param>
     explicit ShaderAssetTypeBase(const ScriptingObjectSpawnParams& params, const AssetInfo* info)
         : BaseType(params, info)
     {
@@ -134,38 +127,22 @@ protected:
 protected:
 
     // [BaseType]
-    BinaryAsset* GetShaderAsset() const override
-    {
-        return (BinaryAsset*)this;
-    }
     bool init(AssetInitData& initData) override
     {
-        // Validate version
-        if (initData.SerializedVersion != ShadersSerializedVersion)
-        {
-            LOG(Warning, "Invalid shader serialized version.");
-            return true;
-        }
-
-        // Validate data
-        if (initData.CustomData.Length() != sizeof(_shaderHeader))
-        {
-            LOG(Warning, "Invalid shader header.");
-            return true;
-        }
-
-        // Load header 'as-is'
-        Platform::MemoryCopy(&_shaderHeader, initData.CustomData.Get(), sizeof(_shaderHeader));
-
-        return false;
+        return initBase(initData);
     }
-
     AssetChunksFlag getChunksToPreload() const override
     {
         AssetChunksFlag result = 0;
         const auto cachingMode = ShaderStorage::GetCachingMode();
-        if (cachingMode == ShaderStorage::CachingMode::AssetInternal && GPUDevice::Instance->GetRendererType() != RendererType::Null)
+        if (cachingMode == ShaderStorage::CachingMode::AssetInternal && IsNullRenderer())
             result |= GET_CHUNK_FLAG(GetCacheChunkIndex());
         return result;
+    }
+
+    // [ShaderAssetBase]
+    BinaryAsset* GetShaderAsset() const override
+    {
+        return (BinaryAsset*)this;
     }
 };

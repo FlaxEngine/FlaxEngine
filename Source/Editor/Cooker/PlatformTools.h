@@ -144,8 +144,8 @@ public:
         AotConfig(CookingData& data)
         {
             Platform::GetEnvironmentVariables(EnvVars);
-            EnvVars[TEXT("MONO_PATH")] = data.OutputPath / TEXT("Mono/lib/mono/4.5");
-            AssembliesSearchDirs.Add(data.OutputPath / TEXT("Mono/lib/mono/4.5"));
+            EnvVars[TEXT("MONO_PATH")] = data.DataOutputPath / TEXT("Mono/lib/mono/4.5");
+            AssembliesSearchDirs.Add(data.DataOutputPath / TEXT("Mono/lib/mono/4.5"));
         }
     };
 

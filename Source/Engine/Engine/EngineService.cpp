@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Sorting.h"
+#include <ThirdParty/tracy/Tracy.h>
 
 static bool CompareEngineServices(EngineService* const& a, EngineService* const& b)
 {
@@ -14,6 +15,7 @@ static bool CompareEngineServices(EngineService* const& a, EngineService* const&
     void EngineService::name() { } \
     void EngineService::On##name() \
     { \
+        ZoneScoped; \
         auto& services = GetServices(); \
         for (int32 i = 0; i < services.Count(); i++) \
             services[i]->name(); \
@@ -22,6 +24,7 @@ static bool CompareEngineServices(EngineService* const& a, EngineService* const&
     void EngineService::name() { } \
     void EngineService::On##name() \
     { \
+        ZoneScoped; \
         auto& services = GetServices(); \
         for (int32 i = 0; i < services.Count(); i++) \
             services[i]->name(); \
@@ -63,18 +66,33 @@ bool EngineService::Init()
 
 void EngineService::OnInit()
 {
+    ZoneScoped;
     Sort();
 
     // Init services from front to back
     auto& services = GetServices();
+#if TRACY_ENABLE
+    Char nameBuffer[100];
+#endif
     for (int32 i = 0; i < services.Count(); i++)
     {
         const auto service = services[i];
-        LOG(Info, "Initialize {0}...", service->Name);
+        const StringView name(service->Name);
+#if TRACY_ENABLE
+        ZoneScoped;
+        int32 nameBufferLength = 0;
+        for (int32 j = 0; j < name.Length(); j++)
+            if (name[j] != ' ')
+                nameBuffer[nameBufferLength++] = name[j];
+        Platform::MemoryCopy(nameBuffer + nameBufferLength, TEXT("::Init"), 7 * sizeof(Char));
+        nameBufferLength += 7;
+        ZoneName(nameBuffer, nameBufferLength);
+#endif
+        LOG(Info, "Initialize {0}...", name);
         service->IsInitialized = true;
         if (service->Init())
         {
-            Platform::Fatal(String::Format(TEXT("Failed to initialize {0}."), service->Name));
+            Platform::Fatal(String::Format(TEXT("Failed to initialize {0}."), name));
         }
     }
 
@@ -87,6 +105,7 @@ void EngineService::Dispose()
 
 void EngineService::OnDispose()
 {
+    ZoneScoped;
     // Dispose services from back to front
     auto& services = GetServices();
     for (int32 i = services.Count() - 1; i >= 0; i--)

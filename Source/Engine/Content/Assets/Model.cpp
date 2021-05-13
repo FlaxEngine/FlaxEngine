@@ -8,9 +8,11 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Renderer/DrawCall.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask
@@ -113,7 +115,7 @@ protected:
     }
 };
 
-REGISTER_BINARY_ASSET(Model, "FlaxEngine.Model", ::New<ModelAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())
@@ -396,21 +398,21 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
                 auto& meshData = meshesData[meshIndex];
 
                 // Vertex Buffer 0 (required)
-                auto task = mesh.ExtractDataAsync(MeshBufferType::Vertex0, meshData.VB0);
+                auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, meshData.VB0);
                 if (task == nullptr)
                     return true;
                 task->Start();
                 tasks.Add(task);
 
                 // Vertex Buffer 1 (required)
-                task = mesh.ExtractDataAsync(MeshBufferType::Vertex1, meshData.VB1);
+                task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex1, meshData.VB1);
                 if (task == nullptr)
                     return true;
                 task->Start();
                 tasks.Add(task);
 
                 // Vertex Buffer 2 (optional)
-                task = mesh.ExtractDataAsync(MeshBufferType::Vertex2, meshData.VB2);
+                task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex2, meshData.VB2);
                 if (task)
                 {
                     task->Start();
@@ -418,7 +420,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
                 }
 
                 // Index Buffer (required)
-                task = mesh.ExtractDataAsync(MeshBufferType::Index, meshData.IB);
+                task = mesh.DownloadDataGPUAsync(MeshBufferType::Index, meshData.IB);
                 if (task == nullptr)
                     return true;
                 task->Start();
@@ -618,6 +620,19 @@ void Model::SetupMaterialSlots(int32 slotsCount)
     }
 }
 
+int32 Model::GetLODsCount() const
+{
+    return LODs.Count();
+}
+
+void Model::GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex)
+{
+    auto& lod = LODs[lodIndex];
+    meshes.Resize(lod.Meshes.Count());
+    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+        meshes[meshIndex] = &lod.Meshes[meshIndex];
+}
+
 void Model::InitAsVirtual()
 {
     // Init with a single LOD and one mesh
@@ -627,6 +642,21 @@ void Model::InitAsVirtual()
     // Base
     BinaryAsset::InitAsVirtual();
 }
+
+#if USE_EDITOR
+
+void Model::GetReferences(Array<Guid>& output) const
+{
+    // Base
+    BinaryAsset::GetReferences(output);
+
+    for (int32 i = 0; i < MaterialSlots.Count(); i++)
+    {
+        output.Add(MaterialSlots[i].Material.GetID());
+    }
+}
+
+#endif
 
 int32 Model::GetMaxResidency() const
 {
@@ -791,7 +821,7 @@ Asset::LoadResult Model::load()
         const auto thisSS = LODs[lodIndex].ScreenSize;
         if (prevSS <= thisSS)
         {
-            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, GetPath());
+            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, ToString());
         }
     }
 #endif
@@ -836,4 +866,34 @@ AssetChunksFlag Model::getChunksToPreload() const
 {
     // Note: we don't preload any LODs here because it's done by the Streaming Manager
     return GET_CHUNK_FLAG(0);
+}
+
+void ModelBase::SetupMaterialSlots(int32 slotsCount)
+{
+    CHECK(slotsCount >= 0 && slotsCount < 4096);
+    if (!IsVirtual() && WaitForLoaded())
+        return;
+
+    ScopeLock lock(Locker);
+
+    const int32 prevCount = MaterialSlots.Count();
+    MaterialSlots.Resize(slotsCount, false);
+
+    // Initialize slot names
+    for (int32 i = prevCount; i < slotsCount; i++)
+        MaterialSlots[i].Name = String::Format(TEXT("Material {0}"), i + 1);
+}
+
+MaterialSlot* ModelBase::GetSlot(const StringView& name)
+{
+    MaterialSlot* result = nullptr;
+    for (auto& slot : MaterialSlots)
+    {
+        if (slot.Name == name)
+        {
+            result = &slot;
+            break;
+        }
+    }
+    return result;
 }

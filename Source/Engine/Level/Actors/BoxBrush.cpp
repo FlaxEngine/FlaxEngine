@@ -128,6 +128,13 @@ void BoxBrush::GetSurfaces(CSG::Surface surfaces[6])
     }
 }
 
+void BoxBrush::SetMaterial(int32 surfaceIndex, MaterialBase* material)
+{
+    CHECK(Math::IsInRange(surfaceIndex, 0, 5));
+    Surfaces[surfaceIndex].Material = material;
+    OnBrushModified();
+}
+
 bool BoxBrush::Intersects(int32 surfaceIndex, const Ray& ray, float& distance, Vector3& normal) const
 {
     distance = MAX_float;
@@ -232,12 +239,37 @@ void BoxBrush::OnDebugDrawSelected()
 
 #endif
 
+Scene* BoxBrush::GetBrushScene() const
+{
+    return GetScene();
+}
+
+Guid BoxBrush::GetBrushID() const
+{
+    return GetID();
+}
+
+bool BoxBrush::CanUseCSG() const
+{
+    return IsActiveInHierarchy();
+}
+
+CSG::Mode BoxBrush::GetBrushMode() const
+{
+    return _mode;
+}
+
 void BoxBrush::GetSurfaces(Array<CSG::Surface>& surfaces)
 {
     surfaces.Clear();
     surfaces.Resize(6, false);
 
     GetSurfaces(surfaces.Get());
+}
+
+int32 BoxBrush::GetSurfacesCount()
+{
+    return 6;
 }
 
 void BoxBrush::OnTransformChanged()
@@ -272,7 +304,7 @@ void BoxBrush::OnParentChanged()
 {
     // Base
     Actor::OnParentChanged();
-    
+
     if (!IsDuringPlay())
         return;
 
