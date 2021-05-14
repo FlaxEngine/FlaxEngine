@@ -74,6 +74,16 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
+        /// Determines whether the specified filename is valid for this proxy.
+        /// </summary>
+        /// <param name="filename">The filename.</param>
+        /// <returns><c>true</c> if the filename is valid, otherwise <c>false</c>.</returns>
+        public virtual bool IsFileNameValid(string filename)
+        {
+            return true;
+        }
+        
+        /// <summary>
         /// Determines whether this proxy can create items in the specified target location.
         /// </summary>
         /// <param name="targetLocation">The target location.</param>
