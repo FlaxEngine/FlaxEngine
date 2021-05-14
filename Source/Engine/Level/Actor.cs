@@ -124,7 +124,7 @@ namespace FlaxEngine
         public Actor AddChild(Type type)
         {
             var result = (Actor)New(type);
-            result.SetParent(this, false);
+            result.SetParent(this, false, false);
             return result;
         }
 
@@ -136,7 +136,7 @@ namespace FlaxEngine
         public T AddChild<T>() where T : Actor
         {
             var result = New<T>();
-            result.SetParent(this, false);
+            result.SetParent(this, false, false);
             return result;
         }
 
@@ -173,7 +173,7 @@ namespace FlaxEngine
             if (result == null)
             {
                 result = New<T>();
-                result.SetParent(this, false);
+                result.SetParent(this, false, false);
             }
             return result;
         }
