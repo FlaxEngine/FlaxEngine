@@ -321,7 +321,7 @@ namespace Flax.Build.Bindings
             }
 
             // Convert MonoClass* into MonoType*
-            return "mono_class_get_type" + GenerateCppGetNativeClass(buildData, typeInfo, caller, null) + ')';
+            return "mono_class_get_type(" + GenerateCppGetNativeClass(buildData, typeInfo, caller, null) + ')';
         }
 
         private static string GenerateCppWrapperNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo)
