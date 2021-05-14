@@ -135,7 +135,7 @@ protected:
     {
         AssetChunksFlag result = 0;
         const auto cachingMode = ShaderStorage::GetCachingMode();
-        if (cachingMode == ShaderStorage::CachingMode::AssetInternal && IsNullRenderer())
+        if (cachingMode == ShaderStorage::CachingMode::AssetInternal && !IsNullRenderer())
             result |= GET_CHUNK_FLAG(GetCacheChunkIndex());
         return result;
     }

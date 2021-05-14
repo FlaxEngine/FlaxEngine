@@ -103,7 +103,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
     BytesContainer data;
-    if (File::ReadAllBytes(GetPath(), data))
+    if (File::ReadAllBytes(_path, data))
     {
         LOG(Warning, "Filed to load json asset data. {0}", ToString());
         return LoadResult::CannotLoadData;
@@ -114,7 +114,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     }
 #else
     // Get the asset storage container but don't load it now
-    const auto storage = ContentStorageManager::GetStorage(GetPath(), true);
+    const auto storage = ContentStorageManager::GetStorage(_path, true);
     if (!storage)
         return LoadResult::CannotLoadStorage;
 
