@@ -1544,7 +1544,7 @@ void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& c
 void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
@@ -1571,7 +1571,7 @@ void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Colo
 void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
