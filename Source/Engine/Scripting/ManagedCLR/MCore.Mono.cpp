@@ -423,7 +423,7 @@ bool MCore::LoadEngine()
         }
 
         char buffer[150];
-        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=n,loglevel=%d", debuggerIp.Get(), debuggerPort, debuggerLogLevel);
+        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, CommandLine::Options.WaitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
 
         const char* options[] = {
             "--soft-breakpoints",
