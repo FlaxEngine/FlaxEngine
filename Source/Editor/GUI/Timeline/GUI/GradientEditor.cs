@@ -63,7 +63,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 var isMouseOver = IsMouseOver;
                 var color = Gradient._data[Index].Value;
                 var icons = Editor.Instance.Icons;
-                var icon = icons.VisjectBoxClose;
+                var icon = icons.VisjectBoxClosed32;
 
                 Render2D.DrawSprite(icon, new Rectangle(0.0f, 0.0f, 10.0f, 10.0f), isMouseOver ? Color.Gray : Color.Black);
                 Render2D.DrawSprite(icon, new Rectangle(1.0f, 1.0f, 8.0f, 8.0f), color);

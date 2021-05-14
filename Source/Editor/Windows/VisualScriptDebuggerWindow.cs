@@ -404,13 +404,13 @@ namespace FlaxEditor.Windows
             {
                 Parent = this
             };
-            toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
+            toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
             _debugToolstripControls = new[]
             {
                 toolstrip.AddSeparator(),
-                toolstrip.AddButton(editor.Icons.Play32, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
-                toolstrip.AddButton(editor.Icons.Find32, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
-                toolstrip.AddButton(editor.Icons.Stop32, OnDebuggerStop).LinkTooltip("Stop debugging"),
+                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
+                toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };
             foreach (var control in _debugToolstripControls)
                 control.Visible = Editor.Simulation.IsDuringBreakpointHang;

@@ -1993,7 +1993,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 else if (_isBind)
                 {
-                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Add48);
+                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Add64);
                     _helperButton.Color = Color.Red;
                     _helperButton.TooltipText = "Add new handler function and bind it to this event";
                     _helperButton.Enabled = _signature != null;

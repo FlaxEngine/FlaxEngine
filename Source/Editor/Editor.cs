@@ -220,7 +220,7 @@ namespace FlaxEditor
             GameProject = ProjectInfo.Load(Internal_GetProjectPath());
 
             Icons = new EditorIcons();
-            Icons.GetIcons();
+            Icons.LoadIcons();
 
             // Create common editor modules
             RegisterModule(Options = new OptionsModule(this));

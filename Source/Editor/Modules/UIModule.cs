@@ -190,7 +190,7 @@ namespace FlaxEditor.Modules
             if (isDuringBreakpointHang)
             {
                 play.Checked = false;
-                play.Icon = Editor.Icons.Stop32;
+                play.Icon = Editor.Icons.Stop64;
                 pause.Enabled = false;
                 pause.Checked = true;
                 pause.AutoCheck = false;
@@ -199,7 +199,7 @@ namespace FlaxEditor.Modules
             else if (isPlayMode)
             {
                 play.Checked = false;
-                play.Icon = Editor.Icons.Stop32;
+                play.Icon = Editor.Icons.Stop64;
                 pause.Enabled = true;
                 pause.Checked = Editor.StateMachine.PlayingState.IsPaused;
                 pause.AutoCheck = false;
@@ -208,7 +208,7 @@ namespace FlaxEditor.Modules
             else
             {
                 play.Checked = Editor.Simulation.IsPlayModeRequested;
-                play.Icon = Editor.Icons.Play32;
+                play.Icon = Editor.Icons.Play64;
                 pause.Enabled = canEnterPlayMode;
                 pause.AutoCheck = true;
                 step.Enabled = false;
@@ -501,20 +501,20 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow,
             };
 
-            _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save32, Editor.SaveAll).LinkTooltip("Save all (Ctrl+S)");
+            _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save64, Editor.SaveAll).LinkTooltip("Save all (Ctrl+S)");
             ToolStrip.AddSeparator();
-            _toolStripUndo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Undo32, Editor.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _toolStripRedo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Redo32, Editor.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _toolStripUndo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Undo64, Editor.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _toolStripRedo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Redo64, Editor.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             ToolStrip.AddSeparator();
             _toolStripTranslate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Translate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip("Change Gizmo tool mode to Translate (1)");
             _toolStripRotate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Rotate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate (2)");
             _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale (3)");
             ToolStrip.AddSeparator();
-            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build32, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
+            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
             ToolStrip.AddSeparator();
-            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play32, Editor.Simulation.RequestPlayOrStopPlay).LinkTooltip("Start/Stop game (F5)");
-            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause32, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game(F6)");
-            _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Step32, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
+            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.RequestPlayOrStopPlay).LinkTooltip("Start/Stop game (F5)");
+            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game(F6)");
+            _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
 
             UpdateToolstrip();
         }
