@@ -17,7 +17,6 @@
 AssetsCache::AssetsCache()
     : _isDirty(false)
     , _registry(4096)
-    , _pathsMapping(256)
 {
 }
 
@@ -93,8 +92,8 @@ void AssetsCache::Init()
 #if ENABLE_ASSETS_DISCOVERY
         stream->Read(&e.FileModified);
 #else
-		DateTime tmp1;
-		stream->Read(&tmp1);
+        DateTime tmp1;
+        stream->Read(&tmp1);
 #endif
 
         if (flags & AssetsCacheFlags::RelativePaths && e.Info.Path.HasChars())
@@ -209,7 +208,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
 #if ENABLE_ASSETS_DISCOVERY
         stream->Write(&e.FileModified);
 #else
-		stream->WriteInt64(0);
+        stream->WriteInt64(0);
 #endif
 
         index++;
@@ -233,9 +232,19 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     return false;
 }
 
-const String& AssetsCache::GetAssetPath(const Guid& id) const
+const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
 {
-    return _registry[id].Info.Path;
+#if USE_EDITOR
+    auto e = _registry.TryGet(id);
+    return e ? e->Info.Path : String::Empty;
+#else
+    for (auto& e : _pathsMapping)
+    {
+        if (e.Value == id)
+            return e.Key;
+    }
+    return String::Empty;
+#endif
 }
 
 bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
@@ -587,8 +596,8 @@ bool AssetsCache::IsEntryValid(Entry& e)
 #else
 
     // In game we don't care about it because all cached asset entries are valid (precached)
-	// Skip only entries with missing file
-	return e.Info.Path.HasChars();
+    // Skip only entries with missing file
+    return e.Info.Path.HasChars();
 
 #endif
 }

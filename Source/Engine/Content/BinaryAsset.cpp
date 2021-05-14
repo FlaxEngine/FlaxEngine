@@ -450,7 +450,7 @@ const String& BinaryAsset::GetPath() const
     return Storage ? Storage->GetPath() : String::Empty;
 #else
     // In build all assets are packed into packages so use ID for original path lookup
-    return Content::GetRegistry()->GetAssetPath(_id);
+    return Content::GetRegistry()->GetEditorAssetPath(_id);
 #endif
 }
 

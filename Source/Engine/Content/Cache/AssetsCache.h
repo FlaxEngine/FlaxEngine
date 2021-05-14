@@ -129,11 +129,11 @@ public:
 public:
 
     /// <summary>
-    /// Finds the asset path by id.
+    /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
     /// </summary>
     /// <param name="id">The asset id.</param>
     /// <returns>The asset path, or empty if failed to find.</returns>
-    const String& GetAssetPath(const Guid& id) const;
+    const String& GetEditorAssetPath(const Guid& id) const;
 
     /// <summary>
     /// Finds the asset info by path.
