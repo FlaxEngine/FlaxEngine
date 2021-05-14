@@ -92,20 +92,20 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Parent = this,
             };
-            _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play32);
+            _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play64);
             _liveRecordingButton.LinkTooltip("Live profiling events recording");
             _liveRecordingButton.AutoCheck = true;
             _clearButton = toolstrip.AddButton(editor.Icons.Rotate32, Clear);
             _clearButton.LinkTooltip("Clear data");
             toolstrip.AddSeparator();
-            _prevFrameButton = toolstrip.AddButton(editor.Icons.ArrowLeft32, () => ViewFrameIndex--);
+            _prevFrameButton = toolstrip.AddButton(editor.Icons.Left64, () => ViewFrameIndex--);
             _prevFrameButton.LinkTooltip("Previous frame");
-            _nextFrameButton = toolstrip.AddButton(editor.Icons.ArrowRight32, () => ViewFrameIndex++);
+            _nextFrameButton = toolstrip.AddButton(editor.Icons.Right64, () => ViewFrameIndex++);
             _nextFrameButton.LinkTooltip("Next frame");
-            _lastFrameButton = toolstrip.AddButton(editor.Icons.Step32, () => ViewFrameIndex = -1);
+            _lastFrameButton = toolstrip.AddButton(editor.Icons.Skip64, () => ViewFrameIndex = -1);
             _lastFrameButton.LinkTooltip("Current frame");
             toolstrip.AddSeparator();
-            _showOnlyLastUpdateEventsButton = toolstrip.AddButton(editor.Icons.PageScale32, () => ShowOnlyLastUpdateEvents = !ShowOnlyLastUpdateEvents);
+            _showOnlyLastUpdateEventsButton = toolstrip.AddButton(editor.Icons.CenterView64, () => ShowOnlyLastUpdateEvents = !ShowOnlyLastUpdateEvents);
             _showOnlyLastUpdateEventsButton.LinkTooltip("Show only last update events and hide events from the other callbacks (e.g. draw or fixed update)");
 
             _tabs = new Tabs

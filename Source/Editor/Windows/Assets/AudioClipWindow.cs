@@ -152,12 +152,12 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_properties);
 
             // Toolstrip
-            _toolstrip.AddButton(Editor.Icons.Import32, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
+            _toolstrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
-            _playButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Play32, OnPlay).LinkTooltip("Play/stop audio");
-            _pauseButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Pause32, OnPause).LinkTooltip("Pause audio");
+            _playButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Play64, OnPlay).LinkTooltip("Play/stop audio");
+            _pauseButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Pause64, OnPause).LinkTooltip("Pause audio");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/audio/audio-clip.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/audio/audio-clip.html")).LinkTooltip("See documentation to learn more");
         }
 
         private void OnPlay()
@@ -244,7 +244,7 @@ namespace FlaxEditor.Windows.Assets
         {
             base.UpdateToolstrip();
 
-            _playButton.Icon = _previewSource && _previewSource.State == AudioSource.States.Playing ? Editor.Icons.Stop32 : Editor.Icons.Play32;
+            _playButton.Icon = _previewSource && _previewSource.State == AudioSource.States.Playing ? Editor.Icons.Stop64 : Editor.Icons.Play64;
             _pauseButton.Enabled = _previewSource && _previewSource.State == AudioSource.States.Playing;
         }
 

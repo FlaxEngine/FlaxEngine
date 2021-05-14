@@ -45,7 +45,7 @@ namespace FlaxEditor
         /// <summary>
         /// The icons atlas.
         /// </summary>
-        public static string IconsAtlas = "Editor/IconsAtlas";
+        public static string IconsAtlas = "Editor/IconAtlasNew";
 
         /// <summary>
         /// The primary font.

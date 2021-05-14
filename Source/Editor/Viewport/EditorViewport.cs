@@ -443,7 +443,7 @@ namespace FlaxEditor.Viewport
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
-                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.ArrowRightBorder16, camSpeedCM)
+                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.CamSpeed32, camSpeedCM)
                 {
                     Tag = this,
                     TooltipText = "Camera speed scale"
@@ -484,7 +484,7 @@ namespace FlaxEditor.Viewport
                 // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate16;
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
                     {

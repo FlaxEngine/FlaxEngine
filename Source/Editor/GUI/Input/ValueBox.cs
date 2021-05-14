@@ -184,7 +184,7 @@ namespace FlaxEditor.GUI.Input
                 var style = Style.Current;
 
                 // Draw sliding UI
-                Render2D.DrawSprite(style.Scale, SlideRect, style.Foreground);
+                Render2D.DrawSprite(style.Scalar, SlideRect, style.Foreground);
 
                 // Check if is sliding
                 if (_isSliding)
