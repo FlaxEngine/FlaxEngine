@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Settings;
+using FlaxEngine;
 
 namespace FlaxEditor.Content
 {
@@ -13,15 +14,18 @@ namespace FlaxEditor.Content
     public sealed class SettingsProxy : JsonAssetProxy
     {
         private readonly Type _type;
+        private readonly SpriteHandle _thumbnail;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettingsProxy"/> class.
         /// </summary>
         /// <param name="type">The settings asset type (must be subclass of SettingsBase type).</param>
-        public SettingsProxy(Type type)
+        /// <param name="thumbnail">Asset icon.</param>
+        public SettingsProxy(Type type, SpriteHandle thumbnail)
         {
             _type = type;
             TypeName = type.FullName;
+            _thumbnail = thumbnail;
         }
 
         /// <inheritdoc />
@@ -47,23 +51,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
-            switch (typeName.Substring(typeName.LastIndexOf('.')+1))
-            {
-                case "GameSettings":            return new GameSettingsItem(path, id, typeName);
-                case "AndroidPlatformSettings": return new AndroidPlatformSettingsItem(path, id, typeName);
-                case "AudioSettings":           return new AudioSettingsItem(path, id, typeName);
-                case "BuildSettings":           return new BuildSettingsItem(path, id, typeName);
-                case "GraphicsSettings":        return new GraphicsSettingsItem(path, id, typeName);
-                case "InputSettings":           return new InputSettingsItem(path, id, typeName);
-                case "LayersAndTagsSettings":   return new LayersAndTagsSettingsItem(path, id, typeName);
-                case "LinuxPlatformSettings":   return new LinuxPlatformSettingsItem(path, id, typeName);
-                case "NavigationSettings":      return new NavigationSettingsItem(path, id, typeName);
-                case "PhysicsSettings":         return new PhysicsSettingsItem(path, id, typeName);
-                case "TimeSettings":            return new TimeSettingsItem(path, id, typeName);
-                case "UWPPlatformSettings":     return new UWPPlatformSettingsItem(path, id, typeName);
-                case "WindowsPlatformSettings": return new WindowsPlatformSettingsItem(path, id, typeName);
-            }
-            return base.ConstructItem(path, typeName, ref id);
+            return new JsonAssetItem(path, id, typeName, _thumbnail);
         }
 
         /// <inheritdoc />
