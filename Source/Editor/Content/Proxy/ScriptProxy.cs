@@ -67,6 +67,15 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool IsFileNameValid(string filename)
+        {
+            // Scripts cannot start with digit. 
+            if (Char.IsDigit(filename[0]))
+                return false;
+            return true;
+        }
+        
+        /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
             // Load template
