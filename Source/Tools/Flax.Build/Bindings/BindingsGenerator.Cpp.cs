@@ -958,7 +958,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine("    {");
             contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
-            contents.AppendLine("        static THREADLOCAL bool IsDuringWrapperCall = false;");
+            contents.AppendLine("        static THREADLOCAL void* WrapperCallInstance = nullptr;");
 
             contents.AppendLine("        ScriptingTypeHandle managedTypeHandle = object->GetTypeHandle();");
             contents.AppendLine("        const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();");
@@ -968,7 +968,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("            managedTypePtr = &managedTypeHandle.GetType();");
             contents.AppendLine("        }");
 
-            contents.AppendLine("        if (IsDuringWrapperCall)");
+            contents.AppendLine("        if (WrapperCallInstance == object)");
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
             contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
@@ -990,7 +990,8 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        PROFILE_CPU_NAMED(*method->ProfilerName);");
             contents.AppendLine("        MonoObject* exception = nullptr;");
 
-            contents.AppendLine("        IsDuringWrapperCall = true;");
+            contents.AppendLine("        auto prevWrapperCallInstance = WrapperCallInstance;");
+            contents.AppendLine("        WrapperCallInstance = object;");
             contents.AppendLine("#if USE_MONO_AOT");
 
             if (functionInfo.Parameters.Count == 0)
@@ -1064,7 +1065,7 @@ namespace Flax.Build.Bindings
             }
 
             contents.AppendLine("#endif");
-            contents.AppendLine("        IsDuringWrapperCall = false;");
+            contents.AppendLine("        WrapperCallInstance = prevWrapperCallInstance;");
             contents.AppendLine("        if (exception)");
             contents.AppendLine("            DebugLog::LogException(exception);");
 
