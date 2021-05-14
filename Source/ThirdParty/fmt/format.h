@@ -407,7 +407,7 @@ class basic_memory_buffer: private Allocator, public internal::basic_buffer<T> {
   // Move data from other to this buffer.
   void move(basic_memory_buffer &other) {
     Allocator &this_alloc = *this, &other_alloc = other;
-    this_alloc = std::move(other_alloc);
+    this_alloc = ::MoveTemp(other_alloc);
     T* data = other.data();
     std::size_t size = other.size(), capacity = other.capacity();
     if (data == other.store_) {

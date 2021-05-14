@@ -42,7 +42,7 @@
 #include "TargetConditionals.h"
 #endif
 
-#include <atomic>		// Requires C++11. Sorry VS2010.
+#include <atomic>
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -156,11 +156,7 @@ namespace details {
 			: static_cast<T>(-1);
 	};
 
-#if defined(__GLIBCXX__)
-	typedef ::max_align_t std_max_align_t;      // libstdc++ forgot to add it to std:: for a while
-#else
-	typedef std::max_align_t std_max_align_t;   // Others (e.g. MSVC) insist it can *only* be accessed via std::
-#endif
+	typedef std::max_align_t std_max_align_t;
 
 	// Some platforms have incorrectly set max_align_t to a type with <8 bytes alignment even while supporting
 	// 8-byte aligned scalar values (*cough* 32-bit iOS). Work around this with our own union. See issue #64.
