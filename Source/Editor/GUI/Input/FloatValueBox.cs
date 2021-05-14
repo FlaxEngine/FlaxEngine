@@ -23,10 +23,7 @@ namespace FlaxEditor.GUI.Input
                 value = Mathf.Clamp(value, _min, _max);
                 if (Math.Abs(_value - value) > Mathf.Epsilon)
                 {
-                    // Set value
                     _value = value;
-
-                    // Update
                     UpdateText();
                     OnValueChanged();
                 }
@@ -43,7 +40,6 @@ namespace FlaxEditor.GUI.Input
                 {
                     if (value > _max)
                         throw new ArgumentException();
-
                     _min = value;
                     Value = Value;
                 }
@@ -60,7 +56,6 @@ namespace FlaxEditor.GUI.Input
                 {
                     if (value < _min)
                         throw new ArgumentException();
-
                     _max = value;
                     Value = Value;
                 }
@@ -80,7 +75,17 @@ namespace FlaxEditor.GUI.Input
         public FloatValueBox(float value, float x = 0, float y = 0, float width = 120, float min = float.MinValue, float max = float.MaxValue, float slideSpeed = 1)
         : base(Mathf.Clamp(value, min, max), x, y, width, min, max, slideSpeed)
         {
+            TryUseAutoSliderSpeed();
             UpdateText();
+        }
+
+        private void TryUseAutoSliderSpeed()
+        {
+            var range = _max - _min;
+            if (Mathf.IsOne(_slideSpeed) && range > Mathf.Epsilon * 200.0f && range < 1000000.0f)
+            {
+                _slideSpeed = range * 0.01f;
+            }
         }
 
         /// <summary>
@@ -103,6 +108,7 @@ namespace FlaxEditor.GUI.Input
         {
             _min = limits.Min;
             _max = Mathf.Max(_min, limits.Max);
+            TryUseAutoSliderSpeed();
             Value = Value;
         }
 
@@ -115,6 +121,7 @@ namespace FlaxEditor.GUI.Input
             _min = limits.Min;
             _max = Mathf.Max(_min, limits.Max);
             _slideSpeed = limits.SliderSpeed;
+            TryUseAutoSliderSpeed();
             Value = Value;
         }
 
