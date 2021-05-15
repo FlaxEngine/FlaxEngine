@@ -254,7 +254,7 @@ namespace FlaxEngine.GUI
                     break;
                 }
             }
-            var endTextBlock = Mathf.Min(firstTextBlock + 1, textBlocks.Length);
+            var endTextBlock = Mathf.Min(firstTextBlock + 1, _textBlocks.Count);
             for (int i = _textBlocks.Count - 1; i > firstTextBlock; i--)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
