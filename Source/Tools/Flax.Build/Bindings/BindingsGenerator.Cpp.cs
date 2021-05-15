@@ -1712,7 +1712,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -1728,7 +1728,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
