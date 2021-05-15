@@ -38,7 +38,7 @@ namespace FlaxEditor.Windows
                     _showGUI = value;
 
                     // Update root if it's in game
-                    if (Editor.StateMachine.IsPlayMode)
+                    //if (Editor.StateMachine.IsPlayMode)
                         _guiRoot.Visible = value;
                 }
             }
@@ -276,6 +276,18 @@ namespace FlaxEditor.Windows
             {
                 var takeScreenshot = menu.AddButton("Take Screenshot");
                 takeScreenshot.Clicked += TakeScreenshot;
+            }
+
+            menu.AddSeparator();
+
+            // Show GUI
+            {
+                var showGui = menu.AddButton("Show GUI");
+                var showGuiCheckbox = new CheckBox(140, 2, ShowGUI)
+                {
+                    Parent = showGui
+                };
+                showGuiCheckbox.StateChanged += x => ShowGUI = x.Checked;
             }
 
             menu.MinimumWidth = 200;
