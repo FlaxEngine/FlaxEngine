@@ -137,17 +137,17 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
-	const int gridStartX = groupID.x * DOF_GRID_SIZE;
-	const int gridX = groupThreadID.x - DOF_APRON_SIZE;
+	const uint gridStartX = groupID.x * DOF_GRID_SIZE;
+	const uint gridX = groupThreadID.x - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const int sampleX = gridStartX + gridX;
-	const int sampleY = groupID.y;
+	const uint sampleX = gridStartX + gridX;
+	const uint sampleY = groupID.y;
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
 
-	const int2 samplePos = int2(sampleX, sampleY);
+	const uint2 samplePos = uint2(sampleX, sampleY);
 
 	// Sample the textures
 #if USE_CS_HALF_PIXEL_OFFSET
@@ -186,7 +186,7 @@ void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 			for (int x = -DOF_MAX_SAMPLE_RADIUS; x <= DOF_MAX_SAMPLE_RADIUS; x++)
 			{
 				// Grab the sample from shared memory
-				int groupTapX = groupThreadID.x + x;
+				uint groupTapX = groupThreadID.x + x;
 				DOFSample tap = Samples[groupTapX];
 
 				// Reject the sample if it's outside the CoC radius
@@ -218,17 +218,17 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the vertical group of pixels that this thread group is writing to
-	const int gridStartY = groupID.y * DOF_GRID_SIZE;
-	const int gridY = groupThreadID.y - DOF_APRON_SIZE;
+	const uint gridStartY = groupID.y * DOF_GRID_SIZE;
+	const uint gridY = groupThreadID.y - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const int sampleX = groupID.x;
-	const int sampleY = gridStartY + gridY;
+	const uint sampleX = groupID.x;
+	const uint sampleY = gridStartY + gridY;
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
 
-	const int2 samplePos = int2(sampleX, sampleY);
+	const uint2 samplePos = uint2(sampleX, sampleY);
 
 	// Sample the textures
 #if USE_CS_HALF_PIXEL_OFFSET
@@ -267,7 +267,7 @@ void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 			for (int y = -DOF_MAX_SAMPLE_RADIUS; y <= DOF_MAX_SAMPLE_RADIUS; y++)
 			{
 				// Grab the sample from shared memory
-				int groupTapY = groupThreadID.y + y;
+				uint groupTapY = groupThreadID.y + y;
 				DOFSample tap = Samples[groupTapY];
 
 				// Reject the sample if it's outside the CoC radius
@@ -311,17 +311,17 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_CoCSpreadH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
-	const int gridStartX = groupID.x * DOF_GRID_SIZE;
-	const int gridX = groupThreadID.x - DOF_APRON_SIZE;
+	const uint gridStartX = groupID.x * DOF_GRID_SIZE;
+	const uint gridX = groupThreadID.x - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const int sampleX = gridStartX + gridX;
-	const int sampleY = groupID.y;
+	const uint sampleX = gridStartX + gridX;
+	const uint sampleY = groupID.y;
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
 
-	const int2 samplePos = int2(sampleX, sampleY);
+	const uint2 samplePos = uint2(sampleX, sampleY);
 
 	// Sample the textures
 #if USE_CS_HALF_PIXEL_OFFSET
@@ -355,7 +355,7 @@ void CS_CoCSpreadH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 		for (int x = -DOF_MAX_SAMPLE_RADIUS; x <= DOF_MAX_SAMPLE_RADIUS; x++)
 		{
 			// Grab the sample from shared memory
-			int groupTapX = groupThreadID.x + x;
+			uint groupTapX = groupThreadID.x + x;
 			CoCSample tap = Samples[groupTapX];
 
 			// Only accept samples if they're from the foreground, and have a higher blur amount
@@ -382,17 +382,17 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_CoCSpreadV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the vertical group of pixels that this thread group is writing to
-	const int gridStartY = groupID.y * DOF_GRID_SIZE;
-	const int gridY = groupThreadID.y - DOF_APRON_SIZE;
+	const uint gridStartY = groupID.y * DOF_GRID_SIZE;
+	const uint gridY = groupThreadID.y - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const int sampleX = groupID.x;
-	const int sampleY = gridStartY + gridY;
+	const uint sampleX = groupID.x;
+	const uint sampleY = gridStartY + gridY;
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
 
-	const int2 samplePos = int2(sampleX, sampleY);
+	const uint2 samplePos = uint2(sampleX, sampleY);
 
 	// Sample the textures
 #if USE_CS_HALF_PIXEL_OFFSET
@@ -425,7 +425,7 @@ void CS_CoCSpreadV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 		for (int y = -DOF_MAX_SAMPLE_RADIUS; y <= DOF_MAX_SAMPLE_RADIUS; y++)
 		{
 			// Grab the sample from shared memory
-			int groupTapY = groupThreadID.y + y;
+			uint groupTapY = groupThreadID.y + y;
 			CoCSample tap = Samples[groupTapY];
 
 			// Only accept samples if they're from the foreground, and have a higher blur amount
@@ -605,7 +605,7 @@ void GS_Bokeh(point BokehVSOutput input[1], inout TriangleStream<BokehGSOutput> 
 
 	// Emit 4 new verts, and 2 new triangles
 	UNROLL
-	for (int i = 0; i < 4; i++)
+	for (uint i = 0; i < 4; i++)
 	{
 		output.PositionCS = float4(input[0].Position.xy, 1.0f, 1.0f);
 		output.PositionCS.xy += Offsets[i] * input[0].Size;

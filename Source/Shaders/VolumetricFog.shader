@@ -39,7 +39,7 @@ float HistoryWeight;
 float3 GridSize;
 uint MissedHistorySamplesCount;
 
-int3 GridSizeInt;
+uint3 GridSizeInt;
 float PhaseG;
 
 float2 Dummy0;
@@ -276,7 +276,7 @@ void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispa
 	float3 scattering = GlobalAlbedo * extinction;
 	float absorption = max(0.0f, extinction - Luminance(scattering));
 
-	if (all((int3)gridCoordinate < GridSizeInt))
+	if (all(gridCoordinate < GridSizeInt))
 	{
 		RWVBufferA[gridCoordinate] = float4(scattering, absorption);
 		RWVBufferB[gridCoordinate] = float4(GlobalEmissive, 0);

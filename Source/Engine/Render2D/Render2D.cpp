@@ -62,7 +62,7 @@ PACK_STRUCT(struct Data {
 
 PACK_STRUCT(struct BlurData {
     Vector2 InvBufferSize;
-    int32 SampleCount;
+    uint32 SampleCount;
     float Dummy0;
     Vector4 Bounds;
     Vector4 WeightAndOffsets[RENDER2D_BLUR_MAX_SAMPLES / 2];
@@ -877,20 +877,16 @@ static Vector2 GetWeightAndOffset(float dist, float sigma)
     return Vector2(totalWeight, offset);
 }
 
-static int32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeightsAndOffsets)
+static uint32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeightsAndOffsets)
 {
-    const int32 numSamples = Math::DivideAndRoundUp(kernelSize, 2);
-
+    const uint32 numSamples = Math::DivideAndRoundUp((uint32)kernelSize, 2u);
     outWeightsAndOffsets[0] = Vector4(Vector2(GetWeight(0, sigma), 0), GetWeightAndOffset(1, sigma));
-
-    int32 sampleIndex = 1;
-    for (int32 x = 3; x < kernelSize; x += 4)
+    uint32 sampleIndex = 1;
+    for (uint32 x = 3; x < kernelSize; x += 4)
     {
         outWeightsAndOffsets[sampleIndex] = Vector4(GetWeightAndOffset((float)x, sigma), GetWeightAndOffset((float)(x + 2), sigma));
-
         sampleIndex++;
     }
-
     return numSamples;
 }
 

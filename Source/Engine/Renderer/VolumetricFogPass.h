@@ -46,9 +46,9 @@ private:
         Vector3 GridSize;
         uint32 MissedHistorySamplesCount;
 
-        int32 GridSizeIntX;
-        int32 GridSizeIntY;
-        int32 GridSizeIntZ;
+        uint32 GridSizeIntX;
+        uint32 GridSizeIntY;
+        uint32 GridSizeIntZ;
         float PhaseG;
 
         Vector2 Dummy0;
