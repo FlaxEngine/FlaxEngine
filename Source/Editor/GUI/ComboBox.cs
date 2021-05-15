@@ -349,6 +349,8 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected virtual void OnSelectedIndexChanged()
         {
+            if (_tooltips != null && _tooltips.Length == _items.Count)
+                TooltipText = _selectedIndices.Count == 1 ? _tooltips[_selectedIndices[0]] : null;
             SelectedIndexChanged?.Invoke(this);
         }
 
