@@ -1248,12 +1248,6 @@ void Actor::OnDebugDraw()
     for (auto* script : Scripts)
         if (script->GetEnabled())
             script->OnDebugDraw();
-
-    for (auto& child : Children)
-    {
-        if (child->GetIsActive())
-            child->OnDebugDraw();
-    }
 }
 
 void Actor::OnDebugDrawSelected()

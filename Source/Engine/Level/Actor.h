@@ -665,12 +665,12 @@ public:
 #if USE_EDITOR
 
     /// <summary>
-    /// Draws debug shapes for the actor and all child actors.
+    /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
     virtual void OnDebugDraw();
 
     /// <summary>
-    /// Draws debug shapes for the selected actor and all child actors.
+    /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
     virtual void OnDebugDrawSelected();
 
