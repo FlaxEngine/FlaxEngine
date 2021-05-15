@@ -1185,6 +1185,8 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
+                        return false;
                     return true;
                 }
             }

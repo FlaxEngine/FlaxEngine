@@ -420,7 +420,7 @@ namespace FlaxEditor.Windows
             base.OnStartContainsFocus();
 
             // Center mouse in play mode
-            if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode)
+            if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
                 Vector2 center = PointToWindow(Size * 0.5f);
                 Root.MousePosition = center;
