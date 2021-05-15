@@ -1081,7 +1081,14 @@ namespace Flax.Build.Bindings
             {
                 // Read the fixed array length
                 ParseTypeArray(ref context, desc.Type, desc);
-                context.Tokenizer.ExpectToken(TokenType.SemiColon);
+                token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal });
+                if (token.Type == TokenType.Equal)
+                {
+                    // Fixed array initializer
+                    context.Tokenizer.ExpectToken(TokenType.LeftCurlyBrace);
+                    context.Tokenizer.SkipUntil(TokenType.RightCurlyBrace);
+                    context.Tokenizer.ExpectToken(TokenType.SemiColon);
+                }
             }
             else if (token.Type == TokenType.Colon)
             {
