@@ -418,8 +418,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
                     if (Script* script = dynamic_cast<Script*>(obj))
                     {
-                        if (Editor::IsPlayMode || script->_executeInEditor)
-                            script->OnAwake();
                         if (script->GetParent() && !script->_wasEnableCalled && script->GetParent()->IsActiveInHierarchy() && script->GetParent()->GetScene())
                             script->Enable();
                     }
