@@ -166,6 +166,11 @@ namespace FlaxEditor.Viewport
         public bool DrawDebugDraw = true;
 
         /// <summary>
+        /// Gets the debug draw data for the viewport.
+        /// </summary>
+        public ViewportDebugDrawData DebugDrawData => _debugDrawData;
+
+        /// <summary>
         /// Gets or sets a value indicating whether show navigation mesh.
         /// </summary>
         public bool ShowNavigation

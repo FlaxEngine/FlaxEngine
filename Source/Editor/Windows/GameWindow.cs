@@ -1,11 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -18,6 +18,7 @@ namespace FlaxEditor.Windows
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true;
+        private bool _showDebugDraw = false;
         private float _gameStartTime;
 
         /// <summary>
@@ -36,12 +37,18 @@ namespace FlaxEditor.Windows
                 if (value != _showGUI)
                 {
                     _showGUI = value;
-
-                    // Update root if it's in game
-                    //if (Editor.StateMachine.IsPlayMode)
-                        _guiRoot.Visible = value;
+                    _guiRoot.Visible = value;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show Debug Draw shapes in the view or keep it hidden.
+        /// </summary>
+        public bool ShowDebugDraw
+        {
+            get => _showDebugDraw;
+            set => _showDebugDraw = value;
         }
 
         /// <summary>
@@ -191,6 +198,7 @@ namespace FlaxEditor.Windows
                 AutoFocus = false,
                 Parent = this
             };
+            task.PostRender += OnPostRender;
 
             // Override the game GUI root
             _guiRoot = new GameRoot
@@ -212,6 +220,31 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+        }
+
+        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        {
+            // Debug Draw shapes
+            if (_showDebugDraw)
+            {
+                var task = _viewport.Task;
+
+                // Draw actors debug shapes manually if editor viewport is hidden (game viewport task is always rendered before editor viewports)
+                var editWindowViewport = Editor.Windows.EditWin.Viewport;
+                if (editWindowViewport.Task.LastUsedFrame != Engine.FrameCount)
+                {
+                    unsafe
+                    {
+                        var drawDebugData = editWindowViewport.DebugDrawData;
+                        fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
+                        {
+                            DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
+                        }
+                    }
+                }
+
+                DebugDraw.Draw(ref renderContext, task.OutputView);
+            }
         }
 
         private void OnOptionsChanged(EditorOptions options)
@@ -282,12 +315,16 @@ namespace FlaxEditor.Windows
 
             // Show GUI
             {
-                var showGui = menu.AddButton("Show GUI");
-                var showGuiCheckbox = new CheckBox(140, 2, ShowGUI)
-                {
-                    Parent = showGui
-                };
-                showGuiCheckbox.StateChanged += x => ShowGUI = x.Checked;
+                var button = menu.AddButton("Show GUI");
+                var checkbox = new CheckBox(140, 2, ShowGUI) { Parent = button };
+                checkbox.StateChanged += x => ShowGUI = x.Checked;
+            }
+
+            // Show Debug Draw
+            {
+                var button = menu.AddButton("Show Debug Draw");
+                var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
+                checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
             }
 
             menu.MinimumWidth = 200;
