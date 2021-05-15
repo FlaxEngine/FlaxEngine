@@ -439,7 +439,7 @@ namespace FlaxEditor.GUI.ContextMenu
                         }
                     }
                 }
-                if (startIndex != -1)
+                if (startIndex > 0 && startIndex <= _panel.Children.Count)
                 {
                     // No more items found so start from the top if there are matching items
                     _panel.Children[startIndex - 1].Defocus();
