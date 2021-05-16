@@ -465,7 +465,7 @@ void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
-void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
@@ -476,7 +476,7 @@ void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
-void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 

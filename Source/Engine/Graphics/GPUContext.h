@@ -509,7 +509,7 @@ public:
     /// <param name="bufferForArgs">The buffer with drawing arguments.</param>
     /// <param name="offsetForArgs">The aligned byte offset for arguments.</param>
     /// <param name="drawCount">The number of draw command to execute.</param>
-    API_FUNCTION() virtual void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) = 0;
+    API_FUNCTION() virtual void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
     /// <summary>
     /// Draws the instanced GPU-generated indexed primitives. Buffer must contain GPUDrawIndexedIndirectArgs.
@@ -517,7 +517,7 @@ public:
     /// <param name="bufferForArgs">The buffer with drawing arguments.</param>
     /// <param name="offsetForArgs">The aligned byte offset for arguments.</param>
     /// <param name="drawCount">The number of draw command to execute.</param>
-    API_FUNCTION() virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) = 0;
+    API_FUNCTION() virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 public:
 

@@ -1090,25 +1090,25 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
-void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
-    vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, drawCount, sizeof(VkDrawIndirectCommand));
+    vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
-void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
-    vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, drawCount, sizeof(VkDrawIndexedIndirectCommand));
+    vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 

@@ -912,7 +912,7 @@ void GPUContextDX12::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
-void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
@@ -921,11 +921,11 @@ void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
     SetResourceState(bufferForArgsDX12, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     onDrawCall();
-    _commandList->ExecuteIndirect(signature, drawCount, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
+    _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
-void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount)
+void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
@@ -934,7 +934,7 @@ void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     SetResourceState(bufferForArgsDX12, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     onDrawCall();
-    _commandList->ExecuteIndirect(signature, drawCount, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
+    _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
