@@ -299,6 +299,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         // Fire events
         PostSpawn();
         {
+            Setup();
             SceneBeginData beginData;
             BeginPlay(&beginData);
             beginData.OnDone();
@@ -759,15 +760,7 @@ void Actor::PostLoad()
     // Use lazy creation for the managed instance, just register the object
     if (!IsRegistered())
         RegisterObject();
-    
-    // Fire events for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnAwake();
-        }
-    }
+
 }
 
 void Actor::PostSpawn()
@@ -794,14 +787,22 @@ void Actor::PostSpawn()
     {
         Children[i]->PostSpawn();
     }
-        
-    // Fire events for scripting
+
+}
+
+void Actor::Setup() {
+
+    // Perform additional verification
+    ASSERT(!IsDuringPlay());
+
     for (auto* script : Scripts)
     {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnAwake();
-        }
+        script->Setup();
+    }
+
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        Children[i]->Setup();
     }
 }
 
@@ -1706,6 +1707,15 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         actor->OnTransformChanged();
     }
 
+    // Initialize actor that are spawned to scene or create managed instanced for others
+    for (int32 i = 0; i < parents->Count(); i++)
+    {
+        Actor* actor = parents->At(i);
+        if (!actor->GetScene())
+            continue;
+
+        actor->Setup();
+    }
     // Initialize actor that are spawned to scene or create managed instanced for others
     for (int32 i = 0; i < parents->Count(); i++)
     {

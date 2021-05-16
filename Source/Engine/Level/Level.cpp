@@ -148,6 +148,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
         actor->PostSpawn();
         actor->OnTransformChanged();
         {
+            actor->Setup();
             SceneBeginData beginData;
             actor->BeginPlay(&beginData);
             beginData.OnDone();
@@ -1063,6 +1064,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
 
         if (autoInitialize)
         {
+            scene->Setup();
             SceneBeginData beginData;
             scene->BeginPlay(&beginData);
             beginData.OnDone();

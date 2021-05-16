@@ -292,6 +292,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     if (parent && parent->IsDuringPlay())
     {
         // Begin play
+        root->Setup();
         SceneBeginData beginData;
         root->BeginPlay(&beginData);
         beginData.OnDone();

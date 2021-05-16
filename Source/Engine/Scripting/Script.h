@@ -145,6 +145,7 @@ public:
     void SetOrderInParent(int32 index) override;
     void PostLoad() override;
     void PostSpawn() override;
+    void Setup() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

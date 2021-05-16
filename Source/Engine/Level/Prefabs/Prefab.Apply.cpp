@@ -414,6 +414,14 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                 SceneObject* obj = sceneObjects.Value->At(i);
                 if (!obj->IsDuringPlay() && sceneObjects->Find(obj->GetParent()) < i)
                 {
+                    obj->Setup();
+                }
+            }
+            for (int32 i = existingObjectsCount; i < sceneObjects->Count(); i++)
+            {
+                SceneObject* obj = sceneObjects.Value->At(i);
+                if (!obj->IsDuringPlay() && sceneObjects->Find(obj->GetParent()) < i)
+                {
                     obj->BeginPlay(&beginData);
 
                     if (Script* script = dynamic_cast<Script*>(obj))

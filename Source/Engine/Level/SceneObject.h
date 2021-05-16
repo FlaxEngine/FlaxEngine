@@ -222,6 +222,11 @@ public:
     virtual void PostSpawn() = 0;
 
     /// <summary>
+    /// Batch called before BeginPlay.
+    /// </summary>
+    virtual void Setup() = 0;
+
+    /// <summary>
     /// Called when adding object to the game.
     /// </summary>
     /// <param name="data">The initialization data (e.g. used to collect joints to link after begin).</param>

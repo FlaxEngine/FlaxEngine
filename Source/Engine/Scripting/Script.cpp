@@ -285,6 +285,15 @@ void Script::PostSpawn()
     if (!HasManagedInstance())
         CreateManaged();
 }
+void Script::Setup() {
+
+    ASSERT(!IsDuringPlay());
+
+    CHECK_EXECUTE_IN_EDITOR
+    {
+        OnAwake();
+    }
+}
 
 void Script::BeginPlay(SceneBeginData* data)
 {
