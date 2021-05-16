@@ -132,11 +132,11 @@ public:
     {
     }
 
-    void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) override
+    void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override
     {
     }
 
-    void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs, uint32 drawCount = 1) override
+    void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override
     {
     }
 
