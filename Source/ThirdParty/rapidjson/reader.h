@@ -23,7 +23,6 @@
 #include "internal/meta.h"
 #include "internal/stack.h"
 #include "internal/strtod.h"
-#include <limits>
 
 #if defined(RAPIDJSON_SIMD) && defined(_MSC_VER)
 #include <intrin.h>
@@ -1187,10 +1186,10 @@ private:
         else if ((parseFlags & kParseNanAndInfFlag) && RAPIDJSON_LIKELY((s.Peek() == 'I' || s.Peek() == 'N'))) {
             useNanOrInf = true;
             if (RAPIDJSON_LIKELY(Consume(s, 'N') && Consume(s, 'a') && Consume(s, 'N'))) {
-                d = std::numeric_limits<double>::quiet_NaN();
+                d = NAN;
             }
             else if (RAPIDJSON_LIKELY(Consume(s, 'I') && Consume(s, 'n') && Consume(s, 'f'))) {
-                d = (minus ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
+                d = (minus ? -INFINITY : INFINITY);
                 if (RAPIDJSON_UNLIKELY(s.Peek() == 'i' && !(Consume(s, 'i') && Consume(s, 'n')
                                                             && Consume(s, 'i') && Consume(s, 't') && Consume(s, 'y'))))
                     RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, s.Tell());

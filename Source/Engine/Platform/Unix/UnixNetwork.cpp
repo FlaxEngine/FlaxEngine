@@ -4,7 +4,6 @@
 
 #include "UnixNetwork.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -19,6 +18,7 @@ struct UnixSocketData
 {
     int sockfd;
 };
+
 static_assert(sizeof(NetworkSocket::Data) >= sizeof(UnixSocketData), "NetworkSocket::Data is not big enough to contains UnixSocketData !");
 static_assert(sizeof(NetworkEndPoint::Data) >= sizeof(sockaddr_in6), "NetworkEndPoint::Data is not big enough to contains sockaddr_in6 !");
 
@@ -30,11 +30,6 @@ static int GetAddrSize(const sockaddr& addr)
 static int GetAddrSizeFromEP(NetworkEndPoint& endPoint)
 {
     return endPoint.IPVersion == NetworkIPVersion::IPv6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
-}
-
-static NetworkIPVersion GetIPVersionFromAddr(const sockaddr& addr)
-{
-    return addr.sa_family == AF_INET6 ? NetworkIPVersion::IPv6 : NetworkIPVersion::IPv4;;
 }
 
 static void TranslateSockOptToNative(NetworkSocketOption option, int32* level, int32* name)
@@ -100,7 +95,7 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
     }
     char strPort[6];
     sprintf(strPort, "%d", port);
-    endPoint.IPVersion = GetIPVersionFromAddr(*addr);
+    endPoint.IPVersion = addr->sa_family == AF_INET6 ? NetworkIPVersion::IPv6 : NetworkIPVersion::IPv4;
     memcpy(endPoint.Data, addr, size);
     return false;
 }
@@ -130,12 +125,6 @@ bool UnixNetwork::DestroySocket(NetworkSocket& socket)
     return false;
 }
 
-bool UnixNetwork::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value)
-{
-    const int32 v = value;
-    return SetSocketOption(socket, option, v);
-}
-
 bool UnixNetwork::SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value)
 {
     int32 optlvl = 0;
@@ -151,22 +140,14 @@ bool UnixNetwork::SetSocketOption(NetworkSocket& socket, NetworkSocketOption opt
     return false;
 }
 
-bool UnixNetwork::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value)
-{
-    int32 v;
-    const bool status = GetSocketOption(socket, option, &v);
-    *value = v == 1 ? true : false;
-    return status;
-}
-
-bool UnixNetwork::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value)
+bool UnixNetwork::GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32& value)
 {
     int32 optlvl = 0;
     int32 optnme = 0;
     TranslateSockOptToNative(option, &optlvl, &optnme);
     socklen_t size;
     auto& sock = *(UnixSocketData*)&socket.Data;
-    if (getsockopt(sock.sockfd, optlvl, optnme, (char*)value, &size) == -1)
+    if (getsockopt(sock.sockfd, optlvl, optnme, (char*)&value, &size) == -1)
     {
         LOG(Warning, "Unable to get socket option ! Socket : {0}", sock.sockfd);
         LOG_UNIX_LAST_ERROR;
@@ -177,7 +158,7 @@ bool UnixNetwork::GetSocketOption(NetworkSocket& socket, NetworkSocketOption opt
 
 bool UnixNetwork::ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
 {
-    const uint16 size = GetAddrSizeFromEP(endPoint);
+    const int size = GetAddrSizeFromEP(endPoint);
     auto& sock = *(UnixSocketData*)&socket.Data;
     if (connect(sock.sockfd, (const sockaddr*)endPoint.Data, size) == -1)
     {
@@ -196,7 +177,7 @@ bool UnixNetwork::BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint)
         LOG(Error, "Can't bind socket to end point, Socket.IPVersion != EndPoint.IPVersion! Socket : {0}", sock.sockfd);
         return true;
     }
-    const uint16 size = GetAddrSizeFromEP(endPoint);
+    const int size = GetAddrSizeFromEP(endPoint);
     if (bind(sock.sockfd, (const sockaddr*)endPoint.Data, size) == -1)
     {
         LOG(Error, "Unable to bind socket! Socket : {0}", sock.sockfd);
@@ -242,61 +223,6 @@ bool UnixNetwork::Accept(NetworkSocket& serverSocket, NetworkSocket& newSocket, 
     if (CreateEndPointFromAddr((sockaddr*)&addr, newEndPoint))
         return true;
     return false;
-}
-
-bool UnixNetwork::IsReadable(NetworkSocket& socket)
-{
-    return NetworkBase::IsReadable(socket); // TODO: impl this
-}
-
-bool UnixNetwork::IsWritable(NetworkSocket& socket)
-{
-    return NetworkBase::IsWritable(socket); // TODO: impl this
-}
-
-bool UnixNetwork::CreateSocketGroup(uint32 capacity, NetworkSocketGroup& group)
-{
-    return NetworkBase::CreateSocketGroup(capacity, group); // TODO: impl this
-}
-
-bool UnixNetwork::DestroySocketGroup(NetworkSocketGroup& group)
-{
-    return NetworkBase::DestroySocketGroup(group); // TODO: impl this
-}
-
-int32 UnixNetwork::Poll(NetworkSocketGroup& group)
-{
-    return NetworkBase::Poll(group); // TODO: impl this
-}
-
-bool UnixNetwork::GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state)
-{
-    return NetworkBase::GetSocketState(group, index, state); // TODO: impl this
-}
-
-int32 UnixNetwork::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket)
-{
-    return NetworkBase::AddSocketToGroup(group, socket); // TODO: impl this
-}
-
-bool UnixNetwork::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
-{
-    return NetworkBase::GetSocketFromGroup(group, index, socket); // TODO: impl this
-}
-
-void UnixNetwork::RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index)
-{
-    NetworkBase::RemoveSocketFromGroup(group, index); // TODO: impl this
-}
-
-bool UnixNetwork::RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket)
-{
-    return NetworkBase::RemoveSocketFromGroup(group, socket); // TODO: impl this
-}
-
-void UnixNetwork::ClearGroup(NetworkSocketGroup& group)
-{
-    NetworkBase::ClearGroup(group); // TODO: impl this
 }
 
 int32 UnixNetwork::WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint)
@@ -361,7 +287,7 @@ int32 UnixNetwork::ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferS
     return size;
 }
 
-bool UnixNetwork::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
+bool UnixNetwork::CreateEndPoint(const String& address, const String& port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable)
 {
     int status;
     addrinfo hints;
@@ -372,22 +298,18 @@ bool UnixNetwork::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, 
     hints.ai_flags |= AI_V4MAPPED;
     if (bindable)
         hints.ai_flags = AI_PASSIVE;
-
-    // consider using NUMERICHOST/NUMERICSERV if address is a valid Ipv4 or IPv6 so we can skip some look up ( potentially slow when resolving host names )
-    const StringAsANSI<60> addressAnsi(*address.Address, address.Address.Length());
-    const StringAsANSI<10> portAnsi(*address.Port, address.Port.Length());
-    if ((status = getaddrinfo(address.Address == String::Empty ? nullptr : addressAnsi.Get(), address.Port == String::Empty ? nullptr : portAnsi.Get(), &hints, &info)) != 0)
+    const StringAsANSI<60> addressAnsi(*address, address.Length());
+    const StringAsANSI<10> portAnsi(*port, port.Length());
+    if ((status = getaddrinfo(address.IsEmpty() ? nullptr : addressAnsi.Get(), port.IsEmpty() ? nullptr : portAnsi.Get(), &hints, &info)) != 0)
     {
-        LOG(Error, "Unable to query info for address : {0} Error : {1}", address.Address != String::Empty ? *address.Address : TEXT("ANY"), String(gai_strerror(status)));
+        LOG(Error, "Unable to query info for address : {0}::{1} Error : {2}", address, port, String(gai_strerror(status)));
         return true;
     }
-
     if (info == nullptr)
     {
-        LOG(Error, "Unable to resolve address! Address : {0}", address.Address != String::Empty ? *address.Address : TEXT("ANY"));
+        LOG(Error, "Unable to resolve address! Address : {0}::{1}", address, port);
         return true;
     }
-
     if (CreateEndPointFromAddr(info->ai_addr, endPoint))
     {
         freeaddrinfo(info);
@@ -395,11 +317,6 @@ bool UnixNetwork::CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, 
     }
     freeaddrinfo(info);
     return false;
-}
-
-NetworkEndPoint UnixNetwork::RemapEndPointToIPv6(NetworkEndPoint endPoint)
-{
-    return NetworkBase::RemapEndPointToIPv6(endPoint); // TODO: impl this
 }
 
 #endif

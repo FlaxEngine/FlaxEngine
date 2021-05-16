@@ -11,6 +11,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "../Win32/IncludeWindowsHeaders.h"
@@ -36,9 +37,30 @@ namespace
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
     CriticalSection SymLocker;
+#if TRACY_ENABLE
+    bool SymInitialized = true;
+#else
     bool SymInitialized = false;
-    bool SymModulesDirty = true;
+#endif
     Array<String> SymbolsPath;
+
+    void OnSymbolsPathModified()
+    {
+        if (!SymInitialized)
+            return;
+        HANDLE process = GetCurrentProcess();
+        SymCleanup(process);
+        String symbolSearchPath;
+        for (auto& path : SymbolsPath)
+        {
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
+        }
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        SymInitializeW(process, *symbolSearchPath, TRUE);
+        //SymSetSearchPathW(process, *symbolSearchPath);
+        //SymRefreshModuleList(process);
+    }
 #endif
 }
 
@@ -74,16 +96,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
     }
 
     return (dpiX + dpiY) / 2;
-}
-
-int32 CalculateDpi()
-{
-    if (const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll"))
-    {
-        return CalculateDpi(shCoreDll);
-    }
-
-    return 96;
 }
 
 LONG GetStringRegKey(HKEY hKey, const Char* strValueName, String& strValue, const String& strDefaultValue)
@@ -387,6 +399,20 @@ void WindowsPlatform::PreInit(void* hInstance)
         Error(TEXT("OLE initalization failed!"));
         exit(-1);
     }
+
+#if CRASH_LOG_ENABLE
+    TCHAR buffer[MAX_PATH] = { 0 };
+    SymLocker.Lock();
+    if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    if (::GetEnvironmentVariableW(TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    DWORD options = SymGetOptions();
+    options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
+    SymSetOptions(options);
+    OnSymbolsPathModified();
+    SymLocker.Unlock();
+#endif
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -613,11 +639,13 @@ void WindowsPlatform::Exit()
 {
 #if CRASH_LOG_ENABLE
     SymLocker.Lock();
+#if !TRACY_ENABLE
     if (SymInitialized)
     {
         SymInitialized = false;
         SymCleanup(GetCurrentProcess());
     }
+#endif
     SymbolsPath.Resize(0);
     SymLocker.Unlock();
 #endif
@@ -659,25 +687,20 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll");
     if (!shCoreDll)
         return;
-
     typedef enum _PROCESS_DPI_AWARENESS
     {
         PROCESS_DPI_UNAWARE = 0,
         PROCESS_SYSTEM_DPI_AWARE = 1,
         PROCESS_PER_MONITOR_DPI_AWARE = 2
     } PROCESS_DPI_AWARENESS;
-
     typedef HRESULT (STDAPICALLTYPE *SetProcessDpiAwarenessProc)(PROCESS_DPI_AWARENESS Value);
     const SetProcessDpiAwarenessProc setProcessDpiAwareness = (SetProcessDpiAwarenessProc)GetProcAddress(shCoreDll, "SetProcessDpiAwareness");
-
     if (setProcessDpiAwareness)
     {
         setProcessDpiAwareness(enable ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE);
     }
-
     SystemDpi = CalculateDpi(shCoreDll);
-
-    FreeLibrary(shCoreDll);
+    ::FreeLibrary(shCoreDll);
 }
 
 BatteryInfo WindowsPlatform::GetBatteryInfo()
@@ -1117,10 +1140,9 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     SymLocker.Lock();
     const auto folder = StringUtils::GetDirectoryName(filename);
     if (!SymbolsPath.Contains(folder))
-        SymbolsPath.Add(folder);
-    if (SymInitialized)
     {
-        SymModulesDirty = true;
+        SymbolsPath.Add(folder);
+        OnSymbolsPathModified();
     }
     SymLocker.Unlock();
 #endif
@@ -1140,44 +1162,14 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
     if (!SymInitialized)
     {
         SymInitialized = true;
-
-        // Build search path
         String symbolSearchPath;
-        TCHAR ModulePath[MAX_PATH] = { 0 };
-        if (::GetModuleFileName(::GetModuleHandle(nullptr), ModulePath, MAX_PATH))
-        {
-            symbolSearchPath += StringUtils::GetDirectoryName(ModulePath);
-            symbolSearchPath += ";";
-        }
         for (auto& path : SymbolsPath)
         {
             symbolSearchPath += path;
             symbolSearchPath += ";";
         }
-        String _NT_SYMBOL_PATH;
-        if (!Platform::GetEnvironmentVariable(TEXT("_NT_SYMBOL_PATH"), _NT_SYMBOL_PATH))
-        {
-            symbolSearchPath += _NT_SYMBOL_PATH;
-            symbolSearchPath += ";";
-        }
         symbolSearchPath += Platform::GetWorkingDirectory();
-        symbolSearchPath += ";";
-
-        DWORD options = SymGetOptions();
-        options |= SYMOPT_LOAD_LINES;
-        options |= SYMOPT_FAIL_CRITICAL_ERRORS;
-        options |= SYMOPT_DEFERRED_LOADS;
-        options |= SYMOPT_EXACT_SYMBOLS;
-        SymSetOptions(options);
-
         SymInitializeW(process, *symbolSearchPath, TRUE);
-    }
-
-    // Refresh modules if needed
-    if (SymModulesDirty)
-    {
-        SymModulesDirty = false;
-        SymRefreshModuleList(process);
     }
 
     // Capture the context if missing

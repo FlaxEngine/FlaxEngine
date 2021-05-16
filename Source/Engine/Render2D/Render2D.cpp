@@ -11,16 +11,18 @@
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/Profiler.h"
-#include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineState.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Engine/EngineService.h"
-#include "Engine/Graphics/GPUPipelineState.h"
-#include "Engine/Graphics/RenderTargetPool.h"
 
 #if USE_EDITOR
 
@@ -60,7 +62,7 @@ PACK_STRUCT(struct Data {
 
 PACK_STRUCT(struct BlurData {
     Vector2 InvBufferSize;
-    int32 SampleCount;
+    uint32 SampleCount;
     float Dummy0;
     Vector4 Bounds;
     Vector4 WeightAndOffsets[RENDER2D_BLUR_MAX_SAMPLES / 2];
@@ -875,20 +877,16 @@ static Vector2 GetWeightAndOffset(float dist, float sigma)
     return Vector2(totalWeight, offset);
 }
 
-static int32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeightsAndOffsets)
+static uint32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeightsAndOffsets)
 {
-    const int32 numSamples = Math::DivideAndRoundUp(kernelSize, 2);
-
+    const uint32 numSamples = Math::DivideAndRoundUp((uint32)kernelSize, 2u);
     outWeightsAndOffsets[0] = Vector4(Vector2(GetWeight(0, sigma), 0), GetWeightAndOffset(1, sigma));
-
-    int32 sampleIndex = 1;
-    for (int32 x = 3; x < kernelSize; x += 4)
+    uint32 sampleIndex = 1;
+    for (uint32 x = 3; x < kernelSize; x += 4)
     {
         outWeightsAndOffsets[sampleIndex] = Vector4(GetWeightAndOffset((float)x, sigma), GetWeightAndOffset((float)(x + 2), sigma));
-
         sampleIndex++;
     }
-
     return numSamples;
 }
 
@@ -1542,7 +1540,7 @@ void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& c
 void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
@@ -1569,7 +1567,7 @@ void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Colo
 void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);

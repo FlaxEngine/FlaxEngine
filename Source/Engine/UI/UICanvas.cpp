@@ -14,6 +14,9 @@ MMethod* UICanvas_Deserialize = nullptr;
 MMethod* UICanvas_PostDeserialize = nullptr;
 MMethod* UICanvas_OnEnable = nullptr;
 MMethod* UICanvas_OnDisable = nullptr;
+#if USE_EDITOR
+MMethod* UICanvas_OnActiveInTreeChanged = nullptr;
+#endif
 MMethod* UICanvas_EndPlay = nullptr;
 MMethod* UICanvas_ParentChanged = nullptr;
 
@@ -43,6 +46,9 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_PostDeserialize = mclass->GetMethod("PostDeserialize");
         UICanvas_OnEnable = mclass->GetMethod("OnEnable");
         UICanvas_OnDisable = mclass->GetMethod("OnDisable");
+#if USE_EDITOR
+        UICanvas_OnActiveInTreeChanged = mclass->GetMethod("OnActiveInTreeChanged");
+#endif
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
     }
@@ -167,3 +173,15 @@ void UICanvas::OnTransformChanged()
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }
+
+#if USE_EDITOR
+
+void UICanvas::OnActiveInTreeChanged()
+{
+    UICANVAS_INVOKE(OnActiveInTreeChanged);
+
+    // Base
+    Actor::OnActiveInTreeChanged();
+}
+
+#endif

@@ -49,10 +49,19 @@ public:
         /// </summary>
         Nullable<bool> Std;
 
+#if !BUILD_RELEASE
+
         /// <summary>
         /// -debug !ip:port! (Mono debugger address)
         /// </summary>
         Nullable<String> DebuggerAddress;
+
+        /// <summary>
+        /// -debugwait (instructs Mono debugger to wait for client attach for 5 seconds)
+        /// </summary>
+        Nullable<bool> WaitForDebugger;
+
+#endif
 
 #if PLATFORM_HAS_HEADLESS_MODE
 

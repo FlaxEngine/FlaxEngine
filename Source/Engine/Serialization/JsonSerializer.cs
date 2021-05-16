@@ -83,6 +83,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(new SoftObjectReferenceConverter());
             settings.Converters.Add(new MarginConverter());
             settings.Converters.Add(new VersionConverter());
+            settings.Converters.Add(new LocalizedStringConverter());
             //settings.Converters.Add(new GuidConverter());
             return settings;
         }

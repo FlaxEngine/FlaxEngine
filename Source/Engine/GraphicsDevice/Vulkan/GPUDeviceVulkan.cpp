@@ -27,6 +27,7 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -144,8 +145,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 2: // Fragment shader writes to output location 0 with no matching attachment
         case 3: // Attachment 2 not written by fragment shader
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
-#if PLATFORM_ANDROID
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
+#if PLATFORM_ANDROID
         case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
 #endif
             return VK_FALSE;
@@ -352,7 +353,7 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
 
 void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 {
-    ScopeLock lock(&_locker);
+    ScopeLock lock(_locker);
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
     for (int32 i = 0; i < _entries.Count(); i++)
     {

@@ -6,6 +6,7 @@
 
 #include "MType.h"
 #include "MClass.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
 
@@ -34,7 +35,7 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
         _visibility = MVisibility::Private;
         break;
     case MONO_METHOD_ATTR_FAM_AND_ASSEM:
-        _visibility = MVisibility::ProtectedInternal;
+        _visibility = MVisibility::PrivateProtected;
         break;
     case MONO_METHOD_ATTR_ASSEM:
         _visibility = MVisibility::Internal;
@@ -42,21 +43,35 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
     case MONO_METHOD_ATTR_FAMILY:
         _visibility = MVisibility::Protected;
         break;
+    case MONO_METHOD_ATTR_FAM_OR_ASSEM:
+        _visibility = MVisibility::ProtectedInternal;
+        break;
     case MONO_METHOD_ATTR_PUBLIC:
         _visibility = MVisibility::Public;
         break;
     default:
     CRASH;
     }
+
+#if COMPILE_WITH_PROFILER
+    const MString& className = parentClass->GetFullName();
+    ProfilerName.Resize(className.Length() + 2 + _name.Length());
+    Platform::MemoryCopy(ProfilerName.Get(), className.Get(), className.Length());
+    ProfilerName.Get()[className.Length()] = ':';
+    ProfilerName.Get()[className.Length() + 1] = ':';
+    Platform::MemoryCopy(ProfilerName.Get() + className.Length() + 2, _name.Get(), _name.Length());
+#endif
 }
 
 MonoObject* MMethod::Invoke(void* instance, void** params, MonoObject** exception) const
 {
+    PROFILE_CPU_NAMED(*ProfilerName);
     return mono_runtime_invoke(_monoMethod, instance, params, exception);
 }
 
 MonoObject* MMethod::InvokeVirtual(MonoObject* instance, void** params, MonoObject** exception) const
 {
+    PROFILE_CPU_NAMED(*ProfilerName);
     MonoMethod* virtualMethod = mono_object_get_virtual_method(instance, _monoMethod);
     return mono_runtime_invoke(virtualMethod, instance, params, exception);
 }
@@ -87,7 +102,7 @@ int32 MMethod::GetParametersCount() const
     return mono_signature_get_param_count(sig);
 }
 
-MType MMethod::GetParameterType(int32 paramIdx)
+MType MMethod::GetParameterType(int32 paramIdx) const
 {
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     ASSERT_LOW_LAYER(paramIdx >= 0 && paramIdx < (int32)mono_signature_get_param_count(sig));
@@ -96,7 +111,7 @@ MType MMethod::GetParameterType(int32 paramIdx)
     return MType(((MonoType**)it)[paramIdx]);
 }
 
-bool MMethod::GetParameterIsOut(int32 paramIdx)
+bool MMethod::GetParameterIsOut(int32 paramIdx) const
 {
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     ASSERT_LOW_LAYER(paramIdx >= 0 && paramIdx < (int32)mono_signature_get_param_count(sig));

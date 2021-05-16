@@ -29,6 +29,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Engine/Base/GameBase.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"

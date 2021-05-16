@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
@@ -294,6 +295,41 @@ struct MConverter<AssetReference<T>>
         result.Resize(length);
         for (int32 i = 0; i < length; i++)
             result[i] = (T*)ScriptingObject::ToNative(mono_array_get(data, MonoObject*, i));
+    }
+};
+
+// Converter for Array.
+template<typename T>
+struct MConverter<Array<T>>
+{
+    MonoObject* Box(const Array<T>& data, MonoClass* klass)
+    {
+        if (!klass)
+            return nullptr;
+        // TODO: use shared empty arrays cache
+        auto result = mono_array_new(mono_domain_get(), klass, data.Count());
+        MConverter<T> converter;
+        converter.ToManagedArray(result, Span<T>(data.Get(), data.Count()));
+        return (MonoObject*)result;
+    }
+
+    void Unbox(Array<T>& result, MonoObject* data)
+    {
+        auto length = data ? (int32)mono_array_length((MonoArray*)data) : 0;
+        result.EnsureCapacity(length);
+        MConverter<T> converter;
+        converter.ToNativeArray(result, (MonoArray*)data, length);
+    }
+
+    void ToManagedArray(MonoArray* result, const Span<Array<T>>& data)
+    {
+        CRASH; // Not implemented
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    void ToNativeArray(Array<Array<T>, AllocationType>& result, MonoArray* data, int32 length)
+    {
+        CRASH; // Not implemented
     }
 };
 

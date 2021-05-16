@@ -86,6 +86,10 @@ namespace FlaxEditor.SceneGraph.GUI
                 }
                 parent.SortChildren();
             }
+            else if (Actor)
+            {
+                _orderInParent = Actor.OrderInParent;
+            }
         }
 
         internal void OnNameChanged()
@@ -537,7 +541,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     var customAction = targetActor.HasPrefabLink ? new ReparentAction(targetActor) : null;
                     using (new UndoBlock(ActorNode.Root.Undo, targetActor, "Change actor parent", customAction))
                     {
-                        targetActor.SetParent(newParent, worldPositionLock);
+                        targetActor.SetParent(newParent, worldPositionLock, true);
                         targetActor.OrderInParent = newOrder;
                     }
                 }
@@ -550,7 +554,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         for (int i = 0; i < targetActors.Count; i++)
                         {
                             var targetActor = targetActors[i];
-                            targetActor.SetParent(newParent, worldPositionLock);
+                            targetActor.SetParent(newParent, worldPositionLock, true);
                             targetActor.OrderInParent = newOrder;
                         }
                     }

@@ -2,13 +2,19 @@
 
 #pragma once
 
+#include "../AssetInfo.h"
+#include "../Config.h"
 #include "Engine/Core/Types/Guid.h"
+#if ENABLE_ASSETS_DISCOVERY
+#include "Engine/Core/Types/DateTime.h"
+#endif
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CriticalSection.h"
-#include "Engine/Content/Storage/FlaxStorageReference.h"
-#include "../AssetInfo.h"
-#include "../Config.h"
+
+struct AssetHeader;
+struct FlaxStorageReference;
+class FlaxStorage;
 
 /// <summary>
 /// Assets cache flags.
@@ -46,19 +52,17 @@ public:
         AssetInfo Info;
 
 #if ENABLE_ASSETS_DISCOVERY
-
         /// <summary>
         /// The file modified date.
         /// </summary>
         DateTime FileModified;
-
 #endif
 
         Entry()
         {
         }
 
-        Entry(const Guid& id, const String& typeName, const StringView& path)
+        Entry(const Guid& id, const StringView& typeName, const StringView& path)
             : Info(id, typeName, path)
 #if ENABLE_ASSETS_DISCOVERY
             , FileModified(DateTime::NowUTC())
@@ -125,6 +129,13 @@ public:
 public:
 
     /// <summary>
+    /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
+    /// </summary>
+    /// <param name="id">The asset id.</param>
+    /// <returns>The asset path, or empty if failed to find.</returns>
+    const String& GetEditorAssetPath(const Guid& id) const;
+
+    /// <summary>
     /// Finds the asset info by path.
     /// </summary>
     /// <param name="path">The asset path.</param>
@@ -167,16 +178,13 @@ public:
     /// </summary>
     /// <param name="typeName">The asset typename.</param>
     /// <param name="result">The result array.</param>
-    void GetAllByTypeName(const StringView& typeName, Array<Guid>& result) const;
+    void GetAllByTypeName(const StringView& typeName, Array<Guid, HeapAllocation>& result) const;
 
     /// <summary>
     /// Register assets in the cache
     /// </summary>
     /// <param name="storage">Flax assets container reference</param>
-    FORCE_INLINE void RegisterAssets(const FlaxStorageReference& storage)
-    {
-        RegisterAssets(storage.Get());
-    }
+    void RegisterAssets(const FlaxStorageReference& storage);
 
     /// <summary>
     /// Register assets in the cache
@@ -189,10 +197,7 @@ public:
     /// </summary>
     /// <param name="header">Flax asset file header</param>
     /// <param name="path">Asset path</param>
-    FORCE_INLINE void RegisterAsset(const AssetHeader& header, const StringView& path)
-    {
-        RegisterAsset(header.ID, header.TypeName, path);
-    }
+    void RegisterAsset(const AssetHeader& header, const StringView& path);
 
     /// <summary>
     /// Register asset in the cache

@@ -109,7 +109,10 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-novsync ", NoVSync);
     PARSE_BOOL_SWITCH("-nolog ", NoLog);
     PARSE_BOOL_SWITCH("-std ", Std);
+#if !BUILD_RELEASE
     PARSE_ARG_SWITCH("-debug ", DebuggerAddress);
+    PARSE_BOOL_SWITCH("-debugwait ", WaitForDebugger);
+#endif
 #if PLATFORM_HAS_HEADLESS_MODE
     PARSE_BOOL_SWITCH("-headless ", Headless);
 #endif

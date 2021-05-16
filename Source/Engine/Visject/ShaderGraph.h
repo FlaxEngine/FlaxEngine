@@ -8,6 +8,7 @@
 #include "ShaderGraphValue.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Utilities/TextWriter.h"
 #include "Engine/Graphics/Materials/MaterialParams.h"
 #include "Engine/Content/AssetsContainer.h"

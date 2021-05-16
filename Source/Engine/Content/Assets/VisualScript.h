@@ -115,6 +115,9 @@ public:
         MethodFlags MethodFlags;
         ScriptingTypeMethodSignature Signature;
         Array<StringAnsi, InlinedAllocation<16>> ParamNames;
+#if COMPILE_WITH_PROFILER
+        StringAnsi ProfilerName;
+#endif
     };
 
     struct Field

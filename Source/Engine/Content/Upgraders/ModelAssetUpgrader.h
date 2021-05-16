@@ -2,12 +2,15 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Core/Core.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Graphics/Models/ModelData.h"
+#include "Engine/Content/Asset.h"
 
 /// <summary>
 /// Model Asset Upgrader
@@ -1222,3 +1225,5 @@ private:
         return false;
     }
 };
+
+#endif

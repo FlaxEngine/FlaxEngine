@@ -10,7 +10,7 @@
 /// The Json assets factory base class.
 /// </summary>
 /// <seealso cref="IAssetFactory" />
-class JsonAssetFactoryBase : public IAssetFactory
+class FLAXENGINE_API JsonAssetFactoryBase : public IAssetFactory
 {
 protected:
 
@@ -23,7 +23,6 @@ public:
     {
         return Create(info);
     }
-
     Asset* NewVirtual(const AssetInfo& info) override
     {
         return Create(info);
@@ -47,12 +46,13 @@ protected:
     }
 };
 
-#define REGISTER_JSON_ASSET(type, typeName) \
+#define REGISTER_JSON_ASSET(type, typeName, supportsVirtualAssets) \
 	const String type::TypeName = TEXT(typeName); \
 	class CONCAT_MACROS(Factory, type) : public JsonAssetFactory<type> \
 	{ \
 		public: \
 		CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Add(type::TypeName, this); } \
 		~CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Remove(type::TypeName); } \
+		bool SupportsVirtualAssets() const override { return supportsVirtualAssets; } \
 	}; \
 	static CONCAT_MACROS(Factory, type) CONCAT_MACROS(CFactory, type)

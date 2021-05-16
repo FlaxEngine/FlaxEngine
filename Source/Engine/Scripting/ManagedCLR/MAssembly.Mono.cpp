@@ -8,6 +8,7 @@
 #include "MDomain.h"
 #include "MUtils.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
@@ -16,6 +17,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
 #include <ThirdParty/mono-2.0/mono/metadata/tokentype.h>
@@ -314,7 +316,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
 
 #if MONO_DEBUG_ENABLE
     // Try to load debug symbols (use portable PDB format)
-    const auto pdbPath = StringUtils::GetPathWithoutExtension(assemblyPath) + TEXT(".pdb");
+    const auto pdbPath = String(StringUtils::GetPathWithoutExtension(assemblyPath)) + TEXT(".pdb");
     if (FileSystem::FileExists(pdbPath))
     {
         // Load .pdb file
@@ -332,10 +334,10 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     if (assemblyPath.EndsWith(TEXT("FlaxEngine.CSharp.dll")))
     {
         static Array<byte> NewtonsoftJsonDebugData;
-        File::ReadAllBytes(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
+        File::ReadAllBytes(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
         if (NewtonsoftJsonDebugData.HasItems())
         {
-            StringAnsi tmp(StringUtils::GetDirectoryName(assemblyPath) / TEXT("Newtonsoft.Json.dll"));
+            StringAnsi tmp(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.dll"));
             MonoAssembly* a = mono_assembly_open(tmp.Get(), &status);
             if (a)
             {

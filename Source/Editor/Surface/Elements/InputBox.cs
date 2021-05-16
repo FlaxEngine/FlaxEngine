@@ -9,6 +9,8 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Newtonsoft.Json;
+using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -978,6 +980,121 @@ namespace FlaxEditor.Surface.Elements
             if (_defaultValueEditor != null)
             {
                 _defaultValueEditor.Enabled = canEdit;
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        {
+            if (button == MouseButton.Right && Archetype.ValueIndex != -1)
+            {
+                var menu = new FlaxEditor.GUI.ContextMenu.ContextMenu();
+                menu.AddButton("Copy value", OnCopyValue);
+                var paste = menu.AddButton("Paste value", OnPasteValue);
+                try
+                {
+                    GetClipboardValue(out _, false);
+                }
+                catch
+                {
+                    paste.Enabled = false;
+                }
+
+                menu.Show(this, location);
+                return true;
+            }
+
+            return base.OnMouseUp(location, button);
+        }
+
+        private bool GetClipboardValue(out object result, bool deserialize)
+        {
+            result = null;
+            var text = Clipboard.Text;
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            object obj;
+            var type = CurrentType;
+            if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type))
+            {
+                // Object reference
+                if (text.Length != 32)
+                    return false;
+                JsonSerializer.ParseID(text, out var id);
+                obj = FlaxEngine.Object.Find<FlaxEngine.Object>(ref id);
+            }
+            else
+            {
+                // Default
+                obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(type), JsonSerializer.Settings);
+            }
+
+            if (obj == null || type.IsInstanceOfType(obj))
+            {
+                result = obj;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void OnCopyValue()
+        {
+            var value = ParentNode.Values[Archetype.ValueIndex];
+
+            try
+            {
+                string text;
+                if (value == null)
+                {
+                    // Missing value
+                    var type = CurrentType;
+                    if (type.Type == typeof(bool))
+                        text = "false";
+                    else if (type.Type == typeof(byte) || type.Type == typeof(sbyte) || type.Type == typeof(char) || type.Type == typeof(short) || type.Type == typeof(ushort) || type.Type == typeof(int) || type.Type == typeof(uint) || type.Type == typeof(long) || type.Type == typeof(ulong))
+                        text = "0";
+                    else if (type.Type == typeof(float) || type.Type == typeof(double))
+                        text = "0.0";
+                    else if (type.Type == typeof(Vector2) || type.Type == typeof(Vector3) || type.Type == typeof(Vector4) || type.Type == typeof(Color))
+                        text = JsonSerializer.Serialize(TypeUtils.GetDefaultValue(type));
+                    else if (type.Type == typeof(string))
+                        text = "";
+                    else
+                        text = "null";
+                }
+                else if (value is FlaxEngine.Object asObject)
+                {
+                    // Object reference
+                    text = JsonSerializer.GetStringID(asObject);
+                }
+                else
+                {
+                    // Default
+                    text = JsonSerializer.Serialize(value);
+                }
+                Clipboard.Text = text;
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+                Editor.LogError("Cannot copy property. See log for more info.");
+            }
+        }
+
+        private void OnPasteValue()
+        {
+            try
+            {
+                if (GetClipboardValue(out var value, true))
+                {
+                    ParentNode.SetValue(Archetype.ValueIndex, value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+                Editor.LogError("Cannot paste property value. See log for more info.");
             }
         }
 

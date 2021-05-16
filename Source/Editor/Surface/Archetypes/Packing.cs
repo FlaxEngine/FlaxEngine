@@ -171,7 +171,7 @@ namespace FlaxEditor.Surface.Archetypes
                             for (int i = 0; i < fieldsLength; i++)
                             {
                                 Utilities.Utils.WriteStr(writer, fields[i].Name, 11); // Field type
-                                Utilities.Utils.WriteVariantType(writer, fields[i].ValueType); // Field type
+                                Utilities.VariantUtils.WriteVariantType(writer, fields[i].ValueType); // Field type
                             }
                             Values[1] = stream.ToArray();
                         }
@@ -188,7 +188,7 @@ namespace FlaxEditor.Surface.Archetypes
                         for (int i = 0; i < fieldsLength; i++)
                         {
                             var fieldName = Utilities.Utils.ReadStr(reader, 11); // Field name
-                            var fieldType = Utilities.Utils.ReadVariantType(reader); // Field type
+                            var fieldType = Utilities.VariantUtils.ReadVariantType(reader); // Field type
                             MakeBox(i + 1, fieldName, new ScriptType(fieldType));
                         }
                     }

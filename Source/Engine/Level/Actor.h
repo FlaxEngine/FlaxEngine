@@ -176,7 +176,7 @@ public:
     /// <param name="value">New parent</param>
     /// <param name="worldPositionsStays">Should actor world positions remain the same after parent change?</param>
     /// <param name="canBreakPrefabLink">True if can break prefab link on changing the parent.</param>
-    void SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink);
+    API_FUNCTION() void SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink);
 
     /// <summary>
     /// Gets amount of child actors.
@@ -665,12 +665,12 @@ public:
 #if USE_EDITOR
 
     /// <summary>
-    /// Draws debug shapes for the actor and all child actors.
+    /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
     virtual void OnDebugDraw();
 
     /// <summary>
-    /// Draws debug shapes for the selected actor and all child actors.
+    /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
     virtual void OnDebugDrawSelected();
 

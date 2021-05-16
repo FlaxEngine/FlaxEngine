@@ -80,6 +80,12 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset Navigation;
 
         /// <summary>
+        /// Reference to <see cref="LocalizationSettings"/> asset.
+        /// </summary>
+        [EditorOrder(1046), EditorDisplay("Other Settings"), AssetReference(typeof(LocalizationSettings), true), Tooltip("Reference to Localization Settings asset")]
+        public JsonAsset Localization;
+
+        /// <summary>
         /// Reference to <see cref="BuildSettings"/> asset.
         /// </summary>
         [EditorOrder(1050), EditorDisplay("Other Settings"), AssetReference(typeof(BuildSettings), true), Tooltip("Reference to Build Settings asset")]
@@ -219,6 +225,8 @@ namespace FlaxEditor.Content.Settings
                 return LoadAsset<GraphicsSettings>(gameSettings.Graphics) as T;
             if (type == typeof(NavigationSettings))
                 return LoadAsset<NavigationSettings>(gameSettings.Navigation) as T;
+            if (type == typeof(LocalizationSettings))
+                return LoadAsset<LocalizationSettings>(gameSettings.Localization) as T;
             if (type == typeof(BuildSettings))
                 return LoadAsset<BuildSettings>(gameSettings.GameCooking) as T;
             if (type == typeof(InputSettings))
@@ -321,6 +329,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.Graphics, obj);
             if (type == typeof(NavigationSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Navigation, obj);
+            if (type == typeof(LocalizationSettings))
+                return SaveAsset(gameSettings, ref gameSettings.Localization, obj);
             if (type == typeof(BuildSettings))
                 return SaveAsset(gameSettings, ref gameSettings.GameCooking, obj);
             if (type == typeof(InputSettings))

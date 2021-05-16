@@ -7,6 +7,7 @@
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"

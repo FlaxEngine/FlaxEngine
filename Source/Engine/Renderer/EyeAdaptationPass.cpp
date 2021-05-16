@@ -1,18 +1,21 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "EyeAdaptationPass.h"
+#include "HistogramPass.h"
 #include "RenderList.h"
 #include "Engine/Core/Math/Int2.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Graphics/PostProcessBase.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/PostProcessBase.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Engine/Time.h"
-#include "Engine/Graphics/GPULimits.h"
 #include "Engine/Engine/Engine.h"
-#include "HistogramPass.h"
+#include "Engine/Engine/Time.h"
 
 PACK_STRUCT(struct EyeAdaptationData {
     float MinBrightness;

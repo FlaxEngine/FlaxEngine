@@ -9,6 +9,8 @@
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
 
+class GPUPipelineState;
+
 /// <summary>
 /// Lightmap UVs Density rendering for profiling and debugging in editor.
 /// </summary>

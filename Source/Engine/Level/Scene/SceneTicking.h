@@ -8,7 +8,7 @@
 /// <summary>
 /// Scene gameplay updating helper subsystem that boosts the level ticking by providing efficient objects cache.
 /// </summary>
-class SceneTicking
+class FLAXENGINE_API SceneTicking
 {
     friend Scene;
 
@@ -17,7 +17,7 @@ public:
     /// <summary>
     /// Tick function type.
     /// </summary>
-    struct Tick
+    struct FLAXENGINE_API Tick
     {
         typedef void (*Signature)();
         typedef void (*SignatureObj)(void*);
@@ -51,7 +51,7 @@ public:
         }
     };
 
-    class TickData
+    class FLAXENGINE_API TickData
     {
     public:
 
@@ -144,7 +144,7 @@ public:
         }
     };
 
-    class FixedUpdateTickData : public TickData
+    class FLAXENGINE_API FixedUpdateTickData : public TickData
     {
     public:
 
@@ -156,7 +156,7 @@ public:
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class UpdateTickData : public TickData
+    class FLAXENGINE_API UpdateTickData : public TickData
     {
     public:
 
@@ -168,7 +168,7 @@ public:
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class LateUpdateTickData : public TickData
+    class FLAXENGINE_API LateUpdateTickData : public TickData
     {
     public:
 

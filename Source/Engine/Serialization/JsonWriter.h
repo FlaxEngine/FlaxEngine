@@ -4,27 +4,11 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
-#include "Engine/Core/Types/Guid.h"
-#include "Engine/Core/Types/DateTime.h"
-#include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/BoundingSphere.h"
-#include "Engine/Core/Math/Vector2.h"
-#include "Engine/Core/Math/Vector3.h"
-#include "Engine/Core/Math/Vector4.h"
-#include "Engine/Core/Math/Int2.h"
-#include "Engine/Core/Math/Int3.h"
-#include "Engine/Core/Math/Int4.h"
-#include "Engine/Core/Math/Color.h"
-#include "Engine/Core/Math/Quaternion.h"
-#include "Engine/Core/Math/Ray.h"
-#include "Engine/Core/Math/Transform.h"
-#include "Engine/Core/Math/Rectangle.h"
-#include "Engine/Core/Math/Plane.h"
 #include "Engine/Utilities/StringConverter.h"
-#include "ISerializable.h"
 
 struct CommonValue;
 struct Matrix;
+struct Transform;
 class ISerializable;
 
 // Helper macro for JSON serialization keys (reduces allocations count)
@@ -62,6 +46,12 @@ public:
     FORCE_INLINE void Key(const StringAnsiView& str)
     {
         Key(str.Get(), static_cast<unsigned>(str.Length()));
+    }
+
+    FORCE_INLINE void Key(const StringView& str)
+    {
+        const StringAsUTF8<256> buf(*str, str.Length());
+        Key(buf.Get(), buf.Length());
     }
 
     FORCE_INLINE void String(const char* str)
@@ -102,11 +92,6 @@ public:
         RawValue(json, StringUtils::Length(json));
     }
 
-    FORCE_INLINE void DateTime(const DateTime& value)
-    {
-        Int64(value.Ticks);
-    }
-
     // Raw bytes blob serialized as base64 string
     void Blob(const void* data, int32 length);
 
@@ -116,217 +101,27 @@ public:
         Int(static_cast<int32>(value));
     }
 
-    void Vector2(const Vector2& value)
-    {
-        StartObject();
-        JKEY("X");
-        Float(value.X);
-        JKEY("Y");
-        Float(value.Y);
-        EndObject();
-    }
-
-    void Vector3(const Vector3& value)
-    {
-        StartObject();
-        JKEY("X");
-        Float(value.X);
-        JKEY("Y");
-        Float(value.Y);
-        JKEY("Z");
-        Float(value.Z);
-        EndObject();
-    }
-
-    void Vector4(const Vector4& value)
-    {
-        StartObject();
-        JKEY("X");
-        Float(value.X);
-        JKEY("Y");
-        Float(value.Y);
-        JKEY("Z");
-        Float(value.Z);
-        JKEY("W");
-        Float(value.W);
-        EndObject();
-    }
-
-    void Int2(const Int2& value)
-    {
-        StartObject();
-        JKEY("X");
-        Int(value.X);
-        JKEY("Y");
-        Int(value.Y);
-        EndObject();
-    }
-
-    void Int3(const Int3& value)
-    {
-        StartObject();
-        JKEY("X");
-        Int(value.X);
-        JKEY("Y");
-        Int(value.Y);
-        JKEY("Z");
-        Int(value.Z);
-        EndObject();
-    }
-
-    void Int4(const Int4& value)
-    {
-        StartObject();
-        JKEY("X");
-        Int(value.X);
-        JKEY("Y");
-        Int(value.Y);
-        JKEY("Z");
-        Int(value.Z);
-        JKEY("W");
-        Int(value.W);
-        EndObject();
-    }
-    
-    void Color(const Color& value)
-    {
-        StartObject();
-        JKEY("R");
-        Float(value.R);
-        JKEY("G");
-        Float(value.G);
-        JKEY("B");
-        Float(value.B);
-        JKEY("A");
-        Float(value.A);
-        EndObject();
-    }
-
-    void Quaternion(const Quaternion& value)
-    {
-        StartObject();
-        JKEY("X");
-        Float(value.X);
-        JKEY("Y");
-        Float(value.Y);
-        JKEY("Z");
-        Float(value.Z);
-        JKEY("W");
-        Float(value.W);
-        EndObject();
-    }
-
-    void Ray(const Ray& value)
-    {
-        StartObject();
-        JKEY("Position");
-        Vector3(value.Position);
-        JKEY("Direction");
-        Vector3(value.Direction);
-        EndObject();
-    }
-
+    void DateTime(const DateTime& value);
+    void Vector2(const Vector2& value);
+    void Vector3(const Vector3& value);
+    void Vector4(const Vector4& value);
+    void Int2(const Int2& value);
+    void Int3(const Int3& value);
+    void Int4(const Int4& value);
+    void Color(const Color& value);
+    void Quaternion(const Quaternion& value);
+    void Ray(const Ray& value);
     void Matrix(const Matrix& value);
     void CommonValue(const CommonValue& value);
-
-    void Transform(const ::Transform& value)
-    {
-        StartObject();
-        if (!value.Translation.IsZero())
-        {
-            JKEY("Translation");
-            Vector3(value.Translation);
-        }
-        if (!value.Orientation.IsIdentity())
-        {
-            JKEY("Orientation");
-            Quaternion(value.Orientation);
-        }
-        if (!value.Scale.IsOne())
-        {
-            JKEY("Scale");
-            Vector3(value.Scale);
-        }
-        EndObject();
-    }
-
-    void Transform(const ::Transform& value, const ::Transform* other)
-    {
-        StartObject();
-        if (!other || !Vector3::NearEqual(value.Translation, other->Translation))
-        {
-            JKEY("Translation");
-            Vector3(value.Translation);
-        }
-        if (!other || !Quaternion::NearEqual(value.Orientation, other->Orientation))
-        {
-            JKEY("Orientation");
-            Quaternion(value.Orientation);
-        }
-        if (!other || !Vector3::NearEqual(value.Scale, other->Scale))
-        {
-            JKEY("Scale");
-            Vector3(value.Scale);
-        }
-        EndObject();
-    }
-
-    void Plane(const Plane& value)
-    {
-        StartObject();
-        JKEY("Normal");
-        Vector3(value.Normal);
-        JKEY("D");
-        Float(value.D);
-        EndObject();
-    }
-
-    void Rectangle(const Rectangle& value)
-    {
-        StartObject();
-        JKEY("Location");
-        Vector2(value.Location);
-        JKEY("Size");
-        Vector2(value.Size);
-        EndObject();
-    }
-
-    void BoundingSphere(const BoundingSphere& value)
-    {
-        StartObject();
-        JKEY("Center");
-        Vector3(value.Center);
-        JKEY("Radius");
-        Float(value.Radius);
-        EndObject();
-    }
-
-    void BoundingBox(const BoundingBox& value)
-    {
-        StartObject();
-        JKEY("Minimum");
-        Vector3(value.Minimum);
-        JKEY("Maximum");
-        Vector3(value.Maximum);
-        EndObject();
-    }
-
+    void Transform(const ::Transform& value);
+    void Transform(const ::Transform& value, const ::Transform* other);
+    void Plane(const Plane& value);
+    void Rectangle(const Rectangle& value);
+    void BoundingSphere(const BoundingSphere& value);
+    void BoundingBox(const BoundingBox& value);
     void Guid(const Guid& value);
-
     void Object(ISerializable* value, const void* otherObj);
 
     // Serializes scene object (handles prefab with diff serialization)
     void SceneObject(class SceneObject* obj);
-
-public:
-
-    void Array(const ::Guid* value, int32 count)
-    {
-        StartArray();
-        for (int32 i = 0; i < count; i++)
-        {
-            Guid(value[i]);
-        }
-        EndArray(count);
-    }
 };

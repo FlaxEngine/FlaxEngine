@@ -322,7 +322,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.ArrowRight32),
+                Brush = new SpriteBrush(icons.Right32),
                 Offsets = new Margin(-buttonSize - 2 + _muteCheckbox.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };
@@ -335,7 +335,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(3),
-                Brush = new SpriteBrush(icons.Add48),
+                Brush = new SpriteBrush(icons.Add32),
                 Offsets = new Margin(-buttonSize - 2 + rightKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };
@@ -348,7 +348,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.ArrowLeft32),
+                Brush = new SpriteBrush(icons.Left32),
                 Offsets = new Margin(-buttonSize - 2 + addKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };

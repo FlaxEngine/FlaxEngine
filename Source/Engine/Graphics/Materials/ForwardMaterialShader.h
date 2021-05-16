@@ -58,7 +58,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    ForwardMaterialShader(const String& name)
+    ForwardMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

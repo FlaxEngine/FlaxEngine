@@ -28,13 +28,16 @@ MField::MField(MonoClassField* monoField, const char* name, MClass* parentClass)
             _visibility = MVisibility::Private;
             break;
         case MONO_FIELD_ATTR_FAM_AND_ASSEM:
-            _visibility = MVisibility::ProtectedInternal;
+            _visibility = MVisibility::PrivateProtected;
             break;
         case MONO_FIELD_ATTR_ASSEMBLY:
             _visibility = MVisibility::Internal;
             break;
         case MONO_FIELD_ATTR_FAMILY:
             _visibility = MVisibility::Protected;
+            break;
+        case MONO_FIELD_ATTR_FAM_OR_ASSEM:
+            _visibility = MVisibility::ProtectedInternal;
             break;
         case MONO_FIELD_ATTR_PUBLIC:
             _visibility = MVisibility::Public;

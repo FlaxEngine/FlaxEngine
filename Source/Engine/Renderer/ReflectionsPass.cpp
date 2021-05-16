@@ -2,11 +2,13 @@
 
 #include "ReflectionsPass.h"
 #include "GBufferPass.h"
+#include "RenderList.h"
 #include "ScreenSpaceReflectionsPass.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 

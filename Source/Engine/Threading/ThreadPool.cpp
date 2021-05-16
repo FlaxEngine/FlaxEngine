@@ -7,10 +7,16 @@
 #include "ConcurrentTaskQueue.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
+
+FLAXENGINE_API bool IsInMainThread()
+{
+    return Globals::MainThreadID == Platform::GetCurrentThreadID();
+}
 
 namespace ThreadPoolImpl
 {

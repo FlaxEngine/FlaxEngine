@@ -62,8 +62,9 @@ class MType;
 enum class MVisibility
 {
     Private,
-    Protected,
+    PrivateProtected,
     Internal,
+    Protected,
     ProtectedInternal,
     Public,
 };

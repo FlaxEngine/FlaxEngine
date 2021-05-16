@@ -166,6 +166,7 @@ int32 Engine::Main(const Char* cmdLine)
 			}
 		}
 #endif
+
         // App paused logic
         if (Platform::GetIsPaused())
         {
@@ -202,6 +203,7 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnDraw();
             Time::OnEndDraw();
+            FrameMark;
             canDraw = false;
         }
 
@@ -622,7 +624,7 @@ void EngineImpl::InitMainWindow()
     if (exception)
     {
         MException ex(exception);
-        ex.Log(LogType::Fatal, TEXT("FlaxEngine.ClassLibraryInitializer.SetWindow"));
+        ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.SetWindow"));
     }
 #endif
 }

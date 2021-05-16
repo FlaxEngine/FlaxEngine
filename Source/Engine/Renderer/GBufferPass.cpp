@@ -1,11 +1,15 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "GBufferPass.h"
+#include "RenderList.h"
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
 #include "Engine/Core/Collections/Sorting.h"
-#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"

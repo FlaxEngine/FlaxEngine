@@ -225,6 +225,12 @@ namespace FlaxEngine.GUI
         public SpriteHandle Scale;
 
         /// <summary>
+        /// The scalar icon.
+        /// </summary>
+        [EditorOrder(330)]
+        public SpriteHandle Scalar;
+
+        /// <summary>
         /// The shared tooltip control used by the controls if no custom tooltip is provided.
         /// </summary>
         [EditorOrder(340)]

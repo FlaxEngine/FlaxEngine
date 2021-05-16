@@ -5,15 +5,15 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.CustomEditors.Elements
 {
     /// <summary>
-    /// The horizontal panel element.
+    /// The vertical panel element.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElement" />
-    public class HorizontalPanelElement : LayoutElementsContainer
+    public class VerticalPanelElement : LayoutElementsContainer
     {
         /// <summary>
         /// The panel.
         /// </summary>
-        public readonly HorizontalPanel Panel = new HorizontalPanel();
+        public readonly VerticalPanel Panel = new VerticalPanel();
 
         /// <inheritdoc />
         public override ContainerControl ContainerControl => Panel;

@@ -5,6 +5,7 @@
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Graphics/Models/SkeletonUpdater.h"
 #include "Engine/Graphics/Models/SkeletonMapping.h"
@@ -486,7 +487,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
         // Auto-import textures
         if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == 0 || texture.FilePath.IsEmpty())
             continue;
-        auto filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath);
+        String filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath);
         for (int32 j = filename.Length() - 1; j >= 0; j--)
         {
             if (EditorUtilities::IsInvalidPathChar(filename[j]))
@@ -497,7 +498,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
             int32 counter = 1;
             do
             {
-                filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath) + TEXT(" ") + StringUtils::ToString(counter);
+                filename = String(StringUtils::GetFileNameWithoutExtension(texture.FilePath)) + TEXT(" ") + StringUtils::ToString(counter);
                 counter++;
             } while (importedFileNames.Contains(filename));
         }

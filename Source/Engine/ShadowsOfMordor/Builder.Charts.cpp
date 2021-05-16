@@ -1,12 +1,12 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
-#include "Engine/Engine/Engine.h"
 #include "AtlasChartsPacker.h"
 #include "Engine/Level/Scene/SceneLightmapsData.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/ContentImporters/ImportTexture.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Level/Scene/Lightmap.h"
 

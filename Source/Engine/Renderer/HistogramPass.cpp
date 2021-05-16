@@ -9,6 +9,8 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 // Those defines must match the HLSL
 #define THREADGROUP_SIZE_X 16

@@ -16,102 +16,124 @@ namespace FlaxEditor
     [HideInEditor]
     public sealed class EditorIcons
     {
-        public SpriteHandle FolderClosed12;
-        public SpriteHandle FolderOpened12;
+        // 12px
         public SpriteHandle DragBar12;
-        public SpriteHandle ArrowDown12;
-        public SpriteHandle ArrowRight12;
         public SpriteHandle Search12;
+        public SpriteHandle WindowDrag12;
+        public SpriteHandle CheckBoxIntermediate12;
+        public SpriteHandle ArrowRight12;
         public SpriteHandle Settings12;
         public SpriteHandle Cross12;
-        public SpriteHandle CheckBoxIntermediate12;
         public SpriteHandle CheckBoxTick12;
-        public SpriteHandle StatusBarSizeGrip12;
+        public SpriteHandle ArrowDown12;
 
-        public SpriteHandle ArrowRightBorder16;
-        public SpriteHandle World16;
-        public SpriteHandle ScaleStep16;
-        public SpriteHandle RotateStep16;
-        public SpriteHandle Grid16;
-        public SpriteHandle Translate16;
-        public SpriteHandle Rotate16;
-        public SpriteHandle Scale16;
-        public SpriteHandle Link16;
-        public SpriteHandle Docs16;
-
-        public SpriteHandle Save32;
-        public SpriteHandle Undo32;
-        public SpriteHandle Redo32;
+        // 32px
+        public SpriteHandle Scalar32;
         public SpriteHandle Translate32;
         public SpriteHandle Rotate32;
         public SpriteHandle Scale32;
-        public SpriteHandle Play32;
-        public SpriteHandle Pause32;
-        public SpriteHandle Step32;
-        public SpriteHandle Stop32;
-        public SpriteHandle PageScale32;
-        public SpriteHandle Bone32;
-        public SpriteHandle Docs32;
-        public SpriteHandle Import32;
-        public SpriteHandle AddDoc32;
-        public SpriteHandle RemoveDoc32;
-        public SpriteHandle BracketsSlash32;
-        public SpriteHandle Find32;
-        public SpriteHandle Reload32;
-        public SpriteHandle ArrowLeft32;
-        public SpriteHandle ArrowRight32;
-        public SpriteHandle ArrowDown32;
-        public SpriteHandle ArrowUp32;
-        public SpriteHandle Error32;
-        public SpriteHandle Warning32;
-        public SpriteHandle Info32;
-        public SpriteHandle UV32;
-        public SpriteHandle Image32;
+        public SpriteHandle Grid32;
+        public SpriteHandle Flax32;
+        public SpriteHandle RotateSnap32;
+        public SpriteHandle ScaleSnap32;
+        public SpriteHandle Globe32;
+        public SpriteHandle CamSpeed32;
         public SpriteHandle Link32;
-        public SpriteHandle Next32;
-        public SpriteHandle Camera32;
-        public SpriteHandle Build32;
+        public SpriteHandle Add32;
+        public SpriteHandle Left32;
+        public SpriteHandle Right32;
+        public SpriteHandle Up32;
+        public SpriteHandle Down32;
+        public SpriteHandle FolderClosed32;
+        public SpriteHandle FolderOpen32;
 
-        public SpriteHandle Add48;
-        public SpriteHandle Paint48;
-        public SpriteHandle Foliage48;
-        public SpriteHandle Mountain48;
+        // Visject
+        public SpriteHandle VisjectBoxOpen32;
+        public SpriteHandle VisjectBoxClosed32;
+        public SpriteHandle VisjectArrowOpen32;
+        public SpriteHandle VisjectArrowClosed32;
 
-        public SpriteHandle Plugin64;
-        public SpriteHandle Document64;
-        public SpriteHandle CSharpScript64;
-        public SpriteHandle CppScript64;
+        // 64px
+        public SpriteHandle Flax64;
+        public SpriteHandle Save64;
+        public SpriteHandle Play64;
+        public SpriteHandle Stop64;
+        public SpriteHandle Pause64;
+        public SpriteHandle Skip64;
+        public SpriteHandle Info64;
+        public SpriteHandle Error64;
+        public SpriteHandle Warning64;
+        public SpriteHandle AddFile64;
+        public SpriteHandle DeleteFile64;
+        public SpriteHandle Import64;
+        public SpriteHandle Left64;
+        public SpriteHandle Right64;
+        public SpriteHandle Up64;
+        public SpriteHandle Down64;
+        public SpriteHandle Undo64;
+        public SpriteHandle Redo64;
+        public SpriteHandle Translate64;
+        public SpriteHandle Rotate64;
+        public SpriteHandle Scale64;
+        public SpriteHandle Refresh64;
+        public SpriteHandle Shift64;
+        public SpriteHandle Code64;
         public SpriteHandle Folder64;
-        public SpriteHandle Scene64;
-        public SpriteHandle CodeScript64;
+        public SpriteHandle CenterView64;
+        public SpriteHandle Image64;
+        public SpriteHandle Camera64;
+        public SpriteHandle Docs64;
+        public SpriteHandle Search64;
+        public SpriteHandle Bone64;
+        public SpriteHandle Link64;
+        public SpriteHandle Build64;
+        public SpriteHandle Add64;
 
-        public SpriteHandle Logo128;
+        // 96px
+        public SpriteHandle Toolbox96;
+        public SpriteHandle Paint96;
+        public SpriteHandle Foliage96;
+        public SpriteHandle Terrain96;
 
-        public SpriteHandle VisjectBoxOpen;
-        public SpriteHandle VisjectBoxClose;
-        public SpriteHandle VisjectArrowOpen;
-        public SpriteHandle VisjectArrowClose;
+        // 128px
+        public SpriteHandle AndroidSettings128;
+        public SpriteHandle PlaystationSettings128;
+        public SpriteHandle InputSettings128;
+        public SpriteHandle PhysicsSettings128;
+        public SpriteHandle CSharpScript128;
+        public SpriteHandle Folder128;
+        public SpriteHandle WindowsIcon128;
+        public SpriteHandle LinuxIcon128;
+        public SpriteHandle UWPSettings128;
+        public SpriteHandle XBOXSettings128;
+        public SpriteHandle LayersTagsSettings128;
+        public SpriteHandle GraphicsSettings128;
+        public SpriteHandle CPPScript128;
+        public SpriteHandle Plugin128;
+        public SpriteHandle XBoxScarletIcon128;
+        public SpriteHandle AssetShadow128;
+        public SpriteHandle WindowsSettings128;
+        public SpriteHandle TimeSettings128;
+        public SpriteHandle GameSettings128;
+        public SpriteHandle VisualScript128;
+        public SpriteHandle Document128;
+        public SpriteHandle XBoxOne128;
+        public SpriteHandle UWPStore128;
+        public SpriteHandle ColorWheel128;
+        public SpriteHandle LinuxSettings128;
+        public SpriteHandle NavigationSettings128;
+        public SpriteHandle AudioSettings128;
+        public SpriteHandle BuildSettings128;
+        public SpriteHandle Scene128;
+        public SpriteHandle AndroidIcon128;
+        public SpriteHandle PS4Icon128;
+        public SpriteHandle FlaxLogo128;
 
-        public SpriteHandle AssetShadow;
-        public SpriteHandle ColorWheel;
-        public SpriteHandle Windows;
-        public SpriteHandle XboxOne;
-        public SpriteHandle WindowsStore;
-        public SpriteHandle Linux;
-        public SpriteHandle PS4;
-        public SpriteHandle XboxSeriesX;
-        public SpriteHandle Android;
-
-        internal void GetIcons()
+        internal void LoadIcons()
         {
-            // Load asset
+            // Load & validate
             var iconsAtlas = FlaxEngine.Content.LoadAsyncInternal<SpriteAtlas>(EditorAssets.IconsAtlas);
-            if (iconsAtlas == null)
-            {
-                Editor.LogError("Cannot load editor icons atlas.");
-                return;
-            }
-            if (iconsAtlas.WaitForLoaded())
+            if (iconsAtlas is null || iconsAtlas.WaitForLoaded())
             {
                 Editor.LogError("Failed to load editor icons atlas.");
                 return;
@@ -122,11 +144,11 @@ namespace FlaxEditor
             for (int i = 0; i < fields.Length; i++)
             {
                 var field = fields[i];
+
                 var sprite = iconsAtlas.FindSprite(field.Name);
                 if (!sprite.IsValid)
-                {
-                    Editor.LogWarning(string.Format("Failed to load sprite icon \'{0}\'.", field.Name));
-                }
+                    Editor.LogWarning($"Failed to load sprite icon \'{field.Name}\'.");
+
                 field.SetValue(this, sprite);
             }
         }

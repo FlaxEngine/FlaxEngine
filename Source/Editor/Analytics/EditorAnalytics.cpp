@@ -10,6 +10,7 @@
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "FlaxEngine.Gen.h"

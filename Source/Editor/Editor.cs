@@ -220,7 +220,7 @@ namespace FlaxEditor
             GameProject = ProjectInfo.Load(Internal_GetProjectPath());
 
             Icons = new EditorIcons();
-            Icons.GetIcons();
+            Icons.LoadIcons();
 
             // Create common editor modules
             RegisterModule(Options = new OptionsModule(this));
@@ -878,10 +878,12 @@ namespace FlaxEditor
         /// Checks if can import asset with the given extension.
         /// </summary>
         /// <param name="extension">The file extension.</param>
+        /// <param name="outputExtension">The output file extension (flax, json, etc.).</param>
         /// <returns>True if can import files with given extension, otherwise false.</returns>
-        public static bool CanImport(string extension)
+        public static bool CanImport(string extension, out string outputExtension)
         {
-            return Internal_CanImport(extension);
+            outputExtension = Internal_CanImport(extension);
+            return outputExtension != null;
         }
 
         /// <summary>
@@ -1183,6 +1185,8 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
+                        return false;
                     return true;
                 }
             }
@@ -1369,7 +1373,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanImport(string extension);
+        internal static extern string Internal_CanImport(string extension);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool Internal_CanExport(string path);

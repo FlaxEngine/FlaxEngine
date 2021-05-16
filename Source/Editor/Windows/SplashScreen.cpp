@@ -2,7 +2,9 @@
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/TextLayoutOptions.h"
@@ -115,11 +117,21 @@ const Char* SplashScreenQuotes[] =
     TEXT("Cyberpunk of game engines"),
     TEXT("That's what she said"),
     TEXT("Compiling Shaders (93,788)"),
-    TEXT("Hi There"),
+    TEXT("Hello There"),
     TEXT("BAGUETTE"),
     TEXT("All we had to do was follow the damn train, CJ"),
     TEXT("28 stab wounds"),
     TEXT("Here we go again"),
+    TEXT("@everyone"),
+    TEXT("Potato"),
+    TEXT("Python is a programming snek"),
+    TEXT("Flax will start when pigs will fly"),
+    TEXT("I'm the android sent by CyberLife"),
+    TEXT("Fancy-ass ray tracing, rtx on, lighting"),
+    TEXT("ZOINKS"),
+    TEXT("Scooby dooby doo"),
+    TEXT("You shall not load!"),
+    TEXT("The roof, the roof, the roof is on fire!")
 };
 
 SplashScreen::~SplashScreen()

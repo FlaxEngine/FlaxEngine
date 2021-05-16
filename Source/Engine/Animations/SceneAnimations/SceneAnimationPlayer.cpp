@@ -9,6 +9,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Audio/AudioSource.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"

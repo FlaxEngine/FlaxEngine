@@ -84,7 +84,7 @@ public:
     /// <summary>
     /// The index of the frame when this task was last time rendered.
     /// </summary>
-    uint64 LastUsedFrame = 0;
+    API_FIELD(ReadOnly) uint64 LastUsedFrame = 0;
 
     /// <summary>
     /// Action fired on task rendering.

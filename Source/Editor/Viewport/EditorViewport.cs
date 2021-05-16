@@ -443,7 +443,7 @@ namespace FlaxEditor.Viewport
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
-                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.ArrowRightBorder16, camSpeedCM)
+                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.CamSpeed32, camSpeedCM)
                 {
                     Tag = this,
                     TooltipText = "Camera speed scale"
@@ -484,7 +484,7 @@ namespace FlaxEditor.Viewport
                 // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate16;
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
                     {
@@ -974,7 +974,8 @@ namespace FlaxEditor.Viewport
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
                 bool useMouse = Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height);
                 _prevInput = _input;
-                if (ContainsFocus && GetChildAt(_viewMousePos, c => c.Visible) == null)
+                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl));
+                if (ContainsFocus && hit == null)
                     _input.Gather(win.Window, useMouse);
                 else
                     _input.Clear();

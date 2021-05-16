@@ -113,7 +113,7 @@ public:
     /// Captures the input since the last call and triggers the input events.
     /// </summary>
     /// <param name="queue">The input events queue.</param>
-    /// <returns>True if device has been disconnected, otherwise false.<returns>
+    /// <returns>True if device has been disconnected, otherwise false.</returns>
     virtual bool Update(EventQueue& queue)
     {
         if (UpdateState())
@@ -126,7 +126,7 @@ public:
     /// <summary>
     /// Updates only the current state of the device.
     /// </summary>
-    /// <returns>True if device has been disconnected, otherwise false.<returns>
+    /// <returns>True if device has been disconnected, otherwise false.</returns>
     virtual bool UpdateState()
     {
         return false;

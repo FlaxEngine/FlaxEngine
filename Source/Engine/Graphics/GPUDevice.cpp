@@ -6,6 +6,7 @@
 #include "RenderTask.h"
 #include "RenderTools.h"
 #include "Graphics.h"
+#include "Shaders/GPUShader.h"
 #include "Async/DefaultGPUTasksExecutor.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"

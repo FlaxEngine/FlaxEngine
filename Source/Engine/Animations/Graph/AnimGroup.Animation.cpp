@@ -636,7 +636,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
 
         // Skip if no change will be performed
-        if (boneIndex < 0 || boneIndex >= _skeletonBonesCount || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
+        auto& skeleton = _graph.BaseModel->Skeleton;
+        if (boneIndex < 0 || boneIndex >= skeleton.Bones.Count() || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
         {
             // Pass through the input
             value = Value::Null;
@@ -767,8 +768,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const auto copyScale = (bool)node->Values[4];
 
         // Skip if no change will be performed
-        if (srcBoneIndex < 0 || srcBoneIndex >= _skeletonBonesCount ||
-            dstBoneIndex < 0 || dstBoneIndex >= _skeletonBonesCount ||
+        const auto& skeleton = _graph.BaseModel->Skeleton;
+        if (srcBoneIndex < 0 || srcBoneIndex >= skeleton.Bones.Count() ||
+            dstBoneIndex < 0 || dstBoneIndex >= skeleton.Bones.Count() ||
             !(copyTranslation || copyRotation || copyScale))
         {
             // Pass through the input
@@ -776,7 +778,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             box->Cache = value;
             return;
         }
-        const auto& skeleton = _graph.BaseModel->Skeleton;
 
         // Copy bone data
         Transform srcTransform = nodes->Nodes[skeleton.Bones[srcBoneIndex].NodeIndex];
@@ -800,7 +801,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const auto boneIndex = (int32)node->Values[0];
         const auto& skeleton = _graph.BaseModel->Skeleton;
         const auto input = tryGetValue(node->GetBox(0), Value::Null);
-        if (ANIM_GRAPH_IS_VALID_PTR(input) && boneIndex >= 0 && boneIndex < _skeletonBonesCount)
+        if (ANIM_GRAPH_IS_VALID_PTR(input) && boneIndex >= 0 && boneIndex < skeleton.Bones.Count())
             value = Variant(((AnimGraphImpulse*)input.AsPointer)->Nodes[skeleton.Bones[boneIndex].NodeIndex]);
         else
             value = Variant(Transform::Identity);

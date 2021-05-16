@@ -912,6 +912,7 @@ public:
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
     static float TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3& v2);
+
 };
 
 inline Vector3 operator+(float a, const Vector3& b)

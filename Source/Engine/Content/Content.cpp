@@ -14,6 +14,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"

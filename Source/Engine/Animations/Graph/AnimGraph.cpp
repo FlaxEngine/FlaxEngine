@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
-#include "Engine/Engine/Time.h"
+#include "Engine/Content/Assets/SkinnedModel.h"
+#include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Engine/Time.h"
 
 RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
 
@@ -173,7 +175,7 @@ AnimGraphExecutor::AnimGraphExecutor(AnimGraph& graph)
     _perGroupProcessCall[16] = (ProcessBoxHandler)&AnimGraphExecutor::ProcessGroupFunction;
 }
 
-const Matrix* AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
+void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
 {
     ASSERT(data.Parameters.Count() == _graph.Parameters.Count());
 
@@ -183,7 +185,6 @@ const Matrix* AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         ANIM_GRAPH_PROFILE_EVENT("Init");
 
         // Prepare graph data for the evaluation
-        _skeletonBonesCount = skeleton.Bones.Count();
         _skeletonNodesCount = skeleton.Nodes.Count();
         _graphStack.Clear();
         _graphStack.Push((Graph*)&_graph);
@@ -263,23 +264,19 @@ const Matrix* AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         _data->RootMotion = animResult->RootMotion;
     }
 
-    // Calculate the final bones transformations
-    {
-        ANIM_GRAPH_PROFILE_EVENT("Final Pose");
-
-        _bonesTransformations.Resize(_skeletonBonesCount, false);
-
-        for (int32 boneIndex = 0; boneIndex < _skeletonBonesCount; boneIndex++)
-        {
-            auto& bone = skeleton.Bones[boneIndex];
-            _bonesTransformations[boneIndex] = bone.OffsetMatrix * _data->NodesPose[bone.NodeIndex];
-        }
-    }
-
     // Cleanup
     _data = nullptr;
+}
 
-    return _bonesTransformations.Get();
+void AnimGraphExecutor::GetInputValue(Box* box, Value& result)
+{
+    result = eatBox(box->GetParent<Node>(), box->FirstConnection());
+}
+
+void AnimGraphExecutor::ResetBucket(int32 bucketIndex)
+{
+    auto& stateBucket = _data->State[bucketIndex];
+    _graph._bucketInitializerList[bucketIndex](stateBucket);
 }
 
 void AnimGraphExecutor::ResetBuckets(AnimGraphBase* graph)

@@ -248,10 +248,11 @@ namespace FlaxEditor.Options
                 Cross = Editor.Icons.Cross12,
                 CheckBoxIntermediate = Editor.Icons.CheckBoxIntermediate12,
                 CheckBoxTick = Editor.Icons.CheckBoxTick12,
-                StatusBarSizeGrip = Editor.Icons.StatusBarSizeGrip12,
-                Translate = Editor.Icons.Translate16,
-                Rotate = Editor.Icons.Rotate16,
-                Scale = Editor.Icons.Scale16,
+                StatusBarSizeGrip = Editor.Icons.WindowDrag12,
+                Translate = Editor.Icons.Translate32,
+                Rotate = Editor.Icons.Rotate32,
+                Scale = Editor.Icons.Scale32,
+                Scalar = Editor.Icons.Scalar32,
 
                 SharedTooltip = new Tooltip()
             };

@@ -25,4 +25,3 @@ int32 Globals::EngineBuildNumber = FLAXENGINE_VERSION_BUILD;
 String Globals::ProductName;
 String Globals::CompanyName;
 int32 Globals::ContentKey;
-bool Globals::ConvertLoadedMaterialsByForce;

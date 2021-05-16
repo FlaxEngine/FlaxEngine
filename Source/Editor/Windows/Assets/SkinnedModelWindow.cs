@@ -114,9 +114,9 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override void Draw()
+            public override void DrawSelf()
             {
-                base.Draw();
+                base.DrawSelf();
 
                 var style = Style.Current;
                 var asset = _window.Asset;
@@ -676,7 +676,6 @@ namespace FlaxEditor.Windows.Assets
                 public UVsLayoutPreviewControl()
                 {
                     Offsets = new Margin(4);
-                    AnchorPreset = AnchorPresets.HorizontalStretchMiddle;
                     AutomaticInvalidate = false;
                 }
 
@@ -920,9 +919,9 @@ namespace FlaxEditor.Windows.Assets
         {
             // Toolstrip
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Bone32, () => _preview.ShowNodes = !_preview.ShowNodes).SetAutoCheck(true).LinkTooltip("Show animated model nodes debug view");
+            _toolstrip.AddButton(editor.Icons.Bone64, () => _preview.ShowNodes = !_preview.ShowNodes).SetAutoCheck(true).LinkTooltip("Show animated model nodes debug view");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skinned-model/index.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skinned-model/index.html")).LinkTooltip("See documentation to learn more");
 
             // Model preview
             _preview = new Preview(this)

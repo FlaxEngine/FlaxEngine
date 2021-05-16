@@ -9,7 +9,7 @@ using FlaxEngine;
 namespace FlaxEditor.CustomEditors.Editors
 {
     /// <summary>
-    /// Default implementation of the inspector used to edit float value type properties.
+    /// Default implementation of the inspector used to edit enum value type properties.
     /// </summary>
     [CustomEditor(typeof(Enum)), DefaultEditor]
     public class EnumEditor : CustomEditor

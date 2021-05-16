@@ -32,7 +32,7 @@ namespace FlaxEditor.Surface.Elements
             Width = archetype.Size.X;
             ParentNode = parentNode;
             Archetype = archetype;
-            Value = (ulong)(int)ParentNode.Values[Archetype.ValueIndex];
+            Value = (int)ParentNode.Values[Archetype.ValueIndex];
         }
 
         /// <inheritdoc />

@@ -23,15 +23,17 @@ struct FLAXENGINE_API ManagedDictionary
     }
 
     template<typename KeyType, typename ValueType>
-    static MonoObject* ToManaged(const Dictionary<KeyType, ValueType>& data, MonoClass* keyType, MonoClass* valueType)
+    static MonoObject* ToManaged(const Dictionary<KeyType, ValueType>& data, MonoType* keyType, MonoType* valueType)
     {
         MConverter<KeyType> keysConverter;
         MConverter<ValueType> valueConverter;
         ManagedDictionary result = New(keyType, valueType);
+        MonoClass* keyClass = mono_type_get_class(keyType);
+        MonoClass* valueClass = mono_type_get_class(valueType);
         for (auto i = data.Begin(); i.IsNotEnd(); ++i)
         {
-            MonoObject* keyManaged = keysConverter.Box(i->Key, keyType);
-            MonoObject* valueManaged = valueConverter.Box(i->Value, valueType);
+            MonoObject* keyManaged = keysConverter.Box(i->Key, keyClass);
+            MonoObject* valueManaged = valueConverter.Box(i->Value, valueClass);
             result.Add(keyManaged, valueManaged);
         }
         return result.Instance;
@@ -71,10 +73,11 @@ struct FLAXENGINE_API ManagedDictionary
         return result;
     }
 
-    static ManagedDictionary New(MonoClass* keyType, MonoClass* valueType)
+    static ManagedDictionary New(MonoType* keyType, MonoType* valueType)
     {
         ManagedDictionary result;
 
+        auto domain = mono_domain_get();
         auto scriptingClass = Scripting::GetStaticClass();
         CHECK_RETURN(scriptingClass, result);
         auto makeGenericMethod = scriptingClass->GetMethod("MakeGenericType", 2);
@@ -83,9 +86,9 @@ struct FLAXENGINE_API ManagedDictionary
         CHECK_RETURN(createMethod, result);
 
         auto genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass->GetNative());
-        auto genericArgs = mono_array_new(mono_domain_get(), mono_get_object_class(), 2);
-        mono_array_set(genericArgs, MonoReflectionType*, 0, MUtils::GetType(keyType));
-        mono_array_set(genericArgs, MonoReflectionType*, 1, MUtils::GetType(valueType));
+        auto genericArgs = mono_array_new(domain, mono_get_object_class(), 2);
+        mono_array_set(genericArgs, MonoReflectionType*, 0, mono_type_get_object(domain, keyType));
+        mono_array_set(genericArgs, MonoReflectionType*, 1, mono_type_get_object(domain, valueType));
 
         void* params[2];
         params[0] = genericType;

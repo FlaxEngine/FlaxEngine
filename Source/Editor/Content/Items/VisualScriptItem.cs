@@ -539,7 +539,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CodeScript64;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.VisualScript128;
 
         /// <inheritdoc />
         protected override bool DrawShadow => false;

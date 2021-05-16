@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Settings;
+using FlaxEngine;
 
 namespace FlaxEditor.Content
 {
@@ -13,15 +14,18 @@ namespace FlaxEditor.Content
     public sealed class SettingsProxy : JsonAssetProxy
     {
         private readonly Type _type;
+        private readonly SpriteHandle _thumbnail;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettingsProxy"/> class.
         /// </summary>
         /// <param name="type">The settings asset type (must be subclass of SettingsBase type).</param>
-        public SettingsProxy(Type type)
+        /// <param name="thumbnail">Asset icon.</param>
+        public SettingsProxy(Type type, SpriteHandle thumbnail)
         {
             _type = type;
             TypeName = type.FullName;
+            _thumbnail = thumbnail;
         }
 
         /// <inheritdoc />
@@ -42,6 +46,12 @@ namespace FlaxEditor.Content
         public override void Create(string outputPath, object arg)
         {
             Editor.Instance.ContentImporting.Create(new SettingsCreateEntry(outputPath));
+        }
+
+        /// <inheritdoc />
+        public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
+        {
+            return new JsonAssetItem(path, id, typeName, _thumbnail);
         }
 
         /// <inheritdoc />
