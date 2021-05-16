@@ -77,7 +77,7 @@ int32 NetworkBase::AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& so
     return -1;
 }
 
-bool NetworkBase::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket)
+bool NetworkBase::GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket& socket)
 {
     return true;
 }
