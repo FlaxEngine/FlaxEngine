@@ -24,9 +24,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         public Border()
         {
+            BorderWidth = 2.0f;
+
+#if FLAX_EDITOR
             var style = Style.Current;
             BorderColor = style.BorderNormal;
-            BorderWidth = 2.0f;
+#endif
         }
 
         /// <inheritdoc />

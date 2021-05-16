@@ -183,10 +183,13 @@ namespace FlaxEngine.GUI
         : base(0, 0, 100, 20)
         {
             AutoFocus = false;
+
+#if FLAX_EDITOR
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
+#endif
         }
 
         /// <inheritdoc />
@@ -194,10 +197,13 @@ namespace FlaxEngine.GUI
         : base(x, y, width, height)
         {
             AutoFocus = false;
+
+#if FLAX_EDITOR
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
+#endif
         }
 
         /// <inheritdoc />

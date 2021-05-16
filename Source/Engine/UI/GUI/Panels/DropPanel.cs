@@ -228,6 +228,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
 
+#if FLAX_EDITOR
             var style = Style.Current;
             HeaderColor = style.BackgroundNormal;
             HeaderColorMouseOver = style.BackgroundHighlighted;
@@ -235,6 +236,7 @@ namespace FlaxEngine.GUI
             HeaderTextColor = style.Foreground;
             ArrowImageOpened = new SpriteBrush(style.ArrowDown);
             ArrowImageClosed = new SpriteBrush(style.ArrowRight);
+#endif
         }
 
         /// <summary>

@@ -433,12 +433,14 @@ namespace FlaxEngine.GUI
             _selectionStart = _selectionEnd = -1;
             AutoFocus = false;
 
+#if FLAX_EDITOR
             var style = Style.Current;
             CaretColor = style.Foreground;
             BorderColor = Color.Transparent;
             BorderSelectedColor = style.BackgroundSelected;
             BackgroundColor = style.TextBoxBackground;
             BackgroundSelectedColor = style.TextBoxBackgroundSelected;
+#endif
         }
 
         /// <summary>

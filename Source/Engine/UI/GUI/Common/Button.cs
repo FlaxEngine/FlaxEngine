@@ -124,6 +124,7 @@ namespace FlaxEngine.GUI
         public Button(float x, float y, float width = 120, float height = DefaultHeight)
         : base(x, y, width, height)
         {
+#if FLAX_EDITOR
             var style = Style.Current;
             if (style != null)
             {
@@ -136,6 +137,7 @@ namespace FlaxEngine.GUI
                 BackgroundColorHighlighted = style.BackgroundHighlighted;
                 BorderColorHighlighted = style.BorderHighlighted;
             }
+#endif
         }
 
         /// <summary>

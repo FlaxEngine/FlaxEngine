@@ -163,12 +163,14 @@ namespace FlaxEngine.GUI
             _state = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
             _boxSize = Mathf.Min(16.0f, size);
 
+#if FLAX_EDITOR
             var style = Style.Current;
             ImageColor = style.BorderSelected * 1.2f;
             BorderColor = style.BorderNormal;
             BorderColorHighlighted = style.BorderSelected;
             CheckedImage = new SpriteBrush(style.CheckBoxTick);
             IntermediateImage = new SpriteBrush(style.CheckBoxIntermediate);
+#endif
 
             CacheBox();
         }

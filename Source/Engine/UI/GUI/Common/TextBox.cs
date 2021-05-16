@@ -87,11 +87,13 @@ namespace FlaxEngine.GUI
             _layout.TextWrapping = TextWrapping.NoWrap;
             _layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
 
+#if FLAX_EDITOR
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             WatermarkTextColor = style.ForegroundDisabled;
             SelectionColor = style.BackgroundSelected;
+#endif
         }
 
         /// <inheritdoc />

@@ -9,12 +9,7 @@ namespace FlaxEngine.GUI
     /// </summary>
     public class RichTextBox : RichTextBoxBase
     {
-        private TextBlockStyle _textStyle = new TextBlockStyle
-        {
-            Font = new FontReference(Style.Current.FontMedium),
-            Color = Style.Current.Foreground,
-            BackgroundSelectedBrush = new SolidColorBrush(Style.Current.BackgroundSelected),
-        };
+        private TextBlockStyle _textStyle;
 
         /// <summary>
         /// The text style applied to the whole text.
@@ -28,6 +23,22 @@ namespace FlaxEngine.GUI
                 _textStyle = value;
                 UpdateTextBlocks();
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Label"/> class.
+        /// </summary>
+        public RichTextBox()
+        : base()
+        {
+            _textStyle = new TextBlockStyle();
+
+#if FLAX_EDITOR
+            var style = Style.Current;
+            _textStyle.Font = new FontReference(style.FontMedium);
+            _textStyle.Color = style.Foreground;
+            _textStyle.BackgroundSelectedBrush = new SolidColorBrush(style.BackgroundSelected);
+#endif
         }
 
         /// <inheritdoc />

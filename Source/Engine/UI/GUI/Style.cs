@@ -22,7 +22,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(10)]
         public Font FontTitle
         {
-            get => _fontTitle.GetFont();
+            get => _fontTitle?.GetFont();
             set => _fontTitle = new FontReference(value);
         }
 
@@ -36,7 +36,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(20)]
         public Font FontLarge
         {
-            get => _fontLarge.GetFont();
+            get => _fontLarge?.GetFont();
             set => _fontLarge = new FontReference(value);
         }
 
@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(30)]
         public Font FontMedium
         {
-            get => _fontMedium.GetFont();
+            get => _fontMedium?.GetFont();
             set => _fontMedium = new FontReference(value);
         }
 
@@ -64,7 +64,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(40)]
         public Font FontSmall
         {
-            get => _fontSmall.GetFont();
+            get => _fontSmall?.GetFont();
             set => _fontSmall = new FontReference(value);
         }
 

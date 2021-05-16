@@ -123,11 +123,13 @@ namespace FlaxEngine.GUI
         : base(x, y, width, height)
         {
             AutoFocus = false;
+            BarMargin = new Margin(1);
 
+#if FLAX_EDITOR
             var style = Style.Current;
             BackgroundColor = style.Background;
             BarColor = style.ProgressNormal;
-            BarMargin = new Margin(1);
+#endif
         }
 
         /// <inheritdoc />

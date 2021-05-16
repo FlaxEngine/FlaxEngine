@@ -235,6 +235,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
 
+#if FLAX_EDITOR
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
@@ -249,6 +250,7 @@ namespace FlaxEngine.GUI
             ArrowColorSelected = style.BackgroundSelected;
             ArrowColorHighlighted = style.Foreground;
             CheckedImage = new SpriteBrush(style.CheckBoxTick);
+#endif
         }
 
         /// <summary>
