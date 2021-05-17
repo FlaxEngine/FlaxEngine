@@ -48,7 +48,6 @@ void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* conte
 {
     ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
     bufferView = &View;
-
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
 }
 
@@ -58,7 +57,13 @@ void GPUBufferViewVulkan::DescriptorAsStorageBuffer(GPUContextVulkan* context, V
     buffer = Buffer;
     offset = 0;
     range = Size;
+    context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
+}
 
+void GPUBufferViewVulkan::DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+{
+    ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
+    bufferView = &View;
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
 }
 
@@ -103,7 +108,7 @@ bool GPUBufferVulkan::OnInit()
         bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     if (_desc.Flags & GPUBufferFlags::IndexBuffer)
         bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (IsStaging())
+    if (IsStaging() || _desc.Flags & GPUBufferFlags::UnorderedAccess)
         bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
     // Create buffer

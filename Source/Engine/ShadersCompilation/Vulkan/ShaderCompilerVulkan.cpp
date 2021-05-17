@@ -234,6 +234,13 @@ SpirvShaderResourceType GetTextureType(const glslang::TSampler& sampler)
     }
 }
 
+bool IsUavType(const glslang::TType& type)
+{
+    if (type.getQualifier().isReadOnly())
+        return false;
+    return (type.getBasicType() == glslang::EbtSampler && type.getSampler().isImage()) || (type.getQualifier().storage == glslang::EvqBuffer);
+}
+
 class DescriptorsCollector
 {
 public:
@@ -295,10 +302,20 @@ public:
             }
             else if (type.getSampler().dim == glslang::EsdBuffer)
             {
-                // Buffer SRV
-                descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-                resourceType = SpirvShaderResourceType::Buffer;
-                resourceBindingType = SpirvShaderResourceBindingType::SRV;
+                if (IsUavType(type))
+                {
+                    // Buffer UAV
+                    descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+                    resourceType = SpirvShaderResourceType::Buffer;
+                    resourceBindingType = SpirvShaderResourceBindingType::UAV;
+                }
+                else
+                {
+                    // Buffer SRV
+                    descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+                    resourceType = SpirvShaderResourceType::Buffer;
+                    resourceBindingType = SpirvShaderResourceBindingType::SRV;
+                }
             }
             else if (type.isTexture())
             {

@@ -79,7 +79,7 @@ public:
             stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             break;
         case VK_ACCESS_INDIRECT_COMMAND_READ_BIT:
-            stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            stageFlags = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
             break;
         case VK_ACCESS_TRANSFER_WRITE_BIT:
             stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;

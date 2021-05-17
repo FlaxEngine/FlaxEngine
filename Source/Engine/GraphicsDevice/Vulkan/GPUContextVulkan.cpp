@@ -491,6 +491,20 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             needsWrite |= dsWriter.WriteStorageBuffer(descriptorIndex, buffer, offset, range);
             break;
         }
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        {
+            // Unordered Access (Buffer)
+            auto ua = handles[descriptor.Slot];
+            if (!ua)
+            {
+                const auto dummy = _device->HelperResources.GetDummyBuffer();
+                ua = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
+            }
+            const VkBufferView* bufferView;
+            ua->DescriptorAsStorageTexelBuffer(this, bufferView);
+            needsWrite |= dsWriter.WriteStorageTexelBuffer(descriptorIndex, bufferView);
+            break;
+        }
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
         {
             // Constant Buffer
@@ -916,6 +930,8 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
 
 void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
 {
+    if (vertexBuffers.Length() == 0)
+        return;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     VkBuffer buffers[GPU_MAX_VB_BINDED];
     VkDeviceSize offsets[GPU_MAX_VB_BINDED];

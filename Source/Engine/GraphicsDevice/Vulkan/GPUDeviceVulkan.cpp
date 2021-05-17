@@ -146,9 +146,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 3: // Attachment 2 not written by fragment shader
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
-#if PLATFORM_ANDROID
         case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
-#endif
             return VK_FALSE;
         }
         break;
@@ -156,11 +154,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         switch (callbackData->messageIdNumber)
         {
         case 0: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
-#if PLATFORM_ANDROID
-            // TODO: implement preTransform for Android to improve swapchain presentation performance
-        case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation.
+        case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation. TODO: implement preTransform for Android to improve swapchain presentation performance
         case 101294395: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
-#endif
             return VK_FALSE;
         }
         break;
@@ -231,6 +226,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
 
     return VK_FALSE;
 }
+
 #endif
 
 void SetupDebugLayerCallback()
@@ -1705,7 +1701,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasGeometryShaders = false; // TODO: add geometry shaders support for Vulkan
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
-        limits.HasDrawIndirect = true;
+        limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthAsSRV = true;
