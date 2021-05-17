@@ -572,6 +572,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         }
 
         context->ResetRenderTarget();
+        context->BindCB(0, cb0);
     }
 
     // Render Lights

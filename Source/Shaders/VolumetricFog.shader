@@ -50,7 +50,7 @@ float4 FogParameters;
 
 float4x4 PrevWorldToClip;
 
-float4 FrameJitterOffsets[8]; 
+float4 FrameJitterOffsets[8];
 
 LightData DirectionalLight;
 LightShadowData DirectionalLightShadow;
