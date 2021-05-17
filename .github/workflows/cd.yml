@@ -60,7 +60,7 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        .\PackageEditor.sh -arch=x64 -platform=Linux
+        ./PackageEditor.sh -arch=x64 -platform=Linux
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
@@ -84,7 +84,7 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        .\PackagePlatforms.sh -arch=x64 -platform=Linux
+        ./PackagePlatforms.sh -arch=x64 -platform=Linux
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
