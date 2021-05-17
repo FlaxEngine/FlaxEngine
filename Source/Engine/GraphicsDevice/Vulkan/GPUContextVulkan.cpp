@@ -1092,14 +1092,24 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
 
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    // TODO: implement it
-    MISSING_CODE("GPUContextVulkan::DrawInstancedIndirect");
+    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+
+    auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    OnDrawCall();
+    vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
+    RENDER_STAT_DRAW_CALL(0, 0);
 }
 
 void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    // TODO: implement it
-    MISSING_CODE("GPUContextVulkan::DrawIndexedInstancedIndirect");
+    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+
+    auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    OnDrawCall();
+    vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
+    RENDER_STAT_DRAW_CALL(0, 0);
 }
 
 void GPUContextVulkan::SetViewport(const Viewport& viewport)

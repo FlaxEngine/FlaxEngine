@@ -1705,7 +1705,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasGeometryShaders = false; // TODO: add geometry shaders support for Vulkan
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
-        limits.HasDrawIndirect = false; // TODO: add Draw Indirect support for Vulkan
+        limits.HasDrawIndirect = true;
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthAsSRV = true;
