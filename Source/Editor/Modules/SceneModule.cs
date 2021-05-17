@@ -414,6 +414,26 @@ namespace FlaxEditor.Modules
                 Editor.Log($"Cleanup graph for scene \'{scene.Name}\'");
 
                 // Cleanup
+                var selection = Editor.SceneEditing.Selection;
+                var hasSceneSelection = false;
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    if (selection[i].ParentScene == node)
+                    {
+                        hasSceneSelection = true;
+                        break;
+                    }
+                }
+                if (hasSceneSelection)
+                {
+                    var newSelection = new List<SceneGraphNode>();
+                    for (int i = 0; i < selection.Count; i++)
+                    {
+                        if (selection[i].ParentScene != node)
+                            newSelection.Add(selection[i]);
+                    }
+                    Editor.SceneEditing.Select(newSelection);
+                }
                 node.Dispose();
             }
         }
