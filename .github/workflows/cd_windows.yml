@@ -4,7 +4,7 @@ on: [push]
 jobs:
 
   # Editor
-  package-windows:
+  package-windows-editor:
     name: Editor (Windows, Development x64)
     runs-on: "windows-latest"
     steps:
@@ -16,7 +16,25 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        .\PackageAll.bat -arch=x64 -platform=Windows
+        .\PackageEditor.bat -arch=x64 -platform=Windows
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: Package_*/*
+  package-windows-game:
+    name: Game (Windows, Development x64)
+    runs-on: "windows-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\PackagePlatforms.bat -arch=x64 -platform=Windows
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
