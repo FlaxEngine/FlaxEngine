@@ -19,12 +19,12 @@ namespace FlaxEngine
         private static readonly List<Plugin> _editorPlugins = new List<Plugin>();
 
         /// <summary>
-        /// Gets the loaded and enabled game plugins.
+        /// Gets the game plugins.
         /// </summary>
         public static IReadOnlyList<GamePlugin> GamePlugins => _gamePlugins;
 
         /// <summary>
-        /// Gets the loaded and enabled editor plugins.
+        /// Gets the editor plugins.
         /// </summary>
         public static IReadOnlyList<Plugin> EditorPlugins => _editorPlugins;
 
@@ -47,6 +47,11 @@ namespace FlaxEngine
         /// Occurs when plugin gets unloaded. It should not be used anymore.
         /// </summary>
         public static event PluginDelegate PluginUnloaded;
+
+        /// <summary>
+        /// Occurs when plugins collection gets edited (added or removed plugin).
+        /// </summary>
+        public static event Action PluginsChanged;
 
         /// <summary>
         /// Determines whether can load the specified plugin.
@@ -217,27 +222,37 @@ namespace FlaxEngine
                 InvokeInitialize(plugin);
             }
 #endif
+            PluginsChanged?.Invoke();
         }
 
         internal static void Internal_Dispose(Assembly assembly)
         {
+            bool changed = false;
+
             for (int i = _editorPlugins.Count - 1; i >= 0 && _editorPlugins.Count > 0; i--)
             {
-                if (_editorPlugins[i].GetType().Assembly == assembly)
+                var plugin = _editorPlugins[i];
+                if (plugin.GetType().Assembly == assembly)
                 {
-                    InvokeDeinitialize(_editorPlugins[i]);
+                    InvokeDeinitialize(plugin);
                     _editorPlugins.RemoveAt(i);
+                    changed = true;
                 }
             }
 
             for (int i = _gamePlugins.Count - 1; i >= 0 && _gamePlugins.Count > 0; i--)
             {
-                if (_gamePlugins[i].GetType().Assembly == assembly)
+                var plugin = _gamePlugins[i];
+                if (plugin.GetType().Assembly == assembly)
                 {
-                    InvokeDeinitialize(_gamePlugins[i]);
+                    InvokeDeinitialize(plugin);
                     _gamePlugins.RemoveAt(i);
+                    changed = true;
                 }
             }
+
+            if (changed)
+                PluginsChanged?.Invoke();
         }
 
         internal static void Internal_Dispose()
@@ -249,15 +264,19 @@ namespace FlaxEngine
 
             for (int i = _editorPlugins.Count - 1; i >= 0 && _editorPlugins.Count > 0; i--)
             {
-                InvokeDeinitialize(_editorPlugins[i]);
+                var plugin = _editorPlugins[i];
+                InvokeDeinitialize(plugin);
                 _editorPlugins.RemoveAt(i);
             }
 
             for (int i = _gamePlugins.Count - 1; i >= 0 && _gamePlugins.Count > 0; i--)
             {
-                InvokeDeinitialize(_gamePlugins[i]);
+                var plugin = _gamePlugins[i];
+                InvokeDeinitialize(plugin);
                 _gamePlugins.RemoveAt(i);
             }
+
+            PluginsChanged?.Invoke();
         }
     }
 }
