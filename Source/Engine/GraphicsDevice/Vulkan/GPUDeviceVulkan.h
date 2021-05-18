@@ -235,6 +235,7 @@ public:
     MSAALevel MSAA;
     bool ReadDepth;
     bool WriteDepth;
+    bool BlendEnable;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
     VkExtent2D Extent;

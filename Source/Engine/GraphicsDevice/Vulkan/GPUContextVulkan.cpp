@@ -338,6 +338,7 @@ void GPUContextVulkan::BeginRenderPass()
     framebufferKey.AttachmentCount = _rtCount;
     RenderTargetLayoutVulkan layout;
     layout.RTsCount = _rtCount;
+    layout.BlendEnable = _currentState && _currentState->BlendEnable;
     layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
     {

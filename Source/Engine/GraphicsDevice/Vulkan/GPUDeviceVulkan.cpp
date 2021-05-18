@@ -427,6 +427,7 @@ uint32 GetHash(const RenderTargetLayoutVulkan& key)
     uint32 hash = (int32)key.MSAA * 11;
     CombineHash(hash, (uint32)key.ReadDepth);
     CombineHash(hash, (uint32)key.WriteDepth);
+    CombineHash(hash, (uint32)key.BlendEnable);
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
     CombineHash(hash, key.RTsCount * 136);
     CombineHash(hash, key.Extent.width);
@@ -505,8 +506,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.flags = 0;
         attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        //attachment.loadOp = currentBlendDesc->BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE; // TODO: Only if any destination blend?
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: only load when using blend mode
+        attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
