@@ -346,7 +346,6 @@ void GPUContextVulkan::BeginRenderPass()
         {
             layout.RTVsFormats[i] = handle->GetFormat();
             framebufferKey.Attachments[i] = handle->GetFramebufferView();
-
             AddImageBarrier(handle, handle->LayoutRTV);
         }
         else
@@ -355,36 +354,31 @@ void GPUContextVulkan::BeginRenderPass()
             framebufferKey.Attachments[i] = VK_NULL_HANDLE;
         }
     }
+    GPUTextureViewVulkan* handle;
     if (_rtDepth)
     {
-        auto handle = _rtDepth;
-        layout.MSAA = handle->GetMSAA();
-        layout.Extent = handle->Extent;
+        handle = _rtDepth;
         layout.ReadDepth = true; // TODO: use proper depthStencilAccess flags
         layout.WriteDepth = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // TODO: do it in a proper way
         framebufferKey.AttachmentCount++;
         framebufferKey.Attachments[_rtCount] = handle->GetFramebufferView();
-
         AddImageBarrier(handle, handle->LayoutRTV);
-    }
-    else if (_rtHandles[0])
-    {
-        layout.MSAA = _rtHandles[0]->GetMSAA();
-        layout.Extent = _rtHandles[0]->Extent;
-        layout.ReadDepth = false;
-        layout.WriteDepth = false;
     }
     else
     {
-        // No depth or render target binded?
-        CRASH;
+        handle = _rtHandles[0];
+        layout.ReadDepth = false;
+        layout.WriteDepth = false;
     }
+    layout.MSAA = handle->GetMSAA();
+    layout.Extent.width = handle->Extent.width;
+    layout.Extent.height = handle->Extent.height;
+    layout.Layers = handle->Layers;
 
     // Get or create objects
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     framebufferKey.RenderPass = renderPass;
-    uint32 layers = 1; // TODO: support rendering to many layers (eg. texture array)
-    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layers);
+    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layout.Layers);
     _renderPass = renderPass;
 
     FlushBarriers();
@@ -519,7 +513,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
         }
         default:
             // Unknown or invalid descriptor type
-        CRASH;
+            CRASH;
             break;
         }
     }

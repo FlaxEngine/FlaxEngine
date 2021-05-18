@@ -51,6 +51,7 @@ public:
     VkImageView View = VK_NULL_HANDLE;
     VkImageView ViewFramebuffer = VK_NULL_HANDLE;
     VkExtent3D Extent;
+    uint32 Layers;
     VkImageViewCreateInfo Info;
     int32 SubresourceIndex;
     VkImageLayout LayoutRTV;

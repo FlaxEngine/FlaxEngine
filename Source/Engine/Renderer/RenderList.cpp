@@ -695,7 +695,7 @@ DRAW:
             if (drawCall.InstanceCount == 0)
             {
                 // No support for batching indirect draw calls
-                ASSERT(batch.BatchSize == 1);
+                ASSERT_LOW_LAYER(batch.BatchSize == 1);
 
                 context->BindVB(ToSpan(vb, vbCount), vbOffsets);
                 context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
