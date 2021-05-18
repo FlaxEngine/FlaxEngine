@@ -259,6 +259,9 @@ META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Quad_VS2GS VS_WriteToSlice(float2 position : POSITION0, float2 texCoord : TEXCOORD0, uint layerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;
+#if VULKAN
+	position.y = position.y * -1.0f;
+#endif
 	output.Vertex.Position = float4(position, 0, 1);
 	output.Vertex.TexCoord = texCoord;
 	output.LayerIndex = layerIndex;
