@@ -82,10 +82,8 @@ namespace FlaxEngine
             //return !pluginDesc.DisabledByDefault;
         }
 
-        /// <summary>
-        /// Initialize all <see cref="GamePlugin"/>
-        /// </summary>
-        public static void InitializeGamePlugins()
+#if FLAX_EDITOR
+        internal static void InitializeGamePlugins()
         {
             for (var i = 0; i < _gamePlugins.Count; i++)
             {
@@ -93,16 +91,14 @@ namespace FlaxEngine
             }
         }
 
-        /// <summary>
-        /// Deinitialize all <see cref="GamePlugin"/>
-        /// </summary>
-        public static void DeinitializeGamePlugins()
+        internal static void DeinitializeGamePlugins()
         {
             for (var i = _gamePlugins.Count - 1; i >= 0; i--)
             {
                 InvokeDeinitialize(_gamePlugins[i]);
             }
         }
+#endif
 
         private static void InvokeInitialize(Plugin plugin)
         {
