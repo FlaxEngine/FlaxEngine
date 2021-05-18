@@ -54,6 +54,38 @@ namespace FlaxEngine.GUI
             }
         }
 
+        /// <summary>
+        /// Min scale value, anything below will get scaled up to fid this size
+        /// </summary>
+        public Vector2 MinCustomScaler = Vector2.Zero;
+        /// <summary>
+        /// Max scale value, anything above will get scaled down to fit this size
+        /// </summary>
+        public Vector2 MaxCustomScaler = Vector2.Maximum;
+        /// <summary>
+        /// Helper value to determine the custom scale;
+        /// </summary>
+        public Vector2 CustomScaler
+        {
+            get
+            {
+                Vector2 outVal = Vector2.One;
+                Vector2 size = base.Size;
+                Debug.Log(size);
+                if (size.X < MinCustomScaler.X)
+                    outVal.X = size.X / MinCustomScaler.X;
+                if (size.Y < MinCustomScaler.Y)
+                    outVal.Y = size.Y / MinCustomScaler.Y;
+
+                if (size.X > MaxCustomScaler.X)
+                    outVal.X = size.X / MaxCustomScaler.X;
+                if (size.Y > MaxCustomScaler.Y)
+                    outVal.Y = size.Y / MaxCustomScaler.Y;
+                Debug.Log(outVal);
+                return outVal;
+            }
+        }
+
         /// <inheritdoc />
         public override Vector2 TrackingMouseOffset => Vector2.Zero;
 
@@ -115,6 +147,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Vector2 PointToParent(ref Vector2 location)
         {
+            location *= CustomScaler;
             if (Is2D)
                 return base.PointToParent(ref location);
 
@@ -149,6 +182,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
@@ -158,6 +192,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
@@ -176,6 +211,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
@@ -203,6 +239,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -212,6 +249,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -221,6 +259,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseEnter(Vector2 location)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return;
 
@@ -242,6 +281,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return;
 
@@ -252,6 +292,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -261,6 +302,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseWheel(Vector2 location, float delta)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -270,6 +312,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchEnter(Vector2 location, int pointerId)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return;
 
@@ -279,6 +322,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnTouchDown(Vector2 location, int pointerId)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -288,6 +332,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchMove(Vector2 location, int pointerId)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return;
 
@@ -297,6 +342,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnTouchUp(Vector2 location, int pointerId)
         {
+            location /= CustomScaler;
             if (!_canvas.ReceivesEvents)
                 return false;
 
@@ -321,5 +367,48 @@ namespace FlaxEngine.GUI
         public override void DoDragDrop(DragData data)
         {
         }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            Vector3 scaling = new Vector3(CustomScaler, 1);
+            Matrix3x3.Scaling(ref scaling, out Matrix3x3 scale);
+            Render2D.PushTransform(scale);
+            base.Draw();
+            Render2D.PopTransform();
+        }
+
+        /// <inheritdoc />
+        public override Vector2 PointFromParent(ref Vector2 location)
+        {
+            location /= CustomScaler;
+            return base.PointFromParent(ref location);
+        }
+        /// <inheritdoc />
+        public override Vector2 PointFromScreen(Vector2 location)
+        {
+            location /= CustomScaler;
+            return base.PointFromScreen(location);
+        }
+        /// <inheritdoc />
+        public override Vector2 PointToScreen(Vector2 location)
+        {
+            location *= CustomScaler;
+            return base.PointToScreen(location);
+        }
+        /// <inheritdoc />
+        public override bool IntersectsContent(ref Vector2 locationParent, out Vector2 location)
+        {
+            locationParent /= CustomScaler;
+            return base.IntersectsContent(ref locationParent, out location);
+        }
+        /*
+        /// <inheritdoc />
+        public override void OnParentResized()
+        {
+            Size = base.Size / CustomScaler;
+            base.OnParentResized();
+        }
+        */
     }
 }

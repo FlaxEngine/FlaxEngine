@@ -109,7 +109,11 @@ namespace FlaxEngine
 
                     // Reset size
                     if (previous == CanvasRenderMode.ScreenSpace || (_renderMode == CanvasRenderMode.WorldSpace || _renderMode == CanvasRenderMode.WorldSpaceFaceCamera))
+                    {
                         Size = new Vector2(500, 500);
+                        MaxCustomScaler = Vector2.Maximum;
+                        MinCustomScaler = Vector2.Zero;
+                    }
                 }
             }
         }
@@ -147,6 +151,8 @@ namespace FlaxEngine
 
 #if FLAX_EDITOR
         private bool Editor_Is3D => _renderMode != CanvasRenderMode.ScreenSpace;
+
+        private bool Editor_IsScreenSpace => _renderMode == CanvasRenderMode.ScreenSpace;
 
         private bool Editor_IsWorldSpace => _renderMode == CanvasRenderMode.WorldSpace || _renderMode == CanvasRenderMode.WorldSpaceFaceCamera;
 
@@ -188,6 +194,26 @@ namespace FlaxEngine
         /// </summary>
         [EditorOrder(60), Limit(0.01f), EditorDisplay("Canvas"), VisibleIf("Editor_IsCameraSpace"), Tooltip("Distance from the RenderCamera to place the plane with GUI. If the screen is resized, changes resolution, or the camera frustum changes, the Canvas will automatically change size to match as well.")]
         public float Distance { get; set; } = 500;
+
+        /// <summary>
+        /// Min scale value, anything above will get scaled up to fit this size
+        /// </summary>
+        [EditorOrder(70), Limit(0.01f), EditorDisplay("Canvas"), VisibleIf("Editor_IsScreenSpace"), Tooltip("Min scale value, anything above will get scaled up to fit this size.")]
+        public Vector2 MinCustomScaler
+        {
+            get => GUI.MinCustomScaler;
+            set => GUI.MinCustomScaler = value;
+        }
+
+        /// <summary>
+        /// Max scale value, anything above will get scaled down to fit this size
+        /// </summary>
+        [EditorOrder(80), Limit(0.01f), EditorDisplay("Canvas"), VisibleIf("Editor_IsScreenSpace"), Tooltip("Max scale value, anything above will get scaled down to fit this size.")]
+        public Vector2 MaxCustomScaler
+        {
+            get => GUI.MaxCustomScaler;
+            set => GUI.MaxCustomScaler = value;
+        }
 
         /// <summary>
         /// Gets the canvas GUI root control.
@@ -541,6 +567,24 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
                 }
+                if( RenderMode == CanvasRenderMode.ScreenSpace)
+                {
+                    jsonWriter.WritePropertyName("MaxCustomScaler");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(MaxCustomScaler.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(MaxCustomScaler.Y);
+                    jsonWriter.WriteEndObject();
+
+                    jsonWriter.WritePropertyName("MinCustomScaler");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(MinCustomScaler.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(MinCustomScaler.Y);
+                    jsonWriter.WriteEndObject();
+                }
 
                 jsonWriter.WriteEndObject();
             }
@@ -613,6 +657,26 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Size.X);
                     jsonWriter.WritePropertyName("Y");
                     jsonWriter.WriteValue(Size.Y);
+                    jsonWriter.WriteEndObject();
+                }
+                if (RenderMode == CanvasRenderMode.ScreenSpace && MaxCustomScaler != other.MaxCustomScaler)
+                {
+                    jsonWriter.WritePropertyName("MaxCustomScaler");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(MaxCustomScaler.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(MaxCustomScaler.Y);
+                    jsonWriter.WriteEndObject();
+                }
+                if (RenderMode == CanvasRenderMode.ScreenSpace && MinCustomScaler != other.MinCustomScaler)
+                {
+                    jsonWriter.WritePropertyName("MinCustomScaler");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(MinCustomScaler.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(MinCustomScaler.Y);
                     jsonWriter.WriteEndObject();
                 }
 
