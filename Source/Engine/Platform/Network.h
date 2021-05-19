@@ -15,7 +15,7 @@
 #elif PLATFORM_ANDROID
 #include "Unix/UnixNetwork.h"
 #elif PLATFORM_SWITCH
-#include "Base/NetworkBase.h"
+#include "Platforms/Switch/Engine/Platform/SwitchNetwork.h"
 #else
 #error Missing Network implementation!
 #endif

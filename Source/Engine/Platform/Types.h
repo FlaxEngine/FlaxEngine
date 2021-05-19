@@ -160,8 +160,8 @@ class SwitchThread;
 typedef SwitchThread Thread;
 class SwitchWindow;
 typedef SwitchWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class SwitchNetwork;
+typedef SwitchNetwork Network;
 
 #else
 
