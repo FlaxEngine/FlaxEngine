@@ -15,6 +15,12 @@ namespace FlaxEngine.GUI
         public GPUTexture Texture;
 
         /// <summary>
+        /// The texture sampling filter mode.
+        /// </summary>
+        [ExpandGroups, Tooltip("The texture sampling filter mode.")]
+        public BrushFilter Filter = BrushFilter.Linear;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GPUTextureBrush"/> class.
         /// </summary>
         public GPUTextureBrush()
@@ -36,7 +42,10 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)
         {
-            Render2D.DrawTexture(Texture, rect, color);
+            if (Filter == BrushFilter.Point)
+                Render2D.DrawTexturePoint(Texture, rect, color);
+            else
+                Render2D.DrawTexture(Texture, rect, color);
         }
     }
 }
