@@ -81,7 +81,10 @@ namespace Flax.Deploy
             Utilities.WriteFileIfChanged(Path.Combine(Globals.EngineRoot, "Source/Engine/Core/Config.Gen.h"), buildConfigHeader.ToString());
 
             // Prepare the package output
-            PackageOutputPath = Path.Combine(Globals.EngineRoot, string.Format("Package_{0}_{1:00}_{2:00000}", VersionMajor, VersionMinor, VersionBuild));
+            if (string.IsNullOrEmpty(Configuration.DeployOutput))
+                PackageOutputPath = Path.Combine(Globals.EngineRoot, string.Format("Package_{0}_{1:00}_{2:00000}", VersionMajor, VersionMinor, VersionBuild));
+            else
+                PackageOutputPath = Configuration.DeployOutput;
             if (!Directory.Exists(PackageOutputPath))
                 Directory.CreateDirectory(PackageOutputPath);
 
