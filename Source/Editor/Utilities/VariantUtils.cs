@@ -56,7 +56,7 @@ namespace FlaxEditor.Utilities
             Int2,
             Int3,
             Int4,
-            
+
             Int16,
             Uint16,
         }
