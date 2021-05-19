@@ -82,8 +82,8 @@ namespace Flax.Deploy
 
             // Prepare the package output
             PackageOutputPath = Path.Combine(Globals.EngineRoot, string.Format("Package_{0}_{1:00}_{2:00000}", VersionMajor, VersionMinor, VersionBuild));
-            Utilities.DirectoryDelete(PackageOutputPath);
-            Directory.CreateDirectory(PackageOutputPath);
+            if (!Directory.Exists(PackageOutputPath))
+                Directory.CreateDirectory(PackageOutputPath);
 
             Log.Info(string.Empty);
             Log.Info(string.Empty);
