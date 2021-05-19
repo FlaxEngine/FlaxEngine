@@ -1,0 +1,92 @@
+name: Continous Deployment
+on: [push]
+
+jobs:
+
+  # Editor
+  package-windows-editor:
+    name: Editor (Windows)
+    runs-on: "windows-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\PackageEditor.bat -arch=x64 -platform=Windows
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Windows-Editor
+        path: Package_*/*
+  package-windows-game:
+    name: Game (Windows)
+    runs-on: "windows-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\PackagePlatforms.bat -arch=x64 -platform=Windows
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Windows-Game
+        path: Package_*/*
+
+  # Editor
+  package-linux-editor:
+    name: Editor (Linux)
+    runs-on: "ubuntu-20.04"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Install dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/*
+        sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Build
+      run: |
+        ./PackageEditor.sh -arch=x64 -platform=Linux
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Linux-Editor
+        path: Package_*/*
+  package-linux-game:
+    name: Game (Linux)
+    runs-on: "ubuntu-20.04"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Install dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/*
+        sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Build
+      run: |
+        ./PackagePlatforms.sh -arch=x64 -platform=Linux
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Linux-Game
+        path: Package_*/*
