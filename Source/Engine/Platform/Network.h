@@ -9,7 +9,7 @@
 #elif PLATFORM_LINUX
 #include "Unix/UnixNetwork.h"
 #elif PLATFORM_PS4
-#include "Base/NetworkBase.h"
+#include "Platforms/PS4/Engine/Platform/PS4Network.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Win32/Win32Network.h"
 #elif PLATFORM_ANDROID

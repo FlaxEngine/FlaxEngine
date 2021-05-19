@@ -91,8 +91,8 @@ class PS4Thread;
 typedef PS4Thread Thread;
 class PS4Window;
 typedef PS4Window Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class PS4Network;
+typedef PS4Network Network;
 
 #elif PLATFORM_XBOX_SCARLETT
 
