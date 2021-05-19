@@ -16,6 +16,7 @@ namespace Flax.Deploy
         public static int VersionMajor;
         public static int VersionMinor;
         public static int VersionBuild;
+        public static TargetConfiguration[] Configurations;
 
         public static bool Run()
         {
@@ -64,6 +65,8 @@ namespace Flax.Deploy
 
         static void Initialize()
         {
+            Configurations = Configuration.BuildConfigurations != null ? Configuration.BuildConfigurations : new[] { TargetConfiguration.Debug, TargetConfiguration.Development, TargetConfiguration.Release };
+
             // Read the current engine version
             var engineVersion = EngineTarget.EngineVersion;
             VersionMajor = engineVersion.Major;
@@ -107,9 +110,10 @@ namespace Flax.Deploy
         private static void BuildEditor()
         {
             var targetPlatform = Platform.BuildPlatform.Target;
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Debug);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Development);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Release);
+            foreach (var configuration in Configurations)
+            {
+                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, configuration);
+            }
         }
 
         private static bool CannotBuildPlatform(TargetPlatform platform)
@@ -132,9 +136,10 @@ namespace Flax.Deploy
             {
                 if (Platform.IsPlatformSupported(platform, architecture))
                 {
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Debug);
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Development);
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Release);
+                    foreach (var configuration in Configurations)
+                    {
+                        FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, configuration);
+                    }
                 }
             }
 
