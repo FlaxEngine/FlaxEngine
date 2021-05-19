@@ -55,7 +55,10 @@ namespace FlaxEditor.Utilities
 
             Int2,
             Int3,
-            Int4
+            Int4,
+            
+            Int16,
+            Uint16,
         }
 
         internal static VariantType ToVariantType(this Type type)
@@ -67,6 +70,10 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Void;
             else if (type == typeof(bool))
                 variantType = VariantType.Bool;
+            else if (type == typeof(short))
+                variantType = VariantType.Int16;
+            else if (type == typeof(ushort))
+                variantType = VariantType.Uint16;
             else if (type == typeof(int))
                 variantType = VariantType.Int;
             else if (type == typeof(uint))
@@ -242,6 +249,8 @@ namespace FlaxEditor.Utilities
             case VariantType.Null: return ScriptType.Null;
             case VariantType.Void: return new ScriptType(typeof(void));
             case VariantType.Bool: return new ScriptType(typeof(bool));
+            case VariantType.Int16: return new ScriptType(typeof(short));
+            case VariantType.Uint16: return new ScriptType(typeof(ushort));
             case VariantType.Int: return new ScriptType(typeof(int));
             case VariantType.Uint: return new ScriptType(typeof(uint));
             case VariantType.Int64: return new ScriptType(typeof(long));
@@ -309,6 +318,8 @@ namespace FlaxEditor.Utilities
             case VariantType.Null: return null;
             case VariantType.Void: return typeof(void);
             case VariantType.Bool: return typeof(bool);
+            case VariantType.Int16: return typeof(short);
+            case VariantType.Uint16: return typeof(ushort);
             case VariantType.Int: return typeof(int);
             case VariantType.Uint: return typeof(uint);
             case VariantType.Int64: return typeof(long);
@@ -378,6 +389,8 @@ namespace FlaxEditor.Utilities
             case VariantType.ManagedObject:
             case VariantType.Void: return null;
             case VariantType.Bool: return stream.ReadByte() != 0;
+            case VariantType.Int16: return stream.ReadInt16();
+            case VariantType.Uint16: return stream.ReadUInt16();
             case VariantType.Int: return stream.ReadInt32();
             case VariantType.Uint: return stream.ReadUInt32();
             case VariantType.Int64: return stream.ReadInt64();
@@ -512,6 +525,12 @@ namespace FlaxEditor.Utilities
             {
             case VariantType.Bool:
                 stream.Write((byte)((bool)value ? 1 : 0));
+                break;
+            case VariantType.Int16:
+                stream.Write((short)value);
+                break;
+            case VariantType.Uint16:
+                stream.Write((ushort)value);
                 break;
             case VariantType.Int:
                 stream.Write((int)value);
@@ -686,6 +705,12 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Bool:
                 stream.WriteValue((bool)value);
+                break;
+            case VariantType.Int16:
+                stream.WriteValue((short)value);
+                break;
+            case VariantType.Uint16:
+                stream.WriteValue((ushort)value);
                 break;
             case VariantType.Int:
                 stream.WriteValue((int)value);
