@@ -156,7 +156,7 @@ public:
         Nullable<bool> ShaderDebug;
 
         /// <summary>
-        /// -game !scene! ( Scene to play, can be null to use default )
+        /// -game !scene! ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Game;
 
