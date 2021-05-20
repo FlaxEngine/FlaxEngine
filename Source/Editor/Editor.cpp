@@ -519,6 +519,7 @@ bool Editor::Init()
         return true;
     }
 
+    // Skip compilation if play on start
     if (CommandLine::Options.Game.HasValue())
     {
         CommandLine::Options.SkipCompile.SetValue(true);
@@ -539,6 +540,7 @@ bool Editor::Init()
     // Initialize managed editor
     Managed->Init();
 
+    // Start play if requested by cmd line
     if (CommandLine::Options.Game.HasValue())
     {
         Managed->RequestStartPlay();
