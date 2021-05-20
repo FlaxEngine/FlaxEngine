@@ -543,7 +543,7 @@ bool Editor::Init()
     // Start play if requested by cmd line
     if (CommandLine::Options.Game.HasValue())
     {
-        Managed->RequestStartPlay();
+        Managed->RequestStartPlayOnEditMode();
     }
     
     return false;
