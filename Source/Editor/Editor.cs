@@ -46,6 +46,7 @@ namespace FlaxEditor
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
         private string _projectToOpen;
         private float _lastAutoSaveTimer;
+        private Guid _startupSceneCmdLine;
 
         private const string ProjectDataLastScene = "LastScene";
         private const string ProjectDataLastSceneSpawn = "LastSceneSpawn";
@@ -271,14 +272,11 @@ namespace FlaxEditor
                 module.OnEndInit();
         }
 
-        private Guid _startupSceneArgument;
-        
-        internal void Init(bool isHeadless, bool skipCompile, Guid sceneId)
+        internal void Init(bool isHeadless, bool skipCompile, Guid startupScene)
         {
-            Debug.Log("sceneId string : " + JsonSerializer.GetStringID(sceneId));
             EnsureState<LoadingState>();
             _isHeadlessMode = isHeadless;
-            _startupSceneArgument = sceneId;
+            _startupSceneCmdLine = startupScene;
             Log("Editor init");
             if (isHeadless)
                 Log("Running in headless mode");
@@ -338,11 +336,11 @@ namespace FlaxEditor
             // Load scene
             
             // scene cmd line argument
-            var scene = ContentDatabase.Find(_startupSceneArgument);
+            var scene = ContentDatabase.Find(_startupSceneCmdLine);
             if (scene is SceneItem)
             {
                 Editor.Log("Loading scene specified in command line");
-                Scene.OpenScene(_startupSceneArgument);
+                Scene.OpenScene(_startupSceneCmdLine);
                 return;
             }
 
