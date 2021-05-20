@@ -488,7 +488,7 @@ bool ManagedEditor::OnAppExit()
     return MUtils::Unbox<bool>(Internal_OnAppExit->Invoke(GetManagedInstance(), nullptr, nullptr));
 }
 
-void ManagedEditor::RequestStartPlay()
+void ManagedEditor::RequestStartPlayOnEditMode()
 {
     if (!HasManagedInstance())
         return;

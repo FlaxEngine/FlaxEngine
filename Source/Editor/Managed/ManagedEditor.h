@@ -134,9 +134,9 @@ public:
     bool OnAppExit();
 
     /// <summary>
-    /// Requests switch to play mode.
+    /// Requests play mode when the editor is in edit mode ( once ).
     /// </summary>
-    void RequestStartPlay();
+    void RequestStartPlayOnEditMode();
 
 private:
 
