@@ -1307,6 +1307,11 @@ namespace FlaxEditor
             AnimGraphDebugFlow?.Invoke(debugFlow);
         }
 
+        internal static void Internal_RequestStartPlay()
+        {
+            Instance.Simulation.RequestStartPlay();
+        }
+        
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int Internal_ReadOutputLogs(string[] outMessages, byte[] outLogTypes, long[] outLogTimes);
 
