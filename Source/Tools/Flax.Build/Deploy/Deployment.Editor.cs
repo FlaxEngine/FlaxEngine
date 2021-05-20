@@ -41,9 +41,8 @@ namespace Flax.Deploy
                 Log.Info(string.Empty);
 
                 // Deploy binaries
-                DeployEditorBinaries(TargetConfiguration.Debug);
-                DeployEditorBinaries(TargetConfiguration.Development);
-                DeployEditorBinaries(TargetConfiguration.Release);
+                foreach (var configuration in Deployer.Configurations)
+                    DeployEditorBinaries(configuration);
                 {
                     var binariesSubDir = "Binaries/Tools";
                     var src = Path.Combine(RootPath, binariesSubDir);
