@@ -363,7 +363,8 @@ void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
 
 void Mesh::Render(GPUContext* context) const
 {
-    ASSERT(IsInitialized());
+    if (!IsInitialized())
+        return;
 
     context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
     context->BindIB(_indexBuffer);
@@ -372,7 +373,7 @@ void Mesh::Render(GPUContext* context) const
 
 void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom) const
 {
-    if (!material || !material->IsSurface())
+    if (!material || !material->IsSurface() || !IsInitialized())
         return;
 
     // Submit draw call
@@ -403,6 +404,9 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
+    if (!IsInitialized())
+        return;
+    
     // Cache data
     const auto& entry = info.Buffer->At(_materialSlotIndex);
     if (!entry.Visible || !IsInitialized())
