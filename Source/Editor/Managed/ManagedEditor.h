@@ -133,6 +133,11 @@ public:
     /// <returns>True if exit engine, otherwise false.</returns>
     bool OnAppExit();
 
+    /// <summary>
+    /// Requests switch to play mode.
+    /// </summary>
+    void RequestStartPlay();
+
 private:
 
     void OnEditorAssemblyLoaded(MAssembly* assembly);
