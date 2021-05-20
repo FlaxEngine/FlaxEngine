@@ -2,7 +2,7 @@ name: Continuous Deployment
 on:
   schedule:
     - cron: '15 4 * * *'
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
 
