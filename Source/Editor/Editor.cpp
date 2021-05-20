@@ -519,6 +519,11 @@ bool Editor::Init()
         return true;
     }
 
+    if (CommandLine::Options.Game.HasValue())
+    {
+        CommandLine::Options.SkipCompile.SetValue(true);
+    }
+    
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
 
@@ -534,6 +539,11 @@ bool Editor::Init()
     // Initialize managed editor
     Managed->Init();
 
+    if (CommandLine::Options.Game.HasValue())
+    {
+        Managed->RequestStartPlay();
+    }
+    
     return false;
 }
 
