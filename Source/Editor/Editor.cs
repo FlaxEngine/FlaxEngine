@@ -1320,9 +1320,18 @@ namespace FlaxEditor
             AnimGraphDebugFlow?.Invoke(debugFlow);
         }
 
-        internal static void Internal_RequestStartPlay()
+        private static void RequestStartPlayOnStartup()
         {
-            Instance.Simulation.RequestStartPlay();
+            if (Instance.StateMachine.IsEditMode)
+            {
+                Instance.Simulation.RequestStartPlay();
+                Instance.StateMachine.StateChanged -= RequestStartPlayOnStartup;
+            }
+        }
+        
+        internal static void Internal_RequestStartPlayOnStartup()
+        {
+            Instance.StateMachine.StateChanged += RequestStartPlayOnStartup;
         }
         
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -35,7 +35,7 @@ MMethod* Internal_GetGameWindowSize = nullptr;
 MMethod* Internal_OnAppExit = nullptr;
 MMethod* Internal_OnVisualScriptingDebugFlow = nullptr;
 MMethod* Internal_OnAnimGraphDebugFlow = nullptr;
-MMethod* Internal_RequestStartPlay = nullptr;
+MMethod* Internal_RequestStartPlayOnStartup = nullptr;
 
 void OnLightmapsBake(ShadowsOfMordor::BuildProgressStep step, float stepProgress, float totalProgress, bool isProgressEvent)
 {
@@ -232,7 +232,7 @@ void ManagedEditor::Init()
     args[0] = &isHeadless;
     args[1] = &skipCompile;
     Guid sceneId;
-    if (Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId))
+    if (CommandLine::Options.Game.HasValue() && Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId))
     {
         sceneId = Guid::Empty;
     }
@@ -492,12 +492,12 @@ void ManagedEditor::RequestStartPlay()
 {
     if (!HasManagedInstance())
         return;
-    if (Internal_RequestStartPlay == nullptr)
+    if (Internal_RequestStartPlayOnStartup == nullptr)
     {
-        Internal_RequestStartPlay = GetClass()->GetMethod("Internal_RequestStartPlay");
-        ASSERT(Internal_RequestStartPlay);
+        Internal_RequestStartPlayOnStartup = GetClass()->GetMethod("Internal_RequestStartPlayOnStartup");
+        ASSERT(Internal_RequestStartPlayOnStartup);
     }
-    Internal_RequestStartPlay->Invoke(GetManagedInstance(), nullptr, nullptr);
+    Internal_RequestStartPlayOnStartup->Invoke(GetManagedInstance(), nullptr, nullptr);
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
