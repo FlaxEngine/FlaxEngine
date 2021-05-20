@@ -1329,7 +1329,7 @@ namespace FlaxEditor
             }
         }
         
-        internal static void Internal_RequestStartPlayOnStartup()
+        internal static void Internal_RequestStartPlayOnEditMode()
         {
             Instance.StateMachine.StateChanged += RequestStartPlayOnStartup;
         }
