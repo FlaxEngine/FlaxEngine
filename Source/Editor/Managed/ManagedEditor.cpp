@@ -210,7 +210,7 @@ ManagedEditor::~ManagedEditor()
 void ManagedEditor::Init()
 {
     // Note: editor modules should perform quite fast init, any longer things should be done in async during 'editor splash screen time
-    void* args[2];
+    void* args[3];
     MClass* mclass = GetClass();
     if (mclass == nullptr)
     {
@@ -231,6 +231,12 @@ void ManagedEditor::Init()
     bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
     args[0] = &isHeadless;
     args[1] = &skipCompile;
+    Guid sceneId;
+    if (Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId))
+    {
+        sceneId = Guid::Empty;
+    }
+    args[2] = CommandLine::Options.Game.HasValue() ? &sceneId : nullptr;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
