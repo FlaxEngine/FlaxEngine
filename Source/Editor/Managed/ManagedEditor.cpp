@@ -35,6 +35,7 @@ MMethod* Internal_GetGameWindowSize = nullptr;
 MMethod* Internal_OnAppExit = nullptr;
 MMethod* Internal_OnVisualScriptingDebugFlow = nullptr;
 MMethod* Internal_OnAnimGraphDebugFlow = nullptr;
+MMethod* Internal_RequestStartPlay = nullptr;
 
 void OnLightmapsBake(ShadowsOfMordor::BuildProgressStep step, float stepProgress, float totalProgress, bool isProgressEvent)
 {
@@ -479,6 +480,18 @@ bool ManagedEditor::OnAppExit()
         ASSERT(Internal_OnAppExit);
     }
     return MUtils::Unbox<bool>(Internal_OnAppExit->Invoke(GetManagedInstance(), nullptr, nullptr));
+}
+
+void ManagedEditor::RequestStartPlay()
+{
+    if (!HasManagedInstance())
+        return;
+    if (Internal_RequestStartPlay == nullptr)
+    {
+        Internal_RequestStartPlay = GetClass()->GetMethod("Internal_RequestStartPlay");
+        ASSERT(Internal_RequestStartPlay);
+    }
+    Internal_RequestStartPlay->Invoke(GetManagedInstance(), nullptr, nullptr);
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
