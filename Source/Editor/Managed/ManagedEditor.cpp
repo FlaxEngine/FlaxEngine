@@ -232,7 +232,7 @@ void ManagedEditor::Init()
     args[0] = &isHeadless;
     args[1] = &skipCompile;
     Guid sceneId;
-    if (CommandLine::Options.Game.HasValue() && Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId))
+    if (!CommandLine::Options.Game.HasValue() || (CommandLine::Options.Game.HasValue() && Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId)))
     {
         sceneId = Guid::Empty;
     }
