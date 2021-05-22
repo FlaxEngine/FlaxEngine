@@ -46,22 +46,35 @@ namespace Flax.Build
                     var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
                     var outputFile = Path.Combine(outputPath, binaryModuleName + ".CSharp.dll");
                     var outputDocFile = Path.Combine(outputPath, binaryModuleName + ".CSharp.xml");
-                    string monoRoot, exePath;
+                    string monoRoot, monoPath, cscPath;
                     switch (buildPlatform)
                     {
                     case TargetPlatform.Windows:
+                    {
                         monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
-                        exePath = Path.Combine(monoRoot, "bin", "mono.exe");
+
+                        // Prefer installed Roslyn C# compiler over Mono one
+                        monoPath = null;
+                        cscPath = Path.Combine(Path.GetDirectoryName(Deploy.VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
+                        
+                        if (!File.Exists(cscPath))
+                        {
+                            // Fallback to Mono binaries
+                            monoPath = Path.Combine(monoRoot, "bin", "mono.exe");
+                            cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
+                        }
                         break;
+                    }
                     case TargetPlatform.Linux:
                         monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
-                        exePath = Path.Combine(monoRoot, "bin", "mono");
+                        monoPath = Path.Combine(monoRoot, "bin", "mono");
+                        cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
                         break;
                     default: throw new InvalidPlatformException(buildPlatform);
                     }
-                    var cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
                     var referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
                     var references = new HashSet<string>(buildOptions.ScriptingAPI.FileReferences);
+
                     foreach (var module in binaryModule)
                     {
                         if (!buildData.Modules.TryGetValue(module, out var moduleBuildOptions))
@@ -147,10 +160,22 @@ namespace Flax.Build
                     task.PrerequisiteFiles.AddRange(references);
                     task.ProducedFiles.Add(outputFile);
                     task.WorkingDirectory = workspaceRoot;
-                    task.CommandPath = exePath;
-                    task.CommandArguments = $"\"{cscPath}\" /noconfig @\"{responseFile}\"";
                     task.InfoMessage = "Compiling " + outputFile;
                     task.Cost = task.PrerequisiteFiles.Count;
+
+                    if (monoPath != null)  
+                    {
+                        task.CommandPath = monoPath;
+                        task.CommandArguments = $"\"{cscPath}\" /noconfig @\"{responseFile}\"";
+                    }
+                    else
+                    {
+                        // The "/shared" flag enables the compiler server support:
+                        // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
+
+                        task.CommandPath = cscPath;
+                        task.CommandArguments = $"/noconfig /shared @\"{responseFile}\"";
+                    }
 
                     // Copy referenced assemblies
                     foreach (var reference in buildOptions.ScriptingAPI.FileReferences)
