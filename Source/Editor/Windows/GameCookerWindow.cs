@@ -43,6 +43,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.PS4, new PS4() },
                 { PlatformType.XboxScarlett, new XboxScarlett() },
                 { PlatformType.Android, new Android() },
+                { PlatformType.Switch, new Switch() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -57,10 +58,14 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.PS4].Init("Output/PS4", "PS4");
                 PerPlatformOptions[PlatformType.XboxScarlett].Init("Output/XboxScarlett", "XboxScarlett");
                 PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
+                PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
             }
 
             public abstract class Platform
             {
+                [HideInEditor]
+                public bool IsSupported;
+
                 [HideInEditor]
                 public bool IsAvailable;
 
@@ -92,6 +97,23 @@ namespace FlaxEditor.Windows
                 public virtual void Init(string output, string platformDataSubDir)
                 {
                     Output = output;
+
+                    // Check if can build on that platform
+#if PLATFORM_WINDOWS
+                    IsSupported = true;
+#elif PLATFORM_LINUX
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.LinuxX64:
+                        IsSupported = true;
+                        break;
+                    default:
+                        IsSupported = false;
+                        break;
+                    }
+#else
+#error "Unknown platform."
+#endif
 
                     // TODO: restore build settings from the Editor cache!
 
@@ -168,6 +190,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.AndroidARM64;
             }
 
+            public class Switch : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
+            }
+
             public class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -179,7 +206,11 @@ namespace FlaxEditor.Windows
                     _platform = proxy.Selector.Selected;
                     var platformObj = proxy.PerPlatformOptions[_platform];
 
-                    if (platformObj.IsAvailable)
+                    if (!platformObj.IsSupported)
+                    {
+                        layout.Label("This platform is not supported on this system.", TextAlignment.Center);
+                    }
+                    else if (platformObj.IsAvailable)
                     {
                         string name;
                         switch (_platform)
@@ -204,6 +235,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Android:
                             name = "Android";
+                            break;
+                        case PlatformType.Switch:
+                            name = "Switch";
                             break;
                         default:
                             name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());

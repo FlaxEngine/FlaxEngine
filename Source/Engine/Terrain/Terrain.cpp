@@ -2,7 +2,7 @@
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
-#include "Engine/Content/Assets/RawDataAsset.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"
@@ -10,6 +10,7 @@
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/PhysX/PxFiltering.h>
 
@@ -37,7 +38,7 @@ Terrain::~Terrain()
 void Terrain::UpdateBounds()
 {
     PROFILE_CPU();
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     for (int32 i = 0; i < _patches.Count(); i++)
     {
         auto patch = _patches[i];

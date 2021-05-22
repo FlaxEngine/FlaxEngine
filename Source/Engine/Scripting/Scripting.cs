@@ -158,11 +158,20 @@ namespace FlaxEngine
 
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            Localization.LocalizationChanged += OnLocalizationChanged;
 
+            OnLocalizationChanged();
             if (!Engine.IsEditor)
             {
                 CreateGuiStyle();
             }
+        }
+
+        private static void OnLocalizationChanged()
+        {
+            var currentThread = Thread.CurrentThread;
+            currentThread.CurrentUICulture = Localization.CurrentLanguage;
+            currentThread.CurrentCulture = Localization.CurrentCulture;
         }
 
         /// <summary>

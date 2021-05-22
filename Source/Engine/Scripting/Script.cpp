@@ -178,13 +178,15 @@ void Script::SetupType()
 {
     // Enable tick functions based on the method overriden in C# or Visual Script
     ScriptingTypeHandle typeHandle = GetTypeHandle();
-    _tickUpdate = _tickLateUpdate = _tickFixedUpdate = 0;
     while (typeHandle != Script::TypeInitializer)
     {
         auto& type = typeHandle.GetType();
-        _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
-        _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
-        _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
+        if (type.Script.ScriptVTable)
+        {
+            _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
+            _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
+            _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
+        }
         typeHandle = type.GetBaseType();
     }
 }

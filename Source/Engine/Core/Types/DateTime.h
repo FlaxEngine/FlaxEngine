@@ -3,7 +3,8 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "TimeSpan.h"
+#include "Engine/Core/Formatting.h"
+#include "Engine/Core/Templates.h"
 #include "Engine/Core/Enums.h"
 
 /// <summary>
@@ -21,11 +22,6 @@ DECLARE_ENUM_EX_12(MonthOfYear, int32, 1, January, February, March, April, May, 
 /// </summary>
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API DateTime
 {
-private:
-
-    static const int32 CachedDaysPerMonth[];
-    static const int32 CachedDaysToMonth[];
-
 public:
 
     /// <summary>
@@ -77,32 +73,11 @@ public:
 
 public:
 
-    DateTime operator+(const TimeSpan& other) const
-    {
-        return DateTime(Ticks + other.Ticks);
-    }
-
-    DateTime& operator+=(const TimeSpan& other)
-    {
-        Ticks += other.Ticks;
-        return *this;
-    }
-
-    TimeSpan operator-(const DateTime& other) const
-    {
-        return TimeSpan(Ticks - other.Ticks);
-    }
-
-    DateTime operator-(const TimeSpan& other) const
-    {
-        return DateTime(Ticks - other.Ticks);
-    }
-
-    DateTime& operator-=(const TimeSpan& other)
-    {
-        Ticks -= other.Ticks;
-        return *this;
-    }
+    DateTime operator+(const TimeSpan& other) const;
+    DateTime& operator+=(const TimeSpan& other);
+    TimeSpan operator-(const DateTime& other) const;
+    DateTime operator-(const TimeSpan& other) const;
+    DateTime& operator-=(const TimeSpan& other);
 
     bool operator==(const DateTime& other) const
     {
@@ -139,11 +114,7 @@ public:
     /// <summary>
     /// Gets the date part of this date. The time part is truncated and becomes 00:00:00.000.
     /// </summary>
-    /// <returns>A DateTime object containing the date.</returns>
-    DateTime GetDate() const
-    {
-        return DateTime(Ticks - Ticks % Constants::TicksPerDay);
-    }
+    DateTime GetDate() const;
 
     /// <summary>
     /// Gets the date components of this date.
@@ -156,106 +127,68 @@ public:
     /// <summary>
     /// Gets this date's day part (1 to 31).
     /// </summary>
-    /// <returns>The day of the month.</returns>
     int32 GetDay() const;
 
     /// <summary>
     /// Calculates this date's day of the week (Sunday - Saturday).
     /// </summary>
-    /// <returns>The week day.</returns>
     DayOfWeek GetDayOfWeek() const;
 
     /// <summary>
     /// Gets this date's day of the year.
     /// </summary>
-    /// <returns>The day of year.</returns>
     int32 GetDayOfYear() const;
 
     /// <summary>
     /// Gets this date's hour part in 24-hour clock format (0 to 23).
     /// </summary>
-    /// <returns>The hour.</returns>
-    int32 GetHour() const
-    {
-        return static_cast<int32>(Ticks / Constants::TicksPerHour % 24);
-    }
+    int32 GetHour() const;
 
     /// <summary>
     /// Gets this date's hour part in 12-hour clock format (1 to 12).
     /// </summary>
-    /// <returns>The hour in AM/PM format.</returns>
     int32 GetHour12() const;
 
     /// <summary>
     /// Gets the Julian Day for this date.
     /// </summary>
-    /// <remarks>
-    /// The Julian Day is the number of days since the inception of the Julian calendar at noon on Monday, January 1, 4713 B.C.E. The minimum Julian Day that can be represented in DateTime is 1721425.5, which corresponds to Monday, January 1, 0001 in the Gregorian calendar.
-    /// </remarks>
-    /// <returns>Julian Day.</returns>
-    double GetJulianDay() const
-    {
-        return 1721425.5 + static_cast<double>(Ticks) / Constants::TicksPerDay;
-    }
+    /// <remarks>The Julian Day is the number of days since the inception of the Julian calendar at noon on Monday, January 1, 4713 B.C.E. The minimum Julian Day that can be represented in DateTime is 1721425.5, which corresponds to Monday, January 1, 0001 in the Gregorian calendar.</remarks>
+    double GetJulianDay() const;
 
     /// <summary>
     /// Gets the Modified Julian day.
     /// </summary>
-    /// <remarks>
-    /// The Modified Julian Day is calculated by subtracting 2400000.5, which corresponds to midnight UTC on November 17, 1858 in the Gregorian calendar.
-    /// </remarks>
-    /// <returns>The Modified Julian Day.</returns>
-    double GetModifiedJulianDay() const
-    {
-        return GetJulianDay() - 2400000.5;
-    }
+    /// <remarks>The Modified Julian Day is calculated by subtracting 2400000.5, which corresponds to midnight UTC on November 17, 1858 in the Gregorian calendar.</remarks>
+    double GetModifiedJulianDay() const;
 
     /// <summary>
     /// Gets this date's millisecond part (0 to 999).
     /// </summary>
-    /// <returns>The millisecond.</returns>
-    int32 GetMillisecond() const
-    {
-        return static_cast<int32>(Ticks / Constants::TicksPerMillisecond % 1000);
-    }
+    int32 GetMillisecond() const;
 
     /// <summary>
     /// Gets this date's minute part (0 to 59).
     /// </summary>
-    /// <returns>The minute.</returns>
-    int32 GetMinute() const
-    {
-        return static_cast<int32>(Ticks / Constants::TicksPerMinute % 60);
-    }
+    int32 GetMinute() const;
 
     /// <summary>
     /// Gets this date's the month part (1 to 12).
     /// </summary>
-    /// <returns>The month.</returns>
     int32 GetMonth() const;
 
     /// <summary>
     /// Gets the date's month of the year (January to December).
     /// </summary>
-    /// <returns>The month of year.</returns>
-    MonthOfYear GetMonthOfYear() const
-    {
-        return static_cast<MonthOfYear>(GetMonth());
-    }
+    MonthOfYear GetMonthOfYear() const;
 
     /// <summary>
     /// Gets this date's second part.
     /// </summary>
-    /// <returns>The second.</returns>
-    int32 GetSecond() const
-    {
-        return static_cast<int32>(Ticks / Constants::TicksPerSecond % 60);
-    }
+    int32 GetSecond() const;
 
     /// <summary>
-    /// Gets this date's representation as number of ticks.
+    /// Gets this date's representation as number of ticks since midnight, January 1, 0001.
     /// </summary>
-    /// <returns>The number of ticks since midnight, January 1, 0001.</returns>
     int64 GetTicks() const
     {
         return Ticks;
@@ -264,26 +197,17 @@ public:
     /// <summary>
     /// Gets the time elapsed since midnight of this date.
     /// </summary>
-    /// <returns>The time span since midnight.</returns>
-    TimeSpan GetTimeOfDay() const
-    {
-        return TimeSpan(Ticks % Constants::TicksPerDay);
-    }
+    TimeSpan GetTimeOfDay() const;
 
     /// <summary>
     /// Gets this date's year part.
     /// </summary>
-    /// <returns>The year.</returns>
     int32 GetYear() const;
 
     /// <summary>
     /// Gets this date as the number of seconds since the Unix Epoch (January 1st of 1970).
     /// </summary>
-    /// <returns>The time.</returns>
-    int32 ToUnixTimestamp() const
-    {
-        return static_cast<int32>((Ticks - DateTime(1970, 1, 1).Ticks) / Constants::TicksPerSecond);
-    }
+    int32 ToUnixTimestamp() const;
 
 public:
 
@@ -307,27 +231,19 @@ public:
     /// </summary>
     /// <param name="julianDay">The Julian Day.</param>
     /// <returns>Gregorian date and time.</returns>
-    static DateTime FromJulianDay(double julianDay)
-    {
-        return DateTime(static_cast<int64>((julianDay - 1721425.5) * Constants::TicksPerDay));
-    }
+    static DateTime FromJulianDay(double julianDay);
 
     /// <summary>
     /// Returns the date from Unix time (seconds from midnight 1970-01-01).
     /// </summary>
     /// <param name="unixTime">The Unix time (seconds from midnight 1970-01-01).</param>
     /// <returns>The Gregorian date and time.</returns>
-    static DateTime FromUnixTimestamp(int32 unixTime)
-    {
-        return DateTime(1970, 1, 1) + TimeSpan(static_cast<int64>(unixTime) * Constants::TicksPerSecond);
-    }
+    static DateTime FromUnixTimestamp(int32 unixTime);
 
     /// <summary>
     /// Determines whether the specified year is a leap year.
     /// </summary>
-    /// <remarks>
-    /// A leap year is a year containing one additional day in order to keep the calendar synchronized with the astronomical year.
-    /// </remarks>
+    /// <remarks>A leap year is a year containing one additional day in order to keep the calendar synchronized with the astronomical year.</remarks>
     /// <param name="year">The year.</param>
     /// <returns><c>true</c> if the specified year os a leap year; otherwise, <c>false</c>.</returns>
     static bool IsLeapYear(int32 year);
@@ -335,22 +251,15 @@ public:
     /// <summary>
     /// Returns the maximum date value.
     /// </summary>
-    /// <remarks>
-    /// The maximum date value is December 31, 9999, 23:59:59.9999999.
-    /// </remarks>
-    /// <returns>The date.</returns>
-    static DateTime MaxValue()
-    {
-        return DateTime(3652059 * Constants::TicksPerDay - 1);
-    }
+    /// <remarks>The maximum date value is December 31, 9999, 23:59:59.9999999.</remarks>
+    /// <returns>The maximum valid date.</returns>
+    static DateTime MaxValue();
 
     /// <summary>
     /// Returns the minimum date value.
     /// </summary>
-    /// <remarks>
-    /// The minimum date value is January 1, 0001, 00:00:00.0.
-    /// </remarks>
-    /// <returns>The date.</returns>
+    /// <remarks>The minimum date value is January 1, 0001, 00:00:00.0.</remarks>
+    /// <returns>The minimum valid date.</returns>
     static DateTime MinValue()
     {
         return DateTime(1, 1, 1, 0, 0, 0, 0);
@@ -359,18 +268,14 @@ public:
     /// <summary>
     /// Gets the local date and time on this computer.
     /// </summary>
-    /// <remarks>
-    ///This method takes into account the local computer's time zone and daylight saving settings. For time zone independent time comparisons, and when comparing times between different computers, use NowUTC() instead.
-    /// </remarks>
+    /// <remarks>This method takes into account the local computer's time zone and daylight saving settings. For time zone independent time comparisons, and when comparing times between different computers, use NowUTC() instead.</remarks>
     /// <returns>The current date and time.</returns>
     static DateTime Now();
 
     /// <summary>
     /// Gets the UTC date and time on this computer.
     /// </summary>
-    /// <remarks>
-    /// This method returns the Coordinated Universal Time (UTC), which does not take the local computer's time zone and daylight savings settings into account. It should be used when comparing dates and times that should be independent of the user's locale. To get the date and time in the current locale, use Now() instead.
-    /// </remarks>
+    /// <remarks>This method returns the Coordinated Universal Time (UTC), which does not take the local computer's time zone and daylight savings settings into account. It should be used when comparing dates and times that should be independent of the user's locale. To get the date and time in the current locale, use Now() instead.</remarks>
     /// <returns>The current date and time.</returns>
     static DateTime NowUTC();
 

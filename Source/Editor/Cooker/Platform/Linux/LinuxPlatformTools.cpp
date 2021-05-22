@@ -38,7 +38,7 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = LinuxPlatformSettings::Get();
-    const auto outputPath = data.OutputPath;
+    const auto outputPath = data.DataOutputPath;
 
     // Copy binaries
     {
@@ -77,6 +77,11 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 #else
     // Don't change application name on a DEBUG build (for build game debugging)
     const String gameExePath = outputPath / TEXT("FlaxGame");
+#endif
+
+    // Ensure the output binary can be executed
+#if PLATFORM_LINUX
+    system(*StringAnsi(String::Format(TEXT("chmod +x \"{0}\""), gameExePath)));
 #endif
 
     // Apply game icon

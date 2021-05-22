@@ -13,6 +13,7 @@
 #include "Engine/Input/InputSettings.h"
 #include "Engine/Audio/AudioSettings.h"
 #include "Engine/Navigation/NavigationSettings.h"
+#include "Engine/Localization/LocalizationSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
@@ -100,7 +101,12 @@ bool GameSettings::Load()
     auto settings = Get();
     if (!settings)
     {
+#if USE_EDITOR
+        // Allow lack of Game Settings in Editor
+        return false;
+#else
         return true;
+#endif
     }
 
     // Preload all settings assets
@@ -122,6 +128,7 @@ bool GameSettings::Load()
     PRELOAD_SETTINGS(Input);
     PRELOAD_SETTINGS(Graphics);
     PRELOAD_SETTINGS(Navigation);
+    PRELOAD_SETTINGS(Localization);
     PRELOAD_SETTINGS(GameCooking);
 #undef PRELOAD_SETTINGS
 
@@ -153,6 +160,7 @@ void GameSettings::Apply()
     APPLY_SETTINGS(InputSettings);
     APPLY_SETTINGS(GraphicsSettings);
     APPLY_SETTINGS(NavigationSettings);
+    APPLY_SETTINGS(LocalizationSettings);
     APPLY_SETTINGS(BuildSettings);
     APPLY_SETTINGS(PlatformSettings);
 #undef APPLY_SETTINGS
@@ -192,6 +200,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Input);
     DESERIALIZE(Graphics);
     DESERIALIZE(Navigation);
+    DESERIALIZE(Localization);
     DESERIALIZE(GameCooking);
 
     // Per-platform settings containers

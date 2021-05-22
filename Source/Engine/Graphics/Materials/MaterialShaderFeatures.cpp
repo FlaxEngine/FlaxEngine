@@ -2,6 +2,7 @@
 
 #include "MaterialShaderFeatures.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ShadowsPass.h"
 #if USE_EDITOR

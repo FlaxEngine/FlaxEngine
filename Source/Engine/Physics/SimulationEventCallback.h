@@ -4,8 +4,9 @@
 
 #include "Types.h"
 #include "Collisions.h"
-#include "Engine/Core/Types/Pair.h"
 #include "Colliders/Collider.h"
+#include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/PhysX/PxSimulationEventCallback.h>
 
 /// <summary>

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
+#include "Cache/AssetsCache.h"
 #include "Storage/ContentStorageManager.h"
 #include "Loading/Tasks/LoadAssetDataTask.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -129,6 +130,13 @@ void BinaryAsset::GetImportMetadata(String& path, String& username) const
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), GetPath());
     }
+}
+
+String BinaryAsset::GetImportPath() const
+{
+    String path, username;
+    GetImportMetadata(path, username);
+    return path;
 }
 
 void BinaryAsset::ClearDependencies()
@@ -293,7 +301,12 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks)
 
 #if USE_EDITOR
 
-bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode)
+bool BinaryAsset::SaveAsset(AssetInitData& data, bool silentMode) const
+{
+    return SaveAsset(GetPath(), data, silentMode);
+}
+
+bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode) const
 {
     data.Header = _header;
     data.Metadata.Link(Metadata);
@@ -303,9 +316,13 @@ bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool si
 
 bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool silentMode)
 {
+    // Ensure path is in a valid format
+    String pathNorm(path);
+    FileSystem::NormalizePath(pathNorm);
+
     // Find target storage container and the asset
-    auto storage = ContentStorageManager::TryGetStorage(path);
-    auto asset = Content::GetAsset(path);
+    auto storage = ContentStorageManager::TryGetStorage(pathNorm);
+    auto asset = Content::GetAsset(pathNorm);
     auto binaryAsset = dynamic_cast<BinaryAsset*>(asset);
     if (asset && !binaryAsset)
     {
@@ -351,8 +368,8 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     }
     else
     {
-        ASSERT(path.HasChars());
-        result = FlaxStorage::Create(path, data, silentMode);
+        ASSERT(pathNorm.HasChars());
+        result = FlaxStorage::Create(pathNorm, data, silentMode);
     }
     if (binaryAsset)
         binaryAsset->_isSaving = false;
@@ -429,7 +446,12 @@ void BinaryAsset::OnDeleteObject()
 
 const String& BinaryAsset::GetPath() const
 {
+#if USE_EDITOR
     return Storage ? Storage->GetPath() : String::Empty;
+#else
+    // In build all assets are packed into packages so use ID for original path lookup
+    return Content::GetRegistry()->GetEditorAssetPath(_id);
+#endif
 }
 
 /// <summary>
@@ -487,7 +509,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _dataLock.Release();

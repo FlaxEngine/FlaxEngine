@@ -107,7 +107,7 @@ namespace FlaxEditor.Windows.Assets
         {
             private readonly ParticleSystemWindow _window;
 
-            [EditorDisplay("Particle System"), EditorOrder(100), Limit(1), Tooltip("The timeline animation duration in frames.")]
+            [EditorDisplay("Particle System"), EditorOrder(-100), Limit(1), Tooltip("The timeline animation duration in frames.")]
             public int TimelineDurationFrames
             {
                 get => _window.Timeline.DurationFrames;
@@ -124,7 +124,7 @@ namespace FlaxEditor.Windows.Assets
         /// The proxy object for editing particle system track properties.
         /// </summary>
         [CustomEditor(typeof(EmitterTrackProxyEditor))]
-        private class EmitterTrackProxy
+        private class EmitterTrackProxy : GeneralProxy
         {
             private readonly ParticleSystemWindow _window;
             private readonly ParticleEffect _effect;
@@ -171,6 +171,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             public EmitterTrackProxy(ParticleSystemWindow window, ParticleEffect effect, ParticleEmitterTrack track, int emitterIndex)
+            : base(window)
             {
                 _window = window;
                 _effect = effect;
@@ -238,7 +239,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// The proxy object for editing folder track properties.
         /// </summary>
-        private class FolderTrackProxy
+        private class FolderTrackProxy : GeneralProxy
         {
             private readonly FolderTrack _track;
 
@@ -265,7 +266,8 @@ namespace FlaxEditor.Windows.Assets
                 set => _track.IconColor = value;
             }
 
-            public FolderTrackProxy(FolderTrack track)
+            public FolderTrackProxy(ParticleSystemWindow window, FolderTrack track)
+            : base(window)
             {
                 _track = track;
             }
@@ -275,8 +277,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly SplitPanel _split2;
         private ParticleSystemTimeline _timeline;
         private readonly ParticleSystemPreview _preview;
-        private readonly CustomEditorPresenter _propertiesEditor1;
-        private readonly CustomEditorPresenter _propertiesEditor2;
+        private readonly CustomEditorPresenter _propertiesEditor;
         private ToolStripButton _saveButton;
         private ToolStripButton _undoButton;
         private ToolStripButton _redoButton;
@@ -347,26 +348,20 @@ namespace FlaxEditor.Windows.Assets
             _timeline.Modified += OnTimelineModified;
             _timeline.SelectionChanged += OnTimelineSelectionChanged;
 
-            // Properties editor (general)
-            var propertiesEditor1 = new CustomEditorPresenter(null, string.Empty);
-            propertiesEditor1.Panel.Parent = _split2.Panel2;
-            propertiesEditor1.Modified += OnParticleSystemPropertyEdited;
-            _propertiesEditor1 = propertiesEditor1;
-            propertiesEditor1.Select(new GeneralProxy(this));
-
-            // Properties editor (selection)
-            var propertiesEditor2 = new CustomEditorPresenter(null, string.Empty);
-            propertiesEditor2.Panel.Parent = _split2.Panel2;
-            propertiesEditor2.Modified += OnParticleSystemPropertyEdited;
-            _propertiesEditor2 = propertiesEditor2;
+            // Properties editor
+            var propertiesEditor = new CustomEditorPresenter(_undo, string.Empty);
+            propertiesEditor.Panel.Parent = _split2.Panel2;
+            propertiesEditor.Modified += OnParticleSystemPropertyEdited;
+            _propertiesEditor = propertiesEditor;
+            propertiesEditor.Select(new GeneralProxy(this));
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo32, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo32, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
@@ -380,8 +375,7 @@ namespace FlaxEditor.Windows.Assets
 
             if (!_isEditingInstancedParameterValue)
             {
-                _propertiesEditor1.BuildLayoutOnUpdate();
-                _propertiesEditor2.BuildLayoutOnUpdate();
+                _propertiesEditor.BuildLayoutOnUpdate();
             }
         }
 
@@ -399,7 +393,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (_timeline.SelectedTracks.Count == 0)
             {
-                _propertiesEditor2.Deselect();
+                _propertiesEditor.Select(new GeneralProxy(this));
                 return;
             }
 
@@ -414,14 +408,14 @@ namespace FlaxEditor.Windows.Assets
                 }
                 else if (track is FolderTrack folderTrack)
                 {
-                    tracks[i] = new FolderTrackProxy(folderTrack);
+                    tracks[i] = new FolderTrackProxy(this, folderTrack);
                 }
                 else
                 {
                     throw new NotImplementedException("Invalid track type.");
                 }
             }
-            _propertiesEditor2.Select(tracks);
+            _propertiesEditor.Select(tracks);
         }
 
         private void OnParticleSystemPropertyEdited()
@@ -443,8 +437,7 @@ namespace FlaxEditor.Windows.Assets
 
             if (_timeline.IsModified)
             {
-                _propertiesEditor1.BuildLayoutOnUpdate();
-                _propertiesEditor2.BuildLayoutOnUpdate();
+                _propertiesEditor.BuildLayoutOnUpdate();
                 _timeline.Save(_asset);
             }
 
@@ -484,7 +477,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            _propertiesEditor2.Deselect();
+            _propertiesEditor.Deselect();
             _preview.System = null;
             _isWaitingForTimelineLoad = false;
 
@@ -507,7 +500,7 @@ namespace FlaxEditor.Windows.Assets
             if (_parametersVersion != _preview.PreviewActor.ParametersVersion)
             {
                 _parametersVersion = _preview.PreviewActor.ParametersVersion;
-                _propertiesEditor2.BuildLayoutOnUpdate();
+                _propertiesEditor.BuildLayoutOnUpdate();
             }
 
             base.Update(deltaTime);
@@ -534,8 +527,7 @@ namespace FlaxEditor.Windows.Assets
                 // Setup
                 _undo.Clear();
                 _timeline.Enabled = true;
-                _propertiesEditor1.BuildLayout();
-                _propertiesEditor2.Deselect();
+                _propertiesEditor.Select(new GeneralProxy(this));
                 ClearEditedFlag();
             }
 
@@ -580,8 +572,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (_undo != null)
                 _undo.Enabled = false;
-            _propertiesEditor1?.Deselect();
-            _propertiesEditor2?.Deselect();
+            _propertiesEditor?.Deselect();
             _undo?.Clear();
             _undo = null;
 

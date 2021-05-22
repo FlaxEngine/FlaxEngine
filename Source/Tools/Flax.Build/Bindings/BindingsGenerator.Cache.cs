@@ -18,7 +18,8 @@ namespace Flax.Build.Bindings
 
     partial class BindingsGenerator
     {
-        private static readonly Dictionary<string, Type> _typeCache = new Dictionary<string, Type>();
+        private static readonly Dictionary<string, Type> TypeCache = new Dictionary<string, Type>();
+        private const int CacheVersion = 7;
 
         internal static void Write(BinaryWriter writer, string e)
         {
@@ -160,7 +161,7 @@ namespace Flax.Build.Bindings
             var typename = reader.ReadString();
             if (string.IsNullOrEmpty(typename))
                 return e;
-            if (!_typeCache.TryGetValue(typename, out var type))
+            if (!TypeCache.TryGetValue(typename, out var type))
             {
                 type = Builder.BuildTypes.FirstOrDefault(x => x.FullName == typename);
                 if (type == null)
@@ -169,7 +170,7 @@ namespace Flax.Build.Bindings
                     Log.Error(msg);
                     throw new Exception(msg);
                 }
-                _typeCache.Add(typename, type);
+                TypeCache.Add(typename, type);
             }
             e = (T)Activator.CreateInstance(type);
             e.Read(reader);
@@ -185,7 +186,7 @@ namespace Flax.Build.Bindings
                 for (int i = 0; i < count; i++)
                 {
                     var typename = reader.ReadString();
-                    if (!_typeCache.TryGetValue(typename, out var type))
+                    if (!TypeCache.TryGetValue(typename, out var type))
                     {
                         type = Builder.BuildTypes.FirstOrDefault(x => x.FullName == typename);
                         if (type == null)
@@ -194,7 +195,7 @@ namespace Flax.Build.Bindings
                             Log.Error(msg);
                             throw new Exception(msg);
                         }
-                        _typeCache.Add(typename, type);
+                        TypeCache.Add(typename, type);
                     }
                     var e = (T)Activator.CreateInstance(type);
                     e.Read(reader);
@@ -218,7 +219,7 @@ namespace Flax.Build.Bindings
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 // Version
-                writer.Write(5);
+                writer.Write(CacheVersion);
                 writer.Write(File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks);
 
                 // Build options
@@ -249,66 +250,66 @@ namespace Flax.Build.Bindings
             var path = GetCachePath(moduleInfo.Module, moduleOptions);
             if (!File.Exists(path))
                 return false;
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var reader = new BinaryReader(stream, Encoding.UTF8))
+            try
             {
-                // Version
-                var version = reader.ReadInt32();
-                if (version != 5)
-                    return false;
-                if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
-                    return false;
-
-                // Build options
-                if (reader.ReadString() != moduleOptions.IntermediateFolder ||
-                    reader.ReadInt32() != (int)moduleOptions.Platform.Target ||
-                    reader.ReadInt32() != (int)moduleOptions.Architecture ||
-                    reader.ReadInt32() != (int)moduleOptions.Configuration)
-                    return false;
-                var publicDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (publicDefinitions.Length != moduleOptions.PublicDefinitions.Count || publicDefinitions.Any(x => !moduleOptions.PublicDefinitions.Contains(x)))
-                    return false;
-                var privateDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (privateDefinitions.Length != moduleOptions.PrivateDefinitions.Count || privateDefinitions.Any(x => !moduleOptions.PrivateDefinitions.Contains(x)))
-                    return false;
-                var preprocessorDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
-                if (preprocessorDefinitions.Length != moduleOptions.CompileEnv.PreprocessorDefinitions.Count || preprocessorDefinitions.Any(x => !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(x)))
-                    return false;
-
-                // Header files
-                var headerFilesCount = reader.ReadInt32();
-                if (headerFilesCount != headerFiles.Count)
-                    return false;
-                for (int i = 0; i < headerFilesCount; i++)
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
                 {
-                    var headerFile = headerFiles[i];
-                    if (headerFile != reader.ReadString())
+                    // Version
+                    var version = reader.ReadInt32();
+                    if (version != CacheVersion)
                         return false;
-                    if (File.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
+                    if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
                         return false;
-                }
 
-                // Info
-                var newModuleInfo = new ModuleInfo
-                {
-                    Module = moduleInfo.Module,
-                    Name = moduleInfo.Name,
-                    Namespace = moduleInfo.Namespace,
-                    IsFromCache = true,
-                };
-                try
-                {
+                    // Build options
+                    if (reader.ReadString() != moduleOptions.IntermediateFolder ||
+                        reader.ReadInt32() != (int)moduleOptions.Platform.Target ||
+                        reader.ReadInt32() != (int)moduleOptions.Architecture ||
+                        reader.ReadInt32() != (int)moduleOptions.Configuration)
+                        return false;
+                    var publicDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (publicDefinitions.Length != moduleOptions.PublicDefinitions.Count || publicDefinitions.Any(x => !moduleOptions.PublicDefinitions.Contains(x)))
+                        return false;
+                    var privateDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (privateDefinitions.Length != moduleOptions.PrivateDefinitions.Count || privateDefinitions.Any(x => !moduleOptions.PrivateDefinitions.Contains(x)))
+                        return false;
+                    var preprocessorDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    if (preprocessorDefinitions.Length != moduleOptions.CompileEnv.PreprocessorDefinitions.Count || preprocessorDefinitions.Any(x => !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(x)))
+                        return false;
+
+                    // Header files
+                    var headerFilesCount = reader.ReadInt32();
+                    if (headerFilesCount != headerFiles.Count)
+                        return false;
+                    for (int i = 0; i < headerFilesCount; i++)
+                    {
+                        var headerFile = headerFiles[i];
+                        if (headerFile != reader.ReadString())
+                            return false;
+                        if (File.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
+                            return false;
+                    }
+
+                    // Info
+                    var newModuleInfo = new ModuleInfo
+                    {
+                        Module = moduleInfo.Module,
+                        Name = moduleInfo.Name,
+                        Namespace = moduleInfo.Namespace,
+                        IsFromCache = true,
+                    };
                     newModuleInfo.Read(reader);
 
                     // Skip parsing and use data loaded from cache
                     moduleInfo = newModuleInfo;
                     return true;
                 }
-                catch
-                {
-                    // Skip loading cache
-                    return false;
-                }
+            }
+            catch
+            {
+                // Skip loading cache
+                return false;
             }
         }
     }

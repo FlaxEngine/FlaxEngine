@@ -220,7 +220,7 @@ namespace FlaxEditor
             GameProject = ProjectInfo.Load(Internal_GetProjectPath());
 
             Icons = new EditorIcons();
-            Icons.GetIcons();
+            Icons.LoadIcons();
 
             // Create common editor modules
             RegisterModule(Options = new OptionsModule(this));
@@ -752,10 +752,11 @@ namespace FlaxEditor
         /// <param name="type">The collision data type.</param>
         /// <param name="model">The source model.</param>
         /// <param name="modelLodIndex">The source model LOD index.</param>
+        /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.</param>
         /// <param name="convexFlags">The convex mesh generation flags.</param>
         /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
         /// <returns>True if failed, otherwise false.</returns>
-        public static bool CookMeshCollision(string path, CollisionDataType type, Model model, int modelLodIndex = 0, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
+        public static bool CookMeshCollision(string path, CollisionDataType type, ModelBase model, int modelLodIndex = 0, uint materialSlotsMask = uint.MaxValue, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
@@ -764,7 +765,7 @@ namespace FlaxEditor
             if (type == CollisionDataType.None)
                 throw new ArgumentException(nameof(type));
 
-            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, convexFlags, convexVertexLimit);
+            return Internal_CookMeshCollision(path, type, FlaxEngine.Object.GetUnmanagedPtr(model), modelLodIndex, materialSlotsMask, convexFlags, convexVertexLimit);
         }
 
         /// <summary>
@@ -816,9 +817,16 @@ namespace FlaxEditor
         /// <param name="sphere">The bounding sphere.</param>
         public static void GetActorEditorSphere(Actor actor, out BoundingSphere sphere)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
-            BoundingSphere.FromBox(ref box, out sphere);
-            sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out var box);
+                BoundingSphere.FromBox(ref box, out sphere);
+                sphere.Radius = Math.Max(sphere.Radius, 15.0f);
+            }
+            else
+            {
+                sphere = BoundingSphere.Empty;
+            }
         }
 
         /// <summary>
@@ -828,7 +836,14 @@ namespace FlaxEditor
         /// <param name="box">The bounding box.</param>
         public static void GetActorEditorBox(Actor actor, out BoundingBox box)
         {
-            Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            if (actor)
+            {
+                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
+            }
+            else
+            {
+                box = BoundingBox.Zero;
+            }
         }
 
         /// <summary>
@@ -863,10 +878,12 @@ namespace FlaxEditor
         /// Checks if can import asset with the given extension.
         /// </summary>
         /// <param name="extension">The file extension.</param>
+        /// <param name="outputExtension">The output file extension (flax, json, etc.).</param>
         /// <returns>True if can import files with given extension, otherwise false.</returns>
-        public static bool CanImport(string extension)
+        public static bool CanImport(string extension, out string outputExtension)
         {
-            return Internal_CanImport(extension);
+            outputExtension = Internal_CanImport(extension);
+            return outputExtension != null;
         }
 
         /// <summary>
@@ -1166,8 +1183,10 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
+                        return false;
                     return true;
                 }
             }
@@ -1179,9 +1198,9 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromWindow(root.Window.ScreenToClient(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
                 else
                 {
@@ -1199,9 +1218,9 @@ namespace FlaxEditor
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root && root.Window.IsFocused)
+                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(root.Window.ClientToScreen(Windows.GameWin.Viewport.PointToWindow(pos)));
+                    pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
                 else
                 {
@@ -1231,13 +1250,18 @@ namespace FlaxEditor
             var gameWin = Windows.GameWin;
             if (gameWin != null)
             {
-                // Handle case when Game window is not selected in tab view
-                var dockedTo = gameWin.ParentDockPanel;
-                if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    resultAsRef = dockedTo.SelectedTab.Size;
-                else
-                    resultAsRef = gameWin.Size;
-                resultAsRef = Vector2.Round(resultAsRef);
+                var win = gameWin.Root;
+                if (win != null && win.RootWindow is WindowRootControl root)
+                {
+                    // Handle case when Game window is not selected in tab view
+                    var dockedTo = gameWin.ParentDockPanel;
+                    if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
+                        resultAsRef = dockedTo.SelectedTab.Size * root.DpiScale;
+                    else
+                        resultAsRef = gameWin.Size * root.DpiScale;
+
+                    resultAsRef = Vector2.Round(resultAsRef);
+                }
             }
         }
 
@@ -1325,7 +1349,7 @@ namespace FlaxEditor
         internal static extern string Internal_GetShaderAssetSourceCode(IntPtr obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
+        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Vector3[] triangles, out int[] indices);
@@ -1349,7 +1373,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanImport(string extension);
+        internal static extern string Internal_CanImport(string extension);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool Internal_CanExport(string path);

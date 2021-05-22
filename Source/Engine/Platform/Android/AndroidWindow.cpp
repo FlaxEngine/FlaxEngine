@@ -6,10 +6,14 @@
 #include "Engine/Graphics/RenderTask.h"
 #include <Engine/Main/Android/android_native_app_glue.h>
 
+#define DefaultDPI 96
+
 AndroidWindow::AndroidWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
     _clientSize = settings.Size;
+    _dpi = DefaultDPI;
+    _dpiScale = (float)_dpi / (float)DefaultDPI;
 }
 
 AndroidWindow::~AndroidWindow()

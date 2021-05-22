@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Render2D/FontAsset.h"
 
@@ -71,3 +73,5 @@ private:
         return CopyChunk(context, 0);
     }
 };
+
+#endif

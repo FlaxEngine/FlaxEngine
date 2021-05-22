@@ -17,6 +17,7 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/JsonWriter.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "FlaxEngine.Gen.h"
 
@@ -1276,7 +1277,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
     }
 }
 
-REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", nullptr, false);
+REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", false);
 
 VisualScript::VisualScript(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -1329,6 +1330,7 @@ Asset::LoadResult VisualScript::load()
         {
         case GRAPH_NODE_MAKE_TYPE(16, 3):
         {
+            // Override method
             auto& method = _methods.AddOne();
             method.Script = this;
             method.Node = &node;
@@ -1342,6 +1344,7 @@ Asset::LoadResult VisualScript::load()
         }
         case GRAPH_NODE_MAKE_TYPE(16, 6):
         {
+            // Function
             auto& method = _methods.AddOne();
             method.Script = this;
             method.Node = &node;
@@ -1380,6 +1383,17 @@ Asset::LoadResult VisualScript::load()
         }
         }
     }
+#if COMPILE_WITH_PROFILER
+    for (auto& method : _methods)
+    {
+        const StringView assetName(StringUtils::GetFileNameWithoutExtension(GetPath()));
+        method.ProfilerName.Resize(assetName.Length() + 2 + method.Name.Length());
+        StringUtils::ConvertUTF162ANSI(assetName.Get(), method.ProfilerName.Get(), assetName.Length());
+        method.ProfilerName.Get()[assetName.Length()] = ':';
+        method.ProfilerName.Get()[assetName.Length() + 1] = ':';
+        Platform::MemoryCopy(method.ProfilerName.Get() + assetName.Length() + 2, method.Name.Get(), method.Name.Length());
+    }
+#endif
 
     // Setup fields list
     _fields.Resize(Graph.Parameters.Count());
@@ -2132,7 +2146,7 @@ BytesContainer VisualScript::LoadSurface()
         return result;
     }
 
-    LOG(Warning, "\'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "\'{0}\' surface data is missing.", ToString());
     return BytesContainer();
 }
 
@@ -2284,6 +2298,7 @@ VisualScriptingBinaryModule* VisualScripting::GetBinaryModule()
 Variant VisualScripting::Invoke(VisualScript::Method* method, ScriptingObject* instance, Span<Variant> parameters)
 {
     CHECK_RETURN(method && method->Script->IsLoaded(), Variant::Zero);
+    PROFILE_CPU_NAMED(*method->ProfilerName);
 
     // Add to the calling stack
     ScopeContext scope;

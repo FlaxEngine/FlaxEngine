@@ -451,7 +451,69 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
         // Get parameter
         int32 paramIndex;
         const auto param = _graph.GetParameter((Guid)node->Values[0], paramIndex);
-        value = param ? _data->Parameters[paramIndex].Value : Value::Null;
+        if (param)
+        {
+            value = _data->Parameters[paramIndex].Value;
+            switch (param->Type.Type)
+            {
+            case VariantType::Vector2:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                    value = value.AsVector2().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Vector3:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                    value = value.AsVector3().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Vector4:
+            case VariantType::Color:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    value = value.AsVector4().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Matrix:
+            {
+                auto& matrix = value.Type.Type == VariantType::Matrix && value.AsBlob.Data ? *(Matrix*)value.AsBlob.Data : Matrix::Identity;
+                switch (box->ID)
+                {
+                case 0:
+                    value = matrix.GetRow1();
+                    break;
+                case 1:
+                    value = matrix.GetRow2();
+                    break;
+                case 2:
+                    value = matrix.GetRow3();
+                    break;
+                case 3:
+                    value = matrix.GetRow4();
+                    break;
+                }
+                break;
+            }
+            }
+        }
+        else
+        {
+            // TODO: add warning that no parameter selected
+            value = Value::Zero;
+        }
         break;
     }
     default:
@@ -574,7 +636,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
 
         // Skip if no change will be performed
-        if (boneIndex < 0 || boneIndex >= _skeletonBonesCount || transformMode == BoneTransformMode::None || transform.IsIdentity())
+        auto& skeleton = _graph.BaseModel->Skeleton;
+        if (boneIndex < 0 || boneIndex >= skeleton.Bones.Count() || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
         {
             // Pass through the input
             value = Value::Null;
@@ -705,8 +768,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const auto copyScale = (bool)node->Values[4];
 
         // Skip if no change will be performed
-        if (srcBoneIndex < 0 || srcBoneIndex >= _skeletonBonesCount ||
-            dstBoneIndex < 0 || dstBoneIndex >= _skeletonBonesCount ||
+        const auto& skeleton = _graph.BaseModel->Skeleton;
+        if (srcBoneIndex < 0 || srcBoneIndex >= skeleton.Bones.Count() ||
+            dstBoneIndex < 0 || dstBoneIndex >= skeleton.Bones.Count() ||
             !(copyTranslation || copyRotation || copyScale))
         {
             // Pass through the input
@@ -714,7 +778,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             box->Cache = value;
             return;
         }
-        const auto& skeleton = _graph.BaseModel->Skeleton;
 
         // Copy bone data
         Transform srcTransform = nodes->Nodes[skeleton.Bones[srcBoneIndex].NodeIndex];
@@ -738,7 +801,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const auto boneIndex = (int32)node->Values[0];
         const auto& skeleton = _graph.BaseModel->Skeleton;
         const auto input = tryGetValue(node->GetBox(0), Value::Null);
-        if (ANIM_GRAPH_IS_VALID_PTR(input) && boneIndex >= 0 && boneIndex < _skeletonBonesCount)
+        if (ANIM_GRAPH_IS_VALID_PTR(input) && boneIndex >= 0 && boneIndex < skeleton.Bones.Count())
             value = Variant(((AnimGraphImpulse*)input.AsPointer)->Nodes[skeleton.Bones[boneIndex].NodeIndex]);
         else
             value = Variant(Transform::Identity);
@@ -1566,7 +1629,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
 
         // Skip if no change will be performed
-        if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || transformMode == BoneTransformMode::None || transform.IsIdentity())
+        if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))
         {
             // Pass through the input
             value = Value::Null;

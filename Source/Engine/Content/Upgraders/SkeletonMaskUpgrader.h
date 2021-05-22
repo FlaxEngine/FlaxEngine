@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -97,3 +99,5 @@ private:
         return false;
     }
 };
+
+#endif

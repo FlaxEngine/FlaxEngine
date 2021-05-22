@@ -3,10 +3,12 @@
 #include "Spline.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Animations/CurveSerialization.h"
+#include "Engine/Core/Math/Matrix.h"
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 
 Spline::Spline(const SpawnParams& params)
     : Actor(params)
+    , _localBounds(Vector3::Zero, Vector3::Zero)
 {
 }
 
@@ -411,16 +413,26 @@ void Spline::SetTangentsSmooth()
 
 void Spline::UpdateSpline()
 {
+    auto& keyframes = Curve.GetKeyframes();
+    const int32 count = keyframes.Count();
+
     // Always keep last point in the loop
-    const int32 count = Curve.GetKeyframes().Count();
     if (_loop && count > 1)
     {
-        auto& first = Curve[0];
-        auto& last = Curve[count - 1];
+        auto& first = keyframes[0];
+        auto& last = keyframes[count - 1];
         last.Value = first.Value;
         last.TangentIn = first.TangentIn;
         last.TangentOut = first.TangentOut;
     }
+
+    // Update bounds
+    _localBounds = BoundingBox(count != 0 ? keyframes[0].Value.Translation : Vector3::Zero);
+    for (int32 i = 1; i < count; i++)
+        _localBounds.Merge(keyframes[i].Value.Translation);
+    Matrix world;
+    _transform.GetWorld(world);
+    BoundingBox::Transform(_localBounds, world, _box);
 
     SplineUpdated();
 }
@@ -484,6 +496,34 @@ void Spline::OnDebugDrawSelected()
 }
 
 #endif
+
+void Spline::OnTransformChanged()
+{
+    // Base
+    Actor::OnTransformChanged();
+
+    Matrix world;
+    _transform.GetWorld(world);
+    BoundingBox::Transform(_localBounds, world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
+}
+
+void Spline::PostLoad()
+{
+    // Base
+    Actor::PostLoad();
+
+    auto& keyframes = Curve.GetKeyframes();
+    const int32 count = keyframes.Count();
+
+    // Update bounds
+    _localBounds = BoundingBox(count != 0 ? keyframes[0].Value.Translation : Vector3::Zero);
+    for (int32 i = 1; i < count; i++)
+        _localBounds.Merge(keyframes[i].Value.Translation);
+    Matrix world;
+    _transform.GetWorld(world);
+    BoundingBox::Transform(_localBounds, world, _box);
+}
 
 void Spline::Serialize(SerializeStream& stream, const void* otherObj)
 {

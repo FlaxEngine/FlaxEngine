@@ -3,6 +3,7 @@
 #include "ScreenSpaceReflectionsPass.h"
 #include "ReflectionsPass.h"
 #include "GBufferPass.h"
+#include "RenderList.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -12,6 +13,7 @@
 #include "Engine/Platform/Window.h"
 #include "Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderTask.h"
 
 #define REFLECTIONS_FORMAT PixelFormat::R11G11B10_Float
 #define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float

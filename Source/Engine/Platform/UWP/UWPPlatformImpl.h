@@ -121,7 +121,7 @@ public:
 	virtual void SetMousePosition(float x, float y) = 0;
 	virtual void GetMousePosition(float* x, float* y) = 0;
 	virtual void GetBounds(float* x, float* y, float* width, float* height) = 0;
-	virtual void GetDpi(float* dpi) = 0;
+	virtual void GetDpi(int* dpi) = 0;
 	virtual void GetTitle(wchar_t* buffer, int bufferLength) = 0;
 	virtual void SetTitle(const wchar_t* title) = 0;
 	virtual int GetGamepadsCount() = 0;

@@ -8,6 +8,8 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
 
+class GPUPipelineState;
+
 /// <summary>
 /// Vertex Colors rendering for profiling and debugging in editor.
 /// </summary>

@@ -249,6 +249,8 @@ namespace FlaxEngine.GUI
         internal void ChangeChildIndex(Control child, int newIndex)
         {
             int oldIndex = _children.IndexOf(child);
+            if (oldIndex == newIndex)
+                return;
             _children.RemoveAt(oldIndex);
 
             // Check if index is invalid
@@ -262,6 +264,8 @@ namespace FlaxEngine.GUI
                 // Change order
                 _children.Insert(newIndex, child);
             }
+
+            PerformLayout();
         }
 
         /// <summary>
@@ -272,7 +276,7 @@ namespace FlaxEngine.GUI
         public int GetChildIndexAt(Vector2 point)
         {
             int result = -1;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -294,7 +298,7 @@ namespace FlaxEngine.GUI
         public Control GetChildAt(Vector2 point)
         {
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -320,7 +324,7 @@ namespace FlaxEngine.GUI
                 throw new ArgumentNullException(nameof(isValid));
 
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -342,7 +346,7 @@ namespace FlaxEngine.GUI
         public Control GetChildAtRecursive(Vector2 point)
         {
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -614,25 +618,32 @@ namespace FlaxEngine.GUI
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Draw the control and the children.
+        /// </summary>
         public override void Draw()
         {
-            base.Draw();
+            DrawSelf();
 
-            // Push clipping mask
             if (ClipChildren)
             {
                 GetDesireClientArea(out var clientArea);
                 Render2D.PushClip(ref clientArea);
-            }
-
-            DrawChildren();
-
-            // Pop clipping mask
-            if (ClipChildren)
-            {
+                DrawChildren();
                 Render2D.PopClip();
             }
+            else
+            {
+                DrawChildren();
+            }
+        }
+
+        /// <summary>
+        /// Draws the control.
+        /// </summary>
+        public virtual void DrawSelf()
+        {
+            base.Draw();
         }
 
         /// <summary>

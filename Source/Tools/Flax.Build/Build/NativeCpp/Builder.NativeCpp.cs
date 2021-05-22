@@ -696,6 +696,26 @@ namespace Flax.Build
                             {
                                 // Export symbols from binary module
                                 moduleOptions.CompileEnv.PreprocessorDefinitions.Add(binaryModuleNameUpper + (target.UseSymbolsExports ? "_API=" + toolchain.DllExport : "_API="));
+
+                                // Import symbols from binary modules containing the referenced modules (from this project only, external ones are handled via ReferenceBuilds below)
+                                foreach (var moduleName in moduleOptions.PrivateDependencies)
+                                {
+                                    var dependencyModule = buildData.Rules.GetModule(moduleName);
+                                    if (dependencyModule != null && !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && dependencyModule.BinaryModuleName != binaryModule.Key && IsModuleFromProject(dependencyModule, project) && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
+                                    {
+                                        // Import symbols from referenced binary module
+                                        moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
+                                    }
+                                }
+                                foreach (var moduleName in moduleOptions.PublicDependencies)
+                                {
+                                    var dependencyModule = buildData.Rules.GetModule(moduleName);
+                                    if (dependencyModule != null && !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && dependencyModule.BinaryModuleName != binaryModule.Key && IsModuleFromProject(dependencyModule, project) && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
+                                    {
+                                        // Import symbols from referenced binary module
+                                        moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
+                                    }
+                                }
                             }
                             else
                             {

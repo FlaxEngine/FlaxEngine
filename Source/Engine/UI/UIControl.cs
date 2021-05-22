@@ -52,7 +52,6 @@ namespace FlaxEngine
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
                     _control.Location = new Vector2(LocalPosition);
-                    // TODO: sync control order in parent with actor order in parent (think about special cases like Panel with scroll bars used as internal controls)
                     _control.LocationChanged += OnControlLocationChanged;
 
                     // Link children UI controls
@@ -199,6 +198,11 @@ namespace FlaxEngine
             // Don't link disabled actors
             if (!IsActiveInHierarchy)
                 return null;
+#if FLAX_EDITOR
+            // Prefab editor doesn't fire BeginPlay so for disabled actors we don't unlink them so do it here
+            if (!IsActive)
+                return null;
+#endif
 
             var parent = Parent;
             if (parent is UIControl uiControl && uiControl.Control is ContainerControl uiContainerControl)
@@ -296,6 +300,9 @@ namespace FlaxEngine
             if (_control != null)
             {
                 Json.JsonSerializer.Deserialize(_control, json);
+
+                // Synchronize actor with control location
+                OnControlLocationChanged(_control);
             }
         }
 
@@ -320,6 +327,12 @@ namespace FlaxEngine
         {
             if (_control != null && !_blockEvents)
             {
+                // Skip if this control is inactive and it's parent too (parent will unlink from hierarchy but children will stay connected while being inactive)
+                if (!IsActiveInHierarchy && Parent && !Parent.IsActive)
+                {
+                    return;
+                }
+
                 // Link or unlink control (won't modify Enable/Visible state)
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
@@ -339,6 +352,7 @@ namespace FlaxEngine
             if (_control != null)
             {
                 _control.Parent = GetParent();
+                _control.IndexInParent = OrderInParent;
             }
         }
 

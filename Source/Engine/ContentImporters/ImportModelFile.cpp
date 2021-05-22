@@ -115,7 +115,8 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     // Import model file
     ModelData modelData;
     String errorMsg;
-    if (ModelTool::ImportModel(context.InputPath, modelData, options, errorMsg, StringUtils::GetDirectoryName(context.TargetAssetPath) / StringUtils::GetFileNameWithoutExtension(context.InputPath)))
+    String autoImportOutput = String(StringUtils::GetDirectoryName(context.TargetAssetPath)) / StringUtils::GetFileNameWithoutExtension(context.InputPath);
+    if (ModelTool::ImportModel(context.InputPath, modelData, options, errorMsg, autoImportOutput))
     {
         LOG(Error, "Cannot import model file. {0}", errorMsg);
         return CreateAssetResult::Error;

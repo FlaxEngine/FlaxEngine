@@ -4,9 +4,10 @@
 #include "GBufferPass.h"
 #include "VolumetricFogPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Content/Content.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Content/Content.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -87,8 +88,8 @@ bool ShadowsPass::Init()
     if (!_supportsShadows)
     {
         LOG(Warning, "GPU doesn't support shadows rendering");
-        LOG(Warning, "Format: {0} features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
-        LOG(Warning, "Format: {0} features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
     }
 
     return false;
@@ -251,6 +252,7 @@ void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)
     auto& shadowView = _shadowContext.View;
     shadowView.Flags = view.Flags;
     shadowView.StaticFlagsMask = view.StaticFlagsMask;
+    shadowView.RenderLayersMask = view.RenderLayersMask;
     shadowView.IsOfflinePass = view.IsOfflinePass;
     shadowView.ModelLODBias = view.ModelLODBias + view.ShadowModelLODBias;
     shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor * view.ShadowModelLODDistanceFactor;

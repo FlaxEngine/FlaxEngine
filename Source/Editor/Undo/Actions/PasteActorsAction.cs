@@ -140,21 +140,26 @@ namespace FlaxEditor.Actions
 
             for (int i = 0; i < nodeParents.Count; i++)
             {
-                // Fix name collisions (only for parents)
                 var node = nodeParents[i];
                 var parent = node.Actor?.Parent;
                 if (parent != null)
                 {
+                    // Fix name collisions
                     string name = node.Name;
                     Actor[] children = parent.Children;
                     if (children.Any(x => x.Name == name))
                     {
-                        // Generate new name
                         node.Actor.Name = StringUtils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
                     }
                 }
 
                 Editor.Instance.Scene.MarkSceneEdited(node.ParentScene);
+            }
+
+            for (int i = 0; i < nodeParents.Count; i++)
+            {
+                var node = nodeParents[i];
+                node.PostPaste();
             }
         }
 

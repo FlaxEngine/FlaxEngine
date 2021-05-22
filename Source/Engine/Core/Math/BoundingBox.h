@@ -48,6 +48,16 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="BoundingBox"/> struct.
     /// </summary>
+    /// <param name="point">The location of the empty bounding box.</param>
+    BoundingBox(const Vector3& point)
+        : Minimum(point)
+        , Maximum(point)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BoundingBox"/> struct.
+    /// </summary>
     /// <param name="minimum">The minimum vertex of the bounding box.</param>
     /// <param name="maximum">The maximum vertex of the bounding box.</param>
     BoundingBox(const Vector3& minimum, const Vector3& maximum)

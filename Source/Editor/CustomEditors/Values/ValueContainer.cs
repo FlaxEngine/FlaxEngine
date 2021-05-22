@@ -43,7 +43,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// Gets the values type.
         /// </summary>
-        public ScriptType Type { get; }
+        public ScriptType Type { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether single object is selected.
@@ -167,14 +167,14 @@ namespace FlaxEditor.CustomEditors
             {
                 if (_hasReferenceValue)
                 {
-                    if (_referenceValue is SceneObject referenceSceneObject && referenceSceneObject.HasPrefabLink)
+                    if (_referenceValue is SceneObject referenceSceneObject && referenceSceneObject && referenceSceneObject.HasPrefabLink)
                     {
                         for (int i = 0; i < Count; i++)
                         {
                             if (this[i] == referenceSceneObject)
                                 continue;
 
-                            if (this[i] == null || (this[i] is SceneObject valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))
+                            if (this[i] == null || (this[i] is SceneObject valueSceneObject && valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))
                                 return true;
                         }
                     }
@@ -251,6 +251,10 @@ namespace FlaxEditor.CustomEditors
             }
             if (instanceValues._hasReferenceValue)
             {
+                // If the reference value is set for the parent values but it's null object then skip it
+                if (instanceValues._referenceValue == null && !instanceValues.Type.IsValueType)
+                    return;
+
                 _referenceValue = Info.GetValue(instanceValues._referenceValue);
                 _hasReferenceValue = true;
             }
@@ -277,6 +281,15 @@ namespace FlaxEditor.CustomEditors
         protected ValueContainer(ScriptMemberInfo info, ScriptType type)
         {
             Info = info;
+            Type = type;
+        }
+
+        /// <summary>
+        /// Sets the type. Use with caution.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        public void SetType(ScriptType type)
+        {
             Type = type;
         }
 

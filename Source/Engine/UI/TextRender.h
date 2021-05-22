@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Models/Config.h"
+#include "Engine/Localization/LocalizedString.h"
 #if USE_PRECISE_MESH_INTERSECTS
 #include "Engine/Graphics/Models/CollisionProxy.h"
 #endif
@@ -34,7 +35,8 @@ private:
 
     bool _isDirty = false;
     bool _buffersDirty = false;
-    String _text;
+    bool _isLocalized = false;
+    LocalizedString _text;
     Color _color;
     TextLayoutOptions _layoutOptions;
     int32 _size;
@@ -56,25 +58,19 @@ public:
     /// <summary>
     /// Gets the text.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(0), DefaultValue(\"\"), MultilineText, EditorDisplay(\"Text\")")
-    FORCE_INLINE const String& GetText() const
-    {
-        return _text;
-    }
+    API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Text\")")
+    const LocalizedString& GetText() const;
 
     /// <summary>
     /// Sets the text.
     /// </summary>
-    API_PROPERTY() void SetText(const StringView& value);
+    API_PROPERTY() void SetText(const LocalizedString& value);
 
     /// <summary>
     /// Gets the color of the text.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Text\")")
-    FORCE_INLINE Color GetColor() const
-    {
-        return _color;
-    }
+    Color GetColor() const;
 
     /// <summary>
     /// Sets the color of the text.
@@ -97,10 +93,7 @@ public:
     /// Gets the font characters size.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(32), Limit(1, 1000), EditorDisplay(\"Text\")")
-    FORCE_INLINE int32 GetFontSize() const
-    {
-        return _size;
-    }
+    int32 GetFontSize() const;
 
     /// <summary>
     /// Sets the font characters size.
@@ -123,7 +116,7 @@ public:
     /// Gets the layout options. Layout is defined in local space of the object (on XY plane).
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(100), EditorDisplay(\"Text\")")
-    FORCE_INLINE TextLayoutOptions GetLayoutOptions() const
+    FORCE_INLINE const TextLayoutOptions& GetLayoutOptions() const
     {
         return _layoutOptions;
     }

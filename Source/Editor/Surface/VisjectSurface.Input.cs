@@ -298,7 +298,6 @@ namespace FlaxEditor.Surface
                         rerouteNode.GetBoxes().First(b => b.IsOutput).CreateConnection(inputBox);
                         addConnectionsAction.End();
 
-
                         Undo.AddAction(new MultiUndoAction(spawnNodeAction, disconnectBoxesAction, addConnectionsAction));
                     }
                     else
@@ -565,11 +564,10 @@ namespace FlaxEditor.Surface
                 if (key == KeyboardKeys.ArrowUp || key == KeyboardKeys.ArrowDown)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null) return true;
+                    if (selectedBox == null)
+                        return true;
 
-                    Box toSelect = (key == KeyboardKeys.ArrowUp) ?
-                        selectedBox?.ParentNode.GetPreviousBox(selectedBox) :
-                        selectedBox?.ParentNode.GetNextBox(selectedBox);
+                    Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
 
                     if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
                     {
@@ -581,10 +579,12 @@ namespace FlaxEditor.Surface
                 if (key == KeyboardKeys.Tab)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null) return true;
+                    if (selectedBox == null)
+                        return true;
 
                     int connectionCount = selectedBox.Connections.Count;
-                    if (connectionCount == 0) return true;
+                    if (connectionCount == 0)
+                        return true;
 
                     if (Root.GetKey(KeyboardKeys.Shift))
                     {
@@ -596,11 +596,11 @@ namespace FlaxEditor.Surface
                     }
                 }
 
-
                 if (key == KeyboardKeys.ArrowRight || key == KeyboardKeys.ArrowLeft)
                 {
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null) return true;
+                    if (selectedBox == null)
+                        return true;
 
                     Box toSelect = null;
 
@@ -633,7 +633,6 @@ namespace FlaxEditor.Surface
                     {
                         Select(toSelect.ParentNode);
                         toSelect.ParentNode.SelectBox(toSelect);
-
                     }
                     return true;
                 }
@@ -825,10 +824,7 @@ namespace FlaxEditor.Surface
                 xLocation += -120 - distanceBetweenNodes.X;
             }
 
-            return new Vector2(
-                xLocation,
-                yLocation
-            );
+            return new Vector2(xLocation, yLocation);
         }
 
         private bool IntersectsConnection(Vector2 mousePosition, out InputBox inputBox, out OutputBox outputBox)

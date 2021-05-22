@@ -4,6 +4,8 @@
 #include "ParticleManager.h"
 #include "ParticleSystem.h"
 #include "ParticleEmitter.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUDevice.h"
 
 ParticleEmitterInstance::ParticleEmitterInstance()
 {

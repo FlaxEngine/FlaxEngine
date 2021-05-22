@@ -15,5 +15,17 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("deployPlatforms", "Builds and packages the platforms data.")]
         public static bool DeployPlatforms;
+
+        /// <summary>
+        /// Certificate file path for binaries signing.
+        /// </summary>
+        [CommandLine("deployCert", "Certificate file path for binaries signing.")]
+        public static string DeployCert;
+
+        /// <summary>
+        /// Certificate file password for binaries signing.
+        /// </summary>
+        [CommandLine("deployCertPass", "Certificate file password for binaries signing.")]
+        public static string DeployCertPass;
     }
 }

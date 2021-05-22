@@ -17,14 +17,26 @@ namespace FlaxEditor.Windows.Assets
     {
         private readonly CustomEditorPresenter _presenter;
         private readonly ToolStripButton _saveButton;
+        private readonly ToolStripButton _undoButton;
+        private readonly ToolStripButton _redoButton;
+        private readonly Undo _undo;
         private object _object;
+        private bool _isRegisteredForScriptsReload;
 
         /// <inheritdoc />
         public JsonAssetWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            // Undo
+            _undo = new Undo();
+            _undo.UndoDone += OnUndoRedo;
+            _undo.RedoDone += OnUndoRedo;
+
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
+            _toolstrip.AddSeparator();
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)
@@ -35,15 +47,24 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Properties
-            _presenter = new CustomEditorPresenter(null, "Loading...");
+            _presenter = new CustomEditorPresenter(_undo, "Loading...");
             _presenter.Panel.Parent = panel;
             _presenter.Modified += MarkAsEdited;
+
+            // Setup input actions
+            InputActions.Add(options => options.Undo, _undo.PerformUndo);
+            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+        }
+
+        private void OnUndoRedo(IUndoAction action)
+        {
+            MarkAsEdited();
+            UpdateToolstrip();
         }
 
         private void OnScriptsReloadBegin()
         {
             Close();
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
         }
 
         /// <inheritdoc />
@@ -64,13 +85,14 @@ namespace FlaxEditor.Windows.Assets
             }
 
             ClearEditedFlag();
-            _item.RefreshThumbnail();
         }
 
         /// <inheritdoc />
         protected override void UpdateToolstrip()
         {
             _saveButton.Enabled = IsEdited;
+            _undoButton.Enabled = _undo.CanUndo;
+            _redoButton.Enabled = _undo.CanRedo;
 
             base.UpdateToolstrip();
         }
@@ -80,11 +102,15 @@ namespace FlaxEditor.Windows.Assets
         {
             _object = Asset.CreateInstance();
             _presenter.Select(_object);
+            _undo.Clear();
             ClearEditedFlag();
 
             // Auto-close on scripting reload if json asset is from game scripts (it might be reloaded)
-            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()))
+            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()) && !_isRegisteredForScriptsReload)
+            {
+                _isRegisteredForScriptsReload = true;
                 ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            }
 
             base.OnAssetLoaded();
         }
@@ -97,6 +123,18 @@ namespace FlaxEditor.Windows.Assets
             ClearEditedFlag();
 
             base.OnItemReimported(item);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_isRegisteredForScriptsReload)
+            {
+                _isRegisteredForScriptsReload = false;
+                ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            }
+
+            base.OnDestroy();
         }
     }
 }

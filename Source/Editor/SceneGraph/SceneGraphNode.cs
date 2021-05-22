@@ -57,7 +57,9 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual RootNode Root => ParentNode?.Root;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets or sets the transform of the node.
+        /// </summary>
         public abstract Transform Transform { get; set; }
 
         /// <summary>
@@ -110,18 +112,9 @@ namespace FlaxEditor.SceneGraph
             {
                 if (parentNode != value)
                 {
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Remove(this);
-                    }
-
+                    parentNode?.ChildNodes.Remove(this);
                     parentNode = value;
-
-                    if (parentNode != null)
-                    {
-                        parentNode.ChildNodes.Add(this);
-                    }
-
+                    parentNode?.ChildNodes.Add(this);
                     OnParentChanged();
                 }
             }
@@ -310,6 +303,20 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Gets the object bounding sphere (including child actors).
+        /// </summary>
+        /// <param name="sphere">The bounding sphere.</param>
+        public virtual void GetEditorSphere(out BoundingSphere sphere)
+        {
+            sphere = new BoundingSphere(Transform.Translation, 15.0f);
+            for (int i = 0; i < ChildNodes.Count; i++)
+            {
+                ChildNodes[i].GetEditorSphere(out var childSphere);
+                BoundingSphere.Merge(ref sphere, ref childSphere, out sphere);
+            }
+        }
+
+        /// <summary>
         /// Called when selected nodes should draw debug shapes using <see cref="DebugDraw"/> interface.
         /// </summary>
         /// <param name="data">The debug draw data.</param>
@@ -358,6 +365,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Gets or sets the node state.
         /// </summary>
+        [NoSerialize]
         public virtual StateData State
         {
             get => throw new NotImplementedException();

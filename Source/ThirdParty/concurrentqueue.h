@@ -36,36 +36,21 @@
 // upon assigning any computed values)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-
-#ifdef MCDBGQ_USE_RELACY
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#endif
 #endif
 
 #if defined(__APPLE__)
 #include "TargetConditionals.h"
 #endif
 
-#ifdef MCDBGQ_USE_RELACY
-#include "relacy/relacy_std.hpp"
-#include "relacy_shims.h"
-// We only use malloc/free anyway, and the delete macro messes up `= delete` method declarations.
-// We'll override the default trait malloc ourselves without a macro.
-#undef new
-#undef delete
-#undef malloc
-#undef free
-#else
-#include <atomic>		// Requires C++11. Sorry VS2010.
+#include <atomic>
 #include <assert.h>
-#endif
+#include <cstddef>
 #include <stdint.h>
 #include <stdlib.h>
-//#include <array>
 #include <type_traits>
-#include <algorithm>
 #include <utility>
-#include <limits.h>		// for CHAR_BIT
+#include <limits>
+#include <limits.h>
 
 // Platform-specific definitions of a numeric thread ID type and an invalid value
 namespace moodycamel { namespace details {
@@ -75,14 +60,7 @@ namespace moodycamel { namespace details {
 		static thread_id_hash_t prehash(thread_id_t const& x) { return x; }
 	};
 } }
-#if defined(MCDBGQ_USE_RELACY)
-namespace moodycamel { namespace details {
-	typedef uint32_t thread_id_t;
-	static const thread_id_t invalid_thread_id  = 0xFFFFFFFFU;
-	static const thread_id_t invalid_thread_id2 = 0xFFFFFFFEU;
-	static inline thread_id_t thread_id() { return rl::thread_index(); }
-} }
-#elif defined(_WIN32) || defined(__WINDOWS__) || defined(__WIN32__)
+#if defined(_WIN32) || defined(__WINDOWS__) || defined(__WIN32__)
 // No sense pulling in windows.h in a header, we'll manually declare the function
 // we use and rely on backwards-compatibility for this not to break
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
@@ -148,67 +126,13 @@ namespace moodycamel { namespace details {
 } }
 #endif
 
-// Exceptions
-#ifndef MOODYCAMEL_EXCEPTIONS_ENABLED
-#if (defined(_MSC_VER) && defined(_CPPUNWIND)) || (defined(__GNUC__) && defined(__EXCEPTIONS)) || (!defined(_MSC_VER) && !defined(__GNUC__))
-#define MOODYCAMEL_EXCEPTIONS_ENABLED
-#endif
-#endif
-#ifdef MOODYCAMEL_EXCEPTIONS_ENABLED
-#define MOODYCAMEL_TRY try
-#define MOODYCAMEL_CATCH(...) catch(__VA_ARGS__)
-#define MOODYCAMEL_RETHROW throw
-#define MOODYCAMEL_THROW(expr) throw (expr)
-#else
-#define MOODYCAMEL_TRY if (true)
-#define MOODYCAMEL_CATCH(...) else if (false)
-#define MOODYCAMEL_RETHROW
-#define MOODYCAMEL_THROW(expr)
-#endif
-
-#ifndef MOODYCAMEL_NOEXCEPT
-#if !defined(MOODYCAMEL_EXCEPTIONS_ENABLED)
-#define MOODYCAMEL_NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) true
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) true
-#elif defined(_MSC_VER) && defined(_NOEXCEPT) && _MSC_VER < 1800
-// VS2012's std::is_nothrow_[move_]constructible is broken and returns true when it shouldn't :-(
-// We have to assume *all* non-trivial constructors may throw on VS2012!
-#define MOODYCAMEL_NOEXCEPT _NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) (std::is_rvalue_reference<valueType>::value && std::is_move_constructible<type>::value ? std::is_trivially_move_constructible<type>::value : std::is_trivially_copy_constructible<type>::value)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) ((std::is_rvalue_reference<valueType>::value && std::is_move_assignable<type>::value ? std::is_trivially_move_assignable<type>::value || std::is_nothrow_move_assignable<type>::value : std::is_trivially_copy_assignable<type>::value || std::is_nothrow_copy_assignable<type>::value) && MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr))
-#elif defined(_MSC_VER) && defined(_NOEXCEPT) && _MSC_VER < 1900
-#define MOODYCAMEL_NOEXCEPT _NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) (std::is_rvalue_reference<valueType>::value && std::is_move_constructible<type>::value ? std::is_trivially_move_constructible<type>::value || std::is_nothrow_move_constructible<type>::value : std::is_trivially_copy_constructible<type>::value || std::is_nothrow_copy_constructible<type>::value)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) ((std::is_rvalue_reference<valueType>::value && std::is_move_assignable<type>::value ? std::is_trivially_move_assignable<type>::value || std::is_nothrow_move_assignable<type>::value : std::is_trivially_copy_assignable<type>::value || std::is_nothrow_copy_assignable<type>::value) && MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr))
-#else
-#define MOODYCAMEL_NOEXCEPT noexcept
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) noexcept(expr)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) noexcept(expr)
-#endif
-#endif
-
 #ifndef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#ifdef MCDBGQ_USE_RELACY
-#define MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#else
 // VS2013 doesn't support `thread_local`, and MinGW-w64 w/ POSIX threading has a crippling bug: http://sourceforge.net/p/mingw-w64/bugs/445
 // g++ <=4.7 doesn't support thread_local either.
 // Finally, iOS/ARM doesn't have support for it either, and g++/ARM allows it to compile but it's unconfirmed to actually work
 #if (!defined(_MSC_VER) || _MSC_VER >= 1900) && (!defined(__MINGW32__) && !defined(__MINGW64__) || !defined(__WINPTHREADS_VERSION)) && (!defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)) && (!defined(__APPLE__) || !TARGET_OS_IPHONE) && !defined(__arm__) && !defined(_M_ARM) && !defined(__aarch64__)
 // Assume `thread_local` is fully supported in all other C++11 compilers/platforms
 //#define MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED    // always disabled for now since several users report having problems with it on
-#endif
-#endif
-#endif
-
-// VS2012 doesn't support deleted functions. 
-// In this case, we declare the function normally but don't define it. A link error will be generated if the function is called.
-#ifndef MOODYCAMEL_DELETE_FUNCTION
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define MOODYCAMEL_DELETE_FUNCTION
-#else
-#define MOODYCAMEL_DELETE_FUNCTION = delete
 #endif
 #endif
 
@@ -222,10 +146,6 @@ namespace moodycamel { namespace details {
 	static inline bool (unlikely)(bool x) { return x; }
 #endif
 } }
-
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-#include "internal/concurrentqueue_internal_debug.h"
-#endif
 
 namespace moodycamel {
 namespace details {
@@ -315,7 +235,6 @@ struct ConcurrentQueueDefaultTraits
 	static const size_t MAX_SUBQUEUE_SIZE = details::const_numeric_max<size_t>::value;
 	
 	
-#ifndef MCDBGQ_USE_RELACY
 	// Memory allocation can be customized if needed.
 	// malloc should return nullptr on failure, and handle alignment like std::malloc.
 #if defined(malloc) || defined(free)
@@ -328,12 +247,6 @@ struct ConcurrentQueueDefaultTraits
 #else
 	static inline void* malloc(size_t size) { return std::malloc(size); }
 	static inline void free(void* ptr) { return std::free(ptr); }
-#endif
-#else
-	// Debug versions when running under the Relacy race detector (ignore
-	// these in user code)
-	static inline void* malloc(size_t size) { return rl::rl_malloc(size, $); }
-	static inline void free(void* ptr) { return rl::rl_free(ptr, $); }
 #endif
 };
 
@@ -474,7 +387,7 @@ namespace details
 	};
 	
 	template<typename It>
-	static inline auto deref_noexcept(It& it) MOODYCAMEL_NOEXCEPT -> decltype(*it)
+	static inline auto deref_noexcept(It& it) noexcept -> decltype(*it)
 	{
 		return *it;
 	}
@@ -486,10 +399,6 @@ namespace details
 #endif
 	
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#ifdef MCDBGQ_USE_RELACY
-	typedef RelacyThreadExitListener ThreadExitListener;
-	typedef RelacyThreadExitNotifier ThreadExitNotifier;
-#else
 	struct ThreadExitListener
 	{
 		typedef void (*callback_t)(void*);
@@ -525,8 +434,8 @@ namespace details
 		
 	private:
 		ThreadExitNotifier() : tail(nullptr) { }
-		ThreadExitNotifier(ThreadExitNotifier const&) MOODYCAMEL_DELETE_FUNCTION;
-		ThreadExitNotifier& operator=(ThreadExitNotifier const&) MOODYCAMEL_DELETE_FUNCTION;
+		ThreadExitNotifier(ThreadExitNotifier const&) = delete;
+		ThreadExitNotifier& operator=(ThreadExitNotifier const&) = delete;
 		
 		~ThreadExitNotifier()
 		{
@@ -547,7 +456,6 @@ namespace details
 	private:
 		ThreadExitListener* tail;
 	};
-#endif
 #endif
 	
 	template<typename T> struct static_is_lock_free_num { enum { value = 0 }; };
@@ -570,7 +478,7 @@ struct ProducerToken
 	template<typename T, typename Traits>
 	explicit ProducerToken(BlockingConcurrentQueue<T, Traits>& queue);
 	
-	ProducerToken(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
+	ProducerToken(ProducerToken&& other) noexcept
 		: producer(other.producer)
 	{
 		other.producer = nullptr;
@@ -579,13 +487,13 @@ struct ProducerToken
 		}
 	}
 	
-	inline ProducerToken& operator=(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
+	inline ProducerToken& operator=(ProducerToken&& other) noexcept
 	{
 		swap(other);
 		return *this;
 	}
 	
-	void swap(ProducerToken& other) MOODYCAMEL_NOEXCEPT
+	void swap(ProducerToken& other) noexcept
 	{
 		std::swap(producer, other.producer);
 		if (producer != nullptr) {
@@ -615,8 +523,8 @@ struct ProducerToken
 	}
 	
 	// Disable copying and assignment
-	ProducerToken(ProducerToken const&) MOODYCAMEL_DELETE_FUNCTION;
-	ProducerToken& operator=(ProducerToken const&) MOODYCAMEL_DELETE_FUNCTION;
+	ProducerToken(ProducerToken const&) = delete;
+	ProducerToken& operator=(ProducerToken const&) = delete;
 	
 private:
 	template<typename T, typename Traits> friend class ConcurrentQueue;
@@ -635,18 +543,18 @@ struct ConsumerToken
 	template<typename T, typename Traits>
 	explicit ConsumerToken(BlockingConcurrentQueue<T, Traits>& q);
 	
-	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+	ConsumerToken(ConsumerToken&& other) noexcept
 		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
 	{
 	}
 	
-	inline ConsumerToken& operator=(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+	inline ConsumerToken& operator=(ConsumerToken&& other) noexcept
 	{
 		swap(other);
 		return *this;
 	}
 	
-	void swap(ConsumerToken& other) MOODYCAMEL_NOEXCEPT
+	void swap(ConsumerToken& other) noexcept
 	{
 		std::swap(initialOffset, other.initialOffset);
 		std::swap(lastKnownGlobalOffset, other.lastKnownGlobalOffset);
@@ -656,8 +564,8 @@ struct ConsumerToken
 	}
 	
 	// Disable copying and assignment
-	ConsumerToken(ConsumerToken const&) MOODYCAMEL_DELETE_FUNCTION;
-	ConsumerToken& operator=(ConsumerToken const&) MOODYCAMEL_DELETE_FUNCTION;
+	ConsumerToken(ConsumerToken const&) = delete;
+	ConsumerToken& operator=(ConsumerToken const&) = delete;
 
 private:
 	template<typename T, typename Traits> friend class ConcurrentQueue;
@@ -674,7 +582,7 @@ private: // but shared with ConcurrentQueue
 // Need to forward-declare this swap because it's in a namespace.
 // See http://stackoverflow.com/questions/4492062/why-does-a-c-friend-class-need-a-forward-declaration-only-in-other-namespaces
 template<typename T, typename Traits>
-inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& b) MOODYCAMEL_NOEXCEPT;
+inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& b) noexcept;
 
 
 template<typename T, typename Traits = ConcurrentQueueDefaultTraits>
@@ -734,15 +642,6 @@ public:
 		implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
 		populate_initial_implicit_producer_hash();
 		populate_initial_block_list(capacity / BLOCK_SIZE + ((capacity & (BLOCK_SIZE - 1)) == 0 ? 0 : 1));
-		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		// Track all the producers using a fully-resolved typed list for
-		// each kind; this makes it possible to debug them starting from
-		// the root queue object (otherwise wacky casts are needed that
-		// don't compile in the debugger's expression evaluator).
-		explicitProducers.store(nullptr, std::memory_order_relaxed);
-		implicitProducers.store(nullptr, std::memory_order_relaxed);
-#endif
 	}
 	
 	// Computes the correct amount of pre-allocated blocks for you based
@@ -759,11 +658,6 @@ public:
 		populate_initial_implicit_producer_hash();
 		size_t blocks = (((minCapacity + BLOCK_SIZE - 1) / BLOCK_SIZE) - 1) * (maxExplicitProducers + 1) + 2 * (maxExplicitProducers + maxImplicitProducers);
 		populate_initial_block_list(blocks);
-		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		explicitProducers.store(nullptr, std::memory_order_relaxed);
-		implicitProducers.store(nullptr, std::memory_order_relaxed);
-#endif
 	}
 	
 	// Note: The queue should not be accessed concurrently while it's
@@ -813,8 +707,8 @@ public:
 	}
 
 	// Disable copying and copy assignment
-	ConcurrentQueue(ConcurrentQueue const&) MOODYCAMEL_DELETE_FUNCTION;
-	ConcurrentQueue& operator=(ConcurrentQueue const&) MOODYCAMEL_DELETE_FUNCTION;
+	ConcurrentQueue(ConcurrentQueue const&) = delete;
+	ConcurrentQueue& operator=(ConcurrentQueue const&) = delete;
 	
 	// Moving is supported, but note that it is *not* a thread-safe operation.
 	// Nobody can use the queue while it's being moved, and the memory effects
@@ -822,7 +716,7 @@ public:
 	// Note: When a queue is moved, its tokens are still valid but can only be
 	// used with the destination queue (i.e. semantically they are moved along
 	// with the queue itself).
-	ConcurrentQueue(ConcurrentQueue&& other) MOODYCAMEL_NOEXCEPT
+	ConcurrentQueue(ConcurrentQueue&& other) noexcept
 		: producerListTail(other.producerListTail.load(std::memory_order_relaxed)),
 		producerCount(other.producerCount.load(std::memory_order_relaxed)),
 		initialBlockPoolIndex(other.initialBlockPoolIndex.load(std::memory_order_relaxed)),
@@ -842,13 +736,6 @@ public:
 		other.nextExplicitConsumerId.store(0, std::memory_order_relaxed);
 		other.globalExplicitConsumerOffset.store(0, std::memory_order_relaxed);
 		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		explicitProducers.store(other.explicitProducers.load(std::memory_order_relaxed), std::memory_order_relaxed);
-		other.explicitProducers.store(nullptr, std::memory_order_relaxed);
-		implicitProducers.store(other.implicitProducers.load(std::memory_order_relaxed), std::memory_order_relaxed);
-		other.implicitProducers.store(nullptr, std::memory_order_relaxed);
-#endif
-		
 		other.initialBlockPoolIndex.store(0, std::memory_order_relaxed);
 		other.initialBlockPoolSize = 0;
 		other.initialBlockPool = nullptr;
@@ -856,7 +743,7 @@ public:
 		reown_producers();
 	}
 	
-	inline ConcurrentQueue& operator=(ConcurrentQueue&& other) MOODYCAMEL_NOEXCEPT
+	inline ConcurrentQueue& operator=(ConcurrentQueue&& other) noexcept
 	{
 		return swap_internal(other);
 	}
@@ -866,7 +753,7 @@ public:
 	// the tokens that were created for one queue must be used with
 	// only the swapped queue (i.e. the tokens are tied to the
 	// queue's movable state, not the object itself).
-	inline void swap(ConcurrentQueue& other) MOODYCAMEL_NOEXCEPT
+	inline void swap(ConcurrentQueue& other) noexcept
 	{
 		swap_internal(other);
 	}
@@ -891,11 +778,6 @@ private:
 		
 		reown_producers();
 		other.reown_producers();
-		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		details::swap_relaxed(explicitProducers, other.explicitProducers);
-		details::swap_relaxed(implicitProducers, other.implicitProducers);
-#endif
 		
 		return *this;
 	}
@@ -1367,14 +1249,11 @@ private:
 		FreeList(FreeList&& other) : freeListHead(other.freeListHead.load(std::memory_order_relaxed)) { other.freeListHead.store(nullptr, std::memory_order_relaxed); }
 		void swap(FreeList& other) { details::swap_relaxed(freeListHead, other.freeListHead); }
 		
-		FreeList(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
-		FreeList& operator=(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
+		FreeList(FreeList const&) = delete;
+		FreeList& operator=(FreeList const&) = delete;
 		
 		inline void add(N* node)
 		{
-#ifdef MCDBGQ_NOLOCKFREE_FREELIST
-			debug::DebugLock lock(mutex);
-#endif		
 			// We know that the should-be-on-freelist bit is 0 at this point, so it's safe to
 			// set it using a fetch_add
 			if (node->freeListRefs.fetch_add(SHOULD_BE_ON_FREELIST, std::memory_order_acq_rel) == 0) {
@@ -1385,10 +1264,7 @@ private:
 		}
 		
 		inline N* try_get()
-		{
-#ifdef MCDBGQ_NOLOCKFREE_FREELIST
-			debug::DebugLock lock(mutex);
-#endif		
+		{	
 			auto head = freeListHead.load(std::memory_order_acquire);
 			while (head != nullptr) {
 				auto prevHead = head;
@@ -1457,10 +1333,6 @@ private:
 	
 	static const uint32_t REFS_MASK = 0x7FFFFFFF;
 	static const uint32_t SHOULD_BE_ON_FREELIST = 0x80000000;
-		
-#ifdef MCDBGQ_NOLOCKFREE_FREELIST
-		debug::DebugMutex mutex;
-#endif
 	};
 	
 	
@@ -1475,9 +1347,6 @@ private:
 		Block()
 			: next(nullptr), elementsCompletelyDequeued(0), freeListRefs(0), freeListNext(nullptr), shouldBeOnFreeList(false), dynamicallyAllocated(true)
 		{
-#ifdef MCDBGQ_TRACKMEM
-			owner = nullptr;
-#endif
 		}
 		
 		template<InnerQueueContext context>
@@ -1577,8 +1446,8 @@ private:
 			}
 		}
 		
-		inline T* operator[](index_t idx) MOODYCAMEL_NOEXCEPT { return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
-		inline T const* operator[](index_t idx) const MOODYCAMEL_NOEXCEPT { return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+		inline T* operator[](index_t idx) noexcept { return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+		inline T const* operator[](index_t idx) const noexcept { return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
 		
 	private:
 		// IMPORTANT: This must be the first member in Block, so that if T depends on the alignment of
@@ -1604,19 +1473,9 @@ private:
 		std::atomic<Block*> freeListNext;
 		std::atomic<bool> shouldBeOnFreeList;
 		bool dynamicallyAllocated;		// Perhaps a better name for this would be 'isNotPartOfInitialBlockPool'
-		
-#ifdef MCDBGQ_TRACKMEM
-		void* owner;
-#endif
 	};
 	static_assert(std::alignment_of<Block>::value >= std::alignment_of<details::max_align_t>::value, "Internal error: Blocks must be at least as aligned as the type they are wrapping");
 
-
-#ifdef MCDBGQ_TRACKMEM
-public:
-	struct MemStats;
-private:
-#endif
 	
 	///////////////////////////
 	// Producer base
@@ -1681,11 +1540,6 @@ private:
 	public:
 		bool isExplicit;
 		ConcurrentQueue* parent;
-		
-	protected:
-#ifdef MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
 	
@@ -1826,9 +1680,6 @@ private:
 					if (newBlock == nullptr) {
 						return false;
 					}
-#ifdef MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template reset_empty<explicit_context>();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
@@ -1841,19 +1692,8 @@ private:
 					++pr_blockIndexSlotsUsed;
 				}
 
-				if (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new ((T*)nullptr) T(std::forward<U>(element)))) {
-					// The constructor may throw. We want the element not to appear in the queue in
-					// that case (without corrupting the queue):
-					MOODYCAMEL_TRY {
-						new ((*this->tailBlock)[currentTailIndex]) T(std::forward<U>(element));
-					}
-					MOODYCAMEL_CATCH (...) {
-						// Revert change to the current block, but leave the new block available
-						// for next time
-						pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-						this->tailBlock = startBlock == nullptr ? this->tailBlock : startBlock;
-						MOODYCAMEL_RETHROW;
-					}
+				if (!noexcept(new ((T*)nullptr) T(std::forward<U>(element)))) {
+					new ((*this->tailBlock)[currentTailIndex]) T(std::forward<U>(element));
 				}
 				else {
 					(void)startBlock;
@@ -1867,7 +1707,7 @@ private:
 				blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront, std::memory_order_release);
 				pr_blockIndexFront = (pr_blockIndexFront + 1) & (pr_blockIndexSize - 1);
 				
-				if (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new ((T*)nullptr) T(std::forward<U>(element)))) {
+				if (!noexcept(new ((T*)nullptr) T(std::forward<U>(element)))) {
 					this->tailIndex.store(newTailIndex, std::memory_order_release);
 					return true;
 				}
@@ -1947,7 +1787,7 @@ private:
 					
 					// Dequeue
 					auto& el = *((*block)[index]);
-					if (!MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, element = std::move(el))) {
+					if (!noexcept(element = std::move(el))) {
 						// Make sure the element is still fully dequeued and destroyed even if the assignment
 						// throws
 						struct Guard {
@@ -2043,9 +1883,6 @@ private:
 						return false;
 					}
 					
-#ifdef MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template set_all_empty<explicit_context>();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
@@ -2076,7 +1913,7 @@ private:
 					block = block->next;
 				}
 				
-				if (MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
+				if (noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
 					blockIndex.load(std::memory_order_relaxed)->front.store((pr_blockIndexFront - 1) & (pr_blockIndexSize - 1), std::memory_order_release);
 				}
 			}
@@ -2095,58 +1932,23 @@ private:
 				if (details::circular_less_than<index_t>(newTailIndex, stopIndex)) {
 					stopIndex = newTailIndex;
 				}
-				if (MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
+				if (noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
 					while (currentTailIndex != stopIndex) {
 						new ((*this->tailBlock)[currentTailIndex++]) T(*itemFirst++);
 					}
 				}
 				else {
-					MOODYCAMEL_TRY {
-						while (currentTailIndex != stopIndex) {
-							// Must use copy constructor even if move constructor is available
-							// because we may have to revert if there's an exception.
-							// Sorry about the horrible templated next line, but it was the only way
-							// to disable moving *at compile time*, which is important because a type
-							// may only define a (noexcept) move constructor, and so calls to the
-							// cctor will not compile, even if they are in an if branch that will never
-							// be executed
-							new ((*this->tailBlock)[currentTailIndex]) T(details::nomove_if<(bool)!MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))>::eval(*itemFirst));
-							++currentTailIndex;
-							++itemFirst;
-						}
-					}
-					MOODYCAMEL_CATCH (...) {
-						// Oh dear, an exception's been thrown -- destroy the elements that
-						// were enqueued so far and revert the entire bulk operation (we'll keep
-						// any allocated blocks in our linked list for later, though).
-						auto constructedStopIndex = currentTailIndex;
-						auto lastBlockEnqueued = this->tailBlock;
-						
-						pr_blockIndexFront = originalBlockIndexFront;
-						pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-						this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
-						
-						if (!details::is_trivially_destructible<T>::value) {
-							auto block = startBlock;
-							if ((startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0) {
-								block = firstAllocatedBlock;
-							}
-							currentTailIndex = startTailIndex;
-							while (true) {
-								stopIndex = (currentTailIndex & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-								if (details::circular_less_than<index_t>(constructedStopIndex, stopIndex)) {
-									stopIndex = constructedStopIndex;
-								}
-								while (currentTailIndex != stopIndex) {
-									(*block)[currentTailIndex++]->~T();
-								}
-								if (block == lastBlockEnqueued) {
-									break;
-								}
-								block = block->next;
-							}
-						}
-						MOODYCAMEL_RETHROW;
+					while (currentTailIndex != stopIndex) {
+						// Must use copy constructor even if move constructor is available
+						// because we may have to revert if there's an exception.
+						// Sorry about the horrible templated next line, but it was the only way
+						// to disable moving *at compile time*, which is important because a type
+						// may only define a (noexcept) move constructor, and so calls to the
+						// cctor will not compile, even if they are in an if branch that will never
+						// be executed
+						new ((*this->tailBlock)[currentTailIndex]) T(details::nomove_if<(bool)!noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))>::eval(*itemFirst));
+						++currentTailIndex;
+						++itemFirst;
 					}
 				}
 				
@@ -2157,7 +1959,7 @@ private:
 				this->tailBlock = this->tailBlock->next;
 			}
 			
-			if (!MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst))) && firstAllocatedBlock != nullptr) {
+			if (!noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst))) && firstAllocatedBlock != nullptr) {
 				blockIndex.load(std::memory_order_relaxed)->front.store((pr_blockIndexFront - 1) & (pr_blockIndexSize - 1), std::memory_order_release);
 			}
 			
@@ -2205,7 +2007,7 @@ private:
 						auto endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
 						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
 						auto block = localBlockIndex->entries[indexIndex].block;
-						if (MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
+						if (noexcept(details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
 							while (index != endIndex) {
 								auto& el = *((*block)[index]);
 								*itemFirst++ = std::move(el);
@@ -2214,33 +2016,12 @@ private:
 							}
 						}
 						else {
-							MOODYCAMEL_TRY {
-								while (index != endIndex) {
-									auto& el = *((*block)[index]);
-									*itemFirst = std::move(el);
-									++itemFirst;
-									el.~T();
-									++index;
-								}
-							}
-							MOODYCAMEL_CATCH (...) {
-								// It's too late to revert the dequeue, but we can make sure that all
-								// the dequeued objects are properly destroyed and the block index
-								// (and empty count) are properly updated before we propagate the exception
-								do {
-									block = localBlockIndex->entries[indexIndex].block;
-									while (index != endIndex) {
-										(*block)[index++]->~T();
-									}
-									block->ConcurrentQueue::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
-									indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
-									
-									firstIndexInBlock = index;
-									endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-									endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
-								} while (index != firstIndex + actualCount);
-								
-								MOODYCAMEL_RETHROW;
+							while (index != endIndex) {
+								auto& el = *((*block)[index]);
+								*itemFirst = std::move(el);
+								++itemFirst;
+								el.~T();
+								++index;
 							}
 						}
 						block->ConcurrentQueue::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
@@ -2322,16 +2103,6 @@ private:
 		size_t pr_blockIndexFront;		// Next slot (not current)
 		BlockIndexEntry* pr_blockIndexEntries;
 		void* pr_blockIndexRaw;
-		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-	public:
-		ExplicitProducer* nextExplicitProducer;
-	private:
-#endif
-		
-#ifdef MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
 	
@@ -2416,9 +2187,6 @@ private:
 				if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE) || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
 					return false;
 				}
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-				debug::DebugLock lock(mutex);
-#endif
 				// Find out where we'll be inserting this block in the block index
 				BlockIndexEntry* idxEntry;
 				if (!insert_block_index_entry<allocMode>(idxEntry, currentTailIndex)) {
@@ -2432,22 +2200,10 @@ private:
 					idxEntry->value.store(nullptr, std::memory_order_relaxed);
 					return false;
 				}
-#ifdef MCDBGQ_TRACKMEM
-				newBlock->owner = this;
-#endif
 				newBlock->ConcurrentQueue::Block::template reset_empty<implicit_context>();
 				
-				if (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new ((T*)nullptr) T(std::forward<U>(element)))) {
-					// May throw, try to insert now before we publish the fact that we have this new block
-					MOODYCAMEL_TRY {
-						new ((*newBlock)[currentTailIndex]) T(std::forward<U>(element));
-					}
-					MOODYCAMEL_CATCH (...) {
-						rewind_block_index_tail();
-						idxEntry->value.store(nullptr, std::memory_order_relaxed);
-						this->parent->add_block_to_free_list(newBlock);
-						MOODYCAMEL_RETHROW;
-					}
+				if (!noexcept(new ((T*)nullptr) T(std::forward<U>(element)))) {
+					new ((*newBlock)[currentTailIndex]) T(std::forward<U>(element));
 				}
 				
 				// Insert the new block into the index
@@ -2455,7 +2211,7 @@ private:
 				
 				this->tailBlock = newBlock;
 				
-				if (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new ((T*)nullptr) T(std::forward<U>(element)))) {
+				if (!noexcept(new ((T*)nullptr) T(std::forward<U>(element)))) {
 					this->tailIndex.store(newTailIndex, std::memory_order_release);
 					return true;
 				}
@@ -2489,12 +2245,7 @@ private:
 					auto block = entry->value.load(std::memory_order_relaxed);
 					auto& el = *((*block)[index]);
 					
-					if (!MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, element = std::move(el))) {
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-						// Note: Acquiring the mutex with every dequeue instead of only when a block
-						// is released is very sub-optimal, but it is, after all, purely debug code.
-						debug::DebugLock lock(producer->mutex);
-#endif
+					if (!noexcept(element = std::move(el))) {
 						struct Guard {
 							Block* block;
 							index_t index;
@@ -2519,9 +2270,6 @@ private:
 
 						if (block->ConcurrentQueue::Block::template set_empty<implicit_context>(index)) {
 							{
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-								debug::DebugLock lock(mutex);
-#endif
 								// Add the block back into the global free pool (and remove from block index)
 								entry->value.store(nullptr, std::memory_order_relaxed);
 							}
@@ -2560,9 +2308,6 @@ private:
 			size_t blockBaseDiff = ((startTailIndex + count - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1)) - ((startTailIndex - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1));
 			index_t currentTailIndex = (startTailIndex - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1);
 			if (blockBaseDiff > 0) {
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-				debug::DebugLock lock(mutex);
-#endif
 				do {
 					blockBaseDiff -= static_cast<index_t>(BLOCK_SIZE);
 					currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
@@ -2594,9 +2339,6 @@ private:
 						return false;
 					}
 					
-#ifdef MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template reset_empty<implicit_context>();
 					newBlock->next = nullptr;
 					
@@ -2628,54 +2370,16 @@ private:
 				if (details::circular_less_than<index_t>(newTailIndex, stopIndex)) {
 					stopIndex = newTailIndex;
 				}
-				if (MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
+				if (noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))) {
 					while (currentTailIndex != stopIndex) {
 						new ((*this->tailBlock)[currentTailIndex++]) T(*itemFirst++);
 					}
 				}
 				else {
-					MOODYCAMEL_TRY {
-						while (currentTailIndex != stopIndex) {
-							new ((*this->tailBlock)[currentTailIndex]) T(details::nomove_if<(bool)!MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*itemFirst), new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))>::eval(*itemFirst));
-							++currentTailIndex;
-							++itemFirst;
-						}
-					}
-					MOODYCAMEL_CATCH (...) {
-						auto constructedStopIndex = currentTailIndex;
-						auto lastBlockEnqueued = this->tailBlock;
-						
-						if (!details::is_trivially_destructible<T>::value) {
-							auto block = startBlock;
-							if ((startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0) {
-								block = firstAllocatedBlock;
-							}
-							currentTailIndex = startTailIndex;
-							while (true) {
-								stopIndex = (currentTailIndex & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-								if (details::circular_less_than<index_t>(constructedStopIndex, stopIndex)) {
-									stopIndex = constructedStopIndex;
-								}
-								while (currentTailIndex != stopIndex) {
-									(*block)[currentTailIndex++]->~T();
-								}
-								if (block == lastBlockEnqueued) {
-									break;
-								}
-								block = block->next;
-							}
-						}
-						
-						currentTailIndex = (startTailIndex - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1);
-						for (auto block = firstAllocatedBlock; block != nullptr; block = block->next) {
-							currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
-							auto idxEntry = get_block_index_entry_for_index(currentTailIndex);
-							idxEntry->value.store(nullptr, std::memory_order_relaxed);
-							rewind_block_index_tail();
-						}
-						this->parent->add_blocks_to_free_list(firstAllocatedBlock);
-						this->tailBlock = startBlock;
-						MOODYCAMEL_RETHROW;
+					while (currentTailIndex != stopIndex) {
+						new ((*this->tailBlock)[currentTailIndex]) T(details::nomove_if<(bool)!noexcept(new ((T*)nullptr) T(details::deref_noexcept(itemFirst)))>::eval(*itemFirst));
+						++currentTailIndex;
+						++itemFirst;
 					}
 				}
 				
@@ -2724,7 +2428,7 @@ private:
 						
 						auto entry = localBlockIndex->index[indexIndex];
 						auto block = entry->value.load(std::memory_order_relaxed);
-						if (MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
+						if (noexcept(details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
 							while (index != endIndex) {
 								auto& el = *((*block)[index]);
 								*itemFirst++ = std::move(el);
@@ -2733,45 +2437,16 @@ private:
 							}
 						}
 						else {
-							MOODYCAMEL_TRY {
-								while (index != endIndex) {
-									auto& el = *((*block)[index]);
-									*itemFirst = std::move(el);
-									++itemFirst;
-									el.~T();
-									++index;
-								}
-							}
-							MOODYCAMEL_CATCH (...) {
-								do {
-									entry = localBlockIndex->index[indexIndex];
-									block = entry->value.load(std::memory_order_relaxed);
-									while (index != endIndex) {
-										(*block)[index++]->~T();
-									}
-									
-									if (block->ConcurrentQueue::Block::template set_many_empty<implicit_context>(blockStartIndex, static_cast<size_t>(endIndex - blockStartIndex))) {
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-										debug::DebugLock lock(mutex);
-#endif
-										entry->value.store(nullptr, std::memory_order_relaxed);
-										this->parent->add_block_to_free_list(block);
-									}
-									indexIndex = (indexIndex + 1) & (localBlockIndex->capacity - 1);
-									
-									blockStartIndex = index;
-									endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-									endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
-								} while (index != firstIndex + actualCount);
-								
-								MOODYCAMEL_RETHROW;
+							while (index != endIndex) {
+								auto& el = *((*block)[index]);
+								*itemFirst = std::move(el);
+								++itemFirst;
+								el.~T();
+								++index;
 							}
 						}
 						if (block->ConcurrentQueue::Block::template set_many_empty<implicit_context>(blockStartIndex, static_cast<size_t>(endIndex - blockStartIndex))) {
 							{
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-								debug::DebugLock lock(mutex);
-#endif
 								// Note that the set_many_empty above did a release, meaning that anybody who acquires the block
 								// we're about to free can use it safely since our writes (and reads!) will have happened-before then.
 								entry->value.store(nullptr, std::memory_order_relaxed);
@@ -2855,9 +2530,6 @@ private:
 		
 		inline size_t get_block_index_index_for_index(index_t index, BlockIndexHeader*& localBlockIndex) const
 		{
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-			debug::DebugLock lock(mutex);
-#endif
 			index &= ~static_cast<index_t>(BLOCK_SIZE - 1);
 			localBlockIndex = blockIndex.load(std::memory_order_acquire);
 			auto tail = localBlockIndex->tail.load(std::memory_order_acquire);
@@ -2924,19 +2596,6 @@ private:
 		details::ThreadExitListener threadExitListener;
 	private:
 #endif
-		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-	public:
-		ImplicitProducer* nextImplicitProducer;
-	private:
-#endif
-
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
-		mutable debug::DebugMutex mutex;
-#endif
-#ifdef MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
 	
@@ -2974,9 +2633,6 @@ private:
 	
 	inline void add_block_to_free_list(Block* block)
 	{
-#ifdef MCDBGQ_TRACKMEM
-		block->owner = nullptr;
-#endif
 		freeList.add(block);
 	}
 	
@@ -3015,112 +2671,6 @@ private:
 		return nullptr;
 	}
 	
-
-#ifdef MCDBGQ_TRACKMEM
-	public:
-		struct MemStats {
-			size_t allocatedBlocks;
-			size_t usedBlocks;
-			size_t freeBlocks;
-			size_t ownedBlocksExplicit;
-			size_t ownedBlocksImplicit;
-			size_t implicitProducers;
-			size_t explicitProducers;
-			size_t elementsEnqueued;
-			size_t blockClassBytes;
-			size_t queueClassBytes;
-			size_t implicitBlockIndexBytes;
-			size_t explicitBlockIndexBytes;
-			
-			friend class ConcurrentQueue;
-			
-		private:
-			static MemStats getFor(ConcurrentQueue* q)
-			{
-				MemStats stats = { 0 };
-				
-				stats.elementsEnqueued = q->size_approx();
-			
-				auto block = q->freeList.head_unsafe();
-				while (block != nullptr) {
-					++stats.allocatedBlocks;
-					++stats.freeBlocks;
-					block = block->freeListNext.load(std::memory_order_relaxed);
-				}
-				
-				for (auto ptr = q->producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
-					bool implicit = dynamic_cast<ImplicitProducer*>(ptr) != nullptr;
-					stats.implicitProducers += implicit ? 1 : 0;
-					stats.explicitProducers += implicit ? 0 : 1;
-					
-					if (implicit) {
-						auto prod = static_cast<ImplicitProducer*>(ptr);
-						stats.queueClassBytes += sizeof(ImplicitProducer);
-						auto head = prod->headIndex.load(std::memory_order_relaxed);
-						auto tail = prod->tailIndex.load(std::memory_order_relaxed);
-						auto hash = prod->blockIndex.load(std::memory_order_relaxed);
-						if (hash != nullptr) {
-							for (size_t i = 0; i != hash->capacity; ++i) {
-								if (hash->index[i]->key.load(std::memory_order_relaxed) != ImplicitProducer::INVALID_BLOCK_BASE && hash->index[i]->value.load(std::memory_order_relaxed) != nullptr) {
-									++stats.allocatedBlocks;
-									++stats.ownedBlocksImplicit;
-								}
-							}
-							stats.implicitBlockIndexBytes += hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry);
-							for (; hash != nullptr; hash = hash->prev) {
-								stats.implicitBlockIndexBytes += sizeof(typename ImplicitProducer::BlockIndexHeader) + hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry*);
-							}
-						}
-						for (; details::circular_less_than<index_t>(head, tail); head += BLOCK_SIZE) {
-							//auto block = prod->get_block_index_entry_for_index(head);
-							++stats.usedBlocks;
-						}
-					}
-					else {
-						auto prod = static_cast<ExplicitProducer*>(ptr);
-						stats.queueClassBytes += sizeof(ExplicitProducer);
-						auto tailBlock = prod->tailBlock;
-						bool wasNonEmpty = false;
-						if (tailBlock != nullptr) {
-							auto block = tailBlock;
-							do {
-								++stats.allocatedBlocks;
-								if (!block->ConcurrentQueue::Block::template is_empty<explicit_context>() || wasNonEmpty) {
-									++stats.usedBlocks;
-									wasNonEmpty = wasNonEmpty || block != tailBlock;
-								}
-								++stats.ownedBlocksExplicit;
-								block = block->next;
-							} while (block != tailBlock);
-						}
-						auto index = prod->blockIndex.load(std::memory_order_relaxed);
-						while (index != nullptr) {
-							stats.explicitBlockIndexBytes += sizeof(typename ExplicitProducer::BlockIndexHeader) + index->size * sizeof(typename ExplicitProducer::BlockIndexEntry);
-							index = static_cast<typename ExplicitProducer::BlockIndexHeader*>(index->prev);
-						}
-					}
-				}
-				
-				auto freeOnInitialPool = q->initialBlockPoolIndex.load(std::memory_order_relaxed) >= q->initialBlockPoolSize ? 0 : q->initialBlockPoolSize - q->initialBlockPoolIndex.load(std::memory_order_relaxed);
-				stats.allocatedBlocks += freeOnInitialPool;
-				stats.freeBlocks += freeOnInitialPool;
-				
-				stats.blockClassBytes = sizeof(Block) * stats.allocatedBlocks;
-				stats.queueClassBytes += sizeof(ConcurrentQueue);
-				
-				return stats;
-			}
-		};
-		
-		// For debugging only. Not thread-safe.
-		MemStats getMemStats()
-		{
-			return MemStats::getFor(this);
-		}
-	private:
-		friend struct MemStats;
-#endif
-	
 	
 	//////////////////////////////////
 	// Producer list manipulation
@@ -3134,9 +2684,6 @@ private:
 	
 	ProducerBase* recycle_or_create_producer(bool isExplicit, bool& recycled)
 	{
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
 		// Try to re-use one first
 		for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
 			if (ptr->inactive.load(std::memory_order_relaxed) && ptr->isExplicit == isExplicit) {
@@ -3168,21 +2715,6 @@ private:
 			producer->next = prevTail;
 		} while (!producerListTail.compare_exchange_weak(prevTail, producer, std::memory_order_release, std::memory_order_relaxed));
 		
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		if (producer->isExplicit) {
-			auto prevTailExplicit = explicitProducers.load(std::memory_order_relaxed);
-			do {
-				static_cast<ExplicitProducer*>(producer)->nextExplicitProducer = prevTailExplicit;
-			} while (!explicitProducers.compare_exchange_weak(prevTailExplicit, static_cast<ExplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
-		}
-		else {
-			auto prevTailImplicit = implicitProducers.load(std::memory_order_relaxed);
-			do {
-				static_cast<ImplicitProducer*>(producer)->nextImplicitProducer = prevTailImplicit;
-			} while (!implicitProducers.compare_exchange_weak(prevTailImplicit, static_cast<ImplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
-		}
-#endif
-		
 		return producer;
 	}
 	
@@ -3208,19 +2740,19 @@ private:
 		
 		ImplicitProducerKVP() : value(nullptr) { }
 		
-		ImplicitProducerKVP(ImplicitProducerKVP&& other) MOODYCAMEL_NOEXCEPT
+		ImplicitProducerKVP(ImplicitProducerKVP&& other) noexcept
 		{
 			key.store(other.key.load(std::memory_order_relaxed), std::memory_order_relaxed);
 			value = other.value;
 		}
 		
-		inline ImplicitProducerKVP& operator=(ImplicitProducerKVP&& other) MOODYCAMEL_NOEXCEPT
+		inline ImplicitProducerKVP& operator=(ImplicitProducerKVP&& other) noexcept
 		{
 			swap(other);
 			return *this;
 		}
 		
-		inline void swap(ImplicitProducerKVP& other) MOODYCAMEL_NOEXCEPT
+		inline void swap(ImplicitProducerKVP& other) noexcept
 		{
 			if (this != &other) {
 				details::swap_relaxed(key, other.key);
@@ -3230,7 +2762,7 @@ private:
 	};
 	
 	template<typename XT, typename XTraits>
-	friend void moodycamel::swap(typename ConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&, typename ConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&) MOODYCAMEL_NOEXCEPT;
+	friend void moodycamel::swap(typename ConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&, typename ConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&) noexcept;
 	
 	struct ImplicitProducerHash
 	{
@@ -3300,10 +2832,6 @@ private:
 		// have added it previously to one of the tables that we traversed.
 		
 		// Code and algorithm adapted from http://preshing.com/20130605/the-worlds-simplest-lock-free-hash-table
-		
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
 		
 		auto id = details::thread_id();
 		auto hashedId = details::hash_thread_id(id);
@@ -3447,9 +2975,6 @@ private:
 		details::ThreadExitNotifier::unsubscribe(&producer->threadExitListener);
 		
 		// Remove from hash
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
 		auto hash = implicitProducerHash.load(std::memory_order_acquire);
 		assert(hash != nullptr);		// The thread exit listener is only registered if we were added to a hash in the first place
 		auto id = details::thread_id();
@@ -3544,12 +3069,8 @@ private:
 	std::atomic<size_t> initialBlockPoolIndex;
 	Block* initialBlockPool;
 	size_t initialBlockPoolSize;
-	
-#if !MCDBGQ_USEDEBUGFREELIST
+
 	FreeList<Block> freeList;
-#else
-	debug::DebugFreeList<Block> freeList;
-#endif
 	
 	std::atomic<ImplicitProducerHash*> implicitProducerHash;
 	std::atomic<size_t> implicitProducerHashCount;		// Number of slots logically used
@@ -3559,15 +3080,6 @@ private:
 	
 	std::atomic<uint32_t> nextExplicitConsumerId;
 	std::atomic<uint32_t> globalExplicitConsumerOffset;
-	
-#ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-	debug::DebugMutex implicitProdMutex;
-#endif
-	
-#ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-	std::atomic<ExplicitProducer*> explicitProducers;
-	std::atomic<ImplicitProducer*> implicitProducers;
-#endif
 };
 
 
@@ -3606,23 +3118,23 @@ ConsumerToken::ConsumerToken(BlockingConcurrentQueue<T, Traits>& queue)
 }
 
 template<typename T, typename Traits>
-inline void swap(ConcurrentQueue<T, Traits>& a, ConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ConcurrentQueue<T, Traits>& a, ConcurrentQueue<T, Traits>& b) noexcept
 {
 	a.swap(b);
 }
 
-inline void swap(ProducerToken& a, ProducerToken& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ProducerToken& a, ProducerToken& b) noexcept
 {
 	a.swap(b);
 }
 
-inline void swap(ConsumerToken& a, ConsumerToken& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ConsumerToken& a, ConsumerToken& b) noexcept
 {
 	a.swap(b);
 }
 
 template<typename T, typename Traits>
-inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& b) MOODYCAMEL_NOEXCEPT
+inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& b) noexcept
 {
 	a.swap(b);
 }

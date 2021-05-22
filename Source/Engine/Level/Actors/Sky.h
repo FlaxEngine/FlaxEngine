@@ -9,6 +9,8 @@
 #include "Engine/Renderer/Config.h"
 #include "Engine/Renderer/DrawCall.h"
 
+class GPUPipelineState;
+
 /// <summary>
 /// Sky actor renders atmosphere around the scene with fog and sky.
 /// </summary>

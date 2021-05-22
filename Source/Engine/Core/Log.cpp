@@ -156,9 +156,9 @@ void Log::Logger::Dispose()
     WriteFloor();
 
     // Close
-    LogAfterInit = false;
     if (LogAfterInit)
     {
+        LogAfterInit = false;
         LogFile->Close();
         Delete(LogFile);
         LogFile = nullptr;

@@ -100,7 +100,7 @@
 	<Type Name="StringView">
     <DisplayString Condition="_length == 0">Empty</DisplayString>
     <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
-    <DisplayString>{_data,su}</DisplayString>
+    <DisplayString>{_data,[_length]su}</DisplayString>
     <StringView>_data</StringView>
     <Expand>
       <Item Name="[Length]" ExcludeView="simple">_length</Item>
@@ -130,7 +130,7 @@
   <Type Name="StringAnsiView">
     <DisplayString Condition="_length == 0">Empty</DisplayString>
     <DisplayString Condition="_length &lt; 0">Invalid</DisplayString>
-    <DisplayString>{_data}</DisplayString>
+    <DisplayString>{_data,[_length]}</DisplayString>
     <StringView>_data</StringView>
     <Expand>
       <Item Name="[Length]" ExcludeView="simple">_length</Item>
@@ -143,9 +143,9 @@
 
   <!-- StringBuilder -->
   <Type Name="StringBuilder">
-		<DisplayString>{_data_allocation.._data,su}</DisplayString>
+		<DisplayString>{_data._allocation._data,[_data._count]su}</DisplayString>
 		<Expand>
-			<Item Name="[Raw]" ExcludeView="simple">_data._data</Item>
+			<Item Name="[Raw]" ExcludeView="simple">_data._allocation._data</Item>
 			<Item Name="[Size]" ExcludeView="simple">_data._count</Item>
 			<ArrayItems>
 				<Size>_data._count</Size>

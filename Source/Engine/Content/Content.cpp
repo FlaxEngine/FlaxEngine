@@ -14,6 +14,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
@@ -408,16 +409,20 @@ Asset* Content::LoadAsync(const StringView& path, MClass* type)
 
 Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& type)
 {
+    // Ensure path is in a valid format
+    String pathNorm(path);
+    FileSystem::NormalizePath(pathNorm);
+
 #if USE_EDITOR
-    if (!FileSystem::FileExists(path))
+    if (!FileSystem::FileExists(pathNorm))
     {
-        LOG(Error, "Missing file \'{0}\'", path);
+        LOG(Error, "Missing file \'{0}\'", pathNorm);
         return nullptr;
     }
 #endif
 
     AssetInfo assetInfo;
-    if (GetAssetInfo(path, assetInfo))
+    if (GetAssetInfo(pathNorm, assetInfo))
     {
         return LoadAsync(assetInfo.ID, type);
     }

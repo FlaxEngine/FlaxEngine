@@ -83,6 +83,17 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Checks if the project that contains a given module (checks for modules located in the given project Source folder).
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="project">The project to check.</param>
+        /// <returns>True if project contains that module inside, otherwise it's external or referenced.</returns>
+        public static bool IsModuleFromProject(Module module, ProjectInfo project)
+        {
+            return GetModuleProject(module, project) == project;
+        }
+
+        /// <summary>
         /// Builds the targets.
         /// </summary>
         /// <returns>True if failed, otherwise false.</returns>

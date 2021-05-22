@@ -4,6 +4,7 @@
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -193,9 +194,9 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.GlobalExtinctionScale = options.ExtinctionScale;
     _cache.Data.GlobalEmissive = options.Emissive.ToVector3() * options.Emissive.A;
     _cache.Data.GridSize = _cache.GridSize;
-    _cache.Data.GridSizeIntX = (int32)_cache.GridSize.X;
-    _cache.Data.GridSizeIntY = (int32)_cache.GridSize.Y;
-    _cache.Data.GridSizeIntZ = (int32)_cache.GridSize.Z;
+    _cache.Data.GridSizeIntX = (uint32)_cache.GridSize.X;
+    _cache.Data.GridSizeIntY = (uint32)_cache.GridSize.Y;
+    _cache.Data.GridSizeIntZ = (uint32)_cache.GridSize.Z;
     _cache.Data.HistoryWeight = _cache.HistoryWeight;
     _cache.Data.FogParameters = options.FogParameters;
     _cache.Data.InverseSquaredLightDistanceBiasScale = _cache.InverseSquaredLightDistanceBiasScale;
@@ -298,6 +299,8 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     context->SetViewportAndScissors(_cache.Data.GridSize.X, _cache.Data.GridSize.Y);
 
     // Setup data
+    perLight.SliceToDepth.X = _cache.Data.GridSize.Z;
+    perLight.SliceToDepth.Y = _cache.Data.VolumetricFogMaxDistance;
     perLight.MinZ = volumeZBoundsMin;
     perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
     perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
@@ -355,6 +358,8 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
         bool withShadow = false;
 
         // Setup data
+        perLight.SliceToDepth.X = cache.Data.GridSize.Z;
+        perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
         perLight.MinZ = volumeZBoundsMin;
         perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
         perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);

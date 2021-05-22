@@ -6,6 +6,8 @@
 #include "Terrain.h"
 #include "TerrainManager.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Level/Scene/Scene.h"

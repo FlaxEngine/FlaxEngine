@@ -76,7 +76,7 @@ void PreviewsCache::FlushTask::OnEnd()
     ThreadPoolTask::OnEnd();
 }
 
-REGISTER_BINARY_ASSET(PreviewsCache, "FlaxEditor.PreviewsCache", ::New<TextureAssetUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(PreviewsCache, "FlaxEditor.PreviewsCache", TextureAssetUpgrader, false);
 
 PreviewsCache::PreviewsCache(const SpawnParams& params, const AssetInfo* info)
     : SpriteAtlas(params, info)

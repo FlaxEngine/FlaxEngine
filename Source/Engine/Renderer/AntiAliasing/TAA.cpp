@@ -7,6 +7,8 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Engine/Engine.h"
 
 bool TAA::Init()

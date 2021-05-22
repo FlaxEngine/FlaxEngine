@@ -8,7 +8,7 @@
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 
-REGISTER_BINARY_ASSET(SceneAnimation, "FlaxEngine.SceneAnimation", nullptr, false);
+REGISTER_BINARY_ASSET(SceneAnimation, "FlaxEngine.SceneAnimation", false);
 
 SceneAnimation::SceneAnimation(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

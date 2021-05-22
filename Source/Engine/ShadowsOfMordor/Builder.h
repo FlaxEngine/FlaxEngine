@@ -9,8 +9,11 @@
 
 #if COMPILE_WITH_GI_BAKING
 
+#include "Engine/Graphics/RenderTask.h"
+
 // Forward declarations
 #if COMPILE_WITH_ASSETS_IMPORTER
+
 namespace DirectX
 {
     class ScratchImage;
@@ -20,6 +23,7 @@ class Actor;
 class Terrain;
 class Foliage;
 class StaticModel;
+class GPUPipelineState;
 
 namespace ShadowsOfMordor
 {

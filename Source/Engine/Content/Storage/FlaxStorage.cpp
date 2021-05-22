@@ -5,10 +5,16 @@
 #include "FlaxPackage.h"
 #include "ContentStorageManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#if USE_EDITOR
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonWriters.h"
+#else
+#include "Engine/Engine/Globals.h"
+#endif
 #include <ThirdParty/LZ4/lz4.h>
 
 String AssetHeader::ToString() const
@@ -194,13 +200,13 @@ void FlaxStorage::AddRef()
 
 void FlaxStorage::RemoveRef()
 {
-    ASSERT(_refCount > 0);
-
-    _refCount--;
-
-    if (_refCount == 0)
+    if (_refCount > 0)
     {
-        _lastRefLostTime = DateTime::NowUTC();
+        _refCount--;
+        if (_refCount == 0)
+        {
+            _lastRefLostTime = DateTime::NowUTC();
+        }
     }
 }
 
@@ -623,6 +629,7 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
             stream->ReadBytes(tmpBuf.Get(), size);
 
             // Decompress data
+            PROFILE_CPU_NAMED("DecompressLZ4");
             chunk->Data.Allocate(originalSize);
             const int32 res = LZ4_decompress_safe((const char*)tmpBuf.Get(), chunk->Data.Get<char>(), size, originalSize);
             if (res <= 0)
@@ -823,6 +830,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         const FlaxChunk* chunk = chunks[i];
         if (chunk->Flags & FlaxChunkFlags::CompressedLZ4)
         {
+            PROFILE_CPU_NAMED("CompressLZ4");
             const int32 srcSize = chunk->Data.Length();
             const int32 maxSize = LZ4_compressBound(srcSize);
             auto& chunkCompressed = compressedChunks[i];

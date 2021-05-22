@@ -2,10 +2,17 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Graphics/Models/Types.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Transform.h"
 
 /// <summary>
 /// Skinned Model Asset Upgrader
@@ -418,3 +425,5 @@ private:
         return false;
     }
 };
+
+#endif

@@ -2,6 +2,7 @@
 
 #include "NavMeshData.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Serialization/WriteStream.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
 void NavMeshData::Save(WriteStream& stream)

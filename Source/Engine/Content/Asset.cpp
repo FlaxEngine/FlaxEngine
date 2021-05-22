@@ -38,9 +38,10 @@ void Asset::OnDeleteObject()
     if (!IsInternalType())
         Content::AssetDisposing(this);
 
-    // Cache data
     const bool wasMarkedToDelete = _deleteFileOnUnload != 0;
+#if USE_EDITOR
     const String path = wasMarkedToDelete ? GetPath() : String::Empty;
+#endif
     const Guid id = GetID();
 
     // Fire unload event (every object referencing this asset or it's data should release reference so later actions are safe)
@@ -66,7 +67,7 @@ void Asset::OnDeleteObject()
     // Base (after it `this` is invalid)
     ManagedScriptingObject::OnDeleteObject();
 
-    // Check if asset was marked to delete
+#if USE_EDITOR
     if (wasMarkedToDelete)
     {
         LOG(Info, "Deleting asset '{0}':{1}.", path, id.ToString());
@@ -77,6 +78,7 @@ void Asset::OnDeleteObject()
         // Delete file
         Content::deleteFileSafety(path, id);
     }
+#endif
 }
 
 void Asset::CreateManaged()
@@ -130,6 +132,20 @@ void Asset::ChangeID(const Guid& newId)
     // Don't allow to change asset ids
     CRASH;
 }
+
+bool Asset::LastLoadFailed() const
+{
+    return _loadFailed != 0;
+}
+
+#if USE_EDITOR
+
+bool Asset::ShouldDeleteFileOnUnload() const
+{
+    return _deleteFileOnUnload != 0;
+}
+
+#endif
 
 void Asset::Reload()
 {
@@ -225,7 +241,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         while (!Engine::ShouldExit())
         {
             // Try to execute content tasks
-            while (task->IsQueued())
+            while (task->IsQueued() && !Engine::ShouldExit())
             {
                 // Pick this task from the queue
                 ContentLoadTask* tmp;
@@ -335,13 +351,21 @@ void Asset::startLoading()
 bool Asset::onLoad(LoadAssetTask* task)
 {
     // It may fail when task is cancelled and new one is created later (don't crash but just end with an error)
-    if (task->GetAsset() != this || _loadingTask == nullptr)
+    if (task->Asset.Get() != this || _loadingTask == nullptr)
         return true;
 
     Locker.Lock();
 
     // Load asset
-    const LoadResult result = loadAsset();
+    LoadResult result;
+    {
+#if TRACY_ENABLE
+        ZoneScoped;
+        const StringView name(GetPath());
+        ZoneName(*name, name.Length());
+#endif
+        result = loadAsset();
+    }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
     _loadFailed = failed;

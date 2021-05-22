@@ -104,7 +104,7 @@ namespace FlaxEditor.Surface.Archetypes
                         color *= 1.3f;
                     color.A = 1.0f;
                     var icons = Editor.Instance.Icons;
-                    var icon = isSelected ? icons.VisjectArrowClose : icons.VisjectArrowOpen;
+                    var icon = isSelected ? icons.VisjectArrowClosed32 : icons.VisjectArrowOpen32;
 
                     Render2D.PushTransform(ref arrowTransform);
                     Render2D.DrawSprite(icon, arrowRect, color);
@@ -672,6 +672,24 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private class ThisNode : SurfaceNode
+        {
+            /// <inheritdoc />
+            public ThisNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {}
+
+            /// <inheritdoc />
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+                var vss = (VisualScriptSurface)this.Context.Surface;
+                var type = TypeUtils.GetType(vss.Script.ScriptTypeName);
+                var box = (OutputBox)GetBox(0);
+                box.CurrentType = type ? type : new ScriptType(typeof(VisualScript));
+            }
+        }
+        
         private class AssetReferenceNode : SurfaceNode
         {
             /// <inheritdoc />
@@ -1366,6 +1384,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 19,
                 Title = "This Instance",
+                Create = (id, context, arch, groupArch) => new ThisNode(id, context, arch, groupArch),
                 Description = "Gets the reference to this script object instance (self).",
                 Flags = NodeFlags.VisualScriptGraph,
                 Size = new Vector2(140, 20),

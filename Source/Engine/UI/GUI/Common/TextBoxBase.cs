@@ -9,7 +9,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Base class for all text box controls which can gather text input from the user.
     /// </summary>
-    public abstract class TextBoxBase : Control
+    public abstract class TextBoxBase : ContainerControl
     {
         /// <summary>
         /// The text separators (used for words skipping).
@@ -262,6 +262,11 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets a value indicating whether user is editing the text.
+        /// </summary>
+        public bool IsEditing => _isEditing;
+
+        /// <summary>
         /// Gets or sets text property.
         /// </summary>
         [EditorOrder(0), MultilineText, Tooltip("The entered text.")]
@@ -279,10 +284,11 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Sets the text.
+        /// Sets the text (forced, even if user is editing it).
         /// </summary>
         /// <param name="value">The value.</param>
-        protected void SetText(string value)
+        [NoAnimate]
+        public void SetText(string value)
         {
             // Prevent from null problems
             if (value == null)
@@ -312,6 +318,18 @@ namespace FlaxEngine.GUI
 
                 OnTextChanged();
             }
+        }
+
+        /// <summary>
+        /// Sets the text as it was entered by user (focus, change value, defocus).
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [NoAnimate]
+        public void SetTextAsUser(string value)
+        {
+            Focus();
+            SetText(value);
+            Defocus();
         }
 
         /// <summary>
@@ -504,9 +522,7 @@ namespace FlaxEngine.GUI
             if (string.IsNullOrEmpty(clipboardText))
                 return;
 
-            var right = SelectionRight;
             Insert(clipboardText);
-            SetSelection(Mathf.Max(right, 0) + clipboardText.Length);
         }
 
         /// <summary>
@@ -536,6 +552,12 @@ namespace FlaxEngine.GUI
             if (_text.Length == 0)
             {
                 TargetViewOffset = Vector2.Zero;
+                return;
+            }
+
+            // If it's not selected
+            if (_selectionStart == -1 && _selectionEnd == -1)
+            {
                 return;
             }
 
@@ -616,11 +638,13 @@ namespace FlaxEngine.GUI
             {
                 var left = SelectionLeft >= 0 ? SelectionLeft : 0;
                 if (HasSelection)
+                {
                     _text = _text.Remove(left, selectionLength);
-
+                    SetSelection(left);
+                }
                 _text = _text.Insert(left, str);
 
-                SetSelection(left + 1);
+                SetSelection(left + str.Length);
             }
 
             OnTextChanged();
@@ -806,6 +830,19 @@ namespace FlaxEngine.GUI
             return spaceLoc;
         }
 
+        private int FindPrevLineBegin()
+        {
+            int caretPos = CaretPosition;
+            if (caretPos - 2 < 0)
+                return 0;
+            int newLineLoc = _text.LastIndexOf('\n', caretPos - 2);
+            if (newLineLoc == -1)
+                newLineLoc = 0;
+            else
+                newLineLoc++;
+            return newLineLoc;
+        }
+
         private int FindLineDownChar(int index)
         {
             if (!IsMultiline)
@@ -981,7 +1018,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
-            // Check if user is selecting
+            base.OnMouseMove(location);
+
             if (_isSelecting)
             {
                 // Find char index at current mouse location
@@ -995,6 +1033,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseDown(location, button))
+                return true;
+
             if (button == MouseButton.Left && _text.Length > 0)
             {
                 Focus();
@@ -1031,6 +1072,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (button == MouseButton.Left)
             {
                 OnSelectingEnd();
@@ -1060,6 +1104,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
+            if (base.OnCharInput(c))
+                return true;
             Insert(c);
             return true;
         }
@@ -1175,7 +1221,6 @@ namespace FlaxEngine.GUI
                 return true;
             }
             case KeyboardKeys.Return:
-            {
                 if (IsMultiline)
                 {
                     // Insert new line
@@ -1186,15 +1231,22 @@ namespace FlaxEngine.GUI
                     // End editing
                     Defocus();
                 }
-
                 return true;
-            }
             case KeyboardKeys.Home:
-            {
-                // Move caret to the first character
-                SetSelection(0);
+                if (shiftDown)
+                {
+                    // Select text from the current cursor point back to the beginning of the line
+                    if (_selectionStart != -1)
+                    {
+                        SetSelection(FindPrevLineBegin(), _selectionStart);
+                    }
+                }
+                else
+                {
+                    // Move caret to the first character
+                    SetSelection(0);
+                }
                 return true;
-            }
             case KeyboardKeys.End:
             {
                 // Move caret after last character

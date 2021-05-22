@@ -38,7 +38,7 @@ public class curl : DepsModule
             options.OutputFiles.Add("crypt32.lib");
             break;
         case TargetPlatform.Linux:
-            options.Libraries.Add("curl");
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

@@ -166,6 +166,7 @@ int32 Engine::Main(const Char* cmdLine)
 			}
 		}
 #endif
+
         // App paused logic
         if (Platform::GetIsPaused())
         {
@@ -202,6 +203,7 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnDraw();
             Time::OnEndDraw();
+            FrameMark;
             canDraw = false;
         }
 
@@ -410,24 +412,6 @@ bool Engine::HasGameViewportFocus()
     return Editor::Managed->HasGameViewportFocus();
 #else
     return HasFocus;
-#endif
-}
-
-Vector2 Engine::ScreenToGameViewport(const Vector2& screenPos)
-{
-#if USE_EDITOR
-    return Editor::Managed->ScreenToGameViewport(screenPos);
-#else
-    return MainWindow ? MainWindow->ScreenToClient(screenPos) : Vector2::Minimum;
-#endif
-}
-
-Vector2 Engine::GameViewportToScreen(const Vector2& viewportPos)
-{
-#if USE_EDITOR
-    return Editor::Managed->GameViewportToScreen(viewportPos);
-#else
-    return MainWindow ? MainWindow->ClientToScreen(viewportPos) : Vector2::Minimum;
 #endif
 }
 
@@ -640,7 +624,7 @@ void EngineImpl::InitMainWindow()
     if (exception)
     {
         MException ex(exception);
-        ex.Log(LogType::Fatal, TEXT("FlaxEngine.ClassLibraryInitializer.SetWindow"));
+        ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.SetWindow"));
     }
 #endif
 }

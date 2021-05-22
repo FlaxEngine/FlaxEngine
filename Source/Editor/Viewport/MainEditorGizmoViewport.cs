@@ -9,6 +9,7 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
+using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -165,6 +166,11 @@ namespace FlaxEditor.Viewport
         public bool DrawDebugDraw = true;
 
         /// <summary>
+        /// Gets the debug draw data for the viewport.
+        /// </summary>
+        public ViewportDebugDrawData DebugDrawData => _debugDrawData;
+
+        /// <summary>
         /// Gets or sets a value indicating whether show navigation mesh.
         /// </summary>
         public bool ShowNavigation
@@ -218,7 +224,7 @@ namespace FlaxEditor.Viewport
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.World16, null, true)
+            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
@@ -229,7 +235,7 @@ namespace FlaxEditor.Viewport
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.ScaleStep16, null, true)
+            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.ScaleSnap32, null, true)
             {
                 Checked = TransformGizmo.ScaleSnapEnabled,
                 TooltipText = "Enable scale snapping",
@@ -256,7 +262,7 @@ namespace FlaxEditor.Viewport
 
             // Rotation snapping widget
             var rotateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.RotateStep16, null, true)
+            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.RotateSnap32, null, true)
             {
                 Checked = TransformGizmo.RotationSnapEnabled,
                 TooltipText = "Enable rotation snapping",
@@ -283,7 +289,7 @@ namespace FlaxEditor.Viewport
 
             // Translation snapping widget
             var translateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.Grid16, null, true)
+            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.Grid32, null, true)
             {
                 Checked = TransformGizmo.TranslationSnapEnable,
                 TooltipText = "Enable position snapping",
@@ -310,7 +316,7 @@ namespace FlaxEditor.Viewport
 
             // Gizmo mode widget
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate16, null, true)
+            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
@@ -318,14 +324,14 @@ namespace FlaxEditor.Viewport
                 Parent = gizmoMode
             };
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
-            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate16, null, true)
+            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
-            _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale16, null, true)
+            _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",
@@ -388,10 +394,11 @@ namespace FlaxEditor.Viewport
                 return;
 
             // Create actor
+            var parent = Level.GetScene(0);
             var actor = new Camera
             {
                 StaticFlags = StaticFlags.None,
-                Name = "Camera",
+                Name = StringUtils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
                 Transform = ViewTransform,
                 NearPlane = NearPlane,
                 FarPlane = FarPlane,
@@ -401,7 +408,7 @@ namespace FlaxEditor.Viewport
             };
 
             // Spawn
-            Editor.Instance.SceneEditing.Spawn(actor);
+            Editor.Instance.SceneEditing.Spawn(actor, parent);
         }
 
         private void OnBegin(RenderTask task, GPUContext context)
@@ -699,6 +706,17 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        protected override void OrientViewport(ref Quaternion orientation)
+        {
+            if (TransformGizmo.SelectedParents.Count != 0)
+            {
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+            }
+
+            base.OrientViewport(ref orientation);
+        }
+
+        /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
@@ -797,6 +815,8 @@ namespace FlaxEditor.Viewport
                     return true;
                 if (assetItem.IsOfType<ModelBase>())
                     return true;
+                if (assetItem.IsOfType<CollisionData>())
+                    return true;
                 if (assetItem.IsOfType<AudioClip>())
                     return true;
                 if (assetItem.IsOfType<Prefab>())
@@ -860,6 +880,15 @@ namespace FlaxEditor.Viewport
             return location;
         }
 
+        private void Spawn(Actor actor, ref Vector3 hitLocation)
+        {
+            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
+            var parent = actor.Parent ?? Level.GetScene(0);
+            actor.Name = StringUtils.IncrementNameNumber(actor.Name, x => parent.GetChild(x) == null);
+            Editor.Instance.SceneEditing.Spawn(actor);
+            Focus();
+        }
+
         private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
         {
             if (item is AssetItem assetItem)
@@ -872,8 +901,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         ParticleSystem = asset
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<SceneAnimation>())
@@ -884,8 +912,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Animation = asset
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<MaterialBase>())
@@ -921,8 +948,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         SkinnedModel = model
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<Model>())
@@ -933,8 +959,18 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Model = model
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
+                    return;
+                }
+                if (assetItem.IsOfType<CollisionData>())
+                {
+                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
+                    var actor = new MeshCollider
+                    {
+                        Name = item.ShortName,
+                        CollisionData = collisionData
+                    };
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<AudioClip>())
@@ -945,8 +981,7 @@ namespace FlaxEditor.Viewport
                         Name = item.ShortName,
                         Clip = clip
                     };
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<Prefab>())
@@ -954,8 +989,7 @@ namespace FlaxEditor.Viewport
                     var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
                     var actor = PrefabManager.SpawnPrefab(prefab, null);
                     actor.Name = item.ShortName;
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
                 if (assetItem.IsOfType<SceneAsset>())
@@ -967,8 +1001,7 @@ namespace FlaxEditor.Viewport
                 {
                     var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
                     actor.Name = item.ShortName;
-                    actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-                    Editor.Instance.SceneEditing.Spawn(actor);
+                    Spawn(actor, ref hitLocation);
                     return;
                 }
             }
@@ -983,8 +1016,7 @@ namespace FlaxEditor.Viewport
                 return;
             }
             actor.Name = item.Name;
-            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-            Editor.Instance.SceneEditing.Spawn(actor);
+            Spawn(actor, ref hitLocation);
         }
 
         /// <inheritdoc />
@@ -1042,10 +1074,12 @@ namespace FlaxEditor.Viewport
 
             DisposeModes();
             _debugDrawData.Dispose();
-            //Object.Destroy(ref SelectionOutline);
-            //Object.Destroy(ref EditorPrimitives);
-            //Object.Destroy(ref _editorSpritesRenderer);
-            //Object.Destroy(ref _customSelectionOutline);
+            if (_task != null)
+            {
+                // Release if task is not used to save screenshot for project icon
+                Object.Destroy(ref _task);
+                ReleaseResources();
+            }
 
             base.OnDestroy();
         }
@@ -1062,7 +1096,6 @@ namespace FlaxEditor.Viewport
 
             _task = null;
             _backBuffer = null;
-            _editorSpritesRenderer = null;
         }
 
         internal void SaveProjectIconEnd()
@@ -1070,9 +1103,19 @@ namespace FlaxEditor.Viewport
             if (_savedTask)
             {
                 _savedTask.Enabled = false;
+                Object.Destroy(_savedTask);
+                ReleaseResources();
                 _savedTask = null;
             }
             Object.Destroy(ref _savedBackBuffer);
+        }
+
+        private void ReleaseResources()
+        {
+            Object.Destroy(ref SelectionOutline);
+            Object.Destroy(ref EditorPrimitives);
+            Object.Destroy(ref _editorSpritesRenderer);
+            Object.Destroy(ref _customSelectionOutline);
         }
     }
 }

@@ -399,9 +399,18 @@ namespace FlaxEditor.Windows.Assets
                             ShadowsCastingMode[] shadowsModes = new ShadowsCastingMode[value.Length];
                             for (int i = 0; i < value.Length; i++)
                             {
-                                materials[i] = value[i].Material;
-                                names[i] = value[i].Name;
-                                shadowsModes[i] = value[i].ShadowsMode;
+                                if (value[i] != null)
+                                {
+                                    materials[i] = value[i].Material;
+                                    names[i] = value[i].Name;
+                                    shadowsModes[i] = value[i].ShadowsMode;
+                                }
+                                else
+                                {
+                                    materials[i] = null;
+                                    names[i] = "Material " + i;
+                                    shadowsModes[i] = ShadowsCastingMode.All;
+                                }
                             }
 
                             Asset.SetupMaterialSlots(value.Length);
@@ -556,7 +565,6 @@ namespace FlaxEditor.Windows.Assets
                 public UVsLayoutPreviewControl()
                 {
                     Offsets = new Margin(4);
-                    AnchorPreset = AnchorPresets.HorizontalStretchMiddle;
                     AutomaticInvalidate = false;
                 }
 
@@ -610,9 +618,9 @@ namespace FlaxEditor.Windows.Assets
                 }
 
                 /// <inheritdoc />
-                protected override void DrawChildren()
+                public override void DrawSelf()
                 {
-                    base.DrawChildren();
+                    base.DrawSelf();
 
                     var size = Size;
                     if (_channel == UVChannel.None || size.MaxValue < 5.0f)
@@ -816,7 +824,7 @@ namespace FlaxEditor.Windows.Assets
         {
             // Toolstrip
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more");
 
             // Model preview
             _preview = new Preview(this)

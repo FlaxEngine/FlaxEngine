@@ -6,7 +6,7 @@
 #include "../Types/String.h"
 
 const BoundingBox BoundingBox::Empty(Vector3(MAX_float), Vector3(MIN_float));
-const BoundingBox BoundingBox::Zero(Vector3(0.0f), Vector3(0.0f));
+const BoundingBox BoundingBox::Zero(Vector3(0.0f));
 
 String BoundingBox::ToString() const
 {

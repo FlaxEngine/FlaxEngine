@@ -9,6 +9,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Audio/AudioSource.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
@@ -1132,6 +1133,6 @@ void SceneAnimationPlayer::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }

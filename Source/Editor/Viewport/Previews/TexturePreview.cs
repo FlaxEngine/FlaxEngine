@@ -13,6 +13,7 @@ namespace FlaxEditor.Viewport.Previews
     /// Base class for texture previews. Draws a surface in the UI and supports view moving/zooming.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public abstract class TexturePreviewBase : ContainerControl
     {
         private Rectangle _textureRect;

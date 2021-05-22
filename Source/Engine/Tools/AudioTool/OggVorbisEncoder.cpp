@@ -5,6 +5,7 @@
 #include "OggVorbisEncoder.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Collections/Array.h"
 #include "AudioTool.h"
 #include <ThirdParty/vorbis/vorbisenc.h>
 

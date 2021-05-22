@@ -137,7 +137,7 @@ namespace FlaxEditor.Surface.Archetypes
                         {
                             int* dataValues = (int*)dataPtr;
                             for (int i = 0; i < entries.Count; i++)
-                                dataValues[i] = entries[i].Value;
+                                dataValues[i] = (int)entries[i].Value;
                         }
                     }
                     else

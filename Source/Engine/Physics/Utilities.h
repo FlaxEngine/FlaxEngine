@@ -74,4 +74,24 @@ inline Vector3 P2C(const PxExtendedVec3& v)
 #endif
 }
 
+inline float M2ToCm2(float v)
+{
+    return v * (100.0f * 100.0f);
+}
+
+inline float Cm2ToM2(float v)
+{
+    return v / (100.0f * 100.0f);
+}
+
+inline float RpmToRadPerS(float v)
+{
+    return v * (PI / 30.0f);
+}
+
+inline float RadPerSToRpm(float v)
+{
+    return v * (30.0f / PI);
+}
+
 extern PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled);

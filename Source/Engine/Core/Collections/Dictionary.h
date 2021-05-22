@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Config.h"
 
@@ -781,7 +781,8 @@ public:
     /// Gets the keys collection to the output array (will contain unique items).
     /// </summary>
     /// <param name="result">The result.</param>
-    void GetKeys(Array<KeyType>& result) const
+    template<typename AllocationType>
+    void GetKeys(Array<KeyType, AllocationType>& result) const
     {
         for (auto i = Begin(); i.IsNotEnd(); ++i)
             result.Add(i->Key);
@@ -791,7 +792,8 @@ public:
     /// Gets the values collection to the output array (may contain duplicates).
     /// </summary>
     /// <param name="result">The result.</param>
-    void GetValues(Array<ValueType>& result) const
+    template<typename AllocationType>
+    void GetValues(Array<ValueType, AllocationType>& result) const
     {
         for (auto i = Begin(); i.IsNotEnd(); ++i)
             result.Add(i->Value);

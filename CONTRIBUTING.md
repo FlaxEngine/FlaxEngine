@@ -32,3 +32,19 @@ Go check out our [Trello](https://trello.com/b/NQjLXRCP/flax-roadmap).
 
 
 Thank you for taking interest in contributing to Flax!
+
+## **Common issues**
+
+Below are some common issues that someone working with the FlaxEngine source code might run into. Hopefully some of those issues will get fixed in the future. If you know how, please contribute!
+
+* Missing MSVC toolset
+  * Install it through the Visual Studio Installer
+* Building or attaching fails
+  * Run `GenerateProjectFiles.bat`
+  * Rebuild `Flax.Build`
+  * Make sure that there isn't a stray FlaxEngine process running in the background
+  * First start Flax and then attach the C# debugger
+  * Configure the C# FlaxEngine project by going into the project properties, then the debug tab and selecting "Start external program" `Flax\FlaxEngine\Binaries\Editor\Win64\Debug\FlaxEditor.exe`
+    * Then you can also set command line arguments such as `-project "C:\Users\PROFILE\Documents\Flax Projects\FlaxSamples\BasicTemplate"`
+* Git LFS
+  * Push with `git push --no-verify`

@@ -13,8 +13,11 @@
 #include "Engine/Navigation/NavMesh.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
+#if USE_EDITOR
+#include "Engine/Engine/Globals.h"
+#endif
 
-REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset");
+REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset", false);
 
 SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAsset(params, info)
@@ -362,6 +365,6 @@ void Scene::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }

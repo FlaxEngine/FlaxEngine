@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Content/JsonAsset.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 
 class Actor;
@@ -15,7 +16,6 @@ class SceneObject;
 API_CLASS(NoSpawn) class FLAXENGINE_API Prefab : public JsonAssetBase
 {
 DECLARE_ASSET_HEADER(Prefab);
-
 private:
 
     bool _isCreatingDefaultInstance;

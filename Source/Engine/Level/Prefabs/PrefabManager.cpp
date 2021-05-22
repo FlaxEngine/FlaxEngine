@@ -16,6 +16,7 @@
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/Scripting.h"
 
 #if USE_EDITOR
@@ -216,21 +217,57 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
 
         // TODO: consider caching actorToRemovedObjectsData per prefab
 
-        Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
         SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
-        Scripting::ObjectsLookupIdMapping.Set(nullptr);
     }
 
-    // Delete objects without parent
+    // Delete objects without parent or with invalid linkage to the prefab
     for (int32 i = 1; i < sceneObjects->Count(); i++)
     {
         SceneObject* obj = sceneObjects->At(i);
-        if (obj && obj->GetParent() == nullptr)
+        if (!obj)
+            continue;
+
+        // Check for missing parent (eg. parent object has been deleted)
+        if (obj->GetParent() == nullptr)
         {
             sceneObjects->At(i) = nullptr;
             LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
             obj->DeleteObject();
+            continue;
         }
+
+#if USE_EDITOR && !BUILD_RELEASE
+        // Check for not being added to the parent (eg. invalid setup events fault on registration)
+        auto actor = dynamic_cast<Actor*>(obj);
+        auto script = dynamic_cast<Script*>(obj);
+        if (obj->GetParent() == obj || (actor && !actor->GetParent()->Children.Contains(actor)) || (script && !script->GetParent()->Scripts.Contains(script)))
+        {
+            sceneObjects->At(i) = nullptr;
+            LOG(Warning, "Scene object {0} {1} has invalid parent object linkage after load. Removing it.", obj->GetID(), obj->ToString());
+            obj->DeleteObject();
+            continue;
+        }
+#endif
+
+#if USE_EDITOR && BUILD_DEBUG
+        // Check for being added to parent not from spawned prefab (eg. invalid parentId linkage fault)
+        bool hasParentInInstance = false;
+        for (int32 j = 0; j < sceneObjects->Count(); j++)
+        {
+            if (sceneObjects->At(j) == obj->GetParent())
+            {
+                hasParentInInstance = true;
+                break;
+            }
+        }
+        if (!hasParentInInstance)
+        {
+            sceneObjects->At(i) = nullptr;
+            LOG(Warning, "Scene object {0} {1} has invalid parent object after load. Removing it.", obj->GetID(), obj->ToString());
+            obj->DeleteObject();
+            continue;
+        }
+#endif
     }
 
     // Link objects to prefab (only deserialized from prefab data)

@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows
 
                 var iconImage = new Image
                 {
-                    Brush = new SpriteBrush(Editor.Instance.Icons.Plugin64),
+                    Brush = new SpriteBrush(Editor.Instance.Icons.Plugin128),
                     Parent = this,
                     Bounds = new Rectangle(margin, margin, iconSize, iconSize),
                 };

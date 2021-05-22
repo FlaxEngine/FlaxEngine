@@ -911,6 +911,8 @@ namespace FlaxEditor.Modules
             Proxy.Add(new ParticleSystemProxy());
             Proxy.Add(new SceneAnimationProxy());
             Proxy.Add(new CSharpScriptProxy());
+            Proxy.Add(new CppAssetProxy());
+            Proxy.Add(new CppStaticClassProxy());
             Proxy.Add(new CppScriptProxy());
             Proxy.Add(new SceneProxy());
             Proxy.Add(new PrefabProxy());
@@ -923,29 +925,34 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SkeletonMaskProxy());
             Proxy.Add(new GameplayGlobalsProxy());
             Proxy.Add(new VisualScriptProxy());
+            Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
 
             // Settings
-            Proxy.Add(new SettingsProxy(typeof(GameSettings)));
-            Proxy.Add(new SettingsProxy(typeof(TimeSettings)));
-            Proxy.Add(new SettingsProxy(typeof(LayersAndTagsSettings)));
-            Proxy.Add(new SettingsProxy(typeof(PhysicsSettings)));
-            Proxy.Add(new SettingsProxy(typeof(GraphicsSettings)));
-            Proxy.Add(new SettingsProxy(typeof(NavigationSettings)));
-            Proxy.Add(new SettingsProxy(typeof(BuildSettings)));
-            Proxy.Add(new SettingsProxy(typeof(InputSettings)));
-            Proxy.Add(new SettingsProxy(typeof(WindowsPlatformSettings)));
-            Proxy.Add(new SettingsProxy(typeof(UWPPlatformSettings)));
-            Proxy.Add(new SettingsProxy(typeof(LinuxPlatformSettings)));
+            Proxy.Add(new SettingsProxy(typeof(GameSettings), Editor.Instance.Icons.GameSettings128));
+            Proxy.Add(new SettingsProxy(typeof(TimeSettings), Editor.Instance.Icons.TimeSettings128));
+            Proxy.Add(new SettingsProxy(typeof(LayersAndTagsSettings), Editor.Instance.Icons.LayersTagsSettings128));
+            Proxy.Add(new SettingsProxy(typeof(PhysicsSettings), Editor.Instance.Icons.PhysicsSettings128));
+            Proxy.Add(new SettingsProxy(typeof(GraphicsSettings), Editor.Instance.Icons.GraphicsSettings128));
+            Proxy.Add(new SettingsProxy(typeof(NavigationSettings), Editor.Instance.Icons.NavigationSettings128));
+            Proxy.Add(new SettingsProxy(typeof(LocalizationSettings), Editor.Instance.Icons.Document128));
+            Proxy.Add(new SettingsProxy(typeof(BuildSettings), Editor.Instance.Icons.BuildSettings128));
+            Proxy.Add(new SettingsProxy(typeof(InputSettings), Editor.Instance.Icons.InputSettings128));
+            Proxy.Add(new SettingsProxy(typeof(WindowsPlatformSettings), Editor.Instance.Icons.WindowsSettings128));
+            Proxy.Add(new SettingsProxy(typeof(UWPPlatformSettings), Editor.Instance.Icons.UWPSettings128));
+            Proxy.Add(new SettingsProxy(typeof(LinuxPlatformSettings), Editor.Instance.Icons.LinuxSettings128));
             var typePS4PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename);
             if (typePS4PlatformSettings != null)
-                Proxy.Add(new SettingsProxy(typePS4PlatformSettings));
+                Proxy.Add(new SettingsProxy(typePS4PlatformSettings, Editor.Instance.Icons.PlaystationSettings128));
             var typeXboxScarlettPlatformSettings = TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename);
             if (typeXboxScarlettPlatformSettings != null)
-                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings));
-            Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings)));
-            Proxy.Add(new SettingsProxy(typeof(AudioSettings)));
+                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings, Editor.Instance.Icons.XBoxScarletIcon128));
+            Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings), Editor.Instance.Icons.AndroidSettings128));
+            var typeSwitchPlatformSettings = TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename);
+            if (typeSwitchPlatformSettings != null)
+                Proxy.Add(new SettingsProxy(typeSwitchPlatformSettings, Editor.Instance.Icons.Document128));
+            Proxy.Add(new SettingsProxy(typeof(AudioSettings), Editor.Instance.Icons.AudioSettings128));
 
             // Last add generic json (won't override other json proxies)
             Proxy.Add(new GenericJsonAssetProxy());

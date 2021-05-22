@@ -309,6 +309,7 @@ namespace FlaxEditor.Modules
             { "FlaxEditor.Content.Settings.InputSettings", "Settings" },
             { "FlaxEditor.Content.Settings.LayersAndTagsSettings", "Settings" },
             { "FlaxEditor.Content.Settings.NavigationSettings", "Settings" },
+            { "FlaxEditor.Content.Settings.LocalizationSettings", "Settings" },
             { "FlaxEditor.Content.Settings.PhysicsSettings", "Settings" },
             { "FlaxEditor.Content.Settings.TimeSettings", "Settings" },
             { "FlaxEditor.Content.Settings.UWPPlatformSettings", "Settings" },

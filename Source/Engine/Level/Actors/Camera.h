@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Types/LayersMask.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 #if USE_EDITOR
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
@@ -28,7 +29,7 @@ DECLARE_SCENE_OBJECT(Camera);
     static Camera* CutSceneCamera;
 
     // The overriden main camera.
-    API_FIELD() static Camera* OverrideMainCamera;
+    API_FIELD() static ScriptingObjectReference<Camera> OverrideMainCamera;
 
     // Gets the main camera.
     API_PROPERTY() static Camera* GetMainCamera();
@@ -174,19 +175,19 @@ public:
 public:
 
     /// <summary>
-    /// Projects the point from 3D world-space to the camera screen-space (in screen pixels for default viewport calculated from <see cref="Viewport"/>).
+    /// Projects the point from 3D world-space to game window coordinates (in screen pixels for default viewport calculated from <see cref="Viewport"/>).
     /// </summary>
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
-    /// <param name="screenSpaceLocation">The output screen-space location (XY in screen pixels).</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& screenSpaceLocation) const;
+    /// <param name="gameWindowSpaceLocation">The output game window coordinates (XY in screen pixels).</param>
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& gameWindowSpaceLocation) const;
 
     /// <summary>
-    /// Projects the point from 3D world-space to the camera screen-space (in screen pixels for given viewport).
+    /// Projects the point from 3D world-space to the camera viewport-space (in screen pixels for given viewport).
     /// </summary>
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
-    /// <param name="screenSpaceLocation">The output screen-space location (XY in screen pixels).</param>
+    /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& screenSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.

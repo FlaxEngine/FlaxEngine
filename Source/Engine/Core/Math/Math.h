@@ -13,6 +13,7 @@
 #define PI_OVER_2 1.57079632679f
 #define PI_OVER_4 0.78539816339f
 #define PI_HALF PI_OVER_2
+#define GOLDEN_RATIO 1.6180339887f
 
 // The value for which all absolute numbers smaller than are considered equal to zero.
 #define ZeroTolerance 1e-6f
@@ -648,9 +649,9 @@ namespace Math
     {
         float delta = a2 - a1;
         if (delta > PI)
-            delta = delta - PI * 2.0f;
+            delta = delta - TWO_PI;
         else if (delta < -PI)
-            delta = delta + PI * 2.0f;
+            delta = delta + TWO_PI;
         return delta;
     }
 
@@ -658,9 +659,9 @@ namespace Math
     static float UnwindRadians(float a)
     {
         while (a > PI)
-            a -= (float)PI * 2.0f;
+            a -= TWO_PI;
         while (a < -PI)
-            a += (float)PI * 2.0f;
+            a += TWO_PI;
         return a;
     }
 

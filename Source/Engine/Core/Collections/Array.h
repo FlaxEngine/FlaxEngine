@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
@@ -45,6 +46,20 @@ public:
     {
         if (capacity > 0)
             _allocation.Allocate(capacity);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// </summary>
+    /// <param name="initList">The initial values defined in the array.</param>
+    Array(std::initializer_list<T> initList)
+    {
+        _count = _capacity = (int32)initList.size();
+        if (_count > 0)
+        {
+            _allocation.Allocate(_count);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
     }
 
     /// <summary>
@@ -121,6 +136,24 @@ public:
         other._count = 0;
         other._capacity = 0;
         _allocation.Swap(other._allocation);
+    }
+
+    /// <summary>
+    /// The assignment operator that deletes the current collection of items and the copies items from the initializer list.
+    /// </summary>
+    /// <param name="initList">The other collection to copy.</param>
+    /// <returns>The reference to this.</returns>
+    Array& operator=(std::initializer_list<T> initList) noexcept
+    {
+        Memory::DestructItems(Get(), _count);
+
+        _count = _capacity = (int32)initList.size();
+        if (_capacity > 0)
+        {
+            _allocation.Allocate(_capacity);
+            Memory::ConstructItems(Get(), initList.begin(), _count);
+        }
+        return *this;
     }
 
     /// <summary>
@@ -725,7 +758,6 @@ public:
     /// <summary>
     /// Performs pop from stack operation (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     T Pop()
     {
         T item(Last());
@@ -736,19 +768,19 @@ public:
     /// <summary>
     /// Peeks items which is at the top of the stack (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     FORCE_INLINE T& Peek()
     {
-        return Last();
+        ASSERT(_count > 0);
+        return Get()[_count - 1];
     }
 
     /// <summary>
     /// Peeks items which is at the top of the stack (stack grows at the end of the collection).
     /// </summary>
-    /// <returns>The item.</returns>
     FORCE_INLINE const T& Peek() const
     {
-        return Last();
+        ASSERT(_count > 0);
+        return Get()[_count - 1];
     }
 
 public:

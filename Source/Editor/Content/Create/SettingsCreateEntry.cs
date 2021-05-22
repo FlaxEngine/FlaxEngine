@@ -54,6 +54,11 @@ namespace FlaxEditor.Content.Create
             NavigationSettings,
 
             /// <summary>
+            /// The localization settings.
+            /// </summary>
+            LocalizationSettings,
+
+            /// <summary>
             /// The build settings.
             /// </summary>
             BuildSettings,
@@ -92,6 +97,11 @@ namespace FlaxEditor.Content.Create
             /// The Android settings
             /// </summary>
             AndroidPlatformSettings,
+
+            /// <summary>
+            /// The Switch settings
+            /// </summary>
+            SwitchPlatformSettings,
         }
 
         private static readonly Type[] _types =
@@ -103,6 +113,7 @@ namespace FlaxEditor.Content.Create
             typeof(PhysicsSettings),
             typeof(GraphicsSettings),
             typeof(NavigationSettings),
+            typeof(LocalizationSettings),
             typeof(BuildSettings),
             typeof(InputSettings),
             typeof(WindowsPlatformSettings),
@@ -111,6 +122,7 @@ namespace FlaxEditor.Content.Create
             TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename),
             TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename),
             typeof(AndroidPlatformSettings),
+            TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
         };
 
         /// <summary>

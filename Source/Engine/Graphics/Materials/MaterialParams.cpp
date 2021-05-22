@@ -2,6 +2,8 @@
 
 #include "MaterialParams.h"
 #include "MaterialInfo.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Engine/GameplayGlobals.h"
@@ -96,11 +98,11 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Vector3:
         return _asVector3;
     case MaterialParameterType::Vector4:
-        return _asVector4;
+        return *(Vector4*)&AsData;
     case MaterialParameterType::Color:
         return _asColor;
     case MaterialParameterType::Matrix:
-        return Variant(_asMatrix);
+        return Variant(*(Matrix*)&AsData);
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
     case MaterialParameterType::CubeTexture:
@@ -140,13 +142,13 @@ void MaterialParameter::SetValue(const Variant& value)
         _asVector3 = (Vector3)value;
         break;
     case MaterialParameterType::Vector4:
-        _asVector4 = (Vector4)value;
+        *(Vector4*)&AsData = (Vector4)value;
         break;
     case MaterialParameterType::Color:
         _asColor = (Color)value;
         break;
     case MaterialParameterType::Matrix:
-        _asMatrix = (Matrix)value;
+        *(Matrix*)&AsData = (Matrix)value;
         break;
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
@@ -245,13 +247,13 @@ void MaterialParameter::Bind(BindMeta& meta) const
         *((Vector3*)(meta.Constants + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *((Vector4*)(meta.Constants + _offset)) = _asVector4;
+        *((Vector4*)(meta.Constants + _offset)) = *(Vector4*)&AsData;
         break;
     case MaterialParameterType::Color:
         *((Color*)(meta.Constants + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
-        Matrix::Transpose(_asMatrix, *(Matrix*)(meta.Constants + _offset));
+        Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants + _offset));
         break;
     case MaterialParameterType::NormalMap:
     {
@@ -406,13 +408,13 @@ void MaterialParameter::clone(const MaterialParameter* param)
         _asVector3 = param->_asVector3;
         break;
     case MaterialParameterType::Vector4:
-        _asVector4 = param->_asVector4;
+        *(Vector4*)&AsData = *(Vector4*)&param->AsData;
         break;
     case MaterialParameterType::Color:
         _asColor = param->_asColor;
         break;
     case MaterialParameterType::Matrix:
-        _asMatrix = param->_asMatrix;
+        *(Matrix*)&AsData = *(Matrix*)&param->AsData;
         break;
     default:
         break;
@@ -585,13 +587,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -658,13 +660,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -732,13 +734,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -824,13 +826,13 @@ void MaterialParams::Save(WriteStream* stream)
             stream->Write(&param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write(&param->_asVector4);
+            stream->Write((Vector4*)&param->AsData);
             break;
         case MaterialParameterType::Color:
             stream->Write(&param->_asColor);
             break;
         case MaterialParameterType::Matrix:
-            stream->Write(&param->_asMatrix);
+            stream->Write((Matrix*)&param->AsData);
             break;
         case MaterialParameterType::NormalMap:
         case MaterialParameterType::Texture:
@@ -898,13 +900,13 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
                 stream->Write(&param.AsVector3);
                 break;
             case MaterialParameterType::Vector4:
-                stream->Write(&param.AsVector4);
+                stream->Write((Vector4*)&param.AsData);
                 break;
             case MaterialParameterType::Color:
                 stream->Write(&param.AsColor);
                 break;
             case MaterialParameterType::Matrix:
-                stream->Write(&param.AsMatrix);
+                stream->Write((Matrix*)&param.AsData);
                 break;
             case MaterialParameterType::NormalMap:
             case MaterialParameterType::Texture:

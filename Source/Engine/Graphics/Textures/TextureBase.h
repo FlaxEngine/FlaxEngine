@@ -6,6 +6,8 @@
 #include "StreamingTexture.h"
 #include "Engine/Core/Log.h"
 
+class TextureData;
+
 /// <summary>
 /// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
 /// </summary>
@@ -103,50 +105,32 @@ public:
     /// <summary>
     /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Vector2::Zero if texture is not loaded.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE Vector2 Size() const
-    {
-        return Vector2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
-    }
+    API_PROPERTY() Vector2 Size() const;
 
     /// <summary>
     /// Gets the total array size of the texture.
     /// </summary>
-    API_PROPERTY() int32 GetArraySize() const
-    {
-        return StreamingTexture()->TotalArraySize();
-    }
+    API_PROPERTY() int32 GetArraySize() const;
 
     /// <summary>
     /// Gets the total mip levels count of the texture. Actual resident mipmaps count may be different due to dynamic content streaming.
     /// </summary>
-    API_PROPERTY() int32 GetMipLevels() const
-    {
-        return StreamingTexture()->TotalMipLevels();
-    }
+    API_PROPERTY() int32 GetMipLevels() const;
 
     /// <summary>
     /// Gets the current mip levels count of the texture that are on GPU ready to use.
     /// </summary>
-    API_PROPERTY() int32 GetResidentMipLevels() const
-    {
-        return GetTexture()->ResidentMipLevels();
-    }
+    API_PROPERTY() int32 GetResidentMipLevels() const;
 
     /// <summary>
     /// Gets the amount of the memory used by this resource. Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
-    API_PROPERTY() uint64 GetCurrentMemoryUsage() const
-    {
-        return GetTexture()->GetMemoryUsage();
-    }
+    API_PROPERTY() uint64 GetCurrentMemoryUsage() const;
 
     /// <summary>
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
-    API_PROPERTY() uint64 GetTotalMemoryUsage() const
-    {
-        return StreamingTexture()->GetTotalMemoryUsage();
-    }
+    API_PROPERTY() uint64 GetTotalMemoryUsage() const;
 
 public:
 
@@ -186,7 +170,7 @@ private:
 public:
 
     // [ITextureOwner]
-    CriticalSection* GetOwnerLocker() const override;
+    CriticalSection& GetOwnerLocker() const override;
     Task* RequestMipDataAsync(int32 mipIndex) override;
     FlaxStorage::LockData LockData() override;
     void GetMipData(int32 mipIndex, BytesContainer& data) const override;

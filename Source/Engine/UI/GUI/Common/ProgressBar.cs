@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// Progress bar control shows visual progress of the action or set of actions.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
-    public class ProgressBar : Control
+    public class ProgressBar : ContainerControl
     {
         /// <summary>
         /// The value.
@@ -39,9 +39,6 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets a value indicating whether use progress value smoothing.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if use progress value smoothing; otherwise, <c>false</c>.
-        /// </value>
         public bool UseSmoothing => !Mathf.IsZero(SmoothingScale);
 
         /// <summary>
@@ -91,8 +88,6 @@ namespace FlaxEngine.GUI
                 if (!Mathf.NearEqual(value, _value))
                 {
                     _value = value;
-
-                    // Check if skip smoothing
                     if (!UseSmoothing)
                     {
                         _current = _value;
@@ -138,21 +133,21 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            bool isDeltaSlow = deltaTime > (1 / 20.0f);
-
-            // Ensure progress bar is visible
             if (Visible)
             {
                 // Value smoothing
+                var value = _value;
                 if (Mathf.Abs(_current - _value) > 0.01f)
                 {
                     // Lerp or not if running slow
-                    float value;
+                    bool isDeltaSlow = deltaTime > (1 / 20.0f);
                     if (!isDeltaSlow && UseSmoothing)
                         value = Mathf.Lerp(_current, _value, Mathf.Saturate(deltaTime * 5.0f * SmoothingScale));
-                    else
-                        value = _value;
                     _current = value;
+                }
+                else
+                {
+                    _current = _value;
                 }
             }
 
@@ -160,9 +155,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             float progressNormalized = (_current - _minimum) / _maximum;
             if (progressNormalized > 0.001f)

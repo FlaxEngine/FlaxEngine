@@ -3,7 +3,6 @@
 #include "../WindowsManager.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Engine/EngineService.h"
 
 class WindowsManagerService : public EngineService

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.GPU.h"
+#include "Engine/Graphics/Materials/MaterialInfo.h"
 
 #define SET_ATTRIBUTE(attribute, value) _writer.Write(TEXT("\t{0} = {1};\n"), attribute.Value, value)
 

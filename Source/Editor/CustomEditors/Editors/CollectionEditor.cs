@@ -154,9 +154,20 @@ namespace FlaxEditor.CustomEditors.Editors
                         if (i != 0 && spacing > 0f)
                         {
                             if (layout.Children.Count > 0 && layout.Children[layout.Children.Count - 1] is PropertiesListElement propertiesListElement)
+                            {
+                                if (propertiesListElement.Labels.Count > 0)
+                                {
+                                    var label = propertiesListElement.Labels[propertiesListElement.Labels.Count - 1];
+                                    var margin = label.Margin;
+                                    margin.Bottom += spacing;
+                                    label.Margin = margin;
+                                }
                                 propertiesListElement.Space(spacing);
+                            }
                             else
+                            {
                                 layout.Space(spacing);
+                            }
                         }
 
                         var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;

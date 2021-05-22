@@ -4,6 +4,7 @@
 #include "Audio.h"
 #include "AudioSource.h"
 #include "AudioBackend.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Content/Upgraders/AudioClipUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -12,7 +13,7 @@
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
 
-REGISTER_BINARY_ASSET(AudioClip, "FlaxEngine.AudioClip", ::New<AudioClipUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClipUpgrader, false);
 
 bool AudioClip::StreamingTask::Run()
 {

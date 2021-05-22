@@ -319,10 +319,10 @@ namespace FlaxEditor.Windows
                 Parent = this
             };
 
-            TabsControl.AddTab(Spawn = new SpawnTab(Editor.Icons.Add48, Editor));
-            TabsControl.AddTab(VertexPaint = new VertexPaintingTab(Editor.Icons.Paint48, Editor));
-            TabsControl.AddTab(Foliage = new FoliageTab(Editor.Icons.Foliage48, Editor));
-            TabsControl.AddTab(Carve = new CarveTab(Editor.Icons.Mountain48, Editor));
+            TabsControl.AddTab(Spawn = new SpawnTab(Editor.Icons.Toolbox96, Editor));
+            TabsControl.AddTab(VertexPaint = new VertexPaintingTab(Editor.Icons.Paint96, Editor));
+            TabsControl.AddTab(Foliage = new FoliageTab(Editor.Icons.Foliage96, Editor));
+            TabsControl.AddTab(Carve = new CarveTab(Editor.Icons.Terrain96, Editor));
 
             TabsControl.SelectedTabIndex = 0;
         }

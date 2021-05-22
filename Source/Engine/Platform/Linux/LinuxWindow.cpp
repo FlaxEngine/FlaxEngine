@@ -31,6 +31,7 @@
 #define _NET_WM_STATE_REMOVE 0L // remove/unset property
 #define _NET_WM_STATE_ADD 1L // add/set property
 #define _NET_WM_STATE_TOGGLE 2L // toggle property
+#define DefaultDPI 96
 
 // Window routines function prolog
 #define LINUX_WINDOW_PROLOG X11::Display* display = (X11::Display*)LinuxPlatform::GetXDisplay(); X11::Window window =  (X11::Window)_window
@@ -102,7 +103,6 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	bool Fullscreen;
 	bool AllowMinimize;
 	bool AllowMaximize;
-	bool AllowDragAndDrop;
 	*/
 
 	const X11::Window window = X11::XCreateWindow(
@@ -150,7 +150,10 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		X11::XSetTransientForHint(display, window, (X11::Window)((LinuxWindow*)settings.Parent)->GetNativePtr());
 	}
 
-	// Set events mask
+    _dpi = Platform::GetDpi();
+    _dpiScale = (float)_dpi / (float)DefaultDPI;
+    
+	// Set input mask
 	long eventMask =
 			ExposureMask | FocusChangeMask |
 			KeyPressMask | KeyReleaseMask |
@@ -218,6 +221,15 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		states[statesCount++] = wmStateFullscreen;
 	}
 	X11::XChangeProperty(display, window, wmState, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)states, statesCount);
+
+    // Drag&drop support
+    if (settings.AllowDragAndDrop)
+    {
+        auto xdndVersion = 5;
+        auto xdndAware = XInternAtom(display, "XdndAware", 0);
+        if (xdndAware != 0)
+			X11::XChangeProperty(display, window, xdndAware, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&xdndVersion, 1);
+    }
 
 	// Sync
 	X11::XFlush(display);
@@ -719,12 +731,6 @@ void LinuxWindow::SetTitle(const StringView& title)
 	}
 
 	_title = title;
-}
-
-DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
-{
-	// TODO: impl drag and drop on Linux
-	return DragDropEffect::None;
 }
 
 void LinuxWindow::StartTrackingMouse(bool useMouseScreenOffset)

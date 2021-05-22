@@ -22,14 +22,25 @@ namespace FlaxEditor.Modules
         /// <seealso cref="FlaxEditor.SceneGraph.RootNode" />
         public class ScenesRootNode : RootNode
         {
+            private readonly Editor _editor;
+
+            /// <inheritdoc />
+            public ScenesRootNode()
+            {
+                _editor = Editor.Instance;
+            }
+
             /// <inheritdoc />
             public override void Spawn(Actor actor, Actor parent)
             {
-                Editor.Instance.SceneEditing.Spawn(actor, parent);
+                _editor.SceneEditing.Spawn(actor, parent);
             }
 
             /// <inheritdoc />
             public override Undo Undo => Editor.Instance.Undo;
+
+            /// <inheritdoc />
+            public override List<SceneGraphNode> Selection => _editor.SceneEditing.Selection;
         }
 
         /// <summary>

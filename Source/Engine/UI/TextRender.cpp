@@ -6,6 +6,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Models/Types.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/FontAsset.h"
@@ -16,7 +17,7 @@
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Localization/Localization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
@@ -31,7 +32,7 @@ TextRender::TextRender(const SpawnParams& params)
 {
     _world = Matrix::Identity;
     _color = Color::White;
-    _localBox = BoundingBox(Vector3::Zero, Vector3::Zero);
+    _localBox = BoundingBox(Vector3::Zero);
     _layoutOptions.Bounds = Rectangle(-100, -100, 200, 200);
     _layoutOptions.HorizontalAlignment = TextAlignment::Center;
     _layoutOptions.VerticalAlignment = TextAlignment::Center;
@@ -45,13 +46,23 @@ TextRender::TextRender(const SpawnParams& params)
     Material.Changed.Bind<TextRender, &TextRender::Invalidate>(this);
 }
 
-void TextRender::SetText(const StringView& value)
+const LocalizedString& TextRender::GetText() const
+{
+    return _text;
+}
+
+void TextRender::SetText(const LocalizedString& value)
 {
     if (_text != value)
     {
         _text = value;
         _isDirty = true;
     }
+}
+
+Color TextRender::GetColor() const
+{
+    return _color;
 }
 
 void TextRender::SetColor(const Color& value)
@@ -61,6 +72,11 @@ void TextRender::SetColor(const Color& value)
         _color = value;
         _isDirty = true;
     }
+}
+
+int32 TextRender::GetFontSize() const
+{
+    return _size;
 }
 
 void TextRender::SetFontSize(int32 value)
@@ -84,15 +100,12 @@ void TextRender::SetLayoutOptions(TextLayoutOptions& value)
 
 void TextRender::UpdateLayout()
 {
-    if (!_isDirty)
-        return;
-
     // Clear
     _ib.Clear();
     _vb0.Clear();
     _vb1.Clear();
     _vb2.Clear();
-    _localBox = BoundingBox(Vector3::Zero, Vector3::Zero);
+    _localBox = BoundingBox(Vector3::Zero);
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
 #if USE_PRECISE_MESH_INTERSECTS
@@ -111,8 +124,28 @@ void TextRender::UpdateLayout()
     _isDirty = false;
 
     // Skip if no need to calculate the layout
-    if (_text.IsEmpty())
-        return;
+    String textData;
+    String* textPtr = &_text.Value;
+    if (textPtr->IsEmpty())
+    {
+        if (_text.Id.IsEmpty())
+            return;
+        textData = Localization::GetString(_text.Id);
+        textPtr = &textData;
+        if (!_isLocalized)
+        {
+            _isLocalized = true;
+            Localization::LocalizationChanged.Bind<TextRender, &TextRender::UpdateLayout>(this);
+        }
+        if (textPtr->IsEmpty())
+            return;
+    }
+    else if (_isLocalized)
+    {
+        _isLocalized = false;
+        Localization::LocalizationChanged.Unbind<TextRender, &TextRender::UpdateLayout>(this);
+    }
+    const String& text = *textPtr;
 
     // Pick a font (remove DPI text scale as the text is being placed in the world)
     auto font = Font->CreateFont(_size);
@@ -126,13 +159,13 @@ void TextRender::UpdateLayout()
 
     // Perform layout
     Array<FontLineCache> lines;
-    font->ProcessText(_text, lines, _layoutOptions);
+    font->ProcessText(text, lines, _layoutOptions);
 
     // Prepare buffers capacity
-    _ib.Data.EnsureCapacity(_text.Length() * 6 * sizeof(uint16));
-    _vb0.Data.EnsureCapacity(_text.Length() * 4 * sizeof(VB0ElementType));
-    _vb1.Data.EnsureCapacity(_text.Length() * 4 * sizeof(VB1ElementType));
-    _vb2.Data.EnsureCapacity(_text.Length() * 4 * sizeof(VB2ElementType));
+    _ib.Data.EnsureCapacity(text.Length() * 6 * sizeof(uint16));
+    _vb0.Data.EnsureCapacity(text.Length() * 4 * sizeof(VB0ElementType));
+    _vb1.Data.EnsureCapacity(text.Length() * 4 * sizeof(VB1ElementType));
+    _vb2.Data.EnsureCapacity(text.Length() * 4 * sizeof(VB2ElementType));
     _buffersDirty = true;
 
     // Init draw chunks data
@@ -155,7 +188,7 @@ void TextRender::UpdateLayout()
         // Render all characters from the line
         for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
         {
-            const Char c = _text[charIndex];
+            const Char c = text[charIndex];
             if (c != '\n')
             {
                 font->GetCharacter(c, entry);
@@ -177,8 +210,15 @@ void TextRender::UpdateLayout()
                     // Get texture atlas that contains current character
                     drawChunk.FontAtlasIndex = entry.TextureIndex;
                     fontAtlas = FontManager::GetAtlas(drawChunk.FontAtlasIndex);
-                    fontAtlas->EnsureTextureCreated();
-                    invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    }
+                    else
+                    {
+                        invAtlasSize = 1.0f;
+                    }
 
                     // Setup material
                     drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
@@ -191,7 +231,7 @@ void TextRender::UpdateLayout()
                     const auto param = drawChunk.Material->Params.Get(FontParamName);
                     if (param && param->GetParameterType() == MaterialParameterType::Texture)
                     {
-                        param->SetValue(fontAtlas);
+                        param->SetValue(Variant(fontAtlas));
                         param->SetIsOverride(true);
                     }
                 }
@@ -281,6 +321,11 @@ void TextRender::UpdateLayout()
 #endif
 
     // Update text bounds (from build vertex positions)
+    if (_ib.Data.IsEmpty())
+    {
+        // Empty
+        box = BoundingBox(_transform.Translation);
+    }
     _localBox = box;
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
@@ -293,7 +338,10 @@ bool TextRender::HasContentLoaded() const
 
 void TextRender::Draw(RenderContext& renderContext)
 {
-    UpdateLayout();
+    if (_isDirty)
+    {
+        UpdateLayout();
+    }
 
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
@@ -437,11 +485,19 @@ void TextRender::OnEnable()
     // Base
     Actor::OnEnable();
 
-    UpdateLayout();
+    if (_isDirty)
+    {
+        UpdateLayout();
+    }
 }
 
 void TextRender::OnDisable()
 {
+    if (_isLocalized)
+    {
+        _isLocalized = false;
+        Localization::LocalizationChanged.Unbind<TextRender, &TextRender::UpdateLayout>(this);
+    }
     GetSceneRendering()->RemoveGeometry(this);
 
     // Base

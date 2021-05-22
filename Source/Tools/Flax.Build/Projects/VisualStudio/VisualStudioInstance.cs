@@ -97,9 +97,13 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 _installDirs = new List<VisualStudioInstance>();
 
+                // Skip if running on non-Windows system
+                if (Platform.BuildTargetPlatform != TargetPlatform.Windows)
+                    return _installDirs;
+
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-                    // Visual Studio 2017-2020
+                    // Visual Studio 2017-2019
                     List<VisualStudioInstance> preReleaseInstallDirs = null;
                     try
                     {

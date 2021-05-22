@@ -72,7 +72,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
                 case 3:
                     value = matrix.GetRow4();
                     break;
-                default: CRASH;
+                default:
                     break;
                 }
                 break;

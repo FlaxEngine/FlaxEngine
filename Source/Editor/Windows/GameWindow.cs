@@ -1,11 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -18,6 +18,7 @@ namespace FlaxEditor.Windows
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true;
+        private bool _showDebugDraw = false;
         private float _gameStartTime;
 
         /// <summary>
@@ -36,12 +37,18 @@ namespace FlaxEditor.Windows
                 if (value != _showGUI)
                 {
                     _showGUI = value;
-
-                    // Update root if it's in game
-                    if (Editor.StateMachine.IsPlayMode)
-                        _guiRoot.Visible = value;
+                    _guiRoot.Visible = value;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show Debug Draw shapes in the view or keep it hidden.
+        /// </summary>
+        public bool ShowDebugDraw
+        {
+            get => _showDebugDraw;
+            set => _showDebugDraw = value;
         }
 
         /// <summary>
@@ -191,6 +198,7 @@ namespace FlaxEditor.Windows
                 AutoFocus = false,
                 Parent = this
             };
+            task.PostRender += OnPostRender;
 
             // Override the game GUI root
             _guiRoot = new GameRoot
@@ -212,6 +220,31 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+        }
+
+        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        {
+            // Debug Draw shapes
+            if (_showDebugDraw)
+            {
+                var task = _viewport.Task;
+
+                // Draw actors debug shapes manually if editor viewport is hidden (game viewport task is always rendered before editor viewports)
+                var editWindowViewport = Editor.Windows.EditWin.Viewport;
+                if (editWindowViewport.Task.LastUsedFrame != Engine.FrameCount)
+                {
+                    unsafe
+                    {
+                        var drawDebugData = editWindowViewport.DebugDrawData;
+                        fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
+                        {
+                            DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
+                        }
+                    }
+                }
+
+                DebugDraw.Draw(ref renderContext, task.OutputView);
+            }
         }
 
         private void OnOptionsChanged(EditorOptions options)
@@ -278,6 +311,22 @@ namespace FlaxEditor.Windows
                 takeScreenshot.Clicked += TakeScreenshot;
             }
 
+            menu.AddSeparator();
+
+            // Show GUI
+            {
+                var button = menu.AddButton("Show GUI");
+                var checkbox = new CheckBox(140, 2, ShowGUI) { Parent = button };
+                checkbox.StateChanged += x => ShowGUI = x.Checked;
+            }
+
+            // Show Debug Draw
+            {
+                var button = menu.AddButton("Show Debug Draw");
+                var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
+                checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
+            }
+
             menu.MinimumWidth = 200;
             menu.AddSeparator();
         }
@@ -296,7 +345,7 @@ namespace FlaxEditor.Windows
             // Selected UI controls outline
             for (var i = 0; i < Editor.Instance.SceneEditing.Selection.Count; i++)
             {
-                if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor.Control != null)
+                if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     var control = controlActor.Control;
                     var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Vector2.Zero), control.PointToParent(_viewport, control.Size));
@@ -408,7 +457,7 @@ namespace FlaxEditor.Windows
             base.OnStartContainsFocus();
 
             // Center mouse in play mode
-            if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode)
+            if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
                 Vector2 center = PointToWindow(Size * 0.5f);
                 Root.MousePosition = center;

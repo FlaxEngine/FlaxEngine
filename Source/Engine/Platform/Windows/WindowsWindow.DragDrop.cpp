@@ -10,6 +10,8 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Platform/IGuiData.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/Mouse.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/ThreadPool.h"
 #include "Engine/Scripting/Scripting.h"
@@ -629,6 +631,10 @@ DragDropEffect WindowsWindow::DoDragDrop(const StringView& data)
     // Release allocated data
     dropSource->Release();
     ReleaseStgMedium(&stgmed);
+
+    // Fix hanging mouse state (Windows doesn't send WM_LBUTTONUP when we end the drag and drop)
+    if (Input::GetMouseButton(MouseButton::Left))
+        Input::Mouse->OnMouseUp(Input::Mouse->GetPosition(), MouseButton::Left, this);
 
     return SUCCEEDED(result) ? dropEffectFromOleEnum(dwEffect) : DragDropEffect::None;
 }

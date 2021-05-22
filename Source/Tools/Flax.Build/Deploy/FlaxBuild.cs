@@ -21,6 +21,8 @@ namespace Flax.Deploy
                 format = format.Replace("-", "--");
             }
             var cmdLine = string.Format(format, target, platform, architecture, configuration);
+            if (!string.IsNullOrEmpty(Configuration.Compiler))
+                cmdLine += " -compiler=" + Configuration.Compiler;
 
             int result;
             if (buildPlatform == TargetPlatform.Windows)

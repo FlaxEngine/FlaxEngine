@@ -55,8 +55,9 @@ namespace FlaxEngine.GUI
         /// </summary>
         public bool AutomaticInvalidate { get; set; } = true;
 
+#if FLAX_EDITOR
         private bool CanEditTextureSize => !_autoSize;
-
+#endif
         /// <summary>
         /// Invalidates the cached image of children controls and invokes the redraw to the texture.
         /// </summary>

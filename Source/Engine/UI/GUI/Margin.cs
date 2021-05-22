@@ -47,7 +47,12 @@ namespace FlaxEngine.GUI
         public float Bottom;
 
         /// <summary>
-        /// Gets the margin's total size. Cumulative margin size.
+        /// Gets the margin's location (Left, Top).
+        /// </summary>
+        public Vector2 Location => new Vector2(Left, Top);
+
+        /// <summary>
+        /// Gets the margin's total size. Cumulative margin size (Left + Right, Top + Bottom).
         /// </summary>
         public Vector2 Size => new Vector2(Left + Right, Top + Bottom);
 

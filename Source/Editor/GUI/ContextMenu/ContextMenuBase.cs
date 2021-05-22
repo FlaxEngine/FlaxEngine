@@ -48,6 +48,11 @@ namespace FlaxEditor.GUI.ContextMenu
         private Control _previouslyFocused;
 
         /// <summary>
+        /// Gets a value indicating whether use automatic popup direction fix based on the screen dimensions.
+        /// </summary>
+        protected virtual bool UseAutomaticDirectionFix => true;
+
+        /// <summary>
         /// Returns true if context menu is opened
         /// </summary>
         public bool IsOpened => Parent != null;
@@ -124,7 +129,7 @@ namespace FlaxEditor.GUI.ContextMenu
             PerformLayout();
 
             // Calculate popup direction and initial location (fit on a single monitor)
-            var dpiScale = Platform.DpiScale;
+            var dpiScale = parentWin.DpiScale;
             Vector2 dpiSize = Size * dpiScale;
             Vector2 locationWS = parent.PointToWindow(location);
             Vector2 locationSS = parentWin.PointToScreen(locationWS);
@@ -132,21 +137,24 @@ namespace FlaxEditor.GUI.ContextMenu
             Rectangle monitorBounds = Platform.GetMonitorBounds(locationSS);
             Vector2 rightBottomLocationSS = locationSS + dpiSize;
             bool isUp = false, isLeft = false;
-            if (monitorBounds.Bottom < rightBottomLocationSS.Y)
+            if (UseAutomaticDirectionFix)
             {
-                // Direction: up
-                isUp = true;
-                locationSS.Y -= dpiSize.Y;
+                if (monitorBounds.Bottom < rightBottomLocationSS.Y)
+                {
+                    // Direction: up
+                    isUp = true;
+                    locationSS.Y -= dpiSize.Y;
 
-                // Offset to fix sub-menu location
-                if (parent is ContextMenu menu && menu._childCM != null)
-                    locationSS.Y += 30.0f * dpiScale;
-            }
-            if (monitorBounds.Right < rightBottomLocationSS.X)
-            {
-                // Direction: left
-                isLeft = true;
-                locationSS.X -= dpiSize.X;
+                    // Offset to fix sub-menu location
+                    if (parent is ContextMenu menu && menu._childCM != null)
+                        locationSS.Y += 30.0f * dpiScale;
+                }
+                if (monitorBounds.Right < rightBottomLocationSS.X)
+                {
+                    // Direction: left
+                    isLeft = true;
+                    locationSS.X -= dpiSize.X;
+                }
             }
 
             // Update direction flag
@@ -275,7 +283,7 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             if (_window != null)
             {
-                _window.ClientSize = Size * Platform.DpiScale;
+                _window.ClientSize = Size * _window.DpiScale;
             }
         }
 

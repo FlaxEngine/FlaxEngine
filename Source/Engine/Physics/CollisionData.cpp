@@ -12,7 +12,7 @@
 #include <ThirdParty/PhysX/geometry/PxConvexMesh.h>
 #include <ThirdParty/PhysX/PxPhysics.h>
 
-REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", nullptr, true);
+REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", true);
 
 CollisionData::CollisionData(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -23,7 +23,7 @@ CollisionData::CollisionData(const SpawnParams& params, const AssetInfo* info)
 
 #if COMPILE_WITH_PHYSICS_COOKING
 
-bool CollisionData::CookCollision(CollisionDataType type, Model* modelObj, int32 modelLodIndex, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     // Validate state
     if (!IsVirtual())
@@ -37,6 +37,7 @@ bool CollisionData::CookCollision(CollisionDataType type, Model* modelObj, int32
     arg.Type = type;
     arg.Model = modelObj;
     arg.ModelLodIndex = modelLodIndex;
+    arg.MaterialSlotsMask = materialSlotsMask;
     arg.ConvexFlags = convexFlags;
     arg.ConvexVertexLimit = convexVertexLimit;
 

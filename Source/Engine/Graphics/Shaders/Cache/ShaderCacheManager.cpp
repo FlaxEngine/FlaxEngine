@@ -233,7 +233,7 @@ bool ShaderCacheManagerService::Init()
     {
         LOG(Warning, "Shaders cache database is invalid. Performing reset.");
 
-        if (FileSystem::DeleteDirectory(rootDir))
+        if (FileSystem::DirectoryExists(rootDir) && FileSystem::DeleteDirectory(rootDir))
         {
             LOG(Warning, "Failed to reset the shaders cache database.");
         }

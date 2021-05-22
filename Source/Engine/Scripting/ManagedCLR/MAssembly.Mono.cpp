@@ -8,6 +8,7 @@
 #include "MDomain.h"
 #include "MUtils.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
@@ -16,6 +17,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
 #include <ThirdParty/mono-2.0/mono/metadata/tokentype.h>
@@ -123,7 +125,6 @@ void MAssembly::Unload(bool isReloading)
             LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
 
             mono_assembly_close(_monoAssembly);
-            mono_image_close(_monoImage);
         }
         else
         {
@@ -306,18 +307,16 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
 
     // Setup assembly
     const auto assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
+    mono_image_close(assemblyImage);
     if (status != MONO_IMAGE_OK || assembly == nullptr)
     {
-        // Close image if error occurred
-        mono_image_close(assemblyImage);
-
         Log::CLRInnerException(TEXT("Mono assembly image is corrupted at ") + assemblyPath);
         return true;
     }
 
 #if MONO_DEBUG_ENABLE
     // Try to load debug symbols (use portable PDB format)
-    const auto pdbPath = StringUtils::GetPathWithoutExtension(assemblyPath) + TEXT(".pdb");
+    const auto pdbPath = String(StringUtils::GetPathWithoutExtension(assemblyPath)) + TEXT(".pdb");
     if (FileSystem::FileExists(pdbPath))
     {
         // Load .pdb file
@@ -329,6 +328,24 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
             mono_debug_open_image_from_memory(assemblyImage, _debugData.Get(), _debugData.Count());
         }
     }
+
+#if 0
+    // Hack to load debug information for Newtonsoft.Json (enable it to debug C# code of json lib)
+    if (assemblyPath.EndsWith(TEXT("FlaxEngine.CSharp.dll")))
+    {
+        static Array<byte> NewtonsoftJsonDebugData;
+        File::ReadAllBytes(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.pdb"), NewtonsoftJsonDebugData);
+        if (NewtonsoftJsonDebugData.HasItems())
+        {
+            StringAnsi tmp(String(StringUtils::GetDirectoryName(assemblyPath)) / TEXT("Newtonsoft.Json.dll"));
+            MonoAssembly* a = mono_assembly_open(tmp.Get(), &status);
+            if (a)
+            {
+                mono_debug_open_image_from_memory(mono_assembly_get_image(a), NewtonsoftJsonDebugData.Get(), NewtonsoftJsonDebugData.Count());
+            }
+        }
+    }
+#endif
 #endif
 
     // Set state

@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Config/LayersTagsSettings.h"
+#include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
@@ -202,7 +203,7 @@ void LayersAndTagsSettings::Apply()
 
 void LevelService::Update()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::Update");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -231,7 +232,7 @@ void LevelService::Update()
 
 void LevelService::LateUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::LateUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -263,7 +264,7 @@ void LevelService::LateUpdate()
 
 void LevelService::FixedUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::FixedUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -496,14 +497,8 @@ public:
         // - load scenes (from temporary files)
         // Note: we don't want to override original scene files
 
-        // If no scene loaded just reload scripting
-        if (!Level::IsAnySceneLoaded())
-        {
-            // Reload scripting
-            LOG(Info, "No scenes loaded, performing fast scripts reload");
-            Scripting::Reload(false);
-            return false;
-        }
+        LOG(Info, "Scripts reloading start");
+        const auto startTime = DateTime::NowUTC();
 
         // Cache data
         struct SceneData
@@ -538,8 +533,6 @@ public:
             scenes[i].Init(Level::Scenes[i]);
 
         // Fire event
-        LOG(Info, "Scripts reloading start");
-        const auto startTime = DateTime::NowUTC();
         Level::ScriptsReloadStart();
 
         // Save scenes (to memory)
@@ -566,9 +559,10 @@ public:
         Scripting::Reload();
 
         // Restore scenes (from memory)
-        LOG(Info, "Loading temporary scenes");
         for (int32 i = 0; i < scenesCount; i++)
         {
+            LOG(Info, "Restoring scene {0}", scenes[i].Name);
+
             // Parse json
             const auto& sceneData = scenes[i].Data;
             ISerializable::SerializeDocument document;
@@ -590,8 +584,9 @@ public:
         scenes.Resize(0);
 
         // Initialize scenes (will link references and create managed objects using new assembly)
-        LOG(Info, "Prepare scene objects");
+        if (Level::Scenes.HasItems())
         {
+            LOG(Info, "Prepare scene objects");
             SceneBeginData beginData;
             for (int32 i = 0; i < Level::Scenes.Count(); i++)
             {
@@ -601,8 +596,7 @@ public:
         }
 
         // Fire event
-        const auto endTime = DateTime::NowUTC();
-        LOG(Info, "Scripts reloading end. Total time: {0}ms", static_cast<int32>((endTime - startTime).GetTotalMilliseconds()));
+        LOG(Info, "Scripts reloading end. Total time: {0}ms", static_cast<int32>((DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
         Level::ScriptsReloadEnd();
 
         return false;
@@ -649,7 +643,7 @@ public:
 
 void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::CallSceneEvent");
 
     // Call event
     const auto scriptsDomain = Scripting::GetScriptsDomain();
@@ -1037,9 +1031,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-    Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
-    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
     // Delete objects without parent
     for (int32 i = 1; i < objectsCount; i++)

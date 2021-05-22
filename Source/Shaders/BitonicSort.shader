@@ -10,7 +10,8 @@ struct Item
 };
 
 META_CB_BEGIN(0, Data)
-Item NullItem;
+float NullItemKey;
+uint NullItemValue;
 uint CounterOffset;
 uint MaxIterations;
 uint LoopK;
@@ -95,10 +96,17 @@ groupshared Item SortData[2048];
 void LoadItem(uint element, uint count)
 {
 	// Unused elements must sort to the end
+	Item item;
 	if (element < count)
-		SortData[element & 2047] = SortBuffer[element];
+	{
+		item = SortBuffer[element];
+	}
 	else
-		SortData[element & 2047] = NullItem;
+	{
+		item.Key = NullItemKey;
+		item.Value = NullItemValue;
+	}
+	SortData[element & 2047] = item;
 }
 
 void StoreItem(uint element, uint count)

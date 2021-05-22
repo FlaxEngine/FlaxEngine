@@ -5,6 +5,7 @@
 #include "FoliageCluster.h"
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"

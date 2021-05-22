@@ -31,7 +31,7 @@ float AdaptLuminance(float currentLum, Texture2D previousLuminance)
 	float luminance = previousLum + delta * (1.0f - exp2(-DeltaTime * adaptionSpeed));
 	luminance = lerp(luminance, currentLum, DropHistory);
 
-	return clamp(luminance, MinBrightness, MaxBrightness).xxxx;
+	return clamp(luminance, MinBrightness, MaxBrightness);
 }
 
 #ifdef _PS_Manual

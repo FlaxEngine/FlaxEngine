@@ -12,10 +12,19 @@
 
 const DateTime WindowsEpoch(1970, 1, 1);
 
+#define WIN32_INIT_BUFFER(path, buffer) \
+    Char buffer[MAX_PATH]; \
+    if (path.Length() > MAX_PATH) \
+        return true; \
+    Platform::MemoryCopy(buffer, path.Get(), path.Length() * sizeof(Char)); \
+    buffer[path.Length()] = 0
+
 bool Win32FileSystem::CreateDirectory(const StringView& path)
 {
+    WIN32_INIT_BUFFER(path, buffer);
+
     // If the specified directory name doesn't exist, do our thing
-    const DWORD fileAttributes = GetFileAttributesW(*path);
+    const DWORD fileAttributes = GetFileAttributesW(buffer);
     if (fileAttributes == INVALID_FILE_ATTRIBUTES)
     {
         const auto error = GetLastError();
@@ -33,7 +42,7 @@ bool Win32FileSystem::CreateDirectory(const StringView& path)
         }
 
         // Create the last directory on the path (the recursive calls will have taken care of the parent directories by now)
-        const BOOL result = ::CreateDirectoryW(*path, nullptr);
+        const BOOL result = ::CreateDirectoryW(buffer, nullptr);
         if (result == FALSE)
         {
             return true;
@@ -106,13 +115,14 @@ bool Win32FileSystem::DeleteDirectory(const String& path, bool deleteContents)
     RemoveDirectoryW(*path);
 
     // Check if still exists
-    const int32 result = GetFileAttributesW(*path);
+    const DWORD result = GetFileAttributesW(*path);
     return result != 0xFFFFFFFF && result & FILE_ATTRIBUTE_DIRECTORY;
 }
 
 bool Win32FileSystem::DirectoryExists(const StringView& path)
 {
-    const int32 result = GetFileAttributesW(*path);
+    WIN32_INIT_BUFFER(path, buffer);
+    const DWORD result = GetFileAttributesW(buffer);
     return result != 0xFFFFFFFF && result & FILE_ATTRIBUTE_DIRECTORY;
 }
 
@@ -128,8 +138,8 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
     // Try to find first file
     WIN32_FIND_DATA info;
     String pattern = directory / TEXT('*');
-    const HANDLE hp = FindFirstFileW(*pattern, &info);
-    if (INVALID_HANDLE_VALUE == hp)
+    const HANDLE handle = FindFirstFileW(*pattern, &info);
+    if (INVALID_HANDLE_VALUE == handle)
     {
         // Check if no files at all
         return GetLastError() != ERROR_FILE_NOT_FOUND;
@@ -147,15 +157,16 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
             // Add directory
             results.Add(directory / info.cFileName);
         }
-    } while (FindNextFileW(hp, &info) != 0);
-    FindClose(hp);
+    } while (FindNextFileW(handle, &info) != 0);
+    FindClose(handle);
 
     return GetLastError() != ERROR_NO_MORE_FILES;
 }
 
 bool Win32FileSystem::FileExists(const StringView& path)
 {
-    const uint32 result = GetFileAttributesW(*path);
+    WIN32_INIT_BUFFER(path, buffer);
+    const DWORD result = GetFileAttributesW(buffer);
     return result != 0xFFFFFFFF && !(result & FILE_ATTRIBUTE_DIRECTORY);
 }
 
@@ -166,8 +177,9 @@ bool Win32FileSystem::DeleteFile(const StringView& path)
 
 uint64 Win32FileSystem::GetFileSize(const StringView& path)
 {
+    WIN32_INIT_BUFFER(path, buffer);
     WIN32_FILE_ATTRIBUTE_DATA info;
-    if (!!GetFileAttributesExW(*path, GetFileExInfoStandard, &info))
+    if (!!GetFileAttributesExW(buffer, GetFileExInfoStandard, &info))
     {
         if ((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
         {
@@ -182,44 +194,46 @@ uint64 Win32FileSystem::GetFileSize(const StringView& path)
 
 bool Win32FileSystem::IsReadOnly(const StringView& path)
 {
-    const uint32 result = GetFileAttributesW(*path);
-    if (result != 0xFFFFFFFF)
-    {
-        return !!(result & FILE_ATTRIBUTE_READONLY);
-    }
-    return false;
+    WIN32_INIT_BUFFER(path, buffer);
+    const DWORD result = GetFileAttributesW(buffer);
+    return result != 0xFFFFFFFF ? !!(result & FILE_ATTRIBUTE_READONLY) : false;
 }
 
 bool Win32FileSystem::SetReadOnly(const StringView& path, bool isReadOnly)
 {
-    return SetFileAttributesW(*path, isReadOnly ? FILE_ATTRIBUTE_READONLY : FILE_ATTRIBUTE_NORMAL) == 0;
+    WIN32_INIT_BUFFER(path, buffer);
+    return SetFileAttributesW(buffer, isReadOnly ? FILE_ATTRIBUTE_READONLY : FILE_ATTRIBUTE_NORMAL) == 0;
 }
 
 bool Win32FileSystem::MoveFile(const StringView& dst, const StringView& src, bool overwrite)
 {
     const DWORD flags = MOVEFILE_COPY_ALLOWED | (overwrite ? MOVEFILE_REPLACE_EXISTING : 0);
+    WIN32_INIT_BUFFER(dst, bufferDst);
+    WIN32_INIT_BUFFER(src, bufferSrc);
 
     // If paths are almost the same but some characters have different case we need to use a proxy file
-    if (StringUtils::CompareIgnoreCase(*dst, *src) == 0)
+    if (dst.Length() == src.Length() && StringUtils::CompareIgnoreCase(*dst, *src) == 0)
     {
         String tmp;
         GetTempFilePath(tmp);
-        return MoveFileExW(*src, *tmp, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, *dst, flags) == 0;
+        return MoveFileExW(bufferSrc, *tmp, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0 || MoveFileExW(*tmp, bufferDst, flags) == 0;
     }
 
-    return MoveFileExW(*src, *dst, flags) == 0;
+    return MoveFileExW(bufferSrc, bufferDst, flags) == 0;
 }
 
 bool Win32FileSystem::CopyFile(const StringView& dst, const StringView& src)
 {
+    WIN32_INIT_BUFFER(dst, bufferDst);
+    WIN32_INIT_BUFFER(src, bufferSrc);
 #if PLATFORM_UWP
 	const bool overwrite = true;
 	COPYFILE2_EXTENDED_PARAMETERS param = { 0 };
 	param.dwSize = sizeof(COPYFILE2_EXTENDED_PARAMETERS);
 	param.dwCopyFlags = (!overwrite) ? COPY_FILE_FAIL_IF_EXISTS : 0;
-	return FAILED(CopyFile2(*src, *dst, &param));
+	return FAILED(CopyFile2(bufferSrc, bufferDst, &param));
 #else
-    return CopyFileW(*src, *dst, FALSE) == 0;
+    return CopyFileW(bufferSrc, bufferDst, FALSE) == 0;
 #endif
 }
 
@@ -227,7 +241,7 @@ void Win32FileSystem::ConvertLineEndingsToDos(const StringView& text, Array<Char
 {
     // Prepare output (add some space for \r characters, just guess ~1%)
     output.Clear();
-    output.EnsureCapacity(Math::CeilToInt(text.Length() * 1.01f));
+    output.EnsureCapacity(Math::CeilToInt((float)text.Length() * 1.01f));
 
     // Perform conversion
     auto readPtr = text.Get();
@@ -334,8 +348,9 @@ DateTime Win32FileSystem::GetFileLastEditTime(const StringView& path)
 	}
 #endif
 
+    WIN32_INIT_BUFFER(path, buffer);
     WIN32_FILE_ATTRIBUTE_DATA data;
-    if (!!GetFileAttributesExW(*path, GetFileExInfoStandard, &data))
+    if (!!GetFileAttributesExW(buffer, GetFileExInfoStandard, &data))
     {
         SYSTEMTIME lpSystemTime;
         FileTimeToSystemTime(&data.ftLastWriteTime, &lpSystemTime);

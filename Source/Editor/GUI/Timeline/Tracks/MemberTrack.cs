@@ -128,7 +128,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     IsScrollable = false,
                     Color = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
-                    Brush = new SpriteBrush(icons.ArrowRight32),
+                    Brush = new SpriteBrush(icons.Right64),
                     Offsets = new Margin(-buttonSize - 2 + uiLeft, buttonSize, buttonSize * -0.5f, buttonSize),
                     Parent = this,
                 };
@@ -138,9 +138,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     AutoFocus = true,
                     AnchorPreset = AnchorPresets.MiddleRight,
                     IsScrollable = false,
-                    Color = Style.Current.ForegroundGrey,
+                    Color = Style.Current.Foreground,
                     Margin = new Margin(3),
-                    Brush = new SpriteBrush(icons.Add48),
+                    Brush = new SpriteBrush(icons.Add64),
                     Offsets = new Margin(-buttonSize - 2 + _rightKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                     Parent = this,
                 };
@@ -150,9 +150,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     AutoFocus = true,
                     AnchorPreset = AnchorPresets.MiddleRight,
                     IsScrollable = false,
-                    Color = Style.Current.ForegroundGrey,
+                    Color = Style.Current.Foreground,
                     Margin = new Margin(1),
-                    Brush = new SpriteBrush(icons.ArrowLeft32),
+                    Brush = new SpriteBrush(icons.Left64),
                     Offsets = new Margin(-buttonSize - 2 + _addKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                     Parent = this,
                 };

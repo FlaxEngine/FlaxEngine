@@ -139,7 +139,7 @@ namespace FlaxEditor.CustomEditors
             /// <inheritdoc />
             protected override void OnModified()
             {
-                Presenter.Modified?.Invoke();
+                Presenter.OnModified();
 
                 base.OnModified();
             }
@@ -250,6 +250,7 @@ namespace FlaxEditor.CustomEditors
 
             Selection.Clear();
             Selection.Add(obj);
+            Selection.SetType(new ScriptType(obj.GetType()));
 
             OnSelectionChanged();
         }
@@ -271,6 +272,7 @@ namespace FlaxEditor.CustomEditors
 
             Selection.Clear();
             Selection.AddRange(objectsArray);
+            Selection.SetType(new ScriptType(objectsArray.GetType()));
 
             OnSelectionChanged();
         }
@@ -284,6 +286,7 @@ namespace FlaxEditor.CustomEditors
                 return;
 
             Selection.Clear();
+            Selection.SetType(ScriptType.Null);
 
             OnSelectionChanged();
         }
@@ -349,6 +352,14 @@ namespace FlaxEditor.CustomEditors
         public void ClosesAllGroups()
         {
             ExpandGroups(this, false);
+        }
+
+        /// <summary>
+        /// Invokes <see cref="Modified"/> event.
+        /// </summary>
+        public void OnModified()
+        {
+            Modified?.Invoke();
         }
 
         /// <summary>

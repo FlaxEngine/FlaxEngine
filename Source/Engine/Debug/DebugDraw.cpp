@@ -12,11 +12,13 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
-#include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Debug/DebugLog.h"
@@ -271,7 +273,6 @@ namespace
     DynamicVertexBuffer* DebugDrawVB = nullptr;
     Vector3 SphereCache[DEBUG_DRAW_SPHERE_VERTICES];
     Vector3 CircleCache[DEBUG_DRAW_CIRCLE_VERTICES];
-    Vector3 CylinderCache[DEBUG_DRAW_CYLINDER_VERTICES];
     Array<Vector3> SphereTriangleCache;
 };
 
@@ -1242,80 +1243,98 @@ void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientat
     }
 }
 
+namespace
+{
+    void DrawCylinder(Array<DebugTriangle>* list, const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration)
+    {
+        // Setup cache
+        Vector3 CylinderCache[DEBUG_DRAW_CYLINDER_VERTICES];
+        const float angleBetweenFacets = TWO_PI / DEBUG_DRAW_CYLINDER_RESOLUTION;
+        const float verticalOffset = height * 0.5f;
+        int32 index = 0;
+        for (int32 i = 0; i < DEBUG_DRAW_CYLINDER_RESOLUTION; i++)
+        {
+            const float theta = i * angleBetweenFacets;
+            const float x = Math::Cos(theta) * radius;
+            const float z = Math::Sin(theta) * radius;
+
+            // Top cap
+            CylinderCache[index++] = Vector3(x, verticalOffset, z);
+
+            // Top part of body
+            CylinderCache[index++] = Vector3(x, verticalOffset, z);
+
+            // Bottom part of body
+            CylinderCache[index++] = Vector3(x, -verticalOffset, z);
+
+            // Bottom cap
+            CylinderCache[index++] = Vector3(x, -verticalOffset, z);
+        }
+
+        DebugTriangle t;
+        t.Color = Color32(color);
+        t.TimeLeft = duration;
+        const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+
+        // Write triangles
+        for (uint32 i = 0; i < DEBUG_DRAW_CYLINDER_VERTICES; i += 4)
+        {
+            // Each iteration, the loop advances to the next vertex column
+            // Four triangles per column (except for the four degenerate cap triangles)
+
+            // Top cap triangles
+            auto nextIndex = (uint16)((i + 4) % DEBUG_DRAW_CYLINDER_VERTICES);
+            if (nextIndex != 0)
+            {
+                Vector3::Transform(CylinderCache[i], world, t.V0);
+                Vector3::Transform(CylinderCache[nextIndex], world, t.V1);
+                Vector3::Transform(CylinderCache[0], world, t.V2);
+                list->Add(t);
+            }
+
+            // Body triangles
+            nextIndex = (uint16)((i + 5) % DEBUG_DRAW_CYLINDER_VERTICES);
+            Vector3::Transform(CylinderCache[(i + 1)], world, t.V0);
+            Vector3::Transform(CylinderCache[(i + 2)], world, t.V1);
+            Vector3::Transform(CylinderCache[nextIndex], world, t.V2);
+            list->Add(t);
+
+            Vector3::Transform(CylinderCache[nextIndex], world, t.V0);
+            Vector3::Transform(CylinderCache[(i + 2)], world, t.V1);
+            Vector3::Transform(CylinderCache[((i + 6) % DEBUG_DRAW_CYLINDER_VERTICES)], world, t.V2);
+            list->Add(t);
+
+            // Bottom cap triangles
+            nextIndex = (uint16)((i + 7) % DEBUG_DRAW_CYLINDER_VERTICES);
+            if (nextIndex != 3)
+            {
+                Vector3::Transform(CylinderCache[(i + 3)], world, t.V0);
+                Vector3::Transform(CylinderCache[3], world, t.V1);
+                Vector3::Transform(CylinderCache[nextIndex], world, t.V2);
+                list->Add(t);
+            }
+        }
+    }
+}
+
+void DebugDraw::DrawCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    ::DrawCylinder(list, position, orientation, radius, height, color, duration);
+}
+
 void DebugDraw::DrawWireCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
 {
-    // Setup
-    // TODO: move this to init!!
-    const float angleBetweenFacets = TWO_PI / DEBUG_DRAW_CYLINDER_RESOLUTION;
-    float verticalOffset = height * 0.5f;
-    int32 index = 0;
-    for (int32 i = 0; i < DEBUG_DRAW_CYLINDER_RESOLUTION; i++)
-    {
-        // Cache data
-        float theta = i * angleBetweenFacets;
-        float x = Math::Cos(theta) * radius;
-        float z = Math::Sin(theta) * radius;
-
-        // Top cap
-        CylinderCache[index++] = Vector3(x, verticalOffset, z);
-
-        // Top part of body
-        CylinderCache[index++] = Vector3(x, verticalOffset, z);
-
-        // Bottom part of body
-        CylinderCache[index++] = Vector3(x, -verticalOffset, z);
-
-        // Bottom cap
-        CylinderCache[index++] = Vector3(x, -verticalOffset, z);
-    }
-
-    MISSING_CODE("missing rendering cylinder");
-
-    // Write lines
-    // TODO: optimize this to draw less lines
-    /*for (uint32 i = 0; i < DEBUG_DRAW_CYLINDER_VERTICES; i += 4)
-    {
-        // Each iteration, the loop advances to the next vertex column
-        // Four triangles per column (except for the four degenerate cap triangles)
-
-        // Top cap triangles
-        auto nextIndex = (ushort)((i + 4) % DEBUG_DRAW_CYLINDER_VERTICES);
-        if (nextIndex != 0) //Don't add cap indices if it's going to be a degenerate triangle.
-        {
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[i]));
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[nextIndex]));
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[0]));
-        }
-
-        // Body triangles
-        nextIndex = (ushort)((i + 5) % DEBUG_DRAW_CYLINDER_VERTICES);
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[(i + 1)]));
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[(i + 2)]));
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[nextIndex]));
-
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[nextIndex]));
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[(i + 2)]));
-        _vertexList.Items.Add(new VertexMeshInput(CylinderCache[((i + 6) % DEBUG_DRAW_CYLINDER_VERTICES)]));
-
-        // Bottom cap triangles
-        nextIndex = (ushort)((i + 7) % DEBUG_DRAW_CYLINDER_VERTICES);
-        if (nextIndex != 3) //Don't add cap indices if it's going to be a degenerate triangle.
-        {
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[(i + 3)]));
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[3]));
-            _vertexList.Items.Add(new VertexMeshInput(CylinderCache[nextIndex]));
-        }
-    }
-    _vertexList.UpdateResource();
-
-    // Draw
-    Matrix world = Matrix.RotationQuaternion(orientation) * Matrix.Translation(position);
-    bool posOnly;
-    auto material = _boxMaterial.Material;
-    material.Params[0].Value = color;
-    material.Params[1].Value = brightness;
-    material.Apply(view, ref world, out posOnly);
-    _vertexList.Draw(PrimitiveType.TriangleList, vertices);*/
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
+    ::DrawCylinder(list, position, orientation, radius, height, color, duration);
 }
 
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)

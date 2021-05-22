@@ -38,7 +38,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         protected override void OnValueChanged()
         {
-            if ((int)ParentNode.Values[Archetype.ValueIndex] != Value)
+            if ((int)ParentNode.Values[Archetype.ValueIndex] != (int)Value)
             {
                 // Edit value
                 ParentNode.SetValue(Archetype.ValueIndex, Value);

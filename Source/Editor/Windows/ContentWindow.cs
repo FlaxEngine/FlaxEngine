@@ -77,11 +77,11 @@ namespace FlaxEditor.Windows
             {
                 Parent = this,
             };
-            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import32, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
+            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
             _toolStrip.AddSeparator();
-            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.ArrowLeft32, NavigateBackward).LinkTooltip("Navigate backward");
-            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.ArrowRight32, NavigateForward).LinkTooltip("Navigate forward");
-            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.ArrowUp32, NavigateUp).LinkTooltip("Navigate up");
+            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward");
+            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward");
+            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up");
 
             // Navigation bar
             _navigationBar = new NavigationBar
@@ -371,7 +371,7 @@ namespace FlaxEditor.Windows
 
                 // Focus content window
                 Focus();
-                RootWindow?.Window.Focus();
+                RootWindow?.Focus();
             }
 
             // Refresh database and view now

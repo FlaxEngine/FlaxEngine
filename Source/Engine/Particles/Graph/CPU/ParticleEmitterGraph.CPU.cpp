@@ -1,8 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
-#include "Engine/Content/Assets/Model.h"
 #include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Content/Assets/Model.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 

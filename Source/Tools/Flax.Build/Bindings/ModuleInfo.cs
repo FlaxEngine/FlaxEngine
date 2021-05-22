@@ -34,6 +34,8 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Module.BinaryModuleName);
             writer.Write(Module.BuildNativeCode);
             writer.Write(Module.BuildCSharp);
+            writer.Write(Globals.Project.Name);
+            writer.Write(Globals.Project.Version.ToString());
 
             base.Write(writer);
         }
@@ -44,7 +46,9 @@ namespace Flax.Build.Bindings
                 reader.ReadString() != Module.FilePath ||
                 BindingsGenerator.Read(reader, Module.BinaryModuleName) != Module.BinaryModuleName ||
                 reader.ReadBoolean() != Module.BuildNativeCode ||
-                reader.ReadBoolean() != Module.BuildCSharp
+                reader.ReadBoolean() != Module.BuildCSharp ||
+                reader.ReadString() != Globals.Project.Name ||
+                reader.ReadString() != Globals.Project.Version.ToString()
             )
                 throw new Exception();
 

@@ -7,7 +7,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUDevice.h"
 
-REGISTER_BINARY_ASSET(FontTextureAtlas, "FlaxEngine.FontTextureAtlas", nullptr, true);
+REGISTER_BINARY_ASSET(FontTextureAtlas, "FlaxEngine.FontTextureAtlas", true);
 
 FontTextureAtlas::FontTextureAtlas(const SpawnParams& params, const AssetInfo* info)
     : Texture(params, info)

@@ -166,7 +166,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             xAdvance = (kerning + entry.AdvanceX) * scale;
 
             // Check if character fits the line or skip wrapping
-            if (cursorX + xAdvance < boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
+            if (cursorX + xAdvance <= boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
             {
                 // Move character
                 cursorX += xAdvance;

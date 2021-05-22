@@ -84,7 +84,7 @@ public:
     /// <summary>
     /// The index of the frame when this task was last time rendered.
     /// </summary>
-    uint64 LastUsedFrame = 0;
+    API_FIELD(ReadOnly) uint64 LastUsedFrame = 0;
 
     /// <summary>
     /// Action fired on task rendering.
@@ -251,7 +251,7 @@ public:
     /// <summary>
     /// The scene rendering camera. Can be used to override the rendering view properties based on the current camera setup.
     /// </summary>
-    API_FIELD() Camera* Camera = nullptr;
+    API_FIELD() ScriptingObjectReference<Camera> Camera;
 
     /// <summary>
     /// The render view description.

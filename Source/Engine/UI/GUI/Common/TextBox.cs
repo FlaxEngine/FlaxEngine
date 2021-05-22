@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using FlaxEngine.Assertions;
-
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -12,10 +10,19 @@ namespace FlaxEngine.GUI
         private TextLayoutOptions _layout;
 
         /// <summary>
+        /// The watermark text.
+        /// </summary>
+        protected LocalizedString _watermarkText;
+
+        /// <summary>
         /// Gets or sets the watermark text to show grayed when textbox is empty.
         /// </summary>
         [EditorOrder(20), Tooltip("The watermark text to show grayed when textbox is empty.")]
-        public string WatermarkText { get; set; }
+        public LocalizedString WatermarkText
+        {
+            get => _watermarkText;
+            set => _watermarkText = value;
+        }
 
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
@@ -109,7 +116,7 @@ namespace FlaxEngine.GUI
                 return Vector2.Zero;
             }
 
-            height = font.Height;
+            height = font.Height / DpiScale;
             return font.GetCharPosition(_text, index, ref _layout);
         }
 
@@ -134,7 +141,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             // Cache data
             var rect = new Rectangle(Vector2.Zero, Size);
@@ -161,7 +168,7 @@ namespace FlaxEngine.GUI
             {
                 Vector2 leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 Vector2 rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height;
+                float fontHeight = font.Height / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
@@ -203,9 +210,9 @@ namespace FlaxEngine.GUI
                     color *= 0.6f;
                 Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
             }
-            else if (!string.IsNullOrEmpty(WatermarkText) && !IsFocused)
+            else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                Render2D.DrawText(font, WatermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
 
             // Caret

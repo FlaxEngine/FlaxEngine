@@ -25,7 +25,7 @@ namespace FlaxEngine.GUI
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
-                if (c.Visible)
+                if (c.Visible && Mathf.IsZero(c.AnchorMin.Y) && Mathf.IsZero(c.AnchorMax.Y))
                 {
                     c.Height = h;
                 }
@@ -35,28 +35,39 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
         {
-            // Sort controls from left to right
-            float x = _margin.Left;
+            // Sort controls horizontally
+            float left = _margin.Left;
+            float right = _margin.Right;
             float h = Height - _margin.Height;
-            bool hasAnyItem = false;
+            bool hasAnyLeft = false, hasAnyRight = false;
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
-                if (c.Visible && Mathf.IsZero(c.AnchorMax.X))
+                if (c.Visible)
                 {
                     var w = c.Width;
-                    c.Bounds = new Rectangle(x + _offset.X, _margin.Top + _offset.Y, w, h);
-                    x = c.Right + _spacing;
-                    hasAnyItem = true;
+                    if (Mathf.IsZero(c.AnchorMin.X) && Mathf.IsZero(c.AnchorMax.X))
+                    {
+                        c.Bounds = new Rectangle(left + _offset.X, _margin.Top + _offset.Y, w, h);
+                        left = c.Right + _spacing;
+                        hasAnyLeft = true;
+                    }
+                    else if (Mathf.IsOne(c.AnchorMin.X) && Mathf.IsOne(c.AnchorMax.X))
+                    {
+                        right += w + _spacing;
+                        c.Bounds = new Rectangle(Width - right + _offset.X, _margin.Top + _offset.Y, w, h);
+                        hasAnyRight = true;
+                    }
                 }
             }
-            if (hasAnyItem)
-                x -= _spacing;
-            x += _margin.Right;
+            if (hasAnyLeft)
+                left -= _spacing;
+            if (hasAnyRight)
+                right -= _spacing;
 
             // Update size
             if (_autoSize)
-                Width = x;
+                Width = left + right;
         }
     }
 }

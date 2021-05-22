@@ -6,6 +6,7 @@
 
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Cache.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Serialization/Json.h"
@@ -358,25 +359,45 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
             {
                 obj->Deserialize(instance.Data[dataIndex], modifier.Value);
 
-                // Send events because some properties may be modified during prefab changes apply
-                // TODO: maybe send only valid events (need to track changes for before-after state)
-                Actor* actor = dynamic_cast<Actor*>(obj);
-                if (actor && actor->IsDuringPlay())
+                // Preserve order in parent (values from prefab are used)
+                if (i != 0)
                 {
-                    Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, actor, nullptr);
-                    Level::callActorEvent(Level::ActorEventType::OnActorActiveChanged, actor, nullptr);
-                    Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
+                    auto prefab = Content::Load<Prefab>(prefabId);
+                    const auto defaultInstance = prefab ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
+                    if (defaultInstance)
+                    {
+                        obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+                    }
                 }
             }
         }
 
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
-        // Setup objects after deserialization
+        // Setup new objects after deserialization
         for (int32 i = existingObjectsCount; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
             obj->PostLoad();
+        }
+
+        // Synchronize existing objects logic with deserialized state (fire events)
+        for (int32 i = 0; i < existingObjectsCount; i++)
+        {
+            SceneObject* obj = sceneObjects->At(i);
+            Actor* actor = dynamic_cast<Actor*>(obj);
+            if (actor)
+            {
+                const bool shouldBeActiveInHierarchy = actor->GetIsActive() && (!actor->GetParent() || actor->GetParent()->IsActiveInHierarchy());
+                if (shouldBeActiveInHierarchy != actor->IsActiveInHierarchy())
+                {
+                    actor->_isActiveInHierarchy = shouldBeActiveInHierarchy;
+                    actor->OnActiveInTreeChanged();
+                    Level::callActorEvent(Level::ActorEventType::OnActorActiveChanged, actor, nullptr);
+                }
+                Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, actor, nullptr);
+                Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
+            }
         }
 
         // Restore order in parent
@@ -784,6 +805,20 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 obj->Deserialize(diffDataDocument[dataIndex], modifier.Value);
 
                 sceneObjects->Add(obj);
+
+                // Synchronize order of the scene objects with the serialized data (eg. user reordered actors in prefab editor and applied changes)
+                if (i != 0)
+                {
+                    for (int32 j = 0; j < targetObjects->Count(); j++)
+                    {
+                        SceneObject* targetObject = targetObjects->At(j);
+                        if (targetObject->GetPrefabObjectID() == obj->GetID())
+                        {
+                            obj->SetOrderInParent(targetObject->GetOrderInParent());
+                            break;
+                        }
+                    }
+                }
             }
             else
             {
@@ -800,7 +835,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 sceneObjects->RemoveAtKeepOrder(i);
         }
 
-        // Deserialize new prefab objects (add new objects)
+        // Deserialize new prefab objects
         int32 newPrefabInstanceIdToDataIndexCounter = 0;
         int32 newPrefabInstanceIdToDataIndexStart = sceneObjects->Count();
         sceneObjects->Resize(sceneObjects->Count() + newPrefabInstanceIdToDataIndex.Count());
@@ -822,9 +857,27 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             const int32 dataIndex = i->Value;
             SceneObject* obj = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
-            if (obj)
+            if (!obj)
+                continue;
+            SceneObjectsFactory::Deserialize(obj, diffDataDocument[dataIndex], modifier.Value);
+        }
+        for (int32 j = 0; j < targetObjects->Count(); j++)
+        {
+            auto obj = targetObjects->At(j);
+            Guid prefabObjectId;
+            if (newPrefabInstanceIdToPrefabObjectId.TryGet(obj->GetSceneObjectId(), prefabObjectId))
             {
-                SceneObjectsFactory::Deserialize(obj, diffDataDocument[dataIndex], modifier.Value);
+                newPrefabInstanceIdToDataIndexCounter = 0;
+                for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
+                {
+                    SceneObject* e = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
+                    if (e->GetID() == prefabObjectId)
+                    {
+                        // Synchronize order of new objects with the order in target instance
+                        e->SetOrderInParent(obj->GetOrderInParent());
+                        break;
+                    }
+                }
             }
         }
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
@@ -861,7 +914,10 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             auto obj = sceneObjects.Value->At(i);
-            obj->PostLoad();
+            if (obj)
+            {
+                obj->PostLoad();
+            }
         }
 
         // Update transformations

@@ -28,7 +28,7 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Toolstrip
-            _toolstrip.AddButton(editor.Icons.PageScale32, _preview.CenterView).LinkTooltip("Center view");
+            _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
         }
 
         /// <inheritdoc />

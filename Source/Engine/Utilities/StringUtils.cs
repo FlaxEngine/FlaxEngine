@@ -232,20 +232,30 @@ namespace FlaxEngine
             return result;
         }
 
+        private static IEnumerable<string> GraphemeClusters(this string s)
+        {
+            var enumerator = System.Globalization.StringInfo.GetTextElementEnumerator(s);
+            while (enumerator.MoveNext())
+            {
+                yield return (string)enumerator.Current;
+            }
+        }
+
         /// <summary>
         /// Reverses the specified input string.
         /// </summary>
+        /// <remarks>Correctly handles all UTF-16 strings</remarks>
         /// <param name="s">The string to reverse.</param>
         /// <returns>The reversed string.</returns>
         public static string Reverse(this string s)
         {
-            char[] charArray = s.ToCharArray();
-            Array.Reverse(charArray);
-            return new string(charArray);
+            string[] graphemes = s.GraphemeClusters().ToArray();
+            Array.Reverse(graphemes);
+            return string.Concat(graphemes);
         }
 
-        private static readonly Regex IncNameRegex1 = new Regex("^(\\d+)");
-        private static readonly Regex IncNameRegex2 = new Regex("^\\)(\\d+)\\(");
+        private static readonly Regex IncNameRegex1 = new Regex("(\\d+)$");
+        private static readonly Regex IncNameRegex2 = new Regex("\\((\\d+)\\)$");
 
         /// <summary>
         /// Tries to parse number in the name brackets at the end of the value and then increment it to create a new name.
@@ -264,14 +274,13 @@ namespace FlaxEngine
             int index;
             int MaxChecks = 10000;
             string result;
-            string reversed = name.Reverse();
 
             // Find '<name><num>' case
-            var match = IncNameRegex1.Match(reversed);
+            var match = IncNameRegex1.Match(name);
             if (match.Success && match.Groups.Count == 2)
             {
                 // Get result
-                string num = match.Groups[0].Value.Reverse();
+                string num = match.Groups[0].Value;
 
                 // Parse value
                 if (int.TryParse(num, out index))
@@ -294,12 +303,12 @@ namespace FlaxEngine
             }
 
             // Find '<name> (<num>)' case
-            match = IncNameRegex2.Match(reversed);
+            match = IncNameRegex2.Match(name);
             if (match.Success && match.Groups.Count == 2)
             {
                 // Get result
                 string num = match.Groups[0].Value;
-                num = num.Substring(1, num.Length - 2).Reverse();
+                num = num.Substring(1, num.Length - 2);
 
                 // Parse value
                 if (int.TryParse(num, out index))

@@ -243,7 +243,13 @@ namespace FlaxEditor.Windows
         /// </summary>
         public void ShowSelectedActors()
         {
-            ((FPSCamera)Viewport.ViewportCamera).ShowActors(Viewport.TransformGizmo.SelectedParents);
+            if (Viewport.UseOrthographicProjection)
+            {
+                var orient = Viewport.ViewOrientation;
+                ((FPSCamera)Viewport.ViewportCamera).ShowActors(Viewport.TransformGizmo.SelectedParents, ref orient);
+            }
+            else
+                ((FPSCamera)Viewport.ViewportCamera).ShowActors(Viewport.TransformGizmo.SelectedParents);
         }
 
         /// <summary>

@@ -6,7 +6,8 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 
-Array<AnimatedModel*> UpdateList(256);
+Array<AnimatedModel*> UpdateList;
+Array<Matrix> UpdateBones;
 
 class AnimationManagerService : public EngineService
 {
@@ -67,10 +68,11 @@ void AnimationManagerService::Update()
             }
             animatedModel->GraphInstance.LastUpdateTime = t;
 
-            const auto bones = graph->GraphExecutor.Update(animatedModel->GraphInstance, dt);
-            const bool usePrevFrameBones = animatedModel->PerBoneMotionBlur;
-            animatedModel->_skinningData.SetData(bones, !usePrevFrameBones);
-            animatedModel->OnAnimUpdate();
+            // Evaluate animated nodes pose
+            graph->GraphExecutor.Update(animatedModel->GraphInstance, dt);
+
+            // Update gameplay
+            animatedModel->OnAnimationUpdated();
         }
     }
     UpdateList.Clear();
@@ -79,6 +81,7 @@ void AnimationManagerService::Update()
 void AnimationManagerService::Dispose()
 {
     UpdateList.Resize(0);
+    UpdateBones.Resize(0);
 }
 
 void AnimationManager::AddToUpdate(AnimatedModel* obj)

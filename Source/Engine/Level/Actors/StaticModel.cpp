@@ -2,7 +2,10 @@
 
 #include "StaticModel.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -187,7 +190,7 @@ void StaticModel::UpdateBounds()
     }
     else
     {
-        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
 }

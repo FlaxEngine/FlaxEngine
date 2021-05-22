@@ -76,6 +76,9 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public int MetadataToken => 0;
+
+        /// <inheritdoc />
         public bool HasAttribute(Type attributeType, bool inherit)
         {
             return Surface.SurfaceMeta.HasAttribute(_parameter, attributeType);
@@ -194,6 +197,8 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public ScriptType ValueType => _returnType;
+
+        public int MetadataToken => 0;
 
         /// <inheritdoc />
         public bool HasAttribute(Type attributeType, bool inherit)
@@ -534,7 +539,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CodeScript64;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.VisualScript128;
 
         /// <inheritdoc />
         protected override bool DrawShadow => false;

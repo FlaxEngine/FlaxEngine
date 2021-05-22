@@ -4,14 +4,17 @@
 #include "DirectionalLight.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/AtmospherePreCompute.h"
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Serialization/Serialization.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
 PACK_STRUCT(struct Data {
@@ -259,6 +262,6 @@ void Sky::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box = BoundingBox(_transform.Translation, _transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }

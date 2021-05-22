@@ -10,7 +10,11 @@ namespace FlaxEngine.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class Label : ContainerControl
     {
-        private string _text;
+        /// <summary>
+        /// The text.
+        /// </summary>
+        protected LocalizedString _text = new LocalizedString();
+
         private bool _autoWidth;
         private bool _autoHeight;
         private bool _autoFitText;
@@ -26,7 +30,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the text.
         /// </summary>
         [EditorOrder(10), MultilineText, Tooltip("The label text.")]
-        public string Text
+        public LocalizedString Text
         {
             get => _text;
             set
@@ -77,7 +81,19 @@ namespace FlaxEngine.GUI
         public FontReference Font
         {
             get => _font;
-            set => _font = value;
+            set
+            {
+                if (_font != value)
+                {
+                    _font = value;
+
+                    if (_autoWidth || _autoHeight || _autoFitText)
+                    {
+                        _textSize = Vector2.Zero;
+                        PerformLayout();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -192,7 +208,7 @@ namespace FlaxEngine.GUI
             var rect = new Rectangle(new Vector2(Margin.Left, Margin.Top), Size - Margin.Size);
 
             if (ClipText)
-                Render2D.PushClip(ref rect);
+                Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
 
             var color = IsMouseOver ? TextColorHighlighted : TextColor;
 
@@ -200,8 +216,8 @@ namespace FlaxEngine.GUI
                 color *= 0.6f;
 
             var scale = 1.0f;
-            var hAlignment = _autoWidth ? TextAlignment.Near : HorizontalAlignment;
-            var wAlignment = _autoHeight ? TextAlignment.Near : VerticalAlignment;
+            var hAlignment = HorizontalAlignment;
+            var wAlignment = VerticalAlignment;
             if (_autoFitText)
             {
                 hAlignment = TextAlignment.Center;
@@ -213,18 +229,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(
-                _font.GetFont(),
-                Material,
-                Text,
-                rect,
-                color,
-                hAlignment,
-                wAlignment,
-                Wrapping,
-                1.0f,
-                scale
-            );
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, 1.0f, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -239,7 +244,13 @@ namespace FlaxEngine.GUI
                 if (font)
                 {
                     // Calculate text size
-                    _textSize = font.MeasureText(_text);
+                    var layout = TextLayoutOptions.Default;
+                    layout.TextWrapping = Wrapping;
+                    if (_autoHeight && !_autoWidth)
+                        layout.Bounds.Size.X = Width - Margin.Width;
+                    else if (_autoWidth && !_autoHeight)
+                        layout.Bounds.Size.Y = Height - Margin.Height;
+                    _textSize = font.MeasureText(_text, ref layout);
 
                     // Check if size is controlled via text
                     if (_autoWidth || _autoHeight)

@@ -6,26 +6,27 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
-
 /// <summary>
 /// Two-components vector (32 bit integer type).
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Int2
+API_STRUCT() struct FLAXENGINE_API Int2
 {
+DECLARE_SCRIPTING_TYPE_MINIMAL(Int2);
 public:
 
     union
     {
         struct
         {
-            // X component
-            int32 X;
+            /// <summary>
+            /// The X component.
+            /// </summary>
+            API_FIELD() int32 X;
 
-            // Y component
-            int32 Y;
+            /// <summary>
+            /// The Y component.
+            /// </summary>
+            API_FIELD() int32 Y;
         };
 
         // Raw values
@@ -39,6 +40,12 @@ public:
 
     // Vector with all components equal 1
     static const Int2 One;
+
+    // A minimum Int2
+    static const Int2 Minimum;
+
+    // A maximum Int2
+    static const Int2 Maximum;
 
 public:
 
@@ -67,9 +74,25 @@ public:
     }
 
     // Init
-    // @param v Vector to use X and Y components
-    explicit Int2(const Vector2& v);
+    // @param xyz Int3 to use X and Y components
+    Int2(const Int3& xyz);
 
+    // Init
+    // @param xyzw Int4 to use X and Y components
+    Int2(const Int4& xyzw);
+    
+    // Init
+    // @param xy Vector2 to use X and Y components
+    explicit Int2(const Vector2& xy);
+
+    // Init
+    // @param xyz Vector3 to use X and Y components
+    explicit Int2(const Vector3& xyz);
+
+    // Init
+    // @param xyzw Vector4 to use X and Y components
+    explicit Int2(const Vector4& xyzw);
+    
 public:
 
     String ToString() const;
@@ -211,29 +234,29 @@ public:
 
 public:
 
-    static void Add(const Int2& a, const Int2& b, Int2* result)
+    static void Add(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X + b.X;
-        result->Y = a.Y + b.Y;
+        result.X = a.X + b.X;
+        result.Y = a.Y + b.Y;
     }
 
     static Int2 Add(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Add(a, b, &result);
+        Add(a, b, result);
         return result;
     }
 
-    static void Subtract(const Int2& a, const Int2& b, Int2* result)
+    static void Subtract(const Int2& a, const Int2& b, Int2& result)
     {
-        result->X = a.X - b.X;
-        result->Y = a.Y - b.Y;
+        result.X = a.X - b.X;
+        result.Y = a.Y - b.Y;
     }
 
     static Int2 Subtract(const Int2& a, const Int2& b)
     {
         Int2 result;
-        Subtract(a, b, &result);
+        Subtract(a, b, result);
         return result;
     }
 
@@ -257,16 +280,111 @@ public:
         return Int2(a.X / b, a.Y / b);
     }
 
-    // Creates vector from minimum components of two vectors
+    /// <summary>
+    /// Gets a value indicting whether this vector is zero.
+    /// </summary>
+    /// <returns> True if the vector is zero, otherwise false.</returns>
+    bool IsZero() const
+    {
+        return X == 0 && Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether any vector component is zero.
+    /// </summary>
+    /// <returns> True if a component is zero, otherwise false.</returns>
+    bool IsAnyZero() const
+    {
+        return X == 0 || Y == 0;
+    }
+
+    /// <summary>
+    /// Gets a value indicting whether this vector is one.
+    /// </summary>
+    /// <returns> True if the vector is one, otherwise false.</returns>
+    bool IsOne() const
+    {
+        return X == 1 && Y == 1;
+    }
+    
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector
+    /// </summary>
+    /// <returns>Negative vector</returns>
+    Int2 GetNegative() const
+    {
+        return Int2(-X, -Y);
+    }
+    
+    /// <summary>
+    /// Returns average arithmetic of all the components
+    /// </summary>
+    /// <returns>Average arithmetic of all the components</returns>
+    float AverageArithmetic() const
+    {
+        return (X + Y) * 0.5f;
+    }
+
+    /// <summary>
+    /// Gets sum of all vector components values
+    /// </summary>
+    /// <returns>Sum of X, Y, Z and W</returns>
+    int32 SumValues() const
+    {
+        return X + Y;
+    }
+
+    /// <summary>
+    /// Returns minimum value of all the components
+    /// </summary>
+    /// <returns>Minimum value</returns>
+    int32 MinValue() const
+    {
+        return Math::Min(X, Y);
+    }
+
+    /// <summary>
+    /// Returns maximum value of all the components
+    /// </summary>
+    /// <returns>Maximum value</returns>
+    int32 MaxValue() const
+    {
+        return Math::Max(X, Y);
+    }
+
+    
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int2 Min(const Int2& a, const Int2& b)
     {
         return Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
     }
 
-    // Creates vector from maximum components of two vectors
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
     static Int2 Max(const Int2& a, const Int2& b)
     {
         return Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+    }
+
+    // Returns a vector containing the smallest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
+    static void Min(const Int2& a, const Int2& b, Int2& result)
+    {
+        result = Int2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+    }
+
+    // Returns a vector containing the largest components of the specified vectors
+    // @param a The first source vector
+    // @param b The second source vector
+    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
+    static void Max(const Int2& a, const Int2& b, Int2& result)
+    {
+        result = Int2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 };
 

@@ -68,18 +68,23 @@ namespace FlaxEngine.GUI
             var parentWin = target.Root;
             if (parentWin == null)
                 return;
-            float dpiScale = Platform.DpiScale;
+            float dpiScale = target.RootWindow.DpiScale;
             Vector2 dpiSize = Size * dpiScale;
             Vector2 locationWS = target.PointToWindow(location);
             Vector2 locationSS = parentWin.PointToScreen(locationWS);
             Vector2 screenSize = Platform.VirtualDesktopSize;
+            Vector2 parentWinLocationSS = parentWin.PointToScreen(Vector2.Zero);
+            float parentWinRightSS = parentWinLocationSS.Y + parentWin.Size.Y;
+            float parentWinBottomSS = parentWinLocationSS.X + parentWin.Size.X;
             Vector2 rightBottomLocationSS = locationSS + dpiSize;
-            if (screenSize.Y < rightBottomLocationSS.Y)
+
+            // Prioritize tooltip placement within parent window, fall back to virtual desktop
+            if (parentWinRightSS < rightBottomLocationSS.Y || screenSize.Y < rightBottomLocationSS.Y)
             {
                 // Direction: up
                 locationSS.Y -= dpiSize.Y;
             }
-            if (screenSize.X < rightBottomLocationSS.X)
+            if (parentWinBottomSS < rightBottomLocationSS.X || screenSize.X < rightBottomLocationSS.X)
             {
                 // Direction: left
                 locationSS.X -= dpiSize.X;
@@ -155,7 +160,7 @@ namespace FlaxEngine.GUI
         /// <param name="dt">The delta time.</param>
         public void OnMouseOverControl(Control target, float dt)
         {
-            if (!Visible)
+            if (!Visible && _timeToPopupLeft > 0.0f)
             {
                 _lastTarget = target;
                 _timeToPopupLeft -= dt;
@@ -183,7 +188,7 @@ namespace FlaxEngine.GUI
         {
             if (_window)
             {
-                _window.ClientSize = Size * Platform.DpiScale;
+                _window.ClientSize = Size * _window.DpiScale;
             }
         }
 

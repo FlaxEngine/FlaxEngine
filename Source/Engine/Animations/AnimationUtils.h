@@ -70,7 +70,7 @@ namespace AnimationUtils
     FORCE_INLINE void GetTangent<Quaternion>(const Quaternion& a, const Quaternion& b, float length, Quaternion& result)
     {
         const float oneThird = 1.0f / 3.0f;
-        Quaternion::Slerp(a, b, length * oneThird, result);
+        Quaternion::Slerp(a, b, oneThird, result);
     }
 
     template<>
@@ -79,7 +79,7 @@ namespace AnimationUtils
         const float oneThird = 1.0f / 3.0f;
         const float oneThirdLength = length * oneThird;
         result.Translation = a.Translation + b.Translation * oneThirdLength;
-        Quaternion::Slerp(a.Orientation, b.Orientation, oneThirdLength, result.Orientation);
+        Quaternion::Slerp(a.Orientation, b.Orientation, oneThird, result.Orientation);
         result.Scale = a.Scale + (b.Scale - a.Scale) * oneThirdLength;
     }
 

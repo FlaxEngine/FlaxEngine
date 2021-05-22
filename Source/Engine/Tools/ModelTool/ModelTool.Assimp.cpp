@@ -518,29 +518,33 @@ bool ImportMaterials(AssimpImporterData& data, String& errorMsg)
         if (aMaterial->Get(AI_MATKEY_NAME, aName) == AI_SUCCESS)
             materialSlot.Name = String(aName.C_Str()).TrimTrailing();
         materialSlot.AssetID = Guid::Empty;
-        aiColor3D aColor;
-        if (aMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aColor) == AI_SUCCESS)
-            materialSlot.Diffuse.Color = ToColor(aColor);
-        bool aBoolean;
-        if (aMaterial->Get(AI_MATKEY_TWOSIDED, aBoolean) == AI_SUCCESS)
-            materialSlot.TwoSided = aBoolean;
-        bool aFloat;
-        if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
-            materialSlot.Opacity.Value = aFloat;
 
-        if (data.Model.Types & ImportDataTypes::Textures)
+        if (data.Model.Types & ImportDataTypes::Materials)
         {
-            ImportMaterialTexture(data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
-            ImportMaterialTexture(data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
-            ImportMaterialTexture(data, aMaterial, aiTextureType_NORMALS, materialSlot.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
-            ImportMaterialTexture(data, aMaterial, aiTextureType_OPACITY, materialSlot.Opacity.TextureIndex, TextureEntry::TypeHint::ColorRGBA);
+            aiColor3D aColor;
+            if (aMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aColor) == AI_SUCCESS)
+                materialSlot.Diffuse.Color = ToColor(aColor);
+            bool aBoolean;
+            if (aMaterial->Get(AI_MATKEY_TWOSIDED, aBoolean) == AI_SUCCESS)
+                materialSlot.TwoSided = aBoolean;
+            bool aFloat;
+            if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
+                materialSlot.Opacity.Value = aFloat;
 
-            if (materialSlot.Diffuse.TextureIndex != -1)
+            if (data.Model.Types & ImportDataTypes::Textures)
             {
-                // Detect using alpha mask in diffuse texture
-                materialSlot.Diffuse.HasAlphaMask = TextureTool::HasAlpha(data.Model.Textures[materialSlot.Diffuse.TextureIndex].FilePath);
-                if (materialSlot.Diffuse.HasAlphaMask)
-                    data.Model.Textures[materialSlot.Diffuse.TextureIndex].Type = TextureEntry::TypeHint::ColorRGBA;
+                ImportMaterialTexture(data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(data, aMaterial, aiTextureType_NORMALS, materialSlot.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
+                ImportMaterialTexture(data, aMaterial, aiTextureType_OPACITY, materialSlot.Opacity.TextureIndex, TextureEntry::TypeHint::ColorRGBA);
+
+                if (materialSlot.Diffuse.TextureIndex != -1)
+                {
+                    // Detect using alpha mask in diffuse texture
+                    materialSlot.Diffuse.HasAlphaMask = TextureTool::HasAlpha(data.Model.Textures[materialSlot.Diffuse.TextureIndex].FilePath);
+                    if (materialSlot.Diffuse.HasAlphaMask)
+                        data.Model.Textures[materialSlot.Diffuse.TextureIndex].Type = TextureEntry::TypeHint::ColorRGBA;
+                }
             }
         }
     }
@@ -691,13 +695,10 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, cons
     ProcessNodes(assimpData, scene->mRootNode, -1);
 
     // Import materials
-    if (data.Types & ImportDataTypes::Materials)
+    if (ImportMaterials(assimpData, errorMsg))
     {
-        if (ImportMaterials(assimpData, errorMsg))
-        {
-            LOG(Warning, "Failed to import materials.");
-            return true;
-        }
+        LOG(Warning, "Failed to import materials.");
+        return true;
     }
 
     // Import geometry
