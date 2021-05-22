@@ -56,7 +56,7 @@ namespace Flax.Build
                         // Prefer installed Roslyn C# compiler over Mono one
                         monoPath = null;
                         cscPath = Path.Combine(Path.GetDirectoryName(Deploy.VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
-                        
+
                         if (!File.Exists(cscPath))
                         {
                             // Fallback to Mono binaries
@@ -163,7 +163,7 @@ namespace Flax.Build
                     task.InfoMessage = "Compiling " + outputFile;
                     task.Cost = task.PrerequisiteFiles.Count;
 
-                    if (monoPath != null)  
+                    if (monoPath != null)
                     {
                         task.CommandPath = monoPath;
                         task.CommandArguments = $"\"{cscPath}\" /noconfig @\"{responseFile}\"";
