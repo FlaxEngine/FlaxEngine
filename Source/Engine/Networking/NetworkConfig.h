@@ -24,10 +24,10 @@ public:
     uint16 ConnectionsLimit = 32;
     
     API_FIELD()
-    uint16 Port = 7777;
+    String Address = String("127.0.0.1");
     
-    // API_FIELD()
-    // NetworkEndPoint EndPoint = {}; // TODO: Use NetSockets C# API when done
+    API_FIELD()
+    uint16 Port = 7777;
     
     API_FIELD()
     uint16 MessageSize = 1500; // MTU
