@@ -20,6 +20,11 @@ namespace
 
 int NetworkManager::Initialize(const NetworkConfig& config)
 {
+    // Validate the address for listen/connect
+    NetworkEndPoint endPoint = {};
+    const bool isEndPointValid = NetworkBase::CreateEndPoint(config.Address, String("7777"), NetworkIPVersion::IPv4, endPoint, false);
+    ASSERT(config.Address == String("any") || isEndPointValid);
+    
     // Alloc new host
     const int hostId = Hosts.Count();
     Hosts.Add(NetworkHost());
