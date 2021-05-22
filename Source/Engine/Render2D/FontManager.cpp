@@ -287,6 +287,8 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
 void FontManager::Invalidate(FontCharacterEntry& entry)
 {
+    if (entry.TextureIndex == MAX_uint8)
+        return;
     auto atlas = Atlases[entry.TextureIndex];
     const uint32 padding = atlas->GetPaddingAmount();
     const uint32 slotX = static_cast<uint32>(entry.UV.X - padding);
