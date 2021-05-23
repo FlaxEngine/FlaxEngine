@@ -50,6 +50,7 @@ namespace FlaxEditor.SceneGraph.GUI
         public ActorTreeNode()
         : base(true)
         {
+            ChildrenIndent = 16.0f;
         }
 
         internal virtual void LinkNode(ActorNode node)
