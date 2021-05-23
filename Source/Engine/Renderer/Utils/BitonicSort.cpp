@@ -157,6 +157,17 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
     if (sortedIndicesBuffer)
     {
         // Copy indices to another buffer
+#if !BUILD_RELEASE
+        switch (sortedIndicesBuffer->GetDescription().Format)
+        {
+        case PixelFormat::R32_UInt:
+        case PixelFormat::R16_UInt:
+        case PixelFormat::R8_UInt:
+            break;
+        default:
+            LOG(Warning, "Invalid format {0} of sortedIndicesBuffer for BitonicSort. It needs to be UInt type.", (int32)sortedIndicesBuffer->GetDescription().Format);
+        }
+#endif
         context->BindSR(1, sortingKeysBuffer->View());
         context->BindUA(0, sortedIndicesBuffer->View());
         // TODO: use indirect dispatch to match the items count for copy

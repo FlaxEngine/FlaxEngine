@@ -39,6 +39,7 @@ bool DepthOfFieldPass::Init()
     _platformSupportsBokeh = _platformSupportsDoF && limits.HasGeometryShaders && limits.HasDrawIndirect && limits.HasAppendConsumeBuffers;
 
     _platformSupportsBokeh &= GPUDevice::Instance->GetRendererType() != RendererType::DirectX12; // TODO: fix bokeh crash on d3d12 (driver issue probably - started to happen recently)
+    _platformSupportsBokeh &= GPUDevice::Instance->GetRendererType() != RendererType::Vulkan; // TODO: add bokeh on Vulkan (draw indirect with UA output from PS)
 
     // Create pipeline states
     if (_platformSupportsDoF)
@@ -149,8 +150,8 @@ bool DepthOfFieldPass::setupResources()
             _bokehBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Buffer"));
         if (_bokehIndirectArgsBuffer == nullptr)
             _bokehIndirectArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Indirect Args Buffer"));
-        uint32 indirectArgsBufferInitData[4] = { 0, 1, 0, 0 };
-        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
+        GPUDrawIndirectArgs indirectArgsBufferInitData{0, 1, 0, 0};
+        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(&indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
             return true;
     }
 

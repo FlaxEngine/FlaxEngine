@@ -135,6 +135,8 @@ public:
     /// </summary>
     uint32 UsedStagesMask;
 
+    bool BlendEnable;
+
     /// <summary>
     /// The bitmask of stages that have descriptors.
     /// </summary>

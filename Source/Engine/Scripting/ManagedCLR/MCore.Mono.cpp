@@ -16,6 +16,9 @@
 #include "Engine/Platform/Thread.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#ifdef USE_MONO_AOT_MODULE
+#include "Engine/Core/Types/TimeSpan.h"
+#endif
 #include <ThirdParty/mono-2.0/mono/jit/jit.h>
 #include <ThirdParty/mono-2.0/mono/utils/mono-counters.h>
 #include <ThirdParty/mono-2.0/mono/utils/mono-logger.h>

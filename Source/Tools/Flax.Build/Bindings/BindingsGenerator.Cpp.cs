@@ -765,7 +765,7 @@ namespace Flax.Build.Bindings
 
                 GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out _);
                 contents.Append(managedType);
-                if (parameterInfo.IsRef || parameterInfo.IsOut)
+                if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
                 contents.Append(' ');
                 contents.Append(parameterInfo.Name);

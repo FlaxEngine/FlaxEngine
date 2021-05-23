@@ -100,6 +100,8 @@ public:
     /// <returns>The created and loaded material or null if failed.</returns>
     static MaterialShader* CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
+    GPUShader* GetShader() const;
+
     /// <summary>
     /// Clears the loaded data.
     /// </summary>

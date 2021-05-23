@@ -270,7 +270,7 @@ public:
     /// <param name="index">The index.</param>
     /// <param name="socket">The returned socket.</param>
     /// <returns>Returns true on error, otherwise false.</returns>
-    API_FUNCTION() static bool GetSocketFromGroup(API_PARAM(Ref) NetworkSocketGroup& group, uint32 index, API_PARAM(Out) NetworkSocket* socket);
+    API_FUNCTION() static bool GetSocketFromGroup(API_PARAM(Ref) NetworkSocketGroup& group, uint32 index, API_PARAM(Out) NetworkSocket& socket);
 
     /// <summary>
     /// Removes the socket at the specified index.

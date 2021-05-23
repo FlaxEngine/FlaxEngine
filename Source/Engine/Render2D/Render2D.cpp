@@ -882,7 +882,7 @@ static uint32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeig
     const uint32 numSamples = Math::DivideAndRoundUp((uint32)kernelSize, 2u);
     outWeightsAndOffsets[0] = Vector4(Vector2(GetWeight(0, sigma), 0), GetWeightAndOffset(1, sigma));
     uint32 sampleIndex = 1;
-    for (uint32 x = 3; x < kernelSize; x += 4)
+    for (int32 x = 3; x < kernelSize; x += 4)
     {
         outWeightsAndOffsets[sampleIndex] = Vector4(GetWeightAndOffset((float)x, sigma), GetWeightAndOffset((float)(x + 2), sigma));
         sampleIndex++;

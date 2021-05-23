@@ -5,6 +5,12 @@ namespace Flax.Build
     public static partial class Configuration
     {
         /// <summary>
+        /// Package deployment output path.
+        /// </summary>
+        [CommandLine("deployOutput", "Package deployment output path.")]
+        public static string DeployOutput;
+
+        /// <summary>
         /// Builds and packages the editor.
         /// </summary>
         [CommandLine("deployEditor", "Builds and packages the editor.")]

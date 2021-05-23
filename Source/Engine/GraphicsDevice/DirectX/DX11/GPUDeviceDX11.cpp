@@ -537,11 +537,8 @@ bool GPUDeviceDX11::Init()
 #undef CREATE_DEPTH_STENCIL_STATE
     }
 
-    _state
-            =
-            DeviceState::Ready;
-    return
-            GPUDeviceDX::Init();
+    _state = DeviceState::Ready;
+    return GPUDeviceDX::Init();
 }
 
 GPUDeviceDX11::~GPUDeviceDX11()

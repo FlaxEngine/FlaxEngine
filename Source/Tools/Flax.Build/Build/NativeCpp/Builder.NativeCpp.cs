@@ -1076,6 +1076,10 @@ namespace Flax.Build
 
                             // Merge module into target environment
                             buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
+                            foreach (var e in moduleOptions.DependencyFiles)
+                                buildData.TargetOptions.DependencyFiles.Add(e);
+                            foreach (var e in moduleOptions.OptionalDependencyFiles)
+                                buildData.TargetOptions.OptionalDependencyFiles.Add(e);
                         }
                     }
                 }

@@ -154,13 +154,13 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     if (klass == mono_get_boolean_class() || monoType->type == MONO_TYPE_BOOLEAN)
         return VariantType(VariantType::Bool);
     if (klass == mono_get_byte_class() || monoType->type == MONO_TYPE_U1)
-        return VariantType(VariantType::Int);
+        return VariantType(VariantType::Int16);
     if (klass == mono_get_sbyte_class() || monoType->type == MONO_TYPE_I1)
-        return VariantType(VariantType::Int);
+        return VariantType(VariantType::Int16);
     if (klass == mono_get_int16_class() || monoType->type == MONO_TYPE_I2)
-        return VariantType(VariantType::Int);
+        return VariantType(VariantType::Int16);
     if (klass == mono_get_uint16_class() || monoType->type == MONO_TYPE_U2)
-        return VariantType(VariantType::Uint);
+        return VariantType(VariantType::Uint16);
     if (klass == mono_get_int32_class() || monoType->type == MONO_TYPE_I4)
         return VariantType(VariantType::Int);
     if (klass == mono_get_uint32_class() || monoType->type == MONO_TYPE_U4)
@@ -266,13 +266,13 @@ Variant MUtils::UnboxVariant(MonoObject* value)
     if (klass == mono_get_boolean_class())
         return *static_cast<bool*>(mono_object_unbox(value));
     if (klass == mono_get_byte_class())
-        return (int32)*static_cast<byte*>(mono_object_unbox(value));
+        return (int16)*static_cast<byte*>(mono_object_unbox(value));
     if (klass == mono_get_sbyte_class())
-        return (int32)*static_cast<int8*>(mono_object_unbox(value));
+        return (int16)*static_cast<int8*>(mono_object_unbox(value));
     if (klass == mono_get_int16_class())
-        return (int32)*static_cast<int16*>(mono_object_unbox(value));
+        return *static_cast<int16*>(mono_object_unbox(value));
     if (klass == mono_get_uint16_class())
-        return (uint32)*static_cast<uint16*>(mono_object_unbox(value));
+        return *static_cast<uint16*>(mono_object_unbox(value));
     if (klass == mono_get_int32_class())
         return *static_cast<int32*>(mono_object_unbox(value));
     if (klass == mono_get_uint32_class())
@@ -365,6 +365,10 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return nullptr;
     case VariantType::Bool:
         return mono_value_box(mono_domain_get(), mono_get_boolean_class(), (void*)&value.AsBool);
+    case VariantType::Int16:
+        return mono_value_box(mono_domain_get(), mono_get_int16_class(), (void*)&value.AsInt16);
+    case VariantType::Uint16:
+        return mono_value_box(mono_domain_get(), mono_get_uint16_class(), (void*)&value.AsUint16);
     case VariantType::Int:
         return mono_value_box(mono_domain_get(), mono_get_int32_class(), (void*)&value.AsInt);
     case VariantType::Uint:
@@ -534,6 +538,10 @@ MonoClass* MUtils::GetClass(const VariantType& value)
         return mono_get_void_class();
     case VariantType::Bool:
         return mono_get_boolean_class();
+    case VariantType::Int16:
+        return mono_get_int16_class();
+    case VariantType::Uint16:
+        return mono_get_uint16_class();
     case VariantType::Int:
         return mono_get_int32_class();
     case VariantType::Uint:
@@ -600,6 +608,10 @@ MonoClass* MUtils::GetClass(const Variant& value)
         return mono_get_void_class();
     case VariantType::Bool:
         return mono_get_boolean_class();
+    case VariantType::Int16:
+        return mono_get_int16_class();
+    case VariantType::Uint16:
+        return mono_get_uint16_class();
     case VariantType::Int:
         return mono_get_int32_class();
     case VariantType::Uint:
@@ -700,12 +712,18 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
     case MONO_TYPE_CHAR:
     case MONO_TYPE_I1:
     case MONO_TYPE_I2:
+        if (value.Type.Type != VariantType::Int16)
+            value = (int16)value;
+        return &value.AsInt16;
     case MONO_TYPE_I4:
         if (value.Type.Type != VariantType::Int)
             value = (int32)value;
         return &value.AsInt;
     case MONO_TYPE_U1:
     case MONO_TYPE_U2:
+        if (value.Type.Type != VariantType::Uint16)
+            value = (uint16)value;
+        return &value.AsUint16;
     case MONO_TYPE_U4:
         if (value.Type.Type != VariantType::Uint)
             value = (uint32)value;

@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -11,8 +13,14 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The texture.
         /// </summary>
-        [ExpandGroups, Tooltip("The texture asset.")]
+        [ExpandGroups, EditorOrder(0), Tooltip("The texture asset.")]
         public Texture Texture;
+
+        /// <summary>
+        /// The texture sampling filter mode.
+        /// </summary>
+        [ExpandGroups, EditorOrder(1), Tooltip("The texture sampling filter mode.")]
+        public BrushFilter Filter = BrushFilter.Linear;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TextureBrush"/> class.
@@ -36,7 +44,10 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)
         {
-            Render2D.DrawTexture(Texture, rect, color);
+            if (Filter == BrushFilter.Point)
+                Render2D.DrawTexturePoint(Texture?.Texture, rect, color);
+            else
+                Render2D.DrawTexture(Texture, rect, color);
         }
     }
 }

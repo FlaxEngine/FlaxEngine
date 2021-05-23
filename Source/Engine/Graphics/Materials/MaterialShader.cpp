@@ -145,6 +145,11 @@ MaterialShader* MaterialShader::CreateDummy(MemoryReadStream& shaderCacheStream,
     return material;
 }
 
+GPUShader* MaterialShader::GetShader() const
+{
+    return _shader;
+}
+
 const MaterialInfo& MaterialShader::GetInfo() const
 {
     return _info;

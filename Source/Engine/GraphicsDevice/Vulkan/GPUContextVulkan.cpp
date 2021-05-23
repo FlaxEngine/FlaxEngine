@@ -338,6 +338,7 @@ void GPUContextVulkan::BeginRenderPass()
     framebufferKey.AttachmentCount = _rtCount;
     RenderTargetLayoutVulkan layout;
     layout.RTsCount = _rtCount;
+    layout.BlendEnable = _currentState && _currentState->BlendEnable;
     layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
     {
@@ -346,7 +347,6 @@ void GPUContextVulkan::BeginRenderPass()
         {
             layout.RTVsFormats[i] = handle->GetFormat();
             framebufferKey.Attachments[i] = handle->GetFramebufferView();
-
             AddImageBarrier(handle, handle->LayoutRTV);
         }
         else
@@ -355,36 +355,31 @@ void GPUContextVulkan::BeginRenderPass()
             framebufferKey.Attachments[i] = VK_NULL_HANDLE;
         }
     }
+    GPUTextureViewVulkan* handle;
     if (_rtDepth)
     {
-        auto handle = _rtDepth;
-        layout.MSAA = handle->GetMSAA();
-        layout.Extent = handle->Extent;
+        handle = _rtDepth;
         layout.ReadDepth = true; // TODO: use proper depthStencilAccess flags
         layout.WriteDepth = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // TODO: do it in a proper way
         framebufferKey.AttachmentCount++;
         framebufferKey.Attachments[_rtCount] = handle->GetFramebufferView();
-
         AddImageBarrier(handle, handle->LayoutRTV);
-    }
-    else if (_rtHandles[0])
-    {
-        layout.MSAA = _rtHandles[0]->GetMSAA();
-        layout.Extent = _rtHandles[0]->Extent;
-        layout.ReadDepth = false;
-        layout.WriteDepth = false;
     }
     else
     {
-        // No depth or render target binded?
-        CRASH;
+        handle = _rtHandles[0];
+        layout.ReadDepth = false;
+        layout.WriteDepth = false;
     }
+    layout.MSAA = handle->GetMSAA();
+    layout.Extent.width = handle->Extent.width;
+    layout.Extent.height = handle->Extent.height;
+    layout.Layers = handle->Layers;
 
     // Get or create objects
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     framebufferKey.RenderPass = renderPass;
-    uint32 layers = 1; // TODO: support rendering to many layers (eg. texture array)
-    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layers);
+    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layout.Layers);
     _renderPass = renderPass;
 
     FlushBarriers();
@@ -491,6 +486,20 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             needsWrite |= dsWriter.WriteStorageBuffer(descriptorIndex, buffer, offset, range);
             break;
         }
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        {
+            // Unordered Access (Buffer)
+            auto ua = handles[descriptor.Slot];
+            if (!ua)
+            {
+                const auto dummy = _device->HelperResources.GetDummyBuffer();
+                ua = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
+            }
+            const VkBufferView* bufferView;
+            ua->DescriptorAsStorageTexelBuffer(this, bufferView);
+            needsWrite |= dsWriter.WriteStorageTexelBuffer(descriptorIndex, bufferView);
+            break;
+        }
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
         {
             // Constant Buffer
@@ -505,7 +514,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
         }
         default:
             // Unknown or invalid descriptor type
-        CRASH;
+            CRASH;
             break;
         }
     }
@@ -916,6 +925,8 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
 
 void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
 {
+    if (vertexBuffers.Length() == 0)
+        return;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     VkBuffer buffers[GPU_MAX_VB_BINDED];
     VkDeviceSize offsets[GPU_MAX_VB_BINDED];
@@ -1092,14 +1103,24 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
 
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    // TODO: implement it
-    MISSING_CODE("GPUContextVulkan::DrawInstancedIndirect");
+    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+
+    auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    OnDrawCall();
+    vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
+    RENDER_STAT_DRAW_CALL(0, 0);
 }
 
 void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    // TODO: implement it
-    MISSING_CODE("GPUContextVulkan::DrawIndexedInstancedIndirect");
+    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+
+    auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    OnDrawCall();
+    vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
+    RENDER_STAT_DRAW_CALL(0, 0);
 }
 
 void GPUContextVulkan::SetViewport(const Viewport& viewport)

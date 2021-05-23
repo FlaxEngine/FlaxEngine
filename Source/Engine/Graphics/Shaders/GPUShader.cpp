@@ -82,6 +82,9 @@ bool GPUShader::Create(MemoryReadStream& stream)
     int32 shadersCount;
     stream.ReadInt32(&shadersCount);
     GPUShaderProgramInitializer initializer;
+#if !BUILD_RELEASE
+    initializer.Owner = this;
+#endif
     for (int32 i = 0; i < shadersCount; i++)
     {
         const ShaderStage type = static_cast<ShaderStage>(stream.ReadByte());

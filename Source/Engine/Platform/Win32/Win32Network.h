@@ -26,7 +26,7 @@ public:
     static int32 Poll(NetworkSocketGroup& group);
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
-    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
+    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket& socket);
     static void RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index);
     static bool RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket);
     static void ClearGroup(NetworkSocketGroup& group);
