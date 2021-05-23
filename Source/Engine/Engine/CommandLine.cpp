@@ -151,7 +151,7 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_ARG_SWITCH("-build ", Build);
     PARSE_BOOL_SWITCH("-skipcompile ", SkipCompile);
     PARSE_BOOL_SWITCH("-shaderdebug ", ShaderDebug);
-    PARSE_ARG_OPT_SWITCH("-game ", Game);
+    PARSE_ARG_OPT_SWITCH("-play ", Play);
 
 #endif
 

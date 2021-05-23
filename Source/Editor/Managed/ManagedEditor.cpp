@@ -232,11 +232,11 @@ void ManagedEditor::Init()
     args[0] = &isHeadless;
     args[1] = &skipCompile;
     Guid sceneId;
-    if (!CommandLine::Options.Game.HasValue() || (CommandLine::Options.Game.HasValue() && Guid::Parse(CommandLine::Options.Game.GetValue(), sceneId)))
+    if (!CommandLine::Options.Play.HasValue() || (CommandLine::Options.Play.HasValue() && Guid::Parse(CommandLine::Options.Play.GetValue(), sceneId)))
     {
         sceneId = Guid::Empty;
     }
-    args[2] = CommandLine::Options.Game.HasValue() ? &sceneId : nullptr;
+    args[2] = &sceneId;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
