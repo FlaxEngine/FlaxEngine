@@ -518,7 +518,7 @@ bool Editor::Init()
         exit(failed ? 1 : 0);
         return true;
     }
-
+    
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
 
@@ -534,6 +534,12 @@ bool Editor::Init()
     // Initialize managed editor
     Managed->Init();
 
+    // Start play if requested by cmd line
+    if (CommandLine::Options.Play.HasValue())
+    {
+        Managed->RequestStartPlayOnEditMode();
+    }
+    
     return false;
 }
 
