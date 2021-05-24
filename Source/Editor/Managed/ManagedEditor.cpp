@@ -35,6 +35,7 @@ MMethod* Internal_GetGameWindowSize = nullptr;
 MMethod* Internal_OnAppExit = nullptr;
 MMethod* Internal_OnVisualScriptingDebugFlow = nullptr;
 MMethod* Internal_OnAnimGraphDebugFlow = nullptr;
+MMethod* Internal_RequestStartPlayOnEditMode = nullptr;
 
 void OnLightmapsBake(ShadowsOfMordor::BuildProgressStep step, float stepProgress, float totalProgress, bool isProgressEvent)
 {
@@ -209,7 +210,7 @@ ManagedEditor::~ManagedEditor()
 void ManagedEditor::Init()
 {
     // Note: editor modules should perform quite fast init, any longer things should be done in async during 'editor splash screen time
-    void* args[2];
+    void* args[3];
     MClass* mclass = GetClass();
     if (mclass == nullptr)
     {
@@ -230,6 +231,12 @@ void ManagedEditor::Init()
     bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
     args[0] = &isHeadless;
     args[1] = &skipCompile;
+    Guid sceneId;
+    if (!CommandLine::Options.Play.HasValue() || (CommandLine::Options.Play.HasValue() && Guid::Parse(CommandLine::Options.Play.GetValue(), sceneId)))
+    {
+        sceneId = Guid::Empty;
+    }
+    args[2] = &sceneId;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
@@ -479,6 +486,18 @@ bool ManagedEditor::OnAppExit()
         ASSERT(Internal_OnAppExit);
     }
     return MUtils::Unbox<bool>(Internal_OnAppExit->Invoke(GetManagedInstance(), nullptr, nullptr));
+}
+
+void ManagedEditor::RequestStartPlayOnEditMode()
+{
+    if (!HasManagedInstance())
+        return;
+    if (Internal_RequestStartPlayOnEditMode == nullptr)
+    {
+        Internal_RequestStartPlayOnEditMode = GetClass()->GetMethod("Internal_RequestStartPlayOnEditMode");
+        ASSERT(Internal_RequestStartPlayOnEditMode);
+    }
+    Internal_RequestStartPlayOnEditMode->Invoke(GetManagedInstance(), nullptr, nullptr);
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
