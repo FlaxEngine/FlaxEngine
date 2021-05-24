@@ -36,7 +36,7 @@ namespace FlaxEditor.Viewport
         private readonly ViewportWidgetButton _rotateSnapping;
         private readonly ViewportWidgetButton _scaleSnapping;
 
-        private readonly DragAssets<DragDropEventArgs> _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
+        private readonly DragAssets<DragDropEventArgs> _dragAssets;
         private readonly DragActorType<DragDropEventArgs> _dragActorType = new DragActorType<DragDropEventArgs>(ValidateDragActorType);
 
         private SelectionOutline _customSelectionOutline;
@@ -187,6 +187,7 @@ namespace FlaxEditor.Viewport
         : base(Object.New<SceneRenderTask>(), editor.Undo)
         {
             _editor = editor;
+            _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.Scenes;
@@ -800,30 +801,18 @@ namespace FlaxEditor.Viewport
             return result;
         }
 
-        private static bool ValidateDragItem(ContentItem contentItem)
+        private bool ValidateDragItem(ContentItem contentItem)
         {
             if (!Level.IsAnySceneLoaded)
                 return false;
 
             if (contentItem is AssetItem assetItem)
             {
-                if (assetItem.IsOfType<ParticleSystem>())
-                    return true;
-                if (assetItem.IsOfType<SceneAnimation>())
+                if (assetItem.OnEditorDrag(this))
                     return true;
                 if (assetItem.IsOfType<MaterialBase>())
                     return true;
-                if (assetItem.IsOfType<ModelBase>())
-                    return true;
-                if (assetItem.IsOfType<CollisionData>())
-                    return true;
-                if (assetItem.IsOfType<AudioClip>())
-                    return true;
-                if (assetItem.IsOfType<Prefab>())
-                    return true;
                 if (assetItem.IsOfType<SceneAsset>())
-                    return true;
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
                     return true;
             }
 
@@ -891,119 +880,40 @@ namespace FlaxEditor.Viewport
 
         private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
         {
-            if (item is AssetItem assetItem)
+            if (item.IsOfType<MaterialBase>())
             {
-                if (assetItem.IsOfType<ParticleSystem>())
+                if (hit is StaticModelNode staticModelNode)
                 {
-                    var asset = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect
-                    {
-                        Name = item.ShortName,
-                        ParticleSystem = asset
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<SceneAnimation>())
-                {
-                    var asset = FlaxEngine.Content.LoadAsync<SceneAnimation>(item.ID);
-                    var actor = new SceneAnimationPlayer
-                    {
-                        Name = item.ShortName,
-                        Animation = asset
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<MaterialBase>())
-                {
-                    if (hit is StaticModelNode staticModelNode)
-                    {
-                        var staticModel = (StaticModel)staticModelNode.Actor;
-                        var ray = ConvertMouseToRay(ref location);
-                        if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
-                        {
-                            var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
-                            using (new UndoBlock(Undo, staticModel, "Change material"))
-                                staticModel.SetMaterial(entryIndex, material);
-                        }
-                    }
-                    else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
+                    var staticModel = (StaticModel)staticModelNode.Actor;
+                    var ray = ConvertMouseToRay(ref location);
+                    if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
                     {
                         var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
-                        using (new UndoBlock(Undo, brushSurfaceNode.Brush, "Change material"))
-                        {
-                            var surface = brushSurfaceNode.Surface;
-                            surface.Material = material;
-                            brushSurfaceNode.Surface = surface;
-                        }
+                        using (new UndoBlock(Undo, staticModel, "Change material"))
+                            staticModel.SetMaterial(entryIndex, material);
                     }
-                    return;
                 }
-                if (assetItem.IsOfType<SkinnedModel>())
+                else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
                 {
-                    var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel
+                    var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
+                    using (new UndoBlock(Undo, brushSurfaceNode.Brush, "Change material"))
                     {
-                        Name = item.ShortName,
-                        SkinnedModel = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
+                        var surface = brushSurfaceNode.Surface;
+                        surface.Material = material;
+                        brushSurfaceNode.Surface = surface;
+                    }
                 }
-                if (assetItem.IsOfType<Model>())
-                {
-                    var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel
-                    {
-                        Name = item.ShortName,
-                        Model = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<CollisionData>())
-                {
-                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
-                    var actor = new MeshCollider
-                    {
-                        Name = item.ShortName,
-                        CollisionData = collisionData
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<AudioClip>())
-                {
-                    var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource
-                    {
-                        Name = item.ShortName,
-                        Clip = clip
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<Prefab>())
-                {
-                    var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
-                    var actor = PrefabManager.SpawnPrefab(prefab, null);
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<SceneAsset>())
-                {
-                    Editor.Instance.Scene.OpenScene(item.ID, true);
-                    return;
-                }
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
-                {
-                    var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
+                return;
+            }
+            if (item.IsOfType<SceneAsset>())
+            {
+                Editor.Instance.Scene.OpenScene(item.ID, true);
+                return;
+            }
+            {
+                var actor = item.OnEditorDrop(this);
+                actor.Name = item.ShortName;
+                Spawn(actor, ref hitLocation);
             }
         }
 

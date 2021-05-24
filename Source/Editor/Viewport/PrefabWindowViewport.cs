@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Policy;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -53,7 +54,7 @@ namespace FlaxEditor.Viewport
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private IntPtr _debugDrawContext;
         private PrefabSpritesRenderer _spritesRenderer;
-        private readonly DragAssets _dragAssets = new DragAssets(ValidateDragItem);
+        private readonly DragAssets _dragAssets;
         private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
         private readonly DragHandlers _dragHandlers = new DragHandlers();
 
@@ -89,6 +90,7 @@ namespace FlaxEditor.Viewport
             Undo = window.Undo;
             ViewportCamera = new FPSCamera();
             _debugDrawContext = DebugDraw.AllocateContext();
+            _dragAssets = new DragAssets(ValidateDragItem);
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -673,23 +675,13 @@ namespace FlaxEditor.Viewport
             return _dragHandlers.OnDragEnter(data);
         }
 
-        private static bool ValidateDragItem(ContentItem contentItem)
+        private bool ValidateDragItem(ContentItem contentItem)
         {
             if (contentItem is AssetItem assetItem)
             {
-                if (assetItem.IsOfType<ParticleSystem>())
+                if (assetItem.OnEditorDrag(this))
                     return true;
                 if (assetItem.IsOfType<MaterialBase>())
-                    return true;
-                if (assetItem.IsOfType<ModelBase>())
-                    return true;
-                if (assetItem.IsOfType<CollisionData>())
-                    return true;
-                if (assetItem.IsOfType<AudioClip>())
-                    return true;
-                if (assetItem.IsOfType<Prefab>())
-                    return true;
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
                     return true;
             }
 
@@ -743,17 +735,6 @@ namespace FlaxEditor.Viewport
         {
             if (item is BinaryAssetItem binaryAssetItem)
             {
-                if (binaryAssetItem.Type == typeof(ParticleSystem))
-                {
-                    var particleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect
-                    {
-                        Name = item.ShortName,
-                        ParticleSystem = particleSystem
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
                 if (typeof(MaterialBase).IsAssignableFrom(binaryAssetItem.Type))
                 {
                     if (hit is StaticModelNode staticModelNode)
@@ -769,65 +750,11 @@ namespace FlaxEditor.Viewport
                     }
                     return;
                 }
-                if (typeof(SkinnedModel).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel
-                    {
-                        Name = item.ShortName,
-                        SkinnedModel = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(Model).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel
-                    {
-                        Name = item.ShortName,
-                        Model = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (binaryAssetItem.IsOfType<CollisionData>())
-                {
-                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
-                    var actor = new MeshCollider
-                    {
-                        Name = item.ShortName,
-                        CollisionData = collisionData
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(AudioClip).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource
-                    {
-                        Name = item.ShortName,
-                        Clip = clip
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(Prefab).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
-                    var actor = PrefabManager.SpawnPrefab(prefab, null);
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
             }
-            if (item is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
             {
-                var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
+                var actor = item.OnEditorDrop(this);
                 actor.Name = item.ShortName;
                 Spawn(actor, ref hitLocation);
-                return;
             }
         }
 
