@@ -745,7 +745,7 @@ API_ENUM() enum class KeyboardKeys
     LeftBracket = 0xDB,
 
     /// <summary>
-    /// Used for miscellaneous characters; it can vary by keyboard. For the US standard keyboard the '\\|' key
+    /// Used for miscellaneous characters; it can vary by keyboard. For the US standard keyboard the '\|' key
     /// </summary>
     Backslash = 0xDC,
 
