@@ -14,7 +14,7 @@ namespace Flax.Build.Bindings
         private static readonly HashSet<string> CSharpUsedNamespaces = new HashSet<string>();
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
 
-        private static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
+        internal static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
             { "int8", "sbyte" },
@@ -32,7 +32,7 @@ namespace Flax.Build.Bindings
             { "double", "double" },
         };
 
-        private static readonly Dictionary<string, string> CSharpNativeToManagedDefault = new Dictionary<string, string>()
+        internal static readonly Dictionary<string, string> CSharpNativeToManagedDefault = new Dictionary<string, string>()
         {
             // Engine types
             { "String", "string" },
@@ -527,7 +527,7 @@ namespace Flax.Build.Bindings
                 contents.Append("abstract ");
             contents.Append("unsafe partial class ").Append(classInfo.Name);
             if (classInfo.BaseType != null && !classInfo.IsBaseTypeHidden)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, classInfo.BaseType, classInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = classInfo.BaseType.Name }, classInfo));
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
@@ -861,7 +861,7 @@ namespace Flax.Build.Bindings
                 contents.Append("private ");
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             if (structureInfo.BaseType != null && structureInfo.IsPod)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, structureInfo.BaseType, structureInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";

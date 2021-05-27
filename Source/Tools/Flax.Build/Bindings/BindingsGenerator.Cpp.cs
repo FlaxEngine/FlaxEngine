@@ -1095,7 +1095,7 @@ namespace Flax.Build.Bindings
             var baseType = classInfo?.BaseType ?? structureInfo?.BaseType;
             if (classInfo != null && classInfo.IsBaseTypeHidden)
                 baseType = null;
-            if (baseType != null && (baseType.Type == "PersistentScriptingObject" || baseType.Type == "ScriptingObject"))
+            if (baseType != null && (baseType.Name == "PersistentScriptingObject" || baseType.Name == "ScriptingObject"))
                 baseType = null;
             CppAutoSerializeFields.Clear();
             CppAutoSerializeProperties.Clear();
@@ -1105,7 +1105,7 @@ namespace Flax.Build.Bindings
             contents.Append($"void {typeNameNative}::Serialize(SerializeStream& stream, const void* otherObj)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
-                contents.Append($"    {baseType}::Serialize(stream, otherObj);").AppendLine();
+                contents.Append($"    {baseType.FullNameNative}::Serialize(stream, otherObj);").AppendLine();
             contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
 
             if (classInfo != null)
@@ -1161,7 +1161,7 @@ namespace Flax.Build.Bindings
             contents.Append($"void {typeNameNative}::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
-                contents.Append($"    {baseType}::Deserialize(stream, modifier);").AppendLine();
+                contents.Append($"    {baseType.FullNameNative}::Deserialize(stream, modifier);").AppendLine();
 
             foreach (var fieldInfo in CppAutoSerializeFields)
             {
@@ -1554,7 +1554,7 @@ namespace Flax.Build.Bindings
                 else
                     contents.Append($"(ScriptingType::SpawnHandler)&{classTypeNameNative}::Spawn, ");
                 if (classInfo.BaseType != null && useScripting)
-                    contents.Append($"&{classInfo.BaseType}::TypeInitializer, ");
+                    contents.Append($"&{classInfo.BaseType.FullNameNative}::TypeInitializer, ");
                 else
                     contents.Append("nullptr, ");
                 contents.Append(setupScriptVTable);
@@ -1566,7 +1566,7 @@ namespace Flax.Build.Bindings
                 else
                     contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor, ");
                 if (classInfo.BaseType != null)
-                    contents.Append($"&{classInfo.BaseType}::TypeInitializer");
+                    contents.Append($"&{classInfo.BaseType.FullNameNative}::TypeInitializer");
                 else
                     contents.Append("nullptr");
             }

@@ -17,6 +17,19 @@ namespace Flax.Build.Bindings
             base.AddChild(apiTypeInfo);
         }
 
+        public override void Init(Builder.BuildData buildData)
+        {
+            try
+            {
+                base.Init(buildData);
+            }
+            catch (Exception)
+            {
+                Log.Error($"Failed to init '{Name}' file scripting API.");
+                throw;
+            }
+        }
+
         public int CompareTo(FileInfo other)
         {
             return Name.CompareTo(other.Name);

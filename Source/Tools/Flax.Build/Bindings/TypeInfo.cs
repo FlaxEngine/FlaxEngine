@@ -36,8 +36,7 @@ namespace Flax.Build.Bindings
             var apiType = BindingsGenerator.FindApiTypeInfo(buildData, this, caller);
             if (apiType != null)
             {
-                if (!apiType.IsInited)
-                    apiType.Init(buildData);
+                apiType.EnsureInited(buildData);
                 return apiType.IsPod;
             }
 
