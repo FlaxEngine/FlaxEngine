@@ -4,6 +4,7 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
@@ -1118,6 +1119,19 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
     ASSERT(filename);
 
+    // Add folder to search path to load dependency libraries
+    StringView folder = StringUtils::GetDirectoryName(filename);
+    if (folder.HasChars() && FileSystem::IsRelative(folder))
+        folder = StringView::Empty;
+    if (folder.HasChars())
+    {
+        Char& end = ((Char*)folder.Get())[folder.Length()];
+        const Char c = end;
+        end = 0;
+        SetDllDirectoryW(*folder);
+        end = c;
+    }
+
     // Avoiding windows dialog boxes if missing
     const DWORD errorMode = SEM_NOOPENFILEERRORBOX;
     DWORD prevErrorMode = 0;
@@ -1134,12 +1148,15 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     {
         SetThreadErrorMode(prevErrorMode, nullptr);
     }
+    if (folder.HasChars())
+    {
+        SetDllDirectoryW(nullptr);
+    }
 
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
     SymLocker.Lock();
-    const auto folder = StringUtils::GetDirectoryName(filename);
-    if (!SymbolsPath.Contains(folder))
+    if (folder.HasChars() && !SymbolsPath.Contains(folder))
     {
         SymbolsPath.Add(folder);
         OnSymbolsPathModified();
