@@ -263,5 +263,36 @@ namespace Flax.Deps
 
             Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.None, envVars);
         }
+
+        /// <summary>
+        /// Runs the bash script via Cygwin tool (native bash on platforms other than Windows).
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="workspace">The workspace folder.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void RunCygwin(string path, string workspace = null, Dictionary<string, string> envVars = null)
+        {
+            string app;
+            switch (BuildPlatform)
+            {
+            case TargetPlatform.Windows:
+            {
+                var cygwinFolder = Environment.GetEnvironmentVariable("CYGWIN");
+                if (string.IsNullOrEmpty(cygwinFolder) || !Directory.Exists(cygwinFolder))
+                {
+                    cygwinFolder = "C:\\cygwin";
+                    if (!Directory.Exists(cygwinFolder))
+                        throw new Exception("Missing Cygwin. Install Cygwin64 to C:\\cygwin or set CYGWIN env variable to install location folder.");
+                }
+                app = Path.Combine(cygwinFolder, "bin\\bash.exe");
+                break;
+            }
+            case TargetPlatform.Linux:
+                app = "bash";
+                break;
+            default: throw new InvalidPlatformException(BuildPlatform);
+            }
+            Utilities.Run(app, path, null, workspace, Utilities.RunOptions.None, envVars);
+        }
     }
 }
