@@ -24,6 +24,7 @@ namespace Flax.Deploy
                 string platformName = platform.ToString();
                 string src = Path.Combine(platformsRoot, platformName);
                 string dst = Path.Combine(Deployer.PackageOutputPath, platformName);
+                Utilities.DirectoryDelete(dst);
 
                 // Deploy files
                 {
@@ -69,6 +70,7 @@ namespace Flax.Deploy
                     Log.Info("Compressing platform files...");
 
                     var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
+                    Utilities.FileDelete(packageZipPath);
                     using (ZipFile zip = new ZipFile())
                     {
                         zip.AddDirectory(dst);

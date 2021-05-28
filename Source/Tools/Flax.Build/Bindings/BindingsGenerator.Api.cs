@@ -261,7 +261,7 @@ namespace Flax.Build.Bindings
         {
             if (typeInfo == null)
                 return null;
-            var result = FindApiTypeInfoInner(typeInfo, caller);
+            var result = FindApiTypeInfoInner(buildData, typeInfo, caller);
             if (result != null)
                 return result;
             if (buildData.TypeCache.TryGetValue(typeInfo, out result))
@@ -274,7 +274,7 @@ namespace Flax.Build.Bindings
             // Find across all loaded modules for this build
             foreach (var e in buildData.ModulesInfo)
             {
-                result = FindApiTypeInfoInner(typeInfo, e.Value);
+                result = FindApiTypeInfoInner(buildData, typeInfo, e.Value);
                 if (result != null)
                 {
                     buildData.TypeCache.Add(typeInfo, result);
@@ -291,7 +291,7 @@ namespace Flax.Build.Bindings
                 {
                     if (result == null)
                         return null;
-                    result = FindApiTypeInfoInner(new TypeInfo { Type = nesting[i], }, result);
+                    result = FindApiTypeInfoInner(buildData, new TypeInfo { Type = nesting[i], }, result);
                 }
                 return result;
             }
@@ -301,14 +301,17 @@ namespace Flax.Build.Bindings
             return null;
         }
 
-        private static ApiTypeInfo FindApiTypeInfoInner(TypeInfo typeInfo, ApiTypeInfo parent)
+        private static ApiTypeInfo FindApiTypeInfoInner(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo parent)
         {
             foreach (var child in parent.Children)
             {
                 if (child.Name == typeInfo.Type)
+                {
+                    child.EnsureInited(buildData);
                     return child;
+                }
 
-                var result = FindApiTypeInfoInner(typeInfo, child);
+                var result = FindApiTypeInfoInner(buildData, typeInfo, child);
                 if (result != null)
                     return result;
             }

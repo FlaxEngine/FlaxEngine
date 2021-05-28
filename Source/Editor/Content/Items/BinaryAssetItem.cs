@@ -103,12 +103,24 @@ namespace FlaxEditor.Content
     /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="Model"/> assets.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
-    public class ModelAssetItem : BinaryAssetItem
+    public class ModelItem : BinaryAssetItem
     {
         /// <inheritdoc />
-        public ModelAssetItem(string path, ref Guid id, string typeName, Type type)
+        public ModelItem(string path, ref Guid id, string typeName, Type type)
         : base(path, ref id, typeName, type, ContentItemSearchFilter.Model)
         {
+        }
+
+        /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return new StaticModel { Model = FlaxEngine.Content.LoadAsync<Model>(ID) };
         }
 
         /// <inheritdoc />
@@ -142,12 +154,24 @@ namespace FlaxEditor.Content
     /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="SkinnedModel"/> assets.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
-    public class SkinnedModelAssetItem : BinaryAssetItem
+    public class SkinnedModeItem : BinaryAssetItem
     {
         /// <inheritdoc />
-        public SkinnedModelAssetItem(string path, ref Guid id, string typeName, Type type)
+        public SkinnedModeItem(string path, ref Guid id, string typeName, Type type)
         : base(path, ref id, typeName, type, ContentItemSearchFilter.Model)
         {
+        }
+
+        /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return new AnimatedModel { SkinnedModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(ID) };
         }
 
         /// <inheritdoc />

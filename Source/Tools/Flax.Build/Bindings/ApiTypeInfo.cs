@@ -71,6 +71,13 @@ namespace Flax.Build.Bindings
             }
         }
 
+        public void EnsureInited(Builder.BuildData buildData)
+        {
+            if (IsInited)
+                return;
+            Init(buildData);
+        }
+
         public virtual void Init(Builder.BuildData buildData)
         {
             IsInited = true;

@@ -47,7 +47,7 @@ namespace FlaxEditor.Content
 
             menu.AddButton("Create collision data", () =>
             {
-                var model = FlaxEngine.Content.LoadAsync<Model>(((ModelAssetItem)item).ID);
+                var model = FlaxEngine.Content.LoadAsync<Model>(((ModelItem)item).ID);
                 var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
                 collisionDataProxy.CreateCollisionDataFromModel(model);
             });

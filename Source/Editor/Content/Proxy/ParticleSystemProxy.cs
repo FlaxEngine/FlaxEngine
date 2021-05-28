@@ -11,6 +11,31 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.Content
 {
     /// <summary>
+    /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="ParticleSystem"/> assets.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
+    class ParticleSystemItem : BinaryAssetItem
+    {
+        /// <inheritdoc />
+        public ParticleSystemItem(string path, ref Guid id, string typeName, Type type)
+        : base(path, ref id, typeName, type, ContentItemSearchFilter.Particles)
+        {
+        }
+
+        /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return new ParticleEffect { ParticleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(ID) };
+        }
+    }
+
+    /// <summary>
     /// A <see cref="ParticleSystem"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
@@ -26,6 +51,12 @@ namespace FlaxEditor.Content
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
             return new ParticleSystemWindow(editor, item as AssetItem);
+        }
+
+        /// <inheritdoc />
+        public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
+        {
+            return new ParticleSystemItem(path, ref id, typeName, AssetType);
         }
 
         /// <inheritdoc />

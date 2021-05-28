@@ -3,6 +3,12 @@
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
 
+// ReSharper disable CppCStyleCast
+// ReSharper disable CppClangTidyClangDiagnosticCastAlign
+// ReSharper disable CppDefaultCaseNotHandledInSwitchStatement
+// ReSharper disable CppClangTidyCppcoreguidelinesMacroUsage
+// ReSharper disable CppClangTidyClangDiagnosticOldStyleCast
+
 #define RAND Random::Rand()
 #define RAND2 Vector2(RAND, RAND)
 #define RAND3 Vector3(RAND, RAND, RAND)
@@ -62,7 +68,7 @@ namespace
         float scale = 1.0f;
         for (int32 i = 0; i < octaves; i++)
         {
-            const float curWeight = Math::Pow(1.0f - ((float)i / octaves), Math::Lerp(2.0f, 0.2f, roughness));
+            const float curWeight = Math::Pow(1.0f - ((float)i / (float)octaves), Math::Lerp(2.0f, 0.2f, roughness));
 
             noise += Noise3D(position * scale) * curWeight;
             weight += curWeight;
@@ -156,7 +162,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     // Calculate actual spawn amount
     spawnCount = Math::Max(spawnCount, 0.0f);
     const int32 result = Math::FloorToInt(spawnCount);
-    spawnCount -= result;
+    spawnCount -= (float)result;
     data.SpawnCounter = spawnCount;
 
     return result;
@@ -475,7 +481,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
         auto& velocity = _data->Buffer->Layout->Attributes[node->Attributes[0]];
         auto& mass = _data->Buffer->Layout->Attributes[node->Attributes[1]];
-        byte* spriteSizePtr = useSpriteSize ? start + _data->Buffer->Layout->Attributes[node->Attributes[2]].Offset : 0;
+        byte* spriteSizePtr = useSpriteSize ? start + _data->Buffer->Layout->Attributes[node->Attributes[2]].Offset : nullptr;
 
         byte* velocityPtr = start + velocity.Offset;
         byte* massPtr = start + mass.Offset;

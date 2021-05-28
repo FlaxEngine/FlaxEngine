@@ -57,22 +57,87 @@ namespace Flax.Build.Bindings
                 _isScriptingObject = true;
             else if (BaseType == null)
                 _isScriptingObject = false;
-            else if (InBuildScriptingObjectTypes.Contains(BaseType.Type))
+            else if (InBuildScriptingObjectTypes.Contains(BaseType.Name))
                 _isScriptingObject = true;
             else
+                _isScriptingObject = BaseType != null && BaseType.IsScriptingObject;
+
+            if (UniqueFunctionNames == null)
+                UniqueFunctionNames = new HashSet<string>();
+
+            foreach (var fieldInfo in Fields)
             {
-                var baseApiTypeInfo = BindingsGenerator.FindApiTypeInfo(buildData, BaseType, this);
-                if (baseApiTypeInfo != null)
+                if (fieldInfo.Access == AccessLevel.Private)
+                    continue;
+
+                fieldInfo.Getter = new FunctionInfo
                 {
-                    if (!baseApiTypeInfo.IsInited)
-                        baseApiTypeInfo.Init(buildData);
-                    _isScriptingObject = baseApiTypeInfo.IsScriptingObject;
-                }
-                else
+                    Name = "Get" + fieldInfo.Name,
+                    Comment = fieldInfo.Comment,
+                    IsStatic = fieldInfo.IsStatic,
+                    Access = fieldInfo.Access,
+                    Attributes = fieldInfo.Attributes,
+                    ReturnType = fieldInfo.Type,
+                    Parameters = new List<FunctionInfo.ParameterInfo>(),
+                    IsVirtual = false,
+                    IsConst = true,
+                    Glue = new FunctionInfo.GlueInfo()
+                };
+                ProcessAndValidate(fieldInfo.Getter);
+                fieldInfo.Getter.Name = fieldInfo.Name;
+
+                if (!fieldInfo.IsReadOnly)
                 {
-                    _isScriptingObject = false;
+                    fieldInfo.Setter = new FunctionInfo
+                    {
+                        Name = "Set" + fieldInfo.Name,
+                        Comment = fieldInfo.Comment,
+                        IsStatic = fieldInfo.IsStatic,
+                        Access = fieldInfo.Access,
+                        Attributes = fieldInfo.Attributes,
+                        ReturnType = new TypeInfo
+                        {
+                            Type = "void",
+                        },
+                        Parameters = new List<FunctionInfo.ParameterInfo>
+                        {
+                            new FunctionInfo.ParameterInfo
+                            {
+                                Name = "value",
+                                Type = fieldInfo.Type,
+                            },
+                        },
+                        IsVirtual = false,
+                        IsConst = true,
+                        Glue = new FunctionInfo.GlueInfo()
+                    };
+                    ProcessAndValidate(fieldInfo.Setter);
+                    fieldInfo.Setter.Name = fieldInfo.Name;
                 }
             }
+
+            foreach (var propertyInfo in Properties)
+            {
+                if (propertyInfo.Getter != null)
+                    ProcessAndValidate(propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    ProcessAndValidate(propertyInfo.Setter);
+            }
+
+            foreach (var functionInfo in Functions)
+                ProcessAndValidate(functionInfo);
+        }
+
+        private void ProcessAndValidate(FunctionInfo functionInfo)
+        {
+            // Ensure that methods have unique names for bindings
+            if (UniqueFunctionNames == null)
+                UniqueFunctionNames = new HashSet<string>();
+            int idx = 1;
+            functionInfo.UniqueName = functionInfo.Name;
+            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
+                functionInfo.UniqueName = functionInfo.Name + idx++;
+            UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
 
         public override void Write(BinaryWriter writer)
@@ -113,7 +178,7 @@ namespace Flax.Build.Bindings
         {
             if (_scriptVTableSize == -1)
             {
-                if (BindingsGenerator.FindApiTypeInfo(buildData, BaseType, this) is ClassInfo baseApiTypeInfo)
+                if (BaseType is ClassInfo baseApiTypeInfo)
                 {
                     _scriptVTableOffset = baseApiTypeInfo.GetScriptVTableSize(buildData, out _);
                 }

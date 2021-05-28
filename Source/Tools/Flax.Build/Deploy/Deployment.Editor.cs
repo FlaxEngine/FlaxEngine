@@ -34,15 +34,15 @@ namespace Flax.Deploy
                 // Prepare
                 RootPath = Globals.EngineRoot;
                 OutputPath = Path.Combine(Deployer.PackageOutputPath, "Editor");
+                Utilities.DirectoryDelete(OutputPath);
                 Directory.CreateDirectory(OutputPath);
                 Log.Info(string.Empty);
                 Log.Info("Deploy editor files");
                 Log.Info(string.Empty);
 
                 // Deploy binaries
-                DeployEditorBinaries(TargetConfiguration.Debug);
-                DeployEditorBinaries(TargetConfiguration.Development);
-                DeployEditorBinaries(TargetConfiguration.Release);
+                foreach (var configuration in Deployer.Configurations)
+                    DeployEditorBinaries(configuration);
                 {
                     var binariesSubDir = "Binaries/Tools";
                     var src = Path.Combine(RootPath, binariesSubDir);
@@ -130,12 +130,14 @@ namespace Flax.Deploy
                 {
                     // Use system tool (preserves executable file attributes and link files)
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
+                    Utilities.FileDelete(editorPackageZipPath);
                     Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.None);
                     File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
                 }
                 else
                 {
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
+                    Utilities.FileDelete(editorPackageZipPath);
                     using (ZipFile zip = new ZipFile())
                     {
                         zip.AddDirectory(OutputPath);
@@ -152,6 +154,7 @@ namespace Flax.Deploy
                 {
                     Log.Info("Compressing editor debug symbols files...");
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols.zip");
+                    Utilities.FileDelete(editorPackageZipPath);
                     using (ZipFile zip = new ZipFile())
                     {
                         zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols"));

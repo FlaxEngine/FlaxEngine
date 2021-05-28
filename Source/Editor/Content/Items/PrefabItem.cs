@@ -22,6 +22,18 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return PrefabManager.SpawnPrefab(FlaxEngine.Content.LoadAsync<Prefab>(ID), null);
+        }
+
+        /// <inheritdoc />
         public override ContentItemType ItemType => ContentItemType.Asset;
 
         /// <inheritdoc />

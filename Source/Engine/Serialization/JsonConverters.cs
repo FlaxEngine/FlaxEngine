@@ -123,6 +123,13 @@ namespace FlaxEngine.Json
 
             writer.WriteStartObject();
             {
+#if FLAX_EDITOR
+                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                {
+                    writer.WritePropertyName("$type");
+                    writer.WriteValue("FlaxEngine.Margin, FlaxEngine.CSharp");
+                }
+#endif
                 writer.WritePropertyName("Left");
                 writer.WriteValue(valueMargin.Left);
                 writer.WritePropertyName("Right");

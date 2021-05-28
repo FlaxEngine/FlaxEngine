@@ -416,38 +416,38 @@ namespace Flax.Build.Bindings
                         token = accessToken;
                         break;
                     }
-
-                    var baseTypeInfo = new TypeInfo
+                    var inheritType = new TypeInfo
                     {
                         Type = token.Value,
                     };
-                    if (token.Value.Length > 2 && token.Value[0] == 'I' && char.IsUpper(token.Value[1]))
-                    {
-                        // Interface
-                        if (desc.InterfaceNames == null)
-                            desc.InterfaceNames = new List<TypeInfo>();
-                        desc.InterfaceNames.Add(baseTypeInfo);
-                        token = context.Tokenizer.NextToken();
-                        continue;
-                    }
-
-                    if (desc.BaseType != null)
-                    {
-                        // Allow for multiple base classes, just the first one needs to be a valid base type
-                        break;
-                        throw new Exception($"Invalid '{desc.Name}' inheritance (only single base class is allowed for scripting types, excluding interfaces).");
-                    }
-                    desc.BaseType = baseTypeInfo;
+                    if (desc.Inheritance == null)
+                        desc.Inheritance = new List<TypeInfo>();
+                    desc.Inheritance.Add(inheritType);
                     token = context.Tokenizer.NextToken();
                     if (token.Type == TokenType.LeftCurlyBrace)
                     {
                         break;
                     }
+                    if (token.Type == TokenType.Colon)
+                    {
+                        token = context.Tokenizer.ExpectToken(TokenType.Colon);
+                        token = context.Tokenizer.NextToken();
+                        inheritType.Type = token.Value;
+                        token = context.Tokenizer.NextToken();
+                        continue;
+                    }
+                    if (token.Type == TokenType.DoubleColon)
+                    {
+                        token = context.Tokenizer.NextToken();
+                        inheritType.Type += token.Value;
+                        token = context.Tokenizer.NextToken();
+                        continue;
+                    }
                     if (token.Type == TokenType.LeftAngleBracket)
                     {
                         var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
                         token = context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
-                        desc.BaseType.GenericArgs = new List<TypeInfo>
+                        inheritType.GenericArgs = new List<TypeInfo>
                         {
                             new TypeInfo
                             {
@@ -456,9 +456,9 @@ namespace Flax.Build.Bindings
                         };
 
                         // TODO: find better way to resolve this (custom base type attribute?)
-                        if (desc.BaseType.Type == "ShaderAssetTypeBase")
+                        if (inheritType.Type == "ShaderAssetTypeBase")
                         {
-                            desc.BaseType = desc.BaseType.GenericArgs[0];
+                            desc.Inheritance[desc.Inheritance.Count - 1] = inheritType.GenericArgs[0];
                         }
 
                         token = context.Tokenizer.NextToken();

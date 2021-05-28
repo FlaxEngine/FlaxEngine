@@ -203,6 +203,7 @@ namespace FlaxEditor.Modules
                 else if (!gameWin.IsSelected)
                 {
                     gameWin.SelectTab(false);
+                    gameWin.RootWindow?.Window?.Focus();
                     FlaxEngine.GUI.RootControl.GameRoot.Focus();
                 }
             }

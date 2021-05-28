@@ -58,6 +58,9 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Int3,
         Int4,
 
+        Int16,
+        Uint16,
+
         MAX
     };
 
@@ -135,6 +138,8 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
     union
     {
         bool AsBool;
+        int16 AsInt16;
+        uint16 AsUint16;
         int32 AsInt;
         uint32 AsUint;
         int64 AsInt64;
@@ -184,6 +189,8 @@ public:
     Variant(Variant&& other) noexcept;
 
     Variant(bool v);
+    Variant(int16 v);
+    Variant(uint16 v);
     Variant(int32 v);
     Variant(uint32 v);
     Variant(int64 v);

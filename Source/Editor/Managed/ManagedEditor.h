@@ -133,6 +133,11 @@ public:
     /// <returns>True if exit engine, otherwise false.</returns>
     bool OnAppExit();
 
+    /// <summary>
+    /// Requests play mode when the editor is in edit mode ( once ).
+    /// </summary>
+    void RequestStartPlayOnEditMode();
+
 private:
 
     void OnEditorAssemblyLoaded(MAssembly* assembly);

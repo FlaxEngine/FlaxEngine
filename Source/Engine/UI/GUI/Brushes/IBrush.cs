@@ -3,6 +3,24 @@
 namespace FlaxEngine.GUI
 {
     /// <summary>
+    /// Texture brush sampling modes.
+    /// </summary>
+    public enum BrushFilter
+    {
+        /// <summary>
+        /// The point sampling without blending.
+        /// </summary>
+        [Tooltip("The point sampling without blending.")]
+        Point = 0,
+
+        /// <summary>
+        /// The linear color sampling.
+        /// </summary>
+        [Tooltip("The linear color sampling.")]
+        Linear = 1,
+    };
+
+    /// <summary>
     /// Interface that unifies input source textures, sprites, render targets, and any other brushes to be used in a more generic way.
     /// </summary>
     public interface IBrush

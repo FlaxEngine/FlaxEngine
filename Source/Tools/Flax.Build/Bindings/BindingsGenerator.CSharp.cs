@@ -14,7 +14,7 @@ namespace Flax.Build.Bindings
         private static readonly HashSet<string> CSharpUsedNamespaces = new HashSet<string>();
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
 
-        private static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
+        internal static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
             { "int8", "sbyte" },
@@ -32,7 +32,7 @@ namespace Flax.Build.Bindings
             { "double", "double" },
         };
 
-        private static readonly Dictionary<string, string> CSharpNativeToManagedDefault = new Dictionary<string, string>()
+        internal static readonly Dictionary<string, string> CSharpNativeToManagedDefault = new Dictionary<string, string>()
         {
             // Engine types
             { "String", "string" },
@@ -201,6 +201,8 @@ namespace Flax.Build.Bindings
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
             {
+                CSharpUsedNamespaces.Add(apiType.Namespace);
+
                 if (apiType.IsScriptingObject)
                     return typeInfo.Type.Replace("::", ".");
 
@@ -527,7 +529,7 @@ namespace Flax.Build.Bindings
                 contents.Append("abstract ");
             contents.Append("unsafe partial class ").Append(classInfo.Name);
             if (classInfo.BaseType != null && !classInfo.IsBaseTypeHidden)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, classInfo.BaseType, classInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = classInfo.BaseType.Name }, classInfo));
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
@@ -861,7 +863,7 @@ namespace Flax.Build.Bindings
                 contents.Append("private ");
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             if (structureInfo.BaseType != null && structureInfo.IsPod)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, structureInfo.BaseType, structureInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
@@ -1048,30 +1050,6 @@ namespace Flax.Build.Bindings
             return true;
         }
 
-        private static void GenerateCSharpCollectNamespaces(BuildData buildData, ApiTypeInfo apiType, HashSet<string> usedNamespaces)
-        {
-            if (apiType is ClassInfo classInfo)
-            {
-                foreach (var field in classInfo.Fields)
-                {
-                    var fieldInfo = FindApiTypeInfo(buildData, field.Type, classInfo);
-                    if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiType.Namespace)
-                        usedNamespaces.Add(fieldInfo.Namespace);
-                }
-            }
-            else if (apiType is StructureInfo structureInfo)
-            {
-                foreach (var field in structureInfo.Fields)
-                {
-                    var fieldInfo = FindApiTypeInfo(buildData, field.Type, structureInfo);
-                    if (fieldInfo != null && !string.IsNullOrWhiteSpace(fieldInfo.Namespace) && fieldInfo.Namespace != apiType.Namespace)
-                        usedNamespaces.Add(fieldInfo.Namespace);
-                }
-            }
-            foreach (var child in apiType.Children)
-                GenerateCSharpCollectNamespaces(buildData, child, usedNamespaces);
-        }
-
         private static void GenerateCSharp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
             var contents = new StringBuilder();
@@ -1084,29 +1062,17 @@ namespace Flax.Build.Bindings
             contents.Append("true").AppendLine();
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
+            var headerPos = contents.Length;
 
-            // Using declarations
             CSharpUsedNamespaces.Clear();
+            CSharpUsedNamespaces.Add(null);
+            CSharpUsedNamespaces.Add(string.Empty);
             CSharpUsedNamespaces.Add("System");
             CSharpUsedNamespaces.Add("System.ComponentModel");
             CSharpUsedNamespaces.Add("System.Globalization");
             CSharpUsedNamespaces.Add("System.Runtime.CompilerServices");
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices");
             CSharpUsedNamespaces.Add("FlaxEngine");
-            foreach (var e in moduleInfo.Children)
-            {
-                foreach (var apiTypeInfo in e.Children)
-                {
-                    GenerateCSharpCollectNamespaces(buildData, apiTypeInfo, CSharpUsedNamespaces);
-                }
-            }
-            CSharpUsedNamespacesSorted.Clear();
-            CSharpUsedNamespacesSorted.AddRange(CSharpUsedNamespaces);
-            CSharpUsedNamespacesSorted.Sort();
-            foreach (var e in CSharpUsedNamespacesSorted)
-                contents.AppendLine($"using {e};");
-            // TODO: custom using declarations support
-            // TODO: generate using declarations based on references modules (eg. using FlaxEngine, using Plugin1 in game API)
 
             // Process all API types from the file
             var useBindings = false;
@@ -1121,7 +1087,21 @@ namespace Flax.Build.Bindings
             if (!useBindings)
                 return;
 
+            {
+                var header = new StringBuilder();
+
+                // Using declarations
+                CSharpUsedNamespacesSorted.Clear();
+                CSharpUsedNamespacesSorted.AddRange(CSharpUsedNamespaces);
+                CSharpUsedNamespacesSorted.Sort();
+                for (var i = 2; i < CSharpUsedNamespacesSorted.Count; i++)
+                    header.AppendLine($"using {CSharpUsedNamespacesSorted[i]};");
+
+                contents.Insert(headerPos, header.ToString());
+            }
+
             // Save generated file
+            contents.AppendLine();
             contents.AppendLine("#endif");
             Utilities.WriteFileIfChanged(bindings.GeneratedCSharpFilePath, contents.ToString());
         }

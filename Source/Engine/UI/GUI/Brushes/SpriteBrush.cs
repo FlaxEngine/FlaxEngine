@@ -11,8 +11,14 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The sprite.
         /// </summary>
-        [ExpandGroups]
+        [ExpandGroups, EditorOrder(0), Tooltip("The sprite.")]
         public SpriteHandle Sprite;
+
+        /// <summary>
+        /// The texture sampling filter mode.
+        /// </summary>
+        [ExpandGroups, EditorOrder(1), Tooltip("The texture sampling filter mode.")]
+        public BrushFilter Filter = BrushFilter.Linear;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SpriteBrush"/> class.
@@ -36,7 +42,10 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)
         {
-            Render2D.DrawSprite(Sprite, rect, color);
+            if (Filter == BrushFilter.Point)
+                Render2D.DrawSpritePoint(Sprite, rect, color);
+            else
+                Render2D.DrawSprite(Sprite, rect, color);
         }
     }
 }
