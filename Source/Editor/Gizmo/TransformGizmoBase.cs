@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using FlaxEngine;
 
@@ -66,6 +67,16 @@ namespace FlaxEditor.Gizmo
         public Transform LastDelta { get; private set; }
 
         /// <summary>
+        /// Occurs when transforming selection started.
+        /// </summary>
+        public event Action TransformingStarted;
+
+        /// <summary>
+        /// Occurs when transforming selection ended.
+        /// </summary>
+        public event Action TransformingEnded;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TransformGizmoBase" /> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>
@@ -118,10 +129,10 @@ namespace FlaxEditor.Gizmo
                 return;
 
             // End action
-            OnEndTransforming();
-            _startTransforms.Clear();
             _isTransforming = false;
             _isDuplicating = false;
+            OnEndTransforming();
+            _startTransforms.Clear();
         }
 
         private void UpdateGizmoPosition()
@@ -367,6 +378,9 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
+        public override bool IsControllingMouse => _isTransforming;
+
+        /// <inheritdoc />
         public override void Update(float dt)
         {
             LastDelta = Transform.Identity;
@@ -531,6 +545,7 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         protected virtual void OnStartTransforming()
         {
+            TransformingStarted?.Invoke();
         }
 
         /// <summary>
@@ -548,6 +563,7 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         protected virtual void OnEndTransforming()
         {
+            TransformingEnded?.Invoke();
         }
 
         /// <summary>

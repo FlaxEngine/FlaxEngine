@@ -136,7 +136,7 @@ namespace FlaxEditor.Viewport
 
         // Input
 
-        private bool _isControllingMouse;
+        private bool _isControllingMouse, _isViewportControllingMouse;
         private int _deltaFilteringStep;
         private Vector2 _startPos;
         private Vector2 _mouseDeltaLast;
@@ -654,6 +654,11 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets a value indicating whether this viewport is using mouse currently (eg. user moving objects).
+        /// </summary>
+        protected virtual bool IsControllingMouse => false;
+
+        /// <summary>
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
@@ -972,7 +977,16 @@ namespace FlaxEditor.Viewport
             // Update input
             {
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
-                bool useMouse = Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height);
+                var isViewportControllingMouse = IsControllingMouse;
+                if (isViewportControllingMouse != _isViewportControllingMouse)
+                {
+                    _isViewportControllingMouse = isViewportControllingMouse;
+                    if (isViewportControllingMouse)
+                        StartMouseCapture();
+                    else
+                        EndMouseCapture();
+                }
+                bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
                 _prevInput = _input;
                 var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl));
                 if (ContainsFocus && hit == null)

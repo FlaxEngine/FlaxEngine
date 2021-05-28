@@ -541,6 +541,9 @@ namespace FlaxEditor.Tools
         }
 
         /// <inheritdoc />
+        public override bool IsControllingMouse => IsPainting;
+
+        /// <inheritdoc />
         public override void Update(float dt)
         {
             _hasHit = false;

@@ -357,6 +357,9 @@ namespace FlaxEditor.Viewport
         public Undo Undo { get; }
 
         /// <inheritdoc />
+        protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
+
+        /// <inheritdoc />
         protected override void AddUpdateCallbacks(RootControl root)
         {
             base.AddUpdateCallbacks(root);

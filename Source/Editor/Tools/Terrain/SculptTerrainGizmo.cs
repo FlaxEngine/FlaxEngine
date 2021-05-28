@@ -136,6 +136,9 @@ namespace FlaxEditor.Tools.Terrain
         }
 
         /// <inheritdoc />
+        public override bool IsControllingMouse => IsPainting;
+
+        /// <inheritdoc />
         public override void Update(float dt)
         {
             base.Update(dt);

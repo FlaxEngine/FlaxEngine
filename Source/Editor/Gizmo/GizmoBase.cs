@@ -23,6 +23,11 @@ namespace FlaxEditor.Gizmo
         public bool IsActive => Owner.Gizmos.Active == this;
 
         /// <summary>
+        /// Gets a value indicating whether this gizmo is using mouse currently (eg. user moving objects).
+        /// </summary>
+        public virtual bool IsControllingMouse => false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GizmoBase"/> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>
