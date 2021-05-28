@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Security.Policy;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -317,7 +316,8 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents);
+            var orient = Viewport.ViewOrientation;
+            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
         /// <inheritdoc />
@@ -355,6 +355,9 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public Undo Undo { get; }
+
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
@@ -780,13 +783,26 @@ namespace FlaxEditor.Viewport
             Spawn(actor, ref hitLocation);
         }
 
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        public void FocusSelection()
+        {
+            if (TransformGizmo.SelectedParents.Count == 0)
+                return;
+
+            var orientation = ViewOrientation;
+            var gizmoBounds = Gizmos.Active.FocusBounds;
+            if (gizmoBounds != BoundingSphere.Empty)
+                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+            else
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+        }
+
         /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
-            if (TransformGizmo.SelectedParents.Count != 0)
-            {
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
-            }
+            FocusSelection();
 
             base.OrientViewport(ref orientation);
         }

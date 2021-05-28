@@ -361,7 +361,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
-            InputActions.Add(options => options.FocusSelection, () => _editor.Windows.EditWin.ShowSelectedActors());
+            InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
         }
 
@@ -653,6 +653,22 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        public void FocusSelection()
+        {
+            if (TransformGizmo.SelectedParents.Count == 0)
+                return;
+
+            var orientation = ViewOrientation;
+            var gizmoBounds = Gizmos.Active.FocusBounds;
+            if (gizmoBounds != BoundingSphere.Empty)
+                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+            else
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+        }
+
+        /// <summary>
         /// Applies the transform to the collection of scene graph nodes.
         /// </summary>
         /// <param name="selection">The selection.</param>
@@ -709,10 +725,7 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
-            if (TransformGizmo.SelectedParents.Count != 0)
-            {
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
-            }
+            FocusSelection();
 
             base.OrientViewport(ref orientation);
         }

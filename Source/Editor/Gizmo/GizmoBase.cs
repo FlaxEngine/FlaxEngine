@@ -28,6 +28,11 @@ namespace FlaxEditor.Gizmo
         public virtual bool IsControllingMouse => false;
 
         /// <summary>
+        /// Gets the custom world-space bounds for current gizmo mode focus for used (eg. selected object part bounds). Returns <see cref="BoundingSphere.Empty"/> if not used.
+        /// </summary>
+        public virtual BoundingSphere FocusBounds => BoundingSphere.Empty;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GizmoBase"/> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>

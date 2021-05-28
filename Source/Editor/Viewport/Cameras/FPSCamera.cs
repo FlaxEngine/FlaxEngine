@@ -143,13 +143,22 @@ namespace FlaxEditor.Viewport.Cameras
             ShowSphere(ref mergesSphere, ref orientation);
         }
 
-        private void ShowSphere(ref BoundingSphere sphere)
+        /// <summary>
+        /// Moves the camera to visualize given world area defined by the sphere.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        public void ShowSphere(ref BoundingSphere sphere)
         {
             var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
             ShowSphere(ref sphere, ref q);
         }
 
-        private void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
+        /// <summary>
+        /// Moves the camera to visualize given world area defined by the sphere.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="orientation">The camera orientation.</param>
+        public void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
         {
             Vector3 position;
             if (Viewport.UseOrthographicProjection)

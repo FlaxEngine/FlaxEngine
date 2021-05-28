@@ -68,7 +68,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
-            InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.ShowSelectedActors());
+            InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
         }
 
         private void OnSearchBoxTextChanged()
