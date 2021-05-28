@@ -34,6 +34,25 @@ namespace FlaxEditor.Tools.Foliage
         }
 
         /// <inheritdoc />
+        public override BoundingSphere FocusBounds
+        {
+            get
+            {
+                var foliage = GizmoMode.SelectedFoliage;
+                if (foliage)
+                {
+                    var instanceIndex = GizmoMode.SelectedInstanceIndex;
+                    if (instanceIndex >= 0 && instanceIndex < foliage.InstancesCount)
+                    {
+                        var instance = foliage.GetInstance(instanceIndex);
+                        return instance.Bounds;
+                    }
+                }
+                return base.FocusBounds;
+            }
+        }
+
+        /// <inheritdoc />
         protected override int SelectionCount
         {
             get
