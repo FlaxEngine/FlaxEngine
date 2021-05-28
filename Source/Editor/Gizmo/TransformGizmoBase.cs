@@ -204,24 +204,43 @@ namespace FlaxEditor.Gizmo
 
             switch (_activeAxis)
             {
-            case Axis.XY:
             case Axis.X:
             {
-                var plane = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
+                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = _activeAxis == Axis.X
-                            ? new Vector3(_tDelta.X, 0, 0)
-                            : new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    delta = new Vector3(_tDelta.X, 0, 0);
+                }
+                break;
+            }
+            case Axis.Y:
+            {
+                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
+                if (ray.Intersects(ref plane, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(0, _tDelta.Y, 0);
                 }
                 break;
             }
             case Axis.Z:
+            {
+                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
+                if (ray.Intersects(ref plane, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(0, 0, _tDelta.Z);
+                }
+                break;
+            }
             case Axis.YZ:
-            case Axis.Y:
             {
                 var plane = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
                 if (ray.Intersects(ref plane, out float intersection))
@@ -229,18 +248,19 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    switch (_activeAxis)
-                    {
-                    case Axis.Y:
-                        delta = new Vector3(0, _tDelta.Y, 0);
-                        break;
-                    case Axis.Z:
-                        delta = new Vector3(0, 0, _tDelta.Z);
-                        break;
-                    default:
-                        delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
-                        break;
-                    }
+                    delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                }
+                break;
+            }
+            case Axis.XY:
+            {
+                var plane = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
+                if (ray.Intersects(ref plane, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
                 }
                 break;
             }
@@ -271,12 +291,11 @@ namespace FlaxEditor.Gizmo
             }
             }
 
+            // Modifiers
             if (isScaling)
                 delta *= 0.01f;
-
             if (Owner.IsAltKeyDown)
                 delta *= 0.5f;
-
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
                 float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
