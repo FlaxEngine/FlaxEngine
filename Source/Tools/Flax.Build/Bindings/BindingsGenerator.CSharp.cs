@@ -471,9 +471,8 @@ namespace Flax.Build.Bindings
                         if (comment[i - 1].StartsWith("/// "))
                             tooltip += " " + comment[i - 1].Substring(4);
                     }
-                    if (tooltip.IndexOf('\"') != -1)
-                        tooltip = tooltip.Replace("\"", "\\\"");
-                    contents.Append(indent).Append("[Tooltip(\"").Append(tooltip).Append("\")]").AppendLine();
+                    tooltip = tooltip.Replace("\"", "\"\"");
+                    contents.Append(indent).Append("[Tooltip(@\"").Append(tooltip).Append("\")]").AppendLine();
                 }
             }
             if (writeDefaultValue)
