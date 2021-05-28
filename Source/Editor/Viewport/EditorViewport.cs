@@ -661,12 +661,12 @@ namespace FlaxEditor.Viewport
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {
-                var pos = Vector3.Zero + Vector3.Backward * orientation * 2000.0f;
+                var pos = ViewPosition + Vector3.Backward * orientation * 2000.0f;
                 fpsCamera.MoveViewport(pos, orientation);
             }
             else
             {
-                ViewportCamera.SetArcBallView(orientation, Vector3.Zero, 2000.0f);
+                ViewportCamera.SetArcBallView(orientation, ViewPosition, 2000.0f);
             }
         }
 
