@@ -144,7 +144,18 @@ void ENetDriver::Disconnect()
 
 void ENetDriver::Disconnect(const NetworkConnection& connection)
 {
-    // TODO: kick given connection (?)
+    const int connectionId = connection.ConnectionId;
+    
+    void* peer = nullptr;
+    if(_peerMap.TryGet(connectionId, peer))
+    {
+        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
+        _peerMap.Remove(connectionId);
+    }
+    else
+    {
+        LOG(Error, "Failed to kick connection({0}). ENetPeer not found!", connection.ConnectionId);
+    }
 }
 
 bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
