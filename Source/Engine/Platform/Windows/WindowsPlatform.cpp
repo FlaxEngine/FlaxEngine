@@ -30,11 +30,12 @@ void* WindowsPlatform::Instance = nullptr;
 
 namespace
 {
-    String UserLocale, ComputerName, UserName;
+    String UserLocale, ComputerName, UserName, WindowsName;
     HANDLE EngineMutex = nullptr;
     Rectangle VirtualScreenBounds = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
     int32 VersionMajor = 0;
     int32 VersionMinor = 0;
+    int32 VersionBuild = 0;
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
     CriticalSection SymLocker;
@@ -124,6 +125,102 @@ LONG GetDWORDRegKey(HKEY hKey, const Char* strValueName, DWORD& nValue, DWORD nD
         nValue = nResult;
     }
     return nError;
+}
+
+void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionMinor, int32& versionBuild)
+{
+    // Get OS version
+
+    HKEY hKey;
+    LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
+    if (lRes == ERROR_SUCCESS)
+    {
+        GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
+
+        DWORD currentMajorVersionNumber;
+        DWORD currentMinorVersionNumber;
+        String currentBuildNumber;
+        GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
+        GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
+        GetStringRegKey(hKey, TEXT("CurrentBuildNumber"), currentBuildNumber, TEXT("0"));
+        VersionMajor = currentMajorVersionNumber;
+        VersionMinor = currentMinorVersionNumber;
+        StringUtils::Parse(currentBuildNumber.Get(), &VersionBuild);
+
+        if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
+        {
+            VersionMajor = 6;
+            VersionMinor = 2;
+        }
+
+        if (VersionMajor == 0 && VersionMinor == 0)
+        {
+            String windowsVersion;
+            GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
+
+            if (windowsVersion.HasChars())
+            {
+                const int32 dot = windowsVersion.Find('.');
+                if (dot != -1)
+                {
+                    StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
+                    StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (IsWindowsServer())
+        {
+            windowsName = TEXT("Windows Server");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8Point1OrGreater())
+        {
+            windowsName = TEXT("Windows 8.1");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8OrGreater())
+        {
+            windowsName = TEXT("Windows 8");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7SP1OrGreater())
+        {
+            windowsName = TEXT("Windows 7 SP1");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7OrGreater())
+        {
+            windowsName = TEXT("Windows 7");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP2OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP2");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP1OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP1");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaOrGreater())
+        {
+            windowsName = TEXT("Windows Vista");
+            versionMajor = 6;
+            versionMinor = 0;
+        }
+    }
+    RegCloseKey(hKey);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -414,6 +511,15 @@ void WindowsPlatform::PreInit(void* hInstance)
     OnSymbolsPathModified();
     SymLocker.Unlock();
 #endif
+
+    GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
+
+    // Validate platform
+    if (VersionMajor < 6)
+    {
+        Error(TEXT("Not supported operating system version."));
+        exit(-1);
+    }
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -503,105 +609,7 @@ void WindowsPlatform::LogInfo()
 {
     Win32Platform::LogInfo();
 
-    // Get OS version
-    {
-        String windowsName;
-        HKEY hKey;
-        LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
-        if (lRes == ERROR_SUCCESS)
-        {
-            GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
-
-            DWORD currentMajorVersionNumber;
-            DWORD currentMinorVersionNumber;
-            GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
-            GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
-            VersionMajor = currentMajorVersionNumber;
-            VersionMinor = currentMinorVersionNumber;
-
-            if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
-            {
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-
-            if (VersionMajor == 0 && VersionMinor == 0)
-            {
-                String windowsVersion;
-                GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
-
-                if (windowsVersion.HasChars())
-                {
-                    const int32 dot = windowsVersion.Find('.');
-                    if (dot != -1)
-                    {
-                        StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
-                        StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (IsWindowsServer())
-            {
-                windowsName = TEXT("Windows Server");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8Point1OrGreater())
-            {
-                windowsName = TEXT("Windows 8.1");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8OrGreater())
-            {
-                windowsName = TEXT("Windows 8");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7SP1OrGreater())
-            {
-                windowsName = TEXT("Windows 7 SP1");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7OrGreater())
-            {
-                windowsName = TEXT("Windows 7");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP2OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP2");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP1OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP1");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaOrGreater())
-            {
-                windowsName = TEXT("Windows Vista");
-                VersionMajor = 6;
-                VersionMinor = 0;
-            }
-        }
-        RegCloseKey(hKey);
-        LOG(Info, "Microsoft {0} {1}-bit ({2}.{3})", windowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor);
-    }
-
-    // Validate platform
-    if (VersionMajor < 6)
-    {
-        LOG(Error, "Not supported operating system version.");
-        exit(0);
-    }
+    LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
 
     // Check minimum amount of RAM
     auto memStats = Platform::GetMemoryStats();
