@@ -22,10 +22,18 @@ public:
 public:
     API_FIELD()
     uint16 ConnectionsLimit = 32;
-    
+
+    /// <summary>
+    /// Address used to connect to or listen at.
+    /// Set it to "any" when you want to listen at all available addresses.
+    /// </summary>
+    /// <remarks>Only IPv4 is supported.</remarks>
     API_FIELD()
     String Address = String("127.0.0.1");
-    
+
+    /// <summary>
+    /// The port to connect to or listen at.
+    /// </summary>
     API_FIELD()
     uint16 Port = 7777;
     

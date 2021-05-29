@@ -22,8 +22,8 @@ int NetworkManager::Initialize(const NetworkConfig& config)
 {
     // Validate the address for listen/connect
     NetworkEndPoint endPoint = {};
-    const bool isEndPointValid = NetworkBase::CreateEndPoint(config.Address, String("7777"), NetworkIPVersion::IPv4, endPoint, false);
-    ASSERT(config.Address == String("any") || isEndPointValid);
+    const bool isValidEndPoint = NetworkBase::CreateEndPoint(config.Address, String("7777"), NetworkIPVersion::IPv4, endPoint, false);
+    ASSERT(config.Address == String("any") || isValidEndPoint);
     
     // Alloc new host
     const int hostId = Hosts.Count();
@@ -48,7 +48,7 @@ bool NetworkManager::Listen(const int hostId)
     ASSERT(Hosts[hostId].IsValid());
     NetworkHost& host = Hosts[hostId];
     
-    LOG(Info, "NetworkManager starting to listen on address = any:{0}", host.Config.Port);
+    LOG(Info, "NetworkManager starting to listen on address = {0}:{1}", host.Config.Address, host.Config.Port);
     
     return host.NetworkDriver->Listen();
 }
@@ -57,9 +57,8 @@ bool NetworkManager::Connect(const int hostId)
 {
     ASSERT(Hosts[hostId].IsValid());
     NetworkHost& host = Hosts[hostId];
-    LOG(Info, "Connecting to 127.0.0.1:{0}...", host.Config.Port); // TODO: Proper IP address
+    LOG(Info, "Connecting to {0}:{1}...", host.Config.Address, host.Config.Port);
     
-    // TODO: Assert address/endpoint
     return host.NetworkDriver->Connect();
 }
 
