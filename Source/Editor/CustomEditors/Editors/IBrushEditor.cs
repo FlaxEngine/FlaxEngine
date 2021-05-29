@@ -23,6 +23,7 @@ namespace FlaxEditor.CustomEditors.Editors
             new OptionType("Solid Color", typeof(SolidColorBrush)),
             new OptionType("Linear Gradient", typeof(LinearGradientBrush)),
             new OptionType("Texture 9-Slicing", typeof(Texture9SlicingBrush)),
+            new OptionType("Sprite 9-Slicing", typeof(Sprite9SlicingBrush)),
         };
     }
 }

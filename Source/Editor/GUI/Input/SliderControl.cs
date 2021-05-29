@@ -411,6 +411,17 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <summary>
+        /// Sets the limits from the attribute.
+        /// </summary>
+        /// <param name="limits">The limits.</param>
+        public void SetLimits(LimitAttribute limits)
+        {
+            _min = limits.Min;
+            _max = Mathf.Max(_min, limits.Max);
+            Value = Value;
+        }
+
+        /// <summary>
         /// Updates the text of the textbox.
         /// </summary>
         protected virtual void UpdateText()

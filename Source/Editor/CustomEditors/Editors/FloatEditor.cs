@@ -15,6 +15,11 @@ namespace FlaxEditor.CustomEditors.Editors
     {
         private IFloatValueEditor _element;
 
+        /// <summary>
+        /// Gets the element.
+        /// </summary>
+        public IFloatValueEditor Element => _element;
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 

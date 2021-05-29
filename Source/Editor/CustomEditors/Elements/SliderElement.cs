@@ -76,5 +76,14 @@ namespace FlaxEditor.CustomEditors.Elements
 
         /// <inheritdoc cref="IFloatValueEditor.IsSliding" />
         public bool IsSliding => Slider.IsSliding;
+
+        /// <inheritdoc />
+        public void SetLimits(LimitAttribute limit)
+        {
+            if (limit != null)
+            {
+                Slider.SetLimits(limit);
+            }
+        }
     }
 }
