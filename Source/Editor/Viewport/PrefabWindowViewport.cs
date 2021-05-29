@@ -788,10 +788,19 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void FocusSelection()
         {
+            var orientation = ViewOrientation;
+            FocusSelection(ref orientation);
+        }
+        
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        /// <param name="orientation">The target view orientation.</param>
+        public void FocusSelection(ref Quaternion orientation)
+        {
             if (TransformGizmo.SelectedParents.Count == 0)
                 return;
 
-            var orientation = ViewOrientation;
             var gizmoBounds = Gizmos.Active.FocusBounds;
             if (gizmoBounds != BoundingSphere.Empty)
                 ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
@@ -802,9 +811,10 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
-            FocusSelection();
-
-            base.OrientViewport(ref orientation);
+            if (TransformGizmo.SelectedParents.Count != 0)
+                FocusSelection(ref orientation);
+            else
+                base.OrientViewport(ref orientation);
         }
 
         /// <inheritdoc />
