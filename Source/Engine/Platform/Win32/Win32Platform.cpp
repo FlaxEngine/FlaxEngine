@@ -456,7 +456,21 @@ void Win32Platform::SetThreadAffinityMask(uint64 affinityMask)
 
 void Win32Platform::Sleep(int32 milliseconds)
 {
-    ::Sleep(static_cast<DWORD>(milliseconds));
+    static thread_local HANDLE timer = NULL;
+    if (timer == NULL)
+    {
+        // Attempt to create high-resolution timer for each thread (Windows 10 build 17134 or later)
+        timer = CreateWaitableTimerEx(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+        if (timer == NULL) // fallback for older versions of Windows
+            timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    }
+
+    // Negative value is relative to current time, minimum waitable time is 10 microseconds
+    LARGE_INTEGER dueTime;
+    dueTime.QuadPart = -int64_t(milliseconds) * 10000;
+
+    SetWaitableTimerEx(timer, &dueTime, 0, NULL, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
 }
 
 double Win32Platform::GetTimeSeconds()

@@ -18,6 +18,7 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
+#include <timeapi.h>
 #include <Psapi.h>
 #include <objbase.h>
 #if CRASH_LOG_ENABLE
@@ -577,6 +578,12 @@ bool WindowsPlatform::Init()
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows Vista SP1 or higher."));
         return true;
+    }
+
+    // Set lowest possible timer resolution for previous Windows versions
+    if (VersionMajor < 10 || (VersionMajor == 10 && VersionBuild < 17134))
+    {
+        timeBeginPeriod(1);
     }
 
     DWORD tmp;
