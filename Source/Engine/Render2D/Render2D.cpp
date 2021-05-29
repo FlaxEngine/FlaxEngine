@@ -25,19 +25,14 @@
 #include "Engine/Engine/EngineService.h"
 
 #if USE_EDITOR
-
-// TODO: maybe we could also provide some stack trace for that?
 #define RENDER2D_CHECK_RENDERING_STATE \
 	if (!Render2D::IsRendering()) \
 	{ \
 		LOG(Error, "Calling Render2D is only valid during rendering."); \
 		return; \
 	}
-
 #else
-
 #define RENDER2D_CHECK_RENDERING_STATE
-
 #endif
 
 #if USE_EDITOR
@@ -351,6 +346,57 @@ void WriteRect(const Rectangle& rect, const Color& color, const Vector2& uvUpper
 FORCE_INLINE void WriteRect(const Rectangle& rect, const Color& color)
 {
     WriteRect(rect, color, Vector2::Zero, Vector2::One);
+}
+
+void Write9SlicingRect(const Rectangle& rect, const Color& color, const Vector4& border, const Vector4& borderUVs)
+{
+    const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
+    const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
+    const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
+    const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
+
+    const Vector2 upperLeftUV(borderUVs.X, borderUVs.Z);
+    const Vector2 upperRightUV(1.0f - borderUVs.Y, borderUVs.Z);
+    const Vector2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
+    const Vector2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
+
+    WriteRect(upperLeft, color, Vector2::Zero, upperLeftUV);
+    WriteRect(upperRight, color, Vector2(upperRightUV.X, 0), Vector2(1, upperLeftUV.Y));
+    WriteRect(bottomLeft, color, Vector2(0, bottomLeftUV.Y), Vector2(bottomLeftUV.X, 1));
+    WriteRect(bottomRight, color, bottomRightUV, Vector2::One);
+
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Vector2(upperLeftUV.X, 0), upperRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Vector2(0, upperLeftUV.Y), bottomLeftUV);
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Vector2(bottomRightUV.X, 1));
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Vector2(1, bottomRightUV.Y));
+
+    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
+}
+
+void Write9SlicingRect(const Rectangle& rect, const Color& color, const Vector4& border, const Vector4& borderUVs, const Vector2& uvLocation, const Vector2& uvSize)
+{
+    const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
+    const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
+    const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
+    const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
+
+    const Vector2 upperLeftUV = Vector2(borderUVs.X, borderUVs.Z) * uvSize + uvLocation;
+    const Vector2 upperRightUV = Vector2(1.0f - borderUVs.Y, borderUVs.Z) * uvSize + uvLocation;
+    const Vector2 bottomLeftUV = Vector2(borderUVs.X, 1.0f - borderUVs.W) * uvSize + uvLocation;
+    const Vector2 bottomRightUV = Vector2(1.0f - borderUVs.Y, 1.0f - borderUVs.W) * uvSize + uvLocation;
+    const Vector2 uvEnd = uvLocation + uvSize;
+
+    WriteRect(upperLeft, color, uvLocation, upperLeftUV);
+    WriteRect(upperRight, color, Vector2(upperRightUV.X, uvLocation.Y), Vector2(uvEnd.X, upperLeftUV.Y));
+    WriteRect(bottomLeft, color, Vector2(uvLocation.X, bottomLeftUV.Y), Vector2(bottomLeftUV.X, uvEnd.Y));
+    WriteRect(bottomRight, color, bottomRightUV, uvEnd);
+
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Vector2(upperLeftUV.X, uvLocation.Y), upperRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Vector2(uvLocation.X, upperLeftUV.Y), bottomLeftUV);
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Vector2(bottomRightUV.X, uvEnd.Y));
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Vector2(uvEnd.X, bottomRightUV.Y));
+
+    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
 }
 
 typedef bool (*CanDrawCallCallback)(const Render2DDrawCall&, const Render2DDrawCall&);
@@ -1548,7 +1594,7 @@ void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rec
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
-    drawCall.AsTexture.Ptr = spriteHandle.GetAtlasTexture();
+    drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
 }
 
@@ -1575,8 +1621,64 @@ void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle
     drawCall.Type = DrawCallType::FillTexturePoint;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
-    drawCall.AsTexture.Ptr = spriteHandle.GetAtlasTexture();
+    drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
+}
+
+void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    Render2DDrawCall drawCall;
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6 * 9;
+    drawCall.AsTexture.Ptr = t ? t->GetTexture() : nullptr;
+    DrawCalls.Add(drawCall);
+    Write9SlicingRect(rect, color, border, borderUVs);
+}
+
+void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    Render2DDrawCall drawCall;
+    drawCall.Type = DrawCallType::FillTexturePoint;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6 * 9;
+    drawCall.AsTexture.Ptr = t ? t->GetTexture() : nullptr;
+    DrawCalls.Add(drawCall);
+    Write9SlicingRect(rect, color, border, borderUVs);
+}
+
+void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+        return;
+
+    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6 * 9;
+    drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
+    Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
+}
+
+void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+        return;
+
+    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexturePoint;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6 * 9;
+    drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
+    Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
 }
 
 void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* ps, const Color& color)
