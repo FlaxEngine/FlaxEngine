@@ -146,26 +146,22 @@ int32 Engine::Main(const Char* cmdLine)
     EngineImpl::IsReady = true;
 
     // Main engine loop
-    bool canDraw = true; // Prevent drawing 2 or more frames in a row without update or fixed update (nothing will change)
+    const bool useSleep = true; // TODO: this should probably be a platform setting
     while (!ShouldExit())
     {
-#if 0
-        // TODO: test it more and maybe use in future to reduce CPU usage
-		// Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-		{
-			float tickFps;
-			auto tick = Time->GetHighestFrequency(tickFps);
-			double tickTargetStepTime = 1.0 / tickFps;
-			double nextTick = tick->LastEnd + tickTargetStepTime;
-			double timeToTick = nextTick - Platform::GetTimeSeconds();
-			int32 sleepTimeMs = Math::Min(4, Math::FloorToInt(timeToTick * (1000.0 * 0.8))); // Convert seconds to milliseconds and apply adjustment with limit
-			if (!Device->WasVSyncUsed() && sleepTimeMs > 0)
-			{
-				PROFILE_CPU_NAMED("Idle");
-				Platform::Sleep(sleepTimeMs);
-			}
-		}
-#endif
+        // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
+        if ((useSleep && Time::UpdateFPS > 0) || !Platform::GetHasFocus())
+        {
+            double nextTick = Time::GetNextTick();
+            double timeToTick = nextTick - Platform::GetTimeSeconds();
+
+            // Sleep less than needed, some platforms may sleep slightly more than requested
+            if (timeToTick > 0.002)
+            {
+                PROFILE_CPU_NAMED("Idle");
+                Platform::Sleep(1);
+            }
+        }
 
         // App paused logic
         if (Platform::GetIsPaused())
@@ -187,7 +183,6 @@ int32 Engine::Main(const Char* cmdLine)
             OnUpdate();
             OnLateUpdate();
             Time::OnEndUpdate();
-            canDraw = true;
         }
 
         // Start physics simulation
@@ -195,16 +190,14 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnFixedUpdate();
             Time::OnEndPhysics();
-            canDraw = true;
         }
 
         // Draw frame
-        if (canDraw && Time::OnBeginDraw())
+        if (Time::OnBeginDraw())
         {
             OnDraw();
             Time::OnEndDraw();
             FrameMark;
-            canDraw = false;
         }
 
         // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
