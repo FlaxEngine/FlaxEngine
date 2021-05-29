@@ -127,7 +127,7 @@ namespace FlaxEngine.Json
                 if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
                 {
                     writer.WritePropertyName("$type");
-                    writer.WriteValue("FlaxEngine.Margin, FlaxEngine.CSharp");
+                    writer.WriteValue("FlaxEngine.GUI.Margin, FlaxEngine.CSharp");
                 }
 #endif
                 writer.WritePropertyName("Left");
