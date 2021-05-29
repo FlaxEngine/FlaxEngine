@@ -77,6 +77,8 @@ void ENetDriver::Dispose()
     
     _peer = nullptr;
     _host = nullptr;
+    
+    LOG(Info, "ENet driver stopped!");
 }
 
 bool ENetDriver::Listen()

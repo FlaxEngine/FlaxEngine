@@ -10,6 +10,7 @@
 struct FLAXENGINE_API NetworkHost
 {
 public:
+    int HostId;
     NetworkConfig Config;
     INetworkDriver* NetworkDriver = nullptr;
 
@@ -31,6 +32,17 @@ public:
     {
         // Calculate and return the buffer slice using previously calculated slice.
         return MessageBuffer + Config.MessageSize * messageId;
+    }
+
+public:
+    FORCE_INLINE bool operator==(const NetworkHost& other) const
+    {
+        return HostId == other.HostId;
+    }
+
+    FORCE_INLINE bool operator!=(const NetworkHost& other) const
+    {
+        return HostId != other.HostId;
     }
 };
 

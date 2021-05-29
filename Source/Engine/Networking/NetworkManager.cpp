@@ -29,6 +29,7 @@ int NetworkManager::Initialize(const NetworkConfig& config)
     const int hostId = Hosts.Count();
     Hosts.Add(NetworkHost());
     NetworkHost& host = Hosts.Last();
+    host.HostId = hostId;
 
     // Initialize the host
     host.Initialize(config);
@@ -41,6 +42,7 @@ void NetworkManager::Shutdown(const int hostId)
     ASSERT(Hosts[hostId].IsValid());
     NetworkHost& host = Hosts[hostId];
     host.Shutdown();
+    Hosts.Remove(host);
 }
 
 bool NetworkManager::Listen(const int hostId)
