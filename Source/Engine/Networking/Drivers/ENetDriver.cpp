@@ -82,8 +82,12 @@ void ENetDriver::Dispose()
 bool ENetDriver::Listen()
 {
     ENetAddress address = {0};
-    address.host = ENET_HOST_ANY; // TODO
     address.port = _config.Port;
+    address.host = ENET_HOST_ANY;
+
+    // Set host address if needed
+    if(_config.Address != String("any"))
+        enet_address_set_host(&address, _config.Address.ToStringAnsi().GetText());
     
     // Create ENet host
     _host = enet_host_create(&address, _config.ConnectionsLimit, 1, 0, 0);
@@ -103,7 +107,7 @@ bool ENetDriver::Connect()
 
     ENetAddress address = {0};
     address.port = _config.Port;
-    enet_address_set_host(&address, "127.0.0.1"); // TODO
+    enet_address_set_host(&address, _config.Address.ToStringAnsi().GetText());
 
     // Create ENet host
     _host = enet_host_create(nullptr, 1, 1, 0, 0);
