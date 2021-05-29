@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Text;
@@ -15,7 +15,7 @@ namespace FlaxEngine.Networking
         /// <param name="length">The amount of bytes to write from the <see cref="bytes"/> pointer.</param>
         public void WriteBytes(byte* bytes, int length)
         {
-            Assert.IsTrue(Position + length < BufferSize, $"Could not write data of length {length} into message with id={MessageId}!");
+            Assert.IsTrue(Position + length <= BufferSize, $"Could not write data of length {length} into message with id={MessageId}! Current write position={Position}");
             Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer + Position), length);
             Position += (uint)length;
             Length = Position;
@@ -31,7 +31,7 @@ namespace FlaxEngine.Networking
         /// <param name="length">The minimal amount of bytes that the <see cref="buffer"/> contains.</param>
         public void ReadBytes(byte* buffer, int length)
         {
-            Assert.IsTrue(Position + length < Length, $"Could not read data of length {length} from message with id={MessageId}!");
+            Assert.IsTrue(Position + length <= Length, $"Could not read data of length {length} from message with id={MessageId} and size of {Length}B! Current read position={Position}");
             Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(buffer), length);
             Position += (uint)length;
         }
