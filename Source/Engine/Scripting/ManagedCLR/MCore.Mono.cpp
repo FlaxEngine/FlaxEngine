@@ -169,18 +169,20 @@ void OnGCAllocation(MonoProfiler* profiler, MonoObject* obj)
     //LOG(Info, "GC new: {0}.{1} ({2} bytes)", name_space, name, size);
 
 #if 0
-	if (ProfilerCPU::IsProfilingCurrentThread())
-	{
-		static int details = 0;
-		if (details)
-		{
-			StackWalkDataResult stackTrace;
-			stackTrace.Buffer.SetCapacity(1024);
-			mono_stack_walk(&OnStackWalk, &stackTrace);
+    if (ProfilerCPU::IsProfilingCurrentThread())
+    {
+        static int details = 0;
+        if (details)
+        {
+            StackWalkDataResult stackTrace;
+            stackTrace.Buffer.SetCapacity(1024);
+            mono_stack_walk(&OnStackWalk, &stackTrace);
 
-			LOG(Info, "GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}", String(name_space), String(name), size, stackTrace.Buffer.ToStringView());
-		}
-	}
+            const auto msg = String::Format(TEXT("GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}"), String(name_space), String(name), size, stackTrace.Buffer.ToStringView());
+            Platform::Log(*msg);
+            //LOG_STR(Info, msg);
+        }
+    }
 #endif
 
 #if COMPILE_WITH_PROFILER

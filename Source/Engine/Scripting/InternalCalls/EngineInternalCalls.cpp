@@ -8,11 +8,6 @@
 
 namespace UtilsInternal
 {
-    void MemoryCopy(void* source, void* destination, int32 length)
-    {
-        Platform::MemoryCopy(destination, source, length);
-    }
-
     MonoObject* ExtractArrayFromList(MonoObject* obj)
     {
         auto klass = mono_object_get_class(obj);
@@ -78,7 +73,9 @@ namespace FlaxLogWriterInternal
 void registerFlaxEngineInternalCalls()
 {
     AnimGraphExecutor::initRuntime();
-    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCopy", &UtilsInternal::MemoryCopy);
+    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCopy", &Platform::MemoryCopy);
+    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryClear", &Platform::MemoryClear);
+    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCompare", &Platform::MemoryCompare);
     ADD_INTERNAL_CALL("FlaxEngine.Utils::Internal_ExtractArrayFromList", &UtilsInternal::ExtractArrayFromList);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogWrite", &DebugLogHandlerInternal::LogWrite);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_Log", &DebugLogHandlerInternal::Log);

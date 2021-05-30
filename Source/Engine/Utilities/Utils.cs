@@ -17,14 +17,45 @@ namespace FlaxEngine
         /// <summary>
         /// Copies data from one memory location to another using an unmanaged memory pointers.
         /// </summary>
-        /// <remarks>
-        /// Uses low-level memcpy call.
-        /// </remarks>
+        /// <remarks>Uses low-level platform impl.</remarks>
+        /// <param name="source">The source location.</param>
+        /// <param name="destination">The destination location.</param>
+        /// <param name="length">The length (amount of bytes to copy).</param>
+        [Obsolete("Use MemoryCopy with long length and source/destination swapped to match C++ API.")]
+        public static void MemoryCopy(IntPtr source, IntPtr destination, int length)
+        {
+            // [Deprecated on 30.05.2021, expires on 30.05.2022]
+            MemoryCopy(destination, source, (ulong)length);
+        }
+
+        /// <summary>
+        /// Copies data from one memory location to another using an unmanaged memory pointers.
+        /// </summary>
+        /// <remarks>Uses low-level platform impl.</remarks>
         /// <param name="source">The source location.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="length">The length (amount of bytes to copy).</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MemoryCopy(IntPtr source, IntPtr destination, int length);
+        public static extern void MemoryCopy(IntPtr destination, IntPtr source, ulong length);
+
+        /// <summary>
+        /// Clears the memory region with zeros.
+        /// </summary>
+        /// <remarks>Uses low-level platform impl.</remarks>
+        /// <param name="dst">Destination memory address</param>
+        /// <param name="size">Size of the memory to clear in bytes</param>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void MemoryClear(IntPtr dst, ulong size);
+
+        /// <summary>
+        /// Compares two blocks of the memory.
+        /// </summary>
+        /// <remarks>Uses low-level platform impl.</remarks>
+        /// <param name="buf1">The first buffer address.</param>
+        /// <param name="buf2">The second buffer address.</param>
+        /// <param name="size">Size of the memory to compare in bytes.</param>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int MemoryCompare(IntPtr buf1, IntPtr buf2, ulong size);
 
         /// <summary>
         /// Rounds the floating point value up to 1 decimal place.

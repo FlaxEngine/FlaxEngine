@@ -124,7 +124,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
         {
             var data = Marshal.AllocHGlobal(_heightmapDataSize);
             var source = GetData(ref patchCoord, tag);
-            Utils.MemoryCopy(source, data, _heightmapDataSize);
+            Utils.MemoryCopy(data, source, (ulong)_heightmapDataSize);
             _patches.Add(new PatchData
             {
                 PatchCoord = patchCoord,
@@ -150,7 +150,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
 
                 var data = Marshal.AllocHGlobal(_heightmapDataSize);
                 var source = GetData(ref patch.PatchCoord, patch.Tag);
-                Utils.MemoryCopy(source, data, _heightmapDataSize);
+                Utils.MemoryCopy(data, source, (ulong)_heightmapDataSize);
                 patch.After = data;
                 _patches[i] = patch;
             }
