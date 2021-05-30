@@ -24,6 +24,17 @@ namespace FlaxEngine
                     }
                 }
             }
+
+            public unsafe bool NameStartsWith(string prefix)
+            {
+                fixed (char* name = &Name0)
+                {
+                    fixed (char* p = prefix)
+                    {
+                        return Utils.MemoryCompare(new IntPtr(name), new IntPtr(p), (ulong)(prefix.Length * 2)) == 0;
+                    }
+                }
+            }
         }
     }
 }
