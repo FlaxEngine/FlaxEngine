@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -649,6 +650,13 @@ namespace FlaxEditor.Viewport
                 }
             }
 
+            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
+            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
+            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
+            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
+            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
+            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
+
             // Link for task event
             task.Begin += OnRenderBegin;
         }
@@ -657,6 +665,16 @@ namespace FlaxEditor.Viewport
         /// Gets a value indicating whether this viewport is using mouse currently (eg. user moving objects).
         /// </summary>
         protected virtual bool IsControllingMouse => false;
+
+        /// <summary>
+        /// Orients the viewport.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>
+        protected void OrientViewport(Quaternion orientation)
+        {
+            var quat = orientation;
+            OrientViewport(ref quat);
+        }
 
         /// <summary>
         /// Orients the viewport.
