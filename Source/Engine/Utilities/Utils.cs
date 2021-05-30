@@ -180,15 +180,11 @@ namespace FlaxEngine
 
         internal static T[] ExtractArrayFromList<T>(List<T> list)
         {
-            T[] result = null;
-            if (list != null)
-            {
-                // TODO: move it to the native code
-                var field = list.GetType().GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic);
-                result = (T[])field.GetValue(list);
-            }
-            return result;
+            return list != null ? (T[])Internal_ExtractArrayFromList(list) : null;
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Array Internal_ExtractArrayFromList(object list);
 
         /// <summary>
         /// Reads the color from the binary stream.
@@ -249,7 +245,7 @@ namespace FlaxEngine
         {
             return new Int2(stream.ReadInt32(), stream.ReadInt32());
         }
-        
+
         /// <summary>
         /// Reads the Int3 from the binary stream.
         /// </summary>
@@ -259,7 +255,7 @@ namespace FlaxEngine
         {
             return new Int3(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
         }
-        
+
         /// <summary>
         /// Reads the Int4 from the binary stream.
         /// </summary>
@@ -269,7 +265,7 @@ namespace FlaxEngine
         {
             return new Int4(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
         }
-        
+
         /// <summary>
         /// Reads the Quaternion from the binary stream.
         /// </summary>
@@ -402,7 +398,7 @@ namespace FlaxEngine
             stream.Write(value.X);
             stream.Write(value.Y);
         }
-        
+
         /// <summary>
         /// Writes the Int3 to the binary stream.
         /// </summary>

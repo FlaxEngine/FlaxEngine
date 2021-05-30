@@ -12,6 +12,15 @@ namespace UtilsInternal
     {
         Platform::MemoryCopy(destination, source, length);
     }
+
+    MonoObject* ExtractArrayFromList(MonoObject* obj)
+    {
+        auto klass = mono_object_get_class(obj);
+        auto field = mono_class_get_field_from_name(klass, "_items");
+        MonoObject* o;
+        mono_field_get_value(obj, field, &o);
+        return o;
+    }
 }
 
 namespace DebugLogHandlerInternal
@@ -70,6 +79,7 @@ void registerFlaxEngineInternalCalls()
 {
     AnimGraphExecutor::initRuntime();
     ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCopy", &UtilsInternal::MemoryCopy);
+    ADD_INTERNAL_CALL("FlaxEngine.Utils::Internal_ExtractArrayFromList", &UtilsInternal::ExtractArrayFromList);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogWrite", &DebugLogHandlerInternal::LogWrite);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_Log", &DebugLogHandlerInternal::Log);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogException", &DebugLogHandlerInternal::LogException);
