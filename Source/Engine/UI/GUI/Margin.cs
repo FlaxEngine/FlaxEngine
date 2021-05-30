@@ -29,21 +29,25 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Holds the margin to the left.
         /// </summary>
+        [EditorOrder(0)]
         public float Left;
 
         /// <summary>
         /// Holds the margin to the right.
         /// </summary>
+        [EditorOrder(1)]
         public float Right;
 
         /// <summary>
         /// Holds the margin to the top.
         /// </summary>
+        [EditorOrder(2)]
         public float Top;
 
         /// <summary>
         /// Holds the margin to the bottom.
         /// </summary>
+        [EditorOrder(3)]
         public float Bottom;
 
         /// <summary>
