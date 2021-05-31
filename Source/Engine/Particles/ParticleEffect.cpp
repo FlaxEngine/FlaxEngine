@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEffect.h"
-#include "ParticleManager.h"
+#include "Particles.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -270,7 +270,7 @@ void ParticleEffect::UpdateSimulation()
     // Request update
     _lastUpdateFrame = Engine::FrameCount;
     _lastMinDstSqr = MAX_float;
-    ParticleManager::UpdateEffect(this);
+    Particles::UpdateEffect(this);
 }
 
 void ParticleEffect::UpdateBounds()
@@ -493,7 +493,7 @@ bool ParticleEffect::HasContentLoaded() const
 void ParticleEffect::Draw(RenderContext& renderContext)
 {
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
-    ParticleManager::DrawParticles(renderContext, this);
+    Particles::DrawParticles(renderContext, this);
 }
 
 void ParticleEffect::DrawGeneric(RenderContext& renderContext)
@@ -679,7 +679,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
 void ParticleEffect::EndPlay()
 {
     CacheModifiedParameters();
-    ParticleManager::OnEffectDestroy(this);
+    Particles::OnEffectDestroy(this);
     Instance.ClearState();
     _parameters.Clear();
     _parametersVersion = 0;

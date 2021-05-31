@@ -1,9 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticlesSimulation.h"
-#include "ParticleManager.h"
 #include "ParticleSystem.h"
 #include "ParticleEmitter.h"
+#include "Particles.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUDevice.h"
 
@@ -15,7 +15,7 @@ ParticleEmitterInstance::~ParticleEmitterInstance()
 {
     if (Buffer)
     {
-        ParticleManager::RecycleParticleBuffer(Buffer);
+        Particles::RecycleParticleBuffer(Buffer);
     }
 }
 
@@ -30,7 +30,7 @@ void ParticleEmitterInstance::ClearState()
 #endif
     if (Buffer)
     {
-        ParticleManager::RecycleParticleBuffer(Buffer);
+        Particles::RecycleParticleBuffer(Buffer);
         Buffer = nullptr;
     }
 }
@@ -72,7 +72,7 @@ void ParticleEmitterInstance::Sync(ParticleSystemInstance& systemInstance, Parti
     // Sync buffer version
     if (Buffer && Buffer->Version != Version)
     {
-        ParticleManager::RecycleParticleBuffer(Buffer);
+        Particles::RecycleParticleBuffer(Buffer);
         Buffer = nullptr;
     }
 }

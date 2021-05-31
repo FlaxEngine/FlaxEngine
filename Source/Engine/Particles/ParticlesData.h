@@ -14,7 +14,7 @@
 #define PARTICLE_EMITTER_MAX_RIBBONS 4
 
 class ParticleEmitter;
-class ParticleManager;
+class Particles;
 class GPUBuffer;
 class DynamicIndexBuffer;
 

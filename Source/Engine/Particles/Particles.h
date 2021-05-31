@@ -15,7 +15,7 @@ class Actor;
 /// <summary>
 /// The particles service used for simulation and emitters data pooling.
 /// </summary>
-class FLAXENGINE_API ParticleManager
+class FLAXENGINE_API Particles
 {
 public:
 

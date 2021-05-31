@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "ParticleManager.h"
+#include "Particles.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Collections/HashSet.h"
@@ -112,8 +112,8 @@ namespace ParticleManagerImpl
 
 using namespace ParticleManagerImpl;
 
-bool ParticleManager::EnableParticleBufferPooling = true;
-float ParticleManager::ParticleBufferRecycleTimeout = 10.0f;
+bool Particles::EnableParticleBufferPooling = true;
+float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
 SpriteParticleRenderer SpriteRenderer;
 
@@ -155,12 +155,12 @@ public:
 
 ParticleManagerService ParticleManagerServiceInstance;
 
-void ParticleManager::UpdateEffect(ParticleEffect* effect)
+void Particles::UpdateEffect(ParticleEffect* effect)
 {
     UpdateList.Add(effect);
 }
 
-void ParticleManager::OnEffectDestroy(ParticleEffect* effect)
+void Particles::OnEffectDestroy(ParticleEffect* effect)
 {
     UpdateList.Remove(effect);
 #if COMPILE_WITH_GPU_PARTICLES
@@ -895,7 +895,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
 #endif
 
-void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect* effect)
+void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effect)
 {
     // Setup
     auto& view = renderContext.View;
@@ -1066,7 +1066,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 
 #endif
 
-ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
+ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 {
     ParticleBuffer* result = nullptr;
     ASSERT(emitter && emitter->IsLoaded());
@@ -1118,7 +1118,7 @@ ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
     return result;
 }
 
-void ParticleManager::RecycleParticleBuffer(ParticleBuffer* buffer)
+void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 {
     if (buffer->Emitter->EnablePooling && EnableParticleBufferPooling)
     {
@@ -1138,7 +1138,7 @@ void ParticleManager::RecycleParticleBuffer(ParticleBuffer* buffer)
     }
 }
 
-void ParticleManager::OnEmitterUnload(ParticleEmitter* emitter)
+void Particles::OnEmitterUnload(ParticleEmitter* emitter)
 {
     PoolLocker.Lock();
     const auto entries = Pool.TryGet(emitter);
@@ -1262,7 +1262,7 @@ void ParticleManagerService::Update()
                 {
                     if (emitterInstance.Buffer)
                     {
-                        ParticleManager::RecycleParticleBuffer(emitterInstance.Buffer);
+                        Particles::RecycleParticleBuffer(emitterInstance.Buffer);
                         emitterInstance.Buffer = nullptr;
                     }
                 }
@@ -1291,7 +1291,7 @@ void ParticleManagerService::Update()
             data.Sync(effect->Instance, particleSystem, track.AsEmitter.Index);
             if (!data.Buffer)
             {
-                data.Buffer = ParticleManager::AcquireParticleBuffer(emitter);
+                data.Buffer = Particles::AcquireParticleBuffer(emitter);
             }
             data.Time += dt;
 
@@ -1355,7 +1355,7 @@ void ParticleManagerService::Update()
         for (int32 j = 0; j < entries.Count(); j++)
         {
             auto& e = entries[j];
-            if (timeSeconds - e.LastTimeUsed >= ParticleManager::ParticleBufferRecycleTimeout)
+            if (timeSeconds - e.LastTimeUsed >= Particles::ParticleBufferRecycleTimeout)
             {
                 Delete(e.Buffer);
                 entries.RemoveAt(j--);
