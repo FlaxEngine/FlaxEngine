@@ -25,7 +25,7 @@ namespace FlaxEngine
                 }
             }
 
-            public unsafe bool NameStartsWith(string prefix)
+            internal unsafe bool NameStartsWith(string prefix)
             {
                 fixed (char* name = &Name0)
                 {
