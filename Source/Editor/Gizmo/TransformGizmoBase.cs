@@ -213,11 +213,19 @@ namespace FlaxEditor.Gizmo
             ray.Position = Vector3.Transform(ray.Position, invRotationMatrix);
             Vector3.TransformNormal(ref ray.Direction, ref invRotationMatrix, out ray.Direction);
 
+            var planeXY = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
+            var planeYZ = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
+            var planeZX = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
+            var dir = Vector3.Normalize(ray.Position - Position);
+            var planeDotXY = Mathf.Abs(Vector3.Dot(planeXY.Normal, dir));
+            var planeDotYZ = Mathf.Abs(Vector3.Dot(planeYZ.Normal, dir));
+            var planeDotZX = Mathf.Abs(Vector3.Dot(planeZX.Normal, dir));
+
             switch (_activeAxis)
             {
             case Axis.X:
             {
-                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
+                var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
@@ -229,7 +237,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.Y:
             {
-                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
+                var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
@@ -241,7 +249,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.Z:
             {
-                var plane = new Plane(Position, Vector3.Normalize(ray.Position - Position));
+                var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
@@ -253,8 +261,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.YZ:
             {
-                var plane = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref planeYZ, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -265,8 +272,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.XY:
             {
-                var plane = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref planeXY, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -277,8 +283,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.ZX:
             {
-                var plane = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref planeZX, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
