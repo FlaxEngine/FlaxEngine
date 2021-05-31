@@ -15,7 +15,7 @@
 API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
 DECLARE_SCENE_OBJECT(AnimatedModel);
-    friend class AnimationManagerService;
+    friend class AnimationsService;
 public:
 
     /// <summary>

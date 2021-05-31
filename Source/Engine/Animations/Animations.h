@@ -7,7 +7,7 @@ class AnimatedModel;
 /// <summary>
 /// The animations service.
 /// </summary>
-class AnimationManager
+class FLAXENGINE_API Animations
 {
 public:
 
