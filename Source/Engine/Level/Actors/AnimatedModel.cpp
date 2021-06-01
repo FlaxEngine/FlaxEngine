@@ -439,8 +439,7 @@ void AnimatedModel::UpdateLocalBounds()
     }
 
     // Scale bounds
-    box.Minimum *= BoundsScale;
-    box.Maximum *= BoundsScale;
+    box = box.MakeScaled(box, BoundsScale);
 
     _boxLocal = box;
 }
@@ -502,7 +501,6 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
 
-    UpdateBounds();
     GraphInstance.Invalidate();
     if (_blendShapes.Weights.HasItems())
         _blendShapes.WeightsDirty = true;

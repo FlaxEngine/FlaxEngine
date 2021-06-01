@@ -42,9 +42,7 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="SkinnedMeshDrawData"/> class.
     /// </summary>
-    SkinnedMeshDrawData()
-    {
-    }
+    SkinnedMeshDrawData();
 
     /// <summary>
     /// Finalizes an instance of the <see cref="SkinnedMeshDrawData"/> class.
