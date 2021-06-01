@@ -85,6 +85,11 @@ namespace FlaxEditor.Viewport.Previews
                     view.Flags |= ViewFlags.DebugDraw;
                     Task.View = view;
                 }
+                if (value)
+                {
+                    // Need to show editor primitives to show debug shapes
+                    ShowEditorPrimitives = true;
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEditor.GUI.Input;
 using Object = FlaxEngine.Object;
@@ -12,8 +13,9 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
+        private ContextMenuButton _showBoundsButton;
         private AnimatedModel _previewModel;
-        private bool _showNodes;
+        private bool _showNodes, _showBounds;
 
         /// <summary>
         /// Gets or sets the skinned model asset to preview.
@@ -44,10 +46,23 @@ namespace FlaxEditor.Viewport.Previews
             {
                 _showNodes = value;
                 if (value)
-                {
                     ShowDebugDraw = true;
-                    ShowEditorPrimitives = true;
-                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show animated model bounding box debug view.
+        /// </summary>
+        public bool ShowBounds
+        {
+            get => _showBounds;
+            set
+            {
+                _showBounds = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showBoundsButton != null)
+                    _showBoundsButton.Checked = value;
             }
         }
 
@@ -84,6 +99,9 @@ namespace FlaxEditor.Viewport.Previews
 
             if (useWidgets)
             {
+                // Show Bounds
+                _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+
                 // Preview LOD
                 {
                     var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
@@ -159,6 +177,12 @@ namespace FlaxEditor.Viewport.Previews
                         }
                     }
                 }
+            }
+
+            // Draw bounds
+            if (_showBounds)
+            {
+                DebugDraw.DrawWireBox(_previewModel.Box, Color.Violet.RGBMultiplied(0.8f), 0, false);
             }
         }
 

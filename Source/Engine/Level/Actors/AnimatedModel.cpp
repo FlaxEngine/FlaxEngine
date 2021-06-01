@@ -617,7 +617,7 @@ void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 
 void AnimatedModel::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.8f, 0, true);
+    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();
