@@ -104,7 +104,7 @@ void AudioSource::Play()
         return;
     if (Clip == nullptr)
     {
-        LOG(Warning, "Cannot play audio source without a clip ({0})", GetName());
+        LOG(Warning, "Cannot play audio source without a clip ({0})", GetNamePath());
         return;
     }
 
@@ -133,7 +133,7 @@ void AudioSource::Pause()
 {
     if (_state != States::Playing)
     {
-        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetName());
+        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetNamePath());
         return;
     }
 
