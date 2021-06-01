@@ -24,7 +24,7 @@ namespace FlaxEditor.Viewport
     /// <seealso cref="PrefabWindow" />
     /// <seealso cref="PrefabPreview" />
     /// <seealso cref="IGizmoOwner" />
-    public class PrefabWindowViewport : PrefabPreview, IEditorPrimitivesOwner
+    public class PrefabWindowViewport : PrefabPreview, IGizmoOwner
     {
         [HideInEditor]
         private sealed class PrefabSpritesRenderer : MainEditorGizmoViewport.EditorSpritesRenderer
@@ -51,7 +51,6 @@ namespace FlaxEditor.Viewport
         private ViewportWidgetButton _scaleSnapping;
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
-        private IntPtr _debugDrawContext;
         private PrefabSpritesRenderer _spritesRenderer;
         private readonly DragAssets _dragAssets;
         private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
@@ -68,16 +67,6 @@ namespace FlaxEditor.Viewport
         public SelectionOutline SelectionOutline;
 
         /// <summary>
-        /// The editor primitives postFx.
-        /// </summary>
-        public EditorPrimitives EditorPrimitives;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether draw <see cref="DebugDraw"/> shapes.
-        /// </summary>
-        public bool DrawDebugDraw = true;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="PrefabWindowViewport"/> class.
         /// </summary>
         /// <param name="window">Editor window.</param>
@@ -88,8 +77,9 @@ namespace FlaxEditor.Viewport
             _window.SelectionChanged += OnSelectionChanged;
             Undo = window.Undo;
             ViewportCamera = new FPSCamera();
-            _debugDrawContext = DebugDraw.AllocateContext();
             _dragAssets = new DragAssets(ValidateDragItem);
+            ShowDebugDraw = true;
+            ShowEditorPrimitives = true;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -102,9 +92,6 @@ namespace FlaxEditor.Viewport
             SelectionOutline = FlaxEngine.Object.New<SelectionOutline>();
             SelectionOutline.SelectionGetter = () => TransformGizmo.SelectedParents;
             Task.CustomPostFx.Add(SelectionOutline);
-            EditorPrimitives = FlaxEngine.Object.New<EditorPrimitives>();
-            EditorPrimitives.Viewport = this;
-            Task.CustomPostFx.Add(EditorPrimitives);
             _spritesRenderer = FlaxEngine.Object.New<PrefabSpritesRenderer>();
             _spritesRenderer.Task = Task;
             _spritesRenderer.Viewport = this;
@@ -281,13 +268,6 @@ namespace FlaxEditor.Viewport
             if (renderContext.View.Mode != ViewMode.Default)
             {
                 var task = renderContext.Task;
-
-                // Render editor primitives, gizmo and debug shapes in debug view modes
-                // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers
-                if (EditorPrimitives && EditorPrimitives.CanRender)
-                {
-                    EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
-                }
 
                 // Render editor sprites
                 if (_spritesRenderer && _spritesRenderer.CanRender)
@@ -791,7 +771,7 @@ namespace FlaxEditor.Viewport
             var orientation = ViewOrientation;
             FocusSelection(ref orientation);
         }
-        
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
@@ -876,35 +856,35 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            if (_debugDrawContext != IntPtr.Zero)
-            {
-                DebugDraw.FreeContext(_debugDrawContext);
-                _debugDrawContext = IntPtr.Zero;
-            }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
-            FlaxEngine.Object.Destroy(ref EditorPrimitives);
             FlaxEngine.Object.Destroy(ref _spritesRenderer);
 
             base.OnDestroy();
         }
 
         /// <inheritdoc />
-        public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
+        public override void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
-            // Draw selected objects debug shapes and visuals
-            if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
+            base.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
+
+            // Draw gizmos
+            for (int i = 0; i < Gizmos.Count; i++)
             {
-                DebugDraw.SetContext(_debugDrawContext);
-                DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Engine.FramesPerSecond);
-                unsafe
+                Gizmos[i].Draw(ref renderContext);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+        {
+            base.OnDebugDraw(context, ref renderContext);
+
+            unsafe
+            {
+                fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
                 {
-                    fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
-                    {
-                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
-                    }
+                    DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
                 }
-                DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
-                DebugDraw.SetContext(IntPtr.Zero);
             }
         }
     }

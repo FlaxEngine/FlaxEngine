@@ -22,7 +22,7 @@ namespace FlaxEditor.Viewport
     /// Main editor gizmo viewport used by the <see cref="EditGameWindow"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.EditorGizmoViewport" />
-    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner
+    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner, IGizmoOwner
     {
         private readonly Editor _editor;
 
@@ -463,6 +463,12 @@ namespace FlaxEditor.Viewport
 
                 DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
             }
+
+            // Draw gizmos
+            for (int i = 0; i < Gizmos.Count; i++)
+            {
+                Gizmos[i].Draw(ref renderContext);
+            }
         }
 
         private void OnPostRender(GPUContext context, RenderContext renderContext)
@@ -660,7 +666,7 @@ namespace FlaxEditor.Viewport
             var orientation = ViewOrientation;
             FocusSelection(ref orientation);
         }
-        
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
