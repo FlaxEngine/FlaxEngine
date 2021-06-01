@@ -184,8 +184,11 @@ void SpotLight::Draw(RenderContext& renderContext)
 
 void SpotLight::OnDebugDraw()
 {
-    // Draw source tube
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), SourceRadius), Color::Orange, 0, true);
+    if (SourceRadius > ZeroTolerance)
+    {
+        // Draw source tube
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), SourceRadius), Color::Orange, 0, true);
+    }
 
     // Base
     LightWithShadow::OnDebugDraw();

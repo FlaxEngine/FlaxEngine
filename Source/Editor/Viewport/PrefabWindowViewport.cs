@@ -865,13 +865,13 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
-            base.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
-
             // Draw gizmos
             for (int i = 0; i < Gizmos.Count; i++)
             {
                 Gizmos[i].Draw(ref renderContext);
             }
+
+            base.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
         }
 
         /// <inheritdoc />
