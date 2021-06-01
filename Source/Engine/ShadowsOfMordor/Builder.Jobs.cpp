@@ -70,7 +70,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 {
                     uint32 rowPitch, slicePitch;
                     texture->ComputePitch(mipIndex, rowPitch, slicePitch);
-                    context->UpdateTexture(textures[textureIndex], 0, 0, cleaner, rowPitch, slicePitch);
+                    context->UpdateTexture(textures[textureIndex], 0, mipIndex, cleaner, rowPitch, slicePitch);
                 }
             }
         }
