@@ -1,9 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitter.h"
-#include "ParticleManager.h"
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
+#include "Particles.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Core/Log.h"
@@ -287,7 +287,7 @@ void ParticleEmitter::unload(bool isReloading)
     UnregisterForShaderReloads(this);
 #endif
 
-    ParticleManager::OnEmitterUnload(this);
+    Particles::OnEmitterUnload(this);
 
     Graph.Clear();
 #if COMPILE_WITH_GPU_PARTICLES

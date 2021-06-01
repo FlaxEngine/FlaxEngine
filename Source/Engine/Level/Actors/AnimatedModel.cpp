@@ -2,7 +2,7 @@
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
-#include "Engine/Animations/AnimationManager.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -52,7 +52,7 @@ void AnimatedModel::UpdateAnimation()
     if (AnimationGraph && AnimationGraph->IsLoaded() && AnimationGraph->Graph.IsReady())
     {
         // Request an animation update
-        AnimationManager::AddToUpdate(this);
+        Animations::AddToUpdate(this);
     }
     else
     {
@@ -389,7 +389,7 @@ void AnimatedModel::BeginPlay(SceneBeginData* data)
 
 void AnimatedModel::EndPlay()
 {
-    AnimationManager::RemoveFromUpdate(this);
+    Animations::RemoveFromUpdate(this);
     SetMasterPoseModel(nullptr);
 
     // Base

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "AnimationManager.h"
+#include "Animations.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Engine/Time.h"
@@ -9,12 +9,12 @@
 Array<AnimatedModel*> UpdateList;
 Array<Matrix> UpdateBones;
 
-class AnimationManagerService : public EngineService
+class AnimationsService : public EngineService
 {
 public:
 
-    AnimationManagerService()
-        : EngineService(TEXT("Animation Manager"), -10)
+    AnimationsService()
+        : EngineService(TEXT("Animations"), -10)
     {
     }
 
@@ -22,9 +22,9 @@ public:
     void Dispose() override;
 };
 
-AnimationManagerService AnimationManagerInstance;
+AnimationsService AnimationManagerInstance;
 
-void AnimationManagerService::Update()
+void AnimationsService::Update()
 {
     PROFILE_CPU_NAMED("Animations");
 
@@ -78,18 +78,18 @@ void AnimationManagerService::Update()
     UpdateList.Clear();
 }
 
-void AnimationManagerService::Dispose()
+void AnimationsService::Dispose()
 {
     UpdateList.Resize(0);
     UpdateBones.Resize(0);
 }
 
-void AnimationManager::AddToUpdate(AnimatedModel* obj)
+void Animations::AddToUpdate(AnimatedModel* obj)
 {
     UpdateList.Add(obj);
 }
 
-void AnimationManager::RemoveFromUpdate(AnimatedModel* obj)
+void Animations::RemoveFromUpdate(AnimatedModel* obj)
 {
     UpdateList.Remove(obj);
 }
