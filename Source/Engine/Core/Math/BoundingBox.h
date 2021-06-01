@@ -254,12 +254,7 @@ public:
     /// <param name="points">The points that will be contained by the box.</param>
     /// <param name="pointsCount">The amount of points to use.</param>
     /// <returns>The constructed bounding box.</returns>
-    static BoundingBox FromPoints(const Vector3* points, int32 pointsCount)
-    {
-        BoundingBox result;
-        FromPoints(points, pointsCount, result);
-        return result;
-    }
+    static BoundingBox FromPoints(const Vector3* points, int32 pointsCount);
 
     /// <summary>
     /// Constructs a Bounding Box from a given sphere.
@@ -273,12 +268,7 @@ public:
     /// </summary>
     /// <param name="sphere">The sphere that will designate the extents of the box.</param>
     /// <returns>The constructed bounding box.</returns>
-    static BoundingBox FromSphere(const BoundingSphere& sphere)
-    {
-        BoundingBox result;
-        FromSphere(sphere, result);
-        return result;
-    }
+    static BoundingBox FromSphere(const BoundingSphere& sphere);
 
     /// <summary>
     /// Constructs a Bounding Box that is as large as the total combined area of the two specified boxes.
@@ -298,26 +288,23 @@ public:
     /// <param name="box">The box.</param>
     /// <param name="matrix">The matrix.</param>
     /// <returns>The result transformed box.</returns>
-    static BoundingBox Transform(const BoundingBox& box, const Matrix& matrix)
-    {
-        BoundingBox result;
-        Transform(box, matrix, result);
-        return result;
-    }
+    static BoundingBox Transform(const BoundingBox& box, const Matrix& matrix);
 
     /// <summary>
     /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
     /// </summary>
     /// <param name="box">The box.</param>
-    /// <param name="offset">The offset.</param>
-    /// <returns>The result.</returns>
-    static BoundingBox MakeOffsetted(const BoundingBox& box, const Vector3& offset)
-    {
-        BoundingBox result;
-        result.Minimum = box.Minimum + offset;
-        result.Maximum = box.Maximum + offset;
-        return result;
-    }
+    /// <param name="offset">The bounds offset.</param>
+    /// <returns>The offsetted bounds.</returns>
+    static BoundingBox MakeOffsetted(const BoundingBox& box, const Vector3& offset);
+
+    /// <summary>
+    /// Creates the bounding box that is scaled by the given factor. Applies scale to the size of the bounds.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="scale">The bounds scale.</param>
+    /// <returns>The scaled bounds.</returns>
+    static BoundingBox MakeScaled(const BoundingBox& box, float scale);
 
     /// <summary>
     /// Transforms the bounding box using the specified matrix.
