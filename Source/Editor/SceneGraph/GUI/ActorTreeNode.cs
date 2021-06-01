@@ -294,21 +294,6 @@ namespace FlaxEditor.SceneGraph.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (IsFocused)
-            {
-                if (key == KeyboardKeys.F2)
-                {
-                    StartRenaming();
-                    return true;
-                }
-            }
-
-            return base.OnKeyDown(key);
-        }
-
-        /// <inheritdoc />
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
             // Check if cannot edit scene or there is no scene loaded (handle case for actors in prefab editor)

@@ -184,6 +184,7 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Paste, Paste);
             InputActions.Add(options => options.Duplicate, Duplicate);
             InputActions.Add(options => options.Delete, Delete);
+            InputActions.Add(options => options.Rename, Rename);
             InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
         }
 
