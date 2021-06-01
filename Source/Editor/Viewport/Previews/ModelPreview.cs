@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
@@ -12,7 +13,9 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class ModelPreview : AssetPreview
     {
+        private ContextMenuButton _showBoundsButton;
         private StaticModel _previewModel;
+        private bool _showBounds;
 
         /// <summary>
         /// Gets or sets the model asset to preview.
@@ -27,6 +30,22 @@ namespace FlaxEditor.Viewport.Previews
         /// Gets the model actor used to preview selected asset.
         /// </summary>
         public StaticModel PreviewActor => _previewModel;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show animated model bounding box debug view.
+        /// </summary>
+        public bool ShowBounds
+        {
+            get => _showBounds;
+            set
+            {
+                _showBounds = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showBoundsButton != null)
+                    _showBoundsButton.Checked = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether scale the model to the normalized bounds.
@@ -50,6 +69,9 @@ namespace FlaxEditor.Viewport.Previews
 
             if (useWidgets)
             {
+                // Show Bounds
+                _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+
                 // Preview LOD
                 {
                     var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
@@ -82,6 +104,18 @@ namespace FlaxEditor.Viewport.Previews
                 float scale = targetSize / maxSize;
                 _previewModel.Scale = new Vector3(scale);
                 _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+        {
+            base.OnDebugDraw(context, ref renderContext);
+
+            // Draw bounds
+            if (_showBounds)
+            {
+                DebugDraw.DrawWireBox(_previewModel.Box, Color.Violet.RGBMultiplied(0.8f), 0, false);
             }
         }
 
