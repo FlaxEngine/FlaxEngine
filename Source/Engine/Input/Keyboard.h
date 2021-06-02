@@ -10,48 +10,20 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API Keyboard : public InputDevice
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Keyboard);
-public:
+protected:
 
-    /// <summary>
-    /// The keyboard state.
-    /// </summary>
     struct State
     {
-        /// <summary>
-        /// The input text length (characters count).
-        /// </summary>
         uint16 InputTextLength;
-
-        /// <summary>
-        /// The input text.
-        /// </summary>
         Char InputText[32];
-
-        /// <summary>
-        /// The keys.
-        /// </summary>
         bool Keys[(int32)KeyboardKeys::MAX];
-
-        /// <summary>
-        /// Clears the state.
-        /// </summary>
-        void Clear()
-        {
-            Platform::MemoryClear(this, sizeof(State));
-        }
+        void Clear();
     };
-
-protected:
 
     State _state;
     State _prevState;
 
-    explicit Keyboard()
-        : InputDevice(SpawnParams(Guid::New(), TypeInitializer), TEXT("Keyboard"))
-    {
-        _state.Clear();
-        _prevState.Clear();
-    }
+    explicit Keyboard();
 
 public:
 
@@ -93,6 +65,11 @@ public:
     {
         return !_state.Keys[static_cast<int32>(key)] && _prevState.Keys[static_cast<int32>(key)];
     }
+
+    /// <summary>
+    /// Checks if any keyboard key is currently pressed.
+    /// </summary>
+    API_PROPERTY() bool IsAnyKeyDown() const;
 
 public:
 
