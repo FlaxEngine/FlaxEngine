@@ -1,9 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
@@ -12,6 +8,10 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -279,6 +279,24 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        /// <summary>
+        /// Rebuilds the parent layout if its collection.
+        /// </summary>
+        public void RebuildParentCollection()
+        {
+            if (ParentEditor is DictionaryEditor dictionaryEditor)
+            {
+                dictionaryEditor.RebuildParentCollection();
+                dictionaryEditor.RebuildLayout();
+                return;
+            }
+            if (ParentEditor is CollectionEditor collectionEditor)
+            {
+                collectionEditor.RebuildParentCollection();
+                collectionEditor.RebuildLayout();
+            }
+        }
+
         private void OnSizeChanged()
         {
             if (IsSetBlocked)
@@ -454,6 +472,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (Count != _elementsCount)
             {
                 RebuildLayout();
+                RebuildParentCollection();
             }
         }
     }

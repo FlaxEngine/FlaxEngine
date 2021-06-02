@@ -229,6 +229,24 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        /// <summary>
+        /// Rebuilds the parent layout if its collection.
+        /// </summary>
+        public void RebuildParentCollection()
+        {
+            if (ParentEditor is DictionaryEditor dictionaryEditor)
+            {
+                dictionaryEditor.RebuildParentCollection();
+                dictionaryEditor.RebuildLayout();
+                return;
+            }
+            if (ParentEditor is CollectionEditor collectionEditor)
+            {
+                collectionEditor.RebuildParentCollection();
+                collectionEditor.RebuildLayout();
+            }
+        }
+
         private void OnSizeChanged()
         {
             if (IsSetBlocked)
@@ -312,6 +330,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (Count != _elementsCount)
             {
                 RebuildLayout();
+                RebuildParentCollection();
             }
         }
     }
