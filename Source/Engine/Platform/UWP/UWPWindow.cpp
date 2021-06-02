@@ -11,8 +11,8 @@
 
 namespace Impl
 {
-    UWPWindow::UWPKeyboard Keyboard;
-    UWPWindow::UWPMouse Mouse;
+    UWPWindow::UWPKeyboard* Keyboard = nullptr;
+    UWPWindow::UWPMouse* Mouse = nullptr;
     UWPWindow* Window = nullptr;
 }
 

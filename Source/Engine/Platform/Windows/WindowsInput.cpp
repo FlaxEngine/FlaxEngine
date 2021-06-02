@@ -105,14 +105,14 @@ namespace WindowsInputImpl
 {
     float XInputLastUpdateTime = 0;
     bool XInputGamepads[XUSER_MAX_COUNT] = { false };
-    WindowsMouse Mouse;
-    WindowsKeyboard Keyboard;
+    WindowsMouse* Mouse = nullptr;
+    WindowsKeyboard* Keyboard = nullptr;
 }
 
 void WindowsInput::Init()
 {
-    Input::Mouse = &WindowsInputImpl::Mouse;
-    Input::Keyboard = &WindowsInputImpl::Keyboard;
+    Input::Mouse = WindowsInputImpl::Mouse = New<WindowsMouse>();
+    Input::Keyboard = WindowsInputImpl::Keyboard = New<WindowsKeyboard>();
 }
 
 void WindowsInput::Update()
@@ -142,9 +142,9 @@ void WindowsInput::Update()
 
 bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
 {
-    if (WindowsInputImpl::Mouse.WndProc(window, msg, wParam, lParam))
+    if (WindowsInputImpl::Mouse->WndProc(window, msg, wParam, lParam))
         return true;
-    if (WindowsInputImpl::Keyboard.WndProc(window, msg, wParam, lParam))
+    if (WindowsInputImpl::Keyboard->WndProc(window, msg, wParam, lParam))
         return true;
     return false;
 }
