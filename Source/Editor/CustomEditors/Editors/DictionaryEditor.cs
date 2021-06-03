@@ -135,6 +135,7 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private IntegerValueElement _size;
+        private Color _background;
         private int _elementsCount;
         private bool _readOnly;
         private bool _notNullItems;
@@ -164,8 +165,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _readOnly = false;
-            _notNullItems = false;
 
             // No support for different collections for now
             if (HasDifferentValues || HasDifferentTypes)
@@ -185,12 +184,20 @@ namespace FlaxEditor.CustomEditors.Editors
             if (attributes != null)
             {
                 var collection = (CollectionAttribute)attributes.FirstOrDefault(x => x is CollectionAttribute);
-                if (collection != null)
+                if (collection is null)
                 {
                     // TODO: handle ReadOnly and NotNullItems by filtering child editors SetValue
 
+
+                    _readOnly = false;
+                    _notNullItems = false;
+                    _background = new Color(1f, 1f, 1f, 0.08f);
+                }
+                else
+                {
                     _readOnly = collection.ReadOnly;
                     _notNullItems = collection.NotNullItems;
+                    _background = collection.BackgroundColor;
                     overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                     spacing = collection.Spacing;
                 }
@@ -213,13 +220,15 @@ namespace FlaxEditor.CustomEditors.Editors
             // Elements
             if (size > 0)
             {
+                var panel = layout.VerticalPanel();
+                panel.Panel.BackgroundColor = _background;
                 var keysEnumerable = ((IDictionary)Values[0]).Keys.OfType<object>();
                 var keys = keysEnumerable as object[] ?? keysEnumerable.ToArray();
                 for (int i = 0; i < size; i++)
                 {
                     if (i != 0 && spacing > 0f)
                     {
-                        if (layout.Children.Count > 0 && layout.Children[layout.Children.Count - 1] is PropertiesListElement propertiesListElement)
+                        if (panel.Children.Count > 0 && panel.Children[panel.Children.Count - 1] is PropertiesListElement propertiesListElement)
                         {
                             if (propertiesListElement.Labels.Count > 0)
                             {
@@ -232,13 +241,13 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                         else
                         {
-                            layout.Space(spacing);
+                            panel.Space(spacing);
                         }
                     }
 
                     var key = keys.ElementAt(i);
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                    layout.Object(new DictionaryItemLabel(this, key), new DictionaryValueContainer(new ScriptType(valueType), key, Values), overrideEditor);
+                    panel.Object(new DictionaryItemLabel(this, key), new DictionaryValueContainer(new ScriptType(valueType), key, Values), overrideEditor);
                 }
             }
             _elementsCount = size;
@@ -407,7 +416,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                     } while (!isUnique);
 
-                    newValues[Convert.ChangeType(uniqueKey, keyType)] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newValues[Convert.ChangeType(uniqueKey, keyType)] = TypeUtils.GetDefaultValue(new ScriptType(valueType), _notNullItems);
                 }
                 else if (keyType.IsEnum)
                 {
@@ -428,7 +437,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                     } while (!isUnique && uniqueKeyIndex < enumValues.Length);
 
-                    newValues[enumValues.GetValue(uniqueKeyIndex)] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newValues[enumValues.GetValue(uniqueKeyIndex)] = TypeUtils.GetDefaultValue(new ScriptType(valueType), _notNullItems);
                 }
                 else if (keyType == typeof(string))
                 {
@@ -448,7 +457,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                     } while (!isUnique);
 
-                    newValues[uniqueKey] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newValues[uniqueKey] = TypeUtils.GetDefaultValue(new ScriptType(valueType), _notNullItems);
                 }
                 else
                 {

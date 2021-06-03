@@ -52,7 +52,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     else
                     {
                         // Initialize new entries with default values
-                        var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType));
+                        var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType), NotNullItems);
                         for (int i = oldSize; i < newSize; i++)
                             newValues.SetValue(defaultValue, i);
                     }
@@ -60,7 +60,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (newSize > 0)
                 {
                     // Initialize new entries with default values
-                    var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType));
+                    var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType), NotNullItems);
                     for (int i = 0; i < newSize; i++)
                         newValues.SetValue(defaultValue, i);
                 }
