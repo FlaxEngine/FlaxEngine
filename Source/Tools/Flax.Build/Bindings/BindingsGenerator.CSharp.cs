@@ -197,6 +197,26 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
                 return "byte[]";
 
+            // Function
+            if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+            {
+                if (typeInfo.GenericArgs.Count == 0)
+                    throw new Exception("Missing function return type.");
+                if (typeInfo.GenericArgs.Count > 1)
+                {
+                    var args = string.Empty;
+                    args += GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[1], caller);
+                    for (int i = 2; i < typeInfo.GenericArgs.Count; i++)
+                        args += ", " + GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[i], caller);
+                    if (typeInfo.GenericArgs[0].Type == "void")
+                        return string.Format("Action<{0}>", args);
+                    return string.Format("Func<{0}, {1}>", args, GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller));
+                }
+                if (typeInfo.GenericArgs[0].Type == "void")
+                    return "Action";
+                return string.Format("Func<{0}>", GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller));
+            }
+
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
@@ -235,6 +255,10 @@ namespace Flax.Build.Bindings
             if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return "IntPtr";
 
+            // Function
+            if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+                return "IntPtr";
+
             return GenerateCSharpNativeToManaged(buildData, typeInfo, caller);
         }
 
@@ -265,6 +289,9 @@ namespace Flax.Build.Bindings
             case "ManagedScriptingObject":
                 // object
                 return "FlaxEngine.Object.GetUnmanagedPtr";
+            case "Function":
+                // delegate
+                return "Marshal.GetFunctionPointerForDelegate";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)

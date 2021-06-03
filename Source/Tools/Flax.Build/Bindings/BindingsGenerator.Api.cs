@@ -210,16 +210,14 @@ namespace Flax.Build.Bindings
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "Dictionary" || typeInfo.Type == "HashSet") && typeInfo.GenericArgs != null)
                 return false;
 
-            // Skip for BytesContainer
+            // Skip for special types
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
                 return false;
-
-            // Skip for Variant
             if (typeInfo.Type == "Variant" && typeInfo.GenericArgs == null)
                 return false;
-
-            // Skip for VariantType
             if (typeInfo.Type == "VariantType" && typeInfo.GenericArgs == null)
+                return false;
+            if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
                 return false;
 
             // Find API type info

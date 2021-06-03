@@ -420,6 +420,13 @@ namespace Flax.Build.Bindings
                     return "ManagedBitArray::ToManaged({0})";
                 }
 
+                // Function
+                if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+                {
+                    // TODO: automatic converting managed-native for Function
+                    throw new NotImplementedException("TODO: converting native Function to managed");
+                }
+
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
                 {
@@ -604,6 +611,21 @@ namespace Flax.Build.Bindings
                     needLocalVariable = true;
                     type = "MonoArray*";
                     return "MUtils::LinkArray({0})";
+                }
+
+                // Function
+                if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+                {
+                    var args = string.Empty;
+                    if (typeInfo.GenericArgs.Count > 1)
+                    {
+                        args += typeInfo.GenericArgs[1].GetFullNameNative(buildData, caller);
+                        for (int i = 2; i < typeInfo.GenericArgs.Count; i++)
+                            args += ", " + typeInfo.GenericArgs[i].GetFullNameNative(buildData, caller);
+                    }
+                    var T = $"Function<{typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller)}({args})>";
+                    type = T + "::Signature";
+                    return T + "({0})";
                 }
 
                 if (apiType != null)
