@@ -1,5 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
@@ -8,10 +12,6 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -186,15 +186,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 var collection = (CollectionAttribute)attributes.FirstOrDefault(x => x is CollectionAttribute);
                 if (collection is null)
                 {
-                    // TODO: handle ReadOnly and NotNullItems by filtering child editors SetValue
-
-
                     _readOnly = false;
                     _notNullItems = false;
-                    _background = new Color(1f, 1f, 1f, 0.08f);
+                    _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
                 }
                 else
                 {
+                    // TODO: handle ReadOnly and NotNullItems by filtering child editors SetValue
                     _readOnly = collection.ReadOnly;
                     _notNullItems = collection.NotNullItems;
                     _background = collection.BackgroundColor;

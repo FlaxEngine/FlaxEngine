@@ -126,7 +126,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 _readOnly = false;
                 NotNullItems = false;
-                _background = new Color(1f, 1f, 1f, 0.08f);
+                _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
             }
             else
             {

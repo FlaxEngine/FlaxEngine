@@ -153,6 +153,11 @@ namespace FlaxEngine.GUI
         public Color TextBoxBackgroundSelected;
 
         /// <summary>
+        /// The collection background color.
+        /// </summary>
+        [EditorOrder(195)]
+        public Color CollectionBackgroundColor;
+        /// <summary>
         /// The progress normal color.
         /// </summary>
         [EditorOrder(200)]
