@@ -995,7 +995,7 @@ namespace Flax.Build
                             if (buildData.Toolchain == null)
                                 buildData.Toolchain = platform.GetToolchain(architecture);
 
-                            if (Configuration.BuildBindingsOnly || project.IsCSharpOnlyProject || reference.Project.IsCSharpOnlyProject || !platform.HasRequiredSDKsInstalled)
+                            if (Configuration.BuildBindingsOnly || reference.Project.IsCSharpOnlyProject || !platform.HasRequiredSDKsInstalled)
                                 BuildTargetReferenceNativeCppBindingsOnly(buildContext, buildData, reference);
                             else
                                 BuildTargetReferenceNativeCpp(buildContext, buildData, reference);
