@@ -471,7 +471,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _atlases = new List<Atlas>(4);
             if (_output == null)
             {
-                _output = GPUDevice.Instance.CreateTexture();
+                _output = GPUDevice.Instance.CreateTexture("CameraCutMedia.Output");
                 var desc = GPUTextureDescription.New2D(Width, Height, PixelFormat.R8G8B8A8_UNorm);
                 _output.Init(ref desc);
             }

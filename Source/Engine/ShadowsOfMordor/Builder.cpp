@@ -432,7 +432,7 @@ bool ShadowsOfMordor::Builder::initResources()
     // TODO: remove this release and just create missing resources
     releaseResources();
 
-    _output = GPUTexture::New();
+    _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
     if (_output->Init(GPUTextureDescription::New2D(HEMISPHERES_RESOLUTION, HEMISPHERES_RESOLUTION, PixelFormat::R11G11B10_Float)))
         return true;
     _task = New<BuilderRenderTask>();

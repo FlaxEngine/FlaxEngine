@@ -276,7 +276,7 @@ bool ProbesRenderer::Init()
     }
 
     // Init rendering pipeline
-    _output = GPUTexture::New();
+    _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
     if (_output->Init(GPUTextureDescription::New2D(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION, ENV_PROBES_FORMAT)))
         return true;
     _task = New<SceneRenderTask>();
