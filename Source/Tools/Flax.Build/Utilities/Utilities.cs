@@ -326,7 +326,7 @@ namespace Flax.Build
                 }
             }
 
-            var startTime = DateTime.UtcNow;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand))
             {
                 Log.Verbose("Running: " + app + " " + (string.IsNullOrEmpty(commandLine) ? "" : commandLine));
@@ -397,11 +397,11 @@ namespace Flax.Build
 
             if (!options.HasFlag(RunOptions.NoWaitForExit))
             {
-                var buildDuration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                stopwatch.Stop();
                 result = proc.ExitCode;
                 if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand) || options.HasFlag(RunOptions.NoLoggingOfRunDuration))
                 {
-                    Log.Info(string.Format("Took {0}s to run {1}, ExitCode={2}", buildDuration / 1000, Path.GetFileName(app), result));
+                    Log.Info(string.Format("Took {0}s to run {1}, ExitCode={2}", stopwatch.Elapsed.TotalSeconds, Path.GetFileName(app), result));
                 }
             }
 
