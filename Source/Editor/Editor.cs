@@ -334,7 +334,7 @@ namespace FlaxEditor
             }
 
             // Load scene
-            
+
             // scene cmd line argument
             var scene = ContentDatabase.Find(_startupSceneCmdLine);
             if (scene is SceneItem)
@@ -1334,7 +1334,7 @@ namespace FlaxEditor
         {
             Instance.StateMachine.StateChanged += RequestStartPlayOnEditMode;
         }
-        
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int Internal_ReadOutputLogs(string[] outMessages, byte[] outLogTypes, long[] outLogTimes);
 
