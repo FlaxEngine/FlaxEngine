@@ -6,6 +6,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
 #include "Audio.h"
 
@@ -340,6 +341,8 @@ bool AudioSource::IntersectsItself(const Ray& ray, float& distance, Vector3& nor
 
 void AudioSource::Update()
 {
+    PROFILE_CPU();
+
     // Update the velocity
     const Vector3 pos = GetPosition();
     const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), ZeroTolerance);
