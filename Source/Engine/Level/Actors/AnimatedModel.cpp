@@ -2,6 +2,7 @@
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
@@ -12,8 +13,6 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
-
-extern Array<Matrix> UpdateBones;
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
@@ -470,14 +469,17 @@ void AnimatedModel::OnAnimationUpdated()
     // Calculate the final bones transformations and update skinning
     {
         ANIM_GRAPH_PROFILE_EVENT("Final Pose");
-        UpdateBones.Resize(skeleton.Bones.Count(), false);
-        for (int32 boneIndex = 0; boneIndex < skeleton.Bones.Count(); boneIndex++)
+        const int32 bonesCount = skeleton.Bones.Count();
+        Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
+        ASSERT(_skinningData.Data.Count() == bonesCount * sizeof(Matrix3x4));
+        for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
         {
             auto& bone = skeleton.Bones[boneIndex];
-            UpdateBones[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+            Matrix matrix = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+            output[boneIndex].SetMatrixTranspose(matrix);
         }
+        _skinningData.OnDataChanged(!PerBoneMotionBlur);
     }
-    _skinningData.SetData(UpdateBones.Get(), !PerBoneMotionBlur);
 
     UpdateBounds();
     UpdateSockets();

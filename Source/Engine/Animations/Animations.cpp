@@ -7,7 +7,6 @@
 #include "Engine/Engine/EngineService.h"
 
 Array<AnimatedModel*> UpdateList;
-Array<Matrix> UpdateBones;
 
 class AnimationsService : public EngineService
 {
@@ -81,7 +80,6 @@ void AnimationsService::Update()
 void AnimationsService::Dispose()
 {
     UpdateList.Resize(0);
-    UpdateBones.Resize(0);
 }
 
 void Animations::AddToUpdate(AnimatedModel* obj)
