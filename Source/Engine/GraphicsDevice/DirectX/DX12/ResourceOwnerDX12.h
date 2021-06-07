@@ -15,7 +15,7 @@ class GPUAsyncContextDX12;
 /// <summary>
 /// Default amount of frames to wait until resource delete.
 /// </summary>
-#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 10
+#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 100
 
 /// <summary>
 /// Custom resource state used to indicate invalid state (useful for debugging resource tracking issues).
