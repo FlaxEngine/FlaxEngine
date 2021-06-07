@@ -135,7 +135,7 @@ bool ShadowsOfMordor::Builder::doWorkInner(DateTime buildStart)
             }
         }
         reportProgress(BuildProgressStep::RenderHemispheres, 1.0f);
-        return true;
+        return false;
     }
 #endif
 
