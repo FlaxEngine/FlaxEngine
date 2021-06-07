@@ -3,6 +3,7 @@
 #if GRAPHICS_API_DIRECTX12
 
 #include "GPUPipelineStateDX12.h"
+#include "GPUShaderProgramDX12.h"
 #include "GPUTextureDX12.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
@@ -63,6 +64,44 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
         return nullptr;
+#if GPU_ENABLE_RESOURCE_NAMING
+    char name[200];
+    int32 nameLen = 0;
+    if (DebugDesc.VS)
+    {
+        Platform::MemoryCopy(name + nameLen, *DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
+        nameLen += DebugDesc.VS->GetName().Length();
+        name[nameLen++] = '+';
+    }
+    if (DebugDesc.HS)
+    {
+        Platform::MemoryCopy(name + nameLen, *DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
+        nameLen += DebugDesc.HS->GetName().Length();
+        name[nameLen++] = '+';
+    }
+    if (DebugDesc.DS)
+    {
+        Platform::MemoryCopy(name + nameLen, *DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
+        nameLen += DebugDesc.DS->GetName().Length();
+        name[nameLen++] = '+';
+    }
+    if (DebugDesc.GS)
+    {
+        Platform::MemoryCopy(name + nameLen, *DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
+        nameLen += DebugDesc.GS->GetName().Length();
+        name[nameLen++] = '+';
+    }
+    if (DebugDesc.PS)
+    {
+        Platform::MemoryCopy(name + nameLen, *DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
+        nameLen += DebugDesc.PS->GetName().Length();
+        name[nameLen++] = '+';
+    }
+    if (nameLen && name[nameLen - 1] == '+')
+        nameLen--;
+    name[nameLen] = '\0';
+    SetDebugObjectName(state, name);
+#endif
 
     // Cache it
     _states.Add(key, state);
@@ -89,16 +128,23 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     psDesc.pRootSignature = _device->GetRootSignature();
 
     // Shaders
+    Platform::MemoryClear(&Header, sizeof(Header));
     psDesc.InputLayout = { static_cast<D3D12_INPUT_ELEMENT_DESC*>(desc.VS->GetInputLayout()), desc.VS->GetInputLayoutSize() };
-    psDesc.VS = { desc.VS->GetBufferHandle(), desc.VS->GetBufferSize() };
-    if (desc.HS)
-        psDesc.HS = { desc.HS->GetBufferHandle(), desc.HS->GetBufferSize() };
-    if (desc.DS)
-        psDesc.DS = { desc.DS->GetBufferHandle(), desc.DS->GetBufferSize() };
-    if (desc.GS)
-        psDesc.GS = { desc.GS->GetBufferHandle(), desc.GS->GetBufferSize() };
-    if (desc.PS)
-        psDesc.PS = { desc.PS->GetBufferHandle(), desc.PS->GetBufferSize() };
+#define INIT_SHADER_STAGE(stage, type) \
+    if (desc.stage) \
+    { \
+        psDesc.stage = { desc.stage->GetBufferHandle(), desc.stage->GetBufferSize() }; \
+        auto shader = (type*)desc.stage; \
+        auto srCount = Math::FloorLog2(shader->GetBindings().UsedSRsMask) + 1; \
+        for (uint32 i = 0; i < srCount; i++) \
+            if (shader->Header.SrDimensions[i]) \
+                Header.SrDimensions[i] = shader->Header.SrDimensions[i]; \
+    }
+    INIT_SHADER_STAGE(HS, GPUShaderProgramHSDX12);
+    INIT_SHADER_STAGE(DS, GPUShaderProgramDSDX12);
+    INIT_SHADER_STAGE(GS, GPUShaderProgramGSDX12);
+    INIT_SHADER_STAGE(VS, GPUShaderProgramVSDX12);
+    INIT_SHADER_STAGE(PS, GPUShaderProgramPSDX12);
     const static D3D12_PRIMITIVE_TOPOLOGY_TYPE primTypes1[] =
     {
         D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,

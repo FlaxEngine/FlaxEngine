@@ -80,7 +80,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         _constantBuffers.Add({ meta->CB[i].Slot, false, 0 });
 
     // [Output] Version number
-    output->WriteInt32(7);
+    output->WriteInt32(8);
 
     // [Output] Additional data start
     const int32 additionalDataStartPos = output->GetPosition();
