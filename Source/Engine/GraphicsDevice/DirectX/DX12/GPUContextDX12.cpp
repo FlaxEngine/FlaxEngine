@@ -136,26 +136,36 @@ void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D
 
 void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURCE_STATES after, int32 subresourceIndex)
 {
-    // Check if resource is missing
     auto nativeResource = resource->GetResource();
     if (nativeResource == nullptr)
         return;
-
     auto& state = resource->State;
-    if (subresourceIndex == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES && !state.AreAllSubresourcesSame())
+    if (subresourceIndex == -1)
     {
-        // Slow path because we have to transition the entire resource with multiple subresources that aren't in the same state
-        const uint32 subresourceCount = resource->GetSubresourcesCount();
-        for (uint32 i = 0; i < subresourceCount; i++)
+        if (state.AreAllSubresourcesSame())
         {
-            const D3D12_RESOURCE_STATES before = state.GetSubresourceState(i);
-            if (before != after)
+            // Transition entire resource at once
+            const D3D12_RESOURCE_STATES before = state.GetSubresourceState(subresourceIndex);
+            if (ResourceStateDX12::IsTransitionNeeded(before, after))
             {
-                AddTransitionBarrier(resource, before, after, i);
-                state.SetSubresourceState(i, after);
+                AddTransitionBarrier(resource, before, after, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+                state.SetSubresourceState(subresourceIndex, after);
             }
         }
-        ASSERT(state.CheckResourceState(after));
+        else
+        {
+            // Slow path to transition each subresource
+            for (int32 i = 0; i < state.GetSubresourcesCount(); i++)
+            {
+                const D3D12_RESOURCE_STATES before = state.GetSubresourceState(i);
+                if (ResourceStateDX12::IsTransitionNeeded(before, after))
+                {
+                    AddTransitionBarrier(resource, before, after, i);
+                    state.SetSubresourceState(i, after);
+                }
+            }
+            ASSERT(state.CheckResourceState(after));
+        }
         state.SetResourceState(after);
     }
     else
@@ -163,6 +173,7 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
         const D3D12_RESOURCE_STATES before = state.GetSubresourceState(subresourceIndex);
         if (ResourceStateDX12::IsTransitionNeeded(before, after))
         {
+            // Transition a single subresource
             AddTransitionBarrier(resource, before, after, subresourceIndex);
             state.SetSubresourceState(subresourceIndex, after);
         }
@@ -282,23 +293,25 @@ void GPUContextDX12::flushSRVs()
     ASSERT(srCount <= GPU_MAX_SR_BINDED);
 
     // Fill table with source descriptors
+    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
     D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_SR_BINDED];
     for (uint32 i = 0; i < srCount; i++)
     {
         const auto handle = _srHandles[i];
-        if (handle != nullptr)
+        const auto dimensions = (D3D12_SRV_DIMENSION)header.SrDimensions[i];
+        if (handle != nullptr && dimensions)
         {
+            ASSERT(handle->SrvDimension == dimensions);
             srcDescriptorRangeStarts[i] = handle->SRV();
-
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            // TODO: for setup states based on binding mode
+            D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             if (handle->IsDepthStencilResource())
-                state |= D3D12_RESOURCE_STATE_DEPTH_READ;
-
-            SetResourceState(handle->GetResourceOwner(), state, handle->SubresourceIndex);
+                states |= D3D12_RESOURCE_STATE_DEPTH_READ;
+            SetResourceState(handle->GetResourceOwner(), states, handle->SubresourceIndex);
         }
         else
         {
-            srcDescriptorRangeStarts[i] = _device->NullSRV();
+            srcDescriptorRangeStarts[i] = _device->NullSRV(dimensions);
         }
     }
 
@@ -306,10 +319,7 @@ void GPUContextDX12::flushSRVs()
     auto allocation = _device->RingHeap_CBV_SRV_UAV.AllocateTable(srCount);
 
     // Copy descriptors
-    _device->GetDevice()->CopyDescriptors(
-        1, &allocation.CPU, &srCount,
-        srCount, srcDescriptorRangeStarts, nullptr,
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    _device->GetDevice()->CopyDescriptors(1, &allocation.CPU, &srCount, srCount, srcDescriptorRangeStarts, nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // Flush SRV descriptors table
     if (_isCompute)
@@ -400,10 +410,7 @@ void GPUContextDX12::flushUAVs()
     auto allocation = _device->RingHeap_CBV_SRV_UAV.AllocateTable(uaCount);
 
     // Copy descriptors
-    _device->GetDevice()->CopyDescriptors(
-        1, &allocation.CPU, &uaCount,
-        uaCount, srcDescriptorRangeStarts, nullptr,
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    _device->GetDevice()->CopyDescriptors(1, &allocation.CPU, &uaCount, uaCount, srcDescriptorRangeStarts, nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // Flush UAV descriptors table
     if (_isCompute)
@@ -444,8 +451,8 @@ void GPUContextDX12::flushRBs()
     if (_rbBufferSize > 0)
     {
 #if DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING
-		const auto info = String::Format(TEXT("[DX12 Resource Barrier]: Flush {0} barriers"), _rbBufferSize);
-		Log::Logger::Write(LogType::Info, info);
+        const auto info = String::Format(TEXT("[DX12 Resource Barrier]: Flush {0} barriers"), _rbBufferSize);
+        Log::Logger::Write(LogType::Info, info);
 #endif
 
         // Flush resource barriers
@@ -490,6 +497,32 @@ void GPUContextDX12::onDrawCall()
         SetResourceState(_ibHandle, D3D12_RESOURCE_STATE_INDEX_BUFFER);
     }
 
+    // If SRV resource is not binded to RTV then transition it to the whole state (GPU-BASED VALIDATION complains about it)
+    for (uint32 i = 0; i < GPU_MAX_SR_BINDED; i++)
+    {
+        const auto handle = _srHandles[i];
+        if (handle != nullptr && handle->GetResourceOwner())
+        {
+            const auto resourceOwner = handle->GetResourceOwner();
+            bool isRtv = false;
+            for (int32 j = 0; j < _rtCount; j++)
+            {
+                if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == resourceOwner)
+                {
+                    isRtv = true;
+                    break;
+                }
+            }
+            if (!isRtv)
+            {
+                D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                if (handle->IsDepthStencilResource())
+                    states |= D3D12_RESOURCE_STATE_DEPTH_READ;
+                SetResourceState(handle->GetResourceOwner(), states);
+            }
+        }
+    }
+
     // Flush
     flushSRVs();
     flushRTVs();
@@ -497,6 +530,43 @@ void GPUContextDX12::onDrawCall()
     flushRBs();
     flushPS();
     flushCBs();
+
+#if BUILD_DEBUG
+    // Additional verification of the state
+    for (int32 i = 0; i < _rtCount; i++)
+    {
+        const auto handle = _rtHandles[i];
+        if (handle != nullptr && handle->GetResourceOwner())
+        {
+            const auto& state = handle->GetResourceOwner()->State;
+            ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_RENDER_TARGET) != 0);
+        }
+    }
+    const uint32 srMask = _currentState->GetUsedSRsMask();
+    const uint32 srCount = Math::FloorLog2(srMask) + 1;
+    for (uint32 i = 0; i < srCount; i++)
+    {
+        const auto handle = _srHandles[i];
+        if (handle != nullptr && handle->GetResourceOwner())
+        {
+            const auto& state = handle->GetResourceOwner()->State;
+            bool isRtv = false;
+            for (int32 j = 0; j < _rtCount; j++)
+            {
+                if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == handle->GetResourceOwner())
+                {
+                    isRtv = true;
+                    break;
+                }
+            }
+            ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) != 0);
+            if (!isRtv)
+            {
+                ASSERT(state.AreAllSubresourcesSame());
+            }
+        }
+    }
+#endif
 }
 
 void GPUContextDX12::FrameBegin()
@@ -722,10 +792,8 @@ void GPUContextDX12::BindCB(int32 slot, GPUConstantBuffer* cb)
 void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
-
     auto handle = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-
-    if (_srHandles[slot] != handle)
+    if (_srHandles[slot] != handle || !handle)
     {
         _srMaskDirtyGraphics |= 1 << slot;
         _srMaskDirtyCompute |= 1 << slot;
@@ -736,10 +804,8 @@ void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
-
     auto handle = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-
-    if (_uaHandles[slot] != handle)
+    if (_uaHandles[slot] != handle || !handle)
     {
         _uaMaskDirtyGraphics |= 1 << slot;
         _uaMaskDirtyCompute |= 1 << slot;

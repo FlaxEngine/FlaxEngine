@@ -58,7 +58,7 @@ public:
     /// <param name="format">Parent texture format</param>
     /// <param name="msaa">Parent texture multi-sample level</param>
     /// <param name="subresourceIndex">Used subresource index or -1 to cover whole resource.</param>
-    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = -1)
     {
         GPUTextureView::Init(parent, format, msaa);
         SubresourceIndex = subresourceIndex;
@@ -69,80 +69,14 @@ public:
     /// <summary>
     /// Releases the view.
     /// </summary>
-    void Release()
-    {
-        _rtv.Release();
-        _srv.Release();
-        _dsv.Release();
-        _uav.Release();
-    }
+    void Release();
 
 public:
 
-    /// <summary>
-    /// Sets the render target view.
-    /// </summary>
-    /// <param name="rtvDesc">The RTV desc.</param>
-    void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC* rtvDesc)
-    {
-        if (rtvDesc)
-        {
-            _rtv.CreateRTV(_device, _owner->GetResource(), rtvDesc);
-        }
-        else
-        {
-            _rtv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the shader resource view.
-    /// </summary>
-    /// <param name="srvDesc">The SRV desc.</param>
-    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc)
-    {
-        if (srvDesc)
-        {
-            _srv.CreateSRV(_device, _owner->GetResource(), srvDesc);
-        }
-        else
-        {
-            _srv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the depth stencil view.
-    /// </summary>
-    /// <param name="dsvDesc">The DSV desc.</param>
-    void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC* dsvDesc)
-    {
-        if (dsvDesc)
-        {
-            _dsv.CreateDSV(_device, _owner->GetResource(), dsvDesc);
-        }
-        else
-        {
-            _dsv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the unordered access view.
-    /// </summary>
-    /// <param name="uavDesc">The UAV desc.</param>
-    /// <param name="counterResource">The counter buffer resource.</param>
-    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc, ID3D12Resource* counterResource = nullptr)
-    {
-        if (uavDesc)
-        {
-            _uav.CreateUAV(_device, _owner->GetResource(), uavDesc, counterResource);
-        }
-        else
-        {
-            _uav.Release();
-        }
-    }
+    void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC& rtvDesc);
+    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
+    void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc);
+    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource = nullptr);
 
 public:
 

@@ -128,23 +128,12 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
     value &= ~mask;
 }
 
-DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCount, bool shaderVisible)
+DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCountPerHeap, bool shaderVisible)
     : _device(device)
     , _type(type)
-    , _descriptorsCount(descriptorsCount)
+    , _descriptorsCountPerHeap(descriptorsCountPerHeap)
     , _shaderVisible(shaderVisible)
 {
-}
-
-void DescriptorHeapPoolDX12::Init()
-{
-    // Allocate first page
-    auto heap = New<DescriptorHeapWithSlotsDX12>(_device);
-    if (heap->Create(_type, _descriptorsCount, _shaderVisible))
-    {
-        Platform::Fatal(TEXT("Failed to allocate descriptor heap."));
-    }
-    _heaps.Add(heap);
 }
 
 void DescriptorHeapPoolDX12::AllocateSlot(DescriptorHeapWithSlotsDX12*& heap, uint32& slot)
@@ -159,7 +148,7 @@ void DescriptorHeapPoolDX12::AllocateSlot(DescriptorHeapWithSlotsDX12*& heap, ui
     }
 
     heap = New<DescriptorHeapWithSlotsDX12>(_device);
-    if (heap->Create(_type, _descriptorsCount, _shaderVisible))
+    if (heap->Create(_type, _descriptorsCountPerHeap, _shaderVisible))
     {
         Platform::Fatal(TEXT("Failed to allocate descriptor heap."));
     }

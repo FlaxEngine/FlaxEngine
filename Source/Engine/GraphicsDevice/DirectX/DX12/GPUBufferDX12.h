@@ -27,6 +27,7 @@ public:
     /// </summary>
     GPUBufferViewDX12()
     {
+        SrvDimension = D3D12_SRV_DIMENSION_BUFFER;
     }
 
     /// <summary>
@@ -65,34 +66,14 @@ public:
     /// Sets the shader resource view.
     /// </summary>
     /// <param name="srvDesc">The SRV desc.</param>
-    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc)
-    {
-        if (srvDesc)
-        {
-            _srv.CreateSRV(_device, _owner->GetResource(), srvDesc);
-        }
-        else
-        {
-            _srv.Release();
-        }
-    }
+    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
 
     /// <summary>
     /// Sets the unordered access view.
     /// </summary>
     /// <param name="uavDesc">The UAV desc.</param>
     /// <param name="counterResource">The counter buffer resource.</param>
-    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc, ID3D12Resource* counterResource = nullptr)
-    {
-        if (uavDesc)
-        {
-            _uav.CreateUAV(_device, _owner->GetResource(), uavDesc, counterResource);
-        }
-        else
-        {
-            _uav.Release();
-        }
-    }
+    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource = nullptr);
 
 public:
 

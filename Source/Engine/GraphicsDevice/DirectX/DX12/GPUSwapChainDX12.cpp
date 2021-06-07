@@ -21,7 +21,7 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
         rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
         rtDesc.Texture2D.MipSlice = 0;
         rtDesc.Texture2D.PlaneSlice = 0;
-        Handle.SetRTV(&rtDesc);
+        Handle.SetRTV(rtDesc);
     }
 
 #if GPU_USE_WINDOW_SRV
@@ -35,7 +35,7 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
         srDesc.Texture2D.MipLevels = 1;
         srDesc.Texture2D.ResourceMinLODClamp = 0;
         srDesc.Texture2D.PlaneSlice = 0;
-        Handle.SetSRV(&srDesc);
+        Handle.SetSRV(srDesc);
     }
 #endif
 }

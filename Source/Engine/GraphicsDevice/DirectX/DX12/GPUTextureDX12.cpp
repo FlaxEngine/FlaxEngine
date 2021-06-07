@@ -237,7 +237,7 @@ void GPUTextureDX12::onResidentMipsChanged()
     // Change view
     if (_handlesPerSlice[0].GetParent() == nullptr)
         _handlesPerSlice[0].Init(this, _device, this, Format(), MultiSampleLevel());
-    _handlesPerSlice[0].SetSRV(&srDesc);
+    _handlesPerSlice[0].SetSRV(srDesc);
 }
 
 void GPUTextureDX12::OnReleaseGPU()
@@ -252,6 +252,35 @@ void GPUTextureDX12::OnReleaseGPU()
 
     // Base
     GPUTexture::OnReleaseGPU();
+}
+
+void GPUTextureViewDX12::Release()
+{
+    _rtv.Release();
+    _srv.Release();
+    _dsv.Release();
+    _uav.Release();
+}
+
+void GPUTextureViewDX12::SetRTV(D3D12_RENDER_TARGET_VIEW_DESC& rtvDesc)
+{
+    _rtv.CreateRTV(_device, _owner->GetResource(), &rtvDesc);
+}
+
+void GPUTextureViewDX12::SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc)
+{
+    SrvDimension = srvDesc.ViewDimension;
+    _srv.CreateSRV(_device, _owner->GetResource(), &srvDesc);
+}
+
+void GPUTextureViewDX12::SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc)
+{
+    _dsv.CreateDSV(_device, _owner->GetResource(), &dsvDesc);
+}
+
+void GPUTextureViewDX12::SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource)
+{
+    _uav.CreateUAV(_device, _owner->GetResource(), &uavDesc, counterResource);
 }
 
 void GPUTextureDX12::initHandles()
@@ -318,7 +347,7 @@ void GPUTextureDX12::initHandles()
             srDesc.Texture3D.MostDetailedMip = 0;
             srDesc.Texture3D.MipLevels = MipLevels();
             srDesc.Texture3D.ResourceMinLODClamp = 0;
-            _handleVolume.SetSRV(&srDesc);
+            _handleVolume.SetSRV(srDesc);
         }
         if (useRTV)
         {
@@ -326,14 +355,14 @@ void GPUTextureDX12::initHandles()
             rtDesc.Texture3D.MipSlice = 0;
             rtDesc.Texture3D.FirstWSlice = 0;
             rtDesc.Texture3D.WSize = Depth();
-            _handleVolume.SetRTV(&rtDesc);
+            _handleVolume.SetRTV(rtDesc);
         }
         if (useUAV)
         {
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
             uavDesc.Texture2D.MipSlice = 0;
             uavDesc.Texture2D.PlaneSlice = 0;
-            _handleVolume.SetUAV(&uavDesc);
+            _handleVolume.SetUAV(uavDesc);
         }
 
         // Init per slice views
@@ -348,7 +377,7 @@ void GPUTextureDX12::initHandles()
             {
                 rtDesc.Texture3D.FirstWSlice = sliceIndex;
                 _handlesPerSlice[sliceIndex].Init(this, _device, this, format, msaa);
-                _handlesPerSlice[sliceIndex].SetRTV(&rtDesc);
+                _handlesPerSlice[sliceIndex].SetRTV(rtDesc);
             }
         }
     }
@@ -378,7 +407,7 @@ void GPUTextureDX12::initHandles()
                     dsDesc.Texture2DArray.FirstArraySlice = arrayIndex;
                     dsDesc.Texture2DArray.MipSlice = 0;
                 }
-                _handlesPerSlice[arrayIndex].SetDSV(&dsDesc);
+                _handlesPerSlice[arrayIndex].SetDSV(dsDesc);
             }
             if (useRTV)
             {
@@ -398,7 +427,7 @@ void GPUTextureDX12::initHandles()
                     rtDesc.Texture2DArray.MipSlice = 0;
                     rtDesc.Texture2DArray.PlaneSlice = 0;
                 }
-                _handlesPerSlice[arrayIndex].SetRTV(&rtDesc);
+                _handlesPerSlice[arrayIndex].SetRTV(rtDesc);
             }
             if (useSRV)
             {
@@ -420,7 +449,7 @@ void GPUTextureDX12::initHandles()
                     srDesc.Texture2DArray.PlaneSlice = 0;
                     srDesc.Texture2DArray.ResourceMinLODClamp = 0;
                 }
-                _handlesPerSlice[arrayIndex].SetSRV(&srDesc);
+                _handlesPerSlice[arrayIndex].SetSRV(srDesc);
             }
             if (useUAV)
             {
@@ -429,7 +458,7 @@ void GPUTextureDX12::initHandles()
                 uavDesc.Texture2DArray.FirstArraySlice = arrayIndex;
                 uavDesc.Texture2DArray.MipSlice = 0;
                 uavDesc.Texture2DArray.PlaneSlice = 0;
-                _handlesPerSlice[arrayIndex].SetSRV(&srDesc);
+                _handlesPerSlice[arrayIndex].SetSRV(srDesc);
             }
         }
 
@@ -442,7 +471,7 @@ void GPUTextureDX12::initHandles()
                 dsDesc.Texture2DArray.ArraySize = arraySize;
                 dsDesc.Texture2DArray.FirstArraySlice = 0;
                 dsDesc.Texture2DArray.MipSlice = 0;
-                _handleArray.SetDSV(&dsDesc);
+                _handleArray.SetDSV(dsDesc);
             }
             if (useRTV)
             {
@@ -451,7 +480,7 @@ void GPUTextureDX12::initHandles()
                 rtDesc.Texture2DArray.FirstArraySlice = 0;
                 rtDesc.Texture2DArray.MipSlice = 0;
                 rtDesc.Texture2DArray.PlaneSlice = 0;
-                _handleArray.SetRTV(&rtDesc);
+                _handleArray.SetRTV(rtDesc);
             }
             if (useSRV)
             {
@@ -472,7 +501,7 @@ void GPUTextureDX12::initHandles()
                     srDesc.Texture2DArray.ResourceMinLODClamp = 0;
                     srDesc.Texture2DArray.PlaneSlice = 0;
                 }
-                _handleArray.SetSRV(&srDesc);
+                _handleArray.SetSRV(srDesc);
             }
             if (useUAV)
             {
@@ -481,7 +510,7 @@ void GPUTextureDX12::initHandles()
                 uavDesc.Texture2DArray.FirstArraySlice = 0;
                 uavDesc.Texture2DArray.MipSlice = 0;
                 uavDesc.Texture2DArray.PlaneSlice = 0;
-                _handleArray.SetUAV(&uavDesc);
+                _handleArray.SetUAV(uavDesc);
             }
         }
     }
@@ -508,7 +537,7 @@ void GPUTextureDX12::initHandles()
                 dsDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
                 dsDesc.Texture2D.MipSlice = 0;
             }
-            _handlesPerSlice[0].SetDSV(&dsDesc);
+            _handlesPerSlice[0].SetDSV(dsDesc);
         }
         if (useRTV)
         {
@@ -530,7 +559,7 @@ void GPUTextureDX12::initHandles()
                 rtDesc.Texture2D.MipSlice = 0;
                 rtDesc.Texture2D.PlaneSlice = 0;
             }
-            _handlesPerSlice[0].SetRTV(&rtDesc);
+            _handlesPerSlice[0].SetRTV(rtDesc);
         }
         if (useSRV)
         {
@@ -553,7 +582,7 @@ void GPUTextureDX12::initHandles()
                 srDesc.Texture2D.ResourceMinLODClamp = 0;
                 srDesc.Texture2D.PlaneSlice = 0;
             }
-            _handlesPerSlice[0].SetSRV(&srDesc);
+            _handlesPerSlice[0].SetSRV(srDesc);
         }
         if (useUAV)
         {
@@ -571,7 +600,7 @@ void GPUTextureDX12::initHandles()
                 uavDesc.Texture2D.MipSlice = 0;
                 uavDesc.Texture2D.PlaneSlice = 0;
             }
-            _handlesPerSlice[0].SetUAV(&uavDesc);
+            _handlesPerSlice[0].SetUAV(uavDesc);
         }
     }
 
@@ -593,35 +622,63 @@ void GPUTextureDX12::initHandles()
                 // DSV
                 if (useDSV)
                 {
-                    dsDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-                    dsDesc.Texture2DArray.ArraySize = 1;
-                    dsDesc.Texture2DArray.FirstArraySlice = arrayIndex;
-                    dsDesc.Texture2DArray.MipSlice = mipIndex;
-                    slice[mipIndex].SetDSV(&dsDesc);
+                    if (isArray)
+                    {
+                        dsDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                        dsDesc.Texture2DArray.ArraySize = 1;
+                        dsDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                        dsDesc.Texture2DArray.MipSlice = mipIndex;
+                    }
+                    else
+                    {
+                        dsDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                        dsDesc.Texture2D.MipSlice = mipIndex;
+                    }
+                    slice[mipIndex].SetDSV(dsDesc);
                 }
 
                 // RTV
                 if (useRTV)
                 {
-                    rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-                    rtDesc.Texture2DArray.ArraySize = 1;
-                    rtDesc.Texture2DArray.FirstArraySlice = arrayIndex;
-                    rtDesc.Texture2DArray.MipSlice = mipIndex;
-                    rtDesc.Texture2DArray.PlaneSlice = 0;
-                    slice[mipIndex].SetRTV(&rtDesc);
+                    if (isArray)
+                    {
+                        rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+                        rtDesc.Texture2DArray.ArraySize = 1;
+                        rtDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                        rtDesc.Texture2DArray.MipSlice = mipIndex;
+                        rtDesc.Texture2DArray.PlaneSlice = 0;
+                    }
+                    else
+                    {
+                        rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+                        rtDesc.Texture2D.MipSlice = mipIndex;
+                        rtDesc.Texture2D.PlaneSlice = 0;
+                    }
+                    slice[mipIndex].SetRTV(rtDesc);
                 }
 
                 // SRV
                 if (useSRV)
                 {
-                    srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-                    srDesc.Texture2DArray.ArraySize = 1;
-                    srDesc.Texture2DArray.FirstArraySlice = arrayIndex;
-                    srDesc.Texture2DArray.MipLevels = 1;
-                    srDesc.Texture2DArray.MostDetailedMip = mipIndex;
-                    srDesc.Texture2DArray.ResourceMinLODClamp = 0;
-                    srDesc.Texture2DArray.PlaneSlice = 0;
-                    slice[mipIndex].SetSRV(&srDesc);
+                    if (isArray)
+                    {
+                        srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                        srDesc.Texture2DArray.ArraySize = 1;
+                        srDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                        srDesc.Texture2DArray.MipLevels = 1;
+                        srDesc.Texture2DArray.MostDetailedMip = mipIndex;
+                        srDesc.Texture2DArray.ResourceMinLODClamp = 0;
+                        srDesc.Texture2DArray.PlaneSlice = 0;
+                    }
+                    else
+                    {
+                        srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                        srDesc.Texture2D.MipLevels = 1;
+                        srDesc.Texture2D.MostDetailedMip = mipIndex;
+                        srDesc.Texture2D.ResourceMinLODClamp = 0;
+                        srDesc.Texture2D.PlaneSlice = 0;
+                    }
+                    slice[mipIndex].SetSRV(srDesc);
                 }
             }
         }
@@ -652,7 +709,7 @@ void GPUTextureDX12::initHandles()
             dsDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
             if (PixelFormatExtensions::HasStencil(format))
                 dsDesc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
-            _handleReadOnlyDepth.SetDSV(&dsDesc);
+            _handleReadOnlyDepth.SetDSV(dsDesc);
         }
         ASSERT(!useRTV);
         if (useSRV)
@@ -676,7 +733,7 @@ void GPUTextureDX12::initHandles()
                 srDesc.Texture2D.ResourceMinLODClamp = 0;
                 srDesc.Texture2D.PlaneSlice = 0;
             }
-            _handleReadOnlyDepth.SetSRV(&srDesc);
+            _handleReadOnlyDepth.SetSRV(srDesc);
         }
     }
 }

@@ -15,7 +15,7 @@ class IShaderResourceDX12
 public:
 
     IShaderResourceDX12()
-        : SubresourceIndex(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        : SubresourceIndex(-1)
     {
     }
 
@@ -28,8 +28,11 @@ public:
 
     /// <summary>
     /// Affected subresource index or -1 if use whole resource.
+    /// This solves only resource states tracking per single subresource, not subresources range, if need to here should be range of subresources (for texture arrays, volume textures and cubemaps).
     /// </summary>
-    int32 SubresourceIndex; // Note: this solves only resource states tracking per single subresource, not subresources range, if need to here should be range of subresources (for texture arrays, volume textures and cubemaps)
+    int32 SubresourceIndex;
+
+    D3D12_SRV_DIMENSION SrvDimension = D3D12_SRV_DIMENSION_UNKNOWN;
 
 public:
 

@@ -55,7 +55,7 @@ private:
     GPUContextDX12* _mainContext;
 
     // Heaps
-    DescriptorHeapWithSlotsDX12::Slot _nullSrv;
+    DescriptorHeapWithSlotsDX12::Slot _nullSrv[D3D12_SRV_DIMENSION_TEXTURECUBEARRAY + 1];
     DescriptorHeapWithSlotsDX12::Slot _nullUav;
 
 public:
@@ -93,8 +93,7 @@ public:
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE NullSRV() const;
-
+    D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
 
 public:

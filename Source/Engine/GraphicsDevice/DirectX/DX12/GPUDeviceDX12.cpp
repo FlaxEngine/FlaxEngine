@@ -350,32 +350,78 @@ bool GPUDeviceDX12::Init()
 	_device->SetStablePowerState(TRUE);
 #endif
 
-    // Create commands queue
+    // Setup resources
     _commandQueue = New<CommandQueueDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (_commandQueue->Init())
         return true;
-
-    // Create rendering main context
     _mainContext = New<GPUContextDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-    // Create descriptors heaps
-    Heap_CBV_SRV_UAV.Init();
-    Heap_RTV.Init();
-    Heap_DSV.Init();
     if (RingHeap_CBV_SRV_UAV.Init())
         return true;
 
     // Create empty views
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    for (int32 i = 0; i < ARRAY_COUNT(_nullSrv); i++)
     {
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        srvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Texture2D.MostDetailedMip = 0;
-        srvDesc.Texture2D.MipLevels = 1;
-        srvDesc.Texture2D.PlaneSlice = 0;
-        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-        _nullSrv.CreateSRV(this, nullptr, &srvDesc);
+        srvDesc.ViewDimension = (D3D12_SRV_DIMENSION)i;
+        switch (srvDesc.ViewDimension)
+        {
+        case D3D12_SRV_DIMENSION_BUFFER:
+            srvDesc.Buffer.FirstElement = 0;
+            srvDesc.Buffer.NumElements = 0;
+            srvDesc.Buffer.StructureByteStride = 0;
+            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE1D:
+            srvDesc.Texture1D.MostDetailedMip = 0;
+            srvDesc.Texture1D.MipLevels = 1;
+            srvDesc.Texture1D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
+            srvDesc.Texture1DArray.MostDetailedMip = 0;
+            srvDesc.Texture1DArray.MipLevels = 1;
+            srvDesc.Texture1DArray.FirstArraySlice = 0;
+            srvDesc.Texture1DArray.ArraySize = 1;
+            srvDesc.Texture1DArray.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_UNKNOWN: // Map Unknown into Texture2D
+        case D3D12_SRV_DIMENSION_TEXTURE2D:
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MostDetailedMip = 0;
+            srvDesc.Texture2D.MipLevels = 1;
+            srvDesc.Texture2D.PlaneSlice = 0;
+            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+            srvDesc.Texture2DArray.MostDetailedMip = 0;
+            srvDesc.Texture2DArray.MipLevels = 1;
+            srvDesc.Texture2DArray.FirstArraySlice = 0;
+            srvDesc.Texture2DArray.ArraySize = 0;
+            srvDesc.Texture2DArray.PlaneSlice = 0;
+            srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE3D:
+            srvDesc.Texture3D.MostDetailedMip = 0;
+            srvDesc.Texture3D.MipLevels = 1;
+            srvDesc.Texture3D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBE:
+            srvDesc.TextureCube.MostDetailedMip = 0;
+            srvDesc.TextureCube.MipLevels = 1;
+            srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
+            srvDesc.TextureCubeArray.MostDetailedMip = 0;
+            srvDesc.TextureCubeArray.MipLevels = 1;
+            srvDesc.TextureCubeArray.First2DArrayFace = 0;
+            srvDesc.TextureCubeArray.NumCubes = 0;
+            srvDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
+            break;
+        default:
+            continue;
+        }
+        _nullSrv[i].CreateSRV(this, nullptr, &srvDesc);
     }
     {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
@@ -574,14 +620,9 @@ bool GPUDeviceDX12::Init()
 
 void GPUDeviceDX12::DrawBegin()
 {
-    // Wait for the GPU to have at least one backbuffer to render to
     /*{
-        PROFILE_CPU_NAMED("Wait For Fence");
-        const uint64 nextFenceValue = _commandQueue->GetNextFenceValue();
-        if (nextFenceValue >= DX12_BACK_BUFFER_COUNT)
-        {
-            _commandQueue->WaitForFence(nextFenceValue - DX12_BACK_BUFFER_COUNT);
-        }
+        PROFILE_CPU_NAMED("Wait For GPU");
+        _commandQueue->WaitForGPU();
     }*/
 
     // Base
@@ -606,9 +647,9 @@ GPUDeviceDX12::~GPUDeviceDX12()
     Dispose();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullSRV() const
+D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullSRV(D3D12_SRV_DIMENSION dimension) const
 {
-    return _nullSrv.CPU();
+    return _nullSrv[dimension].CPU();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullUAV() const
@@ -647,7 +688,8 @@ void GPUDeviceDX12::Dispose()
     updateRes2Dispose();
 
     // Clear pipeline objects
-    _nullSrv.Release();
+    for (auto& srv : _nullSrv)
+        srv.Release();
     _nullUav.Release();
     TimestampQueryHeap.Destroy();
     DX_SAFE_RELEASE_CHECK(_rootSignature, 0);
@@ -709,7 +751,6 @@ GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)
 {
-    ASSERT(safeFrameCount < 32);
     if (resource == nullptr)
         return;
 
@@ -735,7 +776,6 @@ void GPUDeviceDX12::updateRes2Dispose()
     for (int32 i = _res2Dispose.Count() - 1; i >= 0 && i < _res2Dispose.Count(); i--)
     {
         const DisposeResourceEntry& entry = _res2Dispose[i];
-
         if (entry.TargetFrame <= currentFrame)
         {
             auto refs = entry.Resource->Release();

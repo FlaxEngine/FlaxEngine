@@ -133,17 +133,16 @@ private:
 
     GPUDeviceDX12* _device;
     D3D12_DESCRIPTOR_HEAP_TYPE _type;
-    uint32 _descriptorsCount;
+    uint32 _descriptorsCountPerHeap;
     bool _shaderVisible;
-    Array<DescriptorHeapWithSlotsDX12*> _heaps;
+    Array<DescriptorHeapWithSlotsDX12*, InlinedAllocation<32>> _heaps;
 
 public:
 
-    DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCount, bool shaderVisible);
+    DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCountPerHeap, bool shaderVisible);
 
 public:
 
-    void Init();
     void AllocateSlot(DescriptorHeapWithSlotsDX12*& heap, uint32& slot);
     void ReleaseGPU();
 };
