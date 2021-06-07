@@ -103,6 +103,11 @@ public:
     void AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D12_RESOURCE_STATES before, const D3D12_RESOURCE_STATES after, const int32 subresourceIndex);
 
     /// <summary>
+    /// Adds the UAV barrier. Supports batching barriers.
+    /// </summary>
+    void AddUAVBarrier();
+
+    /// <summary>
     /// Set DirectX 12 resource state using resource barrier
     /// </summary>
     /// <param name="resource">Resource to use</param>

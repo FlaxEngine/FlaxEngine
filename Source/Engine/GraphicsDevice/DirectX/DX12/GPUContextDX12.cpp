@@ -93,7 +93,6 @@ GPUContextDX12::~GPUContextDX12()
 
 void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D12_RESOURCE_STATES before, const D3D12_RESOURCE_STATES after, const int32 subresourceIndex)
 {
-    // Check if need to flush barriers
     if (_rbBufferSize == DX12_RB_BUFFER_SIZE)
         flushRBs();
 
@@ -108,20 +107,6 @@ void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D
     Log::Logger::Write(LogType::Info, info);
 #endif
 
-#if DX12_ENABLE_RESOURCE_BARRIERS_BATCHING
-
-    // Enqueue barrier
-    D3D12_RESOURCE_BARRIER& barrier = _rbBuffer[_rbBufferSize];
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource->GetResource();
-    barrier.Transition.StateBefore = before;
-    barrier.Transition.StateAfter = after;
-    barrier.Transition.Subresource = subresourceIndex;
-    _rbBufferSize++;
-
-#else
-
     D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -129,8 +114,31 @@ void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D
     barrier.Transition.StateBefore = before;
     barrier.Transition.StateAfter = after;
     barrier.Transition.Subresource = subresourceIndex;
+#if DX12_ENABLE_RESOURCE_BARRIERS_BATCHING
+    _rbBuffer[_rbBufferSize++] = barrier;
+#else
     _commandList->ResourceBarrier(1, &barrier);
+#endif
+}
 
+void GPUContextDX12::AddUAVBarrier()
+{
+    if (_rbBufferSize == DX12_RB_BUFFER_SIZE)
+        flushRBs();
+
+#if DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING
+    const auto info = String::Format(TEXT("[DX12 Resource Barrier]: UAV"));
+    Log::Logger::Write(LogType::Info, info);
+#endif
+
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.UAV.pResource = nullptr;
+#if DX12_ENABLE_RESOURCE_BARRIERS_BATCHING
+    _rbBuffer[_rbBufferSize++] = barrier;
+#else
+    _commandList->ResourceBarrier(1, &barrier);
 #endif
 }
 
@@ -916,6 +924,9 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
+
+    // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
+    AddUAVBarrier();
 }
 
 void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
@@ -946,6 +957,9 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
+
+    // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
+    AddUAVBarrier();
 }
 
 void GPUContextDX12::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format)
