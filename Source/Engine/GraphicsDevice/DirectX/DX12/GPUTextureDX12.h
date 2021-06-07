@@ -22,9 +22,6 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTextureViewDX12"/> class.
-    /// </summary>
     GPUTextureViewDX12()
     {
     }
@@ -45,9 +42,6 @@ public:
         return *this;
     }
 
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUTextureViewDX12"/> class.
-    /// </summary>
     ~GPUTextureViewDX12()
     {
         Release();
@@ -155,8 +149,7 @@ public:
     /// <summary>
     /// Gets the CPU handle to the render target view descriptor.
     /// </summary>
-    /// <returns>The CPU handle to the render target view descriptor.</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE RTV() const
+    FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE RTV() const
     {
         return _rtv.CPU();
     }
@@ -164,8 +157,7 @@ public:
     /// <summary>
     /// Gets the CPU handle to the depth stencil view descriptor.
     /// </summary>
-    /// <returns>The CPU handle to the depth stencil view descriptor.</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE DSV() const
+    FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE DSV() const
     {
         return _dsv.CPU();
     }
@@ -183,17 +175,14 @@ public:
     {
         return _dsv.IsValid();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return _owner;
@@ -223,11 +212,6 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTextureDX12"/> class.
-    /// </summary>
-    /// <param name="device">The device.</param>
-    /// <param name="name">The name.</param>
     GPUTextureDX12(GPUDeviceDX12* device, const StringView& name)
         : GPUResourceDX12<GPUTexture>(device, name)
     {
@@ -244,35 +228,29 @@ public:
     {
         return (GPUTextureView*)&_handlesPerSlice[arrayOrDepthIndex];
     }
-
     GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const override
     {
         return (GPUTextureView*)&_handlesPerMip[arrayOrDepthIndex][mipMapIndex];
     }
-
     GPUTextureView* ViewArray() const override
     {
         ASSERT(ArraySize() > 1);
         return (GPUTextureView*)&_handleArray;
     }
-
     GPUTextureView* ViewVolume() const override
     {
         ASSERT(IsVolume());
         return (GPUTextureView*)&_handleVolume;
     }
-
     GPUTextureView* ViewReadOnlyDepth() const override
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
-
     void* GetNativePtr() const override
     {
-        return (void*)nullptr;
+        return (void*)_resource;
     }
-
     bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [ResourceOwnerDX12]
@@ -286,17 +264,14 @@ public:
     {
         return (_desc.Flags & GPUTextureFlags::DepthStencil) != 0;
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return (ResourceOwnerDX12*)this;

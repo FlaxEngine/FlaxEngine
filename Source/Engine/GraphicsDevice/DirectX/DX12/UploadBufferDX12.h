@@ -183,7 +183,6 @@ public:
     /// <summary>
     /// Gets the current generation number.
     /// </summary>
-    /// <returns>The current generation number.</returns>
     FORCE_INLINE uint64 GetCurrentGeneration() const
     {
         return _currentGeneration;

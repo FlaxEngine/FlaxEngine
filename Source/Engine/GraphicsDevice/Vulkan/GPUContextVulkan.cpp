@@ -160,7 +160,6 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
             for (int32 i = 0; i < state.GetSubresourcesCount(); i++)
             {
                 const VkImageLayout srcLayout = state.GetSubresourceState(i);
-
                 if (srcLayout != dstLayout)
                 {
                     VkImageSubresourceRange range;
@@ -175,13 +174,11 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
             }
             ASSERT(state.CheckResourceState(dstLayout));
         }
-
         state.SetResourceState(dstLayout);
     }
     else
     {
         const VkImageLayout srcLayout = state.GetSubresourceState(subresourceIndex);
-
         if (srcLayout != dstLayout)
         {
             // Transition a single subresource

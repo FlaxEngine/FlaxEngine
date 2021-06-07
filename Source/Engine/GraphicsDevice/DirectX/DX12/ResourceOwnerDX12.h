@@ -35,7 +35,7 @@ public:
     /// <param name="currentState">The current resource state.</param>
     /// <param name="targetState">the destination resource state.</param>
     /// <returns>True if need to perform a transition, otherwise false.</returns>
-    static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targetState)
+    FORCE_INLINE static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targetState)
     {
         return currentState != targetState && ((currentState | targetState) != currentState || targetState == D3D12_RESOURCE_STATE_COMMON);
     }
@@ -81,7 +81,6 @@ public:
     /// <summary>
     /// Gets the subresources count.
     /// </summary>
-    /// <returns>The subresources count.</returns>
     FORCE_INLINE uint32 GetSubresourcesCount() const
     {
         return _subresourcesCount;
@@ -90,7 +89,6 @@ public:
     /// <summary>
     /// Gets DirectX 12 resource object handle
     /// </summary>
-    /// <returns>DirectX 12 resource object handle</returns>
     FORCE_INLINE ID3D12Resource* GetResource() const
     {
         return _resource;
@@ -99,7 +97,6 @@ public:
     /// <summary>
     /// Gets resource owner object as a GPUResource type or returns null if cannot perform cast.
     /// </summary>
-    /// <returns>GPU Resource or null if cannot cast.</returns>
     virtual GPUResource* AsGPUResource() const = 0;
 
 protected:

@@ -36,25 +36,21 @@ public:
     /// <summary>
     /// Determines whether this resource is depth/stencil buffer.
     /// </summary>
-    /// <returns>True if this resource is depth/stencil buffer, otherwise false.</returns>
     virtual bool IsDepthStencilResource() const = 0;
 
     /// <summary>
     /// Gets CPU handle to the shader resource view descriptor.
     /// </summary>
-    /// <returns>SRV</returns>
     virtual D3D12_CPU_DESCRIPTOR_HANDLE SRV() const = 0;
 
     /// <summary>
     /// Gets CPU handle to the unordered access view descriptor.
     /// </summary>
-    /// <returns>UAV</returns>
     virtual D3D12_CPU_DESCRIPTOR_HANDLE UAV() const = 0;
 
     /// <summary>
     /// Gets the resource owner.
     /// </summary>
-    /// <returns>Owner object.</returns>
     virtual ResourceOwnerDX12* GetResourceOwner() const = 0;
 };
 

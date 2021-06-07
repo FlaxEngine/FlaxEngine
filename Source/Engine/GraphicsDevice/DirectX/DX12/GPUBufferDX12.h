@@ -107,17 +107,14 @@ public:
     {
         return false;
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return _owner;
@@ -173,19 +170,16 @@ public:
     /// <summary>
     /// Gets buffer size in a GPU memory in bytes.
     /// </summary>
-    /// <returns>Size in bytes.</returns>
     uint64 GetSizeInBytes() const;
 
     /// <summary>
     /// Gets buffer location in a GPU memory.
     /// </summary>
-    /// <returns>GPU memory location.</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetLocation() const;
 
     /// <summary>
     /// Gets the counter resource.
     /// </summary>
-    /// <returns>The internal counter buffer.</returns>
     FORCE_INLINE GPUBufferDX12* GetCounter() const
     {
         return _counter;

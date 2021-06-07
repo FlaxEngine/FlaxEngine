@@ -60,6 +60,7 @@ DynamicAllocation UploadBufferDX12::Allocate(uint64 size, uint64 align)
     // Move in the page
     _currentOffset += size;
 
+    ASSERT(_currentPage->GetResource());
     return result;
 }
 
@@ -67,12 +68,8 @@ bool UploadBufferDX12::UploadBuffer(GPUContextDX12* context, ID3D12Resource* buf
 {
     // Allocate data
     const DynamicAllocation allocation = Allocate(size, 4);
-
-    // Check if allocation is invalid
     if (allocation.IsInvalid())
-    {
         return true;
-    }
 
     // Copy data
     Platform::MemoryCopy(allocation.CPUAddress, data, static_cast<size_t>(size));
@@ -85,10 +82,8 @@ bool UploadBufferDX12::UploadBuffer(GPUContextDX12* context, ID3D12Resource* buf
 
 bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* texture, const void* srcData, uint32 srcRowPitch, uint32 srcSlicePitch, int32 mipIndex, int32 arrayIndex)
 {
-    // Cache resource info
     D3D12_RESOURCE_DESC resourceDesc = texture->GetDesc();
     const UINT subresourceIndex = RenderToolsDX::CalcSubresourceIndex(mipIndex, arrayIndex, resourceDesc.MipLevels);
-
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
     uint32 numRows;
     uint64 rowPitchAligned, mipSizeAligned;
@@ -96,16 +91,8 @@ bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* te
     rowPitchAligned = footprint.Footprint.RowPitch;
     mipSizeAligned = rowPitchAligned * footprint.Footprint.Height;
 
-    // Destination texture copy location description
-    D3D12_TEXTURE_COPY_LOCATION dstLocation;
-    dstLocation.pResource = texture;
-    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dstLocation.SubresourceIndex = subresourceIndex;
-
     // Allocate data
     const DynamicAllocation allocation = Allocate(mipSizeAligned, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-
-    // Check if allocation is invalid
     if (allocation.Size != mipSizeAligned)
         return true;
 
@@ -130,6 +117,12 @@ bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* te
             ptr += srcRowPitch;
         }
     }
+
+    // Destination texture copy location description
+    D3D12_TEXTURE_COPY_LOCATION dstLocation;
+    dstLocation.pResource = texture;
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dstLocation.SubresourceIndex = subresourceIndex;
 
     // Source buffer copy location description
     D3D12_TEXTURE_COPY_LOCATION srcLocation;
@@ -235,13 +228,7 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
     ID3D12Resource* resource;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &resourceDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&resource)));
+    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource)));
 
     // Set state
     initResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ, 1);
@@ -260,6 +247,8 @@ void UploadBufferPageDX12::OnReleaseGPU()
     {
         _resource->Unmap(0, nullptr);
     }
+    GPUAddress = 0;
+    CPUAddress = nullptr;
 
     // Release
     releaseResource();

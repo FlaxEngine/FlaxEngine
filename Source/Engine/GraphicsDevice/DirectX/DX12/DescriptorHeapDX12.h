@@ -37,26 +37,9 @@ public:
         D3D12_CPU_DESCRIPTOR_HANDLE CPU() const;
         D3D12_GPU_DESCRIPTOR_HANDLE GPU() const;
 
-        // Creates shader resource view
-        // @param index Descriptor index in the heap
-        // @param resource Shader Resource to create view for it
-        // @param desc View description
         void CreateSRV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* desc = nullptr);
-
-        // Creates render target view
-        // @param index Descriptor index in the heap
-        // @param resource Render Target to create view for it
         void CreateRTV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc = nullptr);
-
-        // Creates depth stencil view
-        // @param index Descriptor index in the heap
-        // @param resource Render Target Depth to create view for it
         void CreateDSV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_DEPTH_STENCIL_VIEW_DESC* desc = nullptr);
-
-        // Creates unordered access view
-        // @param index Descriptor index in the heap
-        // @param resource Unordered Access to create view for it
-        // @param desc View description
         void CreateUAV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_UNORDERED_ACCESS_VIEW_DESC* desc = nullptr, ID3D12Resource* counterResource = nullptr);
 
         void Release();

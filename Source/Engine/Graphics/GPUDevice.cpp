@@ -31,6 +31,39 @@ GPUPipelineState* GPUPipelineState::New()
     return GPUDevice::Instance->CreatePipelineState();
 }
 
+bool GPUPipelineState::Init(const Description& desc)
+{
+    // Cache description in debug builds
+#if BUILD_DEBUG
+    DebugDesc = desc;
+#endif
+
+    // Cache shader stages usage flags for pipeline state
+    _meta.InstructionsCount = 0;
+    _meta.UsedCBsMask = 0;
+    _meta.UsedSRsMask = 0;
+    _meta.UsedUAsMask = 0;
+#define CHECK_STAGE(stage) \
+	if (desc.stage) { \
+		_meta.UsedCBsMask |= desc.stage->GetBindings().UsedCBsMask; \
+		_meta.UsedSRsMask |= desc.stage->GetBindings().UsedSRsMask; \
+		_meta.UsedUAsMask |= desc.stage->GetBindings().UsedUAsMask; \
+	}
+    CHECK_STAGE(VS);
+    CHECK_STAGE(HS);
+    CHECK_STAGE(DS);
+    CHECK_STAGE(GS);
+    CHECK_STAGE(PS);
+#undef CHECK_STAGE
+
+    return false;
+}
+
+GPUResource::ResourceType GPUPipelineState::GetResourceType() const
+{
+    return ResourceType::PipelineState;
+}
+
 GPUPipelineState::Description GPUPipelineState::Description::Default =
 {
     // Enable/disable depth write
@@ -121,6 +154,33 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     // Colors blending mode
     BlendingMode::Opaque,
 };
+
+void GPUResource::ReleaseGPU()
+{
+    if (_memoryUsage != 0)
+    {
+        Releasing();
+        OnReleaseGPU();
+        _memoryUsage = 0;
+    }
+}
+
+void GPUResource::OnDeviceDispose()
+{
+    // By default we want to release resource data but keep it alive
+    ReleaseGPU();
+}
+
+void GPUResource::OnReleaseGPU()
+{
+}
+
+void GPUResource::OnDeleteObject()
+{
+    ReleaseGPU();
+
+    PersistentScriptingObject::OnDeleteObject();
+}
 
 struct GPUDevice::PrivateData
 {
