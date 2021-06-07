@@ -79,6 +79,8 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _rtDepth(nullptr)
     , _ibHandle(nullptr)
 {
+    FrameFenceValues[0] = 0;
+    FrameFenceValues[1] = 0;
     _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
     VALIDATE_DIRECTX_RESULT(device->GetDevice()->CreateCommandList(0, type, _currentAllocator, nullptr, IID_PPV_ARGS(&_commandList)));
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -592,7 +594,8 @@ void GPUContextDX12::FrameEnd()
     GPUContext::FrameEnd();
 
     // Execute command (but don't wait for them)
-    Execute(false);
+    FrameFenceValues[1] = FrameFenceValues[0];
+    FrameFenceValues[0] = Execute(false);
 }
 
 #if GPU_ALLOW_PROFILE_EVENTS
@@ -1080,7 +1083,7 @@ void GPUContextDX12::Flush()
         return;
 
     // Flush GPU commands
-    Execute();
+    Execute(true);
     Reset();
 }
 

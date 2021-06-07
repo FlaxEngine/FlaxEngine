@@ -64,7 +64,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
         return nullptr;
-#if GPU_ENABLE_RESOURCE_NAMING
+#if GPU_ENABLE_RESOURCE_NAMING && BUILD_DEBUG
     char name[200];
     int32 nameLen = 0;
     if (DebugDesc.VS)

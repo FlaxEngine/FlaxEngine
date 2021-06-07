@@ -13,7 +13,7 @@
 #define DX12_UPLOAD_PAGE_GEN_TIMEOUT DX12_BACK_BUFFER_COUNT
 
 // Upload buffer pages that are not used for a few frames are disposed
-#define DX12_UPLOAD_PAGE_NOT_USED_FRAME_TIMEOUT 8
+#define DX12_UPLOAD_PAGE_NOT_USED_FRAME_TIMEOUT 60
 
 class GPUTextureDX12;
 

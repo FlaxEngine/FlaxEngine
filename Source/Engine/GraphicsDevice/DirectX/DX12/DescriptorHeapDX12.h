@@ -63,36 +63,6 @@ public:
 
 public:
 
-    // Get heap
-    FORCE_INLINE operator ID3D12DescriptorHeap*() const
-    {
-        return _heap;
-    }
-
-public:
-
-    // Create heap data
-    // @param type Heap data type
-    // @param descriptorsCount Amount of descriptors to use
-    // @param shaderVisible True if allow shaders to access heap data
-    bool Create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCount, bool shaderVisible = false);
-
-public:
-
-    // Tries to find free descriptor slot
-    // @param index Result index to use
-    // @returns True if can assign descriptor to the heap
-    bool TryToGetUnusedSlot(uint32& index);
-
-    // Release descriptor slot
-    // @param index Descriptor index in the heap
-    void ReleaseSlot(uint32 index);
-
-public:
-
-    // Get handle to the CPU view at given index
-    // @param index Descriptor index
-    // @returns CPU address
     FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE CPU(uint32 index)
     {
         D3D12_CPU_DESCRIPTOR_HANDLE handle;
@@ -100,9 +70,6 @@ public:
         return handle;
     }
 
-    // Get handle to the GPU view at given index
-    // @param index Descriptor index
-    // @returns GPU address
     FORCE_INLINE D3D12_GPU_DESCRIPTOR_HANDLE GPU(uint32 index)
     {
         D3D12_GPU_DESCRIPTOR_HANDLE handle;
@@ -112,11 +79,14 @@ public:
 
 public:
 
+    bool Create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCount, bool shaderVisible = false);
+    bool TryToGetUnusedSlot(uint32& index);
+    void ReleaseSlot(uint32 index);
+
+public:
+
     // [GPUResourceDX12]
-    ResourceType GetResourceType() const final override
-    {
-        return ResourceType::Descriptor;
-    }
+    ResourceType GetResourceType() const final override;
 
 protected:
 
@@ -188,24 +158,12 @@ public:
 
 public:
 
-    /// <summary>
-    /// Gets DirectX 12 heap object
-    /// </summary>
-    /// <returns>Heap object</returns>
     FORCE_INLINE ID3D12DescriptorHeap* GetHeap() const
     {
         return _heap;
     }
 
-public:
-
-    // Setup heap
-    // @returns True if cannot setup heap, otherwise false
     bool Init();
-
-    // Allocate memory for descriptors table
-    // @param numDesc Amount of descriptors in table
-    // @returns Allocated data (GPU param is valid only for shader visible heaps)
     Allocation AllocateTable(uint32 numDesc);
 
 public:

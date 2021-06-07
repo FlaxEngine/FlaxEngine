@@ -68,28 +68,17 @@ private:
 
 public:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="device">Graphics device</param>
-    /// <param name="type">Context type</param>
     GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE type);
-
-    /// <summary>
-    /// Destructor
-    /// </summary>
     ~GPUContextDX12();
 
 public:
 
-    /// <summary>
-    /// Gets command list
-    /// </summary>
-    /// <returns>Command list to use</returns>
     FORCE_INLINE ID3D12GraphicsCommandList* GetCommandList() const
     {
         return _commandList;
     }
+
+    uint64 FrameFenceValues[2];
 
 public:
 

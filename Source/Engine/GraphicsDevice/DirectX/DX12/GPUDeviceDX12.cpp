@@ -169,7 +169,7 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
     , Heap_DSV(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64, false)
-    , RingHeap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 64 * 1024, true)
+    , RingHeap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 512 * 1024, true)
 {
 }
 
@@ -620,10 +620,11 @@ bool GPUDeviceDX12::Init()
 
 void GPUDeviceDX12::DrawBegin()
 {
-    /*{
+    {
         PROFILE_CPU_NAMED("Wait For GPU");
-        _commandQueue->WaitForGPU();
-    }*/
+        //_commandQueue->WaitForGPU();
+        _commandQueue->WaitForFence(_mainContext->FrameFenceValues[1]);
+    }
 
     // Base
     GPUDeviceDX::DrawBegin();

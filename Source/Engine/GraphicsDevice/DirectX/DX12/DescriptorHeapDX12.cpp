@@ -128,6 +128,11 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
     value &= ~mask;
 }
 
+GPUResource::ResourceType DescriptorHeapWithSlotsDX12::GetResourceType() const
+{
+    return ResourceType::Descriptor;
+}
+
 DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCountPerHeap, bool shaderVisible)
     : _device(device)
     , _type(type)
@@ -184,14 +189,12 @@ DescriptorHeapRingBufferDX12::DescriptorHeapRingBufferDX12(GPUDeviceDX12* device
 
 bool DescriptorHeapRingBufferDX12::Init()
 {
-    // Create description
+    // Create heap
     D3D12_DESCRIPTOR_HEAP_DESC desc;
     desc.Type = _type;
     desc.NumDescriptors = _descriptorsCount;
     desc.Flags = _shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     desc.NodeMask = 0;
-
-    // Create heap
     const HRESULT result = _device->GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
     LOG_DIRECTX_RESULT_WITH_RETURN(result);
 
@@ -203,7 +206,6 @@ bool DescriptorHeapRingBufferDX12::Init()
     else
         _beginGPU.ptr = 0;
     _incrementSize = _device->GetDevice()->GetDescriptorHandleIncrementSize(desc.Type);
-
     _memoryUsage = 1;
 
     return false;
