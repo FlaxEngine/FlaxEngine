@@ -159,7 +159,7 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
             if (ResourceStateDX12::IsTransitionNeeded(before, after))
             {
                 AddTransitionBarrier(resource, before, after, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
-                state.SetSubresourceState(subresourceIndex, after);
+                state.SetResourceState(after);
             }
         }
         else
@@ -175,8 +175,8 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
                 }
             }
             ASSERT(state.CheckResourceState(after));
+            state.SetResourceState(after);
         }
-        state.SetResourceState(after);
     }
     else
     {
@@ -286,7 +286,7 @@ void GPUContextDX12::flushSRVs()
             return;
 
         // Bind all required slots and mark them as not dirty
-        _srMaskDirtyCompute &= ~srMask;
+        //_srMaskDirtyCompute &= ~srMask; // TODO: this causes visual artifacts sometimes, maybe use binary SR-dirty flag for all slots?
     }
     else
     {
@@ -295,7 +295,7 @@ void GPUContextDX12::flushSRVs()
             return;
 
         // Bind all required slots and mark them as not dirty
-        _srMaskDirtyGraphics &= ~srMask;
+        //_srMaskDirtyGraphics &= ~srMask; // TODO: this causes visual artifacts sometimes, maybe use binary SR-dirty flag for all slots?
     }
 
     // Count SRVs required to be bind to the pipeline (the index of the most significant bit that's set)
@@ -309,7 +309,7 @@ void GPUContextDX12::flushSRVs()
     {
         const auto handle = _srHandles[i];
         const auto dimensions = (D3D12_SRV_DIMENSION)header.SrDimensions[i];
-        if (handle != nullptr && dimensions)
+        if (srMask & (1 << i) && handle != nullptr && dimensions)
         {
             ASSERT(handle->SrvDimension == dimensions);
             srcDescriptorRangeStarts[i] = handle->SRV();
@@ -360,7 +360,8 @@ void GPUContextDX12::flushRTVs()
         if (_rtDepth)
         {
             depthBuffer = _rtDepth->DSV();
-            SetResourceState(_rtDepth->GetResourceOwner(), D3D12_RESOURCE_STATE_DEPTH_WRITE, _rtDepth->SubresourceIndex);
+            auto states = _rtDepth->ReadOnlyDepthView ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            SetResourceState(_rtDepth->GetResourceOwner(), states, _rtDepth->SubresourceIndex);
         }
         else
         {
@@ -507,28 +508,33 @@ void GPUContextDX12::onDrawCall()
         SetResourceState(_ibHandle, D3D12_RESOURCE_STATE_INDEX_BUFFER);
     }
 
-    // If SRV resource is not binded to RTV then transition it to the whole state (GPU-BASED VALIDATION complains about it)
-    for (uint32 i = 0; i < GPU_MAX_SR_BINDED; i++)
+    if (_currentState)
     {
-        const auto handle = _srHandles[i];
-        if (handle != nullptr && handle->GetResourceOwner())
+        // If SRV resource is not binded to RTV then transition it to the whole state (GPU-BASED VALIDATION complains about it)
+        const uint32 srMask = _currentState->GetUsedSRsMask();
+        const uint32 srCount = Math::FloorLog2(srMask) + 1;
+        for (uint32 i = 0; i < srCount; i++)
         {
-            const auto resourceOwner = handle->GetResourceOwner();
-            bool isRtv = false;
-            for (int32 j = 0; j < _rtCount; j++)
+            const auto handle = _srHandles[i];
+            if (srMask & (1 << i) && handle != nullptr && handle->GetResourceOwner())
             {
-                if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == resourceOwner)
+                const auto resourceOwner = handle->GetResourceOwner();
+                bool isRtv = false;
+                for (int32 j = 0; j < _rtCount; j++)
                 {
-                    isRtv = true;
-                    break;
+                    if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == resourceOwner)
+                    {
+                        isRtv = true;
+                        break;
+                    }
                 }
-            }
-            if (!isRtv)
-            {
-                D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                if (handle->IsDepthStencilResource())
-                    states |= D3D12_RESOURCE_STATE_DEPTH_READ;
-                SetResourceState(handle->GetResourceOwner(), states);
+                if (!isRtv)
+                {
+                    D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    if (handle->IsDepthStencilResource())
+                        states |= D3D12_RESOURCE_STATE_DEPTH_READ;
+                    SetResourceState(handle->GetResourceOwner(), states);
+                }
             }
         }
     }
@@ -543,36 +549,39 @@ void GPUContextDX12::onDrawCall()
 
 #if BUILD_DEBUG
     // Additional verification of the state
-    for (int32 i = 0; i < _rtCount; i++)
+    if (_currentState)
     {
-        const auto handle = _rtHandles[i];
-        if (handle != nullptr && handle->GetResourceOwner())
+        for (int32 i = 0; i < _rtCount; i++)
         {
-            const auto& state = handle->GetResourceOwner()->State;
-            ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_RENDER_TARGET) != 0);
-        }
-    }
-    const uint32 srMask = _currentState->GetUsedSRsMask();
-    const uint32 srCount = Math::FloorLog2(srMask) + 1;
-    for (uint32 i = 0; i < srCount; i++)
-    {
-        const auto handle = _srHandles[i];
-        if (handle != nullptr && handle->GetResourceOwner())
-        {
-            const auto& state = handle->GetResourceOwner()->State;
-            bool isRtv = false;
-            for (int32 j = 0; j < _rtCount; j++)
+            const auto handle = _rtHandles[i];
+            if (handle != nullptr && handle->GetResourceOwner())
             {
-                if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == handle->GetResourceOwner())
-                {
-                    isRtv = true;
-                    break;
-                }
+                const auto& state = handle->GetResourceOwner()->State;
+                ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_RENDER_TARGET) != 0);
             }
-            ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) != 0);
-            if (!isRtv)
+        }
+        const uint32 srMask = _currentState->GetUsedSRsMask();
+        const uint32 srCount = Math::FloorLog2(srMask) + 1;
+        for (uint32 i = 0; i < srCount; i++)
+        {
+            const auto handle = _srHandles[i];
+            if (srMask & (1 << i) && handle != nullptr && handle->GetResourceOwner())
             {
-                ASSERT(state.AreAllSubresourcesSame());
+                const auto& state = handle->GetResourceOwner()->State;
+                bool isRtv = false;
+                for (int32 j = 0; j < _rtCount; j++)
+                {
+                    if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == handle->GetResourceOwner())
+                    {
+                        isRtv = true;
+                        break;
+                    }
+                }
+                ASSERT((state.GetSubresourceState(handle->SubresourceIndex) & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) != 0);
+                if (!isRtv)
+                {
+                    ASSERT(state.AreAllSubresourcesSame());
+                }
             }
         }
     }
@@ -1069,10 +1078,10 @@ void GPUContextDX12::ClearState()
 void GPUContextDX12::FlushState()
 {
     // Flush
-    flushCBs();
-    flushSRVs();
-    flushRTVs();
-    flushUAVs();
+    //flushCBs();
+    //flushSRVs();
+    //flushRTVs();
+    //flushUAVs();
     flushRBs();
     //flushPS();
 }

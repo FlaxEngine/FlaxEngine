@@ -32,12 +32,21 @@ public:
     /// <summary>
     /// Returns true if resource state transition is needed in order to use resource in given state.
     /// </summary>
-    /// <param name="currentState">The current resource state.</param>
-    /// <param name="targetState">the destination resource state.</param>
+    /// <param name="before">The current resource state.</param>
+    /// <param name="after">the destination resource state.</param>
     /// <returns>True if need to perform a transition, otherwise false.</returns>
-    FORCE_INLINE static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targetState)
+    FORCE_INLINE static bool IsTransitionNeeded(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES& after)
     {
-        return currentState != targetState && ((currentState | targetState) != currentState || targetState == D3D12_RESOURCE_STATE_COMMON);
+        if (before == D3D12_RESOURCE_STATE_DEPTH_WRITE && after == D3D12_RESOURCE_STATE_DEPTH_READ)
+			return false;
+        if (after == D3D12_RESOURCE_STATE_COMMON)
+			return before != D3D12_RESOURCE_STATE_COMMON;
+        if (after == D3D12_RESOURCE_STATE_DEPTH_READ)
+            return ~(before & (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) == 0;
+        const D3D12_RESOURCE_STATES combined = before | after;
+		if ((combined & (D3D12_RESOURCE_STATE_GENERIC_READ | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT)) == combined)
+			after = combined;
+		return before != after;
     }
 };
 

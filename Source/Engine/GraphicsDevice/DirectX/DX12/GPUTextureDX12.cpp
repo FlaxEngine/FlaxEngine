@@ -450,6 +450,8 @@ void GPUTextureDX12::initHandles()
                     srDesc.Texture2DArray.ResourceMinLODClamp = 0;
                 }
                 _handlesPerSlice[arrayIndex].SetSRV(srDesc);
+                if (isCubeMap)
+                    _handlesPerSlice[arrayIndex].SrvDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // Hack xD (to reproduce the problem comment this line and use Spot Light with a shadow)
             }
             if (useUAV)
             {
@@ -688,6 +690,7 @@ void GPUTextureDX12::initHandles()
     if (_desc.Flags & GPUTextureFlags::ReadOnlyDepthView)
     {
         _handleReadOnlyDepth.Init(this, _device, this, format, msaa);
+        _handleReadOnlyDepth.ReadOnlyDepthView = true;
         if (useDSV)
         {
             if (isCubeMap)

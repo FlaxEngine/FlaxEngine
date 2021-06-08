@@ -73,6 +73,7 @@ public:
 
 public:
 
+    bool ReadOnlyDepthView = false;
     void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC& rtvDesc);
     void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
     void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc);
