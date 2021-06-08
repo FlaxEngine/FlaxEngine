@@ -188,7 +188,12 @@ bool ShadowsOfMordor::Builder::doWorkInner(DateTime buildStart)
         tempDesc.Format = HemispheresFormatToPixelFormat[CACHE_NORMALS_FORMAT];
         _cacheNormals = RenderTargetPool::Get(tempDesc);
         if (_cachePositions == nullptr || _cacheNormals == nullptr)
+        {
+            LOG(Warning, "Failed to get textures for cache.");
+            _wasBuildCalled = false;
+            _isActive = false;
             return true;
+        }
 
         generateHemispheres();
 
@@ -228,6 +233,8 @@ bool ShadowsOfMordor::Builder::doWorkInner(DateTime buildStart)
     if (bounceCount <= 0 || hemispheresCount <= 0)
     {
         LOG(Warning, "No data to render");
+        _wasBuildCalled = false;
+        _isActive = false;
         return true;
     }
 
@@ -284,8 +291,8 @@ bool ShadowsOfMordor::Builder::doWorkInner(DateTime buildStart)
     reportProgress(BuildProgressStep::RenderHemispheres, 1.0f);
 
 #if DEBUG_EXPORT_HEMISPHERES_PREVIEW
-	for (int32 sceneIndex = 0; sceneIndex < _scenes.Count(); sceneIndex++)
-		downloadDebugHemisphereAtlases(_scenes[sceneIndex]);
+    for (int32 sceneIndex = 0; sceneIndex < _scenes.Count(); sceneIndex++)
+        downloadDebugHemisphereAtlases(_scenes[sceneIndex]);
 #endif
 
     // References:
@@ -391,6 +398,7 @@ int32 ShadowsOfMordor::Builder::doWork()
     buildFailed = doWorkInner(buildStart);
     if (buildFailed && !checkBuildCancelled())
     {
+        IsBakingLightmaps = false;
         OnBuildFinished(buildFailed);
         return 0;
     }

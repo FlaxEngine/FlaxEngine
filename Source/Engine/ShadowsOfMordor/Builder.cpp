@@ -521,7 +521,7 @@ void ShadowsOfMordor::Builder::releaseResources()
 bool ShadowsOfMordor::Builder::waitForJobDataSync()
 {
     bool wasCancelled = false;
-    const int32 framesToSyncCount = 3;
+    const int32 framesToSyncCount = 4;
 
     while (!wasCancelled)
     {

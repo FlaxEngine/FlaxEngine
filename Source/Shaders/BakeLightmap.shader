@@ -325,6 +325,8 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1, 1, 1)]
 void CS_BlurEmpty(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID)
 {
+	if (GroupID.x >= AtlasSize || GroupID.y > AtlasSize)
+		return;
 	const int2 location = int2(GroupID.x, GroupID.y);
 	const uint texelAdress = (location.y * AtlasSize + location.x) * NUM_SH_TARGETS;
 
@@ -396,7 +398,7 @@ void CS_BlurEmpty(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThre
 
 #elif defined(_CS_Dilate)
 
-Buffer<float4> InputBuffer    : register(t0);
+Buffer<float4> InputBuffer : register(t0);
 RWBuffer<float4> OutputBuffer : register(u0);
 
 // Fills the empty lightmap texels with blurred data of the surroundings texels (uses only valid ones)
@@ -404,6 +406,8 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1, 1, 1)]
 void CS_Dilate(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID)
 {
+	if (GroupID.x >= AtlasSize || GroupID.y > AtlasSize)
+		return;
 	const int2 location = int2(GroupID.x, GroupID.y);
 	const uint texelAdress = (location.y * AtlasSize + location.x) * NUM_SH_TARGETS;
 
@@ -431,11 +435,9 @@ void CS_Dilate(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadI
 	for (int sampleIndex = 0; sampleIndex < 9; sampleIndex++)
 	{
 		int2 sampleLocation = location + int2(OffsetX[sampleIndex], OffsetY[sampleIndex]);
-
 		if (sampleLocation.x >= 0 && sampleLocation.x < AtlasSize && sampleLocation.y >= 0 && sampleLocation.y < AtlasSize)
 		{			
 			uint sampleAdress = (sampleLocation.y * AtlasSize + sampleLocation.x) * NUM_SH_TARGETS;
-
 			float4 sample0 = InputBuffer[sampleAdress + 0];
 			float4 sample1 = InputBuffer[sampleAdress + 1];
 			float4 sample2 = InputBuffer[sampleAdress + 2];
@@ -454,7 +456,6 @@ void CS_Dilate(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadI
 	if (total > 0)
 	{
 		total = 1.0f / total;
-
 		OutputBuffer[texelAdress + 0] = total0 * total;
 		OutputBuffer[texelAdress + 1] = total1 * total;
 		OutputBuffer[texelAdress + 2] = total2 * total;
@@ -470,6 +471,8 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1, 1, 1)]
 void CS_Finalize(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID)
 {
+	if (GroupID.x >= AtlasSize || GroupID.y > AtlasSize)
+		return;
 	const int2 location = int2(GroupID.x, GroupID.y);
 	const uint texelAdress = (location.y * AtlasSize + location.x) * NUM_SH_TARGETS;
 
