@@ -1684,6 +1684,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
+        limits.HasTypedUAVLoad = true;
         limits.MaximumMipLevelsCount = Math::Min(static_cast<int32>(log2(PhysicalDeviceLimits.maxImageDimension2D)), GPU_MAX_TEXTURE_MIP_LEVELS);
         limits.MaximumTexture1DSize = PhysicalDeviceLimits.maxImageDimension1D;
         limits.MaximumTexture1DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;

@@ -339,6 +339,7 @@ bool GPUDeviceDX12::Init()
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = true;
+        limits.HasTypedUAVLoad = options.TypedUAVLoadAdditionalFormats != 0;
         limits.MaximumMipLevelsCount = D3D12_REQ_MIP_LEVELS;
         limits.MaximumTexture1DSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
         limits.MaximumTexture1DArraySize = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;

@@ -314,11 +314,13 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     context->ResetSR();
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferHandle = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+    context->BindSR(3, depthBufferHandle);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Setup shader data
@@ -414,11 +416,13 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     context->ResetSR();
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferHandle = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+    context->BindSR(3, depthBufferHandle);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Setup shader data
@@ -688,11 +692,13 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     context->ResetSR();
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferHandle = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+    context->BindSR(3, depthBufferHandle);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Setup shader data
