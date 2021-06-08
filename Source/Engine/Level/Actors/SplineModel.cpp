@@ -480,3 +480,11 @@ void SplineModel::OnTransformChanged()
 
     OnSplineUpdated();
 }
+
+void SplineModel::OnActiveInTreeChanged()
+{
+    // Base
+    ModelInstanceActor::OnActiveInTreeChanged();
+
+    OnSplineUpdated();
+}
