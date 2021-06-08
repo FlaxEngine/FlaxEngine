@@ -28,6 +28,7 @@ public:
     GPUBufferViewDX12()
     {
         SrvDimension = D3D12_SRV_DIMENSION_BUFFER;
+        UavDimension = D3D12_UAV_DIMENSION_BUFFER;
     }
 
     /// <summary>

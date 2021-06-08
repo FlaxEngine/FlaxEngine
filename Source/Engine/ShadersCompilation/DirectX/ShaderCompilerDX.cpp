@@ -379,6 +379,30 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             case D3D_SIT_UAV_CONSUME_STRUCTURED:
             case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
                 bindings.UsedUAsMask |= 1 << resDesc.BindPoint;
+                switch (resDesc.Dimension)
+                {
+                case D3D_SRV_DIMENSION_BUFFER:
+                    header.UaDimensions[resDesc.BindPoint] = 1; // D3D12_UAV_DIMENSION_BUFFER;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE1D:
+                    header.UaDimensions[resDesc.BindPoint] = 2; // D3D12_UAV_DIMENSION_TEXTURE1D;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+                    header.UaDimensions[resDesc.BindPoint] = 3; // D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE2D:
+                    header.UaDimensions[resDesc.BindPoint] = 4; // D3D12_UAV_DIMENSION_TEXTURE2D;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+                    header.UaDimensions[resDesc.BindPoint] = 5; // D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE3D:
+                    header.UaDimensions[resDesc.BindPoint] = 8; // D3D12_UAV_DIMENSION_TEXTURE3D;
+                    break;
+                default:
+                    LOG(Error, "Unknown UAV resource {2} of type {0} at slot {1}", resDesc.Dimension, resDesc.BindPoint, String(resDesc.Name));
+                    return true;
+                }
                 break;
             }
         }

@@ -33,6 +33,7 @@ public:
     int32 SubresourceIndex;
 
     D3D12_SRV_DIMENSION SrvDimension = D3D12_SRV_DIMENSION_UNKNOWN;
+    D3D12_UAV_DIMENSION UavDimension = D3D12_UAV_DIMENSION_UNKNOWN;
 
 public:
 

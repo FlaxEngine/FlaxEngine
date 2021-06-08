@@ -70,8 +70,6 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _rbBufferSize(0)
     , _srMaskDirtyGraphics(0)
     , _srMaskDirtyCompute(0)
-    , _uaMaskDirtyGraphics(0)
-    , _uaMaskDirtyCompute(0)
     , _isCompute(0)
     , _rtDirtyFlag(0)
     , _psDirtyFlag(0)
@@ -208,8 +206,6 @@ void GPUContextDX12::Reset()
     _rtDepth = nullptr;
     _srMaskDirtyGraphics = 0;
     _srMaskDirtyCompute = 0;
-    _uaMaskDirtyGraphics = 0;
-    _uaMaskDirtyCompute = 0;
     _psDirtyFlag = false;
     _isCompute = false;
     _currentCompute = nullptr;
@@ -309,7 +305,7 @@ void GPUContextDX12::flushSRVs()
     {
         const auto handle = _srHandles[i];
         const auto dimensions = (D3D12_SRV_DIMENSION)header.SrDimensions[i];
-        if (srMask & (1 << i) && handle != nullptr && dimensions)
+        if (srMask & (1 << i) && handle != nullptr)
         {
             ASSERT(handle->SrvDimension == dimensions);
             srcDescriptorRangeStarts[i] = handle->SRV();
@@ -379,35 +375,30 @@ void GPUContextDX12::flushUAVs()
     if (_isCompute)
     {
         // Skip if no compute shader binded or it doesn't use shader resources
-        if (_uaMaskDirtyCompute == 0 || _currentCompute == nullptr || (uaMask = _currentCompute->GetBindings().UsedUAsMask) == 0)
+        if ((uaMask = _currentCompute->GetBindings().UsedUAsMask) == 0)
             return;
-
-        // Bind all dirty slots and all used slots
-        uaMask |= _uaMaskDirtyCompute;
-        _uaMaskDirtyCompute = 0;
     }
     else
     {
         // Skip if no state binded or it doesn't use shader resources
-        if (_uaMaskDirtyGraphics == 0 || _currentState == nullptr || (uaMask = _currentState->GetUsedUAsMask()) == 0)
+        if (_currentState == nullptr || (uaMask = _currentState->GetUsedUAsMask()) == 0)
             return;
-
-        // Bind all dirty slots and all used slots
-        uaMask |= _uaMaskDirtyGraphics;
-        _uaMaskDirtyGraphics = 0;
     }
 
     // Count UAVs required to be bind to the pipeline (the index of the most significant bit that's set)
     const uint32 uaCount = Math::FloorLog2(uaMask) + 1;
-    ASSERT(uaCount <= GPU_MAX_UA_BINDED);
+    ASSERT(uaCount <= GPU_MAX_UA_BINDED + 1);
 
     // Fill table with source descriptors
-    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED];
+    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
+    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED + 1];
     for (uint32 i = 0; i < uaCount; i++)
     {
         const auto handle = _uaHandles[i];
-        if (handle != nullptr)
+        const auto dimensions = (D3D12_UAV_DIMENSION)header.UaDimensions[i];
+        if (uaMask & (1 << i) && handle != nullptr)
         {
+            ASSERT(handle->UavDimension == dimensions);
             srcDescriptorRangeStarts[i] = handle->UAV();
             SetResourceState(handle->GetResourceOwner(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         }
@@ -752,15 +743,8 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
     // Set render target normally
     SetRenderTarget(nullptr, rt);
 
-    // Bind UAV output to the last slot
-    const int32 slot = ARRAY_COUNT(_uaHandles) - 1;
-    IShaderResourceDX12** lastSlot = &_uaHandles[slot];
-    if (*lastSlot != uaOutputDX12)
-    {
-        *lastSlot = uaOutputDX12;
-        _srMaskDirtyGraphics |= 1 << slot;
-        _srMaskDirtyCompute |= 1 << slot;
-    }
+    // Bind UAV output to the 2nd slot (after render target to match DX11 binding model)
+    _uaHandles[1] = uaOutputDX12;
 }
 
 void GPUContextDX12::ResetSR()
@@ -824,13 +808,7 @@ void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
-    auto handle = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-    if (_uaHandles[slot] != handle || !handle)
-    {
-        _uaMaskDirtyGraphics |= 1 << slot;
-        _uaMaskDirtyCompute |= 1 << slot;
-        _uaHandles[slot] = handle;
-    }
+    _uaHandles[slot] = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
 }
 
 void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)

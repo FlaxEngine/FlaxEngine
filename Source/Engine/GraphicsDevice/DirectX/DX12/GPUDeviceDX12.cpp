@@ -467,12 +467,11 @@ bool GPUDeviceDX12::Init()
         {
             D3D12_DESCRIPTOR_RANGE& range = r[1];
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-            range.NumDescriptors = GPU_MAX_UA_BINDED + 1; // the last (additional) UAV register is used as a UAV output (hidden internally)
+            range.NumDescriptors = GPU_MAX_UA_BINDED;
             range.BaseShaderRegister = 0;
             range.RegisterSpace = 0;
             range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
         }
-        static_assert(GPU_MAX_UA_BINDED == 2, "DX12 backend uses hardcoded single UAV register slot. Update code to support more.");
 
         // Root parameters
         D3D12_ROOT_PARAMETER rootParameters[4];

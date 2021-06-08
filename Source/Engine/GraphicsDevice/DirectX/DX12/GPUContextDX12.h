@@ -47,9 +47,6 @@ private:
     uint32 _srMaskDirtyGraphics;
     uint32 _srMaskDirtyCompute;
 
-    uint32 _uaMaskDirtyGraphics;
-    uint32 _uaMaskDirtyCompute;
-
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;
     int32 _psDirtyFlag : 1;
@@ -58,7 +55,7 @@ private:
     GPUTextureViewDX12* _rtDepth;
     GPUTextureViewDX12* _rtHandles[GPU_MAX_RT_BINDED];
     IShaderResourceDX12* _srHandles[GPU_MAX_SR_BINDED];
-    IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED + 1];
+    IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED];
     GPUBufferDX12* _ibHandle;
     GPUBufferDX12* _vbHandles[GPU_MAX_VB_BINDED];
     D3D12_INDEX_BUFFER_VIEW _ibView;

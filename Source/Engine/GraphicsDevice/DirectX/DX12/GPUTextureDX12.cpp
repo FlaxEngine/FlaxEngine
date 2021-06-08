@@ -280,6 +280,7 @@ void GPUTextureViewDX12::SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc)
 
 void GPUTextureViewDX12::SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource)
 {
+    UavDimension = uavDesc.ViewDimension;
     _uav.CreateUAV(_device, _owner->GetResource(), &uavDesc, counterResource);
 }
 

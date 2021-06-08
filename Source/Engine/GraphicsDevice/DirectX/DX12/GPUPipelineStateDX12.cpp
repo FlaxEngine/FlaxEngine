@@ -139,6 +139,10 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         for (uint32 i = 0; i < srCount; i++) \
             if (shader->Header.SrDimensions[i]) \
                 Header.SrDimensions[i] = shader->Header.SrDimensions[i]; \
+        auto uaCount = Math::FloorLog2(shader->GetBindings().UsedUAsMask) + 1; \
+        for (uint32 i = 0; i < uaCount; i++) \
+            if (shader->Header.UaDimensions[i]) \
+                Header.UaDimensions[i] = shader->Header.UaDimensions[i]; \
     }
     INIT_SHADER_STAGE(HS, GPUShaderProgramHSDX12);
     INIT_SHADER_STAGE(DS, GPUShaderProgramDSDX12);
