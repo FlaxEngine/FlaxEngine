@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEngine.GUI;
 
 namespace FlaxEngine
 {
@@ -34,5 +35,10 @@ namespace FlaxEngine
         /// The spacing amount between collection items in the UI.
         /// </summary>
         public float Spacing;
+
+        /// <summary>
+        /// The collection background color.
+        /// </summary>
+        public Color BackgroundColor = Style.Current.CollectionBackgroundColor;
     }
 }
