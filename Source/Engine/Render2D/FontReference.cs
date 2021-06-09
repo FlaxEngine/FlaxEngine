@@ -21,6 +21,16 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="FontReference"/> struct.
         /// </summary>
+        public FontReference()
+        {
+            _font = null;
+            _size = 30;
+            _cachedFont = null;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FontReference"/> struct.
+        /// </summary>
         /// <param name="font">The font.</param>
         /// <param name="size">The font size.</param>
         public FontReference(FontAsset font, int size)
@@ -61,9 +71,7 @@ namespace FlaxEngine
                 if (_font != value)
                 {
                     _font = value;
-
-                    if (_cachedFont)
-                        _cachedFont = null;
+                    _cachedFont = null;
                 }
             }
         }
@@ -80,9 +88,7 @@ namespace FlaxEngine
                 if (_size != value)
                 {
                     _size = value;
-
-                    if (_cachedFont)
-                        _cachedFont = null;
+                    _cachedFont = null;
                 }
             }
         }
@@ -104,9 +110,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="FontReference" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="FontReference" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(FontReference other)
         {
