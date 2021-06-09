@@ -31,6 +31,11 @@ Collider::Collider(const SpawnParams& params)
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
 
+PxShape* Collider::GetPxShape() const
+{
+    return _shape;
+}
+
 void Collider::SetIsTrigger(bool value)
 {
     if (value == _isTrigger || !CanBeTrigger())
