@@ -7,7 +7,7 @@ namespace FlaxEngine
     /// <summary>
     /// Font reference that defines the font asset and font size to use.
     /// </summary>
-    public struct FontReference
+    public class FontReference
     {
         [NoSerialize]
         private FontAsset _font;
@@ -108,9 +108,9 @@ namespace FlaxEngine
         /// <c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(ref FontReference other)
+        public bool Equals(FontReference other)
         {
-            return _font == other._font && _size == other._size;
+            return !(other is null) && _font == other._font && _size == other._size;
         }
 
         /// <summary>
@@ -121,7 +121,9 @@ namespace FlaxEngine
         /// <returns>True if font references are equal, otherwise false.</returns>
         public static bool operator ==(FontReference lhs, FontReference rhs)
         {
-            return lhs.Equals(ref rhs);
+            if (lhs is null)
+                return rhs is null;
+            return lhs.Equals(rhs);
         }
 
         /// <summary>
@@ -132,7 +134,9 @@ namespace FlaxEngine
         /// <returns>True if font references are not equal, otherwise false.</returns>
         public static bool operator !=(FontReference lhs, FontReference rhs)
         {
-            return !lhs.Equals(ref rhs);
+            if (lhs is null)
+                return !(rhs is null);
+            return !lhs.Equals(rhs);
         }
 
         /// <inheritdoc />
@@ -141,7 +145,7 @@ namespace FlaxEngine
             if (!(other is FontReference))
                 return false;
             var fontReference = (FontReference)other;
-            return Equals(ref fontReference);
+            return Equals(fontReference);
         }
 
         /// <inheritdoc />
@@ -149,7 +153,7 @@ namespace FlaxEngine
         {
             unchecked
             {
-                int hashCode = _font.GetHashCode();
+                int hashCode = _font ? _font.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ _size;
                 return hashCode;
             }
