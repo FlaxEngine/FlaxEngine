@@ -25,6 +25,9 @@ namespace FlaxEngine.GUI
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RichTextBox"/> class.
+        /// </summary>
         public RichTextBox()
         {
             var style = Style.Current;
