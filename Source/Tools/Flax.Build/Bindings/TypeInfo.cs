@@ -44,7 +44,7 @@ namespace Flax.Build.Bindings
                 return true;
 
             // Hardcoded cases
-            if (Type == "String" || Type == "Array")
+            if (Type == "String" || Type == "Array" || Type == "StringView" || Type == "StringAnsi" || Type == "StringAnsiView")
                 return false;
 
             // Fallback to default

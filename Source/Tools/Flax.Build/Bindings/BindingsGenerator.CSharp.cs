@@ -225,8 +225,7 @@ namespace Flax.Build.Bindings
 
                 if (apiType.IsScriptingObject)
                     return typeInfo.Type.Replace("::", ".");
-
-                if (typeInfo.IsPtr && (apiType is LangType || apiType.IsPod))
+                if (typeInfo.IsPtr && apiType.IsPod)
                     return typeInfo.Type.Replace("::", ".") + '*';
             }
 
@@ -581,6 +580,46 @@ namespace Flax.Build.Bindings
 
                 contents.AppendLine();
 
+                var useCustomDelegateSignature = false;
+                for (var i = 0; i < paramsCount; i++)
+                {
+                    var result = GenerateCSharpNativeToManaged(buildData, eventInfo.Type.GenericArgs[i], classInfo);
+                    if (result[result.Length - 1] == '*')
+                        useCustomDelegateSignature = true;
+                    CppParamsWrappersCache[i] = result;
+                }
+
+                string eventSignature;
+                if (useCustomDelegateSignature)
+                {
+                    contents.Append(indent).Append($"/// <summary>The delegate for event {eventInfo.Name}.</summary>").AppendLine();
+                    contents.Append(indent).Append("public delegate void ").Append(eventInfo.Name).Append("Delegate(");
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        if (i != 0)
+                            contents.Append(", ");
+                        contents.Append(CppParamsWrappersCache[i]).Append(" arg").Append(i);
+                    }
+                    contents.Append(");").AppendLine().AppendLine();
+                    eventSignature = "event " + eventInfo.Name + "Delegate";
+                }
+                else
+                {
+                    eventSignature = "event Action";
+                    if (paramsCount != 0)
+                    {
+                        eventSignature += '<';
+                        for (var i = 0; i < paramsCount; i++)
+                        {
+                            if (i != 0)
+                                eventSignature += ", ";
+                            CppParamsWrappersCache[i] = GenerateCSharpNativeToManaged(buildData, eventInfo.Type.GenericArgs[i], classInfo);
+                            eventSignature += CppParamsWrappersCache[i];
+                        }
+                        eventSignature += '>';
+                    }
+                }
+
                 foreach (var comment in eventInfo.Comment)
                 {
                     if (comment.Contains("/// <returns>"))
@@ -598,19 +637,6 @@ namespace Flax.Build.Bindings
                     contents.Append("private ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
-                string eventSignature = "event Action";
-                if (paramsCount != 0)
-                {
-                    eventSignature += '<';
-                    for (var i = 0; i < paramsCount; i++)
-                    {
-                        if (i != 0)
-                            eventSignature += ", ";
-                        CppParamsWrappersCache[i] = GenerateCSharpNativeToManaged(buildData, eventInfo.Type.GenericArgs[i], classInfo);
-                        eventSignature += CppParamsWrappersCache[i];
-                    }
-                    eventSignature += '>';
-                }
                 contents.Append(eventSignature);
                 contents.Append(' ').AppendLine(eventInfo.Name);
                 contents.Append(indent).Append('{').AppendLine();

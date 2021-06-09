@@ -75,24 +75,38 @@ namespace Flax.Build.Bindings
 
         private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller)
         {
-            var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out _, null);
+            var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out var managedTypeAsNative, null);
+            string result;
             if (!string.IsNullOrEmpty(nativeToManaged))
-                nativeToManaged = string.Format(nativeToManaged, paramName);
-            else
-                nativeToManaged = paramName;
-            if ((!paramType.IsPtr && paramType.Type != "StringView" && paramType.Type != "StringAnsiView") || paramType.IsPod(buildData, caller))
             {
-                if (nativeToManaged == paramName)
+                result = string.Format(nativeToManaged, paramName);
+                if (managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
                 {
-                    nativeToManaged = '&' + nativeToManaged;
+                    // Pass pointer value
                 }
                 else
                 {
-                    contents.Append($"        auto __param{paramName} = {nativeToManaged};").AppendLine();
-                    nativeToManaged = $"&__param{paramName}";
+                    // Pass as pointer to local variable converted for managed runtime
+                    if (paramType.IsPtr)
+                        result = string.Format(nativeToManaged, '*' + paramName);
+                    contents.Append($"        auto __param_{paramName} = {result};").AppendLine();
+                    result = $"&__param_{paramName}";
                 }
             }
-            return $"(void*){nativeToManaged}";
+            else
+            {
+                result = paramName;
+                if (paramType.IsPtr || managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
+                {
+                    // Pass pointer value
+                }
+                else
+                {
+                    // Pass as pointer to value
+                    result = '&' + result;
+                }
+            }
+            return $"(void*){result}";
         }
 
         public static string GenerateCppWrapperNativeToVariant(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
