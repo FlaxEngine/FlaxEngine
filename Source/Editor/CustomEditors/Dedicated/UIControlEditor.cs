@@ -412,6 +412,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             _cachedType = null;
+            if (Values.HasNull)
+                return;
+            if (HasDifferentTypes)
+            {
+                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
+                return;
+            }
 
             // Set control type button
             var space = layout.Space(20);
@@ -600,34 +607,28 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private bool _cachedXEq;
         private bool _cachedYEq;
 
-        /// <summary>
-        /// Refreshes if equality of anchors does not correspond to the cached equality
-        /// </summary>
-        public void RefreshBaseOnAnchorsEquality()
-        {
-            if (Values.HasNull)
-                return;
-
-            GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
-            if (xEq != _cachedXEq || yEq != _cachedYEq)
-            {
-                RebuildLayout();
-                return;
-            }
-        }
-
         /// <inheritdoc />
         public override void Refresh()
         {
-            // Automatic layout rebuild if control type gets changed
-            var type = Values.HasNull ? null : Values[0].GetType();
-            if (type != _cachedType)
+            if (_cachedType != null)
             {
-                RebuildLayout();
-                return;
+                // Automatic layout rebuild if control type gets changed
+                var type = Values.HasNull ? null : Values[0].GetType();
+                if (type != _cachedType)
+                {
+                    RebuildLayout();
+                    return;
+                }
+
+                // Refresh anchors
+                GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
+                if (xEq != _cachedXEq || yEq != _cachedYEq)
+                {
+                    RebuildLayout();
+                }
+
+                //RefreshValues();
             }
-            RefreshBaseOnAnchorsEquality();
-            //RefreshValues();
 
             base.Refresh();
         }
@@ -672,7 +673,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     for (int i = 0; i < uiControls.Count; i++)
                     {
                         var uiControl = (UIControl)uiControls[i];
-                        string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
+                        string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
                         uiControl.Control = (Control)controlType.CreateInstance();
                         if (uiControl.Name.StartsWith(previousName))
                         {
@@ -687,7 +688,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 for (int i = 0; i < uiControls.Count; i++)
                 {
                     var uiControl = (UIControl)uiControls[i];
-                    string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
+                    string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
                     uiControl.Control = (Control)controlType.CreateInstance();
                     if (uiControl.Name.StartsWith(previousName))
                     {
