@@ -412,8 +412,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             _cachedType = null;
-            if (Values.HasNull)
-                return;
             if (HasDifferentTypes)
             {
                 // TODO: support stable editing multiple different control types (via generic way or for transform-only)
@@ -626,8 +624,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     RebuildLayout();
                 }
-
-                //RefreshValues();
             }
 
             base.Refresh();
@@ -663,39 +659,32 @@ namespace FlaxEditor.CustomEditors.Dedicated
             cm.Show(button.Parent, button.BottomLeft);
         }
 
+        private void SetType(ref ScriptType controlType, UIControl uiControl)
+        {
+            string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
+            uiControl.Control = (Control)controlType.CreateInstance();
+            if (uiControl.Name.StartsWith(previousName))
+            {
+                string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
+                uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+            }
+        }
+
         private void SetType(ScriptType controlType)
         {
             var uiControls = ParentEditor.Values;
-            if (Presenter.Undo != null)
+            if (Presenter.Undo?.Enabled ?? false)
             {
                 using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
                 {
                     for (int i = 0; i < uiControls.Count; i++)
-                    {
-                        var uiControl = (UIControl)uiControls[i];
-                        string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
-                        uiControl.Control = (Control)controlType.CreateInstance();
-                        if (uiControl.Name.StartsWith(previousName))
-                        {
-                            string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                            uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                        }
-                    }
+                        SetType(ref controlType, (UIControl)uiControls[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < uiControls.Count; i++)
-                {
-                    var uiControl = (UIControl)uiControls[i];
-                    string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
-                    uiControl.Control = (Control)controlType.CreateInstance();
-                    if (uiControl.Name.StartsWith(previousName))
-                    {
-                        string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                        uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                    }
-                }
+                    SetType(ref controlType, (UIControl)uiControls[i]);
             }
 
             ParentEditor.RebuildLayout();

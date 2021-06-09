@@ -142,6 +142,10 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void RebuildLayout()
         {
+            // Skip rebuilding during init
+            if (CurrentCustomEditor == this)
+                return;
+
             // Special case for root objects to run normal layout build
             if (_presenter.Selection == Values)
             {
