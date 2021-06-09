@@ -22,9 +22,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var list = (IList)listType.CreateInstance();
             var defaultValue = Scripting.TypeUtils.GetDefaultValue(ElementType);
             for (int i = 0; i < size; i++)
-            {
                 list.Add(defaultValue);
-            }
             return list;
         }
 
@@ -57,7 +55,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     else
                     {
                         // Initialize new entries with default values
-                        var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType);
+                        var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType, NotNullItems);
                         for (int i = oldSize; i < newSize; i++)
                             newValues.Add(defaultValue);
                     }
@@ -65,7 +63,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (newSize > 0)
                 {
                     // Fill new entries with default value
-                    var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType);
+                    var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType, NotNullItems);
                     for (int i = oldSize; i < newSize; i++)
                         newValues.Add(defaultValue);
                 }
@@ -86,9 +84,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var cloned = (IList)listType.CreateInstance();
 
             for (int i = 0; i < size; i++)
-            {
                 cloned.Add(list[i]);
-            }
 
             return cloned;
         }

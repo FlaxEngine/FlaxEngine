@@ -37,8 +37,9 @@ namespace FlaxEditor.Scripting
         /// Gets the default value for the given type (can be value type or reference type).
         /// </summary>
         /// <param name="type">The type.</param>
+        /// <param name="notNull">Whether the value can be empty. If that's true, it can't.</param>
         /// <returns>The created instance.</returns>
-        public static object GetDefaultValue(ScriptType type)
+        public static object GetDefaultValue(ScriptType type, bool notNull = false)
         {
             if (type.Type == typeof(string))
                 return string.Empty;
@@ -64,7 +65,7 @@ namespace FlaxEditor.Scripting
                 Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
-            if (new ScriptType(typeof(object)).IsAssignableFrom(type))
+            if (!notNull && new ScriptType(typeof(object)).IsAssignableFrom(type))
                 return null;
             if (type.CanCreateInstance)
             {
