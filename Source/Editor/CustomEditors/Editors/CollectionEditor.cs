@@ -81,6 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// Determines if value of collection can be null.
         /// </summary>
         protected bool NotNullItems;
+
         private IntegerValueElement _size;
         private Color _background;
         private int _elementsCount;
@@ -107,40 +108,34 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _readOnly = false;
-            _canReorderItems = true;
-            NotNullItems = false;
-
             // No support for different collections for now
             if (HasDifferentValues || HasDifferentTypes)
                 return;
 
             var size = Count;
+            _readOnly = false;
+            _canReorderItems = true;
+            _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
+            NotNullItems = false;
 
             // Try get CollectionAttribute for collection editor meta
             var attributes = Values.GetAttributes();
             Type overrideEditorType = null;
             float spacing = 10.0f;
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
-            if (collection is null)
+            if (collection != null)
             {
-                _readOnly = false;
-                NotNullItems = false;
-                _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
-            }
-            else
-            {
-                // TODO: handle NotNullItems by filtering child editors SetValue
                 _readOnly = collection.ReadOnly;
                 _canReorderItems = collection.CanReorderItems;
                 NotNullItems = collection.NotNullItems;
-                _background = collection.BackgroundColor;
+                if (collection.BackgroundColor.HasValue)
+                    _background = collection.BackgroundColor.Value;
                 overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                 spacing = collection.Spacing;
             }
 
             // Size
-            if (_readOnly)
+            if (_readOnly || (NotNullItems && size == 0))
             {
                 layout.Label("Size", size.ToString());
             }
@@ -214,7 +209,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     Text = "+",
                     TooltipText = "Add new item",
                     AnchorPreset = AnchorPresets.TopRight,
-                    Parent = area.ContainerControl
+                    Parent = area.ContainerControl,
+                    Enabled = !NotNullItems || size > 0,
                 };
                 addButton.Clicked += () =>
                 {
@@ -229,7 +225,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     TooltipText = "Remove last item",
                     AnchorPreset = AnchorPresets.TopRight,
                     Parent = area.ContainerControl,
-                    Enabled = size > 0
+                    Enabled = size > 0,
                 };
                 removeButton.Clicked += () =>
                 {
@@ -344,6 +340,25 @@ namespace FlaxEditor.CustomEditors.Editors
                 RebuildLayout();
                 RebuildParentCollection();
             }
+        }
+
+        /// <inheritdoc />
+        protected override bool OnDirty(CustomEditor editor, object value, object token = null)
+        {
+            if (NotNullItems)
+            {
+                if (value == null && editor.ParentEditor == this)
+                    return false;
+                if (editor == this && value is IList list)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        if (list[i] == null)
+                            return false;
+                    }
+                }
+            }
+            return base.OnDirty(editor, value, token);
         }
     }
 }

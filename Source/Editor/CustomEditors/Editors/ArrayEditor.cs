@@ -43,7 +43,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Copy old values
                     Array.Copy(array, 0, newValues, 0, sharedCount);
 
-                    if (elementType.IsValueType)
+                    if (elementType.IsValueType || NotNullItems)
                     {
                         // Fill new entries with the last value
                         for (int i = oldSize; i < newSize; i++)
@@ -52,7 +52,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     else
                     {
                         // Initialize new entries with default values
-                        var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType), NotNullItems);
+                        var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType));
                         for (int i = oldSize; i < newSize; i++)
                             newValues.SetValue(defaultValue, i);
                     }
@@ -60,7 +60,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (newSize > 0)
                 {
                     // Initialize new entries with default values
-                    var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType), NotNullItems);
+                    var defaultValue = TypeUtils.GetDefaultValue(new ScriptType(elementType));
                     for (int i = 0; i < newSize; i++)
                         newValues.SetValue(defaultValue, i);
                 }

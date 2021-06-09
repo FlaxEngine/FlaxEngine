@@ -157,6 +157,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(195)]
         public Color CollectionBackgroundColor;
+
         /// <summary>
         /// The progress normal color.
         /// </summary>

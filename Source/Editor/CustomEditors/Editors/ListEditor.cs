@@ -46,7 +46,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < sharedCount; i++)
                         newValues.Add(list[i]);
 
-                    if (elementType.IsValueType)
+                    if (elementType.IsValueType || NotNullItems)
                     {
                         // Fill new entries with the last value
                         for (int i = oldSize; i < newSize; i++)
@@ -55,7 +55,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     else
                     {
                         // Initialize new entries with default values
-                        var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType, NotNullItems);
+                        var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType);
                         for (int i = oldSize; i < newSize; i++)
                             newValues.Add(defaultValue);
                     }
@@ -63,7 +63,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (newSize > 0)
                 {
                     // Fill new entries with default value
-                    var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType, NotNullItems);
+                    var defaultValue = Scripting.TypeUtils.GetDefaultValue(elementType);
                     for (int i = oldSize; i < newSize; i++)
                         newValues.Add(defaultValue);
                 }

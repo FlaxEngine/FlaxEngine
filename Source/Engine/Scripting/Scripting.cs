@@ -221,7 +221,7 @@ namespace FlaxEngine
                 TextBoxBackground = Color.FromBgra(0xFF333337),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
-                CollectionBackgroundColor = Color.FromBgra(0x16FFFFFF),
+                CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 SharedTooltip = new Tooltip(),
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;

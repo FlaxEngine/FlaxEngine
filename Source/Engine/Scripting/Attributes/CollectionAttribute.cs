@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
-using FlaxEngine.GUI;
 
 namespace FlaxEngine
 {
@@ -39,6 +38,6 @@ namespace FlaxEngine
         /// <summary>
         /// The collection background color.
         /// </summary>
-        public Color BackgroundColor = Style.Current.CollectionBackgroundColor;
+        public Color? BackgroundColor;
     }
 }
