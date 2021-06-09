@@ -36,8 +36,16 @@ namespace FlaxEngine
         /// <param name="font">The font.</param>
         public FontReference(Font font)
         {
-            _font = font?.Asset;
-            _size = font?.Size ?? 30;
+            if (font)
+            {
+                _font = font.Asset;
+                _size = font.Size;
+            }
+            else
+            {
+                _font = null;
+                _size = 30;
+            }
             _cachedFont = font;
         }
 
@@ -85,7 +93,11 @@ namespace FlaxEngine
         /// <returns>Th font or null if descriptor is invalid.</returns>
         public Font GetFont()
         {
-            return _cachedFont ?? (_cachedFont = _font?.CreateFont(_size));
+            if (_cachedFont)
+                return _cachedFont;
+            if (_font)
+                _cachedFont = _font.CreateFont(_size);
+            return _cachedFont;
         }
 
         /// <summary>
