@@ -73,7 +73,7 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller)
+        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller, bool isOut)
         {
             var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out var managedTypeAsNative, null);
             string result;
@@ -96,7 +96,12 @@ namespace Flax.Build.Bindings
             else
             {
                 result = paramName;
-                if (paramType.IsPtr || managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
+                if (paramType.IsRef && !paramType.IsConst && !isOut)
+                {
+                    // Pass reference as a pointer
+                    result = '&' + result;
+                }
+                else if (paramType.IsPtr || managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
                 {
                     // Pass pointer value
                 }
@@ -1038,7 +1043,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
-                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo);
+                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, parameterInfo.IsOut);
                 contents.Append($"        params[{i}] = {paramValue};").AppendLine();
             }
 
@@ -1295,7 +1300,7 @@ namespace Flax.Build.Bindings
                 {
                     var paramType = eventInfo.Type.GenericArgs[i];
                     var paramName = "arg" + i;
-                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo);
+                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, false);
                     contents.Append($"        params[{i}] = {paramValue};").AppendLine();
                 }
                 if (eventInfo.IsStatic)
