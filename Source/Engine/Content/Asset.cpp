@@ -111,7 +111,7 @@ Asset::Asset(const SpawnParams& params, const AssetInfo* info)
 
 String Asset::ToString() const
 {
-    return String::Format(TEXT("{0}: {1}, \'{2}\', Refs: {3}"), GetTypeName(), GetID(), GetPath(), GetReferencesCount());
+    return String::Format(TEXT("{0}, {1}, {2}"), GetTypeName(), GetID(), GetPath());
 }
 
 void Asset::OnDeleteObject()
