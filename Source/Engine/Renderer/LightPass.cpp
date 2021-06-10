@@ -206,8 +206,10 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
 
     // Bind output
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferHandle = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : nullptr;
-    context->SetRenderTarget(depthBufferHandle, lightBuffer);
+    const bool depthBufferReadOnly = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView;
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
@@ -225,7 +227,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBuffer);
+    context->BindSR(3, depthBufferSRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Check if debug lights
@@ -274,7 +276,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(depthBufferHandle, lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
@@ -329,7 +331,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(depthBufferHandle, lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
@@ -370,7 +372,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, lightIndex, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(depthBufferHandle, lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);

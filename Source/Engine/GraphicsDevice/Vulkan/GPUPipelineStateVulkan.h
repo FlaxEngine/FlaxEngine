@@ -152,6 +152,11 @@ public:
     /// </summary>
     const SpirvShaderDescriptorInfo* DescriptorInfoPerStage[DescriptorSet::GraphicsStagesCount];
 
+    const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const
+    {
+        return _desc.pVertexInputState;
+    }
+
     DescriptorSetWriteContainerVulkan DSWriteContainer;
     DescriptorSetWriterVulkan DSWriter[DescriptorSet::GraphicsStagesCount];
 

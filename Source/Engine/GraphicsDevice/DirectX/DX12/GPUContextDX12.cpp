@@ -153,7 +153,7 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
         if (state.AreAllSubresourcesSame())
         {
             // Transition entire resource at once
-            const D3D12_RESOURCE_STATES before = state.GetSubresourceState(subresourceIndex);
+            const D3D12_RESOURCE_STATES before = state.GetSubresourceState(-1);
             if (ResourceStateDX12::IsTransitionNeeded(before, after))
             {
                 AddTransitionBarrier(resource, before, after, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
@@ -163,6 +163,7 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
         else
         {
             // Slow path to transition each subresource
+            bool hadAnyTransition = false;
             for (int32 i = 0; i < state.GetSubresourcesCount(); i++)
             {
                 const D3D12_RESOURCE_STATES before = state.GetSubresourceState(i);
@@ -170,10 +171,20 @@ void GPUContextDX12::SetResourceState(ResourceOwnerDX12* resource, D3D12_RESOURC
                 {
                     AddTransitionBarrier(resource, before, after, i);
                     state.SetSubresourceState(i, after);
+                    hadAnyTransition = true;
                 }
             }
-            ASSERT(state.CheckResourceState(after));
-            state.SetResourceState(after);
+            if (hadAnyTransition)
+            {
+                // Try merge all subresources states into a single state
+                after = state.GetSubresourceState(0);
+                for (int32 i = 1; i < state.GetSubresourcesCount(); i++)
+                {
+                    if (state.GetSubresourceState(i) != after)
+                        return;
+                }
+                state.SetResourceState(after);
+            }
         }
     }
     else
@@ -357,6 +368,21 @@ void GPUContextDX12::flushRTVs()
         {
             depthBuffer = _rtDepth->DSV();
             auto states = _rtDepth->ReadOnlyDepthView ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            if (_currentState && _rtDepth->ReadOnlyDepthView)
+            {
+                // If read-only depth buffer is also binded as shader input then ensure it has proper state bit
+                const uint32 srMask = _currentState->GetUsedSRsMask();
+                const uint32 srCount = Math::FloorLog2(srMask) + 1;
+                for (uint32 i = 0; i < srCount; i++)
+                {
+                    const auto handle = _srHandles[i];
+                    if (srMask & (1 << i) && handle == _rtDepth)
+                    {
+                        states |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                        break;
+                    }
+                }
+            }
             SetResourceState(_rtDepth->GetResourceOwner(), states, _rtDepth->SubresourceIndex);
         }
         else
@@ -483,7 +509,7 @@ void GPUContextDX12::flushPS()
     }
 }
 
-void GPUContextDX12::onDrawCall()
+void GPUContextDX12::OnDrawCall()
 {
     // Ensure state of the vertex and index buffers
     for (int32 i = 0; i < _vbCount; i++)
@@ -510,7 +536,7 @@ void GPUContextDX12::onDrawCall()
             if (srMask & (1 << i) && handle != nullptr && handle->GetResourceOwner())
             {
                 const auto resourceOwner = handle->GetResourceOwner();
-                bool isRtv = false;
+                bool isRtv = _rtDepth == handle;
                 for (int32 j = 0; j < _rtCount; j++)
                 {
                     if (_rtHandles[j] && _rtHandles[j]->GetResourceOwner() == resourceOwner)
@@ -970,14 +996,14 @@ void GPUContextDX12::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 
 void GPUContextDX12::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
-    onDrawCall();
+    OnDrawCall();
     _commandList->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX12::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
-    onDrawCall();
+    OnDrawCall();
     _commandList->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
@@ -990,7 +1016,7 @@ void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
     auto signature = _device->DrawIndirectCommandSignature->GetSignature();
     SetResourceState(bufferForArgsDX12, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
-    onDrawCall();
+    OnDrawCall();
     _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DRAW_CALL(0, 0);
 }
@@ -1003,7 +1029,7 @@ void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     auto signature = _device->DrawIndexedIndirectCommandSignature->GetSignature();
     SetResourceState(bufferForArgsDX12, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
-    onDrawCall();
+    OnDrawCall();
     _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DRAW_CALL(0, 0);
 }

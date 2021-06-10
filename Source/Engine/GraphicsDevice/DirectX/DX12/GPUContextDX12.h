@@ -138,7 +138,7 @@ private:
     void flushCBs();
     void flushRBs();
     void flushPS();
-    void onDrawCall();
+    void OnDrawCall();
 
 public:
 
