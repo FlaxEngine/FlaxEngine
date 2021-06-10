@@ -13,6 +13,91 @@
 #include "Engine/Threading/ConcurrentTaskQueue.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 
+AssetReferenceBase::~AssetReferenceBase()
+{
+    if (_asset)
+    {
+        _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+        _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        _asset->RemoveReference();
+        _asset = nullptr;
+    }
+}
+
+String AssetReferenceBase::ToString() const
+{
+    return _asset ? _asset->ToString() : TEXT("<null>");
+}
+
+void AssetReferenceBase::OnSet(Asset* asset)
+{
+    auto e = _asset;
+    if (e != asset)
+    {
+        if (e)
+        {
+            e->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+            e->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+            e->RemoveReference();
+        }
+        _asset = e = asset;
+        if (e)
+        {
+            e->AddReference();
+            e->OnLoaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+            e->OnUnloaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        }
+        Changed();
+        if (e && e->IsLoaded())
+            Loaded();
+    }
+}
+
+void AssetReferenceBase::OnLoaded(Asset* asset)
+{
+    ASSERT(_asset == asset);
+    Loaded();
+}
+
+void AssetReferenceBase::OnUnloaded(Asset* asset)
+{
+    ASSERT(_asset == asset);
+    Unload();
+    OnSet(nullptr);
+}
+
+WeakAssetReferenceBase::~WeakAssetReferenceBase()
+{
+    if (_asset)
+        _asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+}
+
+String WeakAssetReferenceBase::ToString() const
+{
+    return _asset ? _asset->ToString() : TEXT("<null>");
+}
+
+void WeakAssetReferenceBase::OnSet(Asset* asset)
+{
+    auto e = _asset;
+    if (e != asset)
+    {
+        if (e)
+            e->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+        _asset = e = asset;
+        if (e)
+            e->OnUnloaded.Bind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    }
+}
+
+void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
+{
+    ASSERT(_asset == asset);
+    Unload();
+    asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    asset = nullptr;
+}
+
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)
     : ManagedScriptingObject(params)
     , _refCount(0)
