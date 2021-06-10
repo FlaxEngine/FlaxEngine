@@ -95,7 +95,7 @@ void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
     ASSERT(_asset == asset);
     Unload();
     asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
-    asset = nullptr;
+    _asset = nullptr;
 }
 
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)
