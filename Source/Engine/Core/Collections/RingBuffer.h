@@ -48,7 +48,7 @@ public:
 	{
 		if (_capacity == 0 || _capacity == _count)
 		{
-			const int32 capacity = _allocation.CalculateCapacityGrow(_capacity, 0);
+			const int32 capacity = _allocation.CalculateCapacityGrow(_capacity, _count + 1);
 			AllocationData alloc;
 			alloc.Allocate(capacity);
 			const int32 frontCount = Math::Min(_capacity - _front, _count);
@@ -78,6 +78,18 @@ public:
 		ASSERT(_front != _back);
 		return _allocation.Get()[_front];
 	}
+
+    FORCE_INLINE T& operator[](int32 index)
+    {
+        ASSERT(index >= 0 && index < _count);
+		return _allocation.Get()[(_front + index) % _capacity];
+    }
+
+    FORCE_INLINE const T& operator[](int32 index) const
+    {
+        ASSERT(index >= 0 && index < _count);
+		return _allocation.Get()[(_front + index) % _capacity];
+    }
 
 	void PopFront()
 	{
