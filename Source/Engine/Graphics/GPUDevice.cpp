@@ -175,6 +175,15 @@ void GPUResource::OnReleaseGPU()
 {
 }
 
+String GPUResource::ToString() const
+{
+#if GPU_ENABLE_RESOURCE_NAMING
+    return GetName();
+#else
+    return TEXT("GPU Resource");
+#endif
+}
+
 void GPUResource::OnDeleteObject()
 {
     ReleaseGPU();

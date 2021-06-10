@@ -12,6 +12,85 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 
+bool MaterialInfo8::operator==(const MaterialInfo8& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && TransparentLighting == other.TransparentLighting
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && Flags == other.Flags
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
+MaterialInfo::MaterialInfo(const MaterialInfo8& other)
+{
+    Domain = other.Domain;
+    BlendMode = other.BlendMode;
+    ShadingModel = other.ShadingModel;
+    UsageFlags = MaterialUsageFlags::None;
+    if (other.Flags & MaterialFlags_Deprecated::UseMask)
+        UsageFlags |= MaterialUsageFlags::UseMask;
+    if (other.Flags & MaterialFlags_Deprecated::UseEmissive)
+        UsageFlags |= MaterialUsageFlags::UseEmissive;
+    if (other.Flags & MaterialFlags_Deprecated::UsePositionOffset)
+        UsageFlags |= MaterialUsageFlags::UsePositionOffset;
+    if (other.Flags & MaterialFlags_Deprecated::UseVertexColor)
+        UsageFlags |= MaterialUsageFlags::UseVertexColor;
+    if (other.Flags & MaterialFlags_Deprecated::UseNormal)
+        UsageFlags |= MaterialUsageFlags::UseNormal;
+    if (other.Flags & MaterialFlags_Deprecated::UseDisplacement)
+        UsageFlags |= MaterialUsageFlags::UseDisplacement;
+    if (other.Flags & MaterialFlags_Deprecated::UseRefraction)
+        UsageFlags |= MaterialUsageFlags::UseRefraction;
+    FeaturesFlags = MaterialFeaturesFlags::None;
+    if (other.Flags & MaterialFlags_Deprecated::Wireframe)
+        FeaturesFlags |= MaterialFeaturesFlags::Wireframe;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDepthTest && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDepthTest;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableFog && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableFog;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableReflections && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableReflections;
+    if (other.Flags & MaterialFlags_Deprecated::DisableDepthWrite)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDepthWrite;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDistortion && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDistortion;
+    if (other.Flags & MaterialFlags_Deprecated::InputWorldSpaceNormal)
+        FeaturesFlags |= MaterialFeaturesFlags::InputWorldSpaceNormal;
+    if (other.Flags & MaterialFlags_Deprecated::UseDitheredLODTransition)
+        FeaturesFlags |= MaterialFeaturesFlags::DitheredLODTransition;
+    if (other.BlendMode != MaterialBlendMode::Opaque && other.TransparentLighting == MaterialTransparentLighting_Deprecated::None)
+        ShadingModel = MaterialShadingModel::Unlit;
+    DecalBlendingMode = other.DecalBlendingMode;
+    PostFxLocation = other.PostFxLocation;
+    CullMode = other.Flags & MaterialFlags_Deprecated::TwoSided ? ::CullMode::TwoSided : ::CullMode::Normal;
+    MaskThreshold = other.MaskThreshold;
+    OpacityThreshold = other.OpacityThreshold;
+    TessellationMode = other.TessellationMode;
+    MaxTessellationFactor = other.MaxTessellationFactor;
+}
+
+bool MaterialInfo::operator==(const MaterialInfo& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && UsageFlags == other.UsageFlags
+            && FeaturesFlags == other.FeaturesFlags
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && CullMode == other.CullMode
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
 const Char* ToString(MaterialParameterType value)
 {
     const Char* result;

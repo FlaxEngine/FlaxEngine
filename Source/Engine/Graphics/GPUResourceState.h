@@ -45,12 +45,8 @@ public:
     void Initialize(uint32 subresourceCount, StateType initialState, bool usePerSubresourceTracking)
     {
         ASSERT(_subresourceState.IsEmpty() && subresourceCount > 0);
-
-        // Initialize state
         _allSubresourcesSame = true;
         _resourceState = initialState;
-
-        // Allocate space for per-subresource state tracking
         if (usePerSubresourceTracking && subresourceCount > 1)
             _subresourceState.Resize(subresourceCount, false);
 #if BUILD_DEBUG
@@ -82,29 +78,19 @@ public:
     bool CheckResourceState(StateType state) const
     {
         if (_allSubresourcesSame)
-        {
             return state == _resourceState;
-        }
-
-        // Check all subresources
         for (int32 i = 0; i < _subresourceState.Count(); i++)
         {
             if (_subresourceState[i] != state)
-            {
                 return false;
-            }
         }
-
         return true;
     }
 
     StateType GetSubresourceState(uint32 subresourceIndex) const
     {
         if (_allSubresourcesSame)
-        {
             return _resourceState;
-        }
-
         ASSERT(subresourceIndex >= 0 && subresourceIndex < static_cast<uint32>(_subresourceState.Count()));
         return _subresourceState[subresourceIndex];
     }
@@ -113,12 +99,9 @@ public:
     {
         _allSubresourcesSame = 1;
         _resourceState = state;
-
 #if BUILD_DEBUG
         for (int32 i = 0; i < _subresourceState.Count(); i++)
-        {
             _subresourceState[i] = InvalidState;
-        }
 #endif
     }
 
@@ -137,9 +120,7 @@ public:
             if (_allSubresourcesSame)
             {
                 for (int32 i = 0; i < _subresourceState.Count(); i++)
-                {
                     _subresourceState[i] = _resourceState;
-                }
                 _allSubresourcesSame = 0;
 #if BUILD_DEBUG
                 _resourceState = InvalidState;

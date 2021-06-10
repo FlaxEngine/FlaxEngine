@@ -248,7 +248,7 @@ public:
     /// <returns>True if the current BoundingFrustum intersects a BoundingBox, otherwise false.</returns>
     FORCE_INLINE bool Intersects(const BoundingBox& box) const
     {
-        return CollisionsHelper::FrustumIntersectsBox(*this, box);
+        return CollisionsHelper::FrustumContainsBox(*this, box) != ContainmentType::Disjoint;
     }
 
 private:

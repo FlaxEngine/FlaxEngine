@@ -108,27 +108,13 @@ public:
 
 public:
 
-    // Streaming Manager cached variables
     struct StreamingCache
     {
-        /// <summary>
-        /// The minimum usage distance since last update (eg. mesh draw distance from camera).
-        /// Used to calculate resource quality.
-        /// </summary>
-        //float MinDstSinceLastUpdate;
-
-        DateTime LastUpdate;
-        int32 TargetResidency;
-        DateTime TargetResidencyChange;
+        //float MinDstSinceLastUpdate = MAX_float;
+        DateTime LastUpdate = 0;
+        int32 TargetResidency = 0;
+        DateTime TargetResidencyChange = 0;
         SamplesBuffer<StreamingQuality, 5> QualitySamples;
-
-        StreamingCache()
-        //: MinDstSinceLastUpdate(MAX_float)
-            : LastUpdate(0)
-            , TargetResidency(0)
-            , TargetResidencyChange(0)
-        {
-        }
     };
 
     StreamingCache Streaming;

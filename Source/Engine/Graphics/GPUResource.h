@@ -126,14 +126,7 @@ protected:
 public:
 
     // [PersistentScriptingObject]
-    String ToString() const override
-    {
-#if GPU_ENABLE_RESOURCE_NAMING
-        return GetName();
-#else
-		return TEXT("GPU Resource");
-#endif
-    }
+    String ToString() const override;
     void OnDeleteObject() override;
 };
 
