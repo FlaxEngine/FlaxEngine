@@ -312,7 +312,7 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
     _callStack.Add(caller);
 
 #if USE_EDITOR
-    DebugFlow(_graph._owner, _data->Object, box->GetParent<Node>()->ID, box->ID);
+    Animations::DebugFlow(_graph._owner, context.Data->Object, box->GetParent<Node>()->ID, box->ID);
 #endif
 
     // Call per group custom processing event

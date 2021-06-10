@@ -828,10 +828,6 @@ private:
 
 public:
 
-#if USE_EDITOR
-    // Custom event that is called every time the Anim Graph signal flows over the graph (including the data connections). Can be used to read and visualize the animation blending logic.
-    static Delegate<Asset*, ScriptingObject*, uint32, uint32> DebugFlow;
-#endif
 
     /// <summary>
     /// Initializes the managed runtime calls.

@@ -34,7 +34,6 @@ MMethod* Internal_GetGameWinPtr = nullptr;
 MMethod* Internal_GetGameWindowSize = nullptr;
 MMethod* Internal_OnAppExit = nullptr;
 MMethod* Internal_OnVisualScriptingDebugFlow = nullptr;
-MMethod* Internal_OnAnimGraphDebugFlow = nullptr;
 MMethod* Internal_RequestStartPlayOnEditMode = nullptr;
 
 void OnLightmapsBake(ShadowsOfMordor::BuildProgressStep step, float stepProgress, float totalProgress, bool isProgressEvent)
@@ -138,38 +137,6 @@ void OnVisualScriptingDebugFlow()
     }
 }
 
-struct AnimGraphDebugFlowInfo
-{
-    MonoObject* Asset;
-    MonoObject* Object;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-void OnAnimGraphDebugFlow(Asset* asset, ScriptingObject* object, uint32 nodeId, uint32 boxId)
-{
-    if (Internal_OnAnimGraphDebugFlow == nullptr)
-    {
-        Internal_OnAnimGraphDebugFlow = ManagedEditor::GetStaticClass()->GetMethod("Internal_OnAnimGraphDebugFlow", 1);
-        ASSERT(Internal_OnAnimGraphDebugFlow);
-    }
-
-    AnimGraphDebugFlowInfo flowInfo;
-    flowInfo.Asset = asset ? asset->GetOrCreateManagedInstance() : nullptr;
-    flowInfo.Object = object ? object->GetOrCreateManagedInstance() : nullptr;
-    flowInfo.NodeId = nodeId;
-    flowInfo.BoxId = boxId;
-    MonoObject* exception = nullptr;
-    void* params[1];
-    params[0] = &flowInfo;
-    Internal_OnAnimGraphDebugFlow->Invoke(nullptr, params, &exception);
-    if (exception)
-    {
-        MException ex(exception);
-        ex.Log(LogType::Error, TEXT("OnAnimGraphDebugFlow"));
-    }
-}
-
 void OnLogMessage(LogType type, const StringView& msg);
 
 ManagedEditor::ManagedEditor()
@@ -187,7 +154,6 @@ ManagedEditor::ManagedEditor()
     CSG::Builder::OnBrushModified.Bind<OnBrushModified>();
     Log::Logger::OnMessage.Bind<OnLogMessage>();
     VisualScripting::DebugFlow.Bind<OnVisualScriptingDebugFlow>();
-    AnimGraphExecutor::DebugFlow.Bind<OnAnimGraphDebugFlow>();
 }
 
 ManagedEditor::~ManagedEditor()
@@ -204,7 +170,6 @@ ManagedEditor::~ManagedEditor()
     CSG::Builder::OnBrushModified.Unbind<OnBrushModified>();
     Log::Logger::OnMessage.Unbind<OnLogMessage>();
     VisualScripting::DebugFlow.Unbind<OnVisualScriptingDebugFlow>();
-    AnimGraphExecutor::DebugFlow.Unbind<OnAnimGraphDebugFlow>();
 }
 
 void ManagedEditor::Init()
@@ -530,7 +495,6 @@ void ManagedEditor::DestroyManaged()
     Internal_GetGameWinPtr = nullptr;
     Internal_OnAppExit = nullptr;
     Internal_OnVisualScriptingDebugFlow = nullptr;
-    Internal_OnAnimGraphDebugFlow = nullptr;
 
     // Base
     PersistentScriptingObject::DestroyManaged();

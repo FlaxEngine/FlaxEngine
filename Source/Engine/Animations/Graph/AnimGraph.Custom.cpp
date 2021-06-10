@@ -80,10 +80,6 @@ namespace AnimGraphInternal
     }
 }
 
-#if USE_EDITOR
-Delegate<Asset*, ScriptingObject*, uint32, uint32> AnimGraphExecutor::DebugFlow;
-#endif
-
 void AnimGraphExecutor::initRuntime()
 {
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal::HasConnection);

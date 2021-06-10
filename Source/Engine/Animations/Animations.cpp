@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Animations.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Engine/Time.h"
@@ -22,6 +23,7 @@ public:
 };
 
 AnimationsService AnimationManagerInstance;
+Delegate<Asset*, ScriptingObject*, uint32, uint32> Animations::DebugFlow;
 
 void AnimationsService::Update()
 {

@@ -1306,22 +1306,6 @@ namespace FlaxEditor
             VisualScriptingDebugFlow?.Invoke(debugFlow);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct AnimGraphDebugFlowInfo
-        {
-            public Asset Asset;
-            public FlaxEngine.Object Object;
-            public uint NodeId;
-            public int BoxId;
-        }
-
-        internal static event Action<AnimGraphDebugFlowInfo> AnimGraphDebugFlow;
-
-        internal static void Internal_OnAnimGraphDebugFlow(ref AnimGraphDebugFlowInfo debugFlow)
-        {
-            AnimGraphDebugFlow?.Invoke(debugFlow);
-        }
-
         private static void RequestStartPlayOnEditMode()
         {
             if (Instance.StateMachine.IsEditMode)
