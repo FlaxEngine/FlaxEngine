@@ -298,6 +298,11 @@ bool GPUDevice::LoadContent()
     return false;
 }
 
+bool GPUDevice::CanDraw()
+{
+    return true;
+}
+
 void GPUDevice::preDispose()
 {
     RenderTargetPool::Flush();
@@ -447,6 +452,11 @@ void GPUDevice::Dispose()
 {
     RenderList::CleanupCache();
     VideoOutputModes.Resize(0);
+}
+
+uint64 GPUDevice::GetMemoryUsage() const
+{
+    return Resources.GetMemoryUsage();
 }
 
 MaterialBase* GPUDevice::GetDefaultMaterial() const
