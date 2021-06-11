@@ -145,11 +145,6 @@ namespace FlaxEditor.Viewport
         private Vector2[] _deltaFilteringBuffer = new Vector2[FpsCameraFilteringFrames];
 
         /// <summary>
-        /// Mouse delta (x = Left, Y = Right)
-        /// </summary>
-        protected Vector2 _mouseDelta;
-
-        /// <summary>
         /// The previous input (from the previous update).
         /// </summary>
         protected Input _prevInput;
