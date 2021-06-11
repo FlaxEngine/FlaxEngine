@@ -19,6 +19,7 @@ namespace FlaxEditor.Windows.Profiler
         private readonly Table _table;
         private SamplesBuffer<ProfilerGPU.Event[]> _events;
         private List<Timeline.Event> _timelineEventsCache;
+        private List<Row> _tableRowsCache;
 
         public GPU()
         : base("GPU")
@@ -147,6 +148,8 @@ namespace FlaxEditor.Windows.Profiler
                 return;
             if (_timelineEventsCache == null)
                 _timelineEventsCache = new List<Timeline.Event>();
+            if (_tableRowsCache == null)
+                _tableRowsCache = new List<Row>();
 
             UpdateTimeline();
             UpdateTable();
@@ -157,6 +160,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             Clear();
             _timelineEventsCache?.Clear();
+            _tableRowsCache?.Clear();
 
             base.OnDestroy();
         }
@@ -286,8 +290,21 @@ namespace FlaxEditor.Windows.Profiler
 
         private void UpdateTable()
         {
-            _table.DisposeChildren();
-
+            _table.IsLayoutLocked = true;
+            int idx = 0;
+            while (_table.Children.Count > idx)
+            {
+                var child = _table.Children[idx];
+                if (child is Row row)
+                {
+                    _tableRowsCache.Add(row);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
             _table.LockChildrenRecursive();
 
             UpdateTableInner();
@@ -313,36 +330,44 @@ namespace FlaxEditor.Windows.Profiler
                 var e = data[i];
                 string name = new string(e.Name);
 
-                var row = new Row
+                Row row;
+                if (_tableRowsCache.Count != 0)
                 {
-                    Values = new object[]
+                    var last = _tableRowsCache.Count - 1;
+                    row = _tableRowsCache[last];
+                    _tableRowsCache.RemoveAt(last);
+                }
+                else
+                {
+                    row = new Row
                     {
-                        // Event
-                        name,
+                        Values = new object[6],
+                    };
+                }
+                {
+                    // Event
+                    row.Values[0] = name;
 
-                        // Total (%)
-                        (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f,
+                    // Total (%)
+                    row.Values[1] = (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f;
 
-                        // GPU ms
-                        (e.Time * 10000.0f) / 10000.0f,
+                    // GPU ms
+                    row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
 
-                        // Draw Calls
-                        e.Stats.DrawCalls,
+                    // Draw Calls
+                    row.Values[3] = e.Stats.DrawCalls;
 
-                        // Triangles
-                        e.Stats.Triangles,
+                    // Triangles
+                    row.Values[4] = e.Stats.Triangles;
 
-                        // Vertices
-                        e.Stats.Vertices,
-                    },
-                    Depth = e.Depth,
-                    Width = _table.Width,
-                    Parent = _table,
-                };
-
-                if (i % 2 == 0)
-                    row.BackgroundColor = rowColor2;
+                    // Vertices
+                    row.Values[5] = e.Stats.Vertices;
+                }
+                row.Depth = e.Depth;
+                row.Width = _table.Width;
                 row.Visible = e.Depth < 3;
+                row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.Parent = _table;
             }
         }
     }

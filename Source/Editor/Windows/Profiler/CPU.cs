@@ -54,6 +54,7 @@ namespace FlaxEditor.Windows.Profiler
         private SamplesBuffer<ProfilingTools.ThreadStats[]> _events;
         private List<Timeline.TrackLabel> _timelineLabelsCache;
         private List<Timeline.Event> _timelineEventsCache;
+        private List<Row> _tableRowsCache;
         private bool _showOnlyLastUpdateEvents;
 
         public CPU()
@@ -193,6 +194,8 @@ namespace FlaxEditor.Windows.Profiler
                 _timelineLabelsCache = new List<Timeline.TrackLabel>();
             if (_timelineEventsCache == null)
                 _timelineEventsCache = new List<Timeline.Event>();
+            if (_tableRowsCache == null)
+                _tableRowsCache = new List<Row>();
 
             var viewRange = GetEventsViewRange();
             UpdateTimeline(ref viewRange);
@@ -205,6 +208,7 @@ namespace FlaxEditor.Windows.Profiler
             Clear();
             _timelineLabelsCache?.Clear();
             _timelineEventsCache?.Clear();
+            _tableRowsCache?.Clear();
 
             base.OnDestroy();
         }
@@ -424,8 +428,21 @@ namespace FlaxEditor.Windows.Profiler
 
         private void UpdateTable(ref ViewRange viewRange)
         {
-            _table.DisposeChildren();
-            _table.LockChildrenRecursive();
+            _table.IsLayoutLocked = true;
+            int idx = 0;
+            while (_table.Children.Count > idx)
+            {
+                var child = _table.Children[idx];
+                if (child is Row row)
+                {
+                    _tableRowsCache.Add(row);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
 
             UpdateTableInner(ref viewRange);
 
@@ -480,36 +497,44 @@ namespace FlaxEditor.Windows.Profiler
 
                     string name = e.Name.Replace("::", ".");
 
-                    var row = new Row
+                    Row row;
+                    if (_tableRowsCache.Count != 0)
                     {
-                        Values = new object[]
+                        var last = _tableRowsCache.Count - 1;
+                        row = _tableRowsCache[last];
+                        _tableRowsCache.RemoveAt(last);
+                    }
+                    else
+                    {
+                        row = new Row
                         {
-                            // Event
-                            name,
+                            Values = new object[6],
+                        };
+                    }
+                    {
+                        // Event
+                        row.Values[0] = name;
 
-                            // Total (%)
-                            (int)(time / totalTimeMs * 1000.0f) / 10.0f,
+                        // Total (%)
+                        row.Values[1] = (int)(time / totalTimeMs * 1000.0f) / 10.0f;
 
-                            // Self (%)
-                            (int)((time - subEventsTimeTotal) / time * 1000.0f) / 10.0f,
+                        // Self (%)
+                        row.Values[2] = (int)((time - subEventsTimeTotal) / time * 1000.0f) / 10.0f;
 
-                            // Time ms
-                            (float)((time * 10000.0f) / 10000.0f),
+                        // Time ms
+                        row.Values[3] = (float)((time * 10000.0f) / 10000.0f);
 
-                            // Self ms
-                            (float)(((time - subEventsTimeTotal) * 10000.0f) / 10000.0f),
+                        // Self ms
+                        row.Values[4] = (float)(((time - subEventsTimeTotal) * 10000.0f) / 10000.0f);
 
-                            // Memory Alloc
-                            subEventsMemoryTotal,
-                        },
-                        Depth = e.Depth,
-                        Width = _table.Width,
-                        Parent = _table,
-                    };
-
-                    if (i % 2 == 0)
-                        row.BackgroundColor = rowColor2;
+                        // Memory Alloc
+                        row.Values[5] = subEventsMemoryTotal;
+                    }
+                    row.Depth = e.Depth;
+                    row.Width = _table.Width;
                     row.Visible = e.Depth < 3;
+                    row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                    row.Parent = _table;
                 }
             }
         }
