@@ -156,7 +156,7 @@ public:
         // Left wheel of the rear axle.
         RearLeft,
         // Right wheel of the rear axle.
-        ReadRight,
+        RearRight,
         // Non-drivable wheel.
         NoDrive,
     };

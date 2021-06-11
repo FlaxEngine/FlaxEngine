@@ -63,7 +63,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
                                    model->GetPath(),
                                    meshIndex,
                                    lodIndex,
-                                   staticModel->GetName());
+                                   staticModel->GetNamePath());
                     }
                 }
             }

@@ -78,6 +78,8 @@ void ShadowsOfMordor::Builder::generateHemispheres()
         // Fill cache
         if (runStage(RenderCache))
             return;
+        if (waitForJobDataSync())
+            return;
 
         // Post-process cache
         if (runStage(PostprocessCache))

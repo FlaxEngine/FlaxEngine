@@ -149,7 +149,7 @@ void SceneObject::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // Handle C# objects data serialization
     if (Flags & ObjectFlags::IsManagedType)
     {
-        auto* const v = stream.FindMember("V");
+        auto* const v = SERIALIZE_FIND_MEMBER(stream, "V");
         if (v != stream.MemberEnd() && v->value.IsObject() && v->value.MemberCount() != 0)
         {
             ManagedSerialization::Deserialize(v->value, GetOrCreateManagedInstance());
@@ -159,7 +159,7 @@ void SceneObject::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // Handle custom scripting objects data serialization
     if (Flags & ObjectFlags::IsCustomScriptingType)
     {
-        auto* const v = stream.FindMember("D");
+        auto* const v = SERIALIZE_FIND_MEMBER(stream, "D");
         if (v != stream.MemberEnd() && v->value.IsObject() && v->value.MemberCount() != 0)
         {
             _type.Module->DeserializeObject(v->value, this, modifier);

@@ -79,7 +79,7 @@ namespace FlaxEditor.GUI
                 var type = allTypes[i];
                 if (_isValid(type))
                 {
-                    var attributes = type.GetAttributes(false);
+                    var attributes = type.GetAttributes(true);
                     if (attributes.FirstOrDefault(x => x is HideInEditorAttribute) == null)
                     {
                         AddItem(new TypeItemView(type, attributes));

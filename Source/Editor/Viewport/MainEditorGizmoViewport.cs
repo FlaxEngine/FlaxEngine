@@ -22,7 +22,7 @@ namespace FlaxEditor.Viewport
     /// Main editor gizmo viewport used by the <see cref="EditGameWindow"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.EditorGizmoViewport" />
-    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner
+    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner, IGizmoOwner
     {
         private readonly Editor _editor;
 
@@ -36,7 +36,7 @@ namespace FlaxEditor.Viewport
         private readonly ViewportWidgetButton _rotateSnapping;
         private readonly ViewportWidgetButton _scaleSnapping;
 
-        private readonly DragAssets<DragDropEventArgs> _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
+        private readonly DragAssets<DragDropEventArgs> _dragAssets;
         private readonly DragActorType<DragDropEventArgs> _dragActorType = new DragActorType<DragDropEventArgs>(ValidateDragActorType);
 
         private SelectionOutline _customSelectionOutline;
@@ -166,6 +166,11 @@ namespace FlaxEditor.Viewport
         public bool DrawDebugDraw = true;
 
         /// <summary>
+        /// Gets the debug draw data for the viewport.
+        /// </summary>
+        public ViewportDebugDrawData DebugDrawData => _debugDrawData;
+
+        /// <summary>
         /// Gets or sets a value indicating whether show navigation mesh.
         /// </summary>
         public bool ShowNavigation
@@ -182,6 +187,7 @@ namespace FlaxEditor.Viewport
         : base(Object.New<SceneRenderTask>(), editor.Undo)
         {
             _editor = editor;
+            _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.Scenes;
@@ -219,7 +225,7 @@ namespace FlaxEditor.Viewport
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.World16, null, true)
+            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
@@ -230,7 +236,7 @@ namespace FlaxEditor.Viewport
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.ScaleStep16, null, true)
+            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.ScaleSnap32, null, true)
             {
                 Checked = TransformGizmo.ScaleSnapEnabled,
                 TooltipText = "Enable scale snapping",
@@ -257,7 +263,7 @@ namespace FlaxEditor.Viewport
 
             // Rotation snapping widget
             var rotateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.RotateStep16, null, true)
+            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.RotateSnap32, null, true)
             {
                 Checked = TransformGizmo.RotationSnapEnabled,
                 TooltipText = "Enable rotation snapping",
@@ -284,7 +290,7 @@ namespace FlaxEditor.Viewport
 
             // Translation snapping widget
             var translateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.Grid16, null, true)
+            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.Grid32, null, true)
             {
                 Checked = TransformGizmo.TranslationSnapEnable,
                 TooltipText = "Enable position snapping",
@@ -311,7 +317,7 @@ namespace FlaxEditor.Viewport
 
             // Gizmo mode widget
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate16, null, true)
+            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
@@ -319,14 +325,14 @@ namespace FlaxEditor.Viewport
                 Parent = gizmoMode
             };
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
-            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate16, null, true)
+            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
-            _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale16, null, true)
+            _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",
@@ -355,7 +361,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
-            InputActions.Add(options => options.FocusSelection, () => _editor.Windows.EditWin.ShowSelectedActors());
+            InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
         }
 
@@ -389,10 +395,11 @@ namespace FlaxEditor.Viewport
                 return;
 
             // Create actor
+            var parent = Level.GetScene(0);
             var actor = new Camera
             {
                 StaticFlags = StaticFlags.None,
-                Name = "Camera",
+                Name = StringUtils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
                 Transform = ViewTransform,
                 NearPlane = NearPlane,
                 FarPlane = FarPlane,
@@ -402,7 +409,7 @@ namespace FlaxEditor.Viewport
             };
 
             // Spawn
-            Editor.Instance.SceneEditing.Spawn(actor);
+            Editor.Instance.SceneEditing.Spawn(actor, parent);
         }
 
         private void OnBegin(RenderTask task, GPUContext context)
@@ -443,6 +450,12 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
+            // Draw gizmos
+            for (int i = 0; i < Gizmos.Count; i++)
+            {
+                Gizmos[i].Draw(ref renderContext);
+            }
+
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -646,6 +659,31 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        public void FocusSelection()
+        {
+            var orientation = ViewOrientation;
+            FocusSelection(ref orientation);
+        }
+
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        /// <param name="orientation">The target view orientation.</param>
+        public void FocusSelection(ref Quaternion orientation)
+        {
+            if (TransformGizmo.SelectedParents.Count == 0)
+                return;
+
+            var gizmoBounds = Gizmos.Active.FocusBounds;
+            if (gizmoBounds != BoundingSphere.Empty)
+                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+            else
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+        }
+
+        /// <summary>
         /// Applies the transform to the collection of scene graph nodes.
         /// </summary>
         /// <param name="selection">The selection.</param>
@@ -703,11 +741,9 @@ namespace FlaxEditor.Viewport
         protected override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
-            {
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
-            }
-
-            base.OrientViewport(ref orientation);
+                FocusSelection(ref orientation);
+            else
+                base.OrientViewport(ref orientation);
         }
 
         /// <inheritdoc />
@@ -794,30 +830,18 @@ namespace FlaxEditor.Viewport
             return result;
         }
 
-        private static bool ValidateDragItem(ContentItem contentItem)
+        private bool ValidateDragItem(ContentItem contentItem)
         {
             if (!Level.IsAnySceneLoaded)
                 return false;
 
             if (contentItem is AssetItem assetItem)
             {
-                if (assetItem.IsOfType<ParticleSystem>())
-                    return true;
-                if (assetItem.IsOfType<SceneAnimation>())
+                if (assetItem.OnEditorDrag(this))
                     return true;
                 if (assetItem.IsOfType<MaterialBase>())
                     return true;
-                if (assetItem.IsOfType<ModelBase>())
-                    return true;
-                if (assetItem.IsOfType<CollisionData>())
-                    return true;
-                if (assetItem.IsOfType<AudioClip>())
-                    return true;
-                if (assetItem.IsOfType<Prefab>())
-                    return true;
                 if (assetItem.IsOfType<SceneAsset>())
-                    return true;
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
                     return true;
             }
 
@@ -877,125 +901,48 @@ namespace FlaxEditor.Viewport
         private void Spawn(Actor actor, ref Vector3 hitLocation)
         {
             actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
+            var parent = actor.Parent ?? Level.GetScene(0);
+            actor.Name = StringUtils.IncrementNameNumber(actor.Name, x => parent.GetChild(x) == null);
             Editor.Instance.SceneEditing.Spawn(actor);
             Focus();
         }
 
         private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
         {
-            if (item is AssetItem assetItem)
+            if (item.IsOfType<MaterialBase>())
             {
-                if (assetItem.IsOfType<ParticleSystem>())
+                if (hit is StaticModelNode staticModelNode)
                 {
-                    var asset = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect
-                    {
-                        Name = item.ShortName,
-                        ParticleSystem = asset
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<SceneAnimation>())
-                {
-                    var asset = FlaxEngine.Content.LoadAsync<SceneAnimation>(item.ID);
-                    var actor = new SceneAnimationPlayer
-                    {
-                        Name = item.ShortName,
-                        Animation = asset
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<MaterialBase>())
-                {
-                    if (hit is StaticModelNode staticModelNode)
-                    {
-                        var staticModel = (StaticModel)staticModelNode.Actor;
-                        var ray = ConvertMouseToRay(ref location);
-                        if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
-                        {
-                            var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
-                            using (new UndoBlock(Undo, staticModel, "Change material"))
-                                staticModel.SetMaterial(entryIndex, material);
-                        }
-                    }
-                    else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
+                    var staticModel = (StaticModel)staticModelNode.Actor;
+                    var ray = ConvertMouseToRay(ref location);
+                    if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
                     {
                         var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
-                        using (new UndoBlock(Undo, brushSurfaceNode.Brush, "Change material"))
-                        {
-                            var surface = brushSurfaceNode.Surface;
-                            surface.Material = material;
-                            brushSurfaceNode.Surface = surface;
-                        }
+                        using (new UndoBlock(Undo, staticModel, "Change material"))
+                            staticModel.SetMaterial(entryIndex, material);
                     }
-                    return;
                 }
-                if (assetItem.IsOfType<SkinnedModel>())
+                else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
                 {
-                    var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel
+                    var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
+                    using (new UndoBlock(Undo, brushSurfaceNode.Brush, "Change material"))
                     {
-                        Name = item.ShortName,
-                        SkinnedModel = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
+                        var surface = brushSurfaceNode.Surface;
+                        surface.Material = material;
+                        brushSurfaceNode.Surface = surface;
+                    }
                 }
-                if (assetItem.IsOfType<Model>())
-                {
-                    var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel
-                    {
-                        Name = item.ShortName,
-                        Model = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<CollisionData>())
-                {
-                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
-                    var actor = new MeshCollider
-                    {
-                        Name = item.ShortName,
-                        CollisionData = collisionData
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<AudioClip>())
-                {
-                    var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource
-                    {
-                        Name = item.ShortName,
-                        Clip = clip
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<Prefab>())
-                {
-                    var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
-                    var actor = PrefabManager.SpawnPrefab(prefab, null);
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (assetItem.IsOfType<SceneAsset>())
-                {
-                    Editor.Instance.Scene.OpenScene(item.ID, true);
-                    return;
-                }
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
-                {
-                    var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
+                return;
+            }
+            if (item.IsOfType<SceneAsset>())
+            {
+                Editor.Instance.Scene.OpenScene(item.ID, true);
+                return;
+            }
+            {
+                var actor = item.OnEditorDrop(this);
+                actor.Name = item.ShortName;
+                Spawn(actor, ref hitLocation);
             }
         }
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Serialization/ISerializable.h"
 #include "Engine/Content/Assets/Texture.h"

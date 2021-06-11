@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MultiScaler.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Content/Content.h"
 
 MultiScaler::MultiScaler()
@@ -181,8 +182,8 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
 
     // Prepare
     Data data;
-    data.TexelSize.X = 1.0f / width;
-    data.TexelSize.Y = 1.0f / height;
+    data.TexelSize.X = 1.0f / (float)width;
+    data.TexelSize.Y = 1.0f / (float)height;
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -218,8 +219,8 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
 
     // Prepare
     Data data;
-    data.TexelSize.X = 2.0f / dstWidth;
-    data.TexelSize.Y = 2.0f / dstHeight;
+    data.TexelSize.X = 2.0f / (float)dstWidth;
+    data.TexelSize.Y = 2.0f / (float)dstHeight;
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

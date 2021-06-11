@@ -51,9 +51,11 @@ MClass::MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const MStr
     case MONO_TYPE_ATTR_NESTED_ASSEMBLY:
         _visibility = MVisibility::Internal;
         break;
-    case MONO_TYPE_ATTR_NESTED_FAM_AND_ASSEM:
     case MONO_TYPE_ATTR_NESTED_FAM_OR_ASSEM:
         _visibility = MVisibility::ProtectedInternal;
+        break;
+    case MONO_TYPE_ATTR_NESTED_FAM_AND_ASSEM:
+        _visibility = MVisibility::PrivateProtected;
         break;
     default:
     CRASH;

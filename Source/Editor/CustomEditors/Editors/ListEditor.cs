@@ -22,9 +22,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var list = (IList)listType.CreateInstance();
             var defaultValue = Scripting.TypeUtils.GetDefaultValue(ElementType);
             for (int i = 0; i < size; i++)
-            {
                 list.Add(defaultValue);
-            }
             return list;
         }
 
@@ -48,7 +46,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < sharedCount; i++)
                         newValues.Add(list[i]);
 
-                    if (elementType.IsValueType)
+                    if (elementType.IsValueType || NotNullItems)
                     {
                         // Fill new entries with the last value
                         for (int i = oldSize; i < newSize; i++)
@@ -86,9 +84,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var cloned = (IList)listType.CreateInstance();
 
             for (int i = 0; i < size; i++)
-            {
                 cloned.Add(list[i]);
-            }
 
             return cloned;
         }

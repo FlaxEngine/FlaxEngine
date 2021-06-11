@@ -3,9 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
+using FlaxEditor.Viewport.Cameras;
 using FlaxEngine;
 
 namespace FlaxEditor.Windows.Assets

@@ -7,7 +7,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
-REGISTER_BINARY_ASSET(MaterialInstance, "FlaxEngine.MaterialInstance", ::New<MaterialInstanceUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(MaterialInstance, "FlaxEngine.MaterialInstance", MaterialInstanceUpgrader, true);
 
 MaterialInstance::MaterialInstance(const SpawnParams& params, const AssetInfo* info)
     : MaterialBase(params, info)

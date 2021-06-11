@@ -176,7 +176,7 @@ public:
     /// <param name="value">New parent</param>
     /// <param name="worldPositionsStays">Should actor world positions remain the same after parent change?</param>
     /// <param name="canBreakPrefabLink">True if can break prefab link on changing the parent.</param>
-    void SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink);
+    API_FUNCTION() void SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink);
 
     /// <summary>
     /// Gets amount of child actors.
@@ -192,10 +192,7 @@ public:
     /// </summary>
     /// <param name="index">The child actor index.</param>
     /// <returns>The child actor (always valid).</returns>
-    API_FUNCTION() FORCE_INLINE Actor* GetChild(int32 index) const
-    {
-        return Children[index];
-    }
+    API_FUNCTION() Actor* GetChild(int32 index) const;
 
     /// <summary>
     /// Gets the child actor with the given name.
@@ -266,10 +263,7 @@ public:
     /// </summary>
     /// <param name="index">The script index.</param>
     /// <returns>The script (always valid).</returns>
-    API_FUNCTION() FORCE_INLINE Script* GetScript(int32 index) const
-    {
-        return Scripts[index];
-    }
+    API_FUNCTION() Script* GetScript(int32 index) const;
 
     /// <summary>
     /// Gets the script of the given type from this actor.
@@ -671,12 +665,12 @@ public:
 #if USE_EDITOR
 
     /// <summary>
-    /// Draws debug shapes for the actor and all child actors.
+    /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
     virtual void OnDebugDraw();
 
     /// <summary>
-    /// Draws debug shapes for the selected actor and all child actors.
+    /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
     virtual void OnDebugDrawSelected();
 

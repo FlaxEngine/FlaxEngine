@@ -6,6 +6,7 @@ class Scripting;
 struct ScriptingType;
 class BinaryModule;
 class ScriptingObject;
+class MDomain;
 class MException;
 class MAssembly;
 class MClass;

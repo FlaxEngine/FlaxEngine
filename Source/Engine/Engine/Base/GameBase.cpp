@@ -6,6 +6,7 @@
 
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Level/Level.h"
@@ -17,6 +18,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Utilities/Encryption.h"
 #include "Engine/Core/Log.h"
 #include "FlaxEngine.Gen.h"
@@ -241,7 +243,7 @@ void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContex
     const Rectangle screenRect(viewport.X, viewport.Y, viewport.Width, viewport.Height);
     Rectangle imageArea = screenRect;
     imageArea.Scale(0.6f);
-    const float aspectRatio = static_cast<float>(splashScreen->Width()) / splashScreen->Height();
+    const float aspectRatio = static_cast<float>(splashScreen->Width()) / static_cast<float>(splashScreen->Height());
     const float height = imageArea.GetWidth() / aspectRatio;
     imageArea.Location.Y += (imageArea.GetHeight() - height) * 0.5f;
     imageArea.Size.Y = height;

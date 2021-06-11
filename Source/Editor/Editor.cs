@@ -46,6 +46,7 @@ namespace FlaxEditor
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
         private string _projectToOpen;
         private float _lastAutoSaveTimer;
+        private Guid _startupSceneCmdLine;
 
         private const string ProjectDataLastScene = "LastScene";
         private const string ProjectDataLastSceneSpawn = "LastSceneSpawn";
@@ -220,7 +221,7 @@ namespace FlaxEditor
             GameProject = ProjectInfo.Load(Internal_GetProjectPath());
 
             Icons = new EditorIcons();
-            Icons.GetIcons();
+            Icons.LoadIcons();
 
             // Create common editor modules
             RegisterModule(Options = new OptionsModule(this));
@@ -271,10 +272,11 @@ namespace FlaxEditor
                 module.OnEndInit();
         }
 
-        internal void Init(bool isHeadless, bool skipCompile)
+        internal void Init(bool isHeadless, bool skipCompile, Guid startupScene)
         {
             EnsureState<LoadingState>();
             _isHeadlessMode = isHeadless;
+            _startupSceneCmdLine = startupScene;
             Log("Editor init");
             if (isHeadless)
                 Log("Running in headless mode");
@@ -332,6 +334,17 @@ namespace FlaxEditor
             }
 
             // Load scene
+            
+            // scene cmd line argument
+            var scene = ContentDatabase.Find(_startupSceneCmdLine);
+            if (scene is SceneItem)
+            {
+                Editor.Log("Loading scene specified in command line");
+                Scene.OpenScene(_startupSceneCmdLine);
+                return;
+            }
+
+            // if no scene cmd line argument is provided
             var startupSceneMode = Options.Options.General.StartupSceneMode;
             if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
             {
@@ -878,10 +891,12 @@ namespace FlaxEditor
         /// Checks if can import asset with the given extension.
         /// </summary>
         /// <param name="extension">The file extension.</param>
+        /// <param name="outputExtension">The output file extension (flax, json, etc.).</param>
         /// <returns>True if can import files with given extension, otherwise false.</returns>
-        public static bool CanImport(string extension)
+        public static bool CanImport(string extension, out string outputExtension)
         {
-            return Internal_CanImport(extension);
+            outputExtension = Internal_CanImport(extension);
+            return outputExtension != null;
         }
 
         /// <summary>
@@ -1183,6 +1198,8 @@ namespace FlaxEditor
                 var win = Windows.GameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
+                        return false;
                     return true;
                 }
             }
@@ -1305,6 +1322,19 @@ namespace FlaxEditor
             AnimGraphDebugFlow?.Invoke(debugFlow);
         }
 
+        private static void RequestStartPlayOnEditMode()
+        {
+            if (Instance.StateMachine.IsEditMode)
+                Instance.Simulation.RequestStartPlay();
+            if (Instance.StateMachine.IsPlayMode)
+                Instance.StateMachine.StateChanged -= RequestStartPlayOnEditMode;
+        }
+
+        internal static void Internal_RequestStartPlayOnEditMode()
+        {
+            Instance.StateMachine.StateChanged += RequestStartPlayOnEditMode;
+        }
+        
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int Internal_ReadOutputLogs(string[] outMessages, byte[] outLogTypes, long[] outLogTimes);
 
@@ -1369,7 +1399,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanImport(string extension);
+        internal static extern string Internal_CanImport(string extension);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool Internal_CanExport(string path);

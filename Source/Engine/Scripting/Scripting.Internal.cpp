@@ -9,6 +9,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 
 namespace ProfilerInternal

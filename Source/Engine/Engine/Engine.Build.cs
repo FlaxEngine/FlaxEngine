@@ -35,6 +35,7 @@ public class Engine : EngineModule
         options.PublicDependencies.Add("UI");
         options.PublicDependencies.Add("Utilities");
         options.PublicDependencies.Add("Visject");
+        options.PublicDependencies.Add("Localization");
 
         // Use source folder per platform group
         switch (options.Platform.Target)

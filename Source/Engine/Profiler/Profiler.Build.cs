@@ -27,5 +27,14 @@ public class Profiler : EngineModule
         options.PrivateDependencies.Clear();
 
         options.PublicDefinitions.Add("COMPILE_WITH_PROFILER");
+
+        // Tracy profiling tools
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Windows:
+        case TargetPlatform.Android:
+            options.PublicDependencies.Add("tracy");
+            break;
+        }
     }
 }

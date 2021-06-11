@@ -82,14 +82,15 @@ namespace FlaxEditor.GUI
             var icons = Editor.Instance.Icons;
             var platforms = new[]
             {
-                new PlatformData(PlatformType.Windows, icons.Windows, "Windows"),
-                new PlatformData(PlatformType.XboxOne, icons.XboxOne, "Xbox One"),
-                new PlatformData(PlatformType.UWP, icons.WindowsStore, "Windows Store"),
-                new PlatformData(PlatformType.Linux, icons.Linux, "Linux"),
-                new PlatformData(PlatformType.PS4, icons.PS4, "PlayStation 4"),
-                new PlatformData(PlatformType.XboxScarlett, icons.XboxSeriesX, "Xbox Scarlett"),
-                new PlatformData(PlatformType.Android, icons.Android, "Android"),
-                new PlatformData(PlatformType.Switch, icons.ColorWheel, "Switch"),
+                new PlatformData(PlatformType.Windows, icons.WindowsIcon128, "Windows"),
+                new PlatformData(PlatformType.XboxOne, icons.XBoxOne128, "Xbox One"),
+                new PlatformData(PlatformType.UWP, icons.UWPStore128, "Windows Store"),
+                new PlatformData(PlatformType.Linux, icons.LinuxIcon128, "Linux"),
+                new PlatformData(PlatformType.PS4, icons.PS4Icon128, "PlayStation 4"),
+                new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
+                new PlatformData(PlatformType.Android, icons.AndroidIcon128, "Android"),
+                new PlatformData(PlatformType.Switch, icons.ColorWheel128, "Switch"),
+
             };
 
             const float IconSize = 48.0f;

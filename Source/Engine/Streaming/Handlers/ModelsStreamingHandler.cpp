@@ -21,7 +21,7 @@ int32 ModelsStreamingHandler::CalculateResidency(StreamableResource* resource, S
     if (quality < ZeroTolerance)
         return 0;
 
-    int32 lods = Math::CeilToInt(quality * lodCount);
+    int32 lods = Math::CeilToInt(quality * (StreamingQuality)lodCount);
 
     ASSERT(model.IsValidLODIndex(lods - 1));
     return lods;

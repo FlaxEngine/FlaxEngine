@@ -1,29 +1,35 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitter.h"
-#include "ParticleManager.h"
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
+#include "Particles.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
-#include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
-#include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"
+#if BUILD_DEBUG
+#include "Engine/Engine/Globals.h"
+#endif
+#endif
+#if COMPILE_WITH_GPU_PARTICLES
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 #endif
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #include "Engine/Utilities/Encryption.h"
 #endif
 
-REGISTER_BINARY_ASSET(ParticleEmitter, "FlaxEngine.ParticleEmitter", ::New<ShaderAssetUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(ParticleEmitter, "FlaxEngine.ParticleEmitter", ShaderAssetUpgrader, false);
 
 ParticleEmitter::ParticleEmitter(const SpawnParams& params, const AssetInfo* info)
     : ShaderAssetTypeBase<BinaryAsset>(params, info)
@@ -128,10 +134,10 @@ Asset::LoadResult ParticleEmitter::load()
 #if USE_EDITOR
             || !HasChunk(SHADER_FILE_CHUNK_SOURCE)
 #endif
-#if COMPILE_WITH_DEV_ENV
-            // Set to true to enable force GPU particle simulation shaders regeneration
-            || false
             || HasDependenciesModified()
+#if COMPILE_WITH_DEV_ENV
+            // Set to true to enable force GPU particle simulation shaders regeneration (don't commit it)
+            || false
 #endif
         ))
     {
@@ -281,7 +287,7 @@ void ParticleEmitter::unload(bool isReloading)
     UnregisterForShaderReloads(this);
 #endif
 
-    ParticleManager::OnEmitterUnload(this);
+    Particles::OnEmitterUnload(this);
 
     Graph.Clear();
 #if COMPILE_WITH_GPU_PARTICLES

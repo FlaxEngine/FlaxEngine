@@ -4,7 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
-#include "Engine/Renderer/RenderList.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Types.h"
 
 // The maximum amount of particle attributes to use
@@ -14,7 +14,7 @@
 #define PARTICLE_EMITTER_MAX_RIBBONS 4
 
 class ParticleEmitter;
-class ParticleManager;
+class Particles;
 class GPUBuffer;
 class DynamicIndexBuffer;
 

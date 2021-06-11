@@ -154,8 +154,7 @@ public:
     // @param length Text length
     void WriteText(const char* text, int32 length)
     {
-        for (int32 i = 0; i < length; i++)
-            WriteChar(text[i]);
+        WriteBytes((const void*)text, sizeof(char) * length);
     }
 
     // Writes text to the stream
@@ -163,8 +162,7 @@ public:
     // @param length Text length
     void WriteText(const Char* text, int32 length)
     {
-        for (int32 i = 0; i < length; i++)
-            WriteChar(text[i]);
+        WriteBytes((const void*)text, sizeof(Char) * length);
     }
 
     template<typename... Args>

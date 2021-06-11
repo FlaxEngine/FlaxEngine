@@ -27,16 +27,28 @@ bool StringView::operator!=(const String& other) const
     return StringUtils::Compare(this->GetText(), *other) != 0;
 }
 
-String StringView::Substring(int32 startIndex) const
+StringView StringView::Left(int32 count) const
 {
-    ASSERT(startIndex >= 0 && startIndex < Length());
-    return String(Get() + startIndex, Length() - startIndex);
+    const int32 countClamped = count < 0 ? 0 : count < Length() ? count : Length();
+    return StringView(**this, countClamped);
 }
 
-String StringView::Substring(int32 startIndex, int32 count) const
+StringView StringView::Right(int32 count) const
+{
+    const int32 countClamped = count < 0 ? 0 : count < Length() ? count : Length();
+    return StringView(**this + Length() - countClamped);
+}
+
+StringView StringView::Substring(int32 startIndex) const
+{
+    ASSERT(startIndex >= 0 && startIndex < Length());
+    return StringView(Get() + startIndex, Length() - startIndex);
+}
+
+StringView StringView::Substring(int32 startIndex, int32 count) const
 {
     ASSERT(startIndex >= 0 && startIndex + count <= Length() && count >= 0);
-    return String(Get() + startIndex, count);
+    return StringView(Get() + startIndex, count);
 }
 
 String StringView::ToString() const

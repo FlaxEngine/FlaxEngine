@@ -77,7 +77,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The items.
         /// </summary>
-        protected List<string> _items = new List<string>();
+        protected List<LocalizedString> _items = new List<LocalizedString>();
 
         /// <summary>
         /// The popup menu. May be null if has not been used yet.
@@ -95,7 +95,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the items collection.
         /// </summary>
         [EditorOrder(1), Tooltip("The items collection.")]
-        public List<string> Items
+        public List<LocalizedString> Items
         {
             get => _items;
             set => _items = value;
@@ -107,7 +107,17 @@ namespace FlaxEngine.GUI
         [HideInEditor, NoSerialize]
         public string SelectedItem
         {
-            get => _selectedIndex != -1 ? _items[_selectedIndex] : string.Empty;
+            get => _selectedIndex != -1 ? _items[_selectedIndex].ToString() : string.Empty;
+            set => SelectedIndex = _items.IndexOf(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected item (returns <see cref="LocalizedString.Empty"/> if no item is being selected).
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public LocalizedString SelectedItemLocalized
+        {
+            get => _selectedIndex != -1 ? _items[_selectedIndex] : LocalizedString.Empty;
             set => SelectedIndex = _items.IndexOf(value);
         }
 
@@ -265,7 +275,8 @@ namespace FlaxEngine.GUI
         /// <param name="items">The items.</param>
         public void AddItems(IEnumerable<string> items)
         {
-            _items.AddRange(items);
+            foreach (var item in items)
+                _items.Add(item);
         }
 
         /// <summary>
@@ -276,7 +287,8 @@ namespace FlaxEngine.GUI
         {
             SelectedIndex = -1;
             _items.Clear();
-            _items.AddRange(items);
+            foreach (var item in items)
+                _items.Add(item);
         }
 
         /// <summary>

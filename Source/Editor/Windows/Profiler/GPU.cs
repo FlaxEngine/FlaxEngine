@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -16,7 +17,9 @@ namespace FlaxEditor.Windows.Profiler
         private readonly SingleChart _drawTimeGPU;
         private readonly Timeline _timeline;
         private readonly Table _table;
-        private readonly SamplesBuffer<ProfilerGPU.Event[]> _events = new SamplesBuffer<ProfilerGPU.Event[]>();
+        private SamplesBuffer<ProfilerGPU.Event[]> _events;
+        private List<Timeline.Event> _timelineEventsCache;
+        private List<Row> _tableRowsCache;
 
         public GPU()
         : base("GPU")
@@ -118,7 +121,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             _drawTimeCPU.Clear();
             _drawTimeGPU.Clear();
-            _events.Clear();
+            _events?.Clear();
         }
 
         /// <inheritdoc />
@@ -126,18 +129,13 @@ namespace FlaxEditor.Windows.Profiler
         {
             // Gather GPU events
             var data = sharedData.GetEventsGPU();
+            if (_events == null)
+                _events = new SamplesBuffer<ProfilerGPU.Event[]>();
             _events.Add(data);
 
             // Peek draw time
             _drawTimeCPU.AddSample(sharedData.Stats.DrawCPUTimeMs);
             _drawTimeGPU.AddSample(sharedData.Stats.DrawGPUTimeMs);
-
-            // Update timeline if using the last frame
-            if (_drawTimeCPU.SelectedSampleIndex == -1)
-            {
-                UpdateTimeline();
-                UpdateTable();
-            }
         }
 
         /// <inheritdoc />
@@ -145,8 +143,26 @@ namespace FlaxEditor.Windows.Profiler
         {
             _drawTimeCPU.SelectedSampleIndex = selectedFrame;
             _drawTimeGPU.SelectedSampleIndex = selectedFrame;
+
+            if (_events == null)
+                return;
+            if (_timelineEventsCache == null)
+                _timelineEventsCache = new List<Timeline.Event>();
+            if (_tableRowsCache == null)
+                _tableRowsCache = new List<Row>();
+
             UpdateTimeline();
             UpdateTable();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            Clear();
+            _timelineEventsCache?.Clear();
+            _tableRowsCache?.Clear();
+
+            base.OnDestroy();
         }
 
         private float AddEvent(float x, int maxDepth, int index, ProfilerGPU.Event[] events, ContainerControl parent)
@@ -157,12 +173,21 @@ namespace FlaxEditor.Windows.Profiler
             float width = (float)(e.Time * scale);
             string name = new string(e.Name);
 
-            new Timeline.Event(x, e.Depth, width)
+            Timeline.Event control;
+            if (_timelineEventsCache.Count != 0)
             {
-                Name = name,
-                TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f)),
-                Parent = parent,
-            };
+                var last = _timelineEventsCache.Count - 1;
+                control = _timelineEventsCache[last];
+                _timelineEventsCache.RemoveAt(last);
+            }
+            else
+            {
+                control = new Timeline.Event();
+            }
+            control.Bounds = new Rectangle(x, e.Depth * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
+            control.Name = name;
+            control.TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f));
+            control.Parent = parent;
 
             // Spawn sub events
             int childrenDepth = e.Depth + 1;
@@ -208,8 +233,21 @@ namespace FlaxEditor.Windows.Profiler
         {
             var container = _timeline.EventsContainer;
 
-            // Clear previous events
-            container.DisposeChildren();
+            container.IsLayoutLocked = true;
+            int idx = 0;
+            while (container.Children.Count > idx)
+            {
+                var child = container.Children[idx];
+                if (child is Timeline.Event e)
+                {
+                    _timelineEventsCache.Add(e);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
 
             container.LockChildrenRecursive();
 
@@ -252,8 +290,21 @@ namespace FlaxEditor.Windows.Profiler
 
         private void UpdateTable()
         {
-            _table.DisposeChildren();
-
+            _table.IsLayoutLocked = true;
+            int idx = 0;
+            while (_table.Children.Count > idx)
+            {
+                var child = _table.Children[idx];
+                if (child is Row row)
+                {
+                    _tableRowsCache.Add(row);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
             _table.LockChildrenRecursive();
 
             UpdateTableInner();
@@ -279,36 +330,44 @@ namespace FlaxEditor.Windows.Profiler
                 var e = data[i];
                 string name = new string(e.Name);
 
-                var row = new Row
+                Row row;
+                if (_tableRowsCache.Count != 0)
                 {
-                    Values = new object[]
+                    var last = _tableRowsCache.Count - 1;
+                    row = _tableRowsCache[last];
+                    _tableRowsCache.RemoveAt(last);
+                }
+                else
+                {
+                    row = new Row
                     {
-                        // Event
-                        name,
+                        Values = new object[6],
+                    };
+                }
+                {
+                    // Event
+                    row.Values[0] = name;
 
-                        // Total (%)
-                        (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f,
+                    // Total (%)
+                    row.Values[1] = (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f;
 
-                        // GPU ms
-                        (e.Time * 10000.0f) / 10000.0f,
+                    // GPU ms
+                    row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
 
-                        // Draw Calls
-                        e.Stats.DrawCalls,
+                    // Draw Calls
+                    row.Values[3] = e.Stats.DrawCalls;
 
-                        // Triangles
-                        e.Stats.Triangles,
+                    // Triangles
+                    row.Values[4] = e.Stats.Triangles;
 
-                        // Vertices
-                        e.Stats.Vertices,
-                    },
-                    Depth = e.Depth,
-                    Width = _table.Width,
-                    Parent = _table,
-                };
-
-                if (i % 2 == 0)
-                    row.BackgroundColor = rowColor2;
+                    // Vertices
+                    row.Values[5] = e.Stats.Vertices;
+                }
+                row.Depth = e.Depth;
+                row.Width = _table.Width;
                 row.Visible = e.Depth < 3;
+                row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.Parent = _table;
             }
         }
     }

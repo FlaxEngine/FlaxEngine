@@ -50,6 +50,7 @@ namespace FlaxEditor.SceneGraph.GUI
         public ActorTreeNode()
         : base(true)
         {
+            ChildrenIndent = 16.0f;
         }
 
         internal virtual void LinkNode(ActorNode node)
@@ -85,6 +86,10 @@ namespace FlaxEditor.SceneGraph.GUI
                         child._orderInParent = child.Actor.OrderInParent;
                 }
                 parent.SortChildren();
+            }
+            else if (Actor)
+            {
+                _orderInParent = Actor.OrderInParent;
             }
         }
 
@@ -286,21 +291,6 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (int i = 0; i < _highlights.Count; i++)
                     Render2D.FillRectangle(_highlights[i], color);
             }
-        }
-
-        /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (IsFocused)
-            {
-                if (key == KeyboardKeys.F2)
-                {
-                    StartRenaming();
-                    return true;
-                }
-            }
-
-            return base.OnKeyDown(key);
         }
 
         /// <inheritdoc />
@@ -537,7 +527,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     var customAction = targetActor.HasPrefabLink ? new ReparentAction(targetActor) : null;
                     using (new UndoBlock(ActorNode.Root.Undo, targetActor, "Change actor parent", customAction))
                     {
-                        targetActor.SetParent(newParent, worldPositionLock);
+                        targetActor.SetParent(newParent, worldPositionLock, true);
                         targetActor.OrderInParent = newOrder;
                     }
                 }
@@ -550,7 +540,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         for (int i = 0; i < targetActors.Count; i++)
                         {
                             var targetActor = targetActors[i];
-                            targetActor.SetParent(newParent, worldPositionLock);
+                            targetActor.SetParent(newParent, worldPositionLock, true);
                             targetActor.OrderInParent = newOrder;
                         }
                     }
@@ -563,121 +553,12 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 for (int i = 0; i < _dragAssets.Objects.Count; i++)
                 {
-                    var assetItem = _dragAssets.Objects[i];
-
-                    if (assetItem.IsOfType<SkinnedModel>())
-                    {
-                        // Create actor
-                        var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(assetItem.ID);
-
-                        var actor = new AnimatedModel
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            SkinnedModel = model,
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem.IsOfType<Model>())
-                    {
-                        // Create actor
-                        var model = FlaxEngine.Content.LoadAsync<Model>(assetItem.ID);
-
-                        var actor = new StaticModel
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            Model = model,
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem.IsOfType<CollisionData>())
-                    {
-                        // Create actor
-                        var actor = new MeshCollider
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            CollisionData = FlaxEngine.Content.LoadAsync<CollisionData>(assetItem.ID),
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem.IsOfType<ParticleSystem>())
-                    {
-                        // Create actor
-                        var actor = new ParticleEffect
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            ParticleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(assetItem.ID),
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem.IsOfType<SceneAnimation>())
-                    {
-                        // Create actor
-                        var actor = new SceneAnimationPlayer
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            Animation = FlaxEngine.Content.LoadAsync<SceneAnimation>(assetItem.ID),
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem.IsOfType<AudioClip>())
-                    {
-                        // Create actor
-                        var actor = new AudioSource
-                        {
-                            StaticFlags = Actor.StaticFlags,
-                            Name = assetItem.ShortName,
-                            Clip = FlaxEngine.Content.LoadAsync<AudioClip>(assetItem.ID),
-                            Transform = Actor.Transform
-                        };
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-
-                        break;
-                    }
-                    else if (assetItem.IsOfType<Prefab>())
-                    {
-                        // Create prefab instance
-                        var prefab = FlaxEngine.Content.LoadAsync<Prefab>(assetItem.ID);
-                        var actor = PrefabManager.SpawnPrefab(prefab, null);
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.Transform = Actor.Transform;
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
-                    else if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
-                    {
-                        // Create actor
-                        var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
-                        actor.StaticFlags = Actor.StaticFlags;
-                        actor.Name = assetItem.ShortName;
-                        actor.Transform = Actor.Transform;
-
-                        // Spawn
-                        ActorNode.Root.Spawn(actor, Actor);
-                    }
+                    var item = _dragAssets.Objects[i];
+                    var actor = item.OnEditorDrop(this);
+                    actor.StaticFlags = Actor.StaticFlags;
+                    actor.Name = item.ShortName;
+                    actor.Transform = Actor.Transform;
+                    ActorNode.Root.Spawn(actor, Actor);
                 }
 
                 result = DragDropEffect.Move;
@@ -732,46 +613,12 @@ namespace FlaxEditor.SceneGraph.GUI
             return actorNode.Actor != null && actorNode != ActorNode && actorNode.Find(Actor) == null;
         }
 
-        /// <summary>
-        /// Validates the asset for drag and drop into one of the scene tree nodes.
-        /// </summary>
-        /// <param name="assetItem">The item.</param>
-        /// <returns>True if can drag and drop it, otherwise false.</returns>
-        public static bool ValidateDragAsset(AssetItem assetItem)
+        private bool ValidateDragAsset(AssetItem assetItem)
         {
-            if (assetItem.IsOfType<SkinnedModel>())
-                return true;
-
-            if (assetItem.IsOfType<Model>())
-                return true;
-
-            if (assetItem.IsOfType<AudioClip>())
-                return true;
-
-            if (assetItem.IsOfType<Prefab>())
-                return true;
-
-            if (assetItem.IsOfType<CollisionData>())
-                return true;
-
-            if (assetItem.IsOfType<ParticleSystem>())
-                return true;
-
-            if (assetItem.IsOfType<SceneAnimation>())
-                return true;
-
-            if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
-                return true;
-
-            return false;
+            return assetItem.OnEditorDrag(this);
         }
 
-        /// <summary>
-        /// Validates the type of the actor for drag and drop into one of the scene tree nodes.
-        /// </summary>
-        /// <param name="actorType">Type of the actor.</param>
-        /// <returns>True if can drag and drop it, otherwise false.</returns>
-        public static bool ValidateDragActorType(ScriptType actorType)
+        private static bool ValidateDragActorType(ScriptType actorType)
         {
             return true;
         }

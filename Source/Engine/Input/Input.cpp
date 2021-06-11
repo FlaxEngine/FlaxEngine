@@ -223,6 +223,27 @@ bool Mouse::Update(EventQueue& queue)
     return false;
 }
 
+void Keyboard::State::Clear()
+{
+    Platform::MemoryClear(this, sizeof(State));
+}
+
+Keyboard::Keyboard()
+    : InputDevice(SpawnParams(Guid::New(), TypeInitializer), TEXT("Keyboard"))
+{
+    _state.Clear();
+    _prevState.Clear();
+}
+
+bool Keyboard::IsAnyKeyDown() const
+{
+    // TODO: optimize with SIMD
+    bool result = false;
+    for (auto e : _state.Keys)
+        result |= e;
+    return result;
+}
+
 void Keyboard::OnCharInput(Char c, Window* target)
 {
     // Skip control characters

@@ -15,7 +15,7 @@ public:
 
 protected:
 
-    Asset* _asset;
+    Asset* _asset = nullptr;
 
 public:
 
@@ -29,29 +29,18 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="WeakAssetReferenceBase"/> class.
     /// </summary>
-    WeakAssetReferenceBase()
-        : _asset(nullptr)
-    {
-    }
+    WeakAssetReferenceBase() = default;
 
     /// <summary>
     /// Finalizes an instance of the <see cref="WeakAssetReferenceBase"/> class.
     /// </summary>
-    ~WeakAssetReferenceBase()
-    {
-        if (_asset)
-        {
-            _asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnAssetUnloaded>(this);
-            _asset = nullptr;
-        }
-    }
+    ~WeakAssetReferenceBase();
 
 public:
 
     /// <summary>
     /// Gets the asset ID or Guid::Empty if not set.
     /// </summary>
-    /// <returns>The asset ID or Guid::Empty if not set.</returns>
     FORCE_INLINE Guid GetID() const
     {
         return _asset ? _asset->GetID() : Guid::Empty;
@@ -60,7 +49,6 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no asset set).
     /// </summary>
-    /// <returns>Mono managed object</returns>
     FORCE_INLINE MonoObject* GetManagedInstance() const
     {
         return _asset ? _asset->GetOrCreateManagedInstance() : nullptr;
@@ -69,35 +57,12 @@ public:
     /// <summary>
     /// Gets the asset property value as string.
     /// </summary>
-    /// <returns>The string.</returns>
-    String ToString() const
-    {
-        static String NullStr = TEXT("<null>");
-        return _asset ? _asset->ToString() : NullStr;
-    }
+    String ToString() const;
 
 protected:
 
-    void OnSet(Asset* asset)
-    {
-        auto e = _asset;
-        if (e != asset)
-        {
-            if (e)
-                e->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnAssetUnloaded>(this);
-            _asset = e = asset;
-            if (e)
-                e->OnUnloaded.Bind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnAssetUnloaded>(this);
-        }
-    }
-
-    void OnAssetUnloaded(Asset* asset)
-    {
-        ASSERT(_asset == asset);
-        Unload();
-        asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnAssetUnloaded>(this);
-        asset = nullptr;
-    }
+    void OnSet(Asset* asset);
+    void OnUnloaded(Asset* asset);
 };
 
 /// <summary>
@@ -175,7 +140,6 @@ public:
     /// <summary>
     /// Implicit conversion to the bool.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE operator T*() const
     {
         return (T*)_asset;
@@ -184,7 +148,6 @@ public:
     /// <summary>
     /// Implicit conversion to the asset.
     /// </summary>
-    /// <returns>True if asset has been set, otherwise false.</returns>
     FORCE_INLINE operator bool() const
     {
         return _asset != nullptr;
@@ -193,7 +156,6 @@ public:
     /// <summary>
     /// Implicit conversion to the asset.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE T* operator->() const
     {
         return (T*)_asset;
@@ -202,7 +164,6 @@ public:
     /// <summary>
     /// Gets the asset.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE T* Get() const
     {
         return (T*)_asset;
@@ -211,7 +172,6 @@ public:
     /// <summary>
     /// Gets the asset as a given type (static cast).
     /// </summary>
-    /// <returns>The asset.</returns>
     template<typename U>
     FORCE_INLINE U* As() const
     {
@@ -229,3 +189,9 @@ public:
         OnSet(asset);
     }
 };
+
+template<typename T>
+uint32 GetHash(const WeakAssetReference<T>& key)
+{
+    return GetHash(key.GetID());
+}

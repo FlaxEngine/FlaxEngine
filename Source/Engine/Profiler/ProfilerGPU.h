@@ -62,20 +62,8 @@ public:
     {
     private:
 
-        bool _isResolved;
+        bool _isResolved = true;
         Array<Event> _data;
-
-    public:
-
-        EventBuffer()
-            : _data(256)
-        {
-            _isResolved = true;
-        }
-
-        ~EventBuffer()
-        {
-        }
 
     public:
 
@@ -87,11 +75,7 @@ public:
         /// <summary>
         /// Determines whether this buffer has ready data (resolved and not empty).
         /// </summary>
-        /// <returns><c>true</c> if this buffer has data; otherwise, <c>false</c>.</returns>
-        FORCE_INLINE bool HasData() const
-        {
-            return _isResolved && _data.HasItems();
-        }
+        bool HasData() const;
 
         /// <summary>
         /// Ends all used timer queries.
@@ -124,22 +108,12 @@ public:
         /// Extracts the buffer data.
         /// </summary>
         /// <param name="data">The output data.</param>
-        void Extract(Array<Event>& data) const
-        {
-            // Don't use unresolved data
-            ASSERT(_isResolved);
-            data = _data;
-        }
+        void Extract(Array<Event>& data) const;
 
         /// <summary>
         /// Clears this buffer.
         /// </summary>
-        void Clear()
-        {
-            _data.Clear();
-            _isResolved = false;
-            FrameIndex = 0;
-        }
+        void Clear();
     };
 
 private:
@@ -150,11 +124,6 @@ private:
     static Array<GPUTimerQuery*> _timerQueriesFree;
 
     static GPUTimerQuery* GetTimerQuery();
-
-    FORCE_INLINE static void FreeTimerQuery(GPUTimerQuery* q)
-    {
-        _timerQueriesFree.Add(q);
-    }
 
 public:
 
@@ -222,24 +191,14 @@ public:
 /// </summary>
 struct ScopeProfileBlockGPU
 {
-    /// <summary>
-    /// The event token index.
-    /// </summary>
     int32 Index;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ScopeProfileBlockGPU"/> struct.
-    /// </summary>
-    /// <param name="name">The event name.</param>
-    ScopeProfileBlockGPU(const Char* name)
+    FORCE_INLINE ScopeProfileBlockGPU(const Char* name)
     {
         Index = ProfilerGPU::BeginEvent(name);
     }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ScopeProfileBlockGPU"/> class.
-    /// </summary>
-    ~ScopeProfileBlockGPU()
+ 
+    FORCE_INLINE ~ScopeProfileBlockGPU()
     {
         ProfilerGPU::EndEvent(Index);
     }
@@ -252,8 +211,7 @@ struct TIsPODType<ProfilerGPU::Event>
 };
 
 // Shortcut macro for profiling rendering on GPU
-#define PROFILE_GPU(name) \
-	ScopeProfileBlockGPU ProfileBlockGPU(TEXT(name))
+#define PROFILE_GPU(name) ScopeProfileBlockGPU ProfileBlockGPU(TEXT(name))
 
 #else
 

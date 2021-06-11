@@ -13,10 +13,8 @@ public:
     // [NetworkBase]
     static bool CreateSocket(NetworkSocket& socket, NetworkProtocol proto, NetworkIPVersion ipv);
     static bool DestroySocket(NetworkSocket& socket);
-    static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool value);
     static bool SetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32 value);
-    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, bool* value);
-    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32* value);
+    static bool GetSocketOption(NetworkSocket& socket, NetworkSocketOption option, int32& value);
     static bool ConnectSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool BindSocket(NetworkSocket& socket, NetworkEndPoint& endPoint);
     static bool Listen(NetworkSocket& socket, uint16 queueSize);
@@ -28,14 +26,14 @@ public:
     static int32 Poll(NetworkSocketGroup& group);
     static bool GetSocketState(NetworkSocketGroup& group, uint32 index, NetworkSocketState& state);
     static int32 AddSocketToGroup(NetworkSocketGroup& group, NetworkSocket& socket);
-    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket* socket);
+    static bool GetSocketFromGroup(NetworkSocketGroup& group, uint32 index, NetworkSocket& socket);
     static void RemoveSocketFromGroup(NetworkSocketGroup& group, uint32 index);
     static bool RemoveSocketFromGroup(NetworkSocketGroup& group, NetworkSocket& socket);
     static void ClearGroup(NetworkSocketGroup& group);
     static int32 WriteSocket(NetworkSocket socket, byte* data, uint32 length, NetworkEndPoint* endPoint = nullptr);
     static int32 ReadSocket(NetworkSocket socket, byte* buffer, uint32 bufferSize, NetworkEndPoint* endPoint = nullptr);
-    static bool CreateEndPoint(NetworkAddress& address, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = true);
-    static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint endPoint);
+    static bool CreateEndPoint(const String& address, const String& port, NetworkIPVersion ipv, NetworkEndPoint& endPoint, bool bindable = true);
+    static NetworkEndPoint RemapEndPointToIPv6(NetworkEndPoint& endPoint);
 };
 
 #endif

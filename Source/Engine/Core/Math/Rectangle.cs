@@ -286,6 +286,19 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Calculates a rectangle that includes the margins (inside).
+        /// </summary>
+        /// <param name="value">The rectangle.</param>
+        /// <param name="margin">The margin to apply to the rectangle.</param>
+        /// <returns>Rectangle inside the given rectangle after applying margins inside it.</returns>
+        public static Rectangle Margin(Rectangle value, GUI.Margin margin)
+        {
+            value.Location += margin.Location;
+            value.Size -= margin.Size;
+            return value;
+        }
+
+        /// <summary>
         /// Calculates a rectangle that contains the union of a and b rectangles
         /// </summary>
         /// <param name="a">The first rectangle.</param>

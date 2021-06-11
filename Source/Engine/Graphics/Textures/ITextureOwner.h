@@ -18,8 +18,7 @@ public:
     /// <summary>
     /// Gets the texture owner mutex used to synchronize texture logic.
     /// </summary>
-    /// <returns>The mutex.</returns>
-    virtual CriticalSection* GetOwnerLocker() const = 0;
+    virtual CriticalSection& GetOwnerLocker() const = 0;
 
     /// <summary>
     /// Get texture mip map data

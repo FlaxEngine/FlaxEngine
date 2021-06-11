@@ -50,6 +50,7 @@ public:
     // [DescriptorOwnerResourceVulkan]
     void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView) override;
     void DescriptorAsStorageBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range) override;
+    void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView) override;
 };
 
 /// <summary>
@@ -80,7 +81,6 @@ public:
     /// <summary>
     /// Gets the Vulkan buffer handle.
     /// </summary>
-    /// <returns>The buffer handle.</returns>
     FORCE_INLINE VkBuffer GetHandle() const
     {
         return _buffer;
@@ -89,7 +89,6 @@ public:
     /// <summary>
     /// Gets the Vulkan memory allocation handle.
     /// </summary>
-    /// <returns>The memory allocation handle.</returns>
     FORCE_INLINE VmaAllocation GetAllocation() const
     {
         return _allocation;

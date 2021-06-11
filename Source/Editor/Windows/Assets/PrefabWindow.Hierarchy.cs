@@ -163,7 +163,13 @@ namespace FlaxEditor.Windows.Assets
 
         private void Rename()
         {
-            ((ActorNode)Selection[0]).TreeNode.StartRenaming();
+            var selection = Selection;
+            if (selection.Count != 0 && selection[0] is ActorNode actor)
+            {
+                if (selection.Count != 0)
+                    Select(actor);
+                actor.TreeNode.StartRenaming();
+            }
         }
 
         /// <summary>

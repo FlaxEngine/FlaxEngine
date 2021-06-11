@@ -5,9 +5,14 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RenderList.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
@@ -472,6 +477,14 @@ void SplineModel::OnTransformChanged()
 {
     // Base
     ModelInstanceActor::OnTransformChanged();
+
+    OnSplineUpdated();
+}
+
+void SplineModel::OnActiveInTreeChanged()
+{
+    // Base
+    ModelInstanceActor::OnActiveInTreeChanged();
 
     OnSplineUpdated();
 }

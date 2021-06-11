@@ -5,6 +5,7 @@
 #if PLATFORM_WIN32
 
 #include "Win32CriticalSection.h"
+#include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// Win32 implementation of a condition variables. Condition variables are synchronization primitives that enable threads to wait until a particular condition occurs. Condition variables enable threads to atomically release a lock and enter the sleeping state.

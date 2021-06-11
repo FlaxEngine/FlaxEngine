@@ -5,6 +5,7 @@
 #include "ShaderCompiler.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -79,7 +80,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         _constantBuffers.Add({ meta->CB[i].Slot, false, 0 });
 
     // [Output] Version number
-    output->WriteInt32(7);
+    output->WriteInt32(8);
 
     // [Output] Additional data start
     const int32 additionalDataStartPos = output->GetPosition();
@@ -359,6 +360,21 @@ bool ShaderCompiler::WriteShaderFunctionBegin(ShaderCompilationContext* context,
 
     // [Output] Shader flags
     output->WriteUint32((uint32)meta.Flags);
+
+    return false;
+}
+
+bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize)
+{
+    auto output = context->Output;
+
+    // [Output] Write compiled shader cache
+    output->WriteUint32(cacheSize + headerSize);
+    output->WriteBytes(header, headerSize);
+    output->WriteBytes(cache, cacheSize);
+
+    // [Output] Shader bindings meta
+    output->Write(&bindings);
 
     return false;
 }

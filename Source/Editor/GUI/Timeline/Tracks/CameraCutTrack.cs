@@ -471,7 +471,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _atlases = new List<Atlas>(4);
             if (_output == null)
             {
-                _output = GPUDevice.Instance.CreateTexture();
+                _output = GPUDevice.Instance.CreateTexture("CameraCutMedia.Output");
                 var desc = GPUTextureDescription.New2D(Width, Height, PixelFormat.R8G8B8A8_UNorm);
                 _output.Init(ref desc);
             }
@@ -695,7 +695,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.Camera32),
+                Brush = new SpriteBrush(icons.Camera64),
                 Offsets = new Margin(-buttonSize - 2 + _selectActor.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };

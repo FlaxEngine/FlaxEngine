@@ -249,6 +249,8 @@ namespace FlaxEngine.GUI
         internal void ChangeChildIndex(Control child, int newIndex)
         {
             int oldIndex = _children.IndexOf(child);
+            if (oldIndex == newIndex)
+                return;
             _children.RemoveAt(oldIndex);
 
             // Check if index is invalid
@@ -274,7 +276,7 @@ namespace FlaxEngine.GUI
         public int GetChildIndexAt(Vector2 point)
         {
             int result = -1;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -296,7 +298,7 @@ namespace FlaxEngine.GUI
         public Control GetChildAt(Vector2 point)
         {
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -322,7 +324,7 @@ namespace FlaxEngine.GUI
                 throw new ArgumentNullException(nameof(isValid));
 
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 
@@ -344,7 +346,7 @@ namespace FlaxEngine.GUI
         public Control GetChildAtRecursive(Vector2 point)
         {
             Control result = null;
-            for (int i = 0; i < _children.Count; i++)
+            for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
 

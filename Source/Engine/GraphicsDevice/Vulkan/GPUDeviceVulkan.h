@@ -235,15 +235,17 @@ public:
     MSAALevel MSAA;
     bool ReadDepth;
     bool WriteDepth;
+    bool BlendEnable;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
-    VkExtent3D Extent;
+    VkExtent2D Extent;
+    uint32 Layers;
 
 public:
 
     bool operator==(const RenderTargetLayoutVulkan& other) const
     {
-        return Platform::MemoryCompare((void*)this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
+        return Platform::MemoryCompare(this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
     }
 };
 
@@ -263,7 +265,7 @@ public:
 
         bool operator==(const Key& other) const
         {
-            return Platform::MemoryCompare((void*)this, &other, sizeof(Key)) == 0;
+            return Platform::MemoryCompare(this, &other, sizeof(Key)) == 0;
         }
     };
 
@@ -274,13 +276,13 @@ private:
 
 public:
 
-    FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent3D& extent, uint32 layers);
+    FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers);
     ~FramebufferVulkan();
 
 public:
 
     VkImageView Attachments[GPU_MAX_RT_BINDED + 1];
-    VkExtent3D Extent;
+    VkExtent2D Extent;
     uint32 Layers;
 
 public:
@@ -498,8 +500,6 @@ private:
 
 public:
 
-    // Create new graphics device (returns Vulkan if failed)
-    // @returns Created device or Vulkan
     static GPUDevice* Create();
 
     /// <summary>
@@ -685,7 +685,7 @@ public:
     }
 
     RenderPassVulkan* GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout);
-    FramebufferVulkan* GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent3D& extent, uint32 layers);
+    FramebufferVulkan* GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent2D& extent, uint32 layers);
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);
     void OnImageViewDestroy(VkImageView imageView);
 
@@ -799,7 +799,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the storage image descriptor.
+    /// Gets the storage image descriptor (VK_DESCRIPTOR_TYPE_STORAGE_IMAGE).
     /// </summary>
     /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="imageView">The image view.</param>
@@ -810,7 +810,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the uniform texel buffer descriptor.
+    /// Gets the uniform texel buffer descriptor (VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER).
     /// </summary>
     /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="bufferView">The buffer view.</param>
@@ -820,7 +820,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the storage buffer descriptor.
+    /// Gets the storage buffer descriptor (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER).
     /// </summary>
     /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="buffer">The buffer.</param>
@@ -832,7 +832,17 @@ public:
     }
 
     /// <summary>
-    /// Gets the dynamic uniform buffer descriptor.
+    /// Gets the storage texel buffer descriptor (VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER).
+    /// </summary>
+    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="bufferView">The buffer view.</param>
+    virtual void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+    {
+        CRASH;
+    }
+
+    /// <summary>
+    /// Gets the dynamic uniform buffer descriptor (VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC).
     /// </summary>
     /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="buffer">The buffer.</param>

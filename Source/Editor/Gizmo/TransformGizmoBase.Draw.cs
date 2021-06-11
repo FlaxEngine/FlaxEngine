@@ -86,7 +86,7 @@ namespace FlaxEditor.Gizmo
             {
                 if (!_modelTranslationAxis || !_modelTranslationAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
                     break;
-
+              
                 _transAxisMesh = _modelTranslationAxis.LODs[0].Meshes[0];
                 _cubeMesh = _modelCube.LODs[0].Meshes[0];
                 _sphereMesh = _modelSphere.LODs[0].Meshes[0];

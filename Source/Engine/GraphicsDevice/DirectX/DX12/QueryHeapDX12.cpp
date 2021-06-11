@@ -85,27 +85,15 @@ void QueryHeapDX12::Destroy()
 void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
 {
     ASSERT(_currentBatch.Open);
-
-    // Skip empty batches
     if (_currentBatch.Count == 0)
-    {
         return;
-    }
 
     // Close the current batch
     _currentBatch.Open = false;
 
     // Resolve the batch
     const int32 offset = _currentBatch.Start * _resultSize;
-    const int32 size = _currentBatch.Count * _resultSize;
-    context->GetCommandList()->ResolveQueryData(
-        _queryHeap,
-        _queryType,
-        _currentBatch.Start,
-        _currentBatch.Count,
-        _resultBuffer,
-        offset
-    );
+    context->GetCommandList()->ResolveQueryData(_queryHeap, _queryType, _currentBatch.Start, _currentBatch.Count, _resultBuffer, offset);
     _currentBatch.Sync = _device->GetCommandQueue()->GetSyncPoint();
 
     // Begin a new query batch
@@ -199,8 +187,7 @@ void* QueryHeapDX12::ResolveQuery(ElementHandle& handle)
             Platform::MemoryCopy(_resultData.Get() + range.Begin, (byte*)mapped + range.Begin, batch.Count * _resultSize);
 
             // Unmap with an empty range to indicate nothing was written by the CPU
-            range.Begin = range.End = 0;
-            _resultBuffer->Unmap(0, &range);
+            _resultBuffer->Unmap(0, nullptr);
 
             // All elements got its results so we can remove this batch
             _batches.RemoveAt(i);

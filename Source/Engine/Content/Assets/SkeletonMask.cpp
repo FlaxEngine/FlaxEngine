@@ -7,7 +7,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/SkeletonMaskUpgrader.h"
 
-REGISTER_BINARY_ASSET(SkeletonMask, "FlaxEngine.SkeletonMask", ::New<SkeletonMaskUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(SkeletonMask, "FlaxEngine.SkeletonMask", SkeletonMaskUpgrader, true);
 
 SkeletonMask::SkeletonMask(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

@@ -10,8 +10,6 @@ namespace FlaxEditor.Progress.Handlers
     /// <seealso cref="FlaxEditor.Progress.ProgressHandler" />
     public sealed class BakeLightmapsProgress : ProgressHandler
     {
-        private static int _canBake;
-
         /// <summary>
         /// Gets a value indicating whether GPU lightmaps baking is supported on this device.
         /// </summary>
@@ -19,15 +17,11 @@ namespace FlaxEditor.Progress.Handlers
         {
             get
             {
-                if (_canBake == 0)
-                {
-                    var instance = GPUDevice.Instance;
-                    if (instance == null)
-                        return false;
-                    var limits = instance.Limits;
-                    _canBake = limits.HasCompute && limits.MaximumTexture2DSize >= 8 * 1024 && instance.TotalGraphicsMemory >= 2 * 1024 ? 1 : 2;
-                }
-                return _canBake == 1;
+                var instance = GPUDevice.Instance;
+                if (instance == null)
+                    return false;
+                var limits = instance.Limits;
+                return limits.HasCompute && limits.HasTypedUAVLoad && limits.MaximumTexture2DSize >= 8 * 1024 && instance.TotalGraphicsMemory >= 2 * 1024;
             }
         }
 

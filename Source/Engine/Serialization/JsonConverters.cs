@@ -123,6 +123,13 @@ namespace FlaxEngine.Json
 
             writer.WriteStartObject();
             {
+#if FLAX_EDITOR
+                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                {
+                    writer.WritePropertyName("$type");
+                    writer.WriteValue("FlaxEngine.GUI.Margin, FlaxEngine.CSharp");
+                }
+#endif
                 writer.WritePropertyName("Left");
                 writer.WriteValue(valueMargin.Left);
                 writer.WritePropertyName("Right");
@@ -177,21 +184,30 @@ namespace FlaxEngine.Json
                     case JsonToken.PropertyName:
                     {
                         var propertyName = (string)reader.Value;
-                        var propertyValue = (float)reader.ReadAsDouble();
-                        switch (propertyName)
+                        reader.Read();
+                        switch (reader.TokenType)
                         {
-                        case "Left":
-                            value.Left = propertyValue;
+                        case JsonToken.Integer:
+                        case JsonToken.Float:
+                        {
+                            var propertyValue = Convert.ToSingle(reader.Value);
+                            switch (propertyName)
+                            {
+                            case "Left":
+                                value.Left = propertyValue;
+                                break;
+                            case "Right":
+                                value.Right = propertyValue;
+                                break;
+                            case "Top":
+                                value.Top = propertyValue;
+                                break;
+                            case "Bottom":
+                                value.Bottom = propertyValue;
+                                break;
+                            }
                             break;
-                        case "Right":
-                            value.Right = propertyValue;
-                            break;
-                        case "Top":
-                            value.Top = propertyValue;
-                            break;
-                        case "Bottom":
-                            value.Bottom = propertyValue;
-                            break;
+                        }
                         }
                         break;
                     }
@@ -217,6 +233,82 @@ namespace FlaxEngine.Json
 
         /// <inheritdoc />
         public override bool CanWriteDiff => true;
+    }
+
+    /// <summary>
+    /// Serialize LocalizedString as inlined text is not using localization (Id member is empty).
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class LocalizedStringConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var str = (LocalizedString)value;
+            if (string.IsNullOrEmpty(str.Id))
+            {
+                writer.WriteValue(str.Value);
+            }
+            else
+            {
+                writer.WriteStartObject();
+#if FLAX_EDITOR
+                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                {
+                    writer.WritePropertyName("$type");
+                    writer.WriteValue("FlaxEngine.LocalizedString, FlaxEngine.CSharp");
+                }
+#endif
+                writer.WritePropertyName("Id");
+                writer.WriteValue(str.Id);
+                writer.WritePropertyName("Value");
+                writer.WriteValue(str.Value);
+                writer.WriteEndObject();
+            }
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var str = existingValue as LocalizedString ?? new LocalizedString();
+            if (reader.TokenType == JsonToken.String)
+            {
+                str.Id = null;
+                str.Value = (string)reader.Value;
+            }
+            else if (reader.TokenType == JsonToken.StartObject)
+            {
+                while (reader.Read())
+                {
+                    switch (reader.TokenType)
+                    {
+                    case JsonToken.PropertyName:
+                    {
+                        var propertyName = (string)reader.Value;
+                        switch (propertyName)
+                        {
+                        case "Id":
+                            str.Id = reader.ReadAsString();
+                            break;
+                        case "Value":
+                            str.Value = reader.ReadAsString();
+                            break;
+                        }
+                        break;
+                    }
+                    case JsonToken.Comment: break;
+                    default: return str;
+                    }
+                }
+            }
+            return str;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(LocalizedString);
+        }
     }
 
     /*

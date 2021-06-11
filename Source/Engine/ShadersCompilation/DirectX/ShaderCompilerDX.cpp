@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Config.h"
+#include "Engine/GraphicsDevice/DirectX/DX12/Types.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include "Engine/Platform/Windows/ComPtr.h"
@@ -110,99 +111,6 @@ ShaderCompilerDX::~ShaderCompilerDX()
     auto containerReflection = (IDxcContainerReflection*)_containerReflection;
     if (containerReflection)
         containerReflection->Release();
-}
-
-namespace
-{
-    bool ProcessShader(ShaderCompilationContext* context, Array<ShaderCompiler::ShaderResourceBuffer>& constantBuffers, ID3D12ShaderReflection* shaderReflection, D3D12_SHADER_DESC& desc, ShaderBindings& bindings)
-    {
-        // Extract constant buffers usage information
-        for (uint32 a = 0; a < desc.ConstantBuffers; a++)
-        {
-            // Get CB
-            auto cb = shaderReflection->GetConstantBufferByIndex(a);
-
-            // Get CB description
-            D3D12_SHADER_BUFFER_DESC cbDesc;
-            cb->GetDesc(&cbDesc);
-
-            // Check buffer type
-            if (cbDesc.Type == D3D_CT_CBUFFER)
-            {
-                // Find CB slot index
-                int32 slot = INVALID_INDEX;
-                for (uint32 b = 0; b < desc.BoundResources; b++)
-                {
-                    D3D12_SHADER_INPUT_BIND_DESC bDesc;
-                    shaderReflection->GetResourceBindingDesc(b, &bDesc);
-                    if (StringUtils::Compare(bDesc.Name, cbDesc.Name) == 0)
-                    {
-                        slot = bDesc.BindPoint;
-                        break;
-                    }
-                }
-                if (slot == INVALID_INDEX)
-                {
-                    context->OnError("Missing bound resource.");
-                    return true;
-                }
-
-                // Set flag
-                bindings.UsedCBsMask |= 1 << slot;
-
-                // Try to add CB to the list
-                for (int32 b = 0; b < constantBuffers.Count(); b++)
-                {
-                    auto& cc = constantBuffers[b];
-                    if (cc.Slot == slot)
-                    {
-                        cc.IsUsed = true;
-                        cc.Size = cbDesc.Size;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Extract resources usage
-        for (uint32 i = 0; i < desc.BoundResources; i++)
-        {
-            // Get resource description
-            D3D12_SHADER_INPUT_BIND_DESC resDesc;
-            shaderReflection->GetResourceBindingDesc(i, &resDesc);
-
-            switch (resDesc.Type)
-            {
-                // Sampler
-            case D3D_SIT_SAMPLER:
-                break;
-
-                // Constant Buffer
-            case D3D_SIT_CBUFFER:
-            case D3D_SIT_TBUFFER:
-                break;
-
-                // Shader Resource
-            case D3D_SIT_TEXTURE:
-            case D3D_SIT_STRUCTURED:
-            case D3D_SIT_BYTEADDRESS:
-                bindings.UsedSRsMask |= 1 << resDesc.BindPoint;
-                break;
-
-                // Unordered Access
-            case D3D_SIT_UAV_RWTYPED:
-            case D3D_SIT_UAV_RWSTRUCTURED:
-            case D3D_SIT_UAV_RWBYTEADDRESS:
-            case D3D_SIT_UAV_APPEND_STRUCTURED:
-            case D3D_SIT_UAV_CONSUME_STRUCTURED:
-            case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-                bindings.UsedUAsMask |= 1 << resDesc.BindPoint;
-                break;
-            }
-        }
-
-        return false;
-    }
 }
 
 bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite)
@@ -393,11 +301,113 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         shaderReflection->GetDesc(&desc);
 
         // Process shader reflection data
+        DxShaderHeader header;
+        Platform::MemoryClear(&header, sizeof(header));
         ShaderBindings bindings = { desc.InstructionCount, 0, 0, 0 };
-        if (ProcessShader(_context, _constantBuffers, shaderReflection.Get(), desc, bindings))
-            return true;
+        for (uint32 a = 0; a < desc.ConstantBuffers; a++)
+        {
+            auto cb = shaderReflection->GetConstantBufferByIndex(a);
+            D3D12_SHADER_BUFFER_DESC cbDesc;
+            cb->GetDesc(&cbDesc);
+            if (cbDesc.Type == D3D_CT_CBUFFER)
+            {
+                // Find CB slot index
+                int32 slot = INVALID_INDEX;
+                for (uint32 b = 0; b < desc.BoundResources; b++)
+                {
+                    D3D12_SHADER_INPUT_BIND_DESC bDesc;
+                    shaderReflection->GetResourceBindingDesc(b, &bDesc);
+                    if (StringUtils::Compare(bDesc.Name, cbDesc.Name) == 0)
+                    {
+                        slot = bDesc.BindPoint;
+                        break;
+                    }
+                }
+                if (slot == INVALID_INDEX)
+                {
+                    _context->OnError("Missing bound resource.");
+                    return true;
+                }
 
-        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, shaderBuffer->GetBufferPointer(), (int32)shaderBuffer->GetBufferSize()))
+                // Set flag
+                bindings.UsedCBsMask |= 1 << slot;
+
+                // Try to add CB to the list
+                for (int32 b = 0; b < _constantBuffers.Count(); b++)
+                {
+                    auto& cc = _constantBuffers[b];
+                    if (cc.Slot == slot)
+                    {
+                        cc.IsUsed = true;
+                        cc.Size = cbDesc.Size;
+                        break;
+                    }
+                }
+            }
+        }
+        for (uint32 i = 0; i < desc.BoundResources; i++)
+        {
+            D3D12_SHADER_INPUT_BIND_DESC resDesc;
+            shaderReflection->GetResourceBindingDesc(i, &resDesc);
+            switch (resDesc.Type)
+            {
+                // Sampler
+            case D3D_SIT_SAMPLER:
+                break;
+
+                // Constant Buffer
+            case D3D_SIT_CBUFFER:
+            case D3D_SIT_TBUFFER:
+                break;
+
+                // Shader Resource
+            case D3D_SIT_TEXTURE:
+                bindings.UsedSRsMask |= 1 << resDesc.BindPoint;
+                header.SrDimensions[resDesc.BindPoint] = resDesc.Dimension;
+                break;
+            case D3D_SIT_STRUCTURED:
+            case D3D_SIT_BYTEADDRESS:
+                bindings.UsedSRsMask |= 1 << resDesc.BindPoint;
+                header.SrDimensions[resDesc.BindPoint] = D3D_SRV_DIMENSION_BUFFER;
+                break;
+
+                // Unordered Access
+            case D3D_SIT_UAV_RWTYPED:
+            case D3D_SIT_UAV_RWSTRUCTURED:
+            case D3D_SIT_UAV_RWBYTEADDRESS:
+            case D3D_SIT_UAV_APPEND_STRUCTURED:
+            case D3D_SIT_UAV_CONSUME_STRUCTURED:
+            case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+                bindings.UsedUAsMask |= 1 << resDesc.BindPoint;
+                switch (resDesc.Dimension)
+                {
+                case D3D_SRV_DIMENSION_BUFFER:
+                    header.UaDimensions[resDesc.BindPoint] = 1; // D3D12_UAV_DIMENSION_BUFFER;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE1D:
+                    header.UaDimensions[resDesc.BindPoint] = 2; // D3D12_UAV_DIMENSION_TEXTURE1D;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+                    header.UaDimensions[resDesc.BindPoint] = 3; // D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE2D:
+                    header.UaDimensions[resDesc.BindPoint] = 4; // D3D12_UAV_DIMENSION_TEXTURE2D;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+                    header.UaDimensions[resDesc.BindPoint] = 5; // D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                    break;
+                case D3D_SRV_DIMENSION_TEXTURE3D:
+                    header.UaDimensions[resDesc.BindPoint] = 8; // D3D12_UAV_DIMENSION_TEXTURE3D;
+                    break;
+                default:
+                    LOG(Error, "Unknown UAV resource {2} of type {0} at slot {1}", resDesc.Dimension, resDesc.BindPoint, String(resDesc.Name));
+                    return true;
+                }
+                break;
+            }
+        }
+
+        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), shaderBuffer->GetBufferPointer(), (int32)shaderBuffer->GetBufferSize()))
             return true;
 
         if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros))

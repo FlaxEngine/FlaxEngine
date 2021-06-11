@@ -21,6 +21,7 @@ void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* ow
     Extent.width = Math::Max<uint32_t>(1, extent.width >> firstMipIndex);
     Extent.height = Math::Max<uint32_t>(1, extent.height >> firstMipIndex);
     Extent.depth = Math::Max<uint32_t>(1, extent.depth >> firstMipIndex);
+    Layers = arraySize;
 
     RenderToolsVulkan::ZeroStruct(Info, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     Info.image = image;
@@ -74,16 +75,30 @@ VkImageView GPUTextureViewVulkan::GetFramebufferView()
     if (ViewFramebuffer)
         return ViewFramebuffer;
 
-    if (Info.subresourceRange.levelCount == 1)
-        return View;
-
-    // Special case:
-    // Render Target Handle can be created for full texture including its mip maps but framebuffer image view can use only a single surface
-    // Use an additional view for that case with modified level count to 1.
-
-    VkImageViewCreateInfo createInfo = Info;
-    createInfo.subresourceRange.levelCount = 1;
-    VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewFramebuffer));
+    if (Info.viewType == VK_IMAGE_VIEW_TYPE_3D)
+    {
+        // Special case:
+        // Render Target Handle to a 3D Volume texture.
+        // Use it as Texture2D Array with layers.
+        VkImageViewCreateInfo createInfo = Info;
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        createInfo.subresourceRange.layerCount = Extent.depth;
+        Layers = Extent.depth;
+        VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewFramebuffer));
+    }
+    else if (Info.subresourceRange.levelCount != 1)
+    {
+        // Special case:
+        // Render Target Handle can be created for full texture including its mip maps but framebuffer image view can use only a single surface
+        // Use an additional view for that case with modified level count to 1.
+        VkImageViewCreateInfo createInfo = Info;
+        createInfo.subresourceRange.levelCount = 1;
+        VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewFramebuffer));
+    }
+    else
+    {
+        ViewFramebuffer = View;
+    }
 
     return ViewFramebuffer;
 }
@@ -92,14 +107,14 @@ void GPUTextureViewVulkan::Release()
 {
     if (View != VK_NULL_HANDLE)
     {
-        Device->OnImageViewDestroy(View);
-        Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, View);
-
-        if (ViewFramebuffer != VK_NULL_HANDLE)
+        if (ViewFramebuffer != View && ViewFramebuffer != VK_NULL_HANDLE)
         {
             Device->OnImageViewDestroy(ViewFramebuffer);
             Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, ViewFramebuffer);
         }
+
+        Device->OnImageViewDestroy(View);
+        Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, View);
 
         View = VK_NULL_HANDLE;
         ViewFramebuffer = VK_NULL_HANDLE;
@@ -236,32 +251,20 @@ bool GPUTextureVulkan::OnInit()
     imageInfo.extent.depth = Depth();
     imageInfo.flags = IsCubeMap() ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
     if (IsSRGB())
-    {
         imageInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-    }
 #if VK_KHR_maintenance1
     if (_device->OptionalDeviceExtensions.HasKHRMaintenance1 && imageInfo.imageType == VK_IMAGE_TYPE_3D)
-    {
         imageInfo.flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR;
-    }
 #endif
     imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     if (useSRV)
-    {
         imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
     if (useDSV)
-    {
         imageInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    }
     if (useRTV)
-    {
         imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    }
     if (useUAV)
-    {
         imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-    }
     imageInfo.tiling = optimalTiling ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
     imageInfo.samples = (VkSampleCountFlagBits)MultiSampleLevel();
     // TODO: set initialLayout to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL for IsRegularTexture() ???

@@ -2,6 +2,8 @@
 
 #include "MaterialParams.h"
 #include "MaterialInfo.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Engine/GameplayGlobals.h"
@@ -9,6 +11,85 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+
+bool MaterialInfo8::operator==(const MaterialInfo8& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && TransparentLighting == other.TransparentLighting
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && Flags == other.Flags
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
+MaterialInfo::MaterialInfo(const MaterialInfo8& other)
+{
+    Domain = other.Domain;
+    BlendMode = other.BlendMode;
+    ShadingModel = other.ShadingModel;
+    UsageFlags = MaterialUsageFlags::None;
+    if (other.Flags & MaterialFlags_Deprecated::UseMask)
+        UsageFlags |= MaterialUsageFlags::UseMask;
+    if (other.Flags & MaterialFlags_Deprecated::UseEmissive)
+        UsageFlags |= MaterialUsageFlags::UseEmissive;
+    if (other.Flags & MaterialFlags_Deprecated::UsePositionOffset)
+        UsageFlags |= MaterialUsageFlags::UsePositionOffset;
+    if (other.Flags & MaterialFlags_Deprecated::UseVertexColor)
+        UsageFlags |= MaterialUsageFlags::UseVertexColor;
+    if (other.Flags & MaterialFlags_Deprecated::UseNormal)
+        UsageFlags |= MaterialUsageFlags::UseNormal;
+    if (other.Flags & MaterialFlags_Deprecated::UseDisplacement)
+        UsageFlags |= MaterialUsageFlags::UseDisplacement;
+    if (other.Flags & MaterialFlags_Deprecated::UseRefraction)
+        UsageFlags |= MaterialUsageFlags::UseRefraction;
+    FeaturesFlags = MaterialFeaturesFlags::None;
+    if (other.Flags & MaterialFlags_Deprecated::Wireframe)
+        FeaturesFlags |= MaterialFeaturesFlags::Wireframe;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDepthTest && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDepthTest;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableFog && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableFog;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableReflections && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableReflections;
+    if (other.Flags & MaterialFlags_Deprecated::DisableDepthWrite)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDepthWrite;
+    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDistortion && BlendMode != MaterialBlendMode::Opaque)
+        FeaturesFlags |= MaterialFeaturesFlags::DisableDistortion;
+    if (other.Flags & MaterialFlags_Deprecated::InputWorldSpaceNormal)
+        FeaturesFlags |= MaterialFeaturesFlags::InputWorldSpaceNormal;
+    if (other.Flags & MaterialFlags_Deprecated::UseDitheredLODTransition)
+        FeaturesFlags |= MaterialFeaturesFlags::DitheredLODTransition;
+    if (other.BlendMode != MaterialBlendMode::Opaque && other.TransparentLighting == MaterialTransparentLighting_Deprecated::None)
+        ShadingModel = MaterialShadingModel::Unlit;
+    DecalBlendingMode = other.DecalBlendingMode;
+    PostFxLocation = other.PostFxLocation;
+    CullMode = other.Flags & MaterialFlags_Deprecated::TwoSided ? ::CullMode::TwoSided : ::CullMode::Normal;
+    MaskThreshold = other.MaskThreshold;
+    OpacityThreshold = other.OpacityThreshold;
+    TessellationMode = other.TessellationMode;
+    MaxTessellationFactor = other.MaxTessellationFactor;
+}
+
+bool MaterialInfo::operator==(const MaterialInfo& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && UsageFlags == other.UsageFlags
+            && FeaturesFlags == other.FeaturesFlags
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && CullMode == other.CullMode
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
 
 const Char* ToString(MaterialParameterType value)
 {
@@ -96,11 +177,11 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Vector3:
         return _asVector3;
     case MaterialParameterType::Vector4:
-        return _asVector4;
+        return *(Vector4*)&AsData;
     case MaterialParameterType::Color:
         return _asColor;
     case MaterialParameterType::Matrix:
-        return Variant(_asMatrix);
+        return Variant(*(Matrix*)&AsData);
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
     case MaterialParameterType::CubeTexture:
@@ -140,13 +221,13 @@ void MaterialParameter::SetValue(const Variant& value)
         _asVector3 = (Vector3)value;
         break;
     case MaterialParameterType::Vector4:
-        _asVector4 = (Vector4)value;
+        *(Vector4*)&AsData = (Vector4)value;
         break;
     case MaterialParameterType::Color:
         _asColor = (Color)value;
         break;
     case MaterialParameterType::Matrix:
-        _asMatrix = (Matrix)value;
+        *(Matrix*)&AsData = (Matrix)value;
         break;
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
@@ -245,13 +326,13 @@ void MaterialParameter::Bind(BindMeta& meta) const
         *((Vector3*)(meta.Constants + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *((Vector4*)(meta.Constants + _offset)) = _asVector4;
+        *((Vector4*)(meta.Constants + _offset)) = *(Vector4*)&AsData;
         break;
     case MaterialParameterType::Color:
         *((Color*)(meta.Constants + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
-        Matrix::Transpose(_asMatrix, *(Matrix*)(meta.Constants + _offset));
+        Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants + _offset));
         break;
     case MaterialParameterType::NormalMap:
     {
@@ -406,13 +487,13 @@ void MaterialParameter::clone(const MaterialParameter* param)
         _asVector3 = param->_asVector3;
         break;
     case MaterialParameterType::Vector4:
-        _asVector4 = param->_asVector4;
+        *(Vector4*)&AsData = *(Vector4*)&param->AsData;
         break;
     case MaterialParameterType::Color:
         _asColor = param->_asColor;
         break;
     case MaterialParameterType::Matrix:
-        _asMatrix = param->_asMatrix;
+        *(Matrix*)&AsData = *(Matrix*)&param->AsData;
         break;
     default:
         break;
@@ -585,13 +666,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -658,13 +739,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -732,13 +813,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read(&param->_asVector4);
+                    stream->Read((Vector4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read(&param->_asMatrix);
+                    stream->Read((Matrix*)&param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -824,13 +905,13 @@ void MaterialParams::Save(WriteStream* stream)
             stream->Write(&param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write(&param->_asVector4);
+            stream->Write((Vector4*)&param->AsData);
             break;
         case MaterialParameterType::Color:
             stream->Write(&param->_asColor);
             break;
         case MaterialParameterType::Matrix:
-            stream->Write(&param->_asMatrix);
+            stream->Write((Matrix*)&param->AsData);
             break;
         case MaterialParameterType::NormalMap:
         case MaterialParameterType::Texture:
@@ -898,13 +979,13 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
                 stream->Write(&param.AsVector3);
                 break;
             case MaterialParameterType::Vector4:
-                stream->Write(&param.AsVector4);
+                stream->Write((Vector4*)&param.AsData);
                 break;
             case MaterialParameterType::Color:
                 stream->Write(&param.AsColor);
                 break;
             case MaterialParameterType::Matrix:
-                stream->Write(&param.AsMatrix);
+                stream->Write((Matrix*)&param.AsData);
                 break;
             case MaterialParameterType::NormalMap:
             case MaterialParameterType::Texture:

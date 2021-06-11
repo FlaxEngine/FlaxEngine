@@ -6,6 +6,8 @@
 #include "Engine/Particles/ParticleEmitter.h"
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 
@@ -37,7 +39,12 @@ bool GPUParticles::Init(ParticleEmitter* owner, MemoryReadStream& shaderCacheStr
 
     // Load shader
     ASSERT(GPUDevice::Instance);
-    _shader = GPUDevice::Instance->CreateShader(owner->GetPath());
+#if GPU_ENABLE_RESOURCE_NAMING
+    const StringView name(owner->GetPath());
+#else
+    const StringView name;
+#endif
+    _shader = GPUDevice::Instance->CreateShader(name);
     if (_shader->Create(shaderCacheStream))
     {
         LOG(Warning, "Failed to load shader.");

@@ -6,6 +6,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/PostProcessBase.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Time.h"

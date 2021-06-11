@@ -260,7 +260,7 @@ namespace
     String AppPackageName, DeviceManufacturer, DeviceModel, DeviceBuildNumber;
     String SystemVersion, SystemLanguage, CacheDir, ExecutablePath;
     byte MacAddress[6];
-    AndroidKeyboard KeyboardImpl;
+    AndroidKeyboard* KeyboardImpl;
     AndroidDeviceGamepad* GamepadImpl;
     AndroidTouchScreen* TouchScreenImpl;
     ScreenOrientationType Orientation;
@@ -496,9 +496,9 @@ namespace
                     if (eventType.KeyboardKey != KeyboardKeys::None)
                     {
                         if (isDown)
-                            KeyboardImpl.OnKeyDown(eventType.KeyboardKey);
+                            KeyboardImpl->OnKeyDown(eventType.KeyboardKey);
                         else
-                            KeyboardImpl.OnKeyUp(eventType.KeyboardKey);
+                            KeyboardImpl->OnKeyUp(eventType.KeyboardKey);
                     }
 
                     // Gamepad
@@ -850,7 +850,7 @@ bool AndroidPlatform::Init()
     }
 
     // Setup native platform input devices
-    Input::Keyboard = &KeyboardImpl;
+    Input::Keyboard = KeyboardImpl = New<AndroidKeyboard>();
     Input::Gamepads.Add(GamepadImpl = New<AndroidDeviceGamepad>());
     Input::OnGamepadsChanged();
     Input::CustomDevices.Add(TouchScreenImpl = New<AndroidTouchScreen>());

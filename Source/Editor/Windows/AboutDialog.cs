@@ -34,7 +34,7 @@ namespace FlaxEditor.Windows
         {
             Image icon = new Image(4, 4, 80, 80)
             {
-                Brush = new SpriteBrush(Editor.Instance.Icons.Logo128),
+                Brush = new SpriteBrush(Editor.Instance.Icons.FlaxLogo128),
                 Parent = this
             };
             var nameLabel = new Label(icon.Right + 10, icon.Top, 200, 34)
@@ -131,6 +131,7 @@ namespace FlaxEditor.Windows
                 "LZ4 Library - Copyright (c) Yann Collet. All rights reserved.",
                 "fmt - www.fmtlib.net",
                 "minimp3 - www.github.com/lieff/minimp3",
+                "Tracy Profiler - www.github.com/wolfpld/tracy",
                 "Ogg and Vorbis - Xiph.org Foundation",
                 "OpenAL Soft - www.github.com/kcat/openal-soft",
                 "OpenFBX - www.github.com/nem0/OpenFBX",

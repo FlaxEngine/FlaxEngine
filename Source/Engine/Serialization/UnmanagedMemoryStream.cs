@@ -84,7 +84,7 @@ namespace FlaxEngine.Json
             if (toRead <= 0)
                 return 0;
             fixed (byte* bufferPtr = buffer)
-                Utils.MemoryCopy(new IntPtr(_ptr + _pos), new IntPtr(bufferPtr), toRead);
+                Utils.MemoryCopy(new IntPtr(bufferPtr), new IntPtr(_ptr + _pos), (ulong)toRead);
             _pos += toRead;
             return toRead;
         }
@@ -135,7 +135,7 @@ namespace FlaxEngine.Json
             if (newPos > _length)
                 _length = newPos;
             fixed (byte* bufferPtr = buffer)
-                Utils.MemoryCopy(new IntPtr(_pos + _pos), new IntPtr(bufferPtr), count);
+                Utils.MemoryCopy(new IntPtr(bufferPtr), new IntPtr(_pos + _pos), (ulong)count);
             _pos = newPos;
         }
 

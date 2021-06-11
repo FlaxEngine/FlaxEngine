@@ -13,10 +13,6 @@
 /// </summary>
 class LoadAssetTask : public ContentLoadTask
 {
-private:
-
-    WeakAssetReference<Asset> _asset;
-
 public:
 
     /// <summary>
@@ -25,27 +21,20 @@ public:
     /// <param name="asset">The asset to load.</param>
     LoadAssetTask(Asset* asset)
         : ContentLoadTask(Type::LoadAsset)
-        , _asset(asset)
+        , Asset(asset)
     {
     }
 
 public:
 
-    /// <summary>
-    /// Gets the asset.
-    /// </summary>
-    /// <returns>The asset.</returns>
-    FORCE_INLINE Asset* GetAsset() const
-    {
-        return _asset.Get();
-    }
+    WeakAssetReference<Asset> Asset;
 
 public:
 
     // [ContentLoadTask]
     bool HasReference(Object* obj) const override
     {
-        return obj == _asset;
+        return obj == Asset;
     }
 
 protected:
@@ -55,7 +44,8 @@ protected:
     {
         PROFILE_CPU();
 
-        AssetReference<Asset> ref = _asset.Get();
+        // Keep valid ref to the asset
+        AssetReference<::Asset> ref = Asset.Get();
         if (ref == nullptr)
             return Result::MissingReferences;
 
@@ -68,7 +58,7 @@ protected:
 
     void OnEnd() override
     {
-        _asset = nullptr;
+        Asset = nullptr;
 
         // Base
         ContentLoadTask::OnEnd();

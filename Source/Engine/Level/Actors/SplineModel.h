@@ -125,4 +125,5 @@ protected:
 
     // [ModelInstanceActor]
     void OnTransformChanged() override;
+    void OnActiveInTreeChanged() override;
 };

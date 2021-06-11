@@ -7,7 +7,7 @@ namespace FlaxEngine
     /// <summary>
     /// Font reference that defines the font asset and font size to use.
     /// </summary>
-    public struct FontReference
+    public class FontReference
     {
         [NoSerialize]
         private FontAsset _font;
@@ -17,6 +17,16 @@ namespace FlaxEngine
 
         [NoSerialize]
         private Font _cachedFont;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FontReference"/> struct.
+        /// </summary>
+        public FontReference()
+        {
+            _font = null;
+            _size = 30;
+            _cachedFont = null;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FontReference"/> struct.
@@ -36,8 +46,16 @@ namespace FlaxEngine
         /// <param name="font">The font.</param>
         public FontReference(Font font)
         {
-            _font = font?.Asset;
-            _size = font?.Size ?? 30;
+            if (font)
+            {
+                _font = font.Asset;
+                _size = font.Size;
+            }
+            else
+            {
+                _font = null;
+                _size = 30;
+            }
             _cachedFont = font;
         }
 
@@ -53,9 +71,7 @@ namespace FlaxEngine
                 if (_font != value)
                 {
                     _font = value;
-
-                    if (_cachedFont)
-                        _cachedFont = null;
+                    _cachedFont = null;
                 }
             }
         }
@@ -72,9 +88,7 @@ namespace FlaxEngine
                 if (_size != value)
                 {
                     _size = value;
-
-                    if (_cachedFont)
-                        _cachedFont = null;
+                    _cachedFont = null;
                 }
             }
         }
@@ -85,20 +99,22 @@ namespace FlaxEngine
         /// <returns>Th font or null if descriptor is invalid.</returns>
         public Font GetFont()
         {
-            return _cachedFont ?? (_cachedFont = _font?.CreateFont(_size));
+            if (_cachedFont)
+                return _cachedFont;
+            if (_font)
+                _cachedFont = _font.CreateFont(_size);
+            return _cachedFont;
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="FontReference" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="FontReference" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(ref FontReference other)
+        public bool Equals(FontReference other)
         {
-            return _font == other._font && _size == other._size;
+            return !(other is null) && _font == other._font && _size == other._size;
         }
 
         /// <summary>
@@ -109,7 +125,9 @@ namespace FlaxEngine
         /// <returns>True if font references are equal, otherwise false.</returns>
         public static bool operator ==(FontReference lhs, FontReference rhs)
         {
-            return lhs.Equals(ref rhs);
+            if (lhs is null)
+                return rhs is null;
+            return lhs.Equals(rhs);
         }
 
         /// <summary>
@@ -120,7 +138,9 @@ namespace FlaxEngine
         /// <returns>True if font references are not equal, otherwise false.</returns>
         public static bool operator !=(FontReference lhs, FontReference rhs)
         {
-            return !lhs.Equals(ref rhs);
+            if (lhs is null)
+                return !(rhs is null);
+            return !lhs.Equals(rhs);
         }
 
         /// <inheritdoc />
@@ -129,7 +149,7 @@ namespace FlaxEngine
             if (!(other is FontReference))
                 return false;
             var fontReference = (FontReference)other;
-            return Equals(ref fontReference);
+            return Equals(fontReference);
         }
 
         /// <inheritdoc />
@@ -137,7 +157,7 @@ namespace FlaxEngine
         {
             unchecked
             {
-                int hashCode = _font.GetHashCode();
+                int hashCode = _font ? _font.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ _size;
                 return hashCode;
             }

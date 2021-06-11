@@ -115,12 +115,10 @@ protected:
 public:
 
 #if BUILD_DEBUG
-
     /// <summary>
     /// The description of the pipeline state cached on creation in debug builds. Can be used to help with rendering crashes or issues and validation.
     /// </summary>
     Description DebugDesc;
-
 #endif
 
 public:
@@ -128,7 +126,6 @@ public:
     /// <summary>
     /// Gets constant buffers usage mask (each set bit marks usage of the constant buffer at the bit index slot). Combined from all the used shader stages.
     /// </summary>
-    /// <returns>The constant buffers usage mask.</returns>
     FORCE_INLINE uint32 GetUsedCBsMask() const
     {
         return _meta.UsedCBsMask;
@@ -137,7 +134,6 @@ public:
     /// <summary>
     /// Gets shader resources usage mask (each set bit marks usage of the shader resource slot at the bit index slot). Combined from all the used shader stages.
     /// </summary>
-    /// <returns>The shader resource usage mask.</returns>
     FORCE_INLINE uint32 GetUsedSRsMask() const
     {
         return _meta.UsedSRsMask;
@@ -146,7 +142,6 @@ public:
     /// <summary>
     /// Gets unordered access usage mask (each set bit marks usage of the unordered access slot at the bit index slot). Combined from all the used shader stages.
     /// </summary>
-    /// <returns>The unordered access usage mask.</returns>
     FORCE_INLINE uint32 GetUsedUAsMask() const
     {
         return _meta.UsedUAsMask;
@@ -157,7 +152,6 @@ public:
     /// <summary>
     /// Returns true if pipeline state is valid and ready to use
     /// </summary>
-    /// <returns>True if is valid</returns>
     API_PROPERTY() virtual bool IsValid() const = 0;
 
     /// <summary>
@@ -165,39 +159,9 @@ public:
     /// </summary>
     /// <param name="desc">Full pipeline state description</param>
     /// <returns>True if cannot create state, otherwise false</returns>
-    API_FUNCTION() virtual bool Init(API_PARAM(Ref) const Description& desc)
-    {
-        // Cache description in debug builds
-#if BUILD_DEBUG
-        DebugDesc = desc;
-#endif
-
-        // Cache shader stages usage flags for pipeline state
-        _meta.InstructionsCount = 0;
-        _meta.UsedCBsMask = 0;
-        _meta.UsedSRsMask = 0;
-        _meta.UsedUAsMask = 0;
-#define CHECK_STAGE(stage) \
-			if(desc.stage) { \
-			_meta.UsedCBsMask |= desc.stage->GetBindings().UsedCBsMask; \
-			_meta.UsedSRsMask |= desc.stage->GetBindings().UsedSRsMask; \
-			_meta.UsedUAsMask |= desc.stage->GetBindings().UsedUAsMask; \
-			}
-        CHECK_STAGE(VS);
-        CHECK_STAGE(HS);
-        CHECK_STAGE(DS);
-        CHECK_STAGE(GS);
-        CHECK_STAGE(PS);
-#undef CHECK_STAGE
-
-        return false;
-    }
+    API_FUNCTION() virtual bool Init(API_PARAM(Ref) const Description& desc);
 
 public:
-
     // [GPUResource]
-    ResourceType GetResourceType() const final override
-    {
-        return ResourceType::PipelineState;
-    }
+    ResourceType GetResourceType() const final override;
 };

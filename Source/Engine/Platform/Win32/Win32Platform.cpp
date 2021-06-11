@@ -10,6 +10,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/CommandLine.h"
 #include "IncludeWindowsHeaders.h"
 #include <Psapi.h>
 #include <WinSock2.h>
@@ -17,6 +18,8 @@
 #include <oleauto.h>
 #include <WinBase.h>
 #include <xmmintrin.h>
+#include <intrin.h>
+#include <cstdio>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace
@@ -61,6 +64,28 @@ bool Win32Platform::Init()
 {
     if (PlatformBase::Init())
         return true;
+
+    // Init console output (engine is linked with /SUBSYSTEM:WINDOWS so it lacks of proper console output on Windows)
+    if (CommandLine::Options.Std)
+    {
+        // Attaches output of application to parent console, returns true if running in console-mode
+        // [Reference: https://www.tillett.info/2013/05/13/how-to-create-a-windows-program-that-works-as-both-as-a-gui-and-console-application]
+        if (AttachConsole(ATTACH_PARENT_PROCESS))
+        {
+            const HANDLE consoleHandleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (consoleHandleOut != INVALID_HANDLE_VALUE)
+            {
+                freopen("CONOUT$", "w", stdout);
+                setvbuf(stdout, NULL, _IONBF, 0);
+            }
+            const HANDLE consoleHandleError = GetStdHandle(STD_ERROR_HANDLE);
+            if (consoleHandleError != INVALID_HANDLE_VALUE)
+            {
+                freopen("CONOUT$", "w", stderr);
+                setvbuf(stderr, NULL, _IONBF, 0);
+            }
+        }
+    }
 
     // Init timing
     LARGE_INTEGER frequency;
@@ -304,28 +329,33 @@ void Win32Platform::Prefetch(void const* ptr)
 
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)
 {
+    void* ptr = _aligned_malloc((size_t)size, (size_t)alignment);
 #if COMPILE_WITH_PROFILER
-    TrackAllocation(size);
+    OnMemoryAlloc(ptr, size);
 #endif
-    return _aligned_malloc((size_t)size, (size_t)alignment);
+    return ptr;
 }
 
 void Win32Platform::Free(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     _aligned_free(ptr);
 }
 
 void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
-
-    // Use VirtualAlloc to allocate page-aligned memory
+#if PLATFORM_UWP
+    return VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
     return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#endif
 }
 
 void Win32Platform::FreePages(void* ptr)
 {
-    // Free page-aligned memory
     VirtualFree(ptr, 0, MEM_RELEASE);
 }
 
@@ -426,7 +456,21 @@ void Win32Platform::SetThreadAffinityMask(uint64 affinityMask)
 
 void Win32Platform::Sleep(int32 milliseconds)
 {
-    ::Sleep(static_cast<DWORD>(milliseconds));
+    static thread_local HANDLE timer = NULL;
+    if (timer == NULL)
+    {
+        // Attempt to create high-resolution timer for each thread (Windows 10 build 17134 or later)
+        timer = CreateWaitableTimerEx(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+        if (timer == NULL) // fallback for older versions of Windows
+            timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    }
+
+    // Negative value is relative to current time, minimum waitable time is 10 microseconds
+    LARGE_INTEGER dueTime;
+    dueTime.QuadPart = -int64_t(milliseconds) * 10000;
+
+    SetWaitableTimerEx(timer, &dueTime, 0, NULL, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
 }
 
 double Win32Platform::GetTimeSeconds()

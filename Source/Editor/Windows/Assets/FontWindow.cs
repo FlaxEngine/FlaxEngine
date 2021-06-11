@@ -111,7 +111,7 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_proxy);
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
         }
 
         private void OnTextChanged()
@@ -135,7 +135,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            _textPreview.Font = new FontReference();
+            _textPreview.Font = null;
 
             base.UnlinkItem();
         }

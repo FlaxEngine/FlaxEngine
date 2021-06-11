@@ -6,6 +6,10 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 
+SkinnedMeshDrawData::SkinnedMeshDrawData()
+{
+}
+
 SkinnedMeshDrawData::~SkinnedMeshDrawData()
 {
     SAFE_DELETE_GPU_RESOURCE(BoneMatrices);

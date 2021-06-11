@@ -3,6 +3,7 @@
 #include "AssetsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/DeleteMe.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Serialization/FileReadStream.h"
@@ -10,12 +11,12 @@
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/Content/Storage/JsonStorageProxy.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
 
 AssetsCache::AssetsCache()
     : _isDirty(false)
     , _registry(4096)
-    , _pathsMapping(256)
 {
 }
 
@@ -91,8 +92,8 @@ void AssetsCache::Init()
 #if ENABLE_ASSETS_DISCOVERY
         stream->Read(&e.FileModified);
 #else
-		DateTime tmp1;
-		stream->Read(&tmp1);
+        DateTime tmp1;
+        stream->Read(&tmp1);
 #endif
 
         if (flags & AssetsCacheFlags::RelativePaths && e.Info.Path.HasChars())
@@ -207,7 +208,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
 #if ENABLE_ASSETS_DISCOVERY
         stream->Write(&e.FileModified);
 #else
-		stream->WriteInt64(0);
+        stream->WriteInt64(0);
 #endif
 
         index++;
@@ -229,6 +230,21 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     Delete(stream);
 
     return false;
+}
+
+const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
+{
+#if USE_EDITOR
+    auto e = _registry.TryGet(id);
+    return e ? e->Info.Path : String::Empty;
+#else
+    for (auto& e : _pathsMapping)
+    {
+        if (e.Value == id)
+            return e.Key;
+    }
+    return String::Empty;
+#endif
 }
 
 bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
@@ -402,14 +418,20 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     _isDirty = true;
 }
 
+void AssetsCache::RegisterAsset(const AssetHeader& header, const StringView& path)
+{
+    RegisterAsset(header.ID, header.TypeName, path);
+}
+
+void AssetsCache::RegisterAssets(const FlaxStorageReference& storage)
+{
+    RegisterAssets(storage.Get());
+}
+
 void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const StringView& path)
 {
     PROFILE_CPU();
-
     ScopeLock lock(_locker);
-
-    // Mark registry as draft
-    _isDirty = true;
 
     // Check if asset has been already added to the registry
     bool isMissing = true;
@@ -417,26 +439,34 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
     {
         auto& e = i->Value;
 
-        // Compare IDs
         if (e.Info.ID == id)
         {
-            // Update registry entry
-            e.Info.Path = path;
-            e.Info.TypeName = typeName;
-
-            // Back
+            if (e.Info.Path != path)
+            {
+                e.Info.Path = path;
+                _isDirty = true;
+            }
+            if (e.Info.TypeName != typeName)
+            {
+                e.Info.TypeName = typeName;
+                _isDirty = true;
+            }
             isMissing = false;
             break;
         }
 
-        // Compare paths
         if (e.Info.Path == path)
         {
-            // Update registry entry
-            e.Info.ID = id;
-            e.Info.TypeName = typeName;
-
-            // Back
+            if (e.Info.ID != id)
+            {
+                e.Info.Path = path;
+                _isDirty = true;
+            }
+            if (e.Info.TypeName != typeName)
+            {
+                e.Info.TypeName = typeName;
+                _isDirty = true;
+            }
             isMissing = false;
             break;
         }
@@ -445,9 +475,8 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
     if (isMissing)
     {
         LOG(Info, "Register asset {0}:{1} \'{2}\'", id, typeName, path);
-
-        // Add new asset entry
         _registry.Add(id, Entry(id, typeName, path));
+        _isDirty = true;
     }
 }
 
@@ -567,8 +596,8 @@ bool AssetsCache::IsEntryValid(Entry& e)
 #else
 
     // In game we don't care about it because all cached asset entries are valid (precached)
-	// Skip only entries with missing file
-	return e.Info.Path.HasChars();
+    // Skip only entries with missing file
+    return e.Info.Path.HasChars();
 
 #endif
 }

@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Gizmo;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -137,7 +138,7 @@ namespace FlaxEditor.Viewport
 
         // Input
 
-        private bool _isControllingMouse;
+        private bool _isControllingMouse, _isViewportControllingMouse;
         private int _deltaFilteringStep;
         private Vector2 _startPos;
         private Vector2 _mouseDeltaLast;
@@ -449,7 +450,7 @@ namespace FlaxEditor.Viewport
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
-                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.ArrowRightBorder16, camSpeedCM)
+                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.CamSpeed32, camSpeedCM)
                 {
                     Tag = this,
                     TooltipText = "Camera speed scale"
@@ -490,7 +491,7 @@ namespace FlaxEditor.Viewport
                 // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate16;
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
                     {
@@ -655,8 +656,30 @@ namespace FlaxEditor.Viewport
                 }
             }
 
+            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
+            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
+            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
+            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
+            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
+            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
+
             // Link for task event
             task.Begin += OnRenderBegin;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this viewport is using mouse currently (eg. user moving objects).
+        /// </summary>
+        protected virtual bool IsControllingMouse => false;
+
+        /// <summary>
+        /// Orients the viewport.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>
+        protected void OrientViewport(Quaternion orientation)
+        {
+            var quat = orientation;
+            OrientViewport(ref quat);
         }
 
         /// <summary>
@@ -667,12 +690,12 @@ namespace FlaxEditor.Viewport
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {
-                var pos = Vector3.Zero + Vector3.Backward * orientation * 2000.0f;
+                var pos = ViewPosition + Vector3.Backward * orientation * 2000.0f;
                 fpsCamera.MoveViewport(pos, orientation);
             }
             else
             {
-                ViewportCamera.SetArcBallView(orientation, Vector3.Zero, 2000.0f);
+                ViewportCamera.SetArcBallView(orientation, ViewPosition, 2000.0f);
             }
         }
 
@@ -979,9 +1002,19 @@ namespace FlaxEditor.Viewport
             // Update input
             {
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
-                bool useMouse = Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height);
+                var isViewportControllingMouse = IsControllingMouse;
+                if (isViewportControllingMouse != _isViewportControllingMouse)
+                {
+                    _isViewportControllingMouse = isViewportControllingMouse;
+                    if (isViewportControllingMouse)
+                        StartMouseCapture();
+                    else
+                        EndMouseCapture();
+                }
+                bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
                 _prevInput = _input;
-                if (ContainsFocus && GetChildAt(_viewMousePos, c => c.Visible) == null)
+                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl));
+                if (ContainsFocus && hit == null)
                     _input.Gather(win.Window, useMouse);
                 else
                     _input.Clear();

@@ -550,8 +550,6 @@ public:
 
     static ContainmentType FrustumContainsBox(const BoundingFrustum& frustum, const BoundingBox& box);
 
-    static void GetBoxToPlanePVertexNVertex(const BoundingBox& box, const Vector3& planeNormal, Vector3& p, Vector3& n);
-
     /// <summary>
     /// Determines whether a line intersects with the other line.
     /// </summary>

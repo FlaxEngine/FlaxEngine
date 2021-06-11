@@ -34,5 +34,10 @@ namespace FlaxEngine
         /// The spacing amount between collection items in the UI.
         /// </summary>
         public float Spacing;
+
+        /// <summary>
+        /// The collection background color.
+        /// </summary>
+        public Color? BackgroundColor;
     }
 }

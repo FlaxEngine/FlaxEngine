@@ -2,15 +2,18 @@
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
-#include "Engine/Animations/AnimationManager.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
+
+extern Array<Matrix> UpdateBones;
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
@@ -41,14 +44,15 @@ void AnimatedModel::UpdateAnimation()
         || !IsActiveInHierarchy()
         || SkinnedModel == nullptr
         || !SkinnedModel->IsLoaded()
-        || _lastUpdateFrame == Engine::FrameCount)
+        || _lastUpdateFrame == Engine::FrameCount
+        || _masterPose)
         return;
     _lastUpdateFrame = Engine::FrameCount;
 
     if (AnimationGraph && AnimationGraph->IsLoaded() && AnimationGraph->Graph.IsReady())
     {
         // Request an animation update
-        AnimationManager::AddToUpdate(this);
+        Animations::AddToUpdate(this);
     }
     else
     {
@@ -131,6 +135,22 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     }
 }
 
+void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
+{
+    if (GraphInstance.NodesPose.Count() == 0)
+        return;
+    CHECK(nodesTransformation.Count() == GraphInstance.NodesPose.Count());
+    GraphInstance.NodesPose = nodesTransformation;
+    if (worldSpace)
+    {
+        Matrix invWorld;
+        Matrix::Invert(_world, invWorld);
+        for (auto& m : GraphInstance.NodesPose)
+            m = invWorld * m;
+    }
+    OnAnimationUpdated();
+}
+
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
 {
     if (nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count())
@@ -144,6 +164,35 @@ void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransform
 void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& nodeTransformation, bool worldSpace) const
 {
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
+}
+
+int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
+{
+    const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
+    int32 result = -1;
+    float closest = MAX_float;
+    for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
+    {
+        const Vector3 node = GraphInstance.NodesPose[nodeIndex].GetTranslation();
+        const float dst = Vector3::DistanceSquared(node, pos);
+        if (dst < closest)
+        {
+            closest = dst;
+            result = nodeIndex;
+        }
+    }
+    return result;
+}
+
+void AnimatedModel::SetMasterPoseModel(AnimatedModel* masterPose)
+{
+    if (masterPose == _masterPose)
+        return;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Unbind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
+    _masterPose = masterPose;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Bind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
 }
 
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
@@ -232,6 +281,8 @@ void AnimatedModel::SetParameterValue(const Guid& id, const Variant& value)
     }
     LOG(Warning, "Failed to set animated model '{0}' missing parameter '{1}'", ToString(), id.ToString());
 }
+
+#undef CHECK_ANIM_GRAPH_PARAM_ACCESS
 
 float AnimatedModel::GetBlendShapeWeight(const StringView& name)
 {
@@ -338,7 +389,8 @@ void AnimatedModel::BeginPlay(SceneBeginData* data)
 
 void AnimatedModel::EndPlay()
 {
-    AnimationManager::RemoveFromUpdate(this);
+    Animations::RemoveFromUpdate(this);
+    SetMasterPoseModel(nullptr);
 
     // Base
     ModelInstanceActor::EndPlay();
@@ -387,8 +439,7 @@ void AnimatedModel::UpdateLocalBounds()
     }
 
     // Scale bounds
-    box.Minimum *= BoundsScale;
-    box.Maximum *= BoundsScale;
+    box = box.MakeScaled(box, BoundsScale);
 
     _boxLocal = box;
 }
@@ -401,12 +452,38 @@ void AnimatedModel::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void AnimatedModel::OnAnimUpdate()
+void AnimatedModel::OnAnimationUpdated()
 {
+    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    auto& skeleton = SkinnedModel->Skeleton;
+
+    // Copy pose from the master
+    if (_masterPose && _masterPose->SkinnedModel->Skeleton.Nodes.Count() == skeleton.Nodes.Count())
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Copy Master Pose");
+        const auto& masterInstance = _masterPose->GraphInstance;
+        GraphInstance.NodesPose = masterInstance.NodesPose;
+        GraphInstance.RootTransform = masterInstance.RootTransform;
+        GraphInstance.RootMotion = masterInstance.RootMotion;
+    }
+
+    // Calculate the final bones transformations and update skinning
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Final Pose");
+        UpdateBones.Resize(skeleton.Bones.Count(), false);
+        for (int32 boneIndex = 0; boneIndex < skeleton.Bones.Count(); boneIndex++)
+        {
+            auto& bone = skeleton.Bones[boneIndex];
+            UpdateBones[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+        }
+    }
+    _skinningData.SetData(UpdateBones.Get(), !PerBoneMotionBlur);
+
     UpdateBounds();
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
     _blendShapes.Update(SkinnedModel.Get());
+    AnimationUpdated();
 }
 
 void AnimatedModel::OnSkinnedModelChanged()
@@ -424,7 +501,6 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
 
-    UpdateBounds();
     GraphInstance.Invalidate();
     if (_blendShapes.Weights.HasItems())
         _blendShapes.WeightsDirty = true;
@@ -539,7 +615,7 @@ void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 
 void AnimatedModel::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.8f, 0, true);
+    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();

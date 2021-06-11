@@ -367,8 +367,11 @@ namespace Flax.Build.Platforms
             var vcToolChainDir = toolsets[Toolset];
             switch (Toolset)
             {
-            case WindowsPlatformToolset.v141: return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
-            case WindowsPlatformToolset.v140: return Path.Combine(vcToolChainDir, "lib", "store", "references");
+            case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v141:
+                return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
+            case WindowsPlatformToolset.v140:
+                return Path.Combine(vcToolChainDir, "lib", "store", "references");
             default: return null;
             }
         }
@@ -680,6 +683,8 @@ namespace Flax.Build.Platforms
                     args.Add("/WINMD");
                     args.Add(string.Format("/WINMDFILE:\"{0}\"", Path.ChangeExtension(outputFilePath, "winmd")));
                     args.Add("/APPCONTAINER");
+                    if (linkEnvironment.Output == LinkerOutput.SharedLibrary)
+                        args.Add("/DYNAMICBASE");
                 }
 
                 if (linkEnvironment.LinkTimeCodeGeneration)
@@ -937,7 +942,7 @@ namespace Flax.Build.Platforms
                                 xmlTextWriter.WriteStartElement("Properties");
 
                                 // TODO: better logo handling
-                                var logoSrcPath = Path.Combine(Environment.CurrentDirectory, "Source", "Logo.png");
+                                var logoSrcPath = Path.Combine(Globals.EngineRoot, "Source", "Logo.png");
                                 var logoDstPath = Path.Combine(options.IntermediateFolder, "Logo.png");
                                 if (!File.Exists(logoDstPath))
                                     Utilities.FileCopy(logoSrcPath, logoDstPath);

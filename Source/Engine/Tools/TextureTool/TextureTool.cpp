@@ -5,6 +5,7 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Int2.h"

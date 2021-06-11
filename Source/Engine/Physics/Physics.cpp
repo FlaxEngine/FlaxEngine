@@ -638,9 +638,9 @@ void Physics::Simulate(float dt)
 
 void Physics::CollectResults()
 {
-    ASSERT(IsInMainThread());
     if (!_isDuringSimulation)
         return;
+    ASSERT(IsInMainThread());
     ASSERT(CPhysX && Stepper);
 
     {

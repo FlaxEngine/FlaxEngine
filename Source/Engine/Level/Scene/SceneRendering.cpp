@@ -2,6 +2,7 @@
 
 #include "SceneRendering.h"
 #include "Scene.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 

@@ -31,7 +31,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    PostFxMaterialShader(const String& name)
+    PostFxMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

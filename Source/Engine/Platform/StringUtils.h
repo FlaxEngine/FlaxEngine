@@ -207,19 +207,19 @@ public:
     // Returns the directory name of the specified path string
     // @param path The path string from which to obtain the directory name
     // @returns Directory name
-    static String GetDirectoryName(const String& path);
+    static StringView GetDirectoryName(const StringView& path);
 
     // Returns the file name and extension of the specified path string
     // @param path The path string from which to obtain the file name and extension
     // @returns File name with extension
-    static String GetFileName(const String& path);
+    static StringView GetFileName(const StringView& path);
 
     // Returns the file name without extension of the specified path string
     // @param path The path string from which to obtain the file name
     // @returns File name without extension
-    static String GetFileNameWithoutExtension(const String& path);
+    static StringView GetFileNameWithoutExtension(const StringView& path);
 
-    static String GetPathWithoutExtension(const String& path);
+    static StringView GetPathWithoutExtension(const StringView& path);
 
     static void PathRemoveRelativeParts(String& path);
 

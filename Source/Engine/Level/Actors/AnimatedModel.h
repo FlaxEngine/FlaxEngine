@@ -6,6 +6,8 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/AnimationGraph.h"
 #include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Core/Delegate.h"
 
 /// <summary>
 /// Performs an animation and renders a skinned model.
@@ -13,7 +15,7 @@
 API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
 DECLARE_SCENE_OBJECT(AnimatedModel);
-    friend class AnimationManagerService;
+    friend class AnimationsService;
 public:
 
     /// <summary>
@@ -63,6 +65,7 @@ private:
     float _lastMinDstSqr;
     uint64 _lastUpdateFrame;
     BlendShapesInstance _blendShapes;
+    ScriptingObjectReference<AnimatedModel> _masterPose;
 
 public:
 
@@ -165,9 +168,14 @@ public:
     API_FUNCTION() void ResetAnimation();
 
     /// <summary>
-    /// Performs the full animation update.
+    /// Performs the full animation update. The actual update will be performed during gameplay tick.
     /// </summary>
     API_FUNCTION() void UpdateAnimation();
+    
+    /// <summary>
+    /// Called after animation gets updated (new skeleton pose).
+    /// </summary>
+    API_EVENT() Action AnimationUpdated;
 
     /// <summary>
     /// Validates and creates a proper skinning data.
@@ -180,16 +188,18 @@ public:
     API_FUNCTION() void PreInitSkinningData();
 
     /// <summary>
-    /// Updates the child bone socket actors.
-    /// </summary>
-    API_FUNCTION() void UpdateSockets();
-
-    /// <summary>
-    /// Gets the per-node final transformations.
+    /// Gets the per-node final transformations (skeleton pose).
     /// </summary>
     /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     API_FUNCTION() void GetCurrentPose(API_PARAM(Out) Array<Matrix>& nodesTransformation, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Sets the per-node final transformations (skeleton pose).
+    /// </summary>
+    /// <param name="nodesTransformation">The per-node final transformation matrices.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values are in local-space of the actor.</param>
+    API_FUNCTION() void SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace = false);
 
     /// <summary>
     /// Gets the node final transformation.
@@ -206,6 +216,20 @@ public:
     /// <param name="nodeTransformation">The output final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Finds the closest node to a given location.
+    /// </summary>
+    /// <param name="location">The text location (in local-space of the actor or world-space depending on <paramref name="worldSpace"/>).</param>
+    /// <param name="worldSpace">True if convert input location is in world-space, otherwise it's in local-space of the actor.</param>
+    /// <returns>The zero-based index of the found node. Returns -1 if skeleton is missing.</returns>
+    API_FUNCTION() int32 FindClosestNode(const Vector3& location, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Sets the master pose model that will be used to copy the skeleton nodes animation. Useful for modular characters.
+    /// </summary>
+    /// <param name="masterPose">The master pose actor to use.</param>
+    API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
 
 public:
 
@@ -275,35 +299,20 @@ public:
 
 private:
 
-    /// <summary>
-    /// Applies the root motion delta to the target actor.
-    /// </summary>
     void ApplyRootMotion(const RootMotionData& rootMotionDelta);
-
-    /// <summary>
-    /// Synchronizes the parameters collection (may lost existing params data on collection change detected).
-    /// </summary>
     void SyncParameters();
 
-    /// <summary>
-    /// Updates the local bounds of the actor.
-    /// </summary>
+    void Update();
     void UpdateLocalBounds();
-
     void UpdateBounds();
-
-    /// <summary>
-    /// Called after animation graph update.
-    /// </summary>
-    void OnAnimUpdate();
+    void UpdateSockets();
+    void OnAnimationUpdated();
 
     void OnSkinnedModelChanged();
     void OnSkinnedModelLoaded();
 
     void OnGraphChanged();
     void OnGraphLoaded();
-
-    void Update();
 
 public:
 

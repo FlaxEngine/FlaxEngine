@@ -44,8 +44,8 @@ namespace Flax.Build.Plugins
             contents.AppendLine();
             contents.AppendLine("    {");
             contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
-            contents.AppendLine("        static THREADLOCAL bool IsDuringWrapperCall = false;");
-            contents.AppendLine("        if (IsDuringWrapperCall)");
+            contents.AppendLine("        static THREADLOCAL void* WrapperCallInstance = nullptr;");
+            contents.AppendLine("        if (WrapperCallInstance == object)");
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling base method");
             contents.AppendLine("            const auto scriptVTableBase = object->GetType().Script.ScriptVTableBase;");
@@ -78,9 +78,10 @@ namespace Flax.Build.Plugins
                 contents.AppendLine("        Variant* parameters = nullptr;");
             }
 
-            contents.AppendLine("        IsDuringWrapperCall = true;");
+            contents.AppendLine("        auto prevWrapperCallInstance = WrapperCallInstance;");
+            contents.AppendLine("        WrapperCallInstance = object;");
             contents.AppendLine($"        auto __result = VisualScripting::Invoke(scriptVTable[{scriptVTableIndex}], object, Span<Variant>(parameters, {functionInfo.Parameters.Count}));");
-            contents.AppendLine("        IsDuringWrapperCall = false;");
+            contents.AppendLine("        WrapperCallInstance = prevWrapperCallInstance;");
 
             if (!functionInfo.ReturnType.IsVoid)
             {

@@ -3,9 +3,9 @@
 #pragma once
 
 #include "Engine/Visject/VisjectGraph.h"
-#include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "../Config.h"
 
 #define ANIM_GRAPH_PARAM_BASE_MODEL_ID Guid(1000, 0, 0, 0)
@@ -21,6 +21,8 @@ class AnimSubGraph;
 class AnimGraphBase;
 class AnimGraphNode;
 class AnimGraphExecutor;
+class SkinnedModel;
+class SkeletonData;
 
 /// <summary>
 /// The root motion data container. Supports displacement and rotation (no scale component).
@@ -777,22 +779,14 @@ public:
     /// <summary>
     /// Determines whether this graph is ready for the animation evaluation.
     /// </summary>
-    /// <returns>True if is ready and can be used for the animation evaluation, otherwise false.</returns>
-    bool IsReady() const
-    {
-        return BaseModel && BaseModel->IsLoaded();
-    }
+    bool IsReady() const;
 
     /// <summary>
     /// Determines whether this graph can be used with the specified skeleton.
     /// </summary>
     /// <param name="other">The other skinned model to check.</param>
     /// <returns>True if can perform the update, otherwise false.</returns>
-    bool CanUseWithSkeleton(SkinnedModel* other) const
-    {
-        // All data loaded and bones count the same
-        return IsReady() && other && other->IsLoaded() && other->Skeleton.Bones.Count() == BaseModel->Skeleton.Bones.Count();
-    }
+    bool CanUseWithSkeleton(SkinnedModel* other) const;
 
 private:
 
@@ -823,12 +817,10 @@ private:
     AnimGraph& _graph;
     float _deltaTime = 0.0f;
     uint64 _currentFrameIndex = 0;
-    int32 _skeletonBonesCount = 0;
     int32 _skeletonNodesCount = 0;
     RootMotionMode _rootMotionMode = RootMotionMode::NoExtraction;
     AnimGraphInstanceData* _data = nullptr;
     AnimGraphImpulse _emptyNodes;
-    Array<Matrix> _bonesTransformations;
     AnimGraphTransitionData _transitionData;
     Array<Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> _callStack;
     Array<Graph*, FixedAllocation<32>> _graphStack;
@@ -859,18 +851,13 @@ public:
     /// </summary>
     /// <param name="data">The instance data.</param>
     /// <param name="dt">The delta time (in seconds).</param>
-    /// <returns>The pointer to the final bones structure as a result of the animation evaluation.</returns>
-    const Matrix* Update(AnimGraphInstanceData& data, float dt);
+    void Update(AnimGraphInstanceData& data, float dt);
 
-    void GetInputValue(Box* box, Value& result)
-    {
-        result = eatBox(box->GetParent<Node>(), box->FirstConnection());
-    }
+    void GetInputValue(Box* box, Value& result);
 
     /// <summary>
     /// Gets the skeleton nodes transformations structure containing identity matrices.
     /// </summary>
-    /// <returns>The data.</returns>
     FORCE_INLINE const AnimGraphImpulse* GetEmptyNodes() const
     {
         return &_emptyNodes;
@@ -920,11 +907,7 @@ public:
     /// Resets the state bucket.
     /// </summary>
     /// <param name="bucketIndex">The zero-based index of the bucket.</param>
-    FORCE_INLINE void ResetBucket(int32 bucketIndex)
-    {
-        auto& stateBucket = _data->State[bucketIndex];
-        _graph._bucketInitializerList[bucketIndex](stateBucket);
-    }
+    void ResetBucket(int32 bucketIndex);
 
     /// <summary>
     /// Resets all the state bucket used by the given graph including sub-graphs (total). Can eb used to reset the animation state of the nested graph (including children).

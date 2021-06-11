@@ -3,6 +3,7 @@
 #include "EnvironmentProbe.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ProbesRenderer.h"

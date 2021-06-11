@@ -41,6 +41,8 @@ namespace FlaxEditor.Windows.Assets
                 var newRoot = Object.Find<Actor>(ref newRootId);
 
                 _window.Graph.MainActor = null;
+                _window.Viewport.Instance = null;
+
                 if (SceneGraphFactory.Nodes.TryGetValue(oldRootId, out var oldRootNode))
                     oldRootNode.Dispose();
                 if (SceneGraphFactory.Nodes.TryGetValue(newRootId, out var newRootNode))

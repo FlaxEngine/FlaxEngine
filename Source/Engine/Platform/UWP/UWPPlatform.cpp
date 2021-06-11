@@ -22,8 +22,8 @@ UWPPlatformImpl* CUWPPlatform = nullptr;
 
 namespace Impl
 {
-    extern UWPWindow::UWPKeyboard Keyboard;
-    extern UWPWindow::UWPMouse Mouse;
+    extern UWPWindow::UWPKeyboard* Keyboard;
+    extern UWPWindow::UWPMouse* Mouse;
     extern UWPWindow* Window;
 }
 
@@ -62,8 +62,8 @@ bool UWPPlatform::Init()
     UserName = String::Empty;
 
     SystemDpi = CUWPPlatform->GetDpi();
-    Input::Mouse = &Impl::Mouse;
-    Input::Keyboard = &Impl::Keyboard;
+    Input::Mouse = Impl::Mouse = New<UWPWindow::UWPMouse>();
+    Input::Keyboard = Impl::Keyboard = New<UWPWindow::UWPKeyboard>();
 
     return false;
 }

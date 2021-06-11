@@ -22,7 +22,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(10)]
         public Font FontTitle
         {
-            get => _fontTitle.GetFont();
+            get => _fontTitle?.GetFont();
             set => _fontTitle = new FontReference(value);
         }
 
@@ -36,7 +36,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(20)]
         public Font FontLarge
         {
-            get => _fontLarge.GetFont();
+            get => _fontLarge?.GetFont();
             set => _fontLarge = new FontReference(value);
         }
 
@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(30)]
         public Font FontMedium
         {
-            get => _fontMedium.GetFont();
+            get => _fontMedium?.GetFont();
             set => _fontMedium = new FontReference(value);
         }
 
@@ -64,7 +64,7 @@ namespace FlaxEngine.GUI
         [EditorOrder(40)]
         public Font FontSmall
         {
-            get => _fontSmall.GetFont();
+            get => _fontSmall?.GetFont();
             set => _fontSmall = new FontReference(value);
         }
 
@@ -153,6 +153,12 @@ namespace FlaxEngine.GUI
         public Color TextBoxBackgroundSelected;
 
         /// <summary>
+        /// The collection background color.
+        /// </summary>
+        [EditorOrder(195)]
+        public Color CollectionBackgroundColor;
+
+        /// <summary>
         /// The progress normal color.
         /// </summary>
         [EditorOrder(200)]
@@ -223,6 +229,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(320)]
         public SpriteHandle Scale;
+
+        /// <summary>
+        /// The scalar icon.
+        /// </summary>
+        [EditorOrder(330)]
+        public SpriteHandle Scalar;
 
         /// <summary>
         /// The shared tooltip control used by the controls if no custom tooltip is provided.

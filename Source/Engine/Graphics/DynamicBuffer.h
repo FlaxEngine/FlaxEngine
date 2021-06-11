@@ -40,7 +40,6 @@ public:
     /// <summary>
     /// Gets buffer (may be null since it's using 'late init' feature)
     /// </summary>
-    /// <returns>Buffer</returns>
     FORCE_INLINE GPUBuffer* GetBuffer() const
     {
         return _buffer;

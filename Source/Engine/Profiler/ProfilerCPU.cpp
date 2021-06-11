@@ -7,8 +7,22 @@
 #include "Engine/Threading/ThreadRegistry.h"
 
 THREADLOCAL ProfilerCPU::Thread* ProfilerCPU::Thread::Current = nullptr;
-Array<ProfilerCPU::Thread*> ProfilerCPU::Threads(64);
+Array<ProfilerCPU::Thread*, InlinedAllocation<64>> ProfilerCPU::Threads;
 bool ProfilerCPU::Enabled = false;
+
+ProfilerCPU::EventBuffer::EventBuffer()
+{
+    _capacity = Math::RoundUpToPowerOf2(10 * 1000);
+    _capacityMask = _capacity - 1;
+    _data = NewArray<Event>(_capacity);
+    _head = 0;
+    _count = 0;
+}
+
+ProfilerCPU::EventBuffer::~EventBuffer()
+{
+    DeleteArray(_data, _capacity);
+}
 
 void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
 {
@@ -87,28 +101,23 @@ void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
         Platform::MemoryCopy(data.Get() + spaceLeftCount, &_data[0], overflow * sizeof(Event));
 }
 
-int32 ProfilerCPU::Thread::BeginEvent(const Char* name)
+int32 ProfilerCPU::Thread::BeginEvent()
 {
     const double time = Platform::GetTimeSeconds() * 1000.0;
     const auto index = Buffer.Add();
-
     Event& e = Buffer.Get(index);
     e.Start = time;
     e.End = 0;
     e.Depth = _depth++;
     e.NativeMemoryAllocation = 0;
     e.ManagedMemoryAllocation = 0;
-    e.Name = name;
-
     return index;
 }
 
 void ProfilerCPU::Thread::EndEvent(int32 index)
 {
     const double time = Platform::GetTimeSeconds() * 1000.0;
-
     _depth--;
-
     Event& e = Buffer.Get(index);
     e.End = time;
 }
@@ -123,7 +132,7 @@ ProfilerCPU::Thread* ProfilerCPU::GetCurrentThread()
     return Enabled ? Thread::Current : nullptr;
 }
 
-int32 ProfilerCPU::BeginEvent(const Char* name)
+int32 ProfilerCPU::BeginEvent()
 {
     if (!Enabled)
         return -1;
@@ -142,8 +151,45 @@ int32 ProfilerCPU::BeginEvent(const Char* name)
         Thread::Current = thread;
         Threads.Add(thread);
     }
+    return thread->BeginEvent();
+}
 
-    return thread->BeginEvent(name);
+int32 ProfilerCPU::BeginEvent(const Char* name)
+{
+    if (!Enabled)
+        return -1;
+    const auto index = BeginEvent();
+    const auto thread = Thread::Current;
+    auto& e = thread->Buffer.Get(index);
+    auto dst = e.Name;
+    auto src = name;
+    if (src)
+    {
+        const auto end = dst + ARRAY_COUNT(e.Name) - 1;
+        while (*src && dst != end)
+            *dst++ = *src++;
+    }
+    *dst = 0;
+    return index;
+}
+
+int32 ProfilerCPU::BeginEvent(const char* name)
+{
+    if (!Enabled)
+        return -1;
+    const auto index = BeginEvent();
+    const auto thread = Thread::Current;
+    auto& e = thread->Buffer.Get(index);
+    auto dst = e.Name;
+    auto src = name;
+    if (src)
+    {
+        const auto end = dst + ARRAY_COUNT(e.Name) - 1;
+        while (*src && dst != end)
+            *dst++ = *src++;
+    }
+    *dst = 0;
+    return index;
 }
 
 void ProfilerCPU::EndEvent(int32 index)

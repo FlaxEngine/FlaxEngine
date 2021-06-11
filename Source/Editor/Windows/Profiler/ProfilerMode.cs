@@ -65,7 +65,7 @@ namespace FlaxEditor.Windows.Profiler
         /// <summary>
         /// The maximum amount of samples to collect.
         /// </summary>
-        public const int MaxSamples = 60 * 5;
+        public const int MaxSamples = 60 * 10;
 
         /// <summary>
         /// The minimum event time in ms.

@@ -170,6 +170,9 @@ namespace FlaxEditor.Tools.Foliage
         }
 
         /// <inheritdoc />
+        public override bool IsControllingMouse => IsPainting;
+
+        /// <inheritdoc />
         public override void Update(float dt)
         {
             base.Update(dt);

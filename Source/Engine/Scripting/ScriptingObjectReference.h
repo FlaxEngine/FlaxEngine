@@ -318,3 +318,9 @@ public:
         OnSet(object);
     }
 };
+
+template<typename T>
+uint32 GetHash(const ScriptingObjectReference<T>& key)
+{
+    return GetHash(key.GetID());
+}

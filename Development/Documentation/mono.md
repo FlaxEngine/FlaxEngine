@@ -5,6 +5,7 @@ Custom fork: [https://github.com/FlaxEngine/mono](https://github.com/FlaxEngine/
 ### Notes
 
 Some useful notes and tips for devs:
+* Use `-monolog` to print Mono logs to Flax logs
 * When working with mono fork set `localRepoPath` to local repo location in `Source\Tools\Flax.Build\Deps\Dependencies\mono.cs`
 * To update mono deps when developing/updating use `.\Development\Scripts\Windows\CallBuildTool.bat -log -ReBuildDeps -verbose -depsToBuild=mono -platform=Windows`, then build engine and run it
 * `MONO_GC_DEBUG=check-remset-consistency` - it will do additional checks at each collection to see if there are any missing write barriers

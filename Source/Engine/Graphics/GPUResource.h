@@ -75,13 +75,11 @@ public:
     /// <summary>
     /// Gets the resource type.
     /// </summary>
-    /// <returns>The type.</returns>
     virtual ResourceType GetResourceType() const = 0;
 
     /// <summary>
     /// Gets resource object type.
     /// </summary>
-    /// <returns>The object type.</returns>
     virtual ObjectType GetObjectType() const
     {
         return ObjectType::Other;
@@ -91,7 +89,6 @@ public:
     /// Gets amount of GPU memory used by this resource (in bytes).
     /// It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
     /// </summary>
-    /// <returns>The current memory usage.</returns>
     API_PROPERTY() FORCE_INLINE uint64 GetMemoryUsage() const
     {
         return _memoryUsage;
@@ -102,7 +99,6 @@ public:
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    /// <returns>The name of the resource.</returns>
     virtual String GetName() const
     {
         return String::Empty;
@@ -113,52 +109,25 @@ public:
     /// <summary>
     /// Releases GPU resource data.
     /// </summary>
-    API_FUNCTION() void ReleaseGPU()
-    {
-        if (_memoryUsage != 0)
-        {
-            Releasing();
-            OnReleaseGPU();
-            _memoryUsage = 0;
-        }
-    }
+    API_FUNCTION() void ReleaseGPU();
 
     /// <summary>
     /// Action called when GPU device is disposing.
     /// </summary>
-    virtual void OnDeviceDispose()
-    {
-        // By default we want to release resource data but keep it alive
-        ReleaseGPU();
-    }
+    virtual void OnDeviceDispose();
 
 protected:
 
     /// <summary>
     /// Releases GPU resource data (implementation).
     /// </summary>
-    virtual void OnReleaseGPU()
-    {
-    }
+    virtual void OnReleaseGPU();
 
 public:
 
     // [PersistentScriptingObject]
-    String ToString() const override
-    {
-#if GPU_ENABLE_RESOURCE_NAMING
-        return GetName();
-#else
-		return TEXT("GPU Resource");
-#endif
-    }
-
-    void OnDeleteObject() override
-    {
-        ReleaseGPU();
-
-        PersistentScriptingObject::OnDeleteObject();
-    }
+    String ToString() const override;
+    void OnDeleteObject() override;
 };
 
 /// <summary>

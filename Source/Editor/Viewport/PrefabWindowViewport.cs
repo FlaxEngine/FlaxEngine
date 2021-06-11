@@ -24,8 +24,9 @@ namespace FlaxEditor.Viewport
     /// <seealso cref="PrefabWindow" />
     /// <seealso cref="PrefabPreview" />
     /// <seealso cref="IGizmoOwner" />
-    public class PrefabWindowViewport : PrefabPreview, IEditorPrimitivesOwner
+    public class PrefabWindowViewport : PrefabPreview, IGizmoOwner
     {
+        [HideInEditor]
         private sealed class PrefabSpritesRenderer : MainEditorGizmoViewport.EditorSpritesRenderer
         {
             public PrefabWindowViewport Viewport;
@@ -50,9 +51,8 @@ namespace FlaxEditor.Viewport
         private ViewportWidgetButton _scaleSnapping;
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
-        private IntPtr _debugDrawContext;
         private PrefabSpritesRenderer _spritesRenderer;
-        private readonly DragAssets _dragAssets = new DragAssets(ValidateDragItem);
+        private readonly DragAssets _dragAssets;
         private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
         private readonly DragHandlers _dragHandlers = new DragHandlers();
 
@@ -67,16 +67,6 @@ namespace FlaxEditor.Viewport
         public SelectionOutline SelectionOutline;
 
         /// <summary>
-        /// The editor primitives postFx.
-        /// </summary>
-        public EditorPrimitives EditorPrimitives;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether draw <see cref="DebugDraw"/> shapes.
-        /// </summary>
-        public bool DrawDebugDraw = true;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="PrefabWindowViewport"/> class.
         /// </summary>
         /// <param name="window">Editor window.</param>
@@ -87,7 +77,9 @@ namespace FlaxEditor.Viewport
             _window.SelectionChanged += OnSelectionChanged;
             Undo = window.Undo;
             ViewportCamera = new FPSCamera();
-            _debugDrawContext = DebugDraw.AllocateContext();
+            _dragAssets = new DragAssets(ValidateDragItem);
+            ShowDebugDraw = true;
+            ShowEditorPrimitives = true;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -100,9 +92,6 @@ namespace FlaxEditor.Viewport
             SelectionOutline = FlaxEngine.Object.New<SelectionOutline>();
             SelectionOutline.SelectionGetter = () => TransformGizmo.SelectedParents;
             Task.CustomPostFx.Add(SelectionOutline);
-            EditorPrimitives = FlaxEngine.Object.New<EditorPrimitives>();
-            EditorPrimitives.Viewport = this;
-            Task.CustomPostFx.Add(EditorPrimitives);
             _spritesRenderer = FlaxEngine.Object.New<PrefabSpritesRenderer>();
             _spritesRenderer.Task = Task;
             _spritesRenderer.Viewport = this;
@@ -117,7 +106,7 @@ namespace FlaxEditor.Viewport
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.World16, null, true)
+            var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
                 TooltipText = "Gizmo transform space (world or local)",
@@ -128,7 +117,7 @@ namespace FlaxEditor.Viewport
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.ScaleStep16, null, true)
+            var enableScaleSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.ScaleSnap32, null, true)
             {
                 Checked = TransformGizmo.ScaleSnapEnabled,
                 TooltipText = "Enable scale snapping",
@@ -155,7 +144,7 @@ namespace FlaxEditor.Viewport
 
             // Rotation snapping widget
             var rotateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.RotateStep16, null, true)
+            var enableRotateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.RotateSnap32, null, true)
             {
                 Checked = TransformGizmo.RotationSnapEnabled,
                 TooltipText = "Enable rotation snapping",
@@ -182,7 +171,7 @@ namespace FlaxEditor.Viewport
 
             // Translation snapping widget
             var translateSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Grid16, null, true)
+            var enableTranslateSnapping = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Grid32, null, true)
             {
                 Checked = TransformGizmo.TranslationSnapEnable,
                 TooltipText = "Enable position snapping",
@@ -209,7 +198,7 @@ namespace FlaxEditor.Viewport
 
             // Gizmo mode widget
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate16, null, true)
+            _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
                 TooltipText = "Translate gizmo mode",
@@ -217,14 +206,14 @@ namespace FlaxEditor.Viewport
                 Parent = gizmoMode
             };
             _gizmoModeTranslate.Toggled += OnGizmoModeToggle;
-            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate16, null, true)
+            _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
                 TooltipText = "Rotate gizmo mode",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
-            _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale16, null, true)
+            _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
                 TooltipText = "Scale gizmo mode",
@@ -280,13 +269,6 @@ namespace FlaxEditor.Viewport
             {
                 var task = renderContext.Task;
 
-                // Render editor primitives, gizmo and debug shapes in debug view modes
-                // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers
-                if (EditorPrimitives && EditorPrimitives.CanRender)
-                {
-                    EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
-                }
-
                 // Render editor sprites
                 if (_spritesRenderer && _spritesRenderer.CanRender)
                 {
@@ -314,7 +296,8 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents);
+            var orient = Viewport.ViewOrientation;
+            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
         /// <inheritdoc />
@@ -352,6 +335,12 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public Undo Undo { get; }
+
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
+
+        /// <inheritdoc />
+        protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />
         protected override void AddUpdateCallbacks(RootControl root)
@@ -672,23 +661,13 @@ namespace FlaxEditor.Viewport
             return _dragHandlers.OnDragEnter(data);
         }
 
-        private static bool ValidateDragItem(ContentItem contentItem)
+        private bool ValidateDragItem(ContentItem contentItem)
         {
             if (contentItem is AssetItem assetItem)
             {
-                if (assetItem.IsOfType<ParticleSystem>())
+                if (assetItem.OnEditorDrag(this))
                     return true;
                 if (assetItem.IsOfType<MaterialBase>())
-                    return true;
-                if (assetItem.IsOfType<ModelBase>())
-                    return true;
-                if (assetItem.IsOfType<CollisionData>())
-                    return true;
-                if (assetItem.IsOfType<AudioClip>())
-                    return true;
-                if (assetItem.IsOfType<Prefab>())
-                    return true;
-                if (assetItem is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
                     return true;
             }
 
@@ -742,17 +721,6 @@ namespace FlaxEditor.Viewport
         {
             if (item is BinaryAssetItem binaryAssetItem)
             {
-                if (binaryAssetItem.Type == typeof(ParticleSystem))
-                {
-                    var particleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(item.ID);
-                    var actor = new ParticleEffect
-                    {
-                        Name = item.ShortName,
-                        ParticleSystem = particleSystem
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
                 if (typeof(MaterialBase).IsAssignableFrom(binaryAssetItem.Type))
                 {
                     if (hit is StaticModelNode staticModelNode)
@@ -768,65 +736,11 @@ namespace FlaxEditor.Viewport
                     }
                     return;
                 }
-                if (typeof(SkinnedModel).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var model = FlaxEngine.Content.LoadAsync<SkinnedModel>(item.ID);
-                    var actor = new AnimatedModel
-                    {
-                        Name = item.ShortName,
-                        SkinnedModel = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(Model).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var model = FlaxEngine.Content.LoadAsync<Model>(item.ID);
-                    var actor = new StaticModel
-                    {
-                        Name = item.ShortName,
-                        Model = model
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (binaryAssetItem.IsOfType<CollisionData>())
-                {
-                    var collisionData = FlaxEngine.Content.LoadAsync<CollisionData>(item.ID);
-                    var actor = new MeshCollider
-                    {
-                        Name = item.ShortName,
-                        CollisionData = collisionData
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(AudioClip).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var clip = FlaxEngine.Content.LoadAsync<AudioClip>(item.ID);
-                    var actor = new AudioSource
-                    {
-                        Name = item.ShortName,
-                        Clip = clip
-                    };
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
-                if (typeof(Prefab).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    var prefab = FlaxEngine.Content.LoadAsync<Prefab>(item.ID);
-                    var actor = PrefabManager.SpawnPrefab(prefab, null);
-                    actor.Name = item.ShortName;
-                    Spawn(actor, ref hitLocation);
-                    return;
-                }
             }
-            if (item is VisualScriptItem visualScriptItem && new ScriptType(typeof(Actor)).IsAssignableFrom(visualScriptItem.ScriptType) && visualScriptItem.ScriptType.CanCreateInstance)
             {
-                var actor = (Actor)visualScriptItem.ScriptType.CreateInstance();
+                var actor = item.OnEditorDrop(this);
                 actor.Name = item.ShortName;
                 Spawn(actor, ref hitLocation);
-                return;
             }
         }
 
@@ -849,15 +763,38 @@ namespace FlaxEditor.Viewport
             Spawn(actor, ref hitLocation);
         }
 
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        public void FocusSelection()
+        {
+            var orientation = ViewOrientation;
+            FocusSelection(ref orientation);
+        }
+
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        /// <param name="orientation">The target view orientation.</param>
+        public void FocusSelection(ref Quaternion orientation)
+        {
+            if (TransformGizmo.SelectedParents.Count == 0)
+                return;
+
+            var gizmoBounds = Gizmos.Active.FocusBounds;
+            if (gizmoBounds != BoundingSphere.Empty)
+                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+            else
+                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+        }
+
         /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
-            {
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
-            }
-
-            base.OrientViewport(ref orientation);
+                FocusSelection(ref orientation);
+            else
+                base.OrientViewport(ref orientation);
         }
 
         /// <inheritdoc />
@@ -919,35 +856,35 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            if (_debugDrawContext != IntPtr.Zero)
-            {
-                DebugDraw.FreeContext(_debugDrawContext);
-                _debugDrawContext = IntPtr.Zero;
-            }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
-            FlaxEngine.Object.Destroy(ref EditorPrimitives);
             FlaxEngine.Object.Destroy(ref _spritesRenderer);
 
             base.OnDestroy();
         }
 
         /// <inheritdoc />
-        public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
+        public override void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
-            // Draw selected objects debug shapes and visuals
-            if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
+            // Draw gizmos
+            for (int i = 0; i < Gizmos.Count; i++)
             {
-                DebugDraw.SetContext(_debugDrawContext);
-                DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Engine.FramesPerSecond);
-                unsafe
+                Gizmos[i].Draw(ref renderContext);
+            }
+
+            base.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
+        }
+
+        /// <inheritdoc />
+        protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+        {
+            base.OnDebugDraw(context, ref renderContext);
+
+            unsafe
+            {
+                fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
                 {
-                    fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
-                    {
-                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
-                    }
+                    DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
                 }
-                DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
-                DebugDraw.SetContext(IntPtr.Zero);
             }
         }
     }

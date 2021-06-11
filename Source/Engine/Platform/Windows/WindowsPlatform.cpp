@@ -4,6 +4,7 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
@@ -11,11 +12,13 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
+#include <timeapi.h>
 #include <Psapi.h>
 #include <objbase.h>
 #if CRASH_LOG_ENABLE
@@ -28,17 +31,39 @@ void* WindowsPlatform::Instance = nullptr;
 
 namespace
 {
-    String UserLocale, ComputerName, UserName;
+    String UserLocale, ComputerName, UserName, WindowsName;
     HANDLE EngineMutex = nullptr;
     Rectangle VirtualScreenBounds = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
     int32 VersionMajor = 0;
     int32 VersionMinor = 0;
+    int32 VersionBuild = 0;
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
     CriticalSection SymLocker;
+#if TRACY_ENABLE
+    bool SymInitialized = true;
+#else
     bool SymInitialized = false;
-    bool SymModulesDirty = true;
-    char* SymPath = nullptr;
+#endif
+    Array<String> SymbolsPath;
+
+    void OnSymbolsPathModified()
+    {
+        if (!SymInitialized)
+            return;
+        HANDLE process = GetCurrentProcess();
+        SymCleanup(process);
+        String symbolSearchPath;
+        for (auto& path : SymbolsPath)
+        {
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
+        }
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        SymInitializeW(process, *symbolSearchPath, TRUE);
+        //SymSetSearchPathW(process, *symbolSearchPath);
+        //SymRefreshModuleList(process);
+    }
 #endif
 }
 
@@ -76,16 +101,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
     return (dpiX + dpiY) / 2;
 }
 
-int32 CalculateDpi()
-{
-    if (const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll"))
-    {
-        return CalculateDpi(shCoreDll);
-    }
-
-    return 96;
-}
-
 LONG GetStringRegKey(HKEY hKey, const Char* strValueName, String& strValue, const String& strDefaultValue)
 {
     strValue = strDefaultValue;
@@ -111,6 +126,102 @@ LONG GetDWORDRegKey(HKEY hKey, const Char* strValueName, DWORD& nValue, DWORD nD
         nValue = nResult;
     }
     return nError;
+}
+
+void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionMinor, int32& versionBuild)
+{
+    // Get OS version
+
+    HKEY hKey;
+    LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
+    if (lRes == ERROR_SUCCESS)
+    {
+        GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
+
+        DWORD currentMajorVersionNumber;
+        DWORD currentMinorVersionNumber;
+        String currentBuildNumber;
+        GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
+        GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
+        GetStringRegKey(hKey, TEXT("CurrentBuildNumber"), currentBuildNumber, TEXT("0"));
+        VersionMajor = currentMajorVersionNumber;
+        VersionMinor = currentMinorVersionNumber;
+        StringUtils::Parse(currentBuildNumber.Get(), &VersionBuild);
+
+        if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
+        {
+            VersionMajor = 6;
+            VersionMinor = 2;
+        }
+
+        if (VersionMajor == 0 && VersionMinor == 0)
+        {
+            String windowsVersion;
+            GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
+
+            if (windowsVersion.HasChars())
+            {
+                const int32 dot = windowsVersion.Find('.');
+                if (dot != -1)
+                {
+                    StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
+                    StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (IsWindowsServer())
+        {
+            windowsName = TEXT("Windows Server");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8Point1OrGreater())
+        {
+            windowsName = TEXT("Windows 8.1");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8OrGreater())
+        {
+            windowsName = TEXT("Windows 8");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7SP1OrGreater())
+        {
+            windowsName = TEXT("Windows 7 SP1");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7OrGreater())
+        {
+            windowsName = TEXT("Windows 7");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP2OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP2");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP1OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP1");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaOrGreater())
+        {
+            windowsName = TEXT("Windows Vista");
+            versionMajor = 6;
+            versionMinor = 0;
+        }
+    }
+    RegCloseKey(hKey);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -387,6 +498,29 @@ void WindowsPlatform::PreInit(void* hInstance)
         Error(TEXT("OLE initalization failed!"));
         exit(-1);
     }
+
+#if CRASH_LOG_ENABLE
+    TCHAR buffer[MAX_PATH] = { 0 };
+    SymLocker.Lock();
+    if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    if (::GetEnvironmentVariableW(TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
+        SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
+    DWORD options = SymGetOptions();
+    options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
+    SymSetOptions(options);
+    OnSymbolsPathModified();
+    SymLocker.Unlock();
+#endif
+
+    GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
+
+    // Validate platform
+    if (VersionMajor < 6)
+    {
+        Error(TEXT("Not supported operating system version."));
+        exit(-1);
+    }
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -446,6 +580,12 @@ bool WindowsPlatform::Init()
         return true;
     }
 
+    // Set lowest possible timer resolution for previous Windows versions
+    if (VersionMajor < 10 || (VersionMajor == 10 && VersionBuild < 17134))
+    {
+        timeBeginPeriod(1);
+    }
+
     DWORD tmp;
     Char buffer[256];
 
@@ -476,105 +616,7 @@ void WindowsPlatform::LogInfo()
 {
     Win32Platform::LogInfo();
 
-    // Get OS version
-    {
-        String windowsName;
-        HKEY hKey;
-        LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
-        if (lRes == ERROR_SUCCESS)
-        {
-            GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
-
-            DWORD currentMajorVersionNumber;
-            DWORD currentMinorVersionNumber;
-            GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
-            GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
-            VersionMajor = currentMajorVersionNumber;
-            VersionMinor = currentMinorVersionNumber;
-
-            if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
-            {
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-
-            if (VersionMajor == 0 && VersionMinor == 0)
-            {
-                String windowsVersion;
-                GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
-
-                if (windowsVersion.HasChars())
-                {
-                    const int32 dot = windowsVersion.Find('.');
-                    if (dot != -1)
-                    {
-                        StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
-                        StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (IsWindowsServer())
-            {
-                windowsName = TEXT("Windows Server");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8Point1OrGreater())
-            {
-                windowsName = TEXT("Windows 8.1");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8OrGreater())
-            {
-                windowsName = TEXT("Windows 8");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7SP1OrGreater())
-            {
-                windowsName = TEXT("Windows 7 SP1");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7OrGreater())
-            {
-                windowsName = TEXT("Windows 7");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP2OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP2");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP1OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP1");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaOrGreater())
-            {
-                windowsName = TEXT("Windows Vista");
-                VersionMajor = 6;
-                VersionMinor = 0;
-            }
-        }
-        RegCloseKey(hKey);
-        LOG(Info, "Microsoft {0} {1}-bit ({2}.{3})", windowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor);
-    }
-
-    // Validate platform
-    if (VersionMajor < 6)
-    {
-        LOG(Error, "Not supported operating system version.");
-        exit(0);
-    }
+    LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
 
     // Check minimum amount of RAM
     auto memStats = Platform::GetMemoryStats();
@@ -613,13 +655,14 @@ void WindowsPlatform::Exit()
 {
 #if CRASH_LOG_ENABLE
     SymLocker.Lock();
+#if !TRACY_ENABLE
     if (SymInitialized)
     {
         SymInitialized = false;
         SymCleanup(GetCurrentProcess());
-        free(SymPath);
-        SymPath = nullptr;
     }
+#endif
+    SymbolsPath.Resize(0);
     SymLocker.Unlock();
 #endif
 
@@ -660,25 +703,20 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     const HMODULE shCoreDll = LoadLibraryW(L"Shcore.dll");
     if (!shCoreDll)
         return;
-
     typedef enum _PROCESS_DPI_AWARENESS
     {
         PROCESS_DPI_UNAWARE = 0,
         PROCESS_SYSTEM_DPI_AWARE = 1,
         PROCESS_PER_MONITOR_DPI_AWARE = 2
     } PROCESS_DPI_AWARENESS;
-
     typedef HRESULT (STDAPICALLTYPE *SetProcessDpiAwarenessProc)(PROCESS_DPI_AWARENESS Value);
     const SetProcessDpiAwarenessProc setProcessDpiAwareness = (SetProcessDpiAwarenessProc)GetProcAddress(shCoreDll, "SetProcessDpiAwareness");
-
     if (setProcessDpiAwareness)
     {
         setProcessDpiAwareness(enable ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE);
     }
-
     SystemDpi = CalculateDpi(shCoreDll);
-
-    FreeLibrary(shCoreDll);
+    ::FreeLibrary(shCoreDll);
 }
 
 BatteryInfo WindowsPlatform::GetBatteryInfo()
@@ -1096,6 +1134,19 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
     ASSERT(filename);
 
+    // Add folder to search path to load dependency libraries
+    StringView folder = StringUtils::GetDirectoryName(filename);
+    if (folder.HasChars() && FileSystem::IsRelative(folder))
+        folder = StringView::Empty;
+    if (folder.HasChars())
+    {
+        Char& end = ((Char*)folder.Get())[folder.Length()];
+        const Char c = end;
+        end = 0;
+        SetDllDirectoryW(*folder);
+        end = c;
+    }
+
     // Avoiding windows dialog boxes if missing
     const DWORD errorMode = SEM_NOOPENFILEERRORBOX;
     DWORD prevErrorMode = 0;
@@ -1112,11 +1163,19 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     {
         SetThreadErrorMode(prevErrorMode, nullptr);
     }
+    if (folder.HasChars())
+    {
+        SetDllDirectoryW(nullptr);
+    }
 
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
     SymLocker.Lock();
-    SymModulesDirty = true;
+    if (folder.HasChars() && !SymbolsPath.Contains(folder))
+    {
+        SymbolsPath.Add(folder);
+        OnSymbolsPathModified();
+    }
     SymLocker.Unlock();
 #endif
 
@@ -1135,82 +1194,15 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
     if (!SymInitialized)
     {
         SymInitialized = true;
-
-        // Build search path
-        const size_t nSymPathLen = 4096;
-        SymPath = (char*)malloc(nSymPathLen);
-        SymPath[0] = 0;
-        strcat_s(SymPath, nSymPathLen, ".;");
-        const size_t nTempLen = 1024;
-        char szTemp[nTempLen];
-
-        // Current directory path
-        if (GetCurrentDirectoryA(nTempLen, szTemp) > 0)
+        String symbolSearchPath;
+        for (auto& path : SymbolsPath)
         {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
+            symbolSearchPath += path;
+            symbolSearchPath += ";";
         }
-
-        // Main module path
-        if (GetModuleFileNameA(nullptr, szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            for (char* p = (szTemp + strlen(szTemp) - 1); p >= szTemp; --p)
-            {
-                // Locate the rightmost path separator
-                if ((*p == '\\') || (*p == '/') || (*p == ':'))
-                {
-                    *p = 0;
-                    break;
-                }
-            }
-            if (strlen(szTemp) > 0)
-            {
-                strcat_s(SymPath, nSymPathLen, szTemp);
-                strcat_s(SymPath, nSymPathLen, ";");
-            }
-        }
-
-        // System symbols paths
-        if (GetEnvironmentVariableA("_NT_SYMBOL_PATH", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-        if (GetEnvironmentVariableA("_NT_ALTERNATE_SYMBOL_PATH", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-        if (GetEnvironmentVariableA("SYSTEMROOT", szTemp, nTempLen) > 0)
-        {
-            szTemp[nTempLen - 1] = 0;
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-
-            strcat_s(szTemp, nTempLen, "\\system32");
-            strcat_s(SymPath, nSymPathLen, szTemp);
-            strcat_s(SymPath, nSymPathLen, ";");
-        }
-
-        SymInitialize(process, SymPath, FALSE);
-
-        DWORD options = SymGetOptions();
-        options |= SYMOPT_LOAD_LINES;
-        options |= SYMOPT_FAIL_CRITICAL_ERRORS;
-        SymSetOptions(options);
+        symbolSearchPath += Platform::GetWorkingDirectory();
+        SymInitializeW(process, *symbolSearchPath, TRUE);
     }
-
-    // Load modules
-    if (SymModulesDirty)
-    {
-        SymModulesDirty = false;
-        GetModuleListPSAPI(process);
-    }
-    SymRefreshModuleList(process);
 
     // Capture the context if missing
     /*EXCEPTION_POINTERS exceptionPointers;

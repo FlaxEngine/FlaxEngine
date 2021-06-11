@@ -299,7 +299,8 @@ public:
     static void Prefetch(void const* ptr) = delete;
 
 #if COMPILE_WITH_PROFILER
-    static void TrackAllocation(uint64 size);
+    static void OnMemoryAlloc(void* ptr, uint64 size);
+    static void OnMemoryFree(void* ptr);
 #endif
 
     /// <summary>

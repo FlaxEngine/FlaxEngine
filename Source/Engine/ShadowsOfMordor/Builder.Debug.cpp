@@ -9,6 +9,8 @@
 
 #if DEBUG_EXPORT_LIGHTMAPS_PREVIEW || DEBUG_EXPORT_CACHE_PREVIEW || DEBUG_EXPORT_HEMISPHERES_PREVIEW
 
+#include "Engine/Engine/Globals.h"
+
 String GetDebugDataPath()
 {
     auto result = Globals::ProjectCacheFolder / TEXT("ShadowsOfMordor_Debug");
@@ -165,7 +167,7 @@ void ShadowsOfMordor::Builder::downloadDebugHemisphereAtlases(SceneBuildCache* s
         GPUTexture* atlas = DebugExportHemispheresAtlases[atlasIndex];
 
         TextureData textureData;
-        if (atlas->DownloadData(&textureData))
+        if (atlas->DownloadData(textureData))
         {
             LOG(Error, "Cannot download hemispheres atlas data.");
             continue;

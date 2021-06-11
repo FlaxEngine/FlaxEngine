@@ -128,23 +128,17 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
     value &= ~mask;
 }
 
-DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCount, bool shaderVisible)
-    : _device(device)
-    , _type(type)
-    , _descriptorsCount(descriptorsCount)
-    , _shaderVisible(shaderVisible)
+GPUResource::ResourceType DescriptorHeapWithSlotsDX12::GetResourceType() const
 {
+    return ResourceType::Descriptor;
 }
 
-void DescriptorHeapPoolDX12::Init()
+DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCountPerHeap, bool shaderVisible)
+    : _device(device)
+    , _type(type)
+    , _descriptorsCountPerHeap(descriptorsCountPerHeap)
+    , _shaderVisible(shaderVisible)
 {
-    // Allocate first page
-    auto heap = New<DescriptorHeapWithSlotsDX12>(_device);
-    if (heap->Create(_type, _descriptorsCount, _shaderVisible))
-    {
-        Platform::Fatal(TEXT("Failed to allocate descriptor heap."));
-    }
-    _heaps.Add(heap);
 }
 
 void DescriptorHeapPoolDX12::AllocateSlot(DescriptorHeapWithSlotsDX12*& heap, uint32& slot)
@@ -159,7 +153,7 @@ void DescriptorHeapPoolDX12::AllocateSlot(DescriptorHeapWithSlotsDX12*& heap, ui
     }
 
     heap = New<DescriptorHeapWithSlotsDX12>(_device);
-    if (heap->Create(_type, _descriptorsCount, _shaderVisible))
+    if (heap->Create(_type, _descriptorsCountPerHeap, _shaderVisible))
     {
         Platform::Fatal(TEXT("Failed to allocate descriptor heap."));
     }
@@ -195,14 +189,12 @@ DescriptorHeapRingBufferDX12::DescriptorHeapRingBufferDX12(GPUDeviceDX12* device
 
 bool DescriptorHeapRingBufferDX12::Init()
 {
-    // Create description
+    // Create heap
     D3D12_DESCRIPTOR_HEAP_DESC desc;
     desc.Type = _type;
     desc.NumDescriptors = _descriptorsCount;
     desc.Flags = _shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     desc.NodeMask = 0;
-
-    // Create heap
     const HRESULT result = _device->GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
     LOG_DIRECTX_RESULT_WITH_RETURN(result);
 
@@ -214,7 +206,6 @@ bool DescriptorHeapRingBufferDX12::Init()
     else
         _beginGPU.ptr = 0;
     _incrementSize = _device->GetDevice()->GetDescriptorHandleIncrementSize(desc.Type);
-
     _memoryUsage = 1;
 
     return false;

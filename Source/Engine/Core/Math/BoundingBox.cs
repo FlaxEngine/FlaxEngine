@@ -495,6 +495,35 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
+        /// </summary>
+        /// <param name="box">The box.</param>
+        /// <param name="offset">The bounds offset.</param>
+        /// <returns>The offsetted bounds.</returns>
+        public static BoundingBox MakeOffsetted(ref BoundingBox box, ref Vector3 offset)
+        {
+            BoundingBox result;
+            Vector3.Add(ref box.Minimum, ref offset, out result.Minimum);
+            Vector3.Add(ref box.Maximum, ref offset, out result.Maximum);
+            return result;
+        }
+
+        /// <summary>
+        /// Creates the bounding box that is scaled by the given factor. Applies scale to the size of the bounds.
+        /// </summary>
+        /// <param name="box">The box.</param>
+        /// <param name="scale">The bounds scale.</param>
+        /// <returns>The scaled bounds.</returns>
+        public static BoundingBox MakeScaled(ref BoundingBox box, float scale)
+        {
+            Vector3.Subtract(ref box.Maximum, ref box.Minimum, out var size);
+            Vector3 sizeHalf = size * 0.5f;
+            Vector3 center = box.Minimum + sizeHalf;
+            sizeHalf = sizeHalf * scale;
+            return new BoundingBox(center - sizeHalf, center + sizeHalf);
+        }
+
+        /// <summary>
         /// Transforms bounding box using the given transformation matrix.
         /// </summary>
         /// <param name="box">The bounding box to transform.</param>

@@ -96,10 +96,9 @@ struct InternalTextureOptions
             to->Sprites.EnsureCapacity(count);
             for (int32 i = 0; i < count; i++)
             {
-                Sprite sprite;
+                Sprite& sprite = to->Sprites.AddOne();
                 sprite.Area = mono_array_get(from->SpriteAreas, Rectangle, i);
                 sprite.Name = MUtils::ToString(mono_array_get(from->SpriteNames, MonoString*, i));
-                to->Sprites.Add(sprite);
             }
         }
     }
@@ -125,7 +124,7 @@ struct InternalTextureOptions
         {
             const auto domain = mono_domain_get();
             int32 count = from->Sprites.Count();
-            auto rectClass = Scripting::FindClass("FlaxEngine.Rectangle");
+            auto rectClass = Rectangle::TypeInitializer.GetType().ManagedClass;
             ASSERT(rectClass != nullptr);
             to->SpriteAreas = mono_array_new(domain, rectClass->GetNative(), count);
             to->SpriteNames = mono_array_new(domain, mono_get_string_class(), count);
@@ -521,13 +520,14 @@ public:
         return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
     }
 
-    static bool CanImport(MonoString* extensionObj)
+    static MonoString* CanImport(MonoString* extensionObj)
     {
         String extension;
         MUtils::ToString(extensionObj, extension);
         if (extension.Length() > 0 && extension[0] == '.')
             extension.Remove(0, 1);
-        return AssetsImportingManager::GetImporter(extension) != nullptr;
+        const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
+        return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
     }
 
     static bool Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)

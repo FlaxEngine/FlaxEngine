@@ -136,6 +136,8 @@ public:
         String AssemblerArgs;
         String ArchiverPath;
         String ArchiverArgs;
+        String AuxToolPath;
+        String AuxToolArgs;
         String AotCachePath;
         Dictionary<String, String> EnvVars;
         Array<String> AssembliesSearchDirs;

@@ -109,13 +109,7 @@ public:
     /// <summary>
     /// Gets the imported file path from the asset metadata (can be empty if not available).
     /// </summary>
-    /// <returns>The imported source file path.</returns>
-    API_PROPERTY() String GetImportPath() const
-    {
-        String path, username;
-        GetImportMetadata(path, username);
-        return path;
-    }
+    API_PROPERTY() String GetImportPath() const;
 
     /// <summary>
     /// Clears the asset dependencies list and unregisters from tracking their changes.
@@ -131,7 +125,6 @@ public:
     /// <summary>
     /// Determines whether any of the dependency assets was modified after last modification time of this asset (last file write time check).
     /// </summary>
-    /// <returns><c>true</c> if one or more dependencies were modified; otherwise, <c>false</c>.</returns>
     bool HasDependenciesModified() const;
 
 protected:
@@ -277,10 +270,7 @@ public:
     /// <param name="data">Asset data.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool SaveAsset(AssetInitData& data, bool silentMode = false)
-    {
-        return SaveAsset(GetPath(), data, silentMode);
-    }
+    bool SaveAsset(AssetInitData& data, bool silentMode = false) const;
 
     /// <summary>
     /// Saves this asset to the file.
@@ -289,7 +279,7 @@ public:
     /// <param name="path">Asset path (will be used to override the asset or create a new one).</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool SaveAsset(const StringView& path, AssetInitData& data, bool silentMode = false);
+    bool SaveAsset(const StringView& path, AssetInitData& data, bool silentMode = false) const;
 
     /// <summary>
     /// Saves asset data to the storage container. Asset unique ID is handled by auto.

@@ -483,7 +483,9 @@ namespace FlaxEditor.Content.Import
         {
             if (settings is TextureImportSettings o)
             {
+                var sprites = o.Sprites ?? _settings.Sprites; // Preserve sprites if not specified to override
                 _settings = o;
+                _settings.Sprites = sprites;
                 return true;
             }
             return false;

@@ -9,6 +9,7 @@
 #include "Engine/Scripting/SoftObjectReference.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Utilities/Encryption.h"
 
 struct Version;
 struct VariantType;
@@ -164,7 +165,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const float& v, const void* otherObj)
     {
-        return !otherObj || Math::Abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
+        return !otherObj || abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const float& v, const void* otherObj)
     {
@@ -521,6 +522,24 @@ namespace Serialization
         v.Resize(streamArray.Size());
         for (int32 i = 0; i < v.Count(); i++)
             Deserialize(streamArray[i], (T&)v[i], modifier);
+    }
+    template<typename AllocationType = HeapAllocation>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, Array<byte, AllocationType>& v, ISerializeModifier* modifier)
+    {
+        if (stream.IsArray())
+        {
+            const auto& streamArray = stream.GetArray();
+            v.Resize(streamArray.Size());
+            for (int32 i = 0; i < v.Count(); i++)
+                Deserialize(streamArray[i], v[i], modifier);
+        }
+        else if (stream.IsString())
+        {
+            // byte[] encoded as Base64
+            const StringAnsiView streamView(stream.GetString(), stream.GetStringLength());
+            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
+            Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
+        }
     }
 
     // Dictionary

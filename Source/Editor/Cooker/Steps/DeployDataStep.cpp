@@ -7,6 +7,7 @@
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Renderer/ReflectionsPass.h"
 #include "Engine/Renderer/AntiAliasing/SMAA.h"
+#include "Engine/Engine/Globals.h"
 
 bool DeployDataStep::Perform(CookingData& data)
 {

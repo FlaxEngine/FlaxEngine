@@ -10,7 +10,11 @@ namespace FlaxEngine.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class Label : ContainerControl
     {
-        private string _text;
+        /// <summary>
+        /// The text.
+        /// </summary>
+        protected LocalizedString _text = new LocalizedString();
+
         private bool _autoWidth;
         private bool _autoHeight;
         private bool _autoFitText;
@@ -26,7 +30,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the text.
         /// </summary>
         [EditorOrder(10), MultilineText, Tooltip("The label text.")]
-        public string Text
+        public LocalizedString Text
         {
             get => _text;
             set
@@ -181,8 +185,8 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
         }
 
         /// <inheritdoc />
@@ -192,8 +196,8 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            TextColor = Style.Current.Foreground;
-            TextColorHighlighted = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
         }
 
         /// <inheritdoc />
@@ -225,18 +229,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(
-                _font.GetFont(),
-                Material,
-                Text,
-                rect,
-                color,
-                hAlignment,
-                wAlignment,
-                Wrapping,
-                1.0f,
-                scale
-            );
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, 1.0f, scale);
 
             if (ClipText)
                 Render2D.PopClip();

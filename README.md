@@ -42,6 +42,16 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
+---
+
+**Note**
+
+If building on Windows to support Vulkan rendering, first install the Vulkan SDK then  set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat:
+
+    set VULKAN_SDK=C:\VulkanSDK\version\
+
+---
+
 ## Linux
 
 * Install Visual Studio Code

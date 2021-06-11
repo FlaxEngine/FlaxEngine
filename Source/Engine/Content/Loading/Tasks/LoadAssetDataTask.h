@@ -53,6 +53,9 @@ protected:
         AssetReference<BinaryAsset> ref = _asset.Get();
         if (ref == nullptr)
             return Result::MissingReferences;
+#if TRACY_ENABLE
+        const StringView name(ref->GetPath());
+#endif
 
         // Load chunks
         for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
@@ -62,11 +65,14 @@ protected:
                 const auto chunk = ref->GetChunk(i);
                 if (chunk != nullptr)
                 {
-                    // Check for cancel
                     if (IsCancelRequested())
                         return Result::Ok;
 
                     // Load it
+#if TRACY_ENABLE
+                    ZoneScoped;
+                    ZoneName(*name, name.Length());
+#endif
                     if (ref->Storage->LoadAssetChunk(chunk))
                     {
                         LOG(Warning, "Cannot load asset \'{0}\' chunk {1}.", ref->ToString(), i);

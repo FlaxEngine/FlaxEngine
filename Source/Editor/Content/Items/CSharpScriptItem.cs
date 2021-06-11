@@ -20,6 +20,6 @@ namespace FlaxEditor.Content
         }
         
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CSharpScript64;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CSharpScript128;
     }
 }

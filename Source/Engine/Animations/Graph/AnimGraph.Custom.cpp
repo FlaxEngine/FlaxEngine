@@ -10,6 +10,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/MException.h"
+#include "Engine/Content/Assets/SkinnedModel.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 struct InternalInitData
@@ -142,6 +143,17 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     // Extract result
     value = MUtils::UnboxVariant(result);
     box->Cache = value;
+}
+
+bool AnimGraph::IsReady() const
+{
+    return BaseModel && BaseModel->IsLoaded();
+}
+
+bool AnimGraph::CanUseWithSkeleton(SkinnedModel* other) const
+{
+    // All data loaded and nodes count the same
+    return IsReady() && other && other->IsLoaded() && other->Skeleton.Nodes.Count() == BaseModel->Skeleton.Nodes.Count();
 }
 
 void AnimGraph::ClearCustomNode(Node* node)

@@ -136,8 +136,11 @@ void PointLight::Draw(RenderContext& renderContext)
 
 void PointLight::OnDebugDraw()
 {
-    // Draw source tube
-    DEBUG_DRAW_WIRE_TUBE(GetPosition(), GetOrientation(), SourceRadius, SourceLength, Color::Orange, 0, true);
+    if (SourceRadius > ZeroTolerance || SourceLength > ZeroTolerance)
+    {
+        // Draw source tube
+        DEBUG_DRAW_WIRE_TUBE(GetPosition(), GetOrientation(), SourceRadius, SourceLength, Color::Orange, 0, true);
+    }
 
     // Base
     LightWithShadow::OnDebugDraw();

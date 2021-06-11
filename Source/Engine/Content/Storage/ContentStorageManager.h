@@ -3,6 +3,7 @@
 #pragma once
 
 #include "FlaxStorageReference.h"
+#include "Engine/Core/Types/TimeSpan.h"
 
 class FlaxFile;
 class FlaxPackage;

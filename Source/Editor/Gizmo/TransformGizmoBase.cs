@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using FlaxEngine;
 
@@ -66,6 +67,16 @@ namespace FlaxEditor.Gizmo
         public Transform LastDelta { get; private set; }
 
         /// <summary>
+        /// Occurs when transforming selection started.
+        /// </summary>
+        public event Action TransformingStarted;
+
+        /// <summary>
+        /// Occurs when transforming selection ended.
+        /// </summary>
+        public event Action TransformingEnded;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TransformGizmoBase" /> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>
@@ -118,10 +129,10 @@ namespace FlaxEditor.Gizmo
                 return;
 
             // End action
-            OnEndTransforming();
-            _startTransforms.Clear();
             _isTransforming = false;
             _isDuplicating = false;
+            OnEndTransforming();
+            _startTransforms.Clear();
         }
 
         private void UpdateGizmoPosition()
@@ -202,52 +213,77 @@ namespace FlaxEditor.Gizmo
             ray.Position = Vector3.Transform(ray.Position, invRotationMatrix);
             Vector3.TransformNormal(ref ray.Direction, ref invRotationMatrix, out ray.Direction);
 
+            var planeXY = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
+            var planeYZ = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
+            var planeZX = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
+            var dir = Vector3.Normalize(ray.Position - Position);
+            var planeDotXY = Mathf.Abs(Vector3.Dot(planeXY.Normal, dir));
+            var planeDotYZ = Mathf.Abs(Vector3.Dot(planeYZ.Normal, dir));
+            var planeDotZX = Mathf.Abs(Vector3.Dot(planeZX.Normal, dir));
+
             switch (_activeAxis)
             {
-            case Axis.XY:
             case Axis.X:
             {
-                var plane = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
+                var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = _activeAxis == Axis.X
-                            ? new Vector3(_tDelta.X, 0, 0)
-                            : new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    delta = new Vector3(_tDelta.X, 0, 0);
+                }
+                break;
+            }
+            case Axis.Y:
+            {
+                var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
+                if (ray.Intersects(ref plane, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(0, _tDelta.Y, 0);
                 }
                 break;
             }
             case Axis.Z:
-            case Axis.YZ:
-            case Axis.Y:
             {
-                var plane = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
+                var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
                 if (ray.Intersects(ref plane, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    switch (_activeAxis)
-                    {
-                    case Axis.Y:
-                        delta = new Vector3(0, _tDelta.Y, 0);
-                        break;
-                    case Axis.Z:
-                        delta = new Vector3(0, 0, _tDelta.Z);
-                        break;
-                    default:
-                        delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
-                        break;
-                    }
+                    delta = new Vector3(0, 0, _tDelta.Z);
+                }
+                break;
+            }
+            case Axis.YZ:
+            {
+                if (ray.Intersects(ref planeYZ, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                }
+                break;
+            }
+            case Axis.XY:
+            {
+                if (ray.Intersects(ref planeXY, out float intersection))
+                {
+                    _intersectPosition = ray.Position + ray.Direction * intersection;
+                    if (_lastIntersectionPosition != Vector3.Zero)
+                        _tDelta = _intersectPosition - _lastIntersectionPosition;
+                    delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
                 }
                 break;
             }
             case Axis.ZX:
             {
-                var plane = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref planeZX, out float intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -271,12 +307,11 @@ namespace FlaxEditor.Gizmo
             }
             }
 
+            // Modifiers
             if (isScaling)
                 delta *= 0.01f;
-
             if (Owner.IsAltKeyDown)
                 delta *= 0.5f;
-
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
                 float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
@@ -346,6 +381,9 @@ namespace FlaxEditor.Gizmo
                 break;
             }
         }
+
+        /// <inheritdoc />
+        public override bool IsControllingMouse => _isTransforming;
 
         /// <inheritdoc />
         public override void Update(float dt)
@@ -512,6 +550,7 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         protected virtual void OnStartTransforming()
         {
+            TransformingStarted?.Invoke();
         }
 
         /// <summary>
@@ -529,6 +568,7 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         protected virtual void OnEndTransforming()
         {
+            TransformingEnded?.Invoke();
         }
 
         /// <summary>

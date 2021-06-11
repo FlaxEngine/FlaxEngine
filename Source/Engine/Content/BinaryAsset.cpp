@@ -132,6 +132,13 @@ void BinaryAsset::GetImportMetadata(String& path, String& username) const
     }
 }
 
+String BinaryAsset::GetImportPath() const
+{
+    String path, username;
+    GetImportMetadata(path, username);
+    return path;
+}
+
 void BinaryAsset::ClearDependencies()
 {
     for (auto& e : Dependencies)
@@ -294,7 +301,12 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks)
 
 #if USE_EDITOR
 
-bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode)
+bool BinaryAsset::SaveAsset(AssetInitData& data, bool silentMode) const
+{
+    return SaveAsset(GetPath(), data, silentMode);
+}
+
+bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool silentMode) const
 {
     data.Header = _header;
     data.Metadata.Link(Metadata);
@@ -434,7 +446,12 @@ void BinaryAsset::OnDeleteObject()
 
 const String& BinaryAsset::GetPath() const
 {
+#if USE_EDITOR
     return Storage ? Storage->GetPath() : String::Empty;
+#else
+    // In build all assets are packed into packages so use ID for original path lookup
+    return Content::GetRegistry()->GetEditorAssetPath(_id);
+#endif
 }
 
 /// <summary>
@@ -492,7 +509,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _dataLock.Release();

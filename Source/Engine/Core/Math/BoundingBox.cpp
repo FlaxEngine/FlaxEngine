@@ -26,12 +26,51 @@ void BoundingBox::FromPoints(const Vector3* points, int32 pointsCount, BoundingB
     result = BoundingBox(min, max);
 }
 
+BoundingBox BoundingBox::FromPoints(const Vector3* points, int32 pointsCount)
+{
+    BoundingBox result;
+    FromPoints(points, pointsCount, result);
+    return result;
+}
+
 void BoundingBox::FromSphere(const BoundingSphere& sphere, BoundingBox& result)
 {
     result = BoundingBox(
         Vector3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius),
         Vector3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius)
     );
+}
+
+BoundingBox BoundingBox::FromSphere(const BoundingSphere& sphere)
+{
+    BoundingBox result;
+    FromSphere(sphere, result);
+    return result;
+}
+
+BoundingBox BoundingBox::Transform(const BoundingBox& box, const Matrix& matrix)
+{
+    BoundingBox result;
+    Transform(box, matrix, result);
+    return result;
+}
+
+BoundingBox BoundingBox::MakeOffsetted(const BoundingBox& box, const Vector3& offset)
+{
+    BoundingBox result;
+    result.Minimum = box.Minimum + offset;
+    result.Maximum = box.Maximum + offset;
+    return result;
+}
+
+BoundingBox BoundingBox::MakeScaled(const BoundingBox& box, float scale)
+{
+    Vector3 size;
+    Vector3::Subtract(box.Maximum, box.Minimum, size);
+    Vector3 sizeHalf = size * 0.5f;
+    const Vector3 center = box.Minimum + sizeHalf;
+    sizeHalf = sizeHalf * scale;
+    return BoundingBox(center - sizeHalf, center + sizeHalf);
 }
 
 void BoundingBox::Transform(const BoundingBox& box, const Matrix& matrix, BoundingBox& result)

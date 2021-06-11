@@ -11,8 +11,8 @@
 
 namespace Impl
 {
-    UWPWindow::UWPKeyboard Keyboard;
-    UWPWindow::UWPMouse Mouse;
+    UWPWindow::UWPKeyboard* Keyboard = nullptr;
+    UWPWindow::UWPMouse* Mouse = nullptr;
     UWPWindow* Window = nullptr;
 }
 
@@ -325,7 +325,7 @@ UWPWindow::UWPWindow(const CreateWindowSettings& settings, UWPWindowImpl* impl)
     _dpiScale = _dpi / 96.0f;
     float x, y;
     _impl->GetBounds(&x, &y, &_logicalSize.X, &_logicalSize.Y);
-    _impl->GetMousePosition(&Impl::Mouse.MousePosition.X, &Impl::Mouse.MousePosition.Y);
+    _impl->GetMousePosition(&Impl::Mouse->MousePosition.X, &Impl::Mouse->MousePosition.Y);
     OnSizeChange();
 }
 
@@ -474,7 +474,7 @@ void UWPWindow::onDpiChanged(float dpi)
 {
     if (_dpi != dpi)
     {
-        _dpi = dpi;
+        _dpi = (int)dpi;
         _dpiScale = _dpi / 96.0f;
 
         // When the display DPI changes, the logical size of the window (measured in Dips) also changes and needs to be updated
@@ -502,7 +502,7 @@ void UWPWindow::onKeyDown(int key)
     if (key < 7)
         return;
 
-    Impl::Keyboard.onKeyDown(key);
+    Impl::Keyboard->onKeyDown(key);
 }
 
 void UWPWindow::onKeyUp(int key)
@@ -510,17 +510,17 @@ void UWPWindow::onKeyUp(int key)
     if (key < 7)
         return;
 
-    Impl::Keyboard.onKeyUp(key);
+    Impl::Keyboard->onKeyUp(key);
 }
 
 void UWPWindow::onCharacterReceived(int key)
 {
-    Impl::Keyboard.onCharacterReceived(key);
+    Impl::Keyboard->onCharacterReceived(key);
 }
 
 void UWPWindow::onMouseMoved(float x, float y)
 {
-    Impl::Mouse.onMouseMoved(x * _dpiScale, y * _dpiScale);
+    Impl::Mouse->onMouseMoved(x * _dpiScale, y * _dpiScale);
 }
 
 void UWPWindow::onPointerPressed(UWPWindowImpl::PointerData* pointer)
@@ -529,7 +529,7 @@ void UWPWindow::onPointerPressed(UWPWindowImpl::PointerData* pointer)
     {
         pointer->PositionX *= _dpiScale;
         pointer->PositionY *= _dpiScale;
-        Impl::Mouse.onPointerPressed(pointer);
+        Impl::Mouse->onPointerPressed(pointer);
     }
 
     // TODO: impl mobile touch support
@@ -541,7 +541,7 @@ void UWPWindow::onPointerMoved(UWPWindowImpl::PointerData* pointer)
     {
         pointer->PositionX *= _dpiScale;
         pointer->PositionY *= _dpiScale;
-        Impl::Mouse.onPointerMoved(pointer);
+        Impl::Mouse->onPointerMoved(pointer);
     }
 
     // TODO: impl mobile touch support
@@ -553,7 +553,7 @@ void UWPWindow::onPointerWheelChanged(UWPWindowImpl::PointerData* pointer)
     {
         pointer->PositionX *= _dpiScale;
         pointer->PositionY *= _dpiScale;
-        Impl::Mouse.onPointerWheelChanged(pointer);
+        Impl::Mouse->onPointerWheelChanged(pointer);
     }
 }
 
@@ -563,7 +563,7 @@ void UWPWindow::onPointerReleased(UWPWindowImpl::PointerData* pointer)
     {
         pointer->PositionX *= _dpiScale;
         pointer->PositionY *= _dpiScale;
-        Impl::Mouse.onPointerReleased(pointer);
+        Impl::Mouse->onPointerReleased(pointer);
     }
 
     // TODO: impl mobile touch support
@@ -575,7 +575,7 @@ void UWPWindow::onPointerExited(UWPWindowImpl::PointerData* pointer)
     {
         pointer->PositionX *= _dpiScale;
         pointer->PositionY *= _dpiScale;
-        Impl::Mouse.onPointerExited(pointer);
+        Impl::Mouse->onPointerExited(pointer);
     }
 
     // TODO: impl mobile touch support
@@ -584,8 +584,8 @@ void UWPWindow::onPointerExited(UWPWindowImpl::PointerData* pointer)
 void UWPWindow::OnSizeChange()
 {
     // Update the actual rendering output resolution
-    _clientSize.X = ConvertDipsToPixels(_logicalSize.X, _dpi);
-    _clientSize.Y = ConvertDipsToPixels(_logicalSize.Y, _dpi);
+    _clientSize.X = ConvertDipsToPixels(_logicalSize.X, (float)_dpi);
+    _clientSize.Y = ConvertDipsToPixels(_logicalSize.Y, (float)_dpi);
 
     // Check if output has been created
     if (_swapChain != nullptr)

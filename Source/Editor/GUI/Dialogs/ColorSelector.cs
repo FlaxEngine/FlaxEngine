@@ -61,7 +61,7 @@ namespace FlaxEditor.GUI.Dialogs
         public ColorSelector(float wheelSize = 64)
         : base(0, 0, wheelSize, wheelSize)
         {
-            _colorWheelSprite = Editor.Instance.Icons.ColorWheel;
+            _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;
             _wheelRect = new Rectangle(0, 0, wheelSize, wheelSize);
         }
 

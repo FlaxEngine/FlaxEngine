@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Threading/ThreadLocal.h"
-#include "ScriptingObject.h"
+#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Scripting/ScriptingType.h"
+#include "Types.h"
 
-class BinaryModule;
+template<typename T, int32 MaxThreads, bool ClearMemory>
+class ThreadLocal;
 
 /// <summary>
 /// Embedded managed scripting runtime service.
@@ -26,41 +27,33 @@ public:
     /// <summary>
     /// Action fired on scripting engine loaded (always main thread).
     /// </summary>
-    static Action ScriptsLoaded;
+    static Delegate<> ScriptsLoaded;
 
     /// <summary>
     /// Action fired on scripting engine unloading start (always main thread).
     /// </summary>
-    static Action ScriptsUnload;
+    static Delegate<> ScriptsUnload;
 
     /// <summary>
     /// Action fired on scripting engine reload start (always main thread).
     /// </summary>
-    static Action ScriptsReloading;
+    static Delegate<> ScriptsReloading;
 
     /// <summary>
     /// Action fired on scripting engine reload start (always main thread).
     /// </summary>
-    static Action ScriptsReloaded;
+    static Delegate<> ScriptsReloaded;
 
 public:
 
     /// <summary>
     /// Gets mono root domain
     /// </summary>
-    /// <returns>The Mono root domain.</returns>
     static MDomain* GetRootDomain();
-
-    /// <summary>
-    /// Gets mono scripts domain
-    /// </summary>
-    /// <returns>The Mono domain.</returns>
-    static MonoDomain* GetMonoScriptsDomain();
 
     /// <summary>
     /// Gets scripts domain
     /// </summary>
-    /// <returns>The domain.</returns>
     static MDomain* GetScriptsDomain();
 
 public:
@@ -123,7 +116,7 @@ public:
     /// <summary>
     /// The objects lookup identifier mapping used to override the object ids on FindObject call (used by the object references deserialization).
     /// </summary>
-    static ThreadLocal<IdsMappingTable*, 32> ObjectsLookupIdMapping;
+    static ThreadLocal<IdsMappingTable*, 32, true> ObjectsLookupIdMapping;
 
     /// <summary>
     /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
-#include "Engine/Platform/Platform.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "CommandAllocatorPoolDX12.h"
 #include "../IncludeDirectXHeaders.h"
@@ -35,28 +34,16 @@ public:
 
 public:
 
-    /// <summary>
-    /// Gets the current fence value.
-    /// </summary>
-    /// <returns>The current fence value.</returns>
     FORCE_INLINE uint64 GetCurrentValue() const
     {
         return _currentValue;
     }
 
-    /// <summary>
-    /// Gets the last signaled fence value.
-    /// </summary>
-    /// <returns>The last signaled fence value.</returns>
     FORCE_INLINE uint64 GetLastSignaledValue() const
     {
         return _lastSignaledValue;
     }
 
-    /// <summary>
-    /// Gets the last completed fence value.
-    /// </summary>
-    /// <returns>The last completed fence value.</returns>
     FORCE_INLINE uint64 GetLastCompletedValue() const
     {
         return _lastCompletedValue;
@@ -146,42 +133,21 @@ private:
 
 public:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="device">Graphics Device handle</param>
-    /// <param name="type">Command queue type</param>
     CommandQueueDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE type);
-
-    /// <summary>
-    /// Destructor
-    /// </summary>
     ~CommandQueueDX12();
 
 public:
 
-    /// <summary>
-    /// Checks if command queue is ready for work
-    /// </summary>
-    /// <returns>True if is ready for work</returns>
     FORCE_INLINE bool IsReady() const
     {
         return _commandQueue != nullptr;
     }
 
-    /// <summary>
-    /// Gets DirectX 12 command queue object
-    /// </summary>
-    /// <returns>DirectX 12 command queue</returns>
     FORCE_INLINE ID3D12CommandQueue* GetCommandQueue() const
     {
         return _commandQueue;
     }
 
-    /// <summary>
-    /// Gets the command lists allocator pool.
-    /// </summary>
-    /// <returns>The allocator.</returns>
     FORCE_INLINE CommandAllocatorPoolDX12& GetAllocatorPool()
     {
         return _allocatorPool;

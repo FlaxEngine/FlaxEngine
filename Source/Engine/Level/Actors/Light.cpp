@@ -2,6 +2,9 @@
 
 #include "Light.h"
 #include "../Scene/Scene.h"
+#if USE_EDITOR
+#include "Engine/Graphics/RenderView.h"
+#endif
 #include "Engine/Serialization/Serialization.h"
 
 Light::Light(const SpawnParams& params)

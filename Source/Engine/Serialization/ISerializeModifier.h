@@ -16,36 +16,10 @@ public:
     /// <summary>
     /// Number of engine build when data was serialized. Useful to upgrade data from the older storage format.
     /// </summary>
-    uint32 EngineBuild;
+    uint32 EngineBuild = FLAXENGINE_VERSION_BUILD;
 
     /// <summary>
     /// The object IDs mapping. Key is a serialized object id, value is mapped value to use.
     /// </summary>
     Dictionary<Guid, Guid> IdsMapping;
-
-public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ISerializeModifier"/> class.
-    /// </summary>
-    ISerializeModifier()
-        : EngineBuild(FLAXENGINE_VERSION_BUILD)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ISerializeModifier"/> class.
-    /// </summary>
-    /// <param name="engineBuild">The engine build.</param>
-    ISerializeModifier(uint32 engineBuild)
-        : EngineBuild(engineBuild)
-    {
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ISerializeModifier"/> class.
-    /// </summary>
-    virtual ~ISerializeModifier()
-    {
-    }
 };

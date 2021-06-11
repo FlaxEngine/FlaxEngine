@@ -2,14 +2,27 @@
 
 #include "BitonicSort.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPULimits.h"
 
 #define INDIRECT_ARGS_STRIDE 12
 
-BitonicSort::BitonicSort()
-    : _dispatchArgsBuffer(nullptr)
+// The sorting keys buffer item structure template. Matches the shader type.
+struct Item
 {
-}
+    float Key;
+    uint32 Value;
+};
+
+PACK_STRUCT(struct Data {
+    Item NullItem;
+    uint32 CounterOffset;
+    uint32 MaxIterations;
+    uint32 LoopK;
+    float KeySign;
+    uint32 LoopJ;
+    float Dummy0;
+    });
 
 String BitonicSort::ToString() const
 {
@@ -144,6 +157,17 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
     if (sortedIndicesBuffer)
     {
         // Copy indices to another buffer
+#if !BUILD_RELEASE
+        switch (sortedIndicesBuffer->GetDescription().Format)
+        {
+        case PixelFormat::R32_UInt:
+        case PixelFormat::R16_UInt:
+        case PixelFormat::R8_UInt:
+            break;
+        default:
+            LOG(Warning, "Invalid format {0} of sortedIndicesBuffer for BitonicSort. It needs to be UInt type.", (int32)sortedIndicesBuffer->GetDescription().Format);
+        }
+#endif
         context->BindSR(1, sortingKeysBuffer->View());
         context->BindUA(0, sortedIndicesBuffer->View());
         // TODO: use indirect dispatch to match the items count for copy
