@@ -131,13 +131,6 @@ namespace FlaxEditor.Windows.Profiler
             // Peek draw time
             _drawTimeCPU.AddSample(sharedData.Stats.DrawCPUTimeMs);
             _drawTimeGPU.AddSample(sharedData.Stats.DrawGPUTimeMs);
-
-            // Update timeline if using the last frame
-            if (_drawTimeCPU.SelectedSampleIndex == -1)
-            {
-                UpdateTimeline();
-                UpdateTable();
-            }
         }
 
         /// <inheritdoc />

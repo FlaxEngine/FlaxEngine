@@ -174,14 +174,6 @@ namespace FlaxEditor.Windows.Profiler
             // Gather CPU events
             var events = sharedData.GetEventsCPU();
             _events.Add(events);
-
-            // Update timeline if using the last frame
-            if (_mainChart.SelectedSampleIndex == -1)
-            {
-                var viewRange = GetEventsViewRange();
-                UpdateTimeline(ref viewRange);
-                UpdateTable(ref viewRange);
-            }
         }
 
         /// <inheritdoc />
