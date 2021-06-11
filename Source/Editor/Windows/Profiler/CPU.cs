@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -50,7 +51,9 @@ namespace FlaxEditor.Windows.Profiler
         private readonly SingleChart _mainChart;
         private readonly Timeline _timeline;
         private readonly Table _table;
-        private readonly SamplesBuffer<ProfilingTools.ThreadStats[]> _events = new SamplesBuffer<ProfilingTools.ThreadStats[]>();
+        private SamplesBuffer<ProfilingTools.ThreadStats[]> _events;
+        private List<Timeline.TrackLabel> _timelineLabelsCache;
+        private List<Timeline.Event> _timelineEventsCache;
         private bool _showOnlyLastUpdateEvents;
 
         public CPU()
@@ -163,7 +166,7 @@ namespace FlaxEditor.Windows.Profiler
         public override void Clear()
         {
             _mainChart.Clear();
-            _events.Clear();
+            _events?.Clear();
         }
 
         /// <inheritdoc />
@@ -173,6 +176,8 @@ namespace FlaxEditor.Windows.Profiler
 
             // Gather CPU events
             var events = sharedData.GetEventsCPU();
+            if (_events == null)
+                _events = new SamplesBuffer<ProfilingTools.ThreadStats[]>();
             _events.Add(events);
         }
 
@@ -182,9 +187,26 @@ namespace FlaxEditor.Windows.Profiler
             _showOnlyLastUpdateEvents = showOnlyLastUpdateEvents;
             _mainChart.SelectedSampleIndex = selectedFrame;
 
+            if (_events == null)
+                return;
+            if (_timelineLabelsCache == null)
+                _timelineLabelsCache = new List<Timeline.TrackLabel>();
+            if (_timelineEventsCache == null)
+                _timelineEventsCache = new List<Timeline.Event>();
+
             var viewRange = GetEventsViewRange();
             UpdateTimeline(ref viewRange);
             UpdateTable(ref viewRange);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            Clear();
+            _timelineLabelsCache?.Clear();
+            _timelineEventsCache?.Clear();
+
+            base.OnDestroy();
         }
 
         private struct ViewRange
@@ -215,7 +237,7 @@ namespace FlaxEditor.Windows.Profiler
             if (_showOnlyLastUpdateEvents)
             {
                 // Find root event named 'Update' and use it as a view range
-                if (_events.Count != 0)
+                if (_events != null && _events.Count != 0)
                 {
                     var data = _events.Get(_mainChart.SelectedSampleIndex);
                     if (data != null)
@@ -251,14 +273,22 @@ namespace FlaxEditor.Windows.Profiler
             double scale = 100.0;
             float x = (float)((e.Start - startTime) * scale);
             float width = (float)(length * scale);
-            string name = e.Name.Replace("::", ".");
 
-            var control = new Timeline.Event(x + xOffset, e.Depth + depthOffset, width)
+            Timeline.Event control;
+            if (_timelineEventsCache.Count != 0)
             {
-                Name = name,
-                TooltipText = string.Format("{0}, {1} ms", name, ((int)(length * 1000.0) / 1000.0f)),
-                Parent = parent,
-            };
+                var last = _timelineEventsCache.Count - 1;
+                control = _timelineEventsCache[last];
+                _timelineEventsCache.RemoveAt(last);
+            }
+            else
+            {
+                control = new Timeline.Event();
+            }
+            control.Bounds = new Rectangle(x + xOffset, (e.Depth + depthOffset) * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
+            control.Name = e.Name.Replace("::", ".");
+            control.TooltipText = string.Format("{0}, {1} ms", control.Name, ((int)(length * 1000.0) / 1000.0f));
+            control.Parent = parent;
 
             // Spawn sub events
             int childrenDepth = e.Depth + 1;
@@ -282,10 +312,26 @@ namespace FlaxEditor.Windows.Profiler
         {
             var container = _timeline.EventsContainer;
 
-            // Clear previous events
-            container.DisposeChildren();
-
-            container.LockChildrenRecursive();
+            container.IsLayoutLocked = true;
+            int idx = 0;
+            while (container.Children.Count > idx)
+            {
+                var child = container.Children[idx];
+                if (child is Timeline.Event e)
+                {
+                    _timelineEventsCache.Add(e);
+                    child.Parent = null;
+                }
+                else if (child is Timeline.TrackLabel l)
+                {
+                    _timelineLabelsCache.Add(l);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
 
             _timeline.Height = UpdateTimelineInner(ref viewRange);
 
@@ -340,13 +386,21 @@ namespace FlaxEditor.Windows.Profiler
 
                 // Add thread label
                 float xOffset = 90;
-                var label = new Timeline.TrackLabel
+                Timeline.TrackLabel trackLabel;
+                if (_timelineLabelsCache.Count != 0)
                 {
-                    Bounds = new Rectangle(0, depthOffset * Timeline.Event.DefaultHeight, xOffset, (maxDepth + 2) * Timeline.Event.DefaultHeight),
-                    Name = data[i].Name,
-                    BackgroundColor = Style.Current.Background * 1.1f,
-                    Parent = container,
-                };
+                    var last = _timelineLabelsCache.Count - 1;
+                    trackLabel = _timelineLabelsCache[last];
+                    _timelineLabelsCache.RemoveAt(last);
+                }
+                else
+                {
+                    trackLabel = new Timeline.TrackLabel();
+                }
+                trackLabel.Bounds = new Rectangle(0, depthOffset * Timeline.Event.DefaultHeight, xOffset, (maxDepth + 2) * Timeline.Event.DefaultHeight);
+                trackLabel.Name = data[i].Name;
+                trackLabel.BackgroundColor = Style.Current.Background * 1.1f;
+                trackLabel.Parent = container;
 
                 // Add events
                 for (int j = 0; j < events.Length; j++)
@@ -371,7 +425,6 @@ namespace FlaxEditor.Windows.Profiler
         private void UpdateTable(ref ViewRange viewRange)
         {
             _table.DisposeChildren();
-
             _table.LockChildrenRecursive();
 
             UpdateTableInner(ref viewRange);

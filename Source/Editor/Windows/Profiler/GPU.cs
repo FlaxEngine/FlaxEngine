@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -16,7 +17,8 @@ namespace FlaxEditor.Windows.Profiler
         private readonly SingleChart _drawTimeGPU;
         private readonly Timeline _timeline;
         private readonly Table _table;
-        private readonly SamplesBuffer<ProfilerGPU.Event[]> _events = new SamplesBuffer<ProfilerGPU.Event[]>();
+        private SamplesBuffer<ProfilerGPU.Event[]> _events;
+        private List<Timeline.Event> _timelineEventsCache;
 
         public GPU()
         : base("GPU")
@@ -118,7 +120,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             _drawTimeCPU.Clear();
             _drawTimeGPU.Clear();
-            _events.Clear();
+            _events?.Clear();
         }
 
         /// <inheritdoc />
@@ -126,6 +128,8 @@ namespace FlaxEditor.Windows.Profiler
         {
             // Gather GPU events
             var data = sharedData.GetEventsGPU();
+            if (_events == null)
+                _events = new SamplesBuffer<ProfilerGPU.Event[]>();
             _events.Add(data);
 
             // Peek draw time
@@ -138,8 +142,23 @@ namespace FlaxEditor.Windows.Profiler
         {
             _drawTimeCPU.SelectedSampleIndex = selectedFrame;
             _drawTimeGPU.SelectedSampleIndex = selectedFrame;
+
+            if (_events == null)
+                return;
+            if (_timelineEventsCache == null)
+                _timelineEventsCache = new List<Timeline.Event>();
+
             UpdateTimeline();
             UpdateTable();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            Clear();
+            _timelineEventsCache?.Clear();
+
+            base.OnDestroy();
         }
 
         private float AddEvent(float x, int maxDepth, int index, ProfilerGPU.Event[] events, ContainerControl parent)
@@ -150,12 +169,21 @@ namespace FlaxEditor.Windows.Profiler
             float width = (float)(e.Time * scale);
             string name = new string(e.Name);
 
-            new Timeline.Event(x, e.Depth, width)
+            Timeline.Event control;
+            if (_timelineEventsCache.Count != 0)
             {
-                Name = name,
-                TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f)),
-                Parent = parent,
-            };
+                var last = _timelineEventsCache.Count - 1;
+                control = _timelineEventsCache[last];
+                _timelineEventsCache.RemoveAt(last);
+            }
+            else
+            {
+                control = new Timeline.Event();
+            }
+            control.Bounds = new Rectangle(x, e.Depth * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
+            control.Name = name;
+            control.TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f));
+            control.Parent = parent;
 
             // Spawn sub events
             int childrenDepth = e.Depth + 1;
@@ -201,8 +229,21 @@ namespace FlaxEditor.Windows.Profiler
         {
             var container = _timeline.EventsContainer;
 
-            // Clear previous events
-            container.DisposeChildren();
+            container.IsLayoutLocked = true;
+            int idx = 0;
+            while (container.Children.Count > idx)
+            {
+                var child = container.Children[idx];
+                if (child is Timeline.Event e)
+                {
+                    _timelineEventsCache.Add(e);
+                    child.Parent = null;
+                }
+                else
+                {
+                    idx++;
+                }
+            }
 
             container.LockChildrenRecursive();
 
