@@ -20,13 +20,6 @@ class VisjectGraphBox : public GraphBox
 {
 public:
 
-    /// <summary>
-    /// The cached value.
-    /// </summary>
-    Variant Cache;
-
-public:
-
     VisjectGraphBox()
         : GraphBox()
     {

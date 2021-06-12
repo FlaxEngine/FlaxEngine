@@ -1,10 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Engine/Time.h"
+
+ThreadLocal<AnimGraphContext, 64> AnimGraphExecutor::Context;
 
 RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
 
@@ -78,16 +81,44 @@ void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 
     parentTransform.WorldToLocal(value, Nodes[nodeIndex]);
 }
 
+void AnimGraphInstanceData::Clear()
+{
+    Version = 0;
+    LastUpdateTime = -1;
+    CurrentFrame = 0;
+    RootTransform = Transform::Identity;
+    RootMotion = RootMotionData::Identity;
+    Parameters.Resize(0);
+    State.Resize(0);
+    NodesPose.Resize(0);
+}
+
+void AnimGraphInstanceData::ClearState()
+{
+    Version = 0;
+    LastUpdateTime = -1;
+    CurrentFrame = 0;
+    RootTransform = Transform::Identity;
+    RootMotion = RootMotionData::Identity;
+    State.Resize(0);
+    NodesPose.Resize(0);
+}
+
+void AnimGraphInstanceData::Invalidate()
+{
+    LastUpdateTime = -1;
+    CurrentFrame = 0;
+}
+
 AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
 {
-    // Ensure to have memory
+    auto& context = AnimGraphExecutor::Context.Get();
     const int32 count = executor->_skeletonNodesCount;
-    if (Nodes.Nodes.Count() != count)
-    {
-        Nodes.Nodes.Resize(count, false);
-    }
-
-    return &Nodes;
+    if (context.PoseCacheSize == context.PoseCache.Count())
+        context.PoseCache.AddOne();
+    auto& nodes = context.PoseCache[context.PoseCacheSize++];
+    nodes.Nodes.Resize(count, false);
+    return &nodes;
 }
 
 bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
@@ -181,20 +212,24 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
 
     // Initialize
     auto& skeleton = _graph.BaseModel->Skeleton;
+    auto& context = Context.Get();
     {
         ANIM_GRAPH_PROFILE_EVENT("Init");
 
-        // Prepare graph data for the evaluation
+        // Init data from base model
         _skeletonNodesCount = skeleton.Nodes.Count();
-        _graphStack.Clear();
-        _graphStack.Push((Graph*)&_graph);
-        _data = &data;
-        _deltaTime = dt;
         _rootMotionMode = (RootMotionMode)(int32)_graph._rootNode->Values[0];
-        _currentFrameIndex = ++data.CurrentFrame;
-        _callStack.Clear();
-        _functions.Clear();
-        _graph.ClearCache();
+
+        // Prepare context data for the evaluation
+        context.GraphStack.Clear();
+        context.GraphStack.Push((Graph*)&_graph);
+        context.Data = &data;
+        context.DeltaTime = dt;
+        context.CurrentFrameIndex = ++data.CurrentFrame;
+        context.CallStack.Clear();
+        context.Functions.Clear();
+        context.PoseCacheSize = 0;
+        context.ValueCache.Clear();
 
         // Prepare instance data
         if (data.Version != _graph.Version)
@@ -208,18 +243,18 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             data.State.Resize(_graph.BucketsCountTotal, false);
 
             // Initialize buckets
-            ResetBuckets(&_graph);
+            ResetBuckets(context, &_graph);
         }
 
         // Init empty nodes data
-        _emptyNodes.RootMotion = RootMotionData::Identity;
-        _emptyNodes.Position = 0.0f;
-        _emptyNodes.Length = 0.0f;
-        _emptyNodes.Nodes.Resize(_skeletonNodesCount, false);
+        context.EmptyNodes.RootMotion = RootMotionData::Identity;
+        context.EmptyNodes.Position = 0.0f;
+        context.EmptyNodes.Length = 0.0f;
+        context.EmptyNodes.Nodes.Resize(_skeletonNodesCount, false);
         for (int32 i = 0; i < _skeletonNodesCount; i++)
         {
             auto& node = skeleton.Nodes[i];
-            _emptyNodes.Nodes[i] = node.LocalTransform;
+            context.EmptyNodes.Nodes[i] = node.LocalTransform;
         }
     }
 
@@ -244,7 +279,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");
 
-        _data->NodesPose.Resize(_skeletonNodesCount, false);
+        data.NodesPose.Resize(_skeletonNodesCount, false);
 
         // Note: this assumes that nodes are sorted (parents first)
         for (int32 nodeIndex = 0; nodeIndex < _skeletonNodesCount; nodeIndex++)
@@ -254,18 +289,16 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             {
                 nodesTransformations[nodeIndex] = nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex]);
             }
-            nodesTransformations[nodeIndex].GetWorld(_data->NodesPose[nodeIndex]);
+            nodesTransformations[nodeIndex].GetWorld(data.NodesPose[nodeIndex]);
         }
-    }
 
-    // Process the root node transformation and the motion
-    {
-        _data->RootTransform = nodesTransformations[0];
-        _data->RootMotion = animResult->RootMotion;
+        // Process the root node transformation and the motion
+        data.RootTransform = nodesTransformations[0];
+        data.RootMotion = animResult->RootMotion;
     }
 
     // Cleanup
-    _data = nullptr;
+    context.Data = nullptr;
 }
 
 void AnimGraphExecutor::GetInputValue(Box* box, Value& result)
@@ -273,29 +306,39 @@ void AnimGraphExecutor::GetInputValue(Box* box, Value& result)
     result = eatBox(box->GetParent<Node>(), box->FirstConnection());
 }
 
-void AnimGraphExecutor::ResetBucket(int32 bucketIndex)
+AnimGraphImpulse* AnimGraphExecutor::GetEmptyNodes()
 {
-    auto& stateBucket = _data->State[bucketIndex];
-    _graph._bucketInitializerList[bucketIndex](stateBucket);
+    return &Context.Get().EmptyNodes;
 }
 
-void AnimGraphExecutor::ResetBuckets(AnimGraphBase* graph)
+void AnimGraphExecutor::InitNodes(AnimGraphImpulse* nodes) const
+{
+    const auto& emptyNodes = Context.Get().EmptyNodes;
+    Platform::MemoryCopy(nodes->Nodes.Get(), emptyNodes.Nodes.Get(), sizeof(Transform) * _skeletonNodesCount);
+    nodes->RootMotion = emptyNodes.RootMotion;
+    nodes->Position = emptyNodes.Position;
+    nodes->Length = emptyNodes.Length;
+}
+
+void AnimGraphExecutor::ResetBuckets(AnimGraphContext& context, AnimGraphBase* graph)
 {
     if (graph == nullptr)
         return;
 
-    ASSERT(_data);
+    auto& state = context.Data->State;
     for (int32 i = 0; i < graph->BucketsCountTotal; i++)
     {
         const int32 bucketIndex = graph->BucketsStart + i;
-        _graph._bucketInitializerList[bucketIndex](_data->State[bucketIndex]);
+        _graph._bucketInitializerList[bucketIndex](state[bucketIndex]);
     }
 }
 
 VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 {
+    auto& context = Context.Get();
+
     // Check if graph is looped or is too deep
-    if (_callStack.Count() >= ANIM_GRAPH_MAX_CALL_STACK)
+    if (context.CallStack.Count() >= ANIM_GRAPH_MAX_CALL_STACK)
     {
         OnError(caller, box, TEXT("Graph is looped or too deep!"));
         return Value::Zero;
@@ -309,7 +352,7 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 #endif
 
     // Add to the calling stack
-    _callStack.Add(caller);
+    context.CallStack.Add(caller);
 
 #if USE_EDITOR
     Animations::DebugFlow(_graph._owner, context.Data->Object, box->GetParent<Node>()->ID, box->ID);
@@ -322,12 +365,13 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
     (this->*func)(box, parentNode, value);
 
     // Remove from the calling stack
-    _callStack.RemoveLast();
+    context.CallStack.RemoveLast();
 
     return value;
 }
 
 VisjectExecutor::Graph* AnimGraphExecutor::GetCurrentGraph() const
 {
-    return _graphStack.Peek();
+    auto& context = Context.Get();
+    return context.GraphStack.Peek();
 }
