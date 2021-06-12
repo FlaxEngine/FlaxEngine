@@ -27,6 +27,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Threading/TaskGraph.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
@@ -62,6 +63,7 @@ bool Engine::HasFocus = false;
 uint64 Engine::FrameCount = 0;
 Action Engine::FixedUpdate;
 Action Engine::Update;
+TaskGraph* Engine::UpdateGraph = nullptr;
 Action Engine::LateUpdate;
 Action Engine::Draw;
 Action Engine::Pause;
@@ -122,6 +124,7 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
 
     // Initialize engine
+    UpdateGraph = New<TaskGraph>();
     EngineService::OnInit();
     if (Application::Init())
         return -10;
@@ -289,6 +292,7 @@ void Engine::OnUpdate()
 
     // Call event
     Update();
+    UpdateGraph->Execute();
 
     // Update services
     EngineService::OnUpdate();
@@ -436,6 +440,7 @@ void Engine::OnExit()
 
     // Unload Engine services
     EngineService::OnDispose();
+    Delete(UpdateGraph);
 
     LOG_FLUSH();
 
