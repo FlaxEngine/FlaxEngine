@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -25,7 +26,7 @@ namespace Flax.Build
             }
 
             Mutex singleInstanceMutex = null;
-            var startTime = DateTime.Now;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             bool failed = false;
 
             try
@@ -166,9 +167,8 @@ namespace Flax.Build
                     singleInstanceMutex.Dispose();
                     singleInstanceMutex = null;
                 }
-
-                var endTime = DateTime.Now;
-                Log.Info(string.Format("Total time: {0}", endTime - startTime));
+                stopwatch.Stop();
+                Log.Info(string.Format("Total time: {0}", stopwatch.Elapsed));
                 Log.Verbose("End.");
                 Log.Dispose();
             }
