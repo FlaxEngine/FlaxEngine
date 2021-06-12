@@ -113,16 +113,6 @@ void AnimatedModel::PreInitSkinningData()
     UpdateSockets();
 }
 
-void AnimatedModel::UpdateSockets()
-{
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
-        if (socket)
-            socket->UpdateTransformation();
-    }
-}
-
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
 {
     nodesTransformation = GraphInstance.NodesPose;
@@ -451,9 +441,19 @@ void AnimatedModel::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void AnimatedModel::OnAnimationUpdated()
+void AnimatedModel::UpdateSockets()
 {
-    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
+        if (socket)
+            socket->UpdateTransformation();
+    }
+}
+
+void AnimatedModel::OnAnimationUpdated_Async()
+{
+    // Update asynchronous stuff
     auto& skeleton = SkinnedModel->Skeleton;
 
     // Copy pose from the master
@@ -482,10 +482,22 @@ void AnimatedModel::OnAnimationUpdated()
     }
 
     UpdateBounds();
+    _blendShapes.Update(SkinnedModel.Get());
+}
+
+void AnimatedModel::OnAnimationUpdated_Sync()
+{
+    // Update synchronous stuff
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
-    _blendShapes.Update(SkinnedModel.Get());
     AnimationUpdated();
+}
+
+void AnimatedModel::OnAnimationUpdated()
+{
+    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    OnAnimationUpdated_Async();
+    OnAnimationUpdated_Sync();
 }
 
 void AnimatedModel::OnSkinnedModelChanged()
