@@ -12,7 +12,7 @@ bool ProfilerCPU::Enabled = false;
 
 ProfilerCPU::EventBuffer::EventBuffer()
 {
-    _capacity = Math::RoundUpToPowerOf2(10 * 1000);
+    _capacity = 8192;
     _capacityMask = _capacity - 1;
     _data = NewArray<Event>(_capacity);
     _head = 0;

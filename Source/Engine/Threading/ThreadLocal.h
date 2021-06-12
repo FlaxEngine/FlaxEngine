@@ -69,7 +69,8 @@ public:
         return result;
     }
 
-    void GetValues(Array<T>& result) const
+    template<typename AllocationType = HeapAllocation>
+    void GetValues(Array<T, AllocationType>& result) const
     {
         result.EnsureCapacity(MaxThreads);
         for (int32 i = 0; i < MaxThreads; i++)
@@ -134,7 +135,8 @@ public:
         }
     }
 
-    void GetNotNullValues(Array<T*>& result) const
+    template<typename AllocationType = HeapAllocation>
+    void GetNotNullValues(Array<T*, AllocationType>& result) const
     {
         result.EnsureCapacity(MaxThreads);
         for (int32 i = 0; i < MaxThreads; i++)

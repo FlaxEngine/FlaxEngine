@@ -20,6 +20,7 @@
 // JOB_SYSTEM_USE_MUTEX=0, enqueue=300-700 cycles, dequeue=10-16 cycles
 // So using RingBuffer+Mutex+Signals is better than moodycamel::ConcurrentQueue
 
+#define JOB_SYSTEM_ENABLED 1
 #define JOB_SYSTEM_USE_MUTEX 1
 #define JOB_SYSTEM_USE_STATS 0
 
@@ -31,6 +32,8 @@
 #else
 #include "ConcurrentQueue.h"
 #endif
+
+#if JOB_SYSTEM_ENABLED
 
 class JobSystemService : public EngineService
 {
@@ -201,11 +204,14 @@ int32 JobSystemThread::Run()
     return 0;
 }
 
+#endif
+
 int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
 {
     PROFILE_CPU();
     if (jobCount <= 0)
         return 0;
+#if JOB_SYSTEM_ENABLED
 #if JOB_SYSTEM_USE_STATS
     const auto start = Platform::GetTimeCycles();
 #endif
@@ -234,15 +240,23 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
         JobsSignal.NotifyAll();
 
     return label;
+#else
+    for (int32 i = 0; i < jobCount; i++)
+        job(i);
+    return 0;
+#endif
 }
 
 void JobSystem::Wait()
 {
+#if JOB_SYSTEM_ENABLED
     Wait(Platform::AtomicRead(&NextLabel));
+#endif
 }
 
 void JobSystem::Wait(int64 label)
 {
+#if JOB_SYSTEM_ENABLED
     PROFILE_CPU();
 
     // Early out
@@ -261,5 +275,6 @@ void JobSystem::Wait(int64 label)
 #if JOB_SYSTEM_USE_STATS
     LOG(Info, "Job average dequeue time: {0} cycles", DequeueSum / DequeueCount);
     DequeueSum = DequeueCount = 0;
+#endif
 #endif
 }
