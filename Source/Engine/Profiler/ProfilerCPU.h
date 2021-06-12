@@ -289,6 +289,11 @@ public:
         /// </summary>
         /// <param name="index">The event index returned by the BeginEvent method.</param>
         void EndEvent(int32 index);
+
+        /// <summary>
+        /// Ends the last event running on a this thread.
+        /// </summary>
+        void EndEvent();
     };
 
 public:
@@ -340,6 +345,11 @@ public:
     /// </summary>
     /// <param name="index">The event index returned by the BeginEvent method.</param>
     static void EndEvent(int32 index);
+
+    /// <summary>
+    /// Ends the last event.
+    /// </summary>
+    static void EndEvent();
 
     /// <summary>
     /// Releases resources. Calls to the profiling API after Dispose are not valid.

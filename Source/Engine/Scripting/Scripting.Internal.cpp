@@ -14,29 +14,21 @@
 
 namespace ProfilerInternal
 {
-    /// <summary>
-    /// The managed events IDs.
-    /// </summary>
-    Array<int32> ManagedEvents;
-
-    /// <summary>
-    /// The managed events IDs for GPU profiling.
-    /// </summary>
+#if COMPILE_WITH_PROFILER
     Array<int32> ManagedEventsGPU;
+#endif
 
     void BeginEvent(MonoString* nameObj)
     {
 #if COMPILE_WITH_PROFILER
-        const auto index = ProfilerCPU::BeginEvent((const Char*)mono_string_chars(nameObj));
-        ManagedEvents.Push(index);
+        ProfilerCPU::BeginEvent((const Char*)mono_string_chars(nameObj));
 #endif
     }
 
     void EndEvent()
     {
 #if COMPILE_WITH_PROFILER
-        const auto index = ManagedEvents.Pop();
-        ProfilerCPU::EndEvent(index);
+        ProfilerCPU::EndEvent();
 #endif
     }
 
