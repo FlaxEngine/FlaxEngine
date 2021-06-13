@@ -70,7 +70,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         : base(ref options)
         {
             // Select Actor button
-            const float buttonSize = 20;
+            const float buttonSize = 18;
             var icons = Editor.Instance.Icons;
             _selectActor = new Image
             {

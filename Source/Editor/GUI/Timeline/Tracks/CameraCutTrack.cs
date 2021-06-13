@@ -685,7 +685,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Height = CameraCutThumbnailRenderer.Height + 8;
 
             // Pilot Camera button
-            const float buttonSize = 20;
+            const float buttonSize = 18;
             var icons = Editor.Instance.Icons;
             _pilotCamera = new Image
             {
