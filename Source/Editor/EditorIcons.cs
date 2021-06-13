@@ -46,7 +46,9 @@ namespace FlaxEditor
         public SpriteHandle Down32;
         public SpriteHandle FolderClosed32;
         public SpriteHandle FolderOpen32;
-        public SpriteHandle FolderFill32;
+        public SpriteHandle Folder32;
+        public SpriteHandle CameraFill32;
+        public SpriteHandle Search32;
         public SpriteHandle Info32;
         public SpriteHandle Warning32;
         public SpriteHandle Error32;

@@ -682,10 +682,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public CameraCutTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
-            Height = CameraCutThumbnailRenderer.Height + 4 + 4;
+            Height = CameraCutThumbnailRenderer.Height + 8;
 
             // Pilot Camera button
-            const float buttonSize = 14;
+            const float buttonSize = 20;
             var icons = Editor.Instance.Icons;
             _pilotCamera = new Image
             {
@@ -695,7 +695,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.Camera64),
+                Brush = new SpriteBrush(icons.CameraFill32),
                 Offsets = new Margin(-buttonSize - 2 + _selectActor.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };

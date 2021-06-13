@@ -312,7 +312,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.UnlockChildrenRecursive();
 
             // Navigation buttons
-            const float buttonSize = 14;
+            const float buttonSize = 20;
             var icons = Editor.Instance.Icons;
             var rightKey = new Image
             {

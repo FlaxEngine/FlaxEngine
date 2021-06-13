@@ -70,7 +70,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         : base(ref options)
         {
             // Select Actor button
-            const float buttonSize = 14;
+            const float buttonSize = 20;
             var icons = Editor.Instance.Icons;
             _selectActor = new Image
             {
@@ -80,7 +80,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 IsScrollable = false,
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(icons.Search12),
+                Brush = new SpriteBrush(icons.Search32),
                 Offsets = new Margin(-buttonSize - 2 + _addButton.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
                 Parent = this,
             };
