@@ -480,15 +480,15 @@ namespace FlaxEditor.Windows
         {
             if (_iconType == LogType.Warning)
             {
-                Icon = IconWarning;
+                Icon = Editor.Icons.Warning32;
             }
             else if (_iconType == LogType.Error)
             {
-                Icon = IconError;
+                Icon = Editor.Icons.Error32;
             }
             else
             {
-                Icon = IconInfo;
+                Icon = Editor.Icons.Info32;
             }
         }
 
