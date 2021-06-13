@@ -22,7 +22,7 @@ namespace FlaxEditor.Content
         public JsonAssetItem(string path, Guid id, string typeName)
         : base(path, typeName, ref id)
         {
-            _thumbnail = Editor.Instance.Icons.Document128;
+            _thumbnail = Editor.Instance.Icons.Json128;
         }
 
         /// <summary>

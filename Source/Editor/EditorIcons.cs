@@ -136,8 +136,8 @@ namespace FlaxEditor
         public SpriteHandle FlaxLogo128;
         public SpriteHandle SwitchIcon128;
         public SpriteHandle SwitchSettings128;
-        public SpriteHandle Json128;
         public SpriteHandle LocalizationSettings128;
+        public SpriteHandle Json128;
 
         internal void LoadIcons()
         {
