@@ -70,7 +70,7 @@ public:
     /// </summary>
     /// <param name="bytes">Pointer to data to write</param>
     /// <param name="size">Amount of data to write (in bytes)</param>
-    FORCE_INLINE void Write(void* bytes, int32 size)
+    FORCE_INLINE void Write(const void* bytes, int32 size)
     {
         Data.Add((byte*)bytes, size);
     }

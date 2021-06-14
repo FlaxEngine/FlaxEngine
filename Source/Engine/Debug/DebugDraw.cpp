@@ -154,7 +154,7 @@ void UpdateList(float dt, Array<T>& list)
 struct DebugDrawData
 {
     Array<DebugLine> DefaultLines;
-    Array<DebugLine> OneFrameLines;
+    Array<Vertex> OneFrameLines;
     Array<DebugTriangle> DefaultTriangles;
     Array<DebugTriangle> OneFrameTriangles;
     Array<DebugTriangle> DefaultWireTriangles;
@@ -182,14 +182,6 @@ struct DebugDrawData
     inline int32 TextCount() const
     {
         return DefaultText2D.Count() + OneFrameText2D.Count() + DefaultText3D.Count() + OneFrameText3D.Count();
-    }
-
-    inline void Add(const DebugLine& l)
-    {
-        if (l.TimeLeft > 0)
-            DefaultLines.Add(l);
-        else
-            OneFrameLines.Add(l);
     }
 
     inline void Add(const DebugTriangle& t)
@@ -278,11 +270,39 @@ namespace
 
 extern int32 BoxTrianglesIndicesCache[];
 
+int32 BoxLineIndicesCache[] =
+{
+	// @formatter:off
+    0, 1,
+	0, 3,
+	0, 4,
+	1, 2,
+	1, 5,
+	2, 3,
+	2, 6,
+	3, 7,
+	4, 5,
+	4, 7,
+	5, 6,
+	6, 7,
+    // @formatter:on
+};
+
 struct DebugDrawCall
 {
     int32 StartVertex;
     int32 VertexCount;
 };
+
+DebugDrawCall WriteList(int32& vertexCounter, const Array<Vertex>& list)
+{
+    DebugDrawCall drawCall;
+    drawCall.StartVertex = vertexCounter;
+    drawCall.VertexCount = list.Count();
+    DebugDrawVB->Write(list.Get(), sizeof(Vertex) * drawCall.VertexCount);
+    vertexCounter += drawCall.VertexCount;
+    return drawCall;
+}
 
 DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
 {
@@ -293,12 +313,10 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
     for (int32 i = 0; i < list.Count(); i++)
     {
         const DebugLine& l = list[i];
-
         vv[0].Position = l.Start;
         vv[0].Color = l.Color;
         vv[1].Position = l.End;
         vv[1].Color = vv[0].Color;
-
         DebugDrawVB->Write(vv, sizeof(Vertex) * 2);
     }
 
@@ -317,14 +335,12 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
     for (int32 i = 0; i < list.Count(); i++)
     {
         const DebugTriangle& l = list[i];
-
         vv[0].Position = l.V0;
         vv[0].Color = l.Color;
         vv[1].Position = l.V1;
         vv[1].Color = vv[0].Color;
         vv[2].Position = l.V2;
         vv[2].Color = vv[0].Color;
-
         DebugDrawVB->Write(vv, sizeof(Vertex) * 3);
     }
 
@@ -334,12 +350,11 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
     return drawCall;
 }
 
-template<typename T>
-DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Array<T>& listB)
+template<typename T, typename U>
+DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Array<U>& listB)
 {
     const DebugDrawCall drawCallA = WriteList(vertexCounter, listA);
     const DebugDrawCall drawCallB = WriteList(vertexCounter, listB);
-
     DebugDrawCall drawCall;
     drawCall.StartVertex = drawCallA.StartVertex;
     drawCall.VertexCount = drawCallA.VertexCount + drawCallB.VertexCount;
@@ -364,7 +379,6 @@ inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext,
 class DebugDrawService : public EngineService
 {
 public:
-
     DebugDrawService()
         : EngineService(TEXT("Debug Draw"), -80)
     {
@@ -640,21 +654,22 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         target = renderContext.Task->GetOutputView();
 
     // Fill vertex buffer and upload data
-#if COMPILE_WITH_PROFILER
-    const auto updateBufferProfileKey = ProfilerCPU::BeginEvent(TEXT("Update Buffer"));
-#endif
-    DebugDrawVB->Clear();
-    int32 vertexCounter = 0;
-    const DebugDrawCall depthTestLines = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultLines, Context->DebugDrawDepthTest.OneFrameLines);
-    const DebugDrawCall defaultLines = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultLines, Context->DebugDrawDefault.OneFrameLines);
-    const DebugDrawCall depthTestTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultTriangles, Context->DebugDrawDepthTest.OneFrameTriangles);
-    const DebugDrawCall defaultTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultTriangles, Context->DebugDrawDefault.OneFrameTriangles);
-    const DebugDrawCall depthTestWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultWireTriangles, Context->DebugDrawDepthTest.OneFrameWireTriangles);
-    const DebugDrawCall defaultWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultWireTriangles, Context->DebugDrawDefault.OneFrameWireTriangles);
-    DebugDrawVB->Flush(context);
-#if COMPILE_WITH_PROFILER
-    ProfilerCPU::EndEvent(updateBufferProfileKey);
-#endif
+    DebugDrawCall depthTestLines, defaultLines, depthTestTriangles, defaultTriangles, depthTestWireTriangles, defaultWireTriangles;
+    {
+        PROFILE_CPU_NAMED("Update Buffer");
+        DebugDrawVB->Clear();
+        int32 vertexCounter = 0;
+        depthTestLines = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultLines, Context->DebugDrawDepthTest.OneFrameLines);
+        defaultLines = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultLines, Context->DebugDrawDefault.OneFrameLines);
+        depthTestTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultTriangles, Context->DebugDrawDepthTest.OneFrameTriangles);
+        defaultTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultTriangles, Context->DebugDrawDefault.OneFrameTriangles);
+        depthTestWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDepthTest.DefaultWireTriangles, Context->DebugDrawDepthTest.OneFrameWireTriangles);
+        defaultWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultWireTriangles, Context->DebugDrawDefault.OneFrameWireTriangles);
+        {
+            PROFILE_CPU_NAMED("Flush");
+            DebugDrawVB->Flush(context);
+        }
+    }
 
     // Update constant buffer
     const auto cb = DebugDrawShader->GetShader()->GetCB(0);
@@ -785,11 +800,11 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
 
 namespace
 {
-    bool DrawActorsTreeWalk(Actor* actor)
+    bool DrawActorsTreeWalk(Actor* a)
     {
-        if (actor->IsActiveInHierarchy())
+        if (a->IsActiveInHierarchy())
         {
-            actor->OnDebugDraw();
+            a->OnDebugDraw();
             return true;
         }
         return false;
@@ -819,14 +834,19 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)
 {
-    // Create draw call entry
-    DebugLine l = { start, end, Color32(color), duration };
-
-    // Add line
-    if (depthTest)
-        Context->DebugDrawDepthTest.Add(l);
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
+    {
+        DebugLine l = { start, end, Color32(color), duration };
+        debugDrawData.DefaultLines.Add(l);
+    }
     else
-        Context->DebugDrawDefault.Add(l);
+    {
+        Vertex l = { start, Color32(color) };
+        debugDrawData.OneFrameLines.Add(l);
+        l.Position = end;
+        debugDrawData.OneFrameLines.Add(l);
+    }
 }
 
 void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
@@ -837,37 +857,36 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
         return;
     }
 
-    // Create draw call entry
-    DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
-
-    // Add lines
+    // Draw lines
     const Vector3* p = lines.Get();
-    Array<DebugLine>* list;
-
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultLines : &Context->DebugDrawDepthTest.OneFrameLines;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultLines : &Context->DebugDrawDefault.OneFrameLines;
-
-    list->EnsureCapacity(list->Count() + lines.Length());
-    for (int32 i = 0; i < lines.Length(); i += 2)
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
-        Vector3::Transform(*p++, transform, l.Start);
-        Vector3::Transform(*p++, transform, l.End);
-        list->Add(l);
+        DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
+        debugDrawData.DefaultLines.EnsureCapacity(debugDrawData.DefaultLines.Count() + lines.Length());
+        for (int32 i = 0; i < lines.Length(); i += 2)
+        {
+            Vector3::Transform(*p++, transform, l.Start);
+            Vector3::Transform(*p++, transform, l.End);
+            debugDrawData.DefaultLines.Add(l);
+        }
+    }
+    else
+    {
+        Vertex l = { Vector3::Zero, Color32(color) };
+        debugDrawData.OneFrameLines.EnsureCapacity(debugDrawData.OneFrameLines.Count() + lines.Length() * 2);
+        for (int32 i = 0; i < lines.Length(); i += 2)
+        {
+            Vector3::Transform(*p++, transform, l.Position);
+            debugDrawData.OneFrameLines.Add(l);
+            Vector3::Transform(*p++, transform, l.Position);
+            debugDrawData.OneFrameLines.Add(l);
+        }
     }
 }
 
 void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& p3, const Vector3& p4, const Color& color, float duration, bool depthTest)
 {
-    // Create draw call entry
-    Array<DebugLine>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultLines : &Context->DebugDrawDepthTest.OneFrameLines;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultLines : &Context->DebugDrawDefault.OneFrameLines;
-    DebugLine l = { p1, Vector3::Zero, Color32(color), duration };
-
     // Find amount of segments to use
     const Vector3 d1 = p2 - p1;
     const Vector3 d2 = p3 - p2;
@@ -875,15 +894,32 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     const float len = d1.Length() + d2.Length() + d3.Length();
     const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
     const float segmentCountInv = 1.0f / (float)segmentCount;
-    list->EnsureCapacity(list->Count() + segmentCount + 2);
 
-    // Draw segmented curve
-    for (int32 i = 0; i <= segmentCount; i++)
+    // Draw segmented curve from lines
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
-        const float t = (float)i * segmentCountInv;
-        AnimationUtils::Bezier(p1, p2, p3, p4, t, l.End);
-        list->Add(l);
-        l.Start = l.End;
+        DebugLine l = { p1, Vector3::Zero, Color32(color), duration };
+        debugDrawData.DefaultLines.EnsureCapacity(debugDrawData.DefaultLines.Count() + segmentCount + 2);
+        for (int32 i = 0; i <= segmentCount; i++)
+        {
+            const float t = (float)i * segmentCountInv;
+            AnimationUtils::Bezier(p1, p2, p3, p4, t, l.End);
+            debugDrawData.DefaultLines.Add(l);
+            l.Start = l.End;
+        }
+    }
+    else
+    {
+        Vertex l = { p1, Color32(color) };
+        debugDrawData.OneFrameLines.EnsureCapacity(debugDrawData.OneFrameLines.Count() + segmentCount * 2 + 4);
+        for (int32 i = 0; i <= segmentCount; i++)
+        {
+            const float t = (float)i * segmentCountInv;
+            debugDrawData.OneFrameLines.Add(l);
+            AnimationUtils::Bezier(p1, p2, p3, p4, t, l.Position);
+            debugDrawData.OneFrameLines.Add(l);
+        }
     }
 }
 
@@ -909,16 +945,28 @@ void DebugDraw::DrawWireBox(const BoundingBox& box, const Color& color, float du
     box.GetCorners(corners);
 
     // Draw lines
-    DebugLine l;
-    l.Color = Color32(color);
-    l.TimeLeft = duration;
-    if (depthTest)
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
-        DRAW_WIRE_BOX(DebugDrawDepthTest);
+        DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Start = corners[BoxLineIndicesCache[i++]];
+            l.End = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.DefaultLines.Add(l);
+        }
     }
     else
     {
-        DRAW_WIRE_BOX(DebugDrawDefault);
+        // TODO: draw lines as strips to reuse vertices with a single draw call
+        Vertex l = { Vector3::Zero, Color32(color) };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+        }
     }
 }
 
@@ -929,16 +977,28 @@ void DebugDraw::DrawWireFrustum(const BoundingFrustum& frustum, const Color& col
     frustum.GetCorners(corners);
 
     // Draw lines
-    DebugLine l;
-    l.Color = Color32(color);
-    l.TimeLeft = duration;
-    if (depthTest)
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
-        DRAW_WIRE_BOX(DebugDrawDepthTest);
+        DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Start = corners[BoxLineIndicesCache[i++]];
+            l.End = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.DefaultLines.Add(l);
+        }
     }
     else
     {
-        DRAW_WIRE_BOX(DebugDrawDefault);
+        // TODO: draw lines as strips to reuse vertices with a single draw call
+        Vertex l = { Vector3::Zero, Color32(color) };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+        }
     }
 }
 
@@ -949,41 +1009,54 @@ void DebugDraw::DrawWireBox(const OrientedBoundingBox& box, const Color& color, 
     box.GetCorners(corners);
 
     // Draw lines
-    DebugLine l;
-    l.Color = Color32(color);
-    l.TimeLeft = duration;
-    if (depthTest)
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
-        DRAW_WIRE_BOX(DebugDrawDepthTest);
+        DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Start = corners[BoxLineIndicesCache[i++]];
+            l.End = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.DefaultLines.Add(l);
+        }
     }
     else
     {
-        DRAW_WIRE_BOX(DebugDrawDefault);
+        // TODO: draw lines as strips to reuse vertices with a single draw call
+        Vertex l = { Vector3::Zero, Color32(color) };
+        for (uint32 i = 0; i < ARRAY_COUNT(BoxLineIndicesCache);)
+        {
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+            l.Position = corners[BoxLineIndicesCache[i++]];
+            debugDrawData.OneFrameLines.Add(l);
+        }
     }
 }
 
 void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color, float duration, bool depthTest)
 {
     // Draw lines of the unit sphere after linear transform
-    DebugLine l;
-    l.Color = Color32(color);
-    l.TimeLeft = duration;
-    if (depthTest)
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
     {
+        DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
         for (int32 i = 0; i < DEBUG_DRAW_SPHERE_VERTICES;)
         {
             l.Start = sphere.Center + SphereCache[i++] * sphere.Radius;
             l.End = sphere.Center + SphereCache[i++] * sphere.Radius;
-            Context->DebugDrawDepthTest.Add(l);
+            debugDrawData.DefaultLines.Add(l);
         }
     }
     else
     {
+        Vertex l = { Vector3::Zero, Color32(color) };
         for (int32 i = 0; i < DEBUG_DRAW_SPHERE_VERTICES;)
         {
-            l.Start = sphere.Center + SphereCache[i++] * sphere.Radius;
-            l.End = sphere.Center + SphereCache[i++] * sphere.Radius;
-            Context->DebugDrawDefault.Add(l);
+            l.Position = sphere.Center + SphereCache[i++] * sphere.Radius;
+            debugDrawData.OneFrameLines.Add(l);
+            l.Position = sphere.Center + SphereCache[i++] * sphere.Radius;
+            debugDrawData.OneFrameLines.Add(l);
         }
     }
 }
