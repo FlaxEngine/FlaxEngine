@@ -16,6 +16,7 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
@@ -31,9 +32,11 @@
 // Debug draw service configuration
 #define DEBUG_DRAW_INITIAL_VB_CAPACITY (4 * 1024)
 //
-#define DEBUG_DRAW_SPHERE_RESOLUTION 64
-#define DEBUG_DRAW_SPHERE_LINES_COUNT (DEBUG_DRAW_SPHERE_RESOLUTION + 1) * 3
-#define DEBUG_DRAW_SPHERE_VERTICES DEBUG_DRAW_SPHERE_LINES_COUNT * 2
+#define DEBUG_DRAW_SPHERE_LOD0_RESOLUTION 64
+#define DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE 0.2f
+#define DEBUG_DRAW_SPHERE_LOD1_RESOLUTION 16
+#define DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE 0.08f
+#define DEBUG_DRAW_SPHERE_LOD2_RESOLUTION 8
 //
 #define DEBUG_DRAW_CIRCLE_RESOLUTION 32
 #define DEBUG_DRAW_CIRCLE_LINES_COUNT DEBUG_DRAW_CIRCLE_RESOLUTION
@@ -43,6 +46,39 @@
 #define DEBUG_DRAW_CYLINDER_VERTICES (DEBUG_DRAW_CYLINDER_RESOLUTION * 4)
 //
 #define DEBUG_DRAW_TRIANGLE_SPHERE_RESOLUTION 12
+
+struct DebugSphereCache
+{
+    Array<Vector3, FixedAllocation<(DEBUG_DRAW_SPHERE_LOD0_RESOLUTION + 1) * 3 * 2>> Vertices;
+
+    void Init(int32 resolution)
+    {
+        const int32 verticesCount = (resolution + 1) * 3 * 2;
+        Vertices.Resize(verticesCount);
+        int32 index = 0;
+        const float step = TWO_PI / (float)resolution;
+        for (float a = 0.0f; a < TWO_PI; a += step)
+        {
+            // Calculate sines and cosines
+            const float sinA = Math::Sin(a);
+            const float cosA = Math::Cos(a);
+            const float sinB = Math::Sin(a + step);
+            const float cosB = Math::Cos(a + step);
+
+            // XY loop
+            Vertices[index++] = Vector3(cosA, sinA, 0.0f);
+            Vertices[index++] = Vector3(cosB, sinB, 0.0f);
+
+            // XZ loop
+            Vertices[index++] = Vector3(cosA, 0.0f, sinA);
+            Vertices[index++] = Vector3(cosB, 0.0f, sinB);
+
+            // YZ loop
+            Vertices[index++] = Vector3(0.0f, cosA, sinA);
+            Vertices[index++] = Vector3(0.0f, cosB, sinB);
+        }
+    }
+};
 
 struct DebugLine
 {
@@ -248,6 +284,8 @@ struct DebugDrawContext
 {
     DebugDrawData DebugDrawDefault;
     DebugDrawData DebugDrawDepthTest;
+    Vector3 LastViewPos = Vector3::Zero;
+    Matrix LastViewProj = Matrix::Identity;
 };
 
 namespace
@@ -263,9 +301,9 @@ namespace
     PsData DebugDrawPsTrianglesDefault;
     PsData DebugDrawPsTrianglesDepthTest;
     DynamicVertexBuffer* DebugDrawVB = nullptr;
-    Vector3 SphereCache[DEBUG_DRAW_SPHERE_VERTICES];
     Vector3 CircleCache[DEBUG_DRAW_CIRCLE_VERTICES];
     Array<Vector3> SphereTriangleCache;
+    DebugSphereCache SphereCache[3];
 };
 
 extern int32 BoxTrianglesIndicesCache[];
@@ -396,32 +434,13 @@ bool DebugDrawService::Init()
     Context = &GlobalContext;
 
     // Init wireframe sphere cache
-    int32 index = 0;
-    float step = TWO_PI / DEBUG_DRAW_SPHERE_RESOLUTION;
-    for (float a = 0.0f; a < TWO_PI; a += step)
-    {
-        // Calculate sines and cosines
-        float sinA = Math::Sin(a);
-        float cosA = Math::Cos(a);
-        float sinB = Math::Sin(a + step);
-        float cosB = Math::Cos(a + step);
-
-        // XY loop
-        SphereCache[index++] = Vector3(cosA, sinA, 0.0f);
-        SphereCache[index++] = Vector3(cosB, sinB, 0.0f);
-
-        // XZ loop
-        SphereCache[index++] = Vector3(cosA, 0.0f, sinA);
-        SphereCache[index++] = Vector3(cosB, 0.0f, sinB);
-
-        // YZ loop
-        SphereCache[index++] = Vector3(0.0f, cosA, sinA);
-        SphereCache[index++] = Vector3(0.0f, cosB, sinB);
-    }
+    SphereCache[0].Init(DEBUG_DRAW_SPHERE_LOD0_RESOLUTION);
+    SphereCache[1].Init(DEBUG_DRAW_SPHERE_LOD1_RESOLUTION);
+    SphereCache[2].Init(DEBUG_DRAW_SPHERE_LOD2_RESOLUTION);
 
     // Init wireframe circle cache
-    index = 0;
-    step = TWO_PI / DEBUG_DRAW_CIRCLE_RESOLUTION;
+    int32 index = 0;
+    float step = TWO_PI / (float)DEBUG_DRAW_CIRCLE_RESOLUTION;
     for (float a = 0.0f; a < TWO_PI; a += step)
     {
         // Calculate sines and cosines
@@ -648,6 +667,8 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
         return;
     auto context = GPUDevice::Instance->GetMainContext();
+    Context->LastViewPos = renderContext.View.Position;
+    Context->LastViewProj = renderContext.View.Projection;
 
     // Fallback to task buffers
     if (target == nullptr && renderContext.Task)
@@ -923,21 +944,6 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     }
 }
 
-#define DRAW_WIRE_BOX_LINE(i0, i1, list) l.Start = corners[i0]; l.End = corners[i1]; Context->list.Add(l)
-#define DRAW_WIRE_BOX(list) \
-	DRAW_WIRE_BOX_LINE(0, 1, list); \
-	DRAW_WIRE_BOX_LINE(0, 3, list); \
-	DRAW_WIRE_BOX_LINE(0, 4, list); \
-	DRAW_WIRE_BOX_LINE(1, 2, list); \
-	DRAW_WIRE_BOX_LINE(1, 5, list); \
-	DRAW_WIRE_BOX_LINE(2, 3, list); \
-	DRAW_WIRE_BOX_LINE(2, 6, list); \
-	DRAW_WIRE_BOX_LINE(3, 7, list); \
-	DRAW_WIRE_BOX_LINE(4, 5, list); \
-	DRAW_WIRE_BOX_LINE(4, 7, list); \
-	DRAW_WIRE_BOX_LINE(5, 6, list); \
-	DRAW_WIRE_BOX_LINE(6, 7, list)
-
 void DebugDraw::DrawWireBox(const BoundingBox& box, const Color& color, float duration, bool depthTest)
 {
     // Get corners
@@ -1036,26 +1042,37 @@ void DebugDraw::DrawWireBox(const OrientedBoundingBox& box, const Color& color, 
 
 void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color, float duration, bool depthTest)
 {
+    // Select LOD
+    int32 index;
+    const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, sphere.Radius, Context->LastViewPos, Context->LastViewProj);
+    if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * 0.25f)
+        index = 0;
+    else if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * 0.25f)
+        index = 1;
+    else
+        index = 2;
+    auto& cache = SphereCache[index];
+
     // Draw lines of the unit sphere after linear transform
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
         DebugLine l = { Vector3::Zero, Vector3::Zero, Color32(color), duration };
-        for (int32 i = 0; i < DEBUG_DRAW_SPHERE_VERTICES;)
+        for (int32 i = 0; i < cache.Vertices.Count();)
         {
-            l.Start = sphere.Center + SphereCache[i++] * sphere.Radius;
-            l.End = sphere.Center + SphereCache[i++] * sphere.Radius;
+            l.Start = sphere.Center + cache.Vertices.Get()[i++] * sphere.Radius;
+            l.End = sphere.Center + cache.Vertices.Get()[i++] * sphere.Radius;
             debugDrawData.DefaultLines.Add(l);
         }
     }
     else
     {
         Vertex l = { Vector3::Zero, Color32(color) };
-        for (int32 i = 0; i < DEBUG_DRAW_SPHERE_VERTICES;)
+        for (int32 i = 0; i < cache.Vertices.Count();)
         {
-            l.Position = sphere.Center + SphereCache[i++] * sphere.Radius;
+            l.Position = sphere.Center + cache.Vertices.Get()[i++] * sphere.Radius;
             debugDrawData.OneFrameLines.Add(l);
-            l.Position = sphere.Center + SphereCache[i++] * sphere.Radius;
+            l.Position = sphere.Center + cache.Vertices.Get()[i++] * sphere.Radius;
             debugDrawData.OneFrameLines.Add(l);
         }
     }
@@ -1263,7 +1280,8 @@ void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientat
     else
     {
         // Set up
-        const float step = TWO_PI / DEBUG_DRAW_SPHERE_RESOLUTION;
+        const int32 resolution = 64;
+        const float step = TWO_PI / (float)resolution;
         radius = Math::Max(radius, 0.05f);
         length = Math::Max(length, 0.05f);
         const float halfLength = length / 2.0f;
