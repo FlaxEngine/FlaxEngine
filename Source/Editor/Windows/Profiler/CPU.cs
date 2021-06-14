@@ -274,10 +274,11 @@ namespace FlaxEditor.Windows.Profiler
             ref ProfilerCPU.Event e = ref events[index];
 
             double length = e.End - e.Start;
+            if (length <= 0.0)
+                return;
             double scale = 100.0;
             float x = (float)((e.Start - startTime) * scale);
             float width = (float)(length * scale);
-
             Timeline.Event control;
             if (_timelineEventsCache.Count != 0)
             {
@@ -301,7 +302,6 @@ namespace FlaxEditor.Windows.Profiler
                 while (++index < events.Length)
                 {
                     int subDepth = events[index].Depth;
-
                     if (subDepth <= e.Depth)
                         break;
                     if (subDepth == childrenDepth)
@@ -376,11 +376,8 @@ namespace FlaxEditor.Windows.Profiler
                 for (int j = 0; j < events.Length; j++)
                 {
                     var e = events[j];
-
-                    // Reject events outside the view range
                     if (viewRange.SkipEvent(ref e))
                         continue;
-
                     maxDepth = Mathf.Max(maxDepth, e.Depth);
                 }
 
@@ -412,10 +409,8 @@ namespace FlaxEditor.Windows.Profiler
                     var e = events[j];
                     if (e.Depth == 0)
                     {
-                        // Reject events outside the view range
                         if (viewRange.SkipEvent(ref e))
                             continue;
-
                         AddEvent(startTime, maxDepth, xOffset, depthOffset, j, events, container);
                     }
                 }
@@ -472,9 +467,7 @@ namespace FlaxEditor.Windows.Profiler
                 {
                     var e = events[i];
                     var time = Math.Max(e.End - e.Start, MinEventTimeMs);
-
-                    // Reject events outside the view range
-                    if (viewRange.SkipEvent(ref e))
+                    if (e.End <= 0.0f || viewRange.SkipEvent(ref e))
                         continue;
 
                     // Count sub-events time
@@ -483,7 +476,7 @@ namespace FlaxEditor.Windows.Profiler
                     for (int k = i + 1; k < events.Length; k++)
                     {
                         var sub = events[k];
-                        if (sub.Depth == e.Depth + 1)
+                        if (sub.Depth == e.Depth + 1 && e.End > 0.0f)
                         {
                             subEventsTimeTotal += Math.Max(sub.End - sub.Start, MinEventTimeMs);
                         }
@@ -491,7 +484,6 @@ namespace FlaxEditor.Windows.Profiler
                         {
                             break;
                         }
-
                         subEventsMemoryTotal += sub.ManagedMemoryAllocation + e.NativeMemoryAllocation;
                     }
 
@@ -532,7 +524,7 @@ namespace FlaxEditor.Windows.Profiler
                     }
                     row.Depth = e.Depth;
                     row.Width = _table.Width;
-                    row.Visible = e.Depth < 3;
+                    row.Visible = e.Depth < 2;
                     row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
                     row.Parent = _table;
                 }
