@@ -45,36 +45,23 @@ protected:
     /// <summary>
     /// The cancel flag used to indicate that there is request to cancel task operation.
     /// </summary>
-    volatile int64 _cancelFlag;
+    volatile int64 _cancelFlag = 0;
 
     /// <summary>
     /// The current task state.
     /// </summary>
-    volatile TaskState _state;
+    volatile TaskState _state = TaskState::Created;
 
     /// <summary>
     /// The task to start after finish.
     /// </summary>
-    Task* _continueWith;
-
-protected:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Task"/> class.
-    /// </summary>
-    Task()
-        : _cancelFlag(0)
-        , _state(TaskState::Created)
-        , _continueWith(nullptr)
-    {
-    }
+    Task* _continueWith = nullptr;
 
 public:
 
     /// <summary>
-    /// Gets work state
+    /// Gets the task state.
     /// </summary>
-    /// <returns>State</returns>
     FORCE_INLINE TaskState GetState() const
     {
         return static_cast<TaskState>(Platform::AtomicRead((int64 volatile*)&_state));
@@ -93,7 +80,6 @@ public:
     /// <summary>
     /// Gets the task to start after this one.
     /// </summary>
-    /// <returns>The next task.</returns>
     FORCE_INLINE Task* GetContinueWithTask() const
     {
         return _continueWith;
@@ -102,45 +88,40 @@ public:
 public:
 
     /// <summary>
-    /// Checks if operation failed
+    /// Checks if operation failed.
     /// </summary>
-    /// <returns>True if operation failed, otherwise false</returns>
     FORCE_INLINE bool IsFailed() const
     {
         return GetState() == TaskState::Failed;
     }
 
     /// <summary>
-    /// Checks if operation has been canceled
+    /// Checks if operation has been canceled.
     /// </summary>
-    /// <returns>True if operation has been canceled, otherwise false</returns>
     FORCE_INLINE bool IsCanceled() const
     {
         return GetState() == TaskState::Canceled;
     }
 
     /// <summary>
-    /// Checks if operation has been queued
+    /// Checks if operation has been queued.
     /// </summary>
-    /// <returns>True if operation has been queued, otherwise false</returns>
     FORCE_INLINE bool IsQueued() const
     {
         return GetState() == TaskState::Queued;
     }
 
     /// <summary>
-    /// Checks if operation is running
+    /// Checks if operation is running.
     /// </summary>
-    /// <returns>True if operation is running, otherwise false</returns>
     FORCE_INLINE bool IsRunning() const
     {
         return GetState() == TaskState::Running;
     }
 
     /// <summary>
-    /// Checks if operation has been finished
+    /// Checks if operation has been finished.
     /// </summary>
-    /// <returns>True if operation has been finished, otherwise false</returns>
     FORCE_INLINE bool IsFinished() const
     {
         return GetState() == TaskState::Finished;
@@ -149,7 +130,6 @@ public:
     /// <summary>
     /// Checks if operation has been ended (via cancel, fail or finish).
     /// </summary>
-    /// <returns>True if operation has been ended, otherwise false</returns>
     bool IsEnded() const
     {
         auto state = GetState();
@@ -159,7 +139,6 @@ public:
     /// <summary>
     /// Returns true if task has been requested to cancel it's operation.
     /// </summary>
-    /// <returns>True if task has been canceled and should stop it's work without calling child task start.</returns>
     FORCE_INLINE bool IsCancelRequested()
     {
         return Platform::AtomicRead(&_cancelFlag) != 0;
@@ -243,25 +222,6 @@ public:
     /// <param name="target">The action target object.</param>
     /// <returns>Enqueued task.</returns>
     Task* ContinueWith(Function<bool()> action, Object* target = nullptr);
-
-public:
-
-    /// <summary>
-    /// Creates a task that completes after a specified time interval (not started).
-    /// </summary>
-    /// <param name="delay">The time span to wait before completing the returned task.</param>
-    /// <returns>A task that represents the time delay (not started).</returns>
-    FORCE_INLINE static Task* Delay(const TimeSpan& delay)
-    {
-        return Delay(static_cast<int32>(delay.GetTotalMilliseconds()));
-    }
-
-    /// <summary>
-    /// Creates a task that completes after a specified time interval (not started).
-    /// </summary>
-    /// <param name="milliseconds">The amount of milliseconds to wait before completing the returned task.</param>
-    /// <returns>A task that represents the time delay (not started).</returns>
-    static Task* Delay(int32 milliseconds);
 
 public:
 

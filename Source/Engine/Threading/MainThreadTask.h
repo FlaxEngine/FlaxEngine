@@ -24,36 +24,20 @@
 class FLAXENGINE_API MainThreadTask : public Task
 {
     friend class Engine;
-
-protected:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MainThreadTask"/> class.
-    /// </summary>
-    MainThreadTask()
-        : Task()
-    {
-    }
-
 private:
+    static void RunAll(float dt);
+
+public:
 
     /// <summary>
-    /// Runs all main thread tasks. Called only by the Engine class.
+    /// The initial time delay (in seconds) before task execution. Use 0 to skip this feature.
     /// </summary>
-    static void RunAll();
+    float InitialDelay = 0.0f;
 
 public:
 
     // [Task]
-    String ToString() const override
-    {
-        return String::Format(TEXT("Main Thread Task ({0})"), ::ToString(GetState()));
-    }
-
-    bool HasReference(Object* obj) const override
-    {
-        return false;
-    }
+    String ToString() const override;
 
 protected:
 
@@ -127,27 +111,10 @@ public:
 protected:
 
     // [MainThreadTask]
-    bool Run() override
-    {
-        if (_action1.IsBinded())
-        {
-            _action1();
-            return false;
-        }
-
-        if (_action2.IsBinded())
-        {
-            return _action2();
-        }
-
-        return true;
-    }
+    bool Run() override;
 
 public:
 
     // [MainThreadTask]
-    bool HasReference(Object* obj) const override
-    {
-        return obj == _target;
-    }
+    bool HasReference(Object* obj) const override;
 };

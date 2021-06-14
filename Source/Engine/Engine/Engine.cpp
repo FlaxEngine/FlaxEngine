@@ -288,7 +288,7 @@ void Engine::OnUpdate()
     // Simulate lags
     //Platform::Sleep(100);
 
-    MainThreadTask::RunAll();
+    MainThreadTask::RunAll(Time::Update.UnscaledDeltaTime.GetTotalSeconds());
 
     // Call event
     Update();
