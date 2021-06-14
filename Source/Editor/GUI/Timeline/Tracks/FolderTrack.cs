@@ -24,7 +24,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 TypeId = 1,
                 Name = "Folder",
-                Icon = Editor.Instance.Icons.Folder64,
+                Icon = Editor.Instance.Icons.Folder32,
                 Create = options => new FolderTrack(ref options),
                 Load = LoadTrack,
                 Save = SaveTrack,

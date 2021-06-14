@@ -312,9 +312,9 @@ namespace FlaxEditor.Windows
             _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true).LinkTooltip("Clears all log entries on enter playmode");
             _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error").SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
-            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error64, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
-            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning64, () => UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides warning messages");
-            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info64, () => UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides info messages");
+            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
+            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () => UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides warning messages");
+            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () => UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
 
             // Split panel
@@ -387,10 +387,10 @@ namespace FlaxEditor.Windows
             switch (_timestampsFormats)
             {
             case InterfaceOptions.TimestampsFormats.Utc:
-                desc.Title = string.Format("[{0}] ", DateTime.UtcNow) + desc.Title;
+                desc.Title = $"[{DateTime.UtcNow}] {desc.Title}";
                 break;
             case InterfaceOptions.TimestampsFormats.LocalTime:
-                desc.Title = string.Format("[{0}] ", DateTime.Now) + desc.Title;
+                desc.Title = $"[{DateTime.Now}] {desc.Title}";
                 break;
             case InterfaceOptions.TimestampsFormats.TimeSinceStartup:
                 desc.Title = string.Format("[{0:g}] ", TimeSpan.FromSeconds(Time.TimeSinceStartup)) + desc.Title;
@@ -480,15 +480,15 @@ namespace FlaxEditor.Windows
         {
             if (_iconType == LogType.Warning)
             {
-                Icon = IconWarning;
+                Icon = Editor.Icons.Warning32;
             }
             else if (_iconType == LogType.Error)
             {
-                Icon = IconError;
+                Icon = Editor.Icons.Error32;
             }
             else
             {
-                Icon = IconInfo;
+                Icon = Editor.Icons.Info32;
             }
         }
 

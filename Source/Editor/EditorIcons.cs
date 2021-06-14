@@ -46,6 +46,12 @@ namespace FlaxEditor
         public SpriteHandle Down32;
         public SpriteHandle FolderClosed32;
         public SpriteHandle FolderOpen32;
+        public SpriteHandle Folder32;
+        public SpriteHandle CameraFill32;
+        public SpriteHandle Search32;
+        public SpriteHandle Info32;
+        public SpriteHandle Warning32;
+        public SpriteHandle Error32;
 
         // Visject
         public SpriteHandle VisjectBoxOpen32;
@@ -128,6 +134,10 @@ namespace FlaxEditor
         public SpriteHandle AndroidIcon128;
         public SpriteHandle PS4Icon128;
         public SpriteHandle FlaxLogo128;
+        public SpriteHandle SwitchIcon128;
+        public SpriteHandle SwitchSettings128;
+        public SpriteHandle LocalizationSettings128;
+        public SpriteHandle Json128;
 
         internal void LoadIcons()
         {
