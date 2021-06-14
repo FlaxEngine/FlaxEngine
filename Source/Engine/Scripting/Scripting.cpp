@@ -865,7 +865,7 @@ bool Scripting::IsEveryAssemblyLoaded()
 
 bool Scripting::IsTypeFromGameScripts(MClass* type)
 {
-    const auto binaryModule = ManagedBinaryModule::GetModule(type->GetAssembly());
+    const auto binaryModule = ManagedBinaryModule::GetModule(type ? type->GetAssembly() : nullptr);
     return binaryModule && binaryModule != GetBinaryModuleCorlib() && binaryModule != GetBinaryModuleFlaxEngine();
 }
 
