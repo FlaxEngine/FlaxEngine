@@ -12,7 +12,7 @@ bool ProfilerCPU::Enabled = false;
 
 ProfilerCPU::EventBuffer::EventBuffer()
 {
-    _capacity = Math::RoundUpToPowerOf2(10 * 1000);
+    _capacity = 8192;
     _capacityMask = _capacity - 1;
     _data = NewArray<Event>(_capacity);
     _head = 0;
@@ -122,6 +122,14 @@ void ProfilerCPU::Thread::EndEvent(int32 index)
     e.End = time;
 }
 
+void ProfilerCPU::Thread::EndEvent()
+{
+    const double time = Platform::GetTimeSeconds() * 1000.0;
+    _depth--;
+    Event& e = Buffer.Get(Buffer.GetCount() - 1);
+    e.End = time;
+}
+
 bool ProfilerCPU::IsProfilingCurrentThread()
 {
     return Enabled && Thread::Current != nullptr;
@@ -194,11 +202,14 @@ int32 ProfilerCPU::BeginEvent(const char* name)
 
 void ProfilerCPU::EndEvent(int32 index)
 {
-    if (!Enabled)
-        return;
+    if (Enabled && Thread::Current)
+        Thread::Current->EndEvent(index);
+}
 
-    ASSERT(Thread::Current);
-    Thread::Current->EndEvent(index);
+void ProfilerCPU::EndEvent()
+{
+    if (Enabled && Thread::Current)
+        Thread::Current->EndEvent();
 }
 
 void ProfilerCPU::Dispose()

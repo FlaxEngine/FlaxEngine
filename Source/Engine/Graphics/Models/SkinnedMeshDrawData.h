@@ -54,7 +54,6 @@ public:
     /// <summary>
     /// Determines whether this instance is ready for rendering.
     /// </summary>
-    /// <returns>True if has valid data and can be rendered, otherwise false.</returns>
     FORCE_INLINE bool IsReady() const
     {
         return BoneMatrices != nullptr && BoneMatrices->IsAllocated();
@@ -72,6 +71,12 @@ public:
     /// <param name="bones">The bones data.</param>
     /// <param name="dropHistory">True if drop previous update bones used for motion blur, otherwise will keep them and do the update.</param>
     void SetData(const Matrix* bones, bool dropHistory);
+
+    /// <summary>
+    /// After bones Data has been modified externally. Updates the bone matrices data for the GPU buffer. Ensure to call Flush before rendering.
+    /// </summary>
+    /// <param name="dropHistory">True if drop previous update bones used for motion blur, otherwise will keep them and do the update.</param>
+    void OnDataChanged(bool dropHistory);
 
     /// <summary>
     /// Flushes the bones data buffer with the GPU by sending the data fro the CPU.

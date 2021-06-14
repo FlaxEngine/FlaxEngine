@@ -5,6 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Flax.Build
 {
@@ -71,6 +72,8 @@ namespace Flax.Build
 
         private static int _depth;
         private static readonly List<Event> _events = new List<Event>(1024);
+        private static readonly DateTime _startTime = DateTime.Now;
+        private static readonly Stopwatch _stopwatch = Stopwatch.StartNew(); // https://stackoverflow.com/questions/1416139/how-to-get-timestamp-of-tick-precision-in-net-c
 
         /// <summary>
         /// Begins the profiling event.
@@ -81,7 +84,7 @@ namespace Flax.Build
         {
             Event e;
             e.Name = name;
-            e.StartTime = DateTime.Now;
+            e.StartTime = _startTime.AddTicks(_stopwatch.Elapsed.Ticks);
             e.Duration = TimeSpan.Zero;
             e.Depth = _depth++;
             e.ThreadId = Thread.CurrentThread.ManagedThreadId;
@@ -95,7 +98,7 @@ namespace Flax.Build
         /// <param name="id">The event identifier returned by <see cref="Begin"/>.</param>
         public static void End(int id)
         {
-            var endTime = DateTime.Now;
+            var endTime = _startTime.AddTicks(_stopwatch.Elapsed.Ticks);
             var e = _events[id];
             e.Duration = endTime - e.StartTime;
             _events[id] = e;
