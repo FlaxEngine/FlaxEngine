@@ -587,13 +587,10 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Check pending events (in a thread safe manner)
             lock (_locker)
             {
                 if (_pendingEntries.Count > 0)
                 {
-                    // TODO: we should provide max limit for entries count and remove if too many
-
                     // Check if user want's to scroll view by var (or is viewing earlier entry)
                     var panelScroll = (Panel)_entriesPanel.Parent;
                     bool scrollView = (panelScroll.VScrollBar.Maximum - panelScroll.VScrollBar.TargetValue) < LogEntry.DefaultHeight * 1.5f;
@@ -601,14 +598,24 @@ namespace FlaxEditor.Windows
                     // Add pending entries
                     LogEntry newEntry = null;
                     bool anyVisible = false;
+                    _entriesPanel.IsLayoutLocked = true;
+                    var spacing = _entriesPanel.Spacing;
+                    var margin = _entriesPanel.Margin;
+                    var offset = _entriesPanel.Offset;
+                    var width = _entriesPanel.Width - margin.Width;
+                    var top = _entriesPanel.Children.Count != 0 ? _entriesPanel.Children[_entriesPanel.Children.Count - 1].Bottom + spacing : margin.Top;
                     for (int i = 0; i < _pendingEntries.Count; i++)
                     {
                         newEntry = _pendingEntries[i];
                         newEntry.Visible = _groupButtons[(int)newEntry.Group].Checked;
                         anyVisible |= newEntry.Visible;
                         newEntry.Parent = _entriesPanel;
+                        newEntry.Bounds = new Rectangle(margin.Left + offset.X, top + offset.Y, width, newEntry.Height);
+                        top = newEntry.Bottom + spacing;
                         _logCountPerGroup[(int)newEntry.Group]++;
                     }
+                    _entriesPanel.Height = top + margin.Bottom;
+                    _entriesPanel.IsLayoutLocked = false;
                     _pendingEntries.Clear();
                     UpdateCount();
                     Assert.IsNotNull(newEntry);
