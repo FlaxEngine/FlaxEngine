@@ -220,9 +220,6 @@ namespace FlaxEditor.Windows.Assets
 
             private void ShowContextMenu(SurfaceNode node, ClickableLabel label)
             {
-                // TODO: Execute only on "Edit Signature...", this makes the "Show" button useless
-                ((VisualScriptWindow)Values[0]).Surface.FocusNode(node);
-
                 var cm = new ContextMenu();
                 cm.AddButton("Show", () => ((VisualScriptWindow)Values[0]).Surface.FocusNode(node)).Icon = Editor.Instance.Icons.Search12;
                 cm.AddButton("Delete", () => ((VisualScriptWindow)Values[0]).Surface.Delete(node)).Icon = Editor.Instance.Icons.Cross12;
