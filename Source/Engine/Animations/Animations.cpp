@@ -33,7 +33,9 @@ public:
 AnimationsService AnimationManagerInstance;
 Array<AnimatedModel*> UpdateList;
 TaskGraphSystem* Animations::System = nullptr;
+#if USE_EDITOR
 Delegate<Asset*, ScriptingObject*, uint32, uint32> Animations::DebugFlow;
+#endif
 
 bool AnimationsService::Init()
 {
