@@ -64,6 +64,7 @@ GPUDevice* GPUDeviceDX12::Create()
         LOG(Info, "DirectX debugging layer enabled");
     }
 #if 0
+#ifdef __ID3D12Debug1_FWD_DEFINED__
     ComPtr<ID3D12Debug1> debugLayer1;
     D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
     if (debugLayer1)
@@ -73,6 +74,8 @@ GPUDevice* GPUDeviceDX12::Create()
         debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
     }
 #endif
+#endif
+#ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
     ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
     VALIDATE_DIRECTX_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings)));
     if (dredSettings)
@@ -81,6 +84,7 @@ GPUDevice* GPUDeviceDX12::Create()
         dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
         dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
     }
+#endif
 #endif
 
     // Create DXGI factory (CreateDXGIFactory2 is supported on Windows 8.1 or newer)
