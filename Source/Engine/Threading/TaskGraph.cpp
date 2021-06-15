@@ -9,7 +9,7 @@ namespace
 {
     bool SortTaskGraphSystem(TaskGraphSystem* const& a, TaskGraphSystem* const& b)
     {
-        return b->Order < a->Order;
+        return b->Order > a->Order;
     };
 }
 

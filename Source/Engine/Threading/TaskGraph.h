@@ -19,7 +19,7 @@ private:
 
 public:
     /// <summary>
-    /// The execution order of the system (systems with higher order are executed earlier).
+    /// The execution order of the system (systems with higher order are executed later, lower first).
     /// </summary>
     API_FIELD() int32 Order = 0;
 
