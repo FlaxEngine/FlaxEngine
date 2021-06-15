@@ -31,6 +31,15 @@ namespace FlaxEditor.GUI
             /// Initializes a new instance of the <see cref="TypeItemView"/> class.
             /// </summary>
             /// <param name="type">The type.</param>
+            public TypeItemView(ScriptType type)
+            : this(type, type.GetAttributes(false))
+            {
+            }
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="TypeItemView"/> class.
+            /// </summary>
+            /// <param name="type">The type.</param>
             /// <param name="attributes">The type attributes.</param>
             public TypeItemView(ScriptType type, object[] attributes)
             {
@@ -38,11 +47,17 @@ namespace FlaxEditor.GUI
 
                 Name = type.Name;
                 TooltipText = type.TypeName;
+                Tag = type;
                 var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
                 if (tooltipAttribute != null)
                 {
                     TooltipText += '\n';
                     TooltipText += tooltipAttribute.Text;
+                }
+                var categoryAttribute = (CategoryAttribute)attributes.FirstOrDefault(x => x is CategoryAttribute);
+                if (categoryAttribute != null)
+                {
+                    Category = categoryAttribute.Name;
                 }
             }
 

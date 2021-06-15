@@ -32,9 +32,14 @@ namespace FlaxEditor.GUI
             protected List<Rectangle> _highlights;
 
             /// <summary>
-            /// Gets or sets the name.
+            /// The item name.
             /// </summary>
-            public string Name { get; set; }
+            public string Name;
+
+            /// <summary>
+            /// The item category name (optional).
+            /// </summary>
+            public string Category;
 
             /// <summary>
             /// Occurs when items gets clicked by the user.
@@ -47,18 +52,6 @@ namespace FlaxEditor.GUI
             public Item()
             : base(0, 0, 120, 12)
             {
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Item"/> class.
-            /// </summary>
-            /// <param name="name">The item name.</param>
-            /// <param name="tag">The item tag object.</param>
-            public Item(string name, object tag = null)
-            : base(0, 0, 120, 12)
-            {
-                Name = name;
-                Tag = tag;
             }
 
             /// <summary>
@@ -181,6 +174,7 @@ namespace FlaxEditor.GUI
         }
 
         private readonly TextBox _searchBox;
+        private List<DropPanel> _categoryPanels;
         private bool _waitingForInput;
 
         /// <summary>
@@ -242,6 +236,23 @@ namespace FlaxEditor.GUI
                 if (items[i] is Item item)
                     item.UpdateFilter(_searchBox.Text);
             }
+            if (_categoryPanels != null)
+            {
+                for (int i = 0; i < _categoryPanels.Count; i++)
+                {
+                    var category = _categoryPanels[i];
+                    bool anyVisible = false;
+                    for (int j = 0; j < category.Children.Count; j++)
+                    {
+                        if (category.Children[j] is Item item2)
+                        {
+                            item2.UpdateFilter(_searchBox.Text);
+                            anyVisible |= item2.Visible;
+                        }
+                    }
+                    category.Visible = anyVisible;
+                }
+            }
 
             UnlockChildrenRecursive();
             PerformLayout(true);
@@ -254,8 +265,33 @@ namespace FlaxEditor.GUI
         /// <param name="item">The item.</param>
         public void AddItem(Item item)
         {
-            item.Parent = ItemsPanel;
             item.Clicked += OnClickItem;
+            ContainerControl parent = ItemsPanel;
+            if (!string.IsNullOrEmpty(item.Category))
+            {
+                if (_categoryPanels == null)
+                    _categoryPanels = new List<DropPanel>();
+                for (int i = 0; i < _categoryPanels.Count; i++)
+                {
+                    if (string.Equals(_categoryPanels[i].HeaderText, item.Category, StringComparison.Ordinal))
+                    {
+                        parent = _categoryPanels[i];
+                        break;
+                    }
+                }
+                if (parent == ItemsPanel)
+                {
+                    var categoryPanel = new DropPanel
+                    {
+                        HeaderText = item.Category,
+                        Parent = parent,
+                    };
+                    categoryPanel.Open(false);
+                    _categoryPanels.Add(categoryPanel);
+                    parent = categoryPanel;
+                }
+            }
+            item.Parent = parent;
         }
 
         /// <summary>
@@ -280,6 +316,19 @@ namespace FlaxEditor.GUI
             {
                 if (items[i] is Item item)
                     item.UpdateFilter(null);
+            }
+            if (_categoryPanels != null)
+            {
+                for (int i = 0; i < _categoryPanels.Count; i++)
+                {
+                    var category = _categoryPanels[i];
+                    for (int j = 0; j < category.Children.Count; j++)
+                    {
+                        if (category.Children[j] is Item item2)
+                            item2.UpdateFilter(null);
+                    }
+                    category.Visible = true;
+                }
             }
 
             _searchBox.Clear();

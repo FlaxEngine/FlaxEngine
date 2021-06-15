@@ -10,6 +10,7 @@ namespace FlaxEditor.GUI
     /// The label that contains events for mouse interaction.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Label" />
+    [HideInEditor]
     public class ClickableLabel : Label
     {
         private bool _leftClick;

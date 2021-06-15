@@ -639,21 +639,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var cm = new ItemsListContextMenu(180);
             for (int i = 0; i < controlTypes.Count; i++)
             {
-                var controlType = controlTypes[i];
-                var item = new ItemsListContextMenu.Item(controlType.Name, controlType)
-                {
-                    TooltipText = controlType.TypeName,
-                };
-                var attributes = controlType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
-                cm.AddItem(item);
+                cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
             }
-
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
             cm.SortChildren();
             cm.Show(button.Parent, button.BottomLeft);

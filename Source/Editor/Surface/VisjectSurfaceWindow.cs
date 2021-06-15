@@ -447,18 +447,13 @@ namespace FlaxEditor.Surface
             var cm = new ItemsListContextMenu(180);
             foreach (var newParameterType in newParameterTypes)
             {
-                var name = newParameterType.Type != null ? window.VisjectSurface.GetTypeName(newParameterType) : newParameterType.Name;
-                var item = new ItemsListContextMenu.Item(name, newParameterType)
+                var item = new TypeSearchPopup.TypeItemView(newParameterType)
                 {
+                    Tag = newParameterType,
                     TooltipText = newParameterType.TypeName,
                 };
-                var attributes = newParameterType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
+                if (newParameterType.Type != null)
+                    item.Name = window.VisjectSurface.GetTypeName(newParameterType);
                 cm.AddItem(item);
             }
             cm.ItemClicked += OnAddParameterItemClicked;
