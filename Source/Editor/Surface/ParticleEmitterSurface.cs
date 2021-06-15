@@ -17,12 +17,12 @@ namespace FlaxEditor.Surface
     [HideInEditor]
     public class ParticleEmitterSurface : VisjectSurface
     {
-        internal Particles.ParticleEmitterNode _rootNode;
+        internal FlaxEditor.Surface.Archetypes.Particles.ParticleEmitterNode _rootNode;
 
         /// <summary>
         /// Gets the root node of the emitter graph.
         /// </summary>
-        public Particles.ParticleEmitterNode RootNode => _rootNode;
+        public FlaxEditor.Surface.Archetypes.Particles.ParticleEmitterNode RootNode => _rootNode;
 
         /// <inheritdoc />
         public ParticleEmitterSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)

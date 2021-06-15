@@ -5,7 +5,6 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
-#include "Engine/Engine/Time.h"
 
 ThreadLocal<AnimGraphContext, 64> AnimGraphExecutor::Context;
 
