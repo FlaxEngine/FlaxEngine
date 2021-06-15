@@ -24,6 +24,7 @@ void ParticleEmitterInstance::ClearState()
     Version = 0;
     Time = 0;
     SpawnModulesData.Clear();
+    CustomData.Clear();
 #if COMPILE_WITH_GPU_PARTICLES
     GPU.DeltaTime = 0.0f;
     GPU.SpawnCount = 0;
@@ -61,11 +62,15 @@ void ParticleEmitterInstance::Sync(ParticleSystemInstance& systemInstance, Parti
         if (SpawnModulesData.Count() != emitter->Graph.SpawnModules.Count())
         {
             SpawnModulesData.Resize(emitter->Graph.SpawnModules.Count(), false);
-
             SpawnerData data;
             data.SpawnCounter = 0;
             data.NextSpawnTime = 0;
             SpawnModulesData.SetAll(data);
+        }
+        if (CustomData.Count() != emitter->Graph.CustomDataSize)
+        {
+            CustomData.Resize(emitter->Graph.CustomDataSize, false);
+            Platform::MemoryClear(CustomData.Get(), CustomData.Count());
         }
     }
 

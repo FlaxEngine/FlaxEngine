@@ -24,6 +24,14 @@ Asset::LoadResult ParticleEmitterFunction::load()
     MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
     if (Graph.Load(&stream, false))
         return LoadResult::Failed;
+    for (int32 i = 0; i < Graph.Nodes.Count(); i++)
+    {
+        // Initialize all used nodes (starting from function output as roots)
+        if (Graph.Nodes[i].Type == GRAPH_NODE_MAKE_TYPE(16, 2))
+        {
+            Graph.InitializeNode(&Graph.Nodes[i]);
+        }
+    }
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
     stream.SetPosition(0);
     if (GraphGPU.Load(&stream, false))

@@ -7,6 +7,8 @@
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 
+ThreadLocal<ParticleEmitterGraphCPUContext, 64> ParticleEmitterGraphCPUExecutor::Context;
+
 namespace
 {
     bool SortRibbonParticles(const int32& a, const int32& b, ParticleBufferCPUDataAccessor<float>* data)
@@ -35,8 +37,7 @@ void ParticleEmitterGraphCPU::CreateDefault()
 
 bool ParticleEmitterGraphCPU::Load(ReadStream* stream, bool loadMeta)
 {
-    // Base
-    if (ParticleEmitterGraph::Load(stream, loadMeta))
+    if (Base::Load(stream, loadMeta))
         return true;
 
     // Assign the offset in the sorted indices buffer to the rendering modules
@@ -61,7 +62,7 @@ bool ParticleEmitterGraphCPU::Load(ReadStream* stream, bool loadMeta)
     for (int32 i = 0; i < RibbonRenderingModules.Count(); i++)
     {
         const auto module = RibbonRenderingModules[i];
-        module->Ribbon.RibbonOrderOffset = ribbonOrderOffset;
+        module->RibbonOrderOffset = ribbonOrderOffset;
         ribbonOrderOffset += Capacity;
     }
 
@@ -96,17 +97,15 @@ void ParticleEmitterGraphCPU::InitializeNode(Node* node)
     if (node->Used)
         return;
 
-    // Base
-    ParticleEmitterGraph::InitializeNode(node);
+    Base::InitializeNode(node);
 
     switch (node->Type)
     {
         // Position (spiral)
     case GRAPH_NODE_MAKE_TYPE(15, 214):
-    {
-        node->SpiralModuleProgress = 0.0f;
+        node->CustomDataOffset = CustomDataSize;
+        CustomDataSize += sizeof(float);
         break;
-    }
     }
 }
 
@@ -120,9 +119,19 @@ ParticleEmitterGraphCPUExecutor::ParticleEmitterGraphCPUExecutor(ParticleEmitter
     _perGroupProcessCall[16] = (ProcessBoxHandler)&ParticleEmitterGraphCPUExecutor::ProcessGroupFunction;
 }
 
-ParticleEmitterGraphCPUExecutor::~ParticleEmitterGraphCPUExecutor()
+void ParticleEmitterGraphCPUExecutor::Init(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, float dt)
 {
-    _functions.ClearDelete();
+    auto& context = Context.Get();
+    context.GraphStack.Clear();
+    context.GraphStack.Push((Graph*)&_graph);
+    context.Data = &data;
+    context.Emitter = emitter;
+    context.Effect = effect;
+    context.DeltaTime = dt;
+    context.ParticleIndex = 0;
+    context.ViewTask = effect->GetRenderTask();
+    context.CallStack.Clear();
+    context.Functions.Clear();
 }
 
 bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, BoundingBox& result)
@@ -240,20 +249,14 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
             case 401:
             {
                 // Prepare graph data
-                _graphStack.Clear();
-                _graphStack.Push((Graph*)&_graph);
-                _data = &data;
-                _emitter = emitter;
-                _effect = effect;
-                _deltaTime = 0.0f;
-                _viewTask = effect->GetRenderTask();
-                _callStack.Clear();
+                auto& context = Context.Get();
+                Init(emitter, effect, data);
 
                 // Find the maximum radius of the particle light
                 float maxRadius = 0.0f;
                 for (int32 particleIndex = 0; particleIndex < count; particleIndex++)
                 {
-                    _particleIndex = particleIndex;
+                    context.ParticleIndex = particleIndex;
                     const float radius = (float)GetValue(module->GetBox(1), 3);
                     if (radius > maxRadius)
                         maxRadius = radius;
@@ -370,14 +373,8 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
     const int32 stride = buffer->Stride;
 
     // Prepare graph data
-    _graphStack.Clear();
-    _graphStack.Push((Graph*)&_graph);
-    _data = &data;
-    _emitter = emitter;
-    _effect = effect;
-    _deltaTime = 0.0f;
-    _viewTask = effect->GetRenderTask();
-    _callStack.Clear();
+    Init(emitter, effect, data);
+    auto& context = Context.Get();
 
     // Draw lights
     for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.LightModules.Count(); moduleIndex++)
@@ -405,7 +402,7 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
 
         for (int32 particleIndex = 0; particleIndex < count; particleIndex++)
         {
-            _particleIndex = particleIndex;
+            context.ParticleIndex = particleIndex;
 
             const Vector4 color = (Vector4)GetValue(module->GetBox(0), 2);
             const float radius = (float)GetValue(module->GetBox(1), 3);
@@ -429,15 +426,8 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
 void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, float dt, bool canSpawn)
 {
     // Prepare data
-    _graphStack.Clear();
-    _graphStack.Push((Graph*)&_graph);
-    _data = &data;
-    _emitter = emitter;
-    _effect = effect;
-    _particleIndex = 0;
-    _deltaTime = dt;
-    _viewTask = effect->GetRenderTask();
-    _callStack.Clear();
+    Init(emitter, effect, data, dt);
+    auto& context = Context.Get();
     auto& cpu = data.Buffer->CPU;
 
     // Update particles
@@ -452,20 +442,20 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     // Dead particles removal
     if (_graph._attrAge != -1 && _graph._attrLifetime != -1)
     {
-        byte* agePtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrAge].Offset;
-        byte* lifetimePtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrLifetime].Offset;
+        byte* agePtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrAge].Offset;
+        byte* lifetimePtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrLifetime].Offset;
         for (int32 particleIndex = 0; particleIndex < cpu.Count; particleIndex++)
         {
             if (*(float*)agePtr >= *(float*)lifetimePtr)
             {
                 cpu.Count--;
-                Platform::MemoryCopy(_data->Buffer->GetParticleCPU(particleIndex), _data->Buffer->GetParticleCPU(cpu.Count), _data->Buffer->Stride);
+                Platform::MemoryCopy(data.Buffer->GetParticleCPU(particleIndex), data.Buffer->GetParticleCPU(cpu.Count), data.Buffer->Stride);
                 particleIndex--;
             }
             else
             {
-                agePtr += _data->Buffer->Stride;
-                lifetimePtr += _data->Buffer->Stride;
+                agePtr += data.Buffer->Stride;
+                lifetimePtr += data.Buffer->Stride;
             }
         }
     }
@@ -474,12 +464,12 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     // Debug validation for NANs in data
     if (_graph._attrPosition != -1)
     {
-        byte* positionPtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrPosition].Offset;
+        byte* positionPtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrPosition].Offset;
         for (int32 particleIndex = 0; particleIndex < cpu.Count; particleIndex++)
         {
             Vector3 pos = *((Vector3*)positionPtr);
             ASSERT(!pos.IsNanOrInfinity());
-            positionPtr += _data->Buffer->Stride;
+            positionPtr += data.Buffer->Stride;
         }
     }
 #endif
@@ -487,26 +477,26 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     // Euler integration
     if (_graph._attrPosition != -1 && _graph._attrVelocity != -1)
     {
-        byte* positionPtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrPosition].Offset;
-        byte* velocityPtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrVelocity].Offset;
+        byte* positionPtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrPosition].Offset;
+        byte* velocityPtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrVelocity].Offset;
         for (int32 particleIndex = 0; particleIndex < cpu.Count; particleIndex++)
         {
-            *((Vector3*)positionPtr) += *((Vector3*)velocityPtr) * _deltaTime;
-            positionPtr += _data->Buffer->Stride;
-            velocityPtr += _data->Buffer->Stride;
+            *((Vector3*)positionPtr) += *((Vector3*)velocityPtr) * dt;
+            positionPtr += data.Buffer->Stride;
+            velocityPtr += data.Buffer->Stride;
         }
     }
 
     // Angular Euler Integration
     if (_graph._attrRotation != -1 && _graph._attrAngularVelocity != -1)
     {
-        byte* rotationPtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrRotation].Offset;
-        byte* angularVelocityPtr = cpu.Buffer.Get() + _data->Buffer->Layout->Attributes[_graph._attrAngularVelocity].Offset;
+        byte* rotationPtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrRotation].Offset;
+        byte* angularVelocityPtr = cpu.Buffer.Get() + data.Buffer->Layout->Attributes[_graph._attrAngularVelocity].Offset;
         for (int32 particleIndex = 0; particleIndex < cpu.Count; particleIndex++)
         {
-            *((Vector3*)rotationPtr) += *((Vector3*)angularVelocityPtr) * _deltaTime;
-            rotationPtr += _data->Buffer->Stride;
-            angularVelocityPtr += _data->Buffer->Stride;
+            *((Vector3*)rotationPtr) += *((Vector3*)angularVelocityPtr) * dt;
+            rotationPtr += data.Buffer->Stride;
+            angularVelocityPtr += data.Buffer->Stride;
         }
     }
 
@@ -545,16 +535,14 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
         // Sort ribbon particles
         if (cpu.RibbonOrder.IsEmpty())
         {
-            cpu.RibbonOrder.Resize(_graph.RibbonRenderingModules.Count() * _data->Buffer->Capacity);
+            cpu.RibbonOrder.Resize(_graph.RibbonRenderingModules.Count() * data.Buffer->Capacity);
         }
-        ASSERT(cpu.RibbonOrder.Count() == _graph.RibbonRenderingModules.Count() * _data->Buffer->Capacity);
+        ASSERT(cpu.RibbonOrder.Count() == _graph.RibbonRenderingModules.Count() * data.Buffer->Capacity);
         for (int32 i = 0; i < _graph.RibbonRenderingModules.Count(); i++)
         {
             const auto module = _graph.RibbonRenderingModules[i];
-
-            ParticleBufferCPUDataAccessor<float> sortKeyData(_data->Buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]));
-
-            int32* ribbonOrderData = cpu.RibbonOrder.Get() + module->Ribbon.RibbonOrderOffset;
+            ParticleBufferCPUDataAccessor<float> sortKeyData(data.Buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]));
+            int32* ribbonOrderData = cpu.RibbonOrder.Get() + module->RibbonOrderOffset;
 
             for (int32 j = 0; j < cpu.Count; j++)
             {
@@ -567,23 +555,13 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
             }
         }
     }
-
-    // Cleanup
-    _data = nullptr;
 }
 
 int32 ParticleEmitterGraphCPUExecutor::UpdateSpawn(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, float dt)
 {
     // Prepare data
-    _graphStack.Clear();
-    _graphStack.Push((Graph*)&_graph);
-    _data = &data;
-    _emitter = emitter;
-    _effect = effect;
-    _particleIndex = 0;
-    _deltaTime = dt;
-    _viewTask = effect->GetRenderTask();
-    _callStack.Clear();
+    auto& context = Context.Get();
+    Init(emitter, effect, data, dt);
 
     // Spawn particles
     int32 spawnCount = 0;
@@ -592,16 +570,14 @@ int32 ParticleEmitterGraphCPUExecutor::UpdateSpawn(ParticleEmitter* emitter, Par
         spawnCount += ProcessSpawnModule(i);
     }
 
-    // Cleanup
-    _data = nullptr;
-
     return spawnCount;
 }
 
 VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box* box)
 {
     // Check if graph is looped or is too deep
-    if (_callStack.Count() >= PARTICLE_EMITTER_MAX_CALL_STACK)
+    auto& context = Context.Get();
+    if (context.CallStack.Count() >= PARTICLE_EMITTER_MAX_CALL_STACK)
     {
         OnError(caller, box, TEXT("Graph is looped or too deep!"));
         return Value::Zero;
@@ -615,7 +591,7 @@ VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box
 #endif
 
     // Add to the calling stack
-    _callStack.Add(caller);
+    context.CallStack.Add(caller);
 
     // Call per group custom processing event
     Value value;
@@ -624,12 +600,13 @@ VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box
     (this->*func)(box, parentNode, value);
 
     // Remove from the calling stack
-    _callStack.RemoveLast();
+    context.CallStack.RemoveLast();
 
     return value;
 }
 
 VisjectExecutor::Graph* ParticleEmitterGraphCPUExecutor::GetCurrentGraph() const
 {
-    return _graphStack.Peek();
+    auto& context = Context.Get();
+    return context.GraphStack.Peek();
 }

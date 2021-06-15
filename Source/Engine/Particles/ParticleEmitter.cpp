@@ -105,7 +105,7 @@ Asset::LoadResult ParticleEmitter::load()
         EnablePooling = root->Values[3].AsBool;
         CustomBounds = (BoundingBox)root->Values[4];
         UseAutoBounds = root->Values[5].AsBool;
-        IsUsingLights = Graph.UsesLightRendering();
+        IsUsingLights = Graph.LightModules.HasItems();
     }
 
     // Select simulation mode

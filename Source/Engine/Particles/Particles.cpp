@@ -335,7 +335,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 break;
             int32 count = buffer->CPU.Count;
             ASSERT(buffer->CPU.RibbonOrder.Count() == emitter->Graph.RibbonRenderingModules.Count() * buffer->Capacity);
-            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->Ribbon.RibbonOrderOffset;
+            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
 
             ParticleBufferCPUDataAccessor<Vector3> positionData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]));
 
@@ -483,7 +483,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             Vector2 uvOffset = module->Values[5].AsVector2();
 
             ParticleBufferCPUDataAccessor<float> sortKeyData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]));
-            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->Ribbon.RibbonOrderOffset;
+            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
             int32 count = buffer->CPU.Count;
 
             // Setup ribbon data
@@ -1073,6 +1073,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 
     if (emitter->EnablePooling && EnableParticleBufferPooling)
     {
+        PoolLocker.Lock();
         const auto entries = Pool.TryGet(emitter);
         if (entries)
         {
@@ -1087,7 +1088,6 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
                 {
                     Delete(result);
                     result = nullptr;
-
                     if (entries->IsEmpty())
                     {
                         Pool.Remove(emitter);
@@ -1096,6 +1096,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
                 }
             }
         }
+        PoolLocker.Unlock();
     }
 
     if (!result)

@@ -83,8 +83,10 @@ public:
     /// </summary>
     Array<SpawnerData> SpawnModulesData;
 
-#if COMPILE_WITH_GPU_PARTICLES
+    // Custom per-node data (eg. position on spiral module for arc progress tracking)
+    Array<byte> CustomData;
 
+#if COMPILE_WITH_GPU_PARTICLES
     struct
     {
         /// <summary>
@@ -97,7 +99,6 @@ public:
         /// </summary>
         int32 SpawnCount;
     } GPU;
-
 #endif
 
     /// <summary>

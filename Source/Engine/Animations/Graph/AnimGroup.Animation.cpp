@@ -1580,11 +1580,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
 #if 0
         // Prevent recursive calls
-        for (int32 i = _callStack.Count() - 1; i >= 0; i--)
+        for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
         {
-            if (_callStack[i]->Type == GRAPH_NODE_MAKE_TYPE(9, 24))
+            if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(9, 24))
             {
-                const auto callFunc = _callStack[i]->Assets[0].Get();
+                const auto callFunc = context.CallStack[i]->Assets[0].Get();
                 if (callFunc == function)
                 {
                     value = Value::Zero;
@@ -1879,7 +1879,7 @@ void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& va
         Graph* graph;
         for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
         {
-            if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(9, 24) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack.Last() == (Graph*)graph)
+            if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(9, 24) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack.Last() == graph)
             {
                 functionCallNode = (AnimGraphNode*)context.CallStack[i];
                 break;

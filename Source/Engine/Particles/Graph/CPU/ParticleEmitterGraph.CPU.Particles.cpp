@@ -7,11 +7,12 @@
 #include "Engine/Graphics/RenderTask.h"
 
 #define GET_VIEW() auto mainViewTask = MainRenderTask::Instance && MainRenderTask::Instance->LastUsedFrame != 0 ? MainRenderTask::Instance : nullptr
-#define ACCESS_PARTICLE_ATTRIBUTE(index) (_data->Buffer->GetParticleCPU(_particleIndex) + _data->Buffer->Layout->Attributes[node->Attributes[index]].Offset)
+#define ACCESS_PARTICLE_ATTRIBUTE(index) (context.Data->Buffer->GetParticleCPU(context.ParticleIndex) + context.Data->Buffer->Layout->Attributes[node->Attributes[index]].Offset)
 #define GET_PARTICLE_ATTRIBUTE(index, type) *(type*)ACCESS_PARTICLE_ATTRIBUTE(index)
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
 {
+    auto& context = Context.Get();
     switch (node->TypeID)
     {
         // Get
@@ -21,7 +22,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
         const auto param = _graph.GetParameter((Guid)node->Values[0], paramIndex);
         if (param)
         {
-            value = _data->Parameters[paramIndex];
+            value = context.Data->Parameters[paramIndex];
             switch (param->Type.Type)
             {
             case VariantType::Vector2:
@@ -130,6 +131,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTextures(Box* box, Node* node,
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
+    auto& context = Context.Get();
     switch (node->TypeID)
     {
         // Linearize Depth
@@ -141,15 +143,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
     }
         // Time
     case 8:
-    {
-        value = box->ID == 0 ? _data->Time : _deltaTime;
+        value = box->ID == 0 ? context.Data->Time : context.DeltaTime;
         break;
-    }
         // Transform Position To Screen UV
     case 9:
     {
         GET_VIEW();
-        const Matrix viewProjection = _viewTask ? _viewTask->View.PrevViewProjection : Matrix::Identity;
+        const Matrix viewProjection = context.ViewTask ? context.ViewTask->View.PrevViewProjection : Matrix::Identity;
         const Vector3 position = (Vector3)TryGetValue(node->GetBox(0), Value::Zero);
         Vector4 projPos;
         Vector3::Transform(position, viewProjection);
@@ -165,6 +165,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* nodeBase, Value& value)
 {
+    auto& context = Context.Get();
     auto node = (ParticleEmitterGraphCPUNode*)nodeBase;
     switch (node->TypeID)
     {
@@ -199,8 +200,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         // Particle Attribute (by index)
     case 303:
     {
-        const auto particleIndex = tryGetValue(node->GetBox(1), _particleIndex);
-        byte* ptr = (_data->Buffer->GetParticleCPU((uint32)particleIndex) + _data->Buffer->Layout->Attributes[node->Attributes[0]].Offset);
+        const auto particleIndex = tryGetValue(node->GetBox(1), context.ParticleIndex);
+        byte* ptr = (context.Data->Buffer->GetParticleCPU((uint32)particleIndex) + context.Data->Buffer->Layout->Attributes[node->Attributes[0]].Offset);
         switch ((ParticleAttribute::ValueTypes)node->Attributes[1])
         {
         case ParticleAttribute::ValueTypes::Float:
@@ -296,19 +297,19 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         // Effect Position
     case 200:
     {
-        value = _effect->GetPosition();
+        value = context.Effect->GetPosition();
         break;
     }
         // Effect Rotation
     case 201:
     {
-        value = _effect->GetOrientation();
+        value = context.Effect->GetOrientation();
         break;
     }
         // Effect Scale
     case 202:
     {
-        value = _effect->GetScale();
+        value = context.Effect->GetScale();
         break;
     }
         // Simulation Mode
@@ -320,25 +321,25 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         // View Position
     case 204:
     {
-        value = _viewTask ? _viewTask->View.Position : Vector3::Zero;
+        value = context.ViewTask ? context.ViewTask->View.Position : Vector3::Zero;
         break;
     }
         // View Direction
     case 205:
     {
-        value = _viewTask ? _viewTask->View.Direction : Vector3::Forward;
+        value = context.ViewTask ? context.ViewTask->View.Direction : Vector3::Forward;
         break;
     }
         // View Far Plane
     case 206:
     {
-        value = _viewTask ? _viewTask->View.Far : 0.0f;
+        value = context.ViewTask ? context.ViewTask->View.Far : 0.0f;
         break;
     }
         // Screen Size
     case 207:
     {
-        const Vector4 size = _viewTask ? _viewTask->View.ScreenSize : Vector4::Zero;
+        const Vector4 size = context.ViewTask ? context.ViewTask->View.ScreenSize : Vector4::Zero;
         if (box->ID == 0)
             value = Vector2(size.X, size.Y);
         else
@@ -358,11 +359,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
 
 #if 0
         // Prevent recursive calls
-        for (int32 i = _callStack.Count() - 1; i >= 0; i--)
+        for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
         {
-            if (_callStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300))
+            if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300))
             {
-                const auto callFunc = ((ParticleEmitterGraphCPUNode*)_callStack[i])->Assets[0].Get();
+                const auto callFunc = context.CallStack[i]->Assets[0].Get();
                 if (callFunc == function)
                 {
                     value = Value::Zero;
@@ -372,14 +373,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         }
 #endif
 
-        // Create a instanced version of the function graph
-        ParticleEmitterGraphCPU* graph;
-        if (!_functions.TryGet(nodeBase, graph))
-        {
-            graph = New<ParticleEmitterGraphCPU>();
-            function->LoadSurface((ParticleEmitterGraphCPU&)*graph);
-            _functions.Add(nodeBase, graph);
-        }
+        // Get function graph
+        Graph* graph = (Graph*)&function->Graph;
+        context.Functions[nodeBase] = graph;
 
         // Peek the function output (function->Outputs maps the functions outputs to output nodes indices)
         const int32 outputIndex = box->ID - 16;
@@ -388,22 +384,22 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
             value = Value::Zero;
             break;
         }
-        ParticleEmitterGraphCPU::Node* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
+        Node* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
         Box* functionOutputBox = functionOutputNode->TryGetBox(0);
 
         // Evaluate the function output
-        _graphStack.Push((Graph*)graph);
+        context.GraphStack.Push(graph);
         value = functionOutputBox && functionOutputBox->HasConnection() ? eatBox(nodeBase, functionOutputBox->FirstConnection()) : Value::Zero;
-        _graphStack.Pop();
+        context.GraphStack.Pop();
         break;
     }
         // Particle Index
     case 301:
-        value = _particleIndex;
+        value = context.ParticleIndex;
         break;
         // Particles Count
     case 302:
-        value = (uint32)_data->Buffer->CPU.Count;
+        value = (uint32)context.Data->Buffer->CPU.Count;
         break;
     default:
         VisjectExecutor::ProcessGroupParticles(box, nodeBase, value);
@@ -413,20 +409,21 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node, Value& value)
 {
+    auto& context = Context.Get();
     switch (node->TypeID)
     {
         // Function Input
     case 1:
     {
         // Find the function call
-        ParticleEmitterGraphCPUNode* functionCallNode = nullptr;
-        ASSERT(_graphStack.Count() >= 2);
-        ParticleEmitterGraphCPU* graph;
-        for (int32 i = _callStack.Count() - 1; i >= 0; i--)
+        Node* functionCallNode = nullptr;
+        ASSERT(context.GraphStack.Count() >= 2);
+        Graph* graph;
+        for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
         {
-            if (_callStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300) && _functions.TryGet(_callStack[i], graph) && _graphStack[_graphStack.Count() - 1] == (Graph*)graph)
+            if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack[context.GraphStack.Count() - 1] == graph)
             {
-                functionCallNode = (ParticleEmitterGraphCPUNode*)_callStack[i];
+                functionCallNode = context.CallStack[i];
                 break;
             }
         }
@@ -436,7 +433,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
             break;
         }
         const auto function = functionCallNode->Assets[0].As<ParticleEmitterFunction>();
-        if (!_functions.TryGet((Node*)functionCallNode, graph) || !function)
+        if (!context.Functions.TryGet(functionCallNode, graph) || !function)
         {
             value = Value::Zero;
             break;
@@ -461,9 +458,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
         if (functionCallBox && functionCallBox->HasConnection())
         {
             // Use provided input value from the function call
-            _graphStack.Pop();
+            context.GraphStack.Pop();
             value = eatBox(node, functionCallBox->FirstConnection());
-            _graphStack.Push((Graph*)graph);
+            context.GraphStack.Push(graph);
         }
         else
         {
