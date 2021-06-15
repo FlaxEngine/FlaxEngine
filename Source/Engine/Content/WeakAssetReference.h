@@ -25,6 +25,7 @@ public:
     EventType Unload;
 
 public:
+    NON_COPYABLE(WeakAssetReferenceBase);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WeakAssetReferenceBase"/> class.
@@ -98,6 +99,22 @@ public:
     WeakAssetReference(const WeakAssetReference& other)
     {
         OnSet(other.Get());
+    }
+
+    WeakAssetReference(WeakAssetReference&& other)
+    {
+        OnSet(other.Get());
+        other.OnSet(nullptr);
+    }
+
+    WeakAssetReference& operator=(WeakAssetReference&& other)
+    {
+        if (&other != this)
+        {
+            OnSet(other.Get());
+            other.OnSet(nullptr);
+        }
+        return *this;
     }
 
     /// <summary>

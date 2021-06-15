@@ -20,7 +20,6 @@ AssetReferenceBase::~AssetReferenceBase()
         _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
         _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
         _asset->RemoveReference();
-        _asset = nullptr;
     }
 }
 
@@ -55,13 +54,15 @@ void AssetReferenceBase::OnSet(Asset* asset)
 
 void AssetReferenceBase::OnLoaded(Asset* asset)
 {
-    ASSERT(_asset == asset);
+    if (_asset != asset)
+        return;
     Loaded();
 }
 
 void AssetReferenceBase::OnUnloaded(Asset* asset)
 {
-    ASSERT(_asset == asset);
+    if (_asset != asset)
+        return;
     Unload();
     OnSet(nullptr);
 }
@@ -92,7 +93,8 @@ void WeakAssetReferenceBase::OnSet(Asset* asset)
 
 void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
 {
-    ASSERT(_asset == asset);
+    if (_asset != asset)
+        return;
     Unload();
     asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
     _asset = nullptr;

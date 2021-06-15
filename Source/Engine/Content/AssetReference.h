@@ -35,6 +35,7 @@ public:
     EventType Changed;
 
 public:
+    NON_COPYABLE(AssetReferenceBase);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetReferenceBase"/> class.
@@ -112,6 +113,22 @@ public:
     AssetReference(const AssetReference& other)
     {
         OnSet(other.Get());
+    }
+
+    AssetReference(AssetReference&& other)
+    {
+        OnSet(other.Get());
+        other.OnSet(nullptr);
+    }
+
+    AssetReference& operator=(AssetReference&& other)
+    {
+        if (&other != this)
+        {
+            OnSet(other.Get());
+            other.OnSet(nullptr);
+        }
+        return *this;
     }
 
     /// <summary>
