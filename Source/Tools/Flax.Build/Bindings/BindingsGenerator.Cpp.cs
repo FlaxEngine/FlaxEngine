@@ -1925,16 +1925,6 @@ namespace Flax.Build.Bindings
             {
                 var header = new StringBuilder();
 
-                // Includes
-                CppReferencesFiles.Remove(null);
-                CppIncludeFilesList.Clear();
-                foreach (var fileInfo in CppReferencesFiles)
-                    CppIncludeFilesList.Add(fileInfo.Name);
-                CppIncludeFilesList.AddRange(CppIncludeFiles);
-                CppIncludeFilesList.Sort();
-                foreach (var path in CppIncludeFilesList)
-                    header.AppendFormat("#include \"{0}\"", path).AppendLine();
-
                 // Variant converting helper methods
                 foreach (var typeInfo in CppVariantToTypes)
                 {
@@ -2283,6 +2273,18 @@ namespace Flax.Build.Bindings
                     }
                 }
 
+                contents.Insert(headerPos, header.ToString());
+
+                // Includes
+                header.Clear();
+                CppReferencesFiles.Remove(null);
+                CppIncludeFilesList.Clear();
+                foreach (var fileInfo in CppReferencesFiles)
+                    CppIncludeFilesList.Add(fileInfo.Name);
+                CppIncludeFilesList.AddRange(CppIncludeFiles);
+                CppIncludeFilesList.Sort();
+                foreach (var path in CppIncludeFilesList)
+                    header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());
             }
 
