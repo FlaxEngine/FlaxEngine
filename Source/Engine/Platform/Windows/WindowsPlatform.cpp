@@ -29,6 +29,28 @@
 const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
+#if CRASH_LOG_ENABLE || TRACY_ENABLE
+// Lock for symbols list, shared with Tracy
+extern "C" {
+static HANDLE dbgHelpLock;
+
+void DbgHelpInit()
+{
+    dbgHelpLock = CreateMutexW(nullptr, FALSE, nullptr);
+}
+
+void DbgHelpLock()
+{
+    WaitForSingleObject(dbgHelpLock, INFINITE);
+}
+
+void DbgHelpUnlock()
+{
+    ReleaseMutex(dbgHelpLock);
+}
+}
+#endif
+
 namespace
 {
     String UserLocale, ComputerName, UserName, WindowsName;
@@ -39,7 +61,6 @@ namespace
     int32 VersionBuild = 0;
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
-    CriticalSection SymLocker;
 #if TRACY_ENABLE
     bool SymInitialized = true;
 #else
@@ -501,7 +522,7 @@ void WindowsPlatform::PreInit(void* hInstance)
 
 #if CRASH_LOG_ENABLE
     TCHAR buffer[MAX_PATH] = { 0 };
-    SymLocker.Lock();
+    DbgHelpLock();
     if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
         SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
     if (::GetEnvironmentVariableW(TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
@@ -510,7 +531,7 @@ void WindowsPlatform::PreInit(void* hInstance)
     options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
     SymSetOptions(options);
     OnSymbolsPathModified();
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
 
     GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
@@ -654,7 +675,7 @@ void WindowsPlatform::BeforeExit()
 void WindowsPlatform::Exit()
 {
 #if CRASH_LOG_ENABLE
-    SymLocker.Lock();
+    DbgHelpLock();
 #if !TRACY_ENABLE
     if (SymInitialized)
     {
@@ -663,7 +684,7 @@ void WindowsPlatform::Exit()
     }
 #endif
     SymbolsPath.Resize(0);
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
 
     // Unregister app class
@@ -1170,13 +1191,13 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
-    SymLocker.Lock();
+    DbgHelpLock();
     if (folder.HasChars() && !SymbolsPath.Contains(folder))
     {
         SymbolsPath.Add(folder);
         OnSymbolsPathModified();
     }
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
 
     return handle;
@@ -1186,7 +1207,7 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
 {
     Array<StackFrame> result;
 #if CRASH_LOG_ENABLE
-    SymLocker.Lock();
+    DbgHelpLock();
 
     // Initialize
     HANDLE process = GetCurrentProcess();
@@ -1310,7 +1331,7 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
         }
     }
 
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
     return result;
 }
