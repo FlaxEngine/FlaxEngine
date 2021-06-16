@@ -29,4 +29,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(JobSystem);
     /// </summary>
     /// <param name="label">The label.</param>
     API_FUNCTION() static void Wait(int64 label);
+
+    /// <summary>
+    /// Sets whether automatically start jobs execution on Dispatch. If disabled jobs won't be executed until it gets re-enabled. Can be used to optimize execution of multiple dispatches that should overlap.
+    /// </summary>
+    API_FUNCTION() static void SetJobStartingOnDispatch(bool value);
 };
