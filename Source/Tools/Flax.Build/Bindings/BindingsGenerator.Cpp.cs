@@ -2091,7 +2091,8 @@ namespace Flax.Build.Bindings
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
                         header.AppendFormat("        	mono_array_set(result, {0}Managed, i, ToManaged(data[i]));", apiType.Name).AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToNativeArray(Array<{0}>& result, MonoArray* data, int32 length)", fullName).AppendLine();
+                        header.Append("    template<typename AllocationType = HeapAllocation>").AppendLine();
+                        header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < length; i++)").AppendLine();
                         header.AppendFormat("    	    result.Add(ToNative(mono_array_get(data, {0}Managed, i)));", apiType.Name).AppendLine();
@@ -2271,7 +2272,8 @@ namespace Flax.Build.Bindings
                         header.Append("            mono_array_setref(result, i, Box(data[i]));").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToNativeArray(Array<{0}>& result, MonoArray* data, int32 length)", fullName).AppendLine();
+                        header.Append("    template<typename AllocationType = HeapAllocation>").AppendLine();
+                        header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < length; i++)").AppendLine();
                         header.AppendFormat("            Unbox(result[i], (MonoObject*)mono_array_addr_with_size(data, sizeof({0}Managed), length));", fullName).AppendLine();

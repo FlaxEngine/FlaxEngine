@@ -62,7 +62,39 @@ namespace Flax.Build.Bindings
             if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
                 return value.Substring(5, value.Length - 6);
 
+            // In-built constants
+            switch (value)
+            {
+            case "nullptr":
+            case "NULL":
+            case "String::Empty":
+            case "StringView::Empty": return "null";
+            case "MAX_int8": return "sbyte.MaxValue";
+            case "MAX_uint8": return "byte.MaxValue";
+            case "MAX_int16": return "short.MaxValue";
+            case "MAX_uint16": return "ushort.MaxValue";
+            case "MAX_int32": return "int.MaxValue";
+            case "MAX_uint32": return "uint.MaxValue";
+            case "MAX_int64": return "long.MaxValue";
+            case "MAX_uint64": return "ulong.MaxValue";
+            case "MAX_float": return "float.MaxValue";
+            case "MAX_double": return "double.MaxValue";
+            case "true":
+            case "false": return value;
+            }
+
+            // Numbers
+            if (float.TryParse(value, out _) || (value[value.Length - 1] == 'f' && float.TryParse(value.Substring(0, value.Length - 1), out _)))
+                return value;
+
             value = value.Replace("::", ".");
+            var dot = value.LastIndexOf('.');
+            ApiTypeInfo apiType = null;
+            if (dot != -1)
+            {
+                var type = new TypeInfo { Type = value.Substring(0, dot) };
+                apiType = FindApiTypeInfo(buildData, type, caller);
+            }
 
             if (attribute)
             {
@@ -95,45 +127,23 @@ namespace Flax.Build.Bindings
                     case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
                     }
 
+                    // Enums
+                    if (apiType != null && apiType.IsEnum)
+                        return value;
+
                     return null;
                 }
             }
 
             // Skip constants unsupported in C#
-            var dot = value.LastIndexOf('.');
-            if (dot != -1)
-            {
-                var type = new TypeInfo { Type = value.Substring(0, dot) };
-                var apiType = FindApiTypeInfo(buildData, type, caller);
-                if (apiType != null && apiType.IsStruct)
-                    return null;
-            }
+            if (apiType != null && apiType.IsStruct)
+                return null;
 
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
                 return "new " + value;
 
-            // Convert from C++ to C#
-            switch (value)
-            {
-            case "nullptr":
-            case "NULL":
-            case "String.Empty":
-            case "StringView.Empty": return "null";
-
-            case "MAX_int8": return "sbyte.MaxValue";
-            case "MAX_uint8": return "byte.MaxValue";
-            case "MAX_int16": return "short.MaxValue";
-            case "MAX_uint16": return "ushort.MaxValue";
-            case "MAX_int32": return "int.MaxValue";
-            case "MAX_uint32": return "uint.MaxValue";
-            case "MAX_int64": return "long.MaxValue";
-            case "MAX_uint64": return "ulong.MaxValue";
-            case "MAX_float": return "float.MaxValue";
-            case "MAX_double": return "double.MaxValue";
-
-            default: return value;
-            }
+            return value;
         }
 
         private static string GenerateCSharpNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)

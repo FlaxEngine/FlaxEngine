@@ -76,6 +76,10 @@ namespace Flax.Build.Bindings
                     if (commentLine.StartsWith("// "))
                         commentLine = "/// " + commentLine.Substring(3);
 
+                    // Fix inlined summary
+                    if (commentLine.StartsWith("/// <summary>") && commentLine.EndsWith("</summary>"))
+                        commentLine = "/// " + commentLine.Substring(13, commentLine.Length - 23);
+
                     context.StringCache.Insert(0, commentLine);
                     break;
                 }
