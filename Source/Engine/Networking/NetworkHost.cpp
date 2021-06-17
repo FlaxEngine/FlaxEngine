@@ -35,6 +35,7 @@ void NetworkHost::Initialize(const NetworkConfig& config)
 
 void NetworkHost::Shutdown()
 {
+    NetworkDriver->Dispose();
     Delete(NetworkDriver);
     DisposeMessageBuffers();
 
