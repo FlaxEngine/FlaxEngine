@@ -94,6 +94,7 @@ void TaskGraph::Execute()
 
         // Execute in order
         Sorting::QuickSort(_queue.Get(), _queue.Count(), &SortTaskGraphSystem);
+        JobSystem::SetJobStartingOnDispatch(false);
         _currentLabel = 0;
         for (int32 i = 0; i < _queue.Count(); i++)
         {
@@ -104,6 +105,7 @@ void TaskGraph::Execute()
         _queue.Clear();
 
         // Wait for async jobs to finish
+        JobSystem::SetJobStartingOnDispatch(true);
         JobSystem::Wait(_currentLabel);
     }
 

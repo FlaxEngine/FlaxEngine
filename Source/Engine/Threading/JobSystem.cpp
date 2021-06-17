@@ -87,6 +87,7 @@ namespace
     JobSystemService JobSystemInstance;
     Thread* Threads[32] = {};
     int32 ThreadsCount = 0;
+    bool JobStartingOnDispatch = true;
     volatile int64 ExitFlag = 0;
     volatile int64 DoneLabel = 0;
     volatile int64 NextLabel = 0;
@@ -234,10 +235,13 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
     LOG(Info, "Job enqueue time: {0} cycles", (int64)(Platform::GetTimeCycles() - start));
 #endif
 
-    if (jobCount == 1)
-        JobsSignal.NotifyOne();
-    else
-        JobsSignal.NotifyAll();
+    if (JobStartingOnDispatch)
+    {
+        if (jobCount == 1)
+            JobsSignal.NotifyOne();
+        else
+            JobsSignal.NotifyAll();
+    }
 
     return label;
 #else
@@ -276,5 +280,23 @@ void JobSystem::Wait(int64 label)
     LOG(Info, "Job average dequeue time: {0} cycles", DequeueSum / DequeueCount);
     DequeueSum = DequeueCount = 0;
 #endif
+#endif
+}
+
+void JobSystem::SetJobStartingOnDispatch(bool value)
+{
+#if JOB_SYSTEM_ENABLED
+    JobStartingOnDispatch = value;
+
+    if (value)
+    {
+        JobsLocker.Lock();
+        const int32 count = Jobs.Count();
+        JobsLocker.Unlock();
+        if (count == 1)
+            JobsSignal.NotifyOne();
+        else if (count != 0)
+            JobsSignal.NotifyAll();
+    }
 #endif
 }
