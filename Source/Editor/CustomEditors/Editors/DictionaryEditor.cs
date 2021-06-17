@@ -140,6 +140,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _readOnly;
         private bool _notNullItems;
         private bool _canEditKeys;
+        private bool _keyEdited;
 
         /// <summary>
         /// Determines whether this editor[can edit the specified dictionary type.
@@ -351,6 +352,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     newValues[e] = dictionary[e];
             }
             SetValue(newValues);
+            _keyEdited = true; // TODO: use custom UndoAction to rebuild UI after key modification
         }
 
         /// <summary>
@@ -463,6 +465,13 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Refresh()
         {
+            if (_keyEdited)
+            {
+                _keyEdited = false;
+                RebuildLayout();
+                RebuildParentCollection();
+            }
+
             base.Refresh();
 
             // No support for different collections for now

@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
@@ -77,7 +78,13 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                _element.Value = (int)Values[0];
+                var value = Values[0];
+                if (value is int asInt)
+                    _element.Value = asInt;
+                else if (value is float asFloat)
+                    _element.Value = (int)asFloat;
+                else
+                    throw new Exception(string.Format("Invalid value type {0}.", value?.GetType().ToString() ?? "<null>"));
             }
         }
     }

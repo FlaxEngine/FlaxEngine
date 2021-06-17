@@ -89,7 +89,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (value is double asDouble)
                     _element.Value = (float)asDouble;
                 else
-                    throw new Exception("Invalid value.");
+                    throw new Exception(string.Format("Invalid value type {0}.", value?.GetType().ToString() ?? "<null>"));
             }
         }
     }
