@@ -26,7 +26,7 @@ int NetworkManager::Initialize(const NetworkConfig& config)
     ASSERT(config.Address == String("any") || isValidEndPoint);
     
     // Alloc new host
-    const int hostId = Hosts.Count();
+    const int hostId = Hosts.Count(); // TODO: Maybe keep the host count under a limit? Maybe some drivers do not support this?
     Hosts.Add(NetworkHost());
     NetworkHost& host = Hosts.Last();
     host.HostId = hostId;
@@ -42,7 +42,7 @@ void NetworkManager::Shutdown(const int hostId)
     ASSERT(Hosts[hostId].IsValid());
     NetworkHost& host = Hosts[hostId];
     host.Shutdown();
-    Hosts.Remove(host);
+    // Hosts.Remove(host); // Do not remove hosts, because we need to keep the array unmodified to make the id's work
 }
 
 bool NetworkManager::Listen(const int hostId)
