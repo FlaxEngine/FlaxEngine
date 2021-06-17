@@ -536,7 +536,7 @@ namespace Serialization
         else if (stream.IsString())
         {
             // byte[] encoded as Base64
-            const StringAnsiView streamView(stream.GetString(), stream.GetStringLength());
+            const StringAnsiView streamView(stream.GetStringAnsiView());
             v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
             Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
         }

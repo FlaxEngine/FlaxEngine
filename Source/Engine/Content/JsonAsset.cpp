@@ -75,7 +75,7 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
-            if (!Guid::Parse(node.GetText(), id))
+            if (!Guid::Parse(node.GetStringAnsiView(), id))
                 output.Add(id);
         }
     }

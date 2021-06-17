@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 
 // TODO: config RAPIDJSON_SSE2 for rapidjson
 #define RAPIDJSON_ERROR_CHARTYPE Char

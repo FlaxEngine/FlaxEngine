@@ -2066,7 +2066,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
             auto& params = instanceParams->Value.Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
-                StringAnsiView idNameAnsi(i->name.GetString(), i->name.GetStringLength());
+                StringAnsiView idNameAnsi(i->name.GetStringAnsiView());
                 Guid paramId;
                 if (!Guid::Parse(idNameAnsi, paramId))
                 {
