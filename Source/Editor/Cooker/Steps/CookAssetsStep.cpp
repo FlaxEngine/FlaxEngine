@@ -25,6 +25,7 @@
 #include "Engine/Core/Config/PlatformSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
+#include "Engine/Streaming/StreamingSettings.h"
 #include "Engine/ShadersCompilation/ShadersCompilation.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -43,6 +44,35 @@
 #include "FlaxEngine.Gen.h"
 
 Dictionary<String, CookAssetsStep::ProcessAssetFunc> CookAssetsStep::AssetProcessors;
+
+bool CookAssetsStep::CacheEntry::IsValid(bool withDependencies)
+{
+    AssetInfo assetInfo;
+    if (Content::GetAssetInfo(ID, assetInfo))
+    {
+        if (TypeName == assetInfo.TypeName)
+        {
+            if (FileSystem::GetFileLastEditTime(assetInfo.Path) <= FileModified)
+            {
+                bool isValid = true;
+                if (withDependencies)
+                {
+                    for (auto& f : FileDependencies)
+                    {
+                        if (FileSystem::GetFileLastEditTime(f.First) > f.Second)
+                        {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                }
+                if (isValid)
+                    return true;
+            }
+        }
+    }
+    return false;
+}
 
 CookAssetsStep::CacheEntry& CookAssetsStep::CacheData::CreateEntry(const JsonAssetBase* asset, String& cachedFilePath)
 {
@@ -68,7 +98,6 @@ CookAssetsStep::CacheEntry& CookAssetsStep::CacheData::CreateEntry(const Asset* 
 void CookAssetsStep::CacheData::InvalidateShaders()
 {
     LOG(Info, "Invalidating cached shader assets.");
-
     for (auto e = Entries.Begin(); e.IsNotEnd(); ++e)
     {
         auto& typeName = e->Value.TypeName;
@@ -76,6 +105,23 @@ void CookAssetsStep::CacheData::InvalidateShaders()
             typeName == Shader::TypeName ||
             typeName == Material::TypeName ||
             typeName == ParticleEmitter::TypeName
+        )
+        {
+            Entries.Remove(e);
+        }
+    }
+}
+
+void CookAssetsStep::CacheData::InvalidateTextures()
+{
+    LOG(Info, "Invalidating cached texture assets.");
+    for (auto e = Entries.Begin(); e.IsNotEnd(); ++e)
+    {
+        auto& typeName = e->Value.TypeName;
+        if (
+            typeName == Texture::TypeName ||
+            typeName == CubeTexture::TypeName ||
+            typeName == SpriteAtlas::TypeName
         )
         {
             Entries.Remove(e);
@@ -159,17 +205,17 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         Entries.Clear();
     }
 
+    const auto buildSettings = BuildSettings::Get();
+    const auto gameSettings = GameSettings::Get();
+
     // Invalidate shaders and assets with shaders if need to rebuild them
     bool invalidateShaders = false;
-    const auto buildSettings = BuildSettings::Get();
-    const bool shadersNoOptimize = buildSettings->ShadersNoOptimize;
-    const bool shadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
-    if (shadersNoOptimize != Settings.Global.ShadersNoOptimize)
+    if (buildSettings->ShadersNoOptimize != Settings.Global.ShadersNoOptimize)
     {
         LOG(Info, "ShadersNoOptimize option has been modified.");
         invalidateShaders = true;
     }
-    if (shadersGenerateDebugData != Settings.Global.ShadersGenerateDebugData)
+    if (buildSettings->ShadersGenerateDebugData != Settings.Global.ShadersGenerateDebugData)
     {
         LOG(Info, "ShadersGenerateDebugData option has been modified.");
         invalidateShaders = true;
@@ -218,6 +264,12 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 #endif
     if (invalidateShaders)
         InvalidateShaders();
+
+    // Invalidate textures if streaming settings gets modified
+    if (Settings.Global.StreamingSettingsAssetId != gameSettings->Streaming || (Entries.ContainsKey(gameSettings->Streaming) && !Entries[gameSettings->Streaming].IsValid()))
+    {
+        InvalidateTextures();
+    }
 }
 
 void CookAssetsStep::CacheData::Save()
@@ -541,91 +593,127 @@ bool ProcessParticleEmitter(CookAssetsStep::AssetCookData& data)
 bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
 {
     const auto asset = static_cast<TextureBase*>(data.Asset);
-
-    // Check if target platform doesn't support the texture format
+    const auto& assetHeader = asset->StreamingTexture()->GetHeader();
     const auto format = asset->Format();
     const auto targetFormat = data.Data.Tools->GetTextureFormat(data.Data, asset, format);
+    const auto streamingSettings = StreamingSettings::Get();
+    int32 mipLevelsMax = GPU_MAX_TEXTURE_MIP_LEVELS;
+    if (assetHeader->TextureGroup >= 0 && assetHeader->TextureGroup < streamingSettings->TextureGroups.Count())
+    {
+        auto& group = streamingSettings->TextureGroups[assetHeader->TextureGroup];
+        mipLevelsMax = group.MipLevelsMax;
+        group.MipLevelsMaxPerPlatform.TryGet(data.Data.Tools->GetPlatform(), mipLevelsMax);
+    }
+
+    // Faster path if don't need to modify texture for the target platform
+    if (format == targetFormat && assetHeader->MipLevels <= mipLevelsMax)
+    {
+        return CookAssetsStep::ProcessDefaultAsset(data);
+    }
+
+    // Extract texture data from the asset
+    TextureData textureDataSrc;
+    auto assetLock = asset->LockData();
+    if (asset->GetTextureData(textureDataSrc, false))
+    {
+        LOG(Error, "Failed to load data from texture {0}", asset->ToString());
+        return true;
+    }
+
+    TextureData* textureData = &textureDataSrc;
+    TextureData textureDataTmp1;
+
     if (format != targetFormat)
     {
-        // Extract texture data from the asset
-        TextureData textureData;
-        auto assetLock = asset->LockData();
-        if (asset->GetTextureData(textureData, false))
-        {
-            LOG(Error, "Failed to load data from texture {0}", asset->ToString());
-            return true;
-        }
-
         // Convert texture data to the target format
-        TextureData targetTextureData;
-        if (TextureTool::Convert(targetTextureData, textureData, targetFormat))
+        if (TextureTool::Convert(textureDataTmp1, *textureData, targetFormat))
         {
             LOG(Error, "Failed to convert texture {0} from format {1} to {2}", asset->ToString(), (int32)format, (int32)targetFormat);
             return true;
         }
-
-        // Adjust texture header
-        auto& header = *(TextureHeader*)data.InitData.CustomData.Get();
-        header.Width = targetTextureData.Width;
-        header.Height = targetTextureData.Height;
-        header.Format = targetTextureData.Format;
-        header.MipLevels = targetTextureData.GetMipLevels();
-
-        // Serialize texture data into the asset chunks
-        for (int32 mipIndex = 0; mipIndex < targetTextureData.GetMipLevels(); mipIndex++)
-        {
-            auto chunk = New<FlaxChunk>();
-            data.InitData.Header.Chunks[mipIndex] = chunk;
-
-            // Calculate the texture data storage layout
-            uint32 rowPitch, slicePitch;
-            const int32 mipWidth = Math::Max(1, targetTextureData.Width >> mipIndex);
-            const int32 mipHeight = Math::Max(1, targetTextureData.Height >> mipIndex);
-            RenderTools::ComputePitch(targetTextureData.Format, mipWidth, mipHeight, rowPitch, slicePitch);
-            chunk->Data.Allocate(slicePitch * targetTextureData.GetArraySize());
-
-            // Copy array slices into mip data (sequential)
-            for (int32 arrayIndex = 0; arrayIndex < targetTextureData.Items.Count(); arrayIndex++)
-            {
-                auto& mipData = targetTextureData.Items[arrayIndex].Mips[mipIndex];
-                byte* src = mipData.Data.Get();
-                byte* dst = chunk->Data.Get() + (slicePitch * arrayIndex);
-
-                // Faster path if source and destination data layout matches
-                if (rowPitch == mipData.RowPitch && slicePitch == mipData.DepthPitch)
-                {
-                    Platform::MemoryCopy(dst, src, slicePitch);
-                }
-                else
-                {
-                    const auto copyRowSize = Math::Min(mipData.RowPitch, rowPitch);
-                    for (uint32 line = 0; line < mipData.Lines; line++)
-                    {
-                        Platform::MemoryCopy(dst, src, copyRowSize);
-                        src += mipData.RowPitch;
-                        dst += rowPitch;
-                    }
-                }
-            }
-        }
-
-        // Clone any custom asset chunks (eg. sprite atlas data, mips are in 0-13 chunks)
-        for (int32 i = 14; i < ASSET_FILE_DATA_CHUNKS; i++)
-        {
-            const auto chunk = asset->GetChunk(i);
-            if (chunk != nullptr && chunk->IsMissing() && chunk->ExistsInFile())
-            {
-                if (asset->Storage->LoadAssetChunk(chunk))
-                    return true;
-                data.InitData.Header.Chunks[i] = chunk->Clone();
-            }
-        }
-
-        return false;
+        textureData = &textureDataSrc;
     }
 
-    // Fallback to the default asset processing
-    return CookAssetsStep::ProcessDefaultAsset(data);
+    if (assetHeader->MipLevels > mipLevelsMax)
+    {
+        // Reduce texture quality
+        const int32 mipLevelsToStrip = assetHeader->MipLevels - mipLevelsMax;
+        textureData->Width = Math::Max(1, textureData->Width >> mipLevelsToStrip);
+        textureData->Height = Math::Max(1, textureData->Height >> mipLevelsToStrip);
+        textureData->Depth = Math::Max(1, textureData->Depth >> mipLevelsToStrip);
+        for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count(); arrayIndex++)
+        {
+            auto& item = textureData->Items[arrayIndex];
+            Array<TextureMipData, FixedAllocation<GPU_MAX_TEXTURE_MIP_LEVELS>> oldMips(MoveTemp(item.Mips));
+            item.Mips.Resize(mipLevelsMax);
+            for (int32 mipIndex = 0; mipIndex < mipLevelsMax; mipIndex++)
+            {
+                auto& dstMip = item.Mips[mipIndex];
+                auto& srcMip = oldMips[mipIndex + mipLevelsToStrip];
+                dstMip = MoveTemp(srcMip);
+            }
+        }
+    }
+
+    // Adjust texture header
+    auto& header = *(TextureHeader*)data.InitData.CustomData.Get();
+    header.Width = textureData->Width;
+    header.Height = textureData->Height;
+    header.Depth = textureData->Depth;
+    header.Format = textureData->Format;
+    header.MipLevels = textureData->GetMipLevels();
+
+    // Serialize texture data into the asset chunks
+    for (int32 mipIndex = 0; mipIndex < textureData->GetMipLevels(); mipIndex++)
+    {
+        auto chunk = New<FlaxChunk>();
+        data.InitData.Header.Chunks[mipIndex] = chunk;
+
+        // Calculate the texture data storage layout
+        uint32 rowPitch, slicePitch;
+        const int32 mipWidth = Math::Max(1, textureData->Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, textureData->Height >> mipIndex);
+        RenderTools::ComputePitch(textureData->Format, mipWidth, mipHeight, rowPitch, slicePitch);
+        chunk->Data.Allocate(slicePitch * textureData->GetArraySize());
+
+        // Copy array slices into mip data (sequential)
+        for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count(); arrayIndex++)
+        {
+            auto& mipData = textureData->Items[arrayIndex].Mips[mipIndex];
+            byte* src = mipData.Data.Get();
+            byte* dst = chunk->Data.Get() + (slicePitch * arrayIndex);
+
+            // Faster path if source and destination data layout matches
+            if (rowPitch == mipData.RowPitch && slicePitch == mipData.DepthPitch)
+            {
+                Platform::MemoryCopy(dst, src, slicePitch);
+            }
+            else
+            {
+                const auto copyRowSize = Math::Min(mipData.RowPitch, rowPitch);
+                for (uint32 line = 0; line < mipData.Lines; line++)
+                {
+                    Platform::MemoryCopy(dst, src, copyRowSize);
+                    src += mipData.RowPitch;
+                    dst += rowPitch;
+                }
+            }
+        }
+    }
+
+    // Clone any custom asset chunks (eg. sprite atlas data, mips are in 0-13 chunks)
+    for (int32 i = 14; i < ASSET_FILE_DATA_CHUNKS; i++)
+    {
+        const auto chunk = asset->GetChunk(i);
+        if (chunk != nullptr && chunk->IsMissing() && chunk->ExistsInFile())
+        {
+            if (asset->Storage->LoadAssetChunk(chunk))
+                return true;
+            data.InitData.Header.Chunks[i] = chunk->Clone();
+        }
+    }
+
+    return false;
 }
 
 CookAssetsStep::CookAssetsStep()
@@ -938,6 +1026,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     {
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
+        cache.Settings.Global.StreamingSettingsAssetId = gameSettings->Streaming;
     }
 
     // Note: this step converts all the assets (even the json) into the binary files (FlaxStorage format).

@@ -12,6 +12,51 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
+TextureMipData::TextureMipData()
+    : RowPitch(0)
+    , DepthPitch(0)
+    , Lines(0)
+{
+}
+
+TextureMipData::TextureMipData(const TextureMipData& other)
+    : RowPitch(other.RowPitch)
+    , DepthPitch(other.DepthPitch)
+    , Lines(other.Lines)
+    , Data(other.Data)
+{
+}
+
+TextureMipData::TextureMipData(TextureMipData&& other) noexcept
+    : RowPitch(other.RowPitch)
+    , DepthPitch(other.DepthPitch)
+    , Lines(other.Lines)
+    , Data(std::move(other.Data))
+{
+}
+
+TextureMipData& TextureMipData::operator=(const TextureMipData& other)
+{
+    if (this == &other)
+        return *this;
+    RowPitch = other.RowPitch;
+    DepthPitch = other.DepthPitch;
+    Lines = other.Lines;
+    Data = other.Data;
+    return *this;
+}
+
+TextureMipData& TextureMipData::operator=(TextureMipData&& other) noexcept
+{
+    if (this == &other)
+        return *this;
+    RowPitch = other.RowPitch;
+    DepthPitch = other.DepthPitch;
+    Lines = other.Lines;
+    Data = MoveTemp(other.Data);
+    return *this;
+}
+
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
 
 TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)
