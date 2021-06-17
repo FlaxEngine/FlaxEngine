@@ -216,7 +216,7 @@ namespace Serialization
     template<typename T>
     inline typename TEnableIf<TIsEnum<T>::Value>::Type Deserialize(ISerializable::DeserializeStream& stream, T& v, ISerializeModifier* modifier)
     {
-        v = (T)(stream.IsInt() ? stream.GetInt() : 0);
+        v = (T)DeserializeInt(stream);
     }
 
     // Common types
