@@ -2,6 +2,7 @@
 
 #include "Lightmap.h"
 #include "Scene.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Level/Level.h"
