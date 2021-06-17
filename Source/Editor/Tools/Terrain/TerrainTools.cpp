@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "TerrainTools.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Math/Int2.h"
 #include "Engine/Core/Math/Color32.h"

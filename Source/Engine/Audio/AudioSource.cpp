@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AudioSource.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderTask.h"

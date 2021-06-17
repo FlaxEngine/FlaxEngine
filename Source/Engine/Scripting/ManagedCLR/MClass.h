@@ -73,12 +73,6 @@ public:
         return _fullname;
     }
 
-    /// <summary>
-    /// Gets the class full name as string.
-    /// </summary>
-    /// <returns>The class full name.</returns>
-    String ToString() const;
-
 #if USE_MONO
 
     /// <summary>

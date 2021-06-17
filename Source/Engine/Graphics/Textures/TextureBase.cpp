@@ -2,16 +2,15 @@
 
 #include "TextureBase.h"
 #include "TextureData.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
 

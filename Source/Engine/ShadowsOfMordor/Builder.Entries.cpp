@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/Actors/StaticModel.h"

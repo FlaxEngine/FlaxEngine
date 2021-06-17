@@ -5,6 +5,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
+#include "Engine/Core/Log.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR

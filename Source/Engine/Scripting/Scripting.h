@@ -91,21 +91,21 @@ public:
     /// <summary>
     /// Finds the class with given fully qualified name within whole assembly.
     /// </summary>
-    /// <param name="fullname">The full name of the type eg: System.Int64.MaxInt.</param>
+    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
     /// <returns>The MClass object or null if missing.</returns>
     static MClass* FindClass(const StringAnsiView& fullname);
 
     /// <summary>
     /// Finds the native class with given fully qualified name within whole assembly.
     /// </summary>
-    /// <param name="fullname">The full name of the type eg: System.Int64.MaxInt.</param>
+    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
     /// <returns>The MClass object or null if missing.</returns>
     static MonoClass* FindClassNative(const StringAnsiView& fullname);
 
     /// <summary>
     /// Finds the scripting type of the given fullname by searching loaded scripting assemblies.
     /// </summary>
-    /// <param name="fullname">The full name of the type eg: System.Int64.MaxInt.</param>
+    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
     /// <returns>The scripting type or invalid type if missing.</returns>
     static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname);
 

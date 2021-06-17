@@ -80,11 +80,6 @@ MClass::~MClass()
     _events.ClearDelete();
 }
 
-String MClass::ToString() const
-{
-    return String(_fullname);
-}
-
 MonoClass* MClass::GetNative() const
 {
     return _monoClass;
