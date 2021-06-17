@@ -79,6 +79,11 @@ public:
         float PreserveAlphaCoverageReference;
 
         /// <summary>
+        /// Texture group for streaming (negative if unused). See Streaming Settings.
+        /// </summary>
+        int32 TextureGroup;
+
+        /// <summary>
         /// The import texture scale.
         /// </summary>
         float Scale;

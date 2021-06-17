@@ -7,7 +7,7 @@
 #include "Types.h"
 
 /// <summary>
-/// GPU texture object which can change it's resolution (quality) at runtime
+/// GPU texture object which can change it's resolution (quality) at runtime.
 /// </summary>
 class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
 {
@@ -180,10 +180,7 @@ public:
     String ToString() const override;
 
     // [StreamableResource]
-    int32 GetMaxResidency() const override
-    {
-        return _header.MipLevels;
-    }
+    int32 GetMaxResidency() const override;
     int32 GetCurrentResidency() const override;
     int32 GetAllocatedResidency() const override;
     bool CanBeUpdated() const override;

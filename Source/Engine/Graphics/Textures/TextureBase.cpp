@@ -29,27 +29,27 @@ Vector2 TextureBase::Size() const
 
 int32 TextureBase::GetArraySize() const
 {
-    return StreamingTexture()->TotalArraySize();
+    return _texture.TotalArraySize();
 }
 
 int32 TextureBase::GetMipLevels() const
 {
-    return StreamingTexture()->TotalMipLevels();
+    return _texture.TotalMipLevels();
 }
 
 int32 TextureBase::GetResidentMipLevels() const
 {
-    return GetTexture()->ResidentMipLevels();
+    return _texture.GetTexture()->ResidentMipLevels();
 }
 
 uint64 TextureBase::GetCurrentMemoryUsage() const
 {
-    return GetTexture()->GetMemoryUsage();
+    return _texture.GetTexture()->GetMemoryUsage();
 }
 
 uint64 TextureBase::GetTotalMemoryUsage() const
 {
-    return StreamingTexture()->GetTotalMemoryUsage();
+    return _texture.GetTotalMemoryUsage();
 }
 
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
@@ -166,16 +166,15 @@ bool TextureBase::Init(InitData* initData)
     _customData = initData;
 
     // Create texture
-    TextureHeader header;
-    header.Format = initData->Format;
-    header.Width = initData->Width;
-    header.Height = initData->Height;
-    header.IsCubeMap = initData->ArraySize == 6;
-    header.MipLevels = initData->Mips.Count();
-    header.IsSRGB = false;
-    header.Type = TextureFormatType::ColorRGBA;
-    header.NeverStream = true;
-    if (_texture.Create(header))
+    TextureHeader textureHeader;
+    textureHeader.Format = initData->Format;
+    textureHeader.Width = initData->Width;
+    textureHeader.Height = initData->Height;
+    textureHeader.IsCubeMap = initData->ArraySize == 6;
+    textureHeader.MipLevels = initData->Mips.Count();
+    textureHeader.Type = TextureFormatType::ColorRGBA;
+    textureHeader.NeverStream = true;
+    if (_texture.Create(textureHeader))
     {
         LOG(Warning, "Cannot initialize texture.");
         return true;
@@ -287,6 +286,41 @@ bool TextureBase::GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32
     }
 
     return result;
+}
+
+bool TextureBase::init(AssetInitData& initData)
+{
+    if (IsVirtual())
+        return false;
+    if (initData.SerializedVersion != TexturesSerializedVersion)
+    {
+        LOG(Error, "Invalid serialized texture version.");
+        return true;
+    }
+
+    // Get texture header for asset custom data (fast access)
+    TextureHeader textureHeader;
+    if (initData.CustomData.Length() == sizeof(TextureHeader))
+    {
+        Platform::MemoryCopy(&textureHeader, initData.CustomData.Get(), sizeof(textureHeader));
+    }
+    else if (initData.CustomData.Length() == sizeof(TextureHeader_Deprecated))
+    {
+        textureHeader = TextureHeader(*(TextureHeader_Deprecated*)initData.CustomData.Get());
+    }
+    else
+    {
+        LOG(Error, "Missing texture header.");
+        return true;
+    }
+
+    return _texture.Create(textureHeader);
+}
+
+Asset::LoadResult TextureBase::load()
+{
+    // Loading textures is very fast xD
+    return LoadResult::Ok;
 }
 
 bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)

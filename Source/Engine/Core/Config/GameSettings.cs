@@ -92,6 +92,12 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset GameCooking;
 
         /// <summary>
+        /// Reference to <see cref="StreamingSettings"/> asset.
+        /// </summary>
+        [EditorOrder(1060), EditorDisplay("Other Settings"), AssetReference(typeof(StreamingSettings), true), Tooltip("Reference to Streaming Settings asset")]
+        public JsonAsset Streaming;
+
+        /// <summary>
         /// The custom settings to use with a game. Can be specified by the user to define game-specific options and be used by the external plugins (used as key-value pair).
         /// </summary>
         [EditorOrder(1100), EditorDisplay("Other Settings"), Tooltip("The custom settings to use with a game. Can be specified by the user to define game-specific options and be used by the external plugins (used as key-value pair).")]
@@ -229,6 +235,8 @@ namespace FlaxEditor.Content.Settings
                 return LoadAsset<LocalizationSettings>(gameSettings.Localization) as T;
             if (type == typeof(BuildSettings))
                 return LoadAsset<BuildSettings>(gameSettings.GameCooking) as T;
+            if (type == typeof(StreamingSettings))
+                return LoadAsset<StreamingSettings>(gameSettings.Streaming) as T;
             if (type == typeof(InputSettings))
                 return LoadAsset<InputSettings>(gameSettings.Input) as T;
             if (type == typeof(AudioSettings))
@@ -333,6 +341,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.Localization, obj);
             if (type == typeof(BuildSettings))
                 return SaveAsset(gameSettings, ref gameSettings.GameCooking, obj);
+            if (type == typeof(StreamingSettings))
+                return SaveAsset(gameSettings, ref gameSettings.Streaming, obj);
             if (type == typeof(InputSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Input, obj);
             if (type == typeof(WindowsPlatformSettings))

@@ -284,6 +284,12 @@ namespace FlaxEditor.Content.Import
         public float PreserveAlphaCoverageReference { get; set; } = 0.5f;
 
         /// <summary>
+        /// Texture group for streaming (negative if unused). See Streaming Settings.
+        /// </summary>
+        [EditorOrder(300), Tooltip("Texture group for streaming (negative if unused). See Streaming Settings.")]
+        public int TextureGroup = -1;
+
+        /// <summary>
         /// The sprites. Used to keep created sprites on sprite atlas reimport.
         /// </summary>
         [HideInEditor]
@@ -305,6 +311,7 @@ namespace FlaxEditor.Content.Import
             public float PreserveAlphaCoverageReference;
             public float Scale;
             public int MaxSize;
+            public int TextureGroup;
             public Int2 Size;
             public Rectangle[] SpriteAreas;
             public string[] SpriteNames;
@@ -327,7 +334,8 @@ namespace FlaxEditor.Content.Import
                 PreserveAlphaCoverageReference = PreserveAlphaCoverageReference,
                 Scale = Scale,
                 Size = Size,
-                MaxSize = (int)MaxSize
+                MaxSize = (int)MaxSize,
+                TextureGroup = TextureGroup,
             };
             if (Sprites != null && Sprites.Count > 0)
             {
@@ -362,6 +370,7 @@ namespace FlaxEditor.Content.Import
             PreserveAlphaCoverageReference = options.PreserveAlphaCoverageReference;
             Scale = options.Scale;
             MaxSize = ConvertMaxSize(options.MaxSize);
+            TextureGroup = options.TextureGroup;
             Size = options.Size;
             if (options.SpriteAreas != null)
             {

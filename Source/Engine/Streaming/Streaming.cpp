@@ -1,13 +1,15 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "StreamingManager.h"
+#include "Streaming.h"
 #include "StreamableResource.h"
 #include "StreamingGroup.h"
+#include "StreamingSettings.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Serialization/Serialization.h"
 
 namespace StreamingManagerImpl
 {
@@ -21,7 +23,6 @@ using namespace StreamingManagerImpl;
 class StreamingManagerService : public EngineService
 {
 public:
-
     StreamingManagerService()
         : EngineService(TEXT("Streaming Manager"), 100)
     {
@@ -32,7 +33,18 @@ public:
 
 StreamingManagerService StreamingManagerServiceInstance;
 
-StreamableResourcesCollection StreamingManager::Resources;
+StreamableResourcesCollection Streaming::Resources;
+Array<TextureGroup, InlinedAllocation<32>> Streaming::TextureGroups;
+
+void StreamingSettings::Apply()
+{
+    Streaming::TextureGroups = TextureGroups;
+}
+
+void StreamingSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(TextureGroups);
+}
 
 void UpdateResource(StreamableResource* resource, DateTime now)
 {
@@ -43,18 +55,18 @@ void UpdateResource(StreamableResource* resource, DateTime now)
     auto handler = group->GetHandler();
 
     // Calculate target quality for that asset
-    StreamingQuality targetQuality = MAX_STREAMING_QUALITY;
+    float targetQuality = 1.0f;
     if (resource->IsDynamic())
     {
         targetQuality = handler->CalculateTargetQuality(resource, now);
         // TODO: here we should apply resources group master scale (based on game settings quality level and memory level)
-        targetQuality = Math::Clamp<StreamingQuality>(targetQuality, MIN_STREAMING_QUALITY, MAX_STREAMING_QUALITY);
+        targetQuality = Math::Saturate(targetQuality);
     }
 
     // Update quality smoothing
     resource->Streaming.QualitySamples.Add(targetQuality);
     targetQuality = resource->Streaming.QualitySamples.Maximum();
-    targetQuality = Math::Clamp<StreamingQuality>(targetQuality, MIN_STREAMING_QUALITY, MAX_STREAMING_QUALITY);
+    targetQuality = Math::Saturate(targetQuality);
 
     // Calculate target residency level (discrete value)
     auto maxResidency = resource->GetMaxResidency();
@@ -132,7 +144,7 @@ void StreamingManagerService::Update()
     // Check if skip update
     auto now = DateTime::NowUTC();
     auto delta = now - LastUpdateTime;
-    int32 resourcesCount = StreamingManager::Resources.ResourcesCount();
+    int32 resourcesCount = Streaming::Resources.ResourcesCount();
     if (resourcesCount == 0 || delta < ManagerUpdatesInterval || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready)
         return;
     LastUpdateTime = now;
@@ -154,7 +166,7 @@ void StreamingManagerService::Update()
             LastUpdateResourcesIndex = 0;
 
         // Peek resource
-        const auto resource = StreamingManager::Resources[LastUpdateResourcesIndex];
+        const auto resource = Streaming::Resources[LastUpdateResourcesIndex];
 
         // Try to update it
         if (now - resource->Streaming.LastUpdate >= ResourceUpdatesInterval && resource->CanBeUpdated())

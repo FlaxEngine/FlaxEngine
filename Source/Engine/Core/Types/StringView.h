@@ -17,6 +17,12 @@ protected:
     const T* _data;
     int32 _length;
 
+    constexpr StringViewBase()
+    {
+        _data = nullptr;
+        _length = 0;
+    }
+
 public:
 
     /// <summary>
@@ -189,8 +195,6 @@ public:
     /// </summary>
     constexpr StringView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>
@@ -396,8 +400,6 @@ public:
     /// </summary>
     constexpr StringAnsiView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>

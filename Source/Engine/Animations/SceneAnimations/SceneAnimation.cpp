@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "SceneAnimation.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"

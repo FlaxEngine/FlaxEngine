@@ -66,6 +66,7 @@ struct InternalTextureOptions
     float PreserveAlphaCoverageReference;
     float Scale;
     int32 MaxSize;
+    int32 TextureGroup;
     int32 SizeX;
     int32 SizeY;
     MonoArray* SpriteAreas;
@@ -86,6 +87,7 @@ struct InternalTextureOptions
         to->PreserveAlphaCoverage = from->PreserveAlphaCoverage;
         to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
         to->MaxSize = from->MaxSize;
+        to->TextureGroup = from->TextureGroup;
         to->SizeX = from->SizeX;
         to->SizeY = from->SizeY;
         to->Sprites.Clear();
@@ -118,6 +120,7 @@ struct InternalTextureOptions
         to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
         to->Scale = from->Scale;
         to->MaxSize = from->MaxSize;
+        to->TextureGroup = from->TextureGroup;
         to->SizeX = from->SizeX;
         to->SizeY = from->SizeY;
         if (from->Sprites.HasItems())

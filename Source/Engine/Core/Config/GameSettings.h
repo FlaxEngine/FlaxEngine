@@ -70,6 +70,7 @@ public:
     Guid Navigation;
     Guid Localization;
     Guid GameCooking;
+    Guid Streaming;
 
     // Per-platform settings containers
     Guid WindowsPlatform;

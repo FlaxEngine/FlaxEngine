@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/SamplesBuffer.h"
-#include "Config.h"
 
 class StreamingGroup;
 class Task;
@@ -18,7 +17,7 @@ protected:
 
     StreamingGroup* _group;
     bool _isDynamic, _isStreaming;
-    StreamingQuality _streamingQuality;
+    float _streamingQuality;
 
     StreamableResource(StreamingGroup* group);
     ~StreamableResource();
@@ -38,17 +37,13 @@ public:
     /// </summary>
     FORCE_INLINE bool IsDynamic() const
     {
-#if ENABLE_RESOURCES_DYNAMIC_STREAMING
         return _isDynamic;
-#else
-		return false;
-#endif
     }
 
     /// <summary>
     /// Gets resource streaming quality level
     /// </summary>
-    FORCE_INLINE StreamingQuality GetStreamingQuality() const
+    FORCE_INLINE float GetStreamingQuality() const
     {
         return _streamingQuality;
     }
@@ -114,7 +109,7 @@ public:
         DateTime LastUpdate = 0;
         int32 TargetResidency = 0;
         DateTime TargetResidencyChange = 0;
-        SamplesBuffer<StreamingQuality, 5> QualitySamples;
+        SamplesBuffer<float, 5> QualitySamples;
     };
 
     StreamingCache Streaming;
