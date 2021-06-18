@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using FlaxEditor.CustomEditors;
 using FlaxEngine;
@@ -9,7 +10,7 @@ using FlaxEngine.Json;
 namespace FlaxEditor.Windows
 {
     /// <summary>
-    /// Window used to show and edit current graphics rendering settings via <see cref="Graphics"/>.
+    /// Window used to show and edit current graphics rendering settings via <see cref="Graphics"/> and <see cref="Streaming"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     public class GraphicsQualityWindow : EditorWindow
@@ -85,6 +86,18 @@ namespace FlaxEditor.Windows
             {
                 get => Graphics.AllowCSMBlending;
                 set => Graphics.AllowCSMBlending = value;
+            }
+
+            [NoSerialize]
+            [EditorOrder(2000), EditorDisplay("Textures", EditorDisplayAttribute.InlineStyle), Tooltip("Textures streaming configuration.")]
+            public TextureGroup[] TextureGroups
+            {
+                get => Streaming.TextureGroups;
+                set
+                {
+                    Streaming.TextureGroups = value;
+                    Streaming.RequestStreamingUpdate();
+                }
             }
         }
 
