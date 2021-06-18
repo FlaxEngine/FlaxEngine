@@ -10,13 +10,13 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
 
-class NetworkHost;
+class NetworkPeer;
 
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(ENetDriver);
 public:
-    void Initialize(NetworkHost* host, const NetworkConfig& config) override;
+    void Initialize(NetworkPeer* host, const NetworkConfig& config) override;
     void Dispose() override;
     
     bool Listen() override;
@@ -38,7 +38,7 @@ private:
     
 private:
     NetworkConfig _config;
-    NetworkHost* _networkHost;
+    NetworkPeer* _networkHost;
     void* _host = nullptr;
     void* _peer = nullptr;
     

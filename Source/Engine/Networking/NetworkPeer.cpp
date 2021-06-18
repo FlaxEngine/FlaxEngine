@@ -1,6 +1,6 @@
 ﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "NetworkHost.h"
+#include "NetworkPeer.h"
 #include "NetworkEvent.h"
 
 
@@ -10,7 +10,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
 
-void NetworkHost::Initialize(const NetworkConfig& config)
+void NetworkPeer::Initialize(const NetworkConfig& config)
 {
     Config = config;
 
@@ -36,7 +36,7 @@ void NetworkHost::Initialize(const NetworkConfig& config)
     LOG(Info, "NetworkManager initialized using driver = {0}", static_cast<int>(Config.NetworkDriverType));
 }
 
-void NetworkHost::Shutdown()
+void NetworkPeer::Shutdown()
 {
     NetworkDriver->Dispose();
     Delete(NetworkDriver);
@@ -45,7 +45,7 @@ void NetworkHost::Shutdown()
     NetworkDriver = nullptr;
 }
 
-void NetworkHost::CreateMessageBuffers()
+void NetworkPeer::CreateMessageBuffers()
 {
     ASSERT(MessageBuffer == nullptr);
         
@@ -61,7 +61,7 @@ void NetworkHost::CreateMessageBuffers()
     Platform::MemorySet(MessageBuffer, 0, numPages * pageSize);
 }
 
-void NetworkHost::DisposeMessageBuffers()
+void NetworkPeer::DisposeMessageBuffers()
 {
     ASSERT(MessageBuffer != nullptr);
         
@@ -69,38 +69,38 @@ void NetworkHost::DisposeMessageBuffers()
     MessageBuffer = nullptr;
 }
 
-bool NetworkHost::Listen()
+bool NetworkPeer::Listen()
 {
     LOG(Info, "NetworkManager starting to listen on address = {0}:{1}", Config.Address, Config.Port);
     return NetworkDriver->Listen();
 }
 
-bool NetworkHost::Connect()
+bool NetworkPeer::Connect()
 {
     LOG(Info, "Connecting to {0}:{1}...", Config.Address, Config.Port);
     return NetworkDriver->Connect();
 }
 
-void NetworkHost::Disconnect()
+void NetworkPeer::Disconnect()
 {
     LOG(Info, "Disconnecting...");
     NetworkDriver->Disconnect();
 }
 
-void NetworkHost::Disconnect(const NetworkConnection& connection)
+void NetworkPeer::Disconnect(const NetworkConnection& connection)
 {
     LOG(Info, "Disconnecting connection with id = {0}...", connection.ConnectionId);
     NetworkDriver->Disconnect(connection);
 }
 
-bool NetworkHost::PopEvent(NetworkEvent& eventRef)
+bool NetworkPeer::PopEvent(NetworkEvent& eventRef)
 {
     // Set host id of the event
     eventRef.HostId = HostId;
     return NetworkDriver->PopEvent(&eventRef);
 }
 
-NetworkMessage NetworkHost::CreateMessage()
+NetworkMessage NetworkPeer::CreateMessage()
 {
     const uint32 messageId = MessagePool.Pop();
     uint8* messageBuffer = GetMessageBuffer(messageId);
@@ -108,7 +108,7 @@ NetworkMessage NetworkHost::CreateMessage()
     return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
 }
 
-void NetworkHost::RecycleMessage(const NetworkMessage& message)
+void NetworkPeer::RecycleMessage(const NetworkMessage& message)
 {
     ASSERT(message.IsValid());
 #ifdef BUILD_DEBUG
@@ -119,18 +119,18 @@ void NetworkHost::RecycleMessage(const NetworkMessage& message)
     MessagePool.Push(message.MessageId);
 }
 
-NetworkMessage NetworkHost::BeginSendMessage()
+NetworkMessage NetworkPeer::BeginSendMessage()
 {
     return CreateMessage();
 }
 
-void NetworkHost::AbortSendMessage(const NetworkMessage& message)
+void NetworkPeer::AbortSendMessage(const NetworkMessage& message)
 {
     ASSERT(message.IsValid());
     RecycleMessage(message);
 }
 
-bool NetworkHost::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
+bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
     ASSERT(message.IsValid());
     
@@ -140,7 +140,7 @@ bool NetworkHost::EndSendMessage(const NetworkChannelType channelType, const Net
     return false;
 }
 
-bool NetworkHost::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target)
+bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target)
 {
     ASSERT(message.IsValid());
     
@@ -150,7 +150,7 @@ bool NetworkHost::EndSendMessage(const NetworkChannelType channelType, const Net
     return false;
 }
 
-bool NetworkHost::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection> targets)
+bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection> targets)
 {
     ASSERT(message.IsValid());
     

@@ -4,17 +4,17 @@
 
 #include "NetworkMessage.h"
 #include "NetworkConfig.h"
-#include "NetworkHost.h"
+#include "NetworkPeer.h"
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 
 namespace
 {
-    Array<NetworkHost*, HeapAllocation> Hosts;
+    Array<NetworkPeer*, HeapAllocation> Hosts;
 }
 
-NetworkHost* NetworkManager::CreateHost(const NetworkConfig& config)
+NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
 {
     // Validate the address for listen/connect
     NetworkEndPoint endPoint = {};
@@ -24,8 +24,8 @@ NetworkHost* NetworkManager::CreateHost(const NetworkConfig& config)
     // Alloc new host
     const int hostId = Hosts.Count(); // TODO: Maybe keep the host count under a limit? Maybe some drivers do not support this?
                                       // TODO: Reuse host ids
-    Hosts.Add(New<NetworkHost>());
-    NetworkHost* host = Hosts.Last();
+    Hosts.Add(New<NetworkPeer>());
+    NetworkPeer* host = Hosts.Last();
     host->HostId = hostId;
 
     // Initialize the host
@@ -34,7 +34,7 @@ NetworkHost* NetworkManager::CreateHost(const NetworkConfig& config)
     return host;
 }
 
-void NetworkManager::ShutdownHost(NetworkHost* host)
+void NetworkManager::ShutdownHost(NetworkPeer* host)
 {
     ASSERT(host->IsValid());
     host->Shutdown();

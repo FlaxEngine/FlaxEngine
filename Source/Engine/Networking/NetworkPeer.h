@@ -9,7 +9,7 @@
 
 #include "Engine/Core/Collections/Array.h"
 
-API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkHost final : public PersistentScriptingObject
+API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public PersistentScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkHost);
     friend class NetworkManager;
@@ -22,7 +22,7 @@ public:
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
-    NetworkHost() : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    NetworkPeer() : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
     
@@ -84,12 +84,12 @@ public:
     }
 
 public:
-    FORCE_INLINE bool operator==(const NetworkHost& other) const
+    FORCE_INLINE bool operator==(const NetworkPeer& other) const
     {
         return HostId == other.HostId;
     }
 
-    FORCE_INLINE bool operator!=(const NetworkHost& other) const
+    FORCE_INLINE bool operator!=(const NetworkPeer& other) const
     {
         return HostId != other.HostId;
     }

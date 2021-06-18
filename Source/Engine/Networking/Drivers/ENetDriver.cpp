@@ -7,7 +7,7 @@
 #include "Engine/Networking/NetworkConfig.h"
 #include "Engine/Networking/NetworkChannelType.h"
 #include "Engine/Networking/NetworkEvent.h"
-#include "Engine/Networking/NetworkHost.h"
+#include "Engine/Networking/NetworkPeer.h"
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -53,7 +53,7 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
     // TODO: To reduce latency, we can use `enet_host_flush` to flush all packets. Maybe some API, like NetworkManager::FlushQueues()?
 }
 
-void ENetDriver::Initialize(NetworkHost* host, const NetworkConfig& config)
+void ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 {
     _networkHost = host;
     _config = config;
