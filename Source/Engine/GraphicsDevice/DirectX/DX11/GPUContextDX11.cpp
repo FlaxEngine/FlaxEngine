@@ -118,7 +118,7 @@ void GPUContextDX11::FrameBegin()
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
-    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers); // TODO: maybe we don't want to bind those static sampler always?
+    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
 #if GPU_ALLOW_PROFILE_EVENTS
@@ -637,7 +637,20 @@ void GPUContextDX11::ClearState()
 
     FlushState();
 
-    //_context->ClearState();
+    _context->ClearState();
+    ID3D11SamplerState* samplers[] =
+    {
+        _device->_samplerLinearClamp,
+        _device->_samplerPointClamp,
+        _device->_samplerLinearWrap,
+        _device->_samplerPointWrap,
+        _device->_samplerShadow,
+        _device->_samplerShadowPCF
+    };
+    _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
 void GPUContextDX11::FlushState()

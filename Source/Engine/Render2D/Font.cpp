@@ -440,5 +440,5 @@ void Font::FlushFaceSize() const
 
 String Font::ToString() const
 {
-    return String::Format(TEXT("Font {0} {1}"), _asset->GetFamilyName(), _size);
+    return String::Format(TEXT("Font {0} {1}"), _asset ? _asset->GetFamilyName() : String::Empty, _size);
 }
