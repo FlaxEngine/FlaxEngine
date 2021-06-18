@@ -2,15 +2,19 @@
 
 #pragma once
 
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Types.h"
 #include "NetworkConfig.h"
 
 #include "Engine/Core/Collections/Array.h"
 
-struct FLAXENGINE_API NetworkHost
+API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkHost final : public PersistentScriptingObject
 {
+DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkHost);
+    friend class NetworkManager;
 public:
-    int HostId;
+    int HostId = -1;
     NetworkConfig Config;
     INetworkDriver* NetworkDriver = nullptr;
 
@@ -18,14 +22,59 @@ public:
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
+    NetworkHost() : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    {
+    }
+    
+private:
     void Initialize(const NetworkConfig& config);
     void Shutdown();
+    
+private:
     void CreateMessageBuffers();
     void DisposeMessageBuffers();
+
+public:
+    API_FUNCTION()
+    bool Listen();
     
+    API_FUNCTION()
+    bool Connect();
+    
+    API_FUNCTION()
+    void Disconnect();
+    
+    API_FUNCTION()
+    void Disconnect(const NetworkConnection& connection);
+    
+    API_FUNCTION()
+    bool PopEvent(API_PARAM(out) NetworkEvent& eventRef);
+
+    API_FUNCTION()
+    NetworkMessage CreateMessage();
+    
+    API_FUNCTION()
+    void RecycleMessage(const NetworkMessage& message);
+
+    API_FUNCTION()
+    NetworkMessage BeginSendMessage();
+    
+    API_FUNCTION()
+    void AbortSendMessage(const NetworkMessage& message);
+    
+    API_FUNCTION()
+    bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message);
+    
+    API_FUNCTION()
+    bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target);
+    
+    API_FUNCTION()
+    bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets);
+    
+public:
     bool IsValid() const
     {
-        return NetworkDriver != nullptr;
+        return NetworkDriver != nullptr && HostId >= 0;
     }
 
     uint8* GetMessageBuffer(const uint32 messageId) const

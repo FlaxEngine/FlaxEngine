@@ -7,7 +7,7 @@
 #include "Engine/Networking/NetworkConfig.h"
 #include "Engine/Networking/NetworkChannelType.h"
 #include "Engine/Networking/NetworkEvent.h"
-#include "Engine/Networking/NetworkManager.h"
+#include "Engine/Networking/NetworkHost.h"
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -15,6 +15,7 @@
 #define ENET_IMPLEMENTATION
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <enet/enet.h>
+
 #undef _WINSOCK_DEPRECATED_NO_WARNINGS
 #undef SendMessage
 
@@ -52,8 +53,9 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
     // TODO: To reduce latency, we can use `enet_host_flush` to flush all packets. Maybe some API, like NetworkManager::FlushQueues()?
 }
 
-void ENetDriver::Initialize(const NetworkConfig& config)
+void ENetDriver::Initialize(NetworkHost* host, const NetworkConfig& config)
 {
+    _networkHost = host;
     _config = config;
     _peerMap = Dictionary<uint32_t, void*>();
 
@@ -202,7 +204,7 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
             eventPtr->EventType = NetworkEventType::Message;
 
             // Acquire message and copy message data
-            eventPtr->Message = NetworkManager::CreateMessage(eventPtr->HostId);
+            eventPtr->Message = _networkHost->CreateMessage();
             eventPtr->Message.Length = event.packet->dataLength;
             Memory::CopyItems(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
             break;

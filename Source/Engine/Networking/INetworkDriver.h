@@ -4,11 +4,13 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
+class NetworkHost;
+
 API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
 public:
-    virtual void Initialize(const NetworkConfig& config) = 0;
+    virtual void Initialize(NetworkHost* host, const NetworkConfig& config) = 0;
     virtual void Dispose() = 0;
     
     virtual bool Listen() = 0;
