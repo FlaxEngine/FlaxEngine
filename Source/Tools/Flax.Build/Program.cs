@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -17,6 +18,10 @@ namespace Flax.Build
             // Setup
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            var culture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            Thread.CurrentThread.CurrentCulture = culture;
 
             // Show help option
             if (CommandLine.HasOption("help"))
