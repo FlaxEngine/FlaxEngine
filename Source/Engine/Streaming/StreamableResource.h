@@ -105,7 +105,6 @@ public:
 
     struct StreamingCache
     {
-        //float MinDstSinceLastUpdate = MAX_float;
         DateTime LastUpdate = 0;
         int32 TargetResidency = 0;
         DateTime TargetResidencyChange = 0;
@@ -124,6 +123,6 @@ public:
 
 protected:
 
-    void startStreaming(bool isDynamic);
-    void stopStreaming();
+    void StartStreaming(bool isDynamic);
+    void StopStreaming();
 };

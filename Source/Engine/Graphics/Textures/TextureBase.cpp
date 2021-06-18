@@ -97,6 +97,20 @@ uint64 TextureBase::GetTotalMemoryUsage() const
     return _texture.GetTotalMemoryUsage();
 }
 
+int32 TextureBase::GetTextureGroup() const
+{
+    return _texture._header.TextureGroup;
+}
+
+void TextureBase::SetTextureGroup(int32 textureGroup)
+{
+    if (_texture._header.TextureGroup != textureGroup)
+    {
+        _texture._header.TextureGroup = textureGroup;
+        _texture.RequestStreamingUpdate();
+    }
+}
+
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
 {
     BytesContainer result;
@@ -114,7 +128,6 @@ BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& s
     }
     else
     {
-        // Wait for the asset header to be loaded
         if (WaitForLoaded())
             return result;
 
@@ -127,7 +140,7 @@ BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& s
         slicePitch = slicePitch1;
 
         // Ensure to have chunk loaded
-        if (LoadChunk(calculateChunkIndex(mipIndex)))
+        if (LoadChunk(CalculateChunkIndex(mipIndex)))
             return result;
     }
 
@@ -261,7 +274,7 @@ bool TextureBase::Init(void* ptr)
     return Init(initData);
 }
 
-int32 TextureBase::calculateChunkIndex(int32 mipIndex) const
+int32 TextureBase::CalculateChunkIndex(int32 mipIndex) const
 {
     // Mips are in 0-13 chunks
     return mipIndex;
@@ -287,7 +300,7 @@ Task* TextureBase::RequestMipDataAsync(int32 mipIndex)
     if (_customData)
         return nullptr;
 
-    auto chunkIndex = calculateChunkIndex(mipIndex);
+    auto chunkIndex = CalculateChunkIndex(mipIndex);
     return (Task*)_parent->RequestChunkDataAsync(chunkIndex);
 }
 
@@ -304,7 +317,7 @@ void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data) const
         return;
     }
 
-    auto chunkIndex = calculateChunkIndex(mipIndex);
+    auto chunkIndex = CalculateChunkIndex(mipIndex);
     _parent->GetChunkData(chunkIndex, data);
 }
 
@@ -316,7 +329,7 @@ void TextureBase::GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) co
         return;
     }
 
-    const auto chunkIndex = calculateChunkIndex(mipIndex);
+    const auto chunkIndex = CalculateChunkIndex(mipIndex);
     _parent->LoadChunk(chunkIndex);
     _parent->GetChunkData(chunkIndex, data);
 }
@@ -399,8 +412,6 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
     // Allocate data
     const int32 dstMipWidth = Math::Max(1, Width >> mipIndex);
     const int32 dstMipHeight = Math::Max(1, Height >> mipIndex);
-    const int32 srcMipWidth = Math::Max(1, Width >> (mipIndex - 1));
-    const int32 srcMipHeight = Math::Max(1, Height >> (mipIndex - 1));
     const int32 pixelStride = PixelFormatExtensions::SizeInBytes(Format);
     dstMip.RowPitch = dstMipWidth * pixelStride;
     dstMip.SlicePitch = dstMip.RowPitch * dstMipHeight;

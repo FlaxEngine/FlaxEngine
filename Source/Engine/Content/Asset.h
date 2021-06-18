@@ -82,10 +82,7 @@ public:
     /// <summary>
     /// Gets asset's reference count. Asset will be automatically unloaded when this reaches zero.
     /// </summary>
-    API_PROPERTY() int32 GetReferencesCount() const
-    {
-        return (int32)Platform::AtomicRead(const_cast<int64 volatile*>(&_refCount));
-    }
+    API_PROPERTY() int32 GetReferencesCount() const;
 
     /// <summary>
     /// Adds reference to that asset.
@@ -213,9 +210,7 @@ protected:
     /// <summary>
     /// Releases the storage file/container handle to prevent issues when renaming or moving the asset.
     /// </summary>
-    virtual void releaseStorage()
-    {
-    }
+    virtual void releaseStorage();
 
     /// <summary>
     /// Loads asset
@@ -231,10 +226,7 @@ protected:
 
 protected:
 
-    virtual bool IsInternalType() const
-    {
-        return false;
-    }
+    virtual bool IsInternalType() const;
 
     bool onLoad(LoadAssetTask* task);
     void onLoaded();

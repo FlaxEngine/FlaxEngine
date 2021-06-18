@@ -111,6 +111,11 @@ Asset::Asset(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+int32 Asset::GetReferencesCount() const
+{
+    return (int32)Platform::AtomicRead(const_cast<int64 volatile*>(&_refCount));
+}
+
 String Asset::ToString() const
 {
     return String::Format(TEXT("{0}, {1}, {2}"), GetTypeName(), GetID(), GetPath());
@@ -433,6 +438,15 @@ void Asset::startLoading()
     _loadingTask = createLoadingTask();
     ASSERT(_loadingTask != nullptr);
     _loadingTask->Start();
+}
+
+void Asset::releaseStorage()
+{
+}
+
+bool Asset::IsInternalType() const
+{
+    return false;
 }
 
 bool Asset::onLoad(LoadAssetTask* task)

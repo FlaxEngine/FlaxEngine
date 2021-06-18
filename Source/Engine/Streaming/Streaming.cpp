@@ -59,7 +59,6 @@ void UpdateResource(StreamableResource* resource, DateTime now)
     if (resource->IsDynamic())
     {
         targetQuality = handler->CalculateTargetQuality(resource, now);
-        // TODO: here we should apply resources group master scale (based on game settings quality level and memory level)
         targetQuality = Math::Saturate(targetQuality);
     }
 

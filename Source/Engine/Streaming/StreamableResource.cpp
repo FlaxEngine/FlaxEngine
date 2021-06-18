@@ -14,10 +14,10 @@ StreamableResource::StreamableResource(StreamingGroup* group)
 
 StreamableResource::~StreamableResource()
 {
-    stopStreaming();
+    StopStreaming();
 }
 
-void StreamableResource::startStreaming(bool isDynamic)
+void StreamableResource::StartStreaming(bool isDynamic)
 {
     _isDynamic = isDynamic;
 
@@ -28,7 +28,7 @@ void StreamableResource::startStreaming(bool isDynamic)
     }
 }
 
-void StreamableResource::stopStreaming()
+void StreamableResource::StopStreaming()
 {
     if (_isStreaming == true)
     {

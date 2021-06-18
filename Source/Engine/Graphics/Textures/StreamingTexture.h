@@ -11,6 +11,7 @@
 /// </summary>
 class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
 {
+    friend class TextureBase;
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
 protected:
@@ -60,7 +61,6 @@ public:
     /// <summary>
     /// Gets total texture width (in texels)
     /// </summary>
-    /// <returns>Texture width</returns>
     FORCE_INLINE int32 TotalWidth() const
     {
         return _header.Width;

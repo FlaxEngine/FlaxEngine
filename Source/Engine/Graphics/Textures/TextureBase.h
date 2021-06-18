@@ -50,9 +50,6 @@ protected:
 
     StreamingTexture _texture;
     InitData* _customData;
-
-private:
-
     BinaryAsset* _parent;
 
 public:
@@ -126,6 +123,16 @@ public:
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
     API_PROPERTY() uint64 GetTotalMemoryUsage() const;
+    
+    /// <summary>
+    /// Gets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() int32 GetTextureGroup() const;
+
+    /// <summary>
+    /// Sets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
 public:
 
@@ -155,7 +162,7 @@ public:
 
 protected:
 
-    virtual int32 calculateChunkIndex(int32 mipIndex) const;
+    virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
 

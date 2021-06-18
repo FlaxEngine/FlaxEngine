@@ -14,9 +14,6 @@ class FLAXENGINE_API StreamingGroup
 {
 public:
 
-    /// <summary>
-    /// Declares the Group type
-    /// </summary>
     DECLARE_ENUM_4(Type, Custom, Textures, Models, Audio);
 
 protected:
@@ -38,7 +35,6 @@ public:
     /// <summary>
     /// Gets the group type.
     /// </summary>
-    /// <returns>Type</returns>
     FORCE_INLINE Type GetType() const
     {
         return _type;
@@ -47,7 +43,6 @@ public:
     /// <summary>
     /// Gets the group type name.
     /// </summary>
-    /// <returns>Typename</returns>
     FORCE_INLINE const Char* GetTypename() const
     {
         return ToString(_type);
@@ -56,7 +51,6 @@ public:
     /// <summary>
     /// Gets the group streaming handler used by this group.
     /// </summary>
-    /// <returns>Handler</returns>
     FORCE_INLINE IStreamingHandler* GetHandler() const
     {
         return _handler;
@@ -88,7 +82,6 @@ public:
     /// <summary>
     /// Gets textures group.
     /// </summary>
-    /// <returns>Group</returns>
     FORCE_INLINE StreamingGroup* Textures() const
     {
         return _textures;
@@ -97,7 +90,6 @@ public:
     /// <summary>
     /// Gets models group.
     /// </summary>
-    /// <returns>Group</returns>
     FORCE_INLINE StreamingGroup* Models() const
     {
         return _models;
@@ -106,7 +98,6 @@ public:
     /// <summary>
     /// Gets skinned models group.
     /// </summary>
-    /// <returns>Group</returns>
     FORCE_INLINE StreamingGroup* SkinnedModels() const
     {
         return _skinnedModels;
@@ -115,7 +106,6 @@ public:
     /// <summary>
     /// Gets audio group.
     /// </summary>
-    /// <returns>Group</returns>
     FORCE_INLINE StreamingGroup* Audio() const
     {
         return _audio;
@@ -126,7 +116,6 @@ public:
     /// <summary>
     /// Gets all the groups.
     /// </summary>
-    /// <returns>Groups.</returns>
     FORCE_INLINE const Array<StreamingGroup*>& Groups() const
     {
         return _groups;
@@ -135,7 +124,6 @@ public:
     /// <summary>
     /// Gets all the handlers.
     /// </summary>
-    /// <returns>Groups.</returns>
     FORCE_INLINE const Array<IStreamingHandler*>& Handlers() const
     {
         return _handlers;

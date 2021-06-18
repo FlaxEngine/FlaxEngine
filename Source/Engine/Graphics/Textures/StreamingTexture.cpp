@@ -117,7 +117,7 @@ bool StreamingTexture::Create(const TextureHeader& header)
 #else
 	bool isDynamic = false;
 #endif
-    startStreaming(isDynamic);
+    StartStreaming(isDynamic);
 
     return false;
 }
