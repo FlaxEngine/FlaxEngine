@@ -12,6 +12,7 @@
 class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
 {
     friend class TextureBase;
+    friend class TexturesStreamingHandler;
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
 protected:
@@ -20,6 +21,7 @@ protected:
     GPUTexture* _texture;
     TextureHeader _header;
     volatile mutable int64 _streamingTasksCount;
+    int32 _minMipCountBlockCompressed;
     bool _isBlockCompressed;
 
 public:
@@ -120,14 +122,6 @@ public:
     FORCE_INLINE const TextureHeader* GetHeader() const
     {
         return &_header;
-    }
-
-    /// <summary>
-    /// Gets a boolean indicating whether this <see cref="StreamingTexture"/> is a using a block compress format (BC1, BC2, BC3, BC4, BC5, BC6H, BC7).
-    /// </summary>
-    FORCE_INLINE bool IsBlockCompressed() const
-    {
-        return _isBlockCompressed;
     }
 
 public:
