@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
-#include "Engine/Core/NonCopyable.h"
+#include "Engine/Core/Enums.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Config.h"
 
@@ -15,7 +14,7 @@
 /// <summary>
 /// The base class for all GPU resources.
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public PersistentScriptingObject, public NonCopyable
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public PersistentScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
 public:
@@ -35,33 +34,23 @@ protected:
     uint64 _memoryUsage = 0;
 
 public:
+    NON_COPYABLE(GPUResource);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResource"/> class.
     /// </summary>
-    GPUResource()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
-    {
-    }
+    GPUResource();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResource"/> class.
     /// </summary>
     /// <param name="params">The object initialization parameters.</param>
-    GPUResource(const SpawnParams& params)
-        : PersistentScriptingObject(params)
-    {
-    }
+    GPUResource(const SpawnParams& params);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="GPUResource"/> class.
     /// </summary>
-    virtual ~GPUResource()
-    {
-#if !BUILD_RELEASE
-        ASSERT(_memoryUsage == 0);
-#endif
-    }
+    virtual ~GPUResource();
 
 public:
 
@@ -83,29 +72,19 @@ public:
     /// <summary>
     /// Gets resource object type.
     /// </summary>
-    virtual ObjectType GetObjectType() const
-    {
-        return ObjectType::Other;
-    }
+    virtual ObjectType GetObjectType() const;
 
     /// <summary>
-    /// Gets amount of GPU memory used by this resource (in bytes).
-    /// It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
+    /// Gets amount of GPU memory used by this resource (in bytes). It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE uint64 GetMemoryUsage() const
-    {
-        return _memoryUsage;
-    }
+    API_PROPERTY() uint64 GetMemoryUsage() const;
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    virtual String GetName() const
-    {
-        return String::Empty;
-    }
+    virtual String GetName() const;
 
 #endif
 
@@ -165,9 +144,6 @@ public:
         , _name(name.Get(), name.Length())
 #endif
     {
-        ASSERT(device);
-
-        // Register
         device->Resources.Add(this);
     }
 
@@ -176,7 +152,6 @@ public:
     /// </summary>
     virtual ~GPUResourceBase()
     {
-        // Unregister
         if (_device)
             _device->Resources.Remove(this);
     }
@@ -186,7 +161,6 @@ public:
     /// <summary>
     /// Gets the graphics device.
     /// </summary>
-    /// <returns>The device.</returns>
     FORCE_INLINE DeviceType* GetDevice() const
     {
         return _device;
@@ -203,10 +177,7 @@ public:
 #endif
     void OnDeviceDispose() override
     {
-        // Base
         GPUResource::OnDeviceDispose();
-
-        // Unlink device handle
         _device = nullptr;
     }
 };
@@ -234,6 +205,5 @@ public:
     /// <summary>
     /// Gets the native pointer to the underlying view. It's a platform-specific handle.
     /// </summary>
-    /// <returns>The pointer.</returns>
     virtual void* GetNativePtr() const = 0;
 };

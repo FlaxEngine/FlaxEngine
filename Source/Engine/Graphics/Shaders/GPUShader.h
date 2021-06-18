@@ -167,7 +167,7 @@ public:
     /// <returns>The Constant Buffer object.</returns>
     API_FUNCTION() FORCE_INLINE GPUConstantBuffer* GetCB(int32 slot) const
     {
-        ASSERT_LOW_LAYER(Math::IsInRange<int32>(slot, 0, ARRAY_COUNT(_constantBuffers) - 1));
+        ASSERT_LOW_LAYER(slot >= 0 && slot < ARRAY_COUNT(_constantBuffers));
         return _constantBuffers[slot];
     }
 

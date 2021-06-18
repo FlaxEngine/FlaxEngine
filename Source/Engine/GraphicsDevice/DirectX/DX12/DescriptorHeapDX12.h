@@ -4,6 +4,7 @@
 
 #if GRAPHICS_API_DIRECTX12
 
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/GPUResource.h"
 #include "../IncludeDirectXHeaders.h"
 

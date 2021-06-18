@@ -155,6 +155,42 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     BlendingMode::Opaque,
 };
 
+GPUResource::GPUResource()
+    : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+{
+}
+
+GPUResource::GPUResource(const SpawnParams& params)
+    : PersistentScriptingObject(params)
+{
+}
+
+GPUResource::~GPUResource()
+{
+#if !BUILD_RELEASE
+    ASSERT(_memoryUsage == 0);
+#endif
+}
+
+GPUResource::ObjectType GPUResource::GetObjectType() const
+{
+    return ObjectType::Other;
+}
+
+uint64 GPUResource::GetMemoryUsage() const
+{
+    return _memoryUsage;
+}
+
+#if GPU_ENABLE_RESOURCE_NAMING
+
+String GPUResource::GetName() const
+{
+    return String::Empty;
+}
+
+#endif
+
 void GPUResource::ReleaseGPU()
 {
     if (_memoryUsage != 0)

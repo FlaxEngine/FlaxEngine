@@ -2,12 +2,13 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Array.h"
 #include "GPUBuffer.h"
 
 /// <summary>
 /// Dynamic GPU buffer that allows to update and use GPU data (index/vertex/other) during single frame (supports dynamic resizing)
 /// </summary>
-class FLAXENGINE_API DynamicBuffer : public NonCopyable
+class FLAXENGINE_API DynamicBuffer
 {
 protected:
 
@@ -16,6 +17,7 @@ protected:
     uint32 _stride;
 
 public:
+    NON_COPYABLE(DynamicBuffer);
 
     /// <summary>
     /// Init
@@ -44,8 +46,6 @@ public:
     {
         return _buffer;
     }
-
-public:
 
     /// <summary>
     /// Clear data (begin for writing)

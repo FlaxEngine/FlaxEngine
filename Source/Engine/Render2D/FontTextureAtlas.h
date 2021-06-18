@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Utilities/RectPack.h"
@@ -91,7 +92,6 @@ public:
     /// <summary>
     /// Gets the atlas width.
     /// </summary>
-    /// <returns>The width.</returns>
     FORCE_INLINE uint32 GetWidth() const
     {
         return _width;
@@ -100,7 +100,6 @@ public:
     /// <summary>
     /// Gets the atlas height.
     /// </summary>
-    /// <returns>The height.</returns>
     FORCE_INLINE uint32 GetHeight() const
     {
         return _height;
@@ -109,7 +108,6 @@ public:
     /// <summary>
     /// Gets the atlas size.
     /// </summary>
-    /// <returns>The size.</returns>
     FORCE_INLINE Vector2 GetSize() const
     {
         return Vector2(static_cast<float>(_width), static_cast<float>(_height));
@@ -118,9 +116,6 @@ public:
     /// <summary>
     /// Determines whether this atlas is dirty and data need to be flushed.
     /// </summary>
-    /// <returns>
-    ///   <c>true</c> if this atlas is dirty; otherwise, <c>false</c>.
-    /// </returns>
     FORCE_INLINE bool IsDirty() const
     {
         return _isDirty;
@@ -129,7 +124,6 @@ public:
     /// <summary>
     /// Gets padding style for textures in the atlas.
     /// </summary>
-    /// <returns>The padding style.</returns>
     FORCE_INLINE PaddingStyle GetPaddingStyle() const
     {
         return _paddingStyle;
@@ -138,7 +132,6 @@ public:
     /// <summary>
     /// Gets amount of pixels to pad textures inside an atlas.
     /// </summary>
-    /// <returns>The padding amount.</returns>
     uint32 GetPaddingAmount() const;
 
 public:

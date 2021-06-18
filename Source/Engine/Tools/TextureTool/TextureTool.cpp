@@ -16,6 +16,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if USE_EDITOR
+#include "Engine/Core/Collections/Dictionary.h"
 namespace
 {
     Dictionary<String, bool> TexturesHasAlphaCache;

@@ -6,12 +6,13 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Collections/ChunkedArray.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Renderer/DrawCall.h"
-#include "Engine/Core/Collections/ChunkedArray.h"
 
 // Must match structure defined in Terrain.shader
 struct TerrainVertex

@@ -3,6 +3,7 @@
 #include "GPUShader.h"
 #include "GPUConstantBuffer.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
 GPUShaderProgramsContainer::GPUShaderProgramsContainer()
