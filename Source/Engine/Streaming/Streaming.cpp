@@ -14,8 +14,9 @@
 namespace StreamingManagerImpl
 {
     DateTime LastUpdateTime(0);
-    CriticalSection UpdateLocker;
     int32 LastUpdateResourcesIndex = 0;
+    CriticalSection ResourcesLock;
+    Array<StreamableResource*> Resources;
 }
 
 using namespace StreamingManagerImpl;
@@ -33,7 +34,6 @@ public:
 
 StreamingManagerService StreamingManagerServiceInstance;
 
-StreamableResourcesCollection Streaming::Resources;
 Array<TextureGroup, InlinedAllocation<32>> Streaming::TextureGroups;
 
 void StreamingSettings::Apply()
@@ -44,6 +44,44 @@ void StreamingSettings::Apply()
 void StreamingSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(TextureGroups);
+}
+
+StreamableResource::StreamableResource(StreamingGroup* group)
+    : _group(group)
+    , _isDynamic(true)
+    , _isStreaming(false)
+    , _streamingQuality(1.0f)
+{
+    ASSERT(_group != nullptr);
+}
+
+StreamableResource::~StreamableResource()
+{
+    StopStreaming();
+}
+
+void StreamableResource::StartStreaming(bool isDynamic)
+{
+    _isDynamic = isDynamic;
+    if (!_isStreaming)
+    {
+        _isStreaming = true;
+        ResourcesLock.Lock();
+        Resources.Add(this);
+        ResourcesLock.Unlock();
+    }
+}
+
+void StreamableResource::StopStreaming()
+{
+    if (_isStreaming)
+    {
+        ResourcesLock.Lock();
+        Resources.Remove(this);
+        ResourcesLock.Unlock();
+        Streaming = StreamingCache();
+        _isStreaming = false;
+    }
 }
 
 void UpdateResource(StreamableResource* resource, DateTime now)
@@ -143,7 +181,8 @@ void StreamingManagerService::Update()
     // Check if skip update
     auto now = DateTime::NowUTC();
     auto delta = now - LastUpdateTime;
-    int32 resourcesCount = Streaming::Resources.ResourcesCount();
+    ScopeLock lock(ResourcesLock);
+    const int32 resourcesCount = Resources.Count();
     if (resourcesCount == 0 || delta < ManagerUpdatesInterval || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready)
         return;
     LastUpdateTime = now;
@@ -151,7 +190,6 @@ void StreamingManagerService::Update()
     PROFILE_CPU();
 
     // Start update
-    ScopeLock lock(UpdateLocker);
     int32 resourcesUpdates = Math::Min(MaxResourcesPerUpdate, resourcesCount);
 
     // Update high priority queue and then rest of the resources
@@ -165,7 +203,7 @@ void StreamingManagerService::Update()
             LastUpdateResourcesIndex = 0;
 
         // Peek resource
-        const auto resource = Streaming::Resources[LastUpdateResourcesIndex];
+        const auto resource = Resources[LastUpdateResourcesIndex];
 
         // Try to update it
         if (now - resource->Streaming.LastUpdate >= ResourceUpdatesInterval && resource->CanBeUpdated())
@@ -176,4 +214,13 @@ void StreamingManagerService::Update()
     }
 
     // TODO: add StreamingManager stats, update time per frame, updates per frame, etc.
+}
+
+void Streaming::RequestStreamingUpdate()
+{
+    PROFILE_CPU();
+    ResourcesLock.Lock();
+    for (auto e : Resources)
+        e->RequestStreamingUpdate();
+    ResourcesLock.Unlock();
 }
