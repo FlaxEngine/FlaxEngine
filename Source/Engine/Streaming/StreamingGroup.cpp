@@ -1,10 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "StreamingGroup.h"
-#include "Handlers/TexturesStreamingHandler.h"
-#include "Handlers/ModelsStreamingHandler.h"
-#include "Handlers/SkinnedModelsStreamingHandler.h"
-#include "Handlers/AudioStreamingHandler.h"
+#include "StreamingHandlers.h"
 
 StreamingGroup::StreamingGroup(Type type, IStreamingHandler* handler)
     : _type(type)

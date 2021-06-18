@@ -33,6 +33,8 @@ public class tracy : ThirdPartyModule
         options.SourceFiles.Add(Path.Combine(FolderPath, "TracyClient.cpp"));
 
         options.PublicDefinitions.Add("TRACY_ENABLE");
+        if (options.Platform.Target == TargetPlatform.Windows)
+            options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
     }
 
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MaterialInstance.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Upgraders/MaterialInstanceUpgrader.h"

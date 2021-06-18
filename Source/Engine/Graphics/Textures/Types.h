@@ -12,24 +12,52 @@
 DECLARE_ENUM_EX_7(TextureFormatType, byte, 0, Unknown, ColorRGB, ColorRGBA, NormalMap, GrayScale, HdrRGBA, HdrRGB);
 
 /// <summary>
-/// Texture header structure
+/// Old texture header structure (was not fully initialized to zero).
+/// </summary>
+struct TextureHeader_Deprecated
+{
+    int32 Width;
+    int32 Height;
+    int32 MipLevels;
+    PixelFormat Format;
+    TextureFormatType Type;
+    bool IsCubeMap;
+    bool NeverStream;
+    bool IsSRGB;
+    byte CustomData[17];
+
+    TextureHeader_Deprecated();
+};
+
+/// <summary>
+/// Texture header structure.
 /// </summary>
 struct FLAXENGINE_API TextureHeader
 {
     /// <summary>
-    /// Top mip width in pixels
+    /// Width in pixels
     /// </summary>
     int32 Width;
 
     /// <summary>
-    /// Top mip height in pixels
+    /// Height in pixels
     /// </summary>
     int32 Height;
+
+    /// <summary>
+    /// Depth in pixels
+    /// </summary>
+    int32 Depth;
 
     /// <summary>
     /// Amount of mip levels
     /// </summary>
     int32 MipLevels;
+
+    /// <summary>
+    /// Texture group for streaming (negative if unused).
+    /// </summary>
+    int32 TextureGroup;
 
     /// <summary>
     /// Texture pixels format
@@ -44,22 +72,23 @@ struct FLAXENGINE_API TextureHeader
     /// <summary>
     /// True if texture is a cubemap (has 6 array slices per mip).
     /// </summary>
-    bool IsCubeMap;
-
-    /// <summary>
-    /// True if disable dynamic texture streaming
-    /// </summary>
-    bool NeverStream;
+    byte IsCubeMap : 1;
 
     /// <summary>
     /// True if texture contains sRGB colors data
     /// </summary>
-    bool IsSRGB;
+    byte IsSRGB : 1;
+
+    /// <summary>
+    /// True if disable dynamic texture streaming
+    /// </summary>
+    byte NeverStream : 1;
 
     /// <summary>
     /// The custom data to be used per texture storage layer (faster access).
     /// </summary>
-    byte CustomData[17];
-};
+    byte CustomData[10];
 
-static_assert(sizeof(TextureHeader) == 10 * sizeof(int32), "Invalid TextureHeader size.");
+    TextureHeader();
+    TextureHeader(TextureHeader_Deprecated& old);
+};

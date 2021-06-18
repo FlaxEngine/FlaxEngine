@@ -267,7 +267,7 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
     {
         for (int32 i = 0; i < CustomActors.Count(); i++)
         {
-            if (CustomActors[i]->GetIsActive())
+            if (CustomActors[i] && CustomActors[i]->GetIsActive())
                 CustomActors[i]->DrawHierarchy(renderContext);
         }
     }

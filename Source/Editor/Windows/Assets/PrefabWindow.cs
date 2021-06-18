@@ -10,7 +10,6 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -185,6 +184,8 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Paste, Paste);
             InputActions.Add(options => options.Duplicate, Duplicate);
             InputActions.Add(options => options.Delete, Delete);
+            InputActions.Add(options => options.Rename, Rename);
+            InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
         }
 
         private void OnSearchBoxTextChanged()
@@ -428,7 +429,6 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-
             if (float.TryParse(node.GetAttribute("Split1"), out float value1))
                 _split1.SplitterValue = value1;
 

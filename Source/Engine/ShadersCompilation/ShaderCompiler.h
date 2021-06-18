@@ -96,6 +96,7 @@ protected:
     virtual bool OnCompileEnd();
 
     static bool WriteShaderFunctionBegin(ShaderCompilationContext* context, ShaderFunctionMeta& meta);
+    static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize);
     static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize);
     static bool WriteShaderFunctionEnd(ShaderCompilationContext* context, ShaderFunctionMeta& meta);
     static bool WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros);

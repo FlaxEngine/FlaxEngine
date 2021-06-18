@@ -15,7 +15,7 @@ class IShaderResourceDX12
 public:
 
     IShaderResourceDX12()
-        : SubresourceIndex(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        : SubresourceIndex(-1)
     {
     }
 
@@ -28,33 +28,33 @@ public:
 
     /// <summary>
     /// Affected subresource index or -1 if use whole resource.
+    /// This solves only resource states tracking per single subresource, not subresources range, if need to here should be range of subresources (for texture arrays, volume textures and cubemaps).
     /// </summary>
-    int32 SubresourceIndex; // Note: this solves only resource states tracking per single subresource, not subresources range, if need to here should be range of subresources (for texture arrays, volume textures and cubemaps)
+    int32 SubresourceIndex;
+
+    D3D12_SRV_DIMENSION SrvDimension = D3D12_SRV_DIMENSION_UNKNOWN;
+    D3D12_UAV_DIMENSION UavDimension = D3D12_UAV_DIMENSION_UNKNOWN;
 
 public:
 
     /// <summary>
     /// Determines whether this resource is depth/stencil buffer.
     /// </summary>
-    /// <returns>True if this resource is depth/stencil buffer, otherwise false.</returns>
     virtual bool IsDepthStencilResource() const = 0;
 
     /// <summary>
     /// Gets CPU handle to the shader resource view descriptor.
     /// </summary>
-    /// <returns>SRV</returns>
     virtual D3D12_CPU_DESCRIPTOR_HANDLE SRV() const = 0;
 
     /// <summary>
     /// Gets CPU handle to the unordered access view descriptor.
     /// </summary>
-    /// <returns>UAV</returns>
     virtual D3D12_CPU_DESCRIPTOR_HANDLE UAV() const = 0;
 
     /// <summary>
     /// Gets the resource owner.
     /// </summary>
-    /// <returns>Owner object.</returns>
     virtual ResourceOwnerDX12* GetResourceOwner() const = 0;
 };
 

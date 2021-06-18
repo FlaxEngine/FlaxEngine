@@ -36,6 +36,8 @@ public:
     /// </summary>
     VisualScriptExecutor();
 
+    void Invoke(const Guid& scriptId, int32 nodeId, int32 boxId, const Guid& instanceId, Variant& result) const;
+
 private:
     Value eatBox(Node* caller, Box* box) override;
     Graph* GetCurrentGraph() const override;

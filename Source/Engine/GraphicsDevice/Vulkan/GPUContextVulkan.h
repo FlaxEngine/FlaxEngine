@@ -35,8 +35,6 @@ class DescriptorSetLayoutVulkan;
 /// </summary>
 #define VK_BARRIER_BUFFER_SIZE 16
 
-#if VK_ENABLE_BARRIERS_BATCHING
-
 /// <summary>
 /// The Vulkan pipeline resources layout barrier batching structure.
 /// </summary>
@@ -81,8 +79,6 @@ public:
     void Execute(CmdBufferVulkan* cmdBuffer);
 };
 
-#endif
-
 /// <summary>
 /// GPU Context for Vulkan backend.
 /// </summary>
@@ -93,9 +89,7 @@ private:
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
-#if VK_ENABLE_BARRIERS_BATCHING
     PipelineBarrierVulkan _barriers;
-#endif
 
     int32 _psDirtyFlag : 1;
     int32 _rtDirtyFlag : 1;
@@ -104,6 +98,7 @@ private:
     int32 _uaDirtyFlag : 1;
 
     int32 _rtCount;
+    int32 _vbCount;
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;

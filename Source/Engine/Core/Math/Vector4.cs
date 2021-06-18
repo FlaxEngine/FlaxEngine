@@ -156,6 +156,19 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Vector4" /> struct.
         /// </summary>
+        /// <param name="xy">A vector containing the values with which to initialize the X and Y components.</param>
+        /// <param name="zw">A vector containing the values with which to initialize the Z and W components.</param>
+        public Vector4(Vector2 xy, Vector2 zw)
+        {
+            X = xy.X;
+            Y = xy.Y;
+            Z = zw.X;
+            W = zw.Y;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Vector4" /> struct.
+        /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X and Y components.</param>
         /// <param name="z">Initial value for the Z component of the vector.</param>
         /// <param name="w">Initial value for the W component of the vector.</param>

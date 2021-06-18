@@ -34,7 +34,7 @@ MMethod* Internal_GetGameWinPtr = nullptr;
 MMethod* Internal_GetGameWindowSize = nullptr;
 MMethod* Internal_OnAppExit = nullptr;
 MMethod* Internal_OnVisualScriptingDebugFlow = nullptr;
-MMethod* Internal_OnAnimGraphDebugFlow = nullptr;
+MMethod* Internal_RequestStartPlayOnEditMode = nullptr;
 
 void OnLightmapsBake(ShadowsOfMordor::BuildProgressStep step, float stepProgress, float totalProgress, bool isProgressEvent)
 {
@@ -137,38 +137,6 @@ void OnVisualScriptingDebugFlow()
     }
 }
 
-struct AnimGraphDebugFlowInfo
-{
-    MonoObject* Asset;
-    MonoObject* Object;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-void OnAnimGraphDebugFlow(Asset* asset, ScriptingObject* object, uint32 nodeId, uint32 boxId)
-{
-    if (Internal_OnAnimGraphDebugFlow == nullptr)
-    {
-        Internal_OnAnimGraphDebugFlow = ManagedEditor::GetStaticClass()->GetMethod("Internal_OnAnimGraphDebugFlow", 1);
-        ASSERT(Internal_OnAnimGraphDebugFlow);
-    }
-
-    AnimGraphDebugFlowInfo flowInfo;
-    flowInfo.Asset = asset ? asset->GetOrCreateManagedInstance() : nullptr;
-    flowInfo.Object = object ? object->GetOrCreateManagedInstance() : nullptr;
-    flowInfo.NodeId = nodeId;
-    flowInfo.BoxId = boxId;
-    MonoObject* exception = nullptr;
-    void* params[1];
-    params[0] = &flowInfo;
-    Internal_OnAnimGraphDebugFlow->Invoke(nullptr, params, &exception);
-    if (exception)
-    {
-        MException ex(exception);
-        ex.Log(LogType::Error, TEXT("OnAnimGraphDebugFlow"));
-    }
-}
-
 void OnLogMessage(LogType type, const StringView& msg);
 
 ManagedEditor::ManagedEditor()
@@ -186,7 +154,6 @@ ManagedEditor::ManagedEditor()
     CSG::Builder::OnBrushModified.Bind<OnBrushModified>();
     Log::Logger::OnMessage.Bind<OnLogMessage>();
     VisualScripting::DebugFlow.Bind<OnVisualScriptingDebugFlow>();
-    AnimGraphExecutor::DebugFlow.Bind<OnAnimGraphDebugFlow>();
 }
 
 ManagedEditor::~ManagedEditor()
@@ -203,13 +170,12 @@ ManagedEditor::~ManagedEditor()
     CSG::Builder::OnBrushModified.Unbind<OnBrushModified>();
     Log::Logger::OnMessage.Unbind<OnLogMessage>();
     VisualScripting::DebugFlow.Unbind<OnVisualScriptingDebugFlow>();
-    AnimGraphExecutor::DebugFlow.Unbind<OnAnimGraphDebugFlow>();
 }
 
 void ManagedEditor::Init()
 {
     // Note: editor modules should perform quite fast init, any longer things should be done in async during 'editor splash screen time
-    void* args[2];
+    void* args[3];
     MClass* mclass = GetClass();
     if (mclass == nullptr)
     {
@@ -230,6 +196,12 @@ void ManagedEditor::Init()
     bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
     args[0] = &isHeadless;
     args[1] = &skipCompile;
+    Guid sceneId;
+    if (!CommandLine::Options.Play.HasValue() || (CommandLine::Options.Play.HasValue() && Guid::Parse(CommandLine::Options.Play.GetValue(), sceneId)))
+    {
+        sceneId = Guid::Empty;
+    }
+    args[2] = &sceneId;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
@@ -481,6 +453,18 @@ bool ManagedEditor::OnAppExit()
     return MUtils::Unbox<bool>(Internal_OnAppExit->Invoke(GetManagedInstance(), nullptr, nullptr));
 }
 
+void ManagedEditor::RequestStartPlayOnEditMode()
+{
+    if (!HasManagedInstance())
+        return;
+    if (Internal_RequestStartPlayOnEditMode == nullptr)
+    {
+        Internal_RequestStartPlayOnEditMode = GetClass()->GetMethod("Internal_RequestStartPlayOnEditMode");
+        ASSERT(Internal_RequestStartPlayOnEditMode);
+    }
+    Internal_RequestStartPlayOnEditMode->Invoke(GetManagedInstance(), nullptr, nullptr);
+}
+
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
 {
     ASSERT(!HasManagedInstance());
@@ -511,7 +495,6 @@ void ManagedEditor::DestroyManaged()
     Internal_GetGameWinPtr = nullptr;
     Internal_OnAppExit = nullptr;
     Internal_OnVisualScriptingDebugFlow = nullptr;
-    Internal_OnAnimGraphDebugFlow = nullptr;
 
     // Base
     PersistentScriptingObject::DestroyManaged();

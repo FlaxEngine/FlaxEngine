@@ -10,6 +10,7 @@
 #if COMPILE_WITH_GI_BAKING
 
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Core/Singleton.h"
 
 // Forward declarations
 #if COMPILE_WITH_ASSETS_IMPORTER

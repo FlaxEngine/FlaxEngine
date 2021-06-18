@@ -30,6 +30,11 @@ CharacterController::CharacterController(const SpawnParams& params)
     static_assert(sizeof(_filterData) == sizeof(PxFilterData), "Invalid filter data size.");
 }
 
+float CharacterController::GetRadius() const
+{
+    return _radius;
+}
+
 void CharacterController::SetRadius(const float value)
 {
     if (Math::NearEqual(value, _radius))
@@ -41,6 +46,11 @@ void CharacterController::SetRadius(const float value)
     UpdateBounds();
 }
 
+float CharacterController::GetHeight() const
+{
+    return _height;
+}
+
 void CharacterController::SetHeight(const float value)
 {
     if (Math::NearEqual(value, _height))
@@ -50,6 +60,11 @@ void CharacterController::SetHeight(const float value)
 
     UpdateSize();
     UpdateBounds();
+}
+
+float CharacterController::GetSlopeLimit() const
+{
+    return _slopeLimit;
 }
 
 void CharacterController::SetSlopeLimit(float value)
@@ -100,6 +115,11 @@ void CharacterController::SetUpDirection(const Vector3& up)
     _upDirection = up;
 }
 
+float CharacterController::GetMinMoveDistance() const
+{
+    return _minMoveDistance;
+}
+
 Vector3 CharacterController::GetUpDirection() const
 {
     return _controller ? P2C(_controller->getUpDirection()) : _upDirection;
@@ -113,6 +133,16 @@ void CharacterController::SetMinMoveDistance(float value)
 Vector3 CharacterController::GetVelocity() const
 {
     return _controller ? P2C(_controller->getActor()->getLinearVelocity()) : Vector3::Zero;
+}
+
+bool CharacterController::IsGrounded() const
+{
+    return (static_cast<int>(_lastFlags) & static_cast<int>(CollisionFlags::Below)) != 0;
+}
+
+CharacterController::CollisionFlags CharacterController::GetFlags() const
+{
+    return _lastFlags;
 }
 
 CharacterController::CollisionFlags CharacterController::SimpleMove(const Vector3& speed)
@@ -178,7 +208,7 @@ void CharacterController::OnDebugDrawSelected()
 
 #endif
 
-void CharacterController::CreateActor()
+void CharacterController::CreateController()
 {
     ASSERT(_controller == nullptr && _shape == nullptr);
 
@@ -216,6 +246,18 @@ void CharacterController::CreateActor()
 
     // Update cached data
     UpdateBounds();
+}
+
+void CharacterController::DeleteController()
+{
+    if (_controller)
+    {
+        _shape->userData = nullptr;
+        _controller->getActor()->userData = nullptr;
+        _controller->release();
+        _controller = nullptr;
+    }
+    _shape = nullptr;
 }
 
 void CharacterController::UpdateSize() const
@@ -313,7 +355,8 @@ void CharacterController::UpdateLayerBits()
 
 void CharacterController::BeginPlay(SceneBeginData* data)
 {
-    CreateActor();
+    if (IsActiveInHierarchy())
+        CreateController();
 
     // Skip collider base
     Actor::BeginPlay(data);
@@ -325,26 +368,28 @@ void CharacterController::EndPlay()
     Actor::EndPlay();
 
     // Remove controller
-    if (_controller)
-    {
-        _shape->userData = nullptr;
-        _controller->getActor()->userData = nullptr;
-        _controller->release();
-        _controller = nullptr;
-    }
-    _shape = nullptr;
+    DeleteController();
 }
 
 void CharacterController::OnActiveInTreeChanged()
 {
     // Skip collider base
     Actor::OnActiveInTreeChanged();
+}
 
-    // Clear velocities and the forces on disabled
-    if (!IsActiveInHierarchy() && _controller)
-    {
-        // TODO: sleep actor? clear forces?
-    }
+void CharacterController::OnEnable()
+{
+    if (_controller == nullptr)
+        CreateController();
+
+    Collider::OnEnable();
+}
+
+void CharacterController::OnDisable()
+{
+    Collider::OnDisable();
+
+    DeleteController();
 }
 
 void CharacterController::OnParentChanged()

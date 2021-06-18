@@ -5,10 +5,16 @@
 #include "GPUShaderDX12.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "GPUShaderProgramDX12.h"
+#include "Types.h"
 #include "../RenderToolsDX.h"
 
 GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream)
 {
+    // Extract the DX shader header from the cache
+    DxShaderHeader* header = (DxShaderHeader*)cacheBytes;
+    cacheBytes += sizeof(DxShaderHeader);
+    cacheSize -= sizeof(DxShaderHeader);
+
     GPUShaderProgram* shader = nullptr;
     switch (type)
     {
@@ -87,34 +93,34 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
         }
 
         // Create object
-        shader = New<GPUShaderProgramVSDX12>(initializer, cacheBytes, cacheSize, inputLayout, inputLayoutSize);
+        shader = New<GPUShaderProgramVSDX12>(initializer, header, cacheBytes, cacheSize, inputLayout, inputLayoutSize);
         break;
     }
     case ShaderStage::Hull:
     {
         int32 controlPointsCount;
         stream.ReadInt32(&controlPointsCount);
-        shader = New<GPUShaderProgramHSDX12>(initializer, cacheBytes, cacheSize, controlPointsCount);
+        shader = New<GPUShaderProgramHSDX12>(initializer, header, cacheBytes, cacheSize, controlPointsCount);
         break;
     }
     case ShaderStage::Domain:
     {
-        shader = New<GPUShaderProgramDSDX12>(initializer, cacheBytes, cacheSize);
+        shader = New<GPUShaderProgramDSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
     case ShaderStage::Geometry:
     {
-        shader = New<GPUShaderProgramGSDX12>(initializer, cacheBytes, cacheSize);
+        shader = New<GPUShaderProgramGSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
     case ShaderStage::Pixel:
     {
-        shader = New<GPUShaderProgramPSDX12>(initializer, cacheBytes, cacheSize);
+        shader = New<GPUShaderProgramPSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
     case ShaderStage::Compute:
     {
-        shader = New<GPUShaderProgramCSDX12>(_device, initializer, cacheBytes, cacheSize);
+        shader = New<GPUShaderProgramCSDX12>(_device, initializer, header, cacheBytes, cacheSize);
         break;
     }
     }

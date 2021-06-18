@@ -6,6 +6,10 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 
+SkinnedMeshDrawData::SkinnedMeshDrawData()
+{
+}
+
 SkinnedMeshDrawData::~SkinnedMeshDrawData()
 {
     SAFE_DELETE_GPU_RESOURCE(BoneMatrices);
@@ -37,10 +41,27 @@ void SkinnedMeshDrawData::SetData(const Matrix* bones, bool dropHistory)
 {
     if (!bones)
         return;
-    ASSERT(BonesCount > 0);
-
     ANIM_GRAPH_PROFILE_EVENT("SetSkinnedMeshData");
 
+    // Copy bones to the buffer
+    const int32 count = BonesCount;
+    const int32 preFetchStride = 2;
+    const Matrix* input = bones;
+    const auto output = (Matrix3x4*)Data.Get();
+    ASSERT(Data.Count() == count * sizeof(Matrix3x4));
+    for (int32 i = 0; i < count; i++)
+    {
+        Matrix3x4* bone = output + i;
+        Platform::Prefetch(bone + preFetchStride);
+        Platform::Prefetch((byte*)(bone + preFetchStride) + PLATFORM_CACHE_LINE_SIZE);
+        bone->SetMatrixTranspose(input[i]);
+    }
+
+    OnDataChanged(dropHistory);
+}
+
+void SkinnedMeshDrawData::OnDataChanged(bool dropHistory)
+{
     // Setup previous frame bone matrices if needed
     if (_hasValidData && !dropHistory)
     {
@@ -58,20 +79,6 @@ void SkinnedMeshDrawData::SetData(const Matrix* bones, bool dropHistory)
     else
     {
         SAFE_DELETE_GPU_RESOURCE(PrevBoneMatrices);
-    }
-
-    // Copy bones to the buffer
-    const int32 count = BonesCount;
-    const int32 preFetchStride = 2;
-    const Matrix* input = bones;
-    const auto output = (Matrix3x4*)Data.Get();
-    ASSERT(Data.Count() == count * sizeof(Matrix3x4));
-    for (int32 i = 0; i < count; i++)
-    {
-        Matrix3x4* bone = output + i;
-        Platform::Prefetch(bone + preFetchStride);
-        Platform::Prefetch((byte*)(bone + preFetchStride) + PLATFORM_CACHE_LINE_SIZE);
-        bone->SetMatrixTranspose(input[i]);
     }
 
     _isDirty = true;

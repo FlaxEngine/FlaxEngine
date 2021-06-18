@@ -15,7 +15,7 @@ class GPUAsyncContextDX12;
 /// <summary>
 /// Default amount of frames to wait until resource delete.
 /// </summary>
-#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 10
+#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 100
 
 /// <summary>
 /// Custom resource state used to indicate invalid state (useful for debugging resource tracking issues).
@@ -32,12 +32,21 @@ public:
     /// <summary>
     /// Returns true if resource state transition is needed in order to use resource in given state.
     /// </summary>
-    /// <param name="currentState">The current resource state.</param>
-    /// <param name="targetState">the destination resource state.</param>
+    /// <param name="before">The current resource state.</param>
+    /// <param name="after">the destination resource state.</param>
     /// <returns>True if need to perform a transition, otherwise false.</returns>
-    static bool IsTransitionNeeded(D3D12_RESOURCE_STATES currentState, D3D12_RESOURCE_STATES targetState)
+    FORCE_INLINE static bool IsTransitionNeeded(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES& after)
     {
-        return currentState != targetState && ((currentState | targetState) != currentState || targetState == D3D12_RESOURCE_STATE_COMMON);
+        if (before == D3D12_RESOURCE_STATE_DEPTH_WRITE && after == D3D12_RESOURCE_STATE_DEPTH_READ)
+			return false;
+        if (after == D3D12_RESOURCE_STATE_COMMON)
+			return before != D3D12_RESOURCE_STATE_COMMON;
+        if (after == D3D12_RESOURCE_STATE_DEPTH_READ)
+            return ~(before & (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) == 0;
+        const D3D12_RESOURCE_STATES combined = before | after;
+		if ((combined & (D3D12_RESOURCE_STATE_GENERIC_READ | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT)) == combined)
+			after = combined;
+		return before != after;
     }
 };
 
@@ -81,7 +90,6 @@ public:
     /// <summary>
     /// Gets the subresources count.
     /// </summary>
-    /// <returns>The subresources count.</returns>
     FORCE_INLINE uint32 GetSubresourcesCount() const
     {
         return _subresourcesCount;
@@ -90,7 +98,6 @@ public:
     /// <summary>
     /// Gets DirectX 12 resource object handle
     /// </summary>
-    /// <returns>DirectX 12 resource object handle</returns>
     FORCE_INLINE ID3D12Resource* GetResource() const
     {
         return _resource;
@@ -99,7 +106,6 @@ public:
     /// <summary>
     /// Gets resource owner object as a GPUResource type or returns null if cannot perform cast.
     /// </summary>
-    /// <returns>GPU Resource or null if cannot cast.</returns>
     virtual GPUResource* AsGPUResource() const = 0;
 
 protected:

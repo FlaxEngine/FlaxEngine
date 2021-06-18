@@ -241,16 +241,13 @@ CreateAssetResult PreviewsCache::create(CreateAssetContext& context)
     IMPORT_SETUP(PreviewsCache, 4);
 
     // Create texture header (custom data)
-    TextureHeader header;
-    header.Width = ASSETS_ICONS_ATLAS_SIZE;
-    header.Height = ASSETS_ICONS_ATLAS_SIZE;
-    header.Format = ASSETS_ICONS_ATLAS_FORMAT;
-    header.IsSRGB = false;
-    header.IsCubeMap = false;
-    header.MipLevels = 1;
-    header.NeverStream = true;
-    header.Type = TextureFormatType::Unknown;
-    context.Data.CustomData.Copy(&header);
+    TextureHeader textureHeader;
+    textureHeader.Width = ASSETS_ICONS_ATLAS_SIZE;
+    textureHeader.Height = ASSETS_ICONS_ATLAS_SIZE;
+    textureHeader.Format = ASSETS_ICONS_ATLAS_FORMAT;
+    textureHeader.MipLevels = 1;
+    textureHeader.NeverStream = true;
+    context.Data.CustomData.Copy(&textureHeader);
 
     // Create blank image (chunk 0)
     uint64 imageSize = CalculateTextureMemoryUsage(ASSETS_ICONS_ATLAS_FORMAT, ASSETS_ICONS_ATLAS_SIZE, ASSETS_ICONS_ATLAS_SIZE, 1);

@@ -38,8 +38,12 @@ namespace FlaxEditor.CustomEditors.Editors
                     var model = staticModel.Model;
                     if (model && model.IsLoaded)
                     {
-                        _group.Panel.HeaderText = "Entry " + model.MaterialSlots[entryIndex].Name;
-                        _updateName = false;
+                        var slots = model.MaterialSlots;
+                        if (slots != null && slots.Length > entryIndex)
+                        {
+                            _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
+                            _updateName = false;
+                        }
                     }
                 }
                 else if (ParentEditor.ParentEditor.Values[0] is AnimatedModel animatedModel)
@@ -47,8 +51,12 @@ namespace FlaxEditor.CustomEditors.Editors
                     var model = animatedModel.SkinnedModel;
                     if (model && model.IsLoaded)
                     {
-                        _group.Panel.HeaderText = "Entry " + model.MaterialSlots[entryIndex].Name;
-                        _updateName = false;
+                        var slots = model.MaterialSlots;
+                        if (slots != null && slots.Length > entryIndex)
+                        {
+                            _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
+                            _updateName = false;
+                        }
                     }
                 }
             }

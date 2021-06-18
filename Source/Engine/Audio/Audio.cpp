@@ -171,6 +171,7 @@ void Audio::OnRemoveSource(AudioSource* source)
 
 bool AudioService::Init()
 {
+    PROFILE_CPU_NAMED("Audio.Init");
     const auto settings = AudioSettings::Get();
     const bool mute = CommandLine::Options.Mute.IsTrue() || settings->DisableAudio;
 
@@ -233,7 +234,7 @@ bool AudioService::Init()
 
 void AudioService::Update()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Audio.Update");
 
     // Update the master volume
     float masterVolume = MasterVolume;
@@ -242,10 +243,9 @@ void AudioService::Update()
         // Mute audio if app has no user focus
         masterVolume = 0.0f;
     }
-    if (Volume != masterVolume)
+    if (Math::NotNearEqual(Volume, masterVolume))
     {
         Volume = masterVolume;
-
         AudioBackend::SetVolume(masterVolume);
     }
 

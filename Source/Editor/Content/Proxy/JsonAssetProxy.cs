@@ -92,6 +92,7 @@ namespace FlaxEditor.Content
                         !type.IsAbstract &&
                         !type.IsGenericType &&
                         type.Type.GetConstructor(Type.EmptyTypes) != null &&
+                        !typeof(FlaxEngine.GUI.Control).IsAssignableFrom(type.Type) &&
                         !typeof(FlaxEngine.Object).IsAssignableFrom(type.Type);
                     }
                 }

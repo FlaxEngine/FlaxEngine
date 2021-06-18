@@ -19,6 +19,12 @@ public:
     uint32 Lines;
     BytesContainer Data;
 
+    TextureMipData();
+    TextureMipData(const TextureMipData& other);
+    TextureMipData(TextureMipData&& other) noexcept;
+    TextureMipData& operator=(const TextureMipData& other);
+    TextureMipData& operator=(TextureMipData&& other) noexcept;
+
     template<typename T>
     T& Get(int32 x, int32 y)
     {
@@ -120,7 +126,6 @@ public:
     /// <summary>
     /// Gets amount of textures in the array
     /// </summary>
-    /// <returns>Array size</returns>
     int32 GetArraySize() const
     {
         return Items.Count();
@@ -129,7 +134,6 @@ public:
     /// <summary>
     /// Gets amount of mip maps in the textures
     /// </summary>
-    /// <returns>Amount of mip levels</returns>
     int32 GetMipLevels() const
     {
         return Items.HasItems() ? Items[0].Mips.Count() : 0;

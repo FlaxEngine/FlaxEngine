@@ -58,6 +58,7 @@ bool GPUDeviceNull::Init()
         limits.HasDepthAsSRV = false;
         limits.HasReadOnlyDepth = false;
         limits.HasMultisampleDepthAsSRV = false;
+        limits.HasTypedUAVLoad = false;
         limits.MaximumMipLevelsCount = 14;
         limits.MaximumTexture1DSize = 8192;
         limits.MaximumTexture1DArraySize = 512;

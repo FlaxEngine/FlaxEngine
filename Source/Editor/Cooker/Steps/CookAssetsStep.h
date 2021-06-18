@@ -49,6 +49,8 @@ public:
         /// The list of files on which this entry depends on. Cached date is the last edit time used to discard cache result on modification.
         /// </summary>
         FileDependenciesList FileDependencies;
+
+        bool IsValid(bool withDependencies = false);
     };
 
     /// <summary>
@@ -93,6 +95,7 @@ public:
             {
                 bool ShadersNoOptimize;
                 bool ShadersGenerateDebugData;
+                Guid StreamingSettingsAssetId;
             } Global;
         } Settings;
 
@@ -133,6 +136,11 @@ public:
         /// Removes all cached entries for assets that contain a shader. This forces rebuild for them.
         /// </summary>
         void InvalidateShaders();
+
+        /// <summary>
+        /// Removes all cached entries for assets that contain a texture. This forces rebuild for them.
+        /// </summary>
+        void InvalidateTextures();
 
         /// <summary>
         /// Loads the cache for the given cooking data.

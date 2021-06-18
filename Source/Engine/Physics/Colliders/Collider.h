@@ -32,11 +32,7 @@ public:
     /// <summary>
     /// Gets the collider shape PhysX object.
     /// </summary>
-    /// <returns>The PhysX Shape object or null.</returns>
-    FORCE_INLINE PxShape* GetPxShape() const
-    {
-        return _shape;
-    }
+    PxShape* GetPxShape() const;
 
     /// <summary>
     /// Gets the 'IsTrigger' flag.

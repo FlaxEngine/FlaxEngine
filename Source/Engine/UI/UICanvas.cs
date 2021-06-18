@@ -77,7 +77,11 @@ namespace FlaxEngine
             GPUTexture depthBuffer = Canvas.IgnoreDepth ? null : renderContext.Buffers.DepthBuffer;
 
             // Render GUI in 3D
+            var features = Render2D.Features;
+            if (Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera)
+                Render2D.Features &= ~Render2D.RenderingFeatures.VertexSnapping;
             Render2D.CallDrawing(Canvas.GUI, context, input, depthBuffer, ref viewProjectionMatrix);
+            Render2D.Features = features;
 
             Profiler.EndEventGPU();
         }

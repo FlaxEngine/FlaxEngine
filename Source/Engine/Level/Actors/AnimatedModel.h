@@ -15,7 +15,7 @@
 API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
 DECLARE_SCENE_OBJECT(AnimatedModel);
-    friend class AnimationManagerService;
+    friend class AnimationsSystem;
 public:
 
     /// <summary>
@@ -306,6 +306,8 @@ private:
     void UpdateLocalBounds();
     void UpdateBounds();
     void UpdateSockets();
+    void OnAnimationUpdated_Async();
+    void OnAnimationUpdated_Sync();
     void OnAnimationUpdated();
 
     void OnSkinnedModelChanged();

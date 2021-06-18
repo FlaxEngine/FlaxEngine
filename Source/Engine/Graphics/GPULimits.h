@@ -276,6 +276,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPULimits);
     API_FIELD() bool HasMultisampleDepthAsSRV;
 
     /// <summary>
+    /// True if device supports reading from typed UAV in shader (common types such as R32G32B32A32, R16G16B16A16, R16, R8). This doesn't apply to single-component 32-bit formats.
+    /// </summary>
+    API_FIELD() bool HasTypedUAVLoad;
+
+    /// <summary>
     /// The maximum amount of texture mip levels.
     /// </summary>
     API_FIELD() int32 MaximumMipLevelsCount;

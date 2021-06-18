@@ -304,7 +304,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
                 GetClassName(mclass->GetFullName(), mclassName);
                 if (className == mclassName)
                 {
-                    LOG(Info, "Found {0} type for type {1} (assembly {2})", mclass->ToString(), String(scriptName.Get(), scriptName.Length()), assembly->ToString());
+                    LOG(Info, "Found {0} type for type {1} (assembly {2})", String(mclass->GetFullName()), String(scriptName.Get(), scriptName.Length()), assembly->ToString());
                     return mclass;
                 }
             }

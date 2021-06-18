@@ -118,7 +118,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     const auto controlMember = stream.FindMember("Control");
     if (controlMember != stream.MemberEnd())
     {
-        const StringAnsiView controlType(controlMember->value.GetString(), controlMember->value.GetStringLength());
+        const StringAnsiView controlType(controlMember->value.GetStringAnsiView());
         const auto type = Scripting::FindClass(controlType);
         if (type != nullptr)
         {

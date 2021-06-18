@@ -639,9 +639,7 @@ MClass* Scripting::FindClass(MonoClass* monoClass)
 {
     if (monoClass == nullptr)
         return nullptr;
-
     PROFILE_CPU();
-
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
     {
@@ -653,7 +651,6 @@ MClass* Scripting::FindClass(MonoClass* monoClass)
                 return result;
         }
     }
-
     return nullptr;
 }
 
@@ -661,9 +658,7 @@ MClass* Scripting::FindClass(const StringAnsiView& fullname)
 {
     if (fullname.IsEmpty())
         return nullptr;
-
     PROFILE_CPU();
-
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
     {
@@ -675,7 +670,6 @@ MClass* Scripting::FindClass(const StringAnsiView& fullname)
                 return result;
         }
     }
-
     return nullptr;
 }
 
@@ -683,9 +677,7 @@ MonoClass* Scripting::FindClassNative(const StringAnsiView& fullname)
 {
     if (fullname.IsEmpty())
         return nullptr;
-
     PROFILE_CPU();
-
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
     {
@@ -697,7 +689,6 @@ MonoClass* Scripting::FindClassNative(const StringAnsiView& fullname)
                 return result->GetNative();
         }
     }
-
     return nullptr;
 }
 
@@ -705,9 +696,7 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
 {
     if (fullname.IsEmpty())
         return ScriptingTypeHandle();
-
     PROFILE_CPU();
-
     auto& modules = BinaryModule::GetModules();
     for (auto module : modules)
     {
@@ -717,7 +706,6 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
             return ScriptingTypeHandle(module, typeIndex);
         }
     }
-
     return ScriptingTypeHandle();
 }
 
@@ -865,7 +853,7 @@ bool Scripting::IsEveryAssemblyLoaded()
 
 bool Scripting::IsTypeFromGameScripts(MClass* type)
 {
-    const auto binaryModule = ManagedBinaryModule::GetModule(type->GetAssembly());
+    const auto binaryModule = ManagedBinaryModule::GetModule(type ? type->GetAssembly() : nullptr);
     return binaryModule && binaryModule != GetBinaryModuleCorlib() && binaryModule != GetBinaryModuleFlaxEngine();
 }
 

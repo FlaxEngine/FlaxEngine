@@ -46,6 +46,7 @@ namespace FlaxEditor
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
         private string _projectToOpen;
         private float _lastAutoSaveTimer;
+        private Guid _startupSceneCmdLine;
 
         private const string ProjectDataLastScene = "LastScene";
         private const string ProjectDataLastSceneSpawn = "LastSceneSpawn";
@@ -271,10 +272,11 @@ namespace FlaxEditor
                 module.OnEndInit();
         }
 
-        internal void Init(bool isHeadless, bool skipCompile)
+        internal void Init(bool isHeadless, bool skipCompile, Guid startupScene)
         {
             EnsureState<LoadingState>();
             _isHeadlessMode = isHeadless;
+            _startupSceneCmdLine = startupScene;
             Log("Editor init");
             if (isHeadless)
                 Log("Running in headless mode");
@@ -332,6 +334,17 @@ namespace FlaxEditor
             }
 
             // Load scene
+
+            // scene cmd line argument
+            var scene = ContentDatabase.Find(_startupSceneCmdLine);
+            if (scene is SceneItem)
+            {
+                Editor.Log("Loading scene specified in command line");
+                Scene.OpenScene(_startupSceneCmdLine);
+                return;
+            }
+
+            // if no scene cmd line argument is provided
             var startupSceneMode = Options.Options.General.StartupSceneMode;
             if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
             {
@@ -1293,20 +1306,17 @@ namespace FlaxEditor
             VisualScriptingDebugFlow?.Invoke(debugFlow);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct AnimGraphDebugFlowInfo
+        private static void RequestStartPlayOnEditMode()
         {
-            public Asset Asset;
-            public FlaxEngine.Object Object;
-            public uint NodeId;
-            public int BoxId;
+            if (Instance.StateMachine.IsEditMode)
+                Instance.Simulation.RequestStartPlay();
+            if (Instance.StateMachine.IsPlayMode)
+                Instance.StateMachine.StateChanged -= RequestStartPlayOnEditMode;
         }
 
-        internal static event Action<AnimGraphDebugFlowInfo> AnimGraphDebugFlow;
-
-        internal static void Internal_OnAnimGraphDebugFlow(ref AnimGraphDebugFlowInfo debugFlow)
+        internal static void Internal_RequestStartPlayOnEditMode()
         {
-            AnimGraphDebugFlow?.Invoke(debugFlow);
+            Instance.StateMachine.StateChanged += RequestStartPlayOnEditMode;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

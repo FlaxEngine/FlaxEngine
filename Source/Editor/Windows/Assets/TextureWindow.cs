@@ -4,7 +4,10 @@ using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.GUI;
+using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -18,46 +21,56 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class TextureWindow : AssetEditorWindowBase<Texture>
     {
+        private sealed class ProxyEditor : GenericEditor
+        {
+            public override void Initialize(LayoutElementsContainer layout)
+            {
+                var window = ((PropertiesProxy)Values[0])._window;
+                var texture = window?.Asset;
+                if (texture == null || !texture.IsLoaded)
+                {
+                    layout.Label("Loading...", TextAlignment.Center);
+                    return;
+                }
+
+                // Texture info
+                var general = layout.Group("General");
+                general.Label("Format: " + texture.Format);
+                general.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height));
+                general.Label("Mip levels: " + texture.MipLevels);
+                general.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage));
+
+                // Texture properties
+                var properties = layout.Group("Properties");
+                var textureGroup = new CustomValueContainer(new ScriptType(typeof(int)), texture.TextureGroup,
+                                                            (instance, index) => texture.TextureGroup,
+                                                            (instance, index, value) =>
+                                                            {
+                                                                texture.TextureGroup = (int)value;
+                                                                window.MarkAsEdited();
+                                                            });
+                properties.Property("Texture Group", textureGroup, new TextureGroupEditor(), "The texture group used by this texture.");
+
+                // Import settings
+                base.Initialize(layout);
+
+                // Reimport
+                layout.Space(10);
+                var reimportButton = layout.Button("Reimport");
+                reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
+            }
+        }
+
         /// <summary>
         /// The texture properties proxy object.
         /// </summary>
         [CustomEditor(typeof(ProxyEditor))]
         private sealed class PropertiesProxy
         {
-            private TextureWindow _window;
+            internal TextureWindow _window;
 
             [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
             public TextureImportSettings ImportSettings = new TextureImportSettings();
-
-            public sealed class ProxyEditor : GenericEditor
-            {
-                public override void Initialize(LayoutElementsContainer layout)
-                {
-                    var window = ((PropertiesProxy)Values[0])._window;
-                    if (window == null)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
-                        return;
-                    }
-
-                    // Texture properties
-                    {
-                        var texture = window.Asset;
-
-                        var group = layout.Group("General");
-                        group.Label("Format: " + texture.Format);
-                        group.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height));
-                        group.Label("Mip levels: " + texture.MipLevels);
-                        group.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage));
-                    }
-
-                    base.Initialize(layout);
-
-                    layout.Space(10);
-                    var reimportButton = layout.Button("Reimport");
-                    reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
-                }
-            }
 
             /// <summary>
             /// Gathers parameters from the specified texture.
@@ -110,7 +123,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly SplitPanel _split;
         private readonly TexturePreview _preview;
         private readonly CustomEditorPresenter _propertiesEditor;
-
+        private readonly ToolStripButton _saveButton;
         private readonly PropertiesProxy _properties;
         private bool _isWaitingForLoad;
 
@@ -140,6 +153,7 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_properties);
 
             // Toolstrip
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
             _toolstrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(Editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
@@ -174,12 +188,35 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        protected override void UpdateToolstrip()
+        {
+            _saveButton.Enabled = IsEdited;
+
+            base.UpdateToolstrip();
+        }
+
+        /// <inheritdoc />
         protected override void OnClose()
         {
             // Discard unsaved changes
             _properties.DiscardChanges();
 
             base.OnClose();
+        }
+
+        /// <inheritdoc />
+        public override void Save()
+        {
+            if (!IsEdited)
+                return;
+
+            if (Asset.Save())
+            {
+                Editor.LogError("Cannot save asset.");
+                return;
+            }
+
+            ClearEditedFlag();
         }
 
         /// <inheritdoc />

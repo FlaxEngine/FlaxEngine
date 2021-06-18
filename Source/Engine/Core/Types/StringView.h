@@ -17,22 +17,13 @@ protected:
     const T* _data;
     int32 _length;
 
-public:
-
-    /// <summary>
-    /// Copies the data.
-    /// </summary>
-    /// <param name="other">The other object.</param>
-    /// <returns>The reference to this object.</returns>
-    FORCE_INLINE StringViewBase& operator=(const StringViewBase& other)
+    constexpr StringViewBase()
     {
-        if (this != &other)
-        {
-            _data = other._data;
-            _length = other._length;
-        }
-        return *this;
+        _data = nullptr;
+        _length = 0;
     }
+
+public:
 
     /// <summary>
     /// Gets the specific const character from this string.
@@ -82,7 +73,7 @@ public:
     /// <summary>
     /// Gets the length of the string.
     /// </summary>
-    FORCE_INLINE int32 Length() const
+    FORCE_INLINE constexpr int32 Length() const
     {
         return _length;
     }
@@ -90,7 +81,7 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    FORCE_INLINE const T* operator*() const
+    FORCE_INLINE constexpr const T* operator*() const
     {
         return _data;
     }
@@ -98,7 +89,7 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    FORCE_INLINE const T* Get() const
+    FORCE_INLINE constexpr const T* Get() const
     {
         return _data;
     }
@@ -202,10 +193,8 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    StringView()
+    constexpr StringView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>
@@ -218,7 +207,7 @@ public:
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
     /// <param name="str">The reference to the static string.</param>
-    StringView(const StringView& str)
+    constexpr StringView(const StringView& str)
     {
         _data = str._data;
         _length = str._length;
@@ -239,7 +228,7 @@ public:
     /// </summary>
     /// <param name="str">The characters sequence.</param>
     /// <param name="length">The characters sequence length (excluding null-terminator character).</param>
-    StringView(const Char* str, int32 length)
+    constexpr StringView(const Char* str, int32 length)
     {
         _data = str;
         _length = length;
@@ -256,6 +245,21 @@ public:
     {
         _data = str;
         _length = StringUtils::Length(str);
+        return *this;
+    }
+
+    /// <summary>
+    /// Assigns the static string.
+    /// </summary>
+    /// <param name="other">The other object.</param>
+    /// <returns>The reference to this object.</returns>
+    FORCE_INLINE constexpr StringView& operator=(const StringView& other)
+    {
+        if (this != &other)
+        {
+            _data = other._data;
+            _length = other._length;
+        }
         return *this;
     }
 
@@ -394,10 +398,8 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    StringAnsiView()
+    constexpr StringAnsiView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>
@@ -410,7 +412,7 @@ public:
     /// Initializes a new instance of the <see cref="StringAnsiView"/> class.
     /// </summary>
     /// <param name="str">The reference to the static string.</param>
-    StringAnsiView(const StringAnsiView& str)
+    constexpr StringAnsiView(const StringAnsiView& str)
     {
         _data = str._data;
         _length = str._length;
@@ -431,7 +433,7 @@ public:
     /// </summary>
     /// <param name="str">The characters sequence.</param>
     /// <param name="length">The characters sequence length (excluding null-terminator character).</param>
-    StringAnsiView(const char* str, int32 length)
+    constexpr StringAnsiView(const char* str, int32 length)
     {
         _data = str;
         _length = length;
@@ -448,6 +450,21 @@ public:
     {
         _data = str;
         _length = StringUtils::Length(str);
+        return *this;
+    }
+
+    /// <summary>
+    /// Assigns the static string.
+    /// </summary>
+    /// <param name="other">The other object.</param>
+    /// <returns>The reference to this object.</returns>
+    FORCE_INLINE constexpr StringAnsiView& operator=(const StringAnsiView& other)
+    {
+        if (this != &other)
+        {
+            _data = other._data;
+            _length = other._length;
+        }
         return *this;
     }
 

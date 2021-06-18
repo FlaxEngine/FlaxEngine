@@ -49,6 +49,11 @@ public:
         double LastLength;
 
         /// <summary>
+        /// The next tick start time.
+        /// </summary>
+        double NextBegin;
+
+        /// <summary>
         /// The delta time.
         /// </summary>
         TimeSpan DeltaTime;
@@ -167,11 +172,10 @@ public:
     }
 
     /// <summary>
-    /// Gets the tick data that uses the highest frequency for the ticking.
+    /// Gets the time of next upcoming tick data of ticking group with defined update frequency.
     /// </summary>
-    /// <param name="fps">The FPS rate of the highest frequency ticking group.</param>
-    /// <returns>The tick data.</returns>
-    static TickData* GetHighestFrequency(float& fps);
+    /// <returns>The time of next tick.</returns>
+    static double GetNextTick();
 
     /// <summary>
     /// Gets the value indicating whenever game logic is paused (physics, script updates, etc.).
@@ -185,7 +189,7 @@ public:
     /// <summary>
     /// Sets the value indicating whenever game logic is paused (physics, script updates, etc.).
     /// </summary>
-    /// <param name="value">>True if pause game logic, otherwise false.</param>
+    /// <param name="value">True if pause game logic, otherwise false.</param>
     API_PROPERTY() static void SetGamePaused(bool value);
 
     /// <summary>

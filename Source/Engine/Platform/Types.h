@@ -45,8 +45,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class UWPWindow;
 typedef UWPWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class Win32Network;
+typedef Win32Network Network;
 
 #elif PLATFORM_LINUX
 

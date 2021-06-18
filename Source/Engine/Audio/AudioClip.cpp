@@ -401,7 +401,7 @@ Asset::LoadResult AudioClip::load()
     if (AudioHeader.Streamable)
     {
         // Do nothing because data streaming starts when any AudioSource requests the data
-        startStreaming(false);
+        StartStreaming(false);
         return LoadResult::Ok;
     }
 
@@ -450,7 +450,7 @@ Asset::LoadResult AudioClip::load()
 
 void AudioClip::unload(bool isReloading)
 {
-    stopStreaming();
+    StopStreaming();
     StreamingQueue.Clear();
     if (Buffers.HasItems())
     {

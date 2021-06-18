@@ -605,8 +605,7 @@ namespace FlaxEditor.Surface.Archetypes
                     MakeBox(0, string.Empty, typeof(void), true);
                 }
 
-                // Update size
-                Resize(Style.Current.FontLarge.MeasureText(Title).X + 30, 20 + (_parameters?.Length * 20 ?? 0));
+                ResizeAuto();
             }
 
             private void MakeBox(int id, string text, Type type, bool single = false)

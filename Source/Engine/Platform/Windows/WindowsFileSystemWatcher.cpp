@@ -87,7 +87,7 @@ VOID CALLBACK NotificationCompletion(DWORD dwErrorCode, DWORD dwNumberOfBytesTra
         {
             // Build path
             String path(notify->FileName, notify->FileNameLength / sizeof(WCHAR));
-            path = watcher->GetDirectory() / path;
+            path = watcher->Directory / path;
 
             // Send event
             watcher->OnEvent(path, action);
@@ -106,7 +106,7 @@ BOOL RefreshWatch(WindowsFileSystemWatcher* watcher)
         watcher->DirectoryHandle,
         watcher->Buffer[watcher->CurrentBuffer],
         FileSystemWatcher::BufferSize,
-        watcher->WithSubDirs() ? TRUE : FALSE,
+        watcher->WithSubDirs ? TRUE : FALSE,
         FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME,
         &dwBytesReturned,
         (OVERLAPPED*)&watcher->Overlapped,

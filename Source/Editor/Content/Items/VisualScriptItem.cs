@@ -539,6 +539,18 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return new ScriptType(typeof(Actor)).IsAssignableFrom(ScriptType) && ScriptType.CanCreateInstance;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return (Actor)ScriptType.CreateInstance();
+        }
+
+        /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.VisualScript128;
 
         /// <inheritdoc />

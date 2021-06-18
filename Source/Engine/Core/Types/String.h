@@ -5,7 +5,6 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Core/Formatting.h"
-#include "Engine/Core/Templates.h"
 
 /// <summary>
 /// Represents text as a sequence of characters. Container uses a single dynamic memory allocation to store the characters data. Characters sequence is always null-terminated.

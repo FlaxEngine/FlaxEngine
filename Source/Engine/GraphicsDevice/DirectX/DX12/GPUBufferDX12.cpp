@@ -9,6 +9,16 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadBufferTask.h"
 
+void GPUBufferViewDX12::SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc)
+{
+    _srv.CreateSRV(_device, _owner->GetResource(), &srvDesc);
+}
+
+void GPUBufferViewDX12::SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource)
+{
+    _uav.CreateUAV(_device, _owner->GetResource(), &uavDesc, counterResource);
+}
+
 uint64 GPUBufferDX12::GetSizeInBytes() const
 {
     return _memoryUsage;
@@ -125,13 +135,7 @@ bool GPUBufferDX12::OnInit()
     // Create resource
     ID3D12Resource* resource;
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &resourceDesc,
-        initialState,
-        nullptr,
-        IID_PPV_ARGS(&resource)));
+    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
 
     // Set state
     initResource(resource, initialState, 1);
@@ -207,7 +211,7 @@ bool GPUBufferDX12::OnInit()
         }
         if (_desc.Flags & GPUBufferFlags::RawBuffer)
             srvDesc.Buffer.Flags |= D3D12_BUFFER_SRV_FLAG_RAW;
-        _view.SetSRV(&srvDesc);
+        _view.SetSRV(srvDesc);
     }
     if (useUAV)
     {
@@ -226,7 +230,7 @@ bool GPUBufferDX12::OnInit()
             uavDesc.Format = DXGI_FORMAT_UNKNOWN;
         else
             uavDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(_desc.Format));
-        _view.SetUAV(&uavDesc, _counter ? _counter->GetResource() : nullptr);
+        _view.SetUAV(uavDesc, _counter ? _counter->GetResource() : nullptr);
     }
 
     return false;

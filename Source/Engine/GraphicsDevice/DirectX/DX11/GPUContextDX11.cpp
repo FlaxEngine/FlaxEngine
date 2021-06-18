@@ -118,7 +118,7 @@ void GPUContextDX11::FrameBegin()
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
-    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers); // TODO: maybe we don't want to bind those static sampler always?
+    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
 #if GPU_ALLOW_PROFILE_EVENTS
@@ -327,26 +327,26 @@ void GPUContextDX11::BindCB(int32 slot, GPUConstantBuffer* cb)
 void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
-
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->SRV() : nullptr;
-
     if (_srHandles[slot] != handle)
     {
         _srDirtyFlag = true;
         _srHandles[slot] = handle;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
     }
 }
 
 void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
-
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->UAV() : nullptr;
-
     if (_uaHandles[slot] != handle)
     {
         _uaDirtyFlag = true;
         _uaHandles[slot] = handle;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
     }
 }
 
@@ -637,7 +637,20 @@ void GPUContextDX11::ClearState()
 
     FlushState();
 
-    //_context->ClearState();
+    _context->ClearState();
+    ID3D11SamplerState* samplers[] =
+    {
+        _device->_samplerLinearClamp,
+        _device->_samplerPointClamp,
+        _device->_samplerLinearWrap,
+        _device->_samplerPointWrap,
+        _device->_samplerShadow,
+        _device->_samplerShadowPCF
+    };
+    _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+    _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
 void GPUContextDX11::FlushState()

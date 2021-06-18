@@ -5,6 +5,7 @@
 #include "LinuxGame.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Config/PlatformSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Globals.h"

@@ -801,12 +801,8 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
 
         int32 spirvBytesCount = (int32)spirv.size() * sizeof(unsigned);
         header.Type = SpirvShaderHeader::Types::Raw;
-        Array<byte> data;
-        data.Resize(sizeof(header) + spirvBytesCount);
-        Platform::MemoryCopy(data.Get(), &header, sizeof(header));
-        Platform::MemoryCopy(data.Get() + sizeof(header), &spirv[0], spirvBytesCount);
 
-        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, data.Get(), data.Count()))
+        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], spirvBytesCount))
             return true;
 
         if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros))

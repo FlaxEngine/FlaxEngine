@@ -114,7 +114,7 @@ namespace FlaxEditor.CustomEditors
         }
 
         /// <summary>
-        /// Adds new horizontal panel element.
+        /// Adds new vertical panel element.
         /// </summary>
         /// <returns>The created element.</returns>
         public VerticalPanelElement VerticalPanel()

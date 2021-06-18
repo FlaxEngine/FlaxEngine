@@ -10,23 +10,16 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API Texture : public TextureBase
 {
 DECLARE_BINARY_ASSET_HEADER(Texture, TexturesSerializedVersion);
-public:
 
     /// <summary>
     /// Gets the texture format type.
     /// </summary>
-    FORCE_INLINE TextureFormatType GetFormatType() const
-    {
-        return _texture.GetFormatType();
-    }
+    TextureFormatType GetFormatType() const;
 
     /// <summary>
     /// Returns true if texture is a normal map.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsNormalMap() const
-    {
-        return GetFormatType() == TextureFormatType::NormalMap;
-    }
+    API_PROPERTY() bool IsNormalMap() const;
 
 public:
 

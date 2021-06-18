@@ -68,22 +68,11 @@ public:
     /// <summary>
     /// Gets the managed instance object or creates it if missing.
     /// </summary>
-    /// <returns>The Mono managed object.</returns>
-    FORCE_INLINE MonoObject* GetOrCreateManagedInstance() const
-    {
-        MonoObject* managedInstance = GetManagedInstance();
-        if (!managedInstance)
-        {
-            const_cast<ScriptingObject*>(this)->CreateManaged();
-            managedInstance = GetManagedInstance();
-        }
-        return managedInstance;
-    }
+    MonoObject* GetOrCreateManagedInstance() const;
 
     /// <summary>
     /// Determines whether managed instance is alive.
     /// </summary>
-    /// <returns>True if managed object has been created and exists, otherwise false.</returns>
     FORCE_INLINE bool HasManagedInstance() const
     {
         return GetManagedInstance() != nullptr;
@@ -92,7 +81,6 @@ public:
     /// <summary>
     /// Gets the unique object ID.
     /// </summary>
-    /// <returns>The unique object ID.</returns>
     FORCE_INLINE const Guid& GetID() const
     {
         return _id;
@@ -101,7 +89,6 @@ public:
     /// <summary>
     /// Gets the scripting type handle of this object.
     /// </summary>
-    /// <returns>The scripting type handle.</returns>
     FORCE_INLINE const ScriptingTypeHandle& GetTypeHandle() const
     {
         return _type;
@@ -110,7 +97,6 @@ public:
     /// <summary>
     /// Gets the scripting type of this object.
     /// </summary>
-    /// <returns>The scripting type.</returns>
     FORCE_INLINE const ScriptingType& GetType() const
     {
         return _type.GetType();
@@ -119,7 +105,6 @@ public:
     /// <summary>
     /// Gets the type class of this object.
     /// </summary>
-    /// <returns>The Mono class.</returns>
     MClass* GetClass() const;
 
 public:

@@ -9,25 +9,6 @@
 #include "Engine/Utilities/Delaunay2D.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
-void AnimGraphBase::ClearCache()
-{
-    // Clear sub-graphs
-    for (int32 i = 0; i < SubGraphs.Count(); i++)
-    {
-        SubGraphs[i]->ClearCache();
-    }
-
-    // Clear cache
-    for (int32 i = 0; i < Nodes.Count(); i++)
-    {
-        auto& node = Nodes[i];
-        for (int32 j = 0; j < node.Boxes.Count(); j++)
-        {
-            node.Boxes[j].InvalidateCache();
-        }
-    }
-}
-
 AnimSubGraph* AnimGraphBase::LoadSubGraph(const void* data, int32 dataLength, const Char* name)
 {
     if (data == nullptr || dataLength == 0)

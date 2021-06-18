@@ -367,8 +367,11 @@ namespace Flax.Build.Platforms
             var vcToolChainDir = toolsets[Toolset];
             switch (Toolset)
             {
-            case WindowsPlatformToolset.v141: return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
-            case WindowsPlatformToolset.v140: return Path.Combine(vcToolChainDir, "lib", "store", "references");
+            case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v141:
+                return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
+            case WindowsPlatformToolset.v140:
+                return Path.Combine(vcToolChainDir, "lib", "store", "references");
             default: return null;
             }
         }

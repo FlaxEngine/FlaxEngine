@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Flax.Build.NativeCpp;
@@ -109,13 +108,6 @@ namespace Flax.Build.Bindings
                 if (LoadCache(ref moduleInfo, moduleOptions, headerFiles))
                 {
                     buildData.ModulesInfo[module] = moduleInfo;
-
-                    // Initialize API
-                    using (new ProfileEventScope("Init"))
-                    {
-                        moduleInfo.Init(buildData);
-                    }
-
                     return moduleInfo;
                 }
             }
@@ -162,12 +154,6 @@ namespace Flax.Build.Bindings
                     Log.Error($"Failed to save API cache for module {moduleInfo.Module.Name}");
                     Log.Exception(ex);
                 }
-            }
-
-            // Initialize API
-            using (new ProfileEventScope("Init"))
-            {
-                moduleInfo.Init(buildData);
             }
 
             return moduleInfo;
@@ -533,23 +519,10 @@ namespace Flax.Build.Bindings
             if (moduleInfo.IsFromCache)
                 return;
 
-            // Process parsed API
-            using (new ProfileEventScope("Process"))
+            // Initialize parsed API
+            using (new ProfileEventScope("Init"))
             {
-                foreach (var child in moduleInfo.Children)
-                {
-                    try
-                    {
-                        foreach (var apiTypeInfo in child.Children)
-                            ProcessAndValidate(buildData, apiTypeInfo);
-                    }
-                    catch (Exception)
-                    {
-                        if (child is FileInfo fileInfo)
-                            Log.Error($"Failed to validate '{fileInfo.Name}' file to generate bindings.");
-                        throw;
-                    }
-                }
+                moduleInfo.Init(buildData);
             }
 
             // Generate bindings for scripting
@@ -582,123 +555,6 @@ namespace Flax.Build.Bindings
                     // TODO: add support for extending this code and support generating bindings for other scripting languages
                 }
             }
-        }
-
-        private static void ProcessAndValidate(BuildData buildData, ApiTypeInfo apiTypeInfo)
-        {
-            if (apiTypeInfo is ClassInfo classInfo)
-                ProcessAndValidate(buildData, classInfo);
-            else if (apiTypeInfo is StructureInfo structureInfo)
-                ProcessAndValidate(buildData, structureInfo);
-
-            foreach (var child in apiTypeInfo.Children)
-                ProcessAndValidate(buildData, child);
-        }
-
-        private static void ProcessAndValidate(BuildData buildData, ClassInfo classInfo)
-        {
-            if (classInfo.UniqueFunctionNames == null)
-                classInfo.UniqueFunctionNames = new HashSet<string>();
-
-            foreach (var fieldInfo in classInfo.Fields)
-            {
-                if (fieldInfo.Access == AccessLevel.Private)
-                    continue;
-
-                fieldInfo.Getter = new FunctionInfo
-                {
-                    Name = "Get" + fieldInfo.Name,
-                    Comment = fieldInfo.Comment,
-                    IsStatic = fieldInfo.IsStatic,
-                    Access = fieldInfo.Access,
-                    Attributes = fieldInfo.Attributes,
-                    ReturnType = fieldInfo.Type,
-                    Parameters = new List<FunctionInfo.ParameterInfo>(),
-                    IsVirtual = false,
-                    IsConst = true,
-                    Glue = new FunctionInfo.GlueInfo()
-                };
-                ProcessAndValidate(classInfo, fieldInfo.Getter);
-                fieldInfo.Getter.Name = fieldInfo.Name;
-
-                if (!fieldInfo.IsReadOnly)
-                {
-                    fieldInfo.Setter = new FunctionInfo
-                    {
-                        Name = "Set" + fieldInfo.Name,
-                        Comment = fieldInfo.Comment,
-                        IsStatic = fieldInfo.IsStatic,
-                        Access = fieldInfo.Access,
-                        Attributes = fieldInfo.Attributes,
-                        ReturnType = new TypeInfo
-                        {
-                            Type = "void",
-                        },
-                        Parameters = new List<FunctionInfo.ParameterInfo>
-                        {
-                            new FunctionInfo.ParameterInfo
-                            {
-                                Name = "value",
-                                Type = fieldInfo.Type,
-                            },
-                        },
-                        IsVirtual = false,
-                        IsConst = true,
-                        Glue = new FunctionInfo.GlueInfo()
-                    };
-                    ProcessAndValidate(classInfo, fieldInfo.Setter);
-                    fieldInfo.Setter.Name = fieldInfo.Name;
-                }
-            }
-
-            foreach (var propertyInfo in classInfo.Properties)
-            {
-                if (propertyInfo.Getter != null)
-                    ProcessAndValidate(classInfo, propertyInfo.Getter);
-                if (propertyInfo.Setter != null)
-                    ProcessAndValidate(classInfo, propertyInfo.Setter);
-            }
-
-            foreach (var functionInfo in classInfo.Functions)
-                ProcessAndValidate(classInfo, functionInfo);
-        }
-
-        private static void ProcessAndValidate(BuildData buildData, StructureInfo structureInfo)
-        {
-            foreach (var fieldInfo in structureInfo.Fields)
-            {
-                if (fieldInfo.Type.IsBitField)
-                    throw new NotImplementedException($"TODO: support bit-fields in structure fields (found field {fieldInfo} in structure {structureInfo.Name})");
-
-                // Pointers are fine
-                if (fieldInfo.Type.IsPtr)
-                    continue;
-
-                // In-build types
-                if (CSharpNativeToManagedBasicTypes.ContainsKey(fieldInfo.Type.Type))
-                    continue;
-                if (CSharpNativeToManagedDefault.ContainsKey(fieldInfo.Type.Type))
-                    continue;
-
-                // Find API type info for this field type
-                var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
-                if (apiType != null)
-                    continue;
-
-                throw new Exception($"Unknown field type '{fieldInfo.Type} {fieldInfo.Name}' in structure '{structureInfo.Name}'.");
-            }
-        }
-
-        private static void ProcessAndValidate(ClassInfo classInfo, FunctionInfo functionInfo)
-        {
-            // Ensure that methods have unique names for bindings
-            if (classInfo.UniqueFunctionNames == null)
-                classInfo.UniqueFunctionNames = new HashSet<string>();
-            int idx = 1;
-            functionInfo.UniqueName = functionInfo.Name;
-            while (classInfo.UniqueFunctionNames.Contains(functionInfo.UniqueName))
-                functionInfo.UniqueName = functionInfo.Name + idx++;
-            classInfo.UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
     }
 }

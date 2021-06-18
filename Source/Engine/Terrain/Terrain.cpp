@@ -2,6 +2,7 @@
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"

@@ -241,11 +241,12 @@ namespace FlaxEngine.GUI
 
             // Calculate text blocks for drawing
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocksCount = _textBlocks?.Count ?? 0;
             var hasSelection = HasSelection;
             var selection = new TextRange(SelectionLeft, SelectionRight);
             var viewRect = new Rectangle(_viewOffset, Size).MakeExpanded(10.0f);
-            var firstTextBlock = _textBlocks.Count;
-            for (int i = 0; i < _textBlocks.Count; i++)
+            var firstTextBlock = textBlocksCount;
+            for (int i = 0; i < textBlocksCount; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 if (textBlock.Bounds.Intersects(ref viewRect))
@@ -254,8 +255,8 @@ namespace FlaxEngine.GUI
                     break;
                 }
             }
-            var endTextBlock = Mathf.Min(firstTextBlock + 1, _textBlocks.Count);
-            for (int i = _textBlocks.Count - 1; i > firstTextBlock; i--)
+            var endTextBlock = Mathf.Min(firstTextBlock + 1, textBlocksCount);
+            for (int i = textBlocksCount - 1; i > firstTextBlock; i--)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 if (textBlock.Bounds.Intersects(ref viewRect))

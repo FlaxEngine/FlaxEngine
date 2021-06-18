@@ -40,7 +40,8 @@ namespace FlaxEditor.Windows.Profiler
             };
 
             private Color _color;
-            private float _nameLength;
+            private string _name;
+            private float _nameLength = -1;
 
             /// <summary>
             /// The default height of the event.
@@ -50,18 +51,14 @@ namespace FlaxEditor.Windows.Profiler
             /// <summary>
             /// Gets or sets the event name.
             /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Event"/> class.
-            /// </summary>
-            /// <param name="x">The x position.</param>
-            /// <param name="depth">The timeline row index (event depth).</param>
-            /// <param name="width">The width.</param>
-            public Event(float x, int depth, float width)
-            : base(x, depth * DefaultHeight, width, DefaultHeight - 1)
+            public string Name
             {
-                _nameLength = -1;
+                get => _name;
+                set
+                {
+                    _name = value;
+                    _nameLength = -1;
+                }
             }
 
             /// <inheritdoc />
@@ -88,12 +85,12 @@ namespace FlaxEditor.Windows.Profiler
                 Render2D.DrawRectangle(bounds, color * 0.5f);
 
                 if (_nameLength < 0 && style.FontMedium)
-                    _nameLength = style.FontMedium.MeasureText(Name).X;
+                    _nameLength = style.FontMedium.MeasureText(_name).X;
 
                 if (_nameLength < bounds.Width + 4)
                 {
                     Render2D.PushClip(bounds);
-                    Render2D.DrawText(style.FontMedium, Name, bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, _name, bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
                     Render2D.PopClip();
                 }
             }

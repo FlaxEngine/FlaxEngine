@@ -1301,41 +1301,31 @@ bool CollisionsHelper::FrustumIntersectsBox(const BoundingFrustum& frustum, cons
 
 ContainmentType CollisionsHelper::FrustumContainsBox(const BoundingFrustum& frustum, const BoundingBox& box)
 {
-    Vector3 p, n;
-    Plane plane;
     auto result = ContainmentType::Contains;
-
     for (int32 i = 0; i < 6; i++)
     {
-        plane = frustum.GetPlane(i);
-        GetBoxToPlanePVertexNVertex(box, plane.Normal, p, n);
-
+        Plane plane = frustum.GetPlane(i);
+        Vector3 p = box.Minimum;
+        if (plane.Normal.X >= 0)
+            p.X = box.Maximum.X;
+        if (plane.Normal.Y >= 0)
+            p.Y = box.Maximum.Y;
+        if (plane.Normal.Z >= 0)
+            p.Z = box.Maximum.Z;
         if (PlaneIntersectsPoint(plane, p) == PlaneIntersectionType::Back)
             return ContainmentType::Disjoint;
 
-        if (PlaneIntersectsPoint(plane, n) == PlaneIntersectionType::Back)
+        p = box.Maximum;
+        if (plane.Normal.X >= 0)
+            p.X = box.Minimum.X;
+        if (plane.Normal.Y >= 0)
+            p.Y = box.Minimum.Y;
+        if (plane.Normal.Z >= 0)
+            p.Z = box.Minimum.Z;
+        if (PlaneIntersectsPoint(plane, p) == PlaneIntersectionType::Back)
             result = ContainmentType::Intersects;
     }
     return result;
-}
-
-void CollisionsHelper::GetBoxToPlanePVertexNVertex(const BoundingBox& box, const Vector3& planeNormal, Vector3& p, Vector3& n)
-{
-    p = box.Minimum;
-    if (planeNormal.X >= 0)
-        p.X = box.Maximum.X;
-    if (planeNormal.Y >= 0)
-        p.Y = box.Maximum.Y;
-    if (planeNormal.Z >= 0)
-        p.Z = box.Maximum.Z;
-
-    n = box.Maximum;
-    if (planeNormal.X >= 0)
-        n.X = box.Minimum.X;
-    if (planeNormal.Y >= 0)
-        n.Y = box.Minimum.Y;
-    if (planeNormal.Z >= 0)
-        n.Z = box.Minimum.Z;
 }
 
 bool CollisionsHelper::LineIntersectsLine(const Vector2& l1p1, const Vector2& l1p2, const Vector2& l2p1, const Vector2& l2p2)

@@ -109,7 +109,7 @@ void FontManagerService::Dispose()
 
 FontTextureAtlas* FontManager::GetAtlas(int32 index)
 {
-    return index >= 0 && index < Atlases.Count() ? Atlases.Get()[index] : nullptr;
+    return index >= 0 && index < Atlases.Count() ? Atlases.Get()[index].Get() : nullptr;
 }
 
 bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)

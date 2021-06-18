@@ -73,26 +73,45 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller)
+        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller, bool isOut)
         {
-            var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out _, null);
+            var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out var managedTypeAsNative, null);
+            string result;
             if (!string.IsNullOrEmpty(nativeToManaged))
-                nativeToManaged = string.Format(nativeToManaged, paramName);
-            else
-                nativeToManaged = paramName;
-            if ((!paramType.IsPtr && paramType.Type != "StringView" && paramType.Type != "StringAnsiView") || paramType.IsPod(buildData, caller))
             {
-                if (nativeToManaged == paramName)
+                result = string.Format(nativeToManaged, paramName);
+                if (managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
                 {
-                    nativeToManaged = '&' + nativeToManaged;
+                    // Pass pointer value
                 }
                 else
                 {
-                    contents.Append($"        auto __param{paramName} = {nativeToManaged};").AppendLine();
-                    nativeToManaged = $"&__param{paramName}";
+                    // Pass as pointer to local variable converted for managed runtime
+                    if (paramType.IsPtr)
+                        result = string.Format(nativeToManaged, '*' + paramName);
+                    contents.Append($"        auto __param_{paramName} = {result};").AppendLine();
+                    result = $"&__param_{paramName}";
                 }
             }
-            return $"(void*){nativeToManaged}";
+            else
+            {
+                result = paramName;
+                if (paramType.IsRef && !paramType.IsConst && !isOut)
+                {
+                    // Pass reference as a pointer
+                    result = '&' + result;
+                }
+                else if (paramType.IsPtr || managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
+                {
+                    // Pass pointer value
+                }
+                else
+                {
+                    // Pass as pointer to value
+                    result = '&' + result;
+                }
+            }
+            return $"(void*){result}";
         }
 
         public static string GenerateCppWrapperNativeToVariant(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
@@ -420,6 +439,13 @@ namespace Flax.Build.Bindings
                     return "ManagedBitArray::ToManaged({0})";
                 }
 
+                // Function
+                if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+                {
+                    // TODO: automatic converting managed-native for Function
+                    throw new NotImplementedException("TODO: converting native Function to managed");
+                }
+
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
                 {
@@ -604,6 +630,21 @@ namespace Flax.Build.Bindings
                     needLocalVariable = true;
                     type = "MonoArray*";
                     return "MUtils::LinkArray({0})";
+                }
+
+                // Function
+                if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
+                {
+                    var args = string.Empty;
+                    if (typeInfo.GenericArgs.Count > 1)
+                    {
+                        args += typeInfo.GenericArgs[1].GetFullNameNative(buildData, caller);
+                        for (int i = 2; i < typeInfo.GenericArgs.Count; i++)
+                            args += ", " + typeInfo.GenericArgs[i].GetFullNameNative(buildData, caller);
+                    }
+                    var T = $"Function<{typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller)}({args})>";
+                    type = T + "::Signature";
+                    return T + "({0})";
                 }
 
                 if (apiType != null)
@@ -1002,7 +1043,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
-                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo);
+                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, parameterInfo.IsOut);
                 contents.Append($"        params[{i}] = {paramValue};").AppendLine();
             }
 
@@ -1095,7 +1136,7 @@ namespace Flax.Build.Bindings
             var baseType = classInfo?.BaseType ?? structureInfo?.BaseType;
             if (classInfo != null && classInfo.IsBaseTypeHidden)
                 baseType = null;
-            if (baseType != null && (baseType.Type == "PersistentScriptingObject" || baseType.Type == "ScriptingObject"))
+            if (baseType != null && (baseType.Name == "PersistentScriptingObject" || baseType.Name == "ScriptingObject"))
                 baseType = null;
             CppAutoSerializeFields.Clear();
             CppAutoSerializeProperties.Clear();
@@ -1105,7 +1146,7 @@ namespace Flax.Build.Bindings
             contents.Append($"void {typeNameNative}::Serialize(SerializeStream& stream, const void* otherObj)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
-                contents.Append($"    {baseType}::Serialize(stream, otherObj);").AppendLine();
+                contents.Append($"    {baseType.FullNameNative}::Serialize(stream, otherObj);").AppendLine();
             contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
 
             if (classInfo != null)
@@ -1161,7 +1202,7 @@ namespace Flax.Build.Bindings
             contents.Append($"void {typeNameNative}::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
-                contents.Append($"    {baseType}::Deserialize(stream, modifier);").AppendLine();
+                contents.Append($"    {baseType.FullNameNative}::Deserialize(stream, modifier);").AppendLine();
 
             foreach (var fieldInfo in CppAutoSerializeFields)
             {
@@ -1259,7 +1300,7 @@ namespace Flax.Build.Bindings
                 {
                     var paramType = eventInfo.Type.GenericArgs[i];
                     var paramName = "arg" + i;
-                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo);
+                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, false);
                     contents.Append($"        params[{i}] = {paramValue};").AppendLine();
                 }
                 if (eventInfo.IsStatic)
@@ -1554,7 +1595,7 @@ namespace Flax.Build.Bindings
                 else
                     contents.Append($"(ScriptingType::SpawnHandler)&{classTypeNameNative}::Spawn, ");
                 if (classInfo.BaseType != null && useScripting)
-                    contents.Append($"&{classInfo.BaseType}::TypeInitializer, ");
+                    contents.Append($"&{classInfo.BaseType.FullNameNative}::TypeInitializer, ");
                 else
                     contents.Append("nullptr, ");
                 contents.Append(setupScriptVTable);
@@ -1566,7 +1607,7 @@ namespace Flax.Build.Bindings
                 else
                     contents.Append($"&{classTypeNameInternal}Internal::Ctor, &{classTypeNameInternal}Internal::Dtor, ");
                 if (classInfo.BaseType != null)
-                    contents.Append($"&{classInfo.BaseType}::TypeInitializer");
+                    contents.Append($"&{classInfo.BaseType.FullNameNative}::TypeInitializer");
                 else
                     contents.Append("nullptr");
             }
@@ -1884,16 +1925,6 @@ namespace Flax.Build.Bindings
             {
                 var header = new StringBuilder();
 
-                // Includes
-                CppReferencesFiles.Remove(null);
-                CppIncludeFilesList.Clear();
-                foreach (var fileInfo in CppReferencesFiles)
-                    CppIncludeFilesList.Add(fileInfo.Name);
-                CppIncludeFilesList.AddRange(CppIncludeFiles);
-                CppIncludeFilesList.Sort();
-                foreach (var path in CppIncludeFilesList)
-                    header.AppendFormat("#include \"{0}\"", path).AppendLine();
-
                 // Variant converting helper methods
                 foreach (var typeInfo in CppVariantToTypes)
                 {
@@ -2050,7 +2081,8 @@ namespace Flax.Build.Bindings
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
                         header.AppendFormat("        	mono_array_set(result, {0}Managed, i, ToManaged(data[i]));", apiType.Name).AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToNativeArray(Array<{0}>& result, MonoArray* data, int32 length)", fullName).AppendLine();
+                        header.Append("    template<typename AllocationType = HeapAllocation>").AppendLine();
+                        header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < length; i++)").AppendLine();
                         header.AppendFormat("    	    result.Add(ToNative(mono_array_get(data, {0}Managed, i)));", apiType.Name).AppendLine();
@@ -2230,7 +2262,8 @@ namespace Flax.Build.Bindings
                         header.Append("            mono_array_setref(result, i, Box(data[i]));").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToNativeArray(Array<{0}>& result, MonoArray* data, int32 length)", fullName).AppendLine();
+                        header.Append("    template<typename AllocationType = HeapAllocation>").AppendLine();
+                        header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < length; i++)").AppendLine();
                         header.AppendFormat("            Unbox(result[i], (MonoObject*)mono_array_addr_with_size(data, sizeof({0}Managed), length));", fullName).AppendLine();
@@ -2240,6 +2273,18 @@ namespace Flax.Build.Bindings
                     }
                 }
 
+                contents.Insert(headerPos, header.ToString());
+
+                // Includes
+                header.Clear();
+                CppReferencesFiles.Remove(null);
+                CppIncludeFilesList.Clear();
+                foreach (var fileInfo in CppReferencesFiles)
+                    CppIncludeFilesList.Add(fileInfo.Name);
+                CppIncludeFilesList.AddRange(CppIncludeFiles);
+                CppIncludeFilesList.Sort();
+                foreach (var path in CppIncludeFilesList)
+                    header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());
             }
 

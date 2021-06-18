@@ -1195,8 +1195,8 @@ struct Property
 
 namespace Impl
 {
-	LinuxKeyboard Keyboard;
-	LinuxMouse Mouse;
+	LinuxKeyboard* Keyboard;
+	LinuxMouse* Mouse;
     StringAnsi ClipboardText;
 
     void ClipboardGetText(String& result, X11::Atom source, X11::Atom atom, X11::Window window)
@@ -2193,8 +2193,8 @@ bool LinuxPlatform::Init()
 		}
 	}
 
-    Input::Mouse = &Impl::Mouse;
-    Input::Keyboard = &Impl::Keyboard;
+    Input::Mouse = Impl::Mouse = New<LinuxMouse>();
+    Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
 
     return false;
 }

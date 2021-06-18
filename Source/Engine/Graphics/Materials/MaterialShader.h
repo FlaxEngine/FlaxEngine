@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IMaterial.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Renderer/Config.h"
 

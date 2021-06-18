@@ -69,6 +69,11 @@ namespace FlaxEditor.Content.Create
             InputSettings,
 
             /// <summary>
+            /// The streaming settings.
+            /// </summary>
+            StreamingSettings,
+
+            /// <summary>
             /// The Windows settings.
             /// </summary>
             WindowsPlatformSettings,
@@ -116,6 +121,7 @@ namespace FlaxEditor.Content.Create
             typeof(LocalizationSettings),
             typeof(BuildSettings),
             typeof(InputSettings),
+            typeof(StreamingSettings),
             typeof(WindowsPlatformSettings),
             typeof(UWPPlatformSettings),
             typeof(LinuxPlatformSettings),

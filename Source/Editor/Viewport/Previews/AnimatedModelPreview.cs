@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEditor.GUI.Input;
 using Object = FlaxEngine.Object;
@@ -13,12 +13,9 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
+        private ContextMenuButton _showBoundsButton;
         private AnimatedModel _previewModel;
-        private StaticModel _previewNodesActor;
-        private Model _previewNodesModel;
-        private int _previewNodesCounter;
-        private List<Vector3> _previewNodesVB;
-        private List<int> _previewNodesIB;
+        private bool _showNodes, _showBounds;
 
         /// <summary>
         /// Gets or sets the skinned model asset to preview.
@@ -42,7 +39,32 @@ namespace FlaxEditor.Viewport.Previews
         /// <summary>
         /// Gets or sets a value indicating whether show animated model skeleton nodes debug view.
         /// </summary>
-        public bool ShowNodes { get; set; } = false;
+        public bool ShowNodes
+        {
+            get => _showNodes;
+            set
+            {
+                _showNodes = value;
+                if (value)
+                    ShowDebugDraw = true;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show animated model bounding box debug view.
+        /// </summary>
+        public bool ShowBounds
+        {
+            get => _showBounds;
+            set
+            {
+                _showBounds = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showBoundsButton != null)
+                    _showBoundsButton.Checked = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether scale the model to the normalized bounds.
@@ -72,20 +94,14 @@ namespace FlaxEditor.Viewport.Previews
                 UpdateMode = AnimatedModel.AnimationUpdateMode.Manual
             };
 
-            _previewNodesModel = FlaxEngine.Content.CreateVirtualAsset<Model>();
-            _previewNodesModel.SetupLODs(new[] { 1 });
-            _previewNodesActor = new StaticModel
-            {
-                Model = _previewNodesModel
-            };
-            _previewNodesActor.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.WiresDebugMaterial));
-
             // Link actors for rendering
             Task.AddCustomActor(_previewModel);
-            Task.AddCustomActor(_previewNodesActor);
 
             if (useWidgets)
             {
+                // Show Bounds
+                _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+
                 // Preview LOD
                 {
                     var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
@@ -122,6 +138,55 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+        {
+            base.OnDebugDraw(context, ref renderContext);
+
+            // Draw skeleton nodes
+            if (_showNodes)
+            {
+                _previewModel.GetCurrentPose(out var pose);
+                var nodes = _previewModel.SkinnedModel?.Nodes;
+                if (pose != null && pose.Length != 0 && nodes != null)
+                {
+                    // Draw bounding box at the node locations
+                    var nodesMask = NodesMask != null && NodesMask.Length == nodes.Length ? NodesMask : null;
+                    var localBox = new OrientedBoundingBox(new Vector3(-1.0f), new Vector3(1.0f));
+                    for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
+                    {
+                        if (nodesMask != null && !nodesMask[nodeIndex])
+                            continue;
+                        var transform = pose[nodeIndex];
+                        transform.Decompose(out var scale, out Matrix _, out _);
+                        transform = Matrix.Invert(Matrix.Scaling(scale)) * transform;
+                        var box = localBox * transform;
+                        DebugDraw.DrawWireBox(box, Color.Green, 0, false);
+                    }
+
+                    // Nodes connections
+                    for (int nodeIndex = 0; nodeIndex < nodes.Length; nodeIndex++)
+                    {
+                        int parentIndex = nodes[nodeIndex].ParentIndex;
+                        if (parentIndex != -1)
+                        {
+                            if (nodesMask != null && (!nodesMask[nodeIndex] || !nodesMask[parentIndex]))
+                                continue;
+                            var parentPos = pose[parentIndex].TranslationVector;
+                            var bonePos = pose[nodeIndex].TranslationVector;
+                            DebugDraw.DrawLine(parentPos, bonePos, Color.Green, 0, false);
+                        }
+                    }
+                }
+            }
+
+            // Draw bounds
+            if (_showBounds)
+            {
+                DebugDraw.DrawWireBox(_previewModel.Box, Color.Violet.RGBMultiplied(0.8f), 0, false);
+            }
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
@@ -130,122 +195,6 @@ namespace FlaxEditor.Viewport.Previews
             if (PlayAnimation)
             {
                 _previewModel.UpdateAnimation();
-            }
-
-            // Update the nodes debug (once every few frames)
-            _previewNodesActor.Transform = _previewModel.Transform;
-            var updateNodesCount = PlayAnimation || _previewNodesVB?.Count == 0 ? 1 : 10;
-            _previewNodesActor.IsActive = ShowNodes;
-            if (_previewNodesCounter++ % updateNodesCount == 0 && ShowNodes)
-            {
-                _previewModel.GetCurrentPose(out var pose);
-                var nodes = _previewModel.SkinnedModel?.Nodes;
-                if (pose == null || pose.Length == 0 || nodes == null)
-                {
-                    _previewNodesActor.IsActive = false;
-                }
-                else
-                {
-                    if (_previewNodesVB == null)
-                        _previewNodesVB = new List<Vector3>(1024 * 2);
-                    else
-                        _previewNodesVB.Clear();
-                    if (_previewNodesIB == null)
-                        _previewNodesIB = new List<int>(1024 * 3);
-                    else
-                        _previewNodesIB.Clear();
-
-                    // Draw bounding box at the node locations
-                    var nodesMask = NodesMask != null && NodesMask.Length == nodes.Length ? NodesMask : null;
-                    var localBox = new OrientedBoundingBox(new Vector3(-1.0f), new Vector3(1.0f));
-                    for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
-                    {
-                        if (nodesMask != null && !nodesMask[nodeIndex])
-                            continue;
-
-                        var transform = pose[nodeIndex];
-                        transform.Decompose(out var scale, out Matrix _, out _);
-                        transform = Matrix.Invert(Matrix.Scaling(scale)) * transform;
-
-                        // Some inlined code to improve performance
-                        var box = localBox * transform;
-                        //
-                        var iStart = _previewNodesVB.Count;
-                        box.GetCorners(_previewNodesVB);
-                        //
-                        _previewNodesIB.Add(iStart + 0);
-                        _previewNodesIB.Add(iStart + 1);
-                        _previewNodesIB.Add(iStart + 0);
-                        //
-                        _previewNodesIB.Add(iStart + 0);
-                        _previewNodesIB.Add(iStart + 4);
-                        _previewNodesIB.Add(iStart + 0);
-                        //
-                        _previewNodesIB.Add(iStart + 1);
-                        _previewNodesIB.Add(iStart + 2);
-                        _previewNodesIB.Add(iStart + 1);
-                        //
-                        _previewNodesIB.Add(iStart + 1);
-                        _previewNodesIB.Add(iStart + 5);
-                        _previewNodesIB.Add(iStart + 1);
-                        //
-                        _previewNodesIB.Add(iStart + 2);
-                        _previewNodesIB.Add(iStart + 3);
-                        _previewNodesIB.Add(iStart + 2);
-                        //
-                        _previewNodesIB.Add(iStart + 2);
-                        _previewNodesIB.Add(iStart + 6);
-                        _previewNodesIB.Add(iStart + 2);
-                        //
-                        _previewNodesIB.Add(iStart + 3);
-                        _previewNodesIB.Add(iStart + 7);
-                        _previewNodesIB.Add(iStart + 3);
-                        //
-                        _previewNodesIB.Add(iStart + 4);
-                        _previewNodesIB.Add(iStart + 5);
-                        _previewNodesIB.Add(iStart + 4);
-                        //
-                        _previewNodesIB.Add(iStart + 4);
-                        _previewNodesIB.Add(iStart + 7);
-                        _previewNodesIB.Add(iStart + 4);
-                        //
-                        _previewNodesIB.Add(iStart + 5);
-                        _previewNodesIB.Add(iStart + 6);
-                        _previewNodesIB.Add(iStart + 5);
-                        //
-                        _previewNodesIB.Add(iStart + 6);
-                        _previewNodesIB.Add(iStart + 7);
-                        _previewNodesIB.Add(iStart + 6);
-                        //
-                    }
-
-                    // Nodes connections
-                    for (int nodeIndex = 0; nodeIndex < nodes.Length; nodeIndex++)
-                    {
-                        int parentIndex = nodes[nodeIndex].ParentIndex;
-
-                        if (parentIndex != -1)
-                        {
-                            if (nodesMask != null && (!nodesMask[nodeIndex] || !nodesMask[parentIndex]))
-                                continue;
-
-                            var parentPos = pose[parentIndex].TranslationVector;
-                            var bonePos = pose[nodeIndex].TranslationVector;
-
-                            var iStart = _previewNodesVB.Count;
-                            _previewNodesVB.Add(parentPos);
-                            _previewNodesVB.Add(bonePos);
-                            _previewNodesIB.Add(iStart + 0);
-                            _previewNodesIB.Add(iStart + 1);
-                            _previewNodesIB.Add(iStart + 0);
-                        }
-                    }
-
-                    if (_previewNodesIB.Count > 0)
-                        _previewNodesModel.LODs[0].Meshes[0].UpdateMesh(_previewNodesVB, _previewNodesIB);
-                    else
-                        _previewNodesActor.IsActive = false;
-                }
             }
         }
 
@@ -265,11 +214,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            // Ensure to cleanup created actor objects
-            _previewNodesActor.Model = null;
             Object.Destroy(ref _previewModel);
-            Object.Destroy(ref _previewNodesActor);
-            Object.Destroy(ref _previewNodesModel);
             NodesMask = null;
 
             base.OnDestroy();

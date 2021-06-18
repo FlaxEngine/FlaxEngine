@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
@@ -13,6 +14,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Object = FlaxEngine.Object;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedMember.Global
@@ -206,11 +208,18 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AnimGraphDebugFlowInfo
+        {
+            public uint NodeId;
+            public int BoxId;
+        }
+
         private FlaxObjectRefPickerControl _debugPicker;
         private NavigationBar _navigationBar;
         private PropertiesProxy _properties;
         private Tab _previewTab;
-        private readonly List<Editor.AnimGraphDebugFlowInfo> _debugFlows = new List<Editor.AnimGraphDebugFlowInfo>();
+        private readonly List<AnimGraphDebugFlowInfo> _debugFlows = new List<AnimGraphDebugFlowInfo>();
 
         /// <summary>
         /// Gets the animated model actor used for the animation preview.
@@ -285,7 +294,7 @@ namespace FlaxEditor.Windows.Assets
                 Parent = this
             };
 
-            Editor.AnimGraphDebugFlow += OnDebugFlow;
+            Animations.DebugFlow += OnDebugFlow;
         }
 
         private void OnSurfaceContextChanged(VisjectSurfaceContext context)
@@ -293,26 +302,27 @@ namespace FlaxEditor.Windows.Assets
             _surface.UpdateNavigationBar(_navigationBar, _toolstrip);
         }
 
-        private bool OnCheckValid(FlaxEngine.Object obj, ScriptType type)
+        private bool OnCheckValid(Object obj, ScriptType type)
         {
             return obj is AnimatedModel player && player.AnimationGraph == OriginalAsset;
         }
 
-        private void OnDebugFlow(Editor.AnimGraphDebugFlowInfo flowInfo)
+        private void OnDebugFlow(Asset asset, Object obj, uint nodeId, uint boxId)
         {
             // Filter the flow
             if (_debugPicker.Value != null)
             {
-                if (flowInfo.Asset != OriginalAsset || _debugPicker.Value != flowInfo.Object)
+                if (asset != OriginalAsset || _debugPicker.Value != obj)
                     return;
             }
             else
             {
-                if (flowInfo.Asset != Asset || _preview.PreviewActor != flowInfo.Object)
+                if (asset != Asset || _preview.PreviewActor != obj)
                     return;
             }
 
             // Register flow to show it in UI on a surface
+            var flowInfo = new AnimGraphDebugFlowInfo { NodeId = nodeId, BoxId = (int)boxId };
             lock (_debugFlows)
             {
                 _debugFlows.Add(flowInfo);
@@ -457,7 +467,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            Editor.AnimGraphDebugFlow -= OnDebugFlow;
+            Animations.DebugFlow -= OnDebugFlow;
 
             _properties = null;
             _navigationBar = null;

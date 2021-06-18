@@ -4,6 +4,7 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
@@ -17,6 +18,7 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
+#include <timeapi.h>
 #include <Psapi.h>
 #include <objbase.h>
 #if CRASH_LOG_ENABLE
@@ -27,16 +29,38 @@
 const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
+#if CRASH_LOG_ENABLE || TRACY_ENABLE
+// Lock for symbols list, shared with Tracy
+extern "C" {
+static HANDLE dbgHelpLock;
+
+void DbgHelpInit()
+{
+    dbgHelpLock = CreateMutexW(nullptr, FALSE, nullptr);
+}
+
+void DbgHelpLock()
+{
+    WaitForSingleObject(dbgHelpLock, INFINITE);
+}
+
+void DbgHelpUnlock()
+{
+    ReleaseMutex(dbgHelpLock);
+}
+}
+#endif
+
 namespace
 {
-    String UserLocale, ComputerName, UserName;
+    String UserLocale, ComputerName, UserName, WindowsName;
     HANDLE EngineMutex = nullptr;
     Rectangle VirtualScreenBounds = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
     int32 VersionMajor = 0;
     int32 VersionMinor = 0;
+    int32 VersionBuild = 0;
     int32 SystemDpi = 96;
 #if CRASH_LOG_ENABLE
-    CriticalSection SymLocker;
 #if TRACY_ENABLE
     bool SymInitialized = true;
 #else
@@ -123,6 +147,102 @@ LONG GetDWORDRegKey(HKEY hKey, const Char* strValueName, DWORD& nValue, DWORD nD
         nValue = nResult;
     }
     return nError;
+}
+
+void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionMinor, int32& versionBuild)
+{
+    // Get OS version
+
+    HKEY hKey;
+    LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
+    if (lRes == ERROR_SUCCESS)
+    {
+        GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
+
+        DWORD currentMajorVersionNumber;
+        DWORD currentMinorVersionNumber;
+        String currentBuildNumber;
+        GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
+        GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
+        GetStringRegKey(hKey, TEXT("CurrentBuildNumber"), currentBuildNumber, TEXT("0"));
+        VersionMajor = currentMajorVersionNumber;
+        VersionMinor = currentMinorVersionNumber;
+        StringUtils::Parse(currentBuildNumber.Get(), &VersionBuild);
+
+        if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
+        {
+            VersionMajor = 6;
+            VersionMinor = 2;
+        }
+
+        if (VersionMajor == 0 && VersionMinor == 0)
+        {
+            String windowsVersion;
+            GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
+
+            if (windowsVersion.HasChars())
+            {
+                const int32 dot = windowsVersion.Find('.');
+                if (dot != -1)
+                {
+                    StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
+                    StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (IsWindowsServer())
+        {
+            windowsName = TEXT("Windows Server");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8Point1OrGreater())
+        {
+            windowsName = TEXT("Windows 8.1");
+            versionMajor = 6;
+            versionMinor = 3;
+        }
+        else if (IsWindows8OrGreater())
+        {
+            windowsName = TEXT("Windows 8");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7SP1OrGreater())
+        {
+            windowsName = TEXT("Windows 7 SP1");
+            versionMajor = 6;
+            versionMinor = 2;
+        }
+        else if (IsWindows7OrGreater())
+        {
+            windowsName = TEXT("Windows 7");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP2OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP2");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaSP1OrGreater())
+        {
+            windowsName = TEXT("Windows Vista SP1");
+            versionMajor = 6;
+            versionMinor = 1;
+        }
+        else if (IsWindowsVistaOrGreater())
+        {
+            windowsName = TEXT("Windows Vista");
+            versionMajor = 6;
+            versionMinor = 0;
+        }
+    }
+    RegCloseKey(hKey);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -402,7 +522,7 @@ void WindowsPlatform::PreInit(void* hInstance)
 
 #if CRASH_LOG_ENABLE
     TCHAR buffer[MAX_PATH] = { 0 };
-    SymLocker.Lock();
+    DbgHelpLock();
     if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
         SymbolsPath.Add(StringUtils::GetDirectoryName(buffer));
     if (::GetEnvironmentVariableW(TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
@@ -411,8 +531,17 @@ void WindowsPlatform::PreInit(void* hInstance)
     options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
     SymSetOptions(options);
     OnSymbolsPathModified();
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
+
+    GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
+
+    // Validate platform
+    if (VersionMajor < 6)
+    {
+        Error(TEXT("Not supported operating system version."));
+        exit(-1);
+    }
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -472,6 +601,12 @@ bool WindowsPlatform::Init()
         return true;
     }
 
+    // Set lowest possible timer resolution for previous Windows versions
+    if (VersionMajor < 10 || (VersionMajor == 10 && VersionBuild < 17134))
+    {
+        timeBeginPeriod(1);
+    }
+
     DWORD tmp;
     Char buffer[256];
 
@@ -502,105 +637,7 @@ void WindowsPlatform::LogInfo()
 {
     Win32Platform::LogInfo();
 
-    // Get OS version
-    {
-        String windowsName;
-        HKEY hKey;
-        LONG lRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_READ, &hKey);
-        if (lRes == ERROR_SUCCESS)
-        {
-            GetStringRegKey(hKey, TEXT("ProductName"), windowsName, TEXT("Windows"));
-
-            DWORD currentMajorVersionNumber;
-            DWORD currentMinorVersionNumber;
-            GetDWORDRegKey(hKey, TEXT("CurrentMajorVersionNumber"), currentMajorVersionNumber, 0);
-            GetDWORDRegKey(hKey, TEXT("CurrentMinorVersionNumber"), currentMinorVersionNumber, 0);
-            VersionMajor = currentMajorVersionNumber;
-            VersionMinor = currentMinorVersionNumber;
-
-            if (StringUtils::Compare(windowsName.Get(), TEXT("Windows 7"), 9) == 0)
-            {
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-
-            if (VersionMajor == 0 && VersionMinor == 0)
-            {
-                String windowsVersion;
-                GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));
-
-                if (windowsVersion.HasChars())
-                {
-                    const int32 dot = windowsVersion.Find('.');
-                    if (dot != -1)
-                    {
-                        StringUtils::Parse(windowsVersion.Substring(0, dot).Get(), &VersionMajor);
-                        StringUtils::Parse(windowsVersion.Substring(dot + 1).Get(), &VersionMinor);
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (IsWindowsServer())
-            {
-                windowsName = TEXT("Windows Server");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8Point1OrGreater())
-            {
-                windowsName = TEXT("Windows 8.1");
-                VersionMajor = 6;
-                VersionMinor = 3;
-            }
-            else if (IsWindows8OrGreater())
-            {
-                windowsName = TEXT("Windows 8");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7SP1OrGreater())
-            {
-                windowsName = TEXT("Windows 7 SP1");
-                VersionMajor = 6;
-                VersionMinor = 2;
-            }
-            else if (IsWindows7OrGreater())
-            {
-                windowsName = TEXT("Windows 7");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP2OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP2");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaSP1OrGreater())
-            {
-                windowsName = TEXT("Windows Vista SP1");
-                VersionMajor = 6;
-                VersionMinor = 1;
-            }
-            else if (IsWindowsVistaOrGreater())
-            {
-                windowsName = TEXT("Windows Vista");
-                VersionMajor = 6;
-                VersionMinor = 0;
-            }
-        }
-        RegCloseKey(hKey);
-        LOG(Info, "Microsoft {0} {1}-bit ({2}.{3})", windowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor);
-    }
-
-    // Validate platform
-    if (VersionMajor < 6)
-    {
-        LOG(Error, "Not supported operating system version.");
-        exit(0);
-    }
+    LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
 
     // Check minimum amount of RAM
     auto memStats = Platform::GetMemoryStats();
@@ -638,7 +675,7 @@ void WindowsPlatform::BeforeExit()
 void WindowsPlatform::Exit()
 {
 #if CRASH_LOG_ENABLE
-    SymLocker.Lock();
+    DbgHelpLock();
 #if !TRACY_ENABLE
     if (SymInitialized)
     {
@@ -647,7 +684,7 @@ void WindowsPlatform::Exit()
     }
 #endif
     SymbolsPath.Resize(0);
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
 
     // Unregister app class
@@ -1118,6 +1155,19 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
     ASSERT(filename);
 
+    // Add folder to search path to load dependency libraries
+    StringView folder = StringUtils::GetDirectoryName(filename);
+    if (folder.HasChars() && FileSystem::IsRelative(folder))
+        folder = StringView::Empty;
+    if (folder.HasChars())
+    {
+        Char& end = ((Char*)folder.Get())[folder.Length()];
+        const Char c = end;
+        end = 0;
+        SetDllDirectoryW(*folder);
+        end = c;
+    }
+
     // Avoiding windows dialog boxes if missing
     const DWORD errorMode = SEM_NOOPENFILEERRORBOX;
     DWORD prevErrorMode = 0;
@@ -1134,17 +1184,20 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     {
         SetThreadErrorMode(prevErrorMode, nullptr);
     }
+    if (folder.HasChars())
+    {
+        SetDllDirectoryW(nullptr);
+    }
 
 #if CRASH_LOG_ENABLE
     // Refresh modules info during next stack trace collecting to have valid debug symbols information
-    SymLocker.Lock();
-    const auto folder = StringUtils::GetDirectoryName(filename);
-    if (!SymbolsPath.Contains(folder))
+    DbgHelpLock();
+    if (folder.HasChars() && !SymbolsPath.Contains(folder))
     {
         SymbolsPath.Add(folder);
         OnSymbolsPathModified();
     }
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
 
     return handle;
@@ -1154,7 +1207,7 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
 {
     Array<StackFrame> result;
 #if CRASH_LOG_ENABLE
-    SymLocker.Lock();
+    DbgHelpLock();
 
     // Initialize
     HANDLE process = GetCurrentProcess();
@@ -1278,7 +1331,7 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
         }
     }
 
-    SymLocker.Unlock();
+    DbgHelpUnlock();
 #endif
     return result;
 }

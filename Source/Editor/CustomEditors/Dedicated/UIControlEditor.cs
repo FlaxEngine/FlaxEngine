@@ -412,6 +412,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             _cachedType = null;
+            if (HasDifferentTypes)
+            {
+                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
+                return;
+            }
 
             // Set control type button
             var space = layout.Space(20);
@@ -600,34 +605,26 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private bool _cachedXEq;
         private bool _cachedYEq;
 
-        /// <summary>
-        /// Refreshes if equality of anchors does not correspond to the cached equality
-        /// </summary>
-        public void RefreshBaseOnAnchorsEquality()
-        {
-            if (Values.HasNull)
-                return;
-
-            GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
-            if (xEq != _cachedXEq || yEq != _cachedYEq)
-            {
-                RebuildLayout();
-                return;
-            }
-        }
-
         /// <inheritdoc />
         public override void Refresh()
         {
-            // Automatic layout rebuild if control type gets changed
-            var type = Values.HasNull ? null : Values[0].GetType();
-            if (type != _cachedType)
+            if (_cachedType != null)
             {
-                RebuildLayout();
-                return;
+                // Automatic layout rebuild if control type gets changed
+                var type = Values.HasNull ? null : Values[0].GetType();
+                if (type != _cachedType)
+                {
+                    RebuildLayout();
+                    return;
+                }
+
+                // Refresh anchors
+                GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
+                if (xEq != _cachedXEq || yEq != _cachedYEq)
+                {
+                    RebuildLayout();
+                }
             }
-            RefreshBaseOnAnchorsEquality();
-            //RefreshValues();
 
             base.Refresh();
         }
@@ -642,59 +639,39 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var cm = new ItemsListContextMenu(180);
             for (int i = 0; i < controlTypes.Count; i++)
             {
-                var controlType = controlTypes[i];
-                var item = new ItemsListContextMenu.Item(controlType.Name, controlType)
-                {
-                    TooltipText = controlType.TypeName,
-                };
-                var attributes = controlType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
-                cm.AddItem(item);
+                cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
             }
-
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
             cm.SortChildren();
             cm.Show(button.Parent, button.BottomLeft);
         }
 
+        private void SetType(ref ScriptType controlType, UIControl uiControl)
+        {
+            string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
+            uiControl.Control = (Control)controlType.CreateInstance();
+            if (uiControl.Name.StartsWith(previousName))
+            {
+                string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
+                uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+            }
+        }
+
         private void SetType(ScriptType controlType)
         {
             var uiControls = ParentEditor.Values;
-            if (Presenter.Undo != null)
+            if (Presenter.Undo?.Enabled ?? false)
             {
                 using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
                 {
                     for (int i = 0; i < uiControls.Count; i++)
-                    {
-                        var uiControl = (UIControl)uiControls[i];
-                        string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
-                        uiControl.Control = (Control)controlType.CreateInstance();
-                        if (uiControl.Name.StartsWith(previousName))
-                        {
-                            string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                            uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                        }
-                    }
+                        SetType(ref controlType, (UIControl)uiControls[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < uiControls.Count; i++)
-                {
-                    var uiControl = (UIControl)uiControls[i];
-                    string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
-                    uiControl.Control = (Control)controlType.CreateInstance();
-                    if (uiControl.Name.StartsWith(previousName))
-                    {
-                        string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                        uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                    }
-                }
+                    SetType(ref controlType, (UIControl)uiControls[i]);
             }
 
             ParentEditor.RebuildLayout();

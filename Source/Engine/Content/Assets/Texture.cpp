@@ -17,6 +17,16 @@ Texture::Texture(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+TextureFormatType Texture::GetFormatType() const
+{
+    return _texture.GetFormatType();
+}
+
+bool Texture::IsNormalMap() const
+{
+    return _texture.GetFormatType() == TextureFormatType::NormalMap;
+}
+
 #if USE_EDITOR
 
 bool Texture::Save(const StringView& path, const InitData* customData)

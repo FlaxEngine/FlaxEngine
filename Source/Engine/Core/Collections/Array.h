@@ -493,17 +493,8 @@ public:
     /// Adds the other collection to the collection.
     /// </summary>
     /// <param name="other">The other collection to add.</param>
-    FORCE_INLINE void Add(const Array& other)
-    {
-        Add(other.Get(), other.Count());
-    }
-
-    /// <summary>
-    /// Adds the other collection to the collection.
-    /// </summary>
-    /// <param name="other">The other collection to add.</param>
-    template<typename U>
-    FORCE_INLINE void Add(const Array<U>& other)
+    template<typename OtherT, typename OtherAllocationType = HeapAllocation>
+    FORCE_INLINE void Add(const Array<OtherT, OtherAllocationType>& other)
     {
         Add(other.Get(), other.Count());
     }

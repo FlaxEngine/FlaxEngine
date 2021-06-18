@@ -100,12 +100,13 @@ bool LightPass::setupResources()
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
-        if (_psLightPointNormal.Create(psDesc, shader, "PS_Point"))
-            return true;
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightPointInverted.Create(psDesc, shader, "PS_Point"))
+            return true;
+        psDesc.CullMode = CullMode::Normal;
+        psDesc.DepthTestEnable = true;
+        if (_psLightPointNormal.Create(psDesc, shader, "PS_Point"))
             return true;
     }
     if (!_psLightSpotNormal.IsValid() || !_psLightSpotInverted.IsValid())
@@ -113,12 +114,13 @@ bool LightPass::setupResources()
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
-        if (_psLightSpotNormal.Create(psDesc, shader, "PS_Spot"))
-            return true;
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightSpotInverted.Create(psDesc, shader, "PS_Spot"))
+            return true;
+        psDesc.CullMode = CullMode::Normal;
+        psDesc.DepthTestEnable = true;
+        if (_psLightSpotNormal.Create(psDesc, shader, "PS_Spot"))
             return true;
     }
     if (!_psLightSkyNormal->IsValid() || !_psLightSkyInverted->IsValid())
@@ -203,7 +205,11 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     PerFrame perFrame;
 
     // Bind output
-    context->SetRenderTarget(lightBuffer);
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    const bool depthBufferReadOnly = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView;
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
@@ -221,7 +227,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+    context->BindSR(3, depthBufferSRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Check if debug lights
@@ -270,7 +276,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
@@ -325,7 +331,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
@@ -366,7 +372,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             ShadowsPass::Instance()->RenderShadow(renderContext, light, lightIndex, shadowMaskView);
 
             // Bind output
-            context->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
             // Set shadow mask
             context->BindSR(5, shadowMaskView);

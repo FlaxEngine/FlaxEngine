@@ -164,6 +164,38 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Determines the closest point between a point and a line.
+        /// </summary>
+        /// <param name="point">The point to test.</param>
+        /// <param name="p0">The line first point.</param>
+        /// <param name="p1">The line second point.</param>
+        /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
+        public static void ClosestPointPointLine(ref Vector3 point, ref Vector3 p0, ref Vector3 p1, out Vector3 result)
+        {
+            Vector3 p = point - p0;
+            Vector3 n = p1 - p0;
+            float length = n.Length;
+            if (length < 1e-10f)
+            {
+                result = p0;
+                return;
+            }
+            n /= length;
+            float dot = Vector3.Dot(ref n, ref p);
+            if (dot <= 0.0f)
+            {
+                result = p0;
+                return;
+            }
+            if (dot >= length)
+            {
+                result = p1;
+                return;
+            }
+            result = p0 + n * dot;
+        }
+
+        /// <summary>
         /// Determines the closest point between a point and a triangle.
         /// </summary>
         /// <param name="point">The point to test.</param>

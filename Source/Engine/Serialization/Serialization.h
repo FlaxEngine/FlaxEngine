@@ -18,6 +18,18 @@ struct VariantType;
 
 namespace Serialization
 {
+    inline int32 DeserializeInt(ISerializable::DeserializeStream& stream)
+    {
+        int32 result = 0;
+        if (stream.IsInt())
+            result = stream.GetInt();
+        else if (stream.IsFloat())
+            result = (int32)stream.GetFloat();
+        else if (stream.IsString())
+            StringUtils::Parse(stream.GetString(), &result);
+        return result;
+    }
+
     // In-build types
     
     inline bool ShouldSerialize(const bool& v, const void* otherObj)
@@ -43,7 +55,7 @@ namespace Serialization
     }
     inline void Deserialize(ISerializable::DeserializeStream& stream, int8& v, ISerializeModifier* modifier)
     {
-        v = stream.GetInt();
+        v = (int8)DeserializeInt(stream);
     }
     
     inline bool ShouldSerialize(const char& v, const void* otherObj)
@@ -82,7 +94,7 @@ namespace Serialization
     }
     inline void Deserialize(ISerializable::DeserializeStream& stream, int16& v, ISerializeModifier* modifier)
     {
-        v = stream.GetInt();
+        v = (int16)DeserializeInt(stream);
     }
 
     inline bool ShouldSerialize(const int32& v, const void* otherObj)
@@ -95,7 +107,7 @@ namespace Serialization
     }
     inline void Deserialize(ISerializable::DeserializeStream& stream, int32& v, ISerializeModifier* modifier)
     {
-        v = stream.GetInt();
+        v = DeserializeInt(stream);
     }
 
     inline bool ShouldSerialize(const int64& v, const void* otherObj)
@@ -204,7 +216,7 @@ namespace Serialization
     template<typename T>
     inline typename TEnableIf<TIsEnum<T>::Value>::Type Deserialize(ISerializable::DeserializeStream& stream, T& v, ISerializeModifier* modifier)
     {
-        v = (T)stream.GetInt();
+        v = (T)DeserializeInt(stream);
     }
 
     // Common types
@@ -536,7 +548,7 @@ namespace Serialization
         else if (stream.IsString())
         {
             // byte[] encoded as Base64
-            const StringAnsiView streamView(stream.GetString(), stream.GetStringLength());
+            const StringAnsiView streamView(stream.GetStringAnsiView());
             v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
             Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
         }
@@ -577,21 +589,34 @@ namespace Serialization
     template<typename KeyType, typename ValueType>
     inline void Deserialize(ISerializable::DeserializeStream& stream, Dictionary<KeyType, ValueType>& v, ISerializeModifier* modifier)
     {
-        if (!stream.IsArray())
-            return;
-        const auto& streamArray = stream.GetArray();
         v.Clear();
-        v.EnsureCapacity(streamArray.Size() * 3);
-        for (rapidjson::SizeType i = 0; i < streamArray.Size(); i++)
+        if (stream.IsArray())
         {
-            auto& streamItem = streamArray[i];
-            const auto mKey = SERIALIZE_FIND_MEMBER(streamItem, "Key");
-            const auto mValue = SERIALIZE_FIND_MEMBER(streamItem, "Value");
-            if (mKey != streamItem.MemberEnd() && mValue != streamItem.MemberEnd())
+            const auto& streamArray = stream.GetArray();
+            const int32 size = streamArray.Size();
+            v.EnsureCapacity(size * 3);
+            for (int32 i = 0; i < size; i++)
+            {
+                auto& streamItem = streamArray[i];
+                const auto mKey = SERIALIZE_FIND_MEMBER(streamItem, "Key");
+                const auto mValue = SERIALIZE_FIND_MEMBER(streamItem, "Value");
+                if (mKey != streamItem.MemberEnd() && mValue != streamItem.MemberEnd())
+                {
+                    KeyType key;
+                    Deserialize(mKey->value, key, modifier);
+                    Deserialize(mValue->value, v[key], modifier);
+                }
+            }
+        }
+        else if (stream.IsObject())
+        {
+            const int32 size = stream.MemberCount();
+            v.EnsureCapacity(size * 3);
+            for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
                 KeyType key;
-                Deserialize(mKey->value, key, modifier);
-                Deserialize(mValue->value, v[key], modifier);
+                Deserialize(i->name, key, modifier);
+                Deserialize(i->value, v[key], modifier);
             }
         }
     }

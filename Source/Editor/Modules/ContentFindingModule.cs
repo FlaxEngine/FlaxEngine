@@ -287,11 +287,11 @@ namespace FlaxEditor.Modules
                 break;
             case ActorNode actorNode:
                 Editor.Instance.SceneEditing.Select(actorNode.Actor);
-                Editor.Instance.Windows.EditWin.ShowSelectedActors();
+                Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
                 break;
             case Actor actor:
                 Editor.Instance.SceneEditing.Select(actor);
-                Editor.Instance.Windows.EditWin.ShowSelectedActors();
+                Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
                 break;
             }
         }

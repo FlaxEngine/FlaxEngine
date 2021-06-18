@@ -33,6 +33,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
                         TargetPlatform.XboxScarlett,
+                        TargetPlatform.Switch,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -614,7 +615,7 @@ namespace Flax.Deps.Dependencies
                         { "ANDROID_API", apiLevel },
                         { "ANDROID_API_VERSION", apiLevel },
                         { "ANDROID_NATIVE_API_LEVEL", apiLevel },
-                        
+
                         { "CC", Path.Combine(ndkBin, archName + apiLevel + "-clang") },
                         { "CXX", Path.Combine(ndkBin, archName + apiLevel + "-clang++") },
                         { "AR", Path.Combine(ndkBin, archName + "-ar") },
@@ -703,6 +704,13 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run("make", $"-j2 -C {root} -C runtime all-mcs build_profiles=monodroid", null, root, Utilities.RunOptions.None);
                     Utilities.DirectoryCopy(Path.Combine(root, "mcs", "class", "lib", "monodroid"), Path.Combine(bclLibMonoOutput, "2.1"), true, true, "*.dll");
                     Utilities.DirectoryDelete(Path.Combine(bclLibMonoOutput, "2.1", "Facades"));
+                    break;
+                }
+                case TargetPlatform.Switch:
+                {
+                    var type = Type.GetType("Flax.Build.Platforms.Switch.mono");
+                    var method = type.GetMethod("Build");
+                    method.Invoke(null, new object[] { root, options });
                     break;
                 }
                 }

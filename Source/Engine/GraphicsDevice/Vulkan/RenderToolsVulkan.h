@@ -164,37 +164,6 @@ public:
         return stageFlags;
     }
 
-    static inline void SetBufferBarrierInfo(VkAccessFlags source, VkAccessFlags dest, VkPipelineStageFlags& sourceStage, VkPipelineStageFlags& destStage)
-    {
-        sourceStage |= GetBufferBarrierFlags(source);
-        destStage |= GetBufferBarrierFlags(dest);
-    }
-
-    static inline void SetImageBarrierInfo(VkImageLayout source, VkImageLayout dest, VkImageMemoryBarrier& barrier, VkPipelineStageFlags& sourceStage, VkPipelineStageFlags& destStage)
-    {
-        barrier.oldLayout = source;
-        barrier.newLayout = dest;
-
-        sourceStage |= GetImageBarrierFlags(source, barrier.srcAccessMask);
-        destStage |= GetImageBarrierFlags(dest, barrier.dstAccessMask);
-    }
-
-    static void ImagePipelineBarrier(VkCommandBuffer cmdBuffer, VkImage img, VkImageLayout src, VkImageLayout dest, const VkImageSubresourceRange& subresourceRange)
-    {
-        VkImageMemoryBarrier imageBarrier;
-        ZeroStruct(imageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        imageBarrier.image = img;
-        imageBarrier.subresourceRange = subresourceRange;
-        imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        VkPipelineStageFlags srcStages = (VkPipelineStageFlags)0;
-        VkPipelineStageFlags destStages = (VkPipelineStageFlags)0;
-        SetImageBarrierInfo(src, dest, imageBarrier, srcStages, destStages);
-
-        vkCmdPipelineBarrier(cmdBuffer, srcStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
-    }
-
     template<class T>
     static FORCE_INLINE void ZeroStruct(T& data, VkStructureType type)
     {

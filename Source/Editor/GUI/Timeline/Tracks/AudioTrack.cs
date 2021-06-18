@@ -312,7 +312,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.UnlockChildrenRecursive();
 
             // Navigation buttons
-            const float buttonSize = 14;
+            const float keySize = 18;
+            const float addSize = 20;
             var icons = Editor.Instance.Icons;
             var rightKey = new Image
             {
@@ -323,7 +324,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
                 Brush = new SpriteBrush(icons.Right32),
-                Offsets = new Margin(-buttonSize - 2 + _muteCheckbox.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
+                Offsets = new Margin(-keySize - 2 + _muteCheckbox.Offsets.Left, keySize, keySize * -0.5f, keySize),
                 Parent = this,
             };
             rightKey.Clicked += OnRightKeyClicked;
@@ -336,7 +337,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(3),
                 Brush = new SpriteBrush(icons.Add32),
-                Offsets = new Margin(-buttonSize - 2 + rightKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
+                Offsets = new Margin(-addSize - 2 + rightKey.Offsets.Left, addSize, addSize * -0.5f, addSize),
                 Parent = this,
             };
             addKey.Clicked += OnAddKeyClicked;
@@ -349,7 +350,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Color = Style.Current.ForegroundGrey,
                 Margin = new Margin(1),
                 Brush = new SpriteBrush(icons.Left32),
-                Offsets = new Margin(-buttonSize - 2 + addKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
+                Offsets = new Margin(-keySize - 2 + addKey.Offsets.Left, keySize, keySize * -0.5f, keySize),
                 Parent = this,
             };
             leftKey.Clicked += OnLeftKeyClicked;

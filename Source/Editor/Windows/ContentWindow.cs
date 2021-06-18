@@ -66,7 +66,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Content";
-            Icon = editor.Icons.Folder64;
+            Icon = editor.Icons.Folder32;
 
             // Content database events
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;

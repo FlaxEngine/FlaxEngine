@@ -2,7 +2,8 @@
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
-#include "Engine/Animations/AnimationManager.h"
+#include "Engine/Core/Math/Matrix3x4.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -12,8 +13,6 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
-
-extern Array<Matrix> UpdateBones;
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
@@ -52,7 +51,7 @@ void AnimatedModel::UpdateAnimation()
     if (AnimationGraph && AnimationGraph->IsLoaded() && AnimationGraph->Graph.IsReady())
     {
         // Request an animation update
-        AnimationManager::AddToUpdate(this);
+        Animations::AddToUpdate(this);
     }
     else
     {
@@ -112,16 +111,6 @@ void AnimatedModel::PreInitSkinningData()
 
     UpdateBounds();
     UpdateSockets();
-}
-
-void AnimatedModel::UpdateSockets()
-{
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
-        if (socket)
-            socket->UpdateTransformation();
-    }
 }
 
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
@@ -389,7 +378,7 @@ void AnimatedModel::BeginPlay(SceneBeginData* data)
 
 void AnimatedModel::EndPlay()
 {
-    AnimationManager::RemoveFromUpdate(this);
+    Animations::RemoveFromUpdate(this);
     SetMasterPoseModel(nullptr);
 
     // Base
@@ -439,8 +428,7 @@ void AnimatedModel::UpdateLocalBounds()
     }
 
     // Scale bounds
-    box.Minimum *= BoundsScale;
-    box.Maximum *= BoundsScale;
+    box = box.MakeScaled(box, BoundsScale);
 
     _boxLocal = box;
 }
@@ -453,9 +441,19 @@ void AnimatedModel::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void AnimatedModel::OnAnimationUpdated()
+void AnimatedModel::UpdateSockets()
 {
-    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
+        if (socket)
+            socket->UpdateTransformation();
+    }
+}
+
+void AnimatedModel::OnAnimationUpdated_Async()
+{
+    // Update asynchronous stuff
     auto& skeleton = SkinnedModel->Skeleton;
 
     // Copy pose from the master
@@ -471,20 +469,35 @@ void AnimatedModel::OnAnimationUpdated()
     // Calculate the final bones transformations and update skinning
     {
         ANIM_GRAPH_PROFILE_EVENT("Final Pose");
-        UpdateBones.Resize(skeleton.Bones.Count(), false);
-        for (int32 boneIndex = 0; boneIndex < skeleton.Bones.Count(); boneIndex++)
+        const int32 bonesCount = skeleton.Bones.Count();
+        Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
+        ASSERT(_skinningData.Data.Count() == bonesCount * sizeof(Matrix3x4));
+        for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
         {
             auto& bone = skeleton.Bones[boneIndex];
-            UpdateBones[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+            Matrix matrix = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+            output[boneIndex].SetMatrixTranspose(matrix);
         }
+        _skinningData.OnDataChanged(!PerBoneMotionBlur);
     }
-    _skinningData.SetData(UpdateBones.Get(), !PerBoneMotionBlur);
 
     UpdateBounds();
+    _blendShapes.Update(SkinnedModel.Get());
+}
+
+void AnimatedModel::OnAnimationUpdated_Sync()
+{
+    // Update synchronous stuff
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
-    _blendShapes.Update(SkinnedModel.Get());
     AnimationUpdated();
+}
+
+void AnimatedModel::OnAnimationUpdated()
+{
+    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    OnAnimationUpdated_Async();
+    OnAnimationUpdated_Sync();
 }
 
 void AnimatedModel::OnSkinnedModelChanged()
@@ -502,7 +515,6 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
 
-    UpdateBounds();
     GraphInstance.Invalidate();
     if (_blendShapes.Weights.HasItems())
         _blendShapes.WeightsDirty = true;
@@ -617,7 +629,7 @@ void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 
 void AnimatedModel::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.8f, 0, true);
+    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();

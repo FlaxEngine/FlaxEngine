@@ -193,7 +193,7 @@ namespace FlaxEngine
                     throw new ArgumentNullException(nameof(destination));
                 destination->NodesCount = source->NodesCount;
                 destination->Unused = source->Unused;
-                Utils.MemoryCopy(new IntPtr(source->Nodes), new IntPtr(destination->Nodes), source->NodesCount * sizeof(Transform));
+                Utils.MemoryCopy(new IntPtr(destination->Nodes), new IntPtr(source->Nodes), (ulong)(source->NodesCount * sizeof(Transform)));
                 destination->RootMotionTranslation = source->RootMotionTranslation;
                 destination->RootMotionRotation = source->RootMotionRotation;
                 destination->Position = source->Position;

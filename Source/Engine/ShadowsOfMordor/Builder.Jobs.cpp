@@ -17,6 +17,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/TerrainManager.h"
 #include "Engine/Foliage/Foliage.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Profiler/Profiler.h"
 
 namespace ShadowsOfMordor
@@ -37,6 +38,8 @@ namespace ShadowsOfMordor
 
 void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 {
+    if (_workerActiveSceneIndex < 0 || _workerActiveSceneIndex >= _scenes.Count())
+        return;
     auto scene = _scenes[_workerActiveSceneIndex];
     int32 atlasSize = (int32)scene->GetSettings().AtlasSize;
 
@@ -70,7 +73,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 {
                     uint32 rowPitch, slicePitch;
                     texture->ComputePitch(mipIndex, rowPitch, slicePitch);
-                    context->UpdateTexture(textures[textureIndex], 0, 0, cleaner, rowPitch, slicePitch);
+                    context->UpdateTexture(textures[textureIndex], 0, mipIndex, cleaner, rowPitch, slicePitch);
                 }
             }
         }
@@ -465,7 +468,9 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         Swap(scene->TempLightmapData, lightmapEntry.LightmapData);
 
         // Keep blurring the empty lightmap texels (from background)
-        const int32 blurPasses = 24;
+        int32 blurPasses = 24;
+        if (context->GetDevice()->GetRendererType() == RendererType::DirectX12)
+            blurPasses = 0; // TODO: fix CS_Dilate passes on D3D12 (probably UAV synchronization issue)
         for (int32 blurPassIndex = 0; blurPassIndex < blurPasses; blurPassIndex++)
         {
             context->UnBindSR(0);

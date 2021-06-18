@@ -6,6 +6,7 @@
 
 #include "GPUDeviceDX12.h"
 #include "Engine/Graphics/Shaders/GPUShaderProgram.h"
+#include "Types.h"
 #include "../IncludeDirectXHeaders.h"
 
 /// <summary>
@@ -20,17 +21,17 @@ protected:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramDX11"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    GPUShaderProgramDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize)
+
+    GPUShaderProgramDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
+        : Header(*header)
     {
         BaseType::Init(initializer);
         _data.Set(cacheBytes, cacheSize);
     }
+
+public:
+
+    DxShaderHeader Header;
 
 public:
 
@@ -39,7 +40,6 @@ public:
     {
         return (void*)_data.Get();
     }
-
     uint32 GetBufferSize() const override
     {
         return _data.Count();
@@ -58,16 +58,8 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramVSDX12"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    /// <param name="inputLayout">The input layout description.</param>
-    /// <param name="inputLayoutSize">The input layout description size.</param>
-    GPUShaderProgramVSDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, D3D12_INPUT_ELEMENT_DESC* inputLayout, byte inputLayoutSize)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramVSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize, D3D12_INPUT_ELEMENT_DESC* inputLayout, byte inputLayoutSize)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
         , _inputLayoutSize(inputLayoutSize)
     {
         for (byte i = 0; i < inputLayoutSize; i++)
@@ -81,7 +73,6 @@ public:
     {
         return (void*)_inputLayout;
     }
-
     byte GetInputLayoutSize() const override
     {
         return _inputLayoutSize;
@@ -95,15 +86,8 @@ class GPUShaderProgramHSDX12 : public GPUShaderProgramDX12<GPUShaderProgramHS>
 {
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramHSDX12"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    /// <param name="controlPointsCount">The control points used by the hull shader for processing.</param>
-    GPUShaderProgramHSDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, int32 controlPointsCount)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramHSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize, int32 controlPointsCount)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
         _controlPointsCount = controlPointsCount;
     }
@@ -116,13 +100,8 @@ class GPUShaderProgramDSDX12 : public GPUShaderProgramDX12<GPUShaderProgramDS>
 {
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramDSDX12"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    GPUShaderProgramDSDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramDSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
     }
 };
@@ -134,14 +113,8 @@ class GPUShaderProgramGSDX12 : public GPUShaderProgramDX12<GPUShaderProgramGS>
 {
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramGSDX12"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    GPUShaderProgramGSDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramGSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
     }
 };
@@ -153,14 +126,8 @@ class GPUShaderProgramPSDX12 : public GPUShaderProgramDX12<GPUShaderProgramPS>
 {
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramPSDX12"/> class.
-    /// </summary>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    GPUShaderProgramPSDX12(const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramPSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
     }
 };
@@ -178,23 +145,13 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramCSDX12"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
-    /// <param name="initializer">The program initialization data.</param>
-    /// <param name="cacheBytes">The shader data.</param>
-    /// <param name="cacheSize">The shader data size.</param>
-    GPUShaderProgramCSDX12(GPUDeviceDX12* device, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize)
-        : GPUShaderProgramDX12(initializer, cacheBytes, cacheSize)
+    GPUShaderProgramCSDX12(GPUDeviceDX12* device, const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
+        : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
         , _device(device)
         , _state(nullptr)
     {
     }
-
-    /// <summary>
-    /// Destructor
-    /// </summary>
+   
     ~GPUShaderProgramCSDX12()
     {
         _device->AddResourceToLateRelease(_state);
@@ -205,7 +162,6 @@ public:
     /// <summary>
     /// Gets DirectX 12 compute pipeline state object
     /// </summary>
-    /// <returns>DirectX 12 compute pipeline state object</returns>
     FORCE_INLINE ID3D12PipelineState* GetState() const
     {
         return _state;
@@ -214,7 +170,6 @@ public:
     /// <summary>
     /// Gets or creates compute pipeline state for that compute shader.
     /// </summary>
-    /// <returns>DirectX 12 compute pipeline state object</returns>
     ID3D12PipelineState* GetOrCreateState();
 };
 

@@ -36,8 +36,7 @@ namespace Flax.Build.Bindings
             var apiType = BindingsGenerator.FindApiTypeInfo(buildData, this, caller);
             if (apiType != null)
             {
-                if (!apiType.IsInited)
-                    apiType.Init(buildData);
+                apiType.EnsureInited(buildData);
                 return apiType.IsPod;
             }
 
@@ -45,7 +44,7 @@ namespace Flax.Build.Bindings
                 return true;
 
             // Hardcoded cases
-            if (Type == "String" || Type == "Array")
+            if (Type == "String" || Type == "Array" || Type == "StringView" || Type == "StringAnsi" || Type == "StringAnsiView")
                 return false;
 
             // Fallback to default

@@ -9,6 +9,38 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 
+TextureHeader_Deprecated::TextureHeader_Deprecated()
+{
+    Platform::MemoryClear(this, sizeof(*this));
+}
+
+TextureHeader::TextureHeader()
+{
+    Platform::MemoryClear(this, sizeof(*this));
+    TextureGroup = -1;
+}
+
+TextureHeader::TextureHeader(TextureHeader_Deprecated& old)
+{
+    Platform::MemoryClear(this, sizeof(*this));
+    Width = old.Width;;
+    Height = old.Height;
+    MipLevels = old.MipLevels;
+    Format = old.Format;
+    Type = old.Type;
+    if (old.IsCubeMap)
+        IsCubeMap = 1;
+    if (old.IsSRGB)
+        IsSRGB = 1;
+    if (old.NeverStream)
+        NeverStream = 1;
+    TextureGroup = -1;
+    Platform::MemoryCopy(CustomData, old.CustomData, sizeof(CustomData));
+}
+
+static_assert(sizeof(TextureHeader_Deprecated) == 10 * sizeof(int32), "Invalid TextureHeader size.");
+static_assert(sizeof(TextureHeader) == 36, "Invalid TextureHeader size.");
+
 StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     : StreamableResource(StreamingGroups::Instance()->Textures())
     , _owner(parent)
@@ -78,6 +110,14 @@ bool StreamingTexture::Create(const TextureHeader& header)
     // That's one of the main advantages of the current resources streaming system.
     _header = header;
     _isBlockCompressed = PixelFormatExtensions::IsCompressed(_header.Format);
+    if (_isBlockCompressed)
+    {
+        // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
+        int32 lastMip = header.MipLevels - 1;
+        while (header.Width >> lastMip < 4 && header.Height >> lastMip < 4)
+            lastMip--;
+        _minMipCountBlockCompressed = header.MipLevels - lastMip + 1;
+    }
 
     // Request resource streaming
 #if GPU_ENABLE_TEXTURES_STREAMING
@@ -85,7 +125,7 @@ bool StreamingTexture::Create(const TextureHeader& header)
 #else
 	bool isDynamic = false;
 #endif
-    startStreaming(isDynamic);
+    StartStreaming(isDynamic);
 
     return false;
 }
@@ -110,6 +150,11 @@ uint64 StreamingTexture::GetTotalMemoryUsage() const
 String StreamingTexture::ToString() const
 {
     return _texture->ToString();
+}
+
+int32 StreamingTexture::GetMaxResidency() const
+{
+    return _header.MipLevels;
 }
 
 int32 StreamingTexture::GetCurrentResidency() const

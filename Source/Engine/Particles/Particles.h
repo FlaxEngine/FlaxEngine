@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "Engine/Scripting/ScriptingType.h"
+
+class TaskGraphSystem;
 struct RenderContext;
 struct RenderView;
 class ParticleEmitter;
@@ -13,10 +16,17 @@ class SceneRenderTask;
 class Actor;
 
 /// <summary>
-/// The particles service used for simulation and emitters data pooling.
+/// The particles simulation service.
 /// </summary>
-class FLAXENGINE_API ParticleManager
+API_CLASS(Static) class FLAXENGINE_API Particles
 {
+DECLARE_SCRIPTING_TYPE_NO_SPAWN(Particles);
+
+    /// <summary>
+    /// The system for Particles update.
+    /// </summary>
+    API_FIELD(ReadOnly) static TaskGraphSystem* System;
+
 public:
 
     /// <summary>

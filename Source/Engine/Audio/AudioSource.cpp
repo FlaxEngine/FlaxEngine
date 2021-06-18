@@ -1,11 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AudioSource.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
 #include "Audio.h"
 
@@ -104,7 +106,7 @@ void AudioSource::Play()
         return;
     if (Clip == nullptr)
     {
-        LOG(Warning, "Cannot play audio source without a clip ({0})", GetName());
+        LOG(Warning, "Cannot play audio source without a clip ({0})", GetNamePath());
         return;
     }
 
@@ -133,7 +135,7 @@ void AudioSource::Pause()
 {
     if (_state != States::Playing)
     {
-        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetName());
+        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetNamePath());
         return;
     }
 
@@ -340,6 +342,8 @@ bool AudioSource::IntersectsItself(const Ray& ray, float& distance, Vector3& nor
 
 void AudioSource::Update()
 {
+    PROFILE_CPU();
+
     // Update the velocity
     const Vector3 pos = GetPosition();
     const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), ZeroTolerance);

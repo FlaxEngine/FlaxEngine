@@ -1648,6 +1648,7 @@ public:
     //@{
 
     const Ch* GetString() const { RAPIDJSON_ASSERT(IsString()); return (data_.f.flags & kInlineStrFlag) ? data_.ss.str : GetStringPointer(); }
+	::StringAnsiView GetStringAnsiView() const { RAPIDJSON_ASSERT(IsString()); return data_.f.flags & kInlineStrFlag ? ::StringAnsiView(data_.ss.str, data_.ss.GetLength()) : ::StringAnsiView(GetStringPointer(), data_.s.length); }
 	::String GetText() const
     {
         ::String result;

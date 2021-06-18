@@ -46,7 +46,6 @@ public:
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
-    /// <returns>The amount of the elements in the collection.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _count;
@@ -55,7 +54,6 @@ public:
     /// <summary>
     /// Gets the amount of the elements that can be hold by collection without resizing.
     /// </summary>
-    /// <returns>The current capacity of the collection.</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return _chunks.Count() * ChunkSize;
@@ -64,7 +62,6 @@ public:
     /// <summary>
     /// Returns true if array isn't empty.
     /// </summary>
-    /// <returns>True if array has any elements added, otherwise it is empty.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _count != 0;
@@ -73,7 +70,6 @@ public:
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if array is empty, otherwise it has any elements added.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _count == 0;
@@ -154,20 +150,12 @@ public:
 
     public:
 
-        /// <summary>
-        /// Checks if iterator is in the end of the collection.
-        /// </summary>
-        /// <returns>True if is in the end, otherwise false.</returns>
         bool IsEnd() const
         {
             ASSERT(_collection);
             return Index() == _collection->Count();
         }
 
-        /// <summary>
-        /// Checks if iterator is not in the end of the collection.
-        /// </summary>
-        /// <returns>True if is not in the end, otherwise false.</returns>
         bool IsNotEnd() const
         {
             ASSERT(_collection);
@@ -332,6 +320,36 @@ public:
     }
 
     /// <summary>
+    /// Adds the one item to the collection and returns the reference to it.
+    /// </summary>
+    /// <returns>The reference to the added item.</returns>
+    T& AddOne()
+    {
+        // Find first chunk with some space
+        Chunk* chunk = nullptr;
+        for (int32 i = 0; i < _chunks.Count(); i++)
+        {
+            if (_chunks[i]->Count() < ChunkSize)
+            {
+                chunk = _chunks[i];
+                break;
+            }
+        }
+
+        // Allocate chunk if missing
+        if (chunk == nullptr)
+        {
+            chunk = New<Chunk>();
+            chunk->SetCapacity(ChunkSize);
+            _chunks.Add(chunk);
+        }
+
+        // Add item
+        _count++;
+        return chunk->AddOne();
+    }
+
+    /// <summary>
     /// Removes the element at specified iterator position.
     /// </summary>
     /// <param name="i">The element iterator to remove.</param>
@@ -408,7 +426,6 @@ public:
     /// <param name="newSize">The new size.</param>
     void Resize(int32 newSize)
     {
-        // Check if shrink
         if (newSize < Count())
         {
             MISSING_CODE("shrinking ChunkedArray on Resize");
@@ -439,7 +456,6 @@ public:
                 chunkIndex++;
             }
         }
-
         ASSERT(newSize == Count());
     }
 

@@ -180,7 +180,7 @@ void CodeEditingManager::OpenSolution(CodeEditorTypes editorType)
     const auto editor = GetCodeEditor(editorType);
     if (editor)
     {
-        editor->OpenSolution();
+        OpenSolution(editor);
     }
     else
     {

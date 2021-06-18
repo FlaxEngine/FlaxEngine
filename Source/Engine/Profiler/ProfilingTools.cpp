@@ -23,7 +23,7 @@ public:
     }
 
     void Update() override;
-    void BeforeExit() override;
+    void Dispose() override;
 };
 
 ProfilingToolsService ProfilingToolsServiceInstance;
@@ -166,7 +166,7 @@ void ProfilingToolsService::Update()
 #endif
 }
 
-void ProfilingToolsService::BeforeExit()
+void ProfilingToolsService::Dispose()
 {
     ProfilingTools::EventsCPU.Clear();
     ProfilingTools::EventsCPU.SetCapacity(0);

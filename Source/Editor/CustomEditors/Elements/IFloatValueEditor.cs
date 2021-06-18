@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using FlaxEngine;
+
 namespace FlaxEditor.CustomEditors.Elements
 {
     /// <summary>
@@ -16,5 +18,11 @@ namespace FlaxEditor.CustomEditors.Elements
         /// Gets a value indicating whether user is using a slider.
         /// </summary>
         bool IsSliding { get; }
+
+        /// <summary>
+        /// Sets the editor limits from member <see cref="LimitAttribute"/>.
+        /// </summary>
+        /// <param name="limit">The limit.</param>
+        void SetLimits(LimitAttribute limit);
     }
 }

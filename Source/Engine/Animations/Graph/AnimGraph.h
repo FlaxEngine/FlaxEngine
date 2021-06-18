@@ -4,6 +4,7 @@
 
 #include "Engine/Visject/VisjectGraph.h"
 #include "Engine/Content/Assets/Animation.h"
+#include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Animations/AlphaBlend.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "../Config.h"
@@ -362,40 +363,17 @@ public:
     /// <summary>
     /// Clears this container data.
     /// </summary>
-    void Clear()
-    {
-        Version = 0;
-        LastUpdateTime = -1;
-        CurrentFrame = 0;
-        RootTransform = Transform::Identity;
-        RootMotion = RootMotionData::Identity;
-        Parameters.Resize(0);
-        State.Resize(0);
-        NodesPose.Resize(0);
-    }
+    void Clear();
 
     /// <summary>
     /// Clears this container state data.
     /// </summary>
-    void ClearState()
-    {
-        Version = 0;
-        LastUpdateTime = -1;
-        CurrentFrame = 0;
-        RootTransform = Transform::Identity;
-        RootMotion = RootMotionData::Identity;
-        State.Resize(0);
-        NodesPose.Resize(0);
-    }
+    void ClearState();
 
     /// <summary>
     /// Invalidates the update timer.
     /// </summary>
-    void Invalidate()
-    {
-        LastUpdateTime = -1;
-        CurrentFrame = 0;
-    }
+    void Invalidate();
 };
 
 /// <summary>
@@ -423,18 +401,6 @@ public:
     AnimGraphBox(AnimGraphNode* parent, byte id, const VariantType& type)
         : VisjectGraphBox(parent, id, type)
     {
-    }
-
-public:
-
-    bool IsCacheValid() const
-    {
-        return Cache.Type.Type != VariantType::Pointer || Cache.AsPointer != nullptr;
-    }
-
-    void InvalidateCache()
-    {
-        Cache = Variant::Null;
     }
 };
 
@@ -575,13 +541,6 @@ public:
     /// </summary>
     int32 BucketIndex = -1;
 
-    // TODO: use shared allocator per AnimGraph to reduce dynamic memory allocation (also bones data would be closer in memory -> less cache misses)
-
-    /// <summary>
-    /// The node transformations (layout matches the linked to graph skinned model skeleton).
-    /// </summary>
-    AnimGraphImpulse Nodes;
-
     /// <summary>
     /// The custom data (depends on node type). Used to cache data for faster usage at runtime.
     /// </summary>
@@ -661,16 +620,10 @@ public:
     /// <summary>
     /// Gets the root node of the graph (cache don load).
     /// </summary>
-    /// <returns>The root node.</returns>
     FORCE_INLINE Node* GetRootNode() const
     {
         return _rootNode;
     }
-
-    /// <summary>
-    /// Clear all cached values in the graph nodes and the sub-graphs data.
-    /// </summary>
-    void ClearCache();
 
     /// <summary>
     /// Loads the sub-graph.
@@ -751,9 +704,9 @@ public:
     AnimGraph(Asset* owner, bool isFunction = false)
         : AnimGraphBase(this)
         , _isFunction(isFunction)
+        , _isRegisteredForScriptingEvents(false)
         , _bucketInitializerList(64)
         , _owner(owner)
-        , _isRegisteredForScriptingEvents(false)
     {
     }
 
@@ -807,6 +760,24 @@ public:
 };
 
 /// <summary>
+/// The Animation Graph evaluation context.
+/// </summary>
+struct AnimGraphContext
+{
+    float DeltaTime;
+    uint64 CurrentFrameIndex;
+    AnimGraphInstanceData* Data;
+    AnimGraphImpulse EmptyNodes;
+    AnimGraphTransitionData TransitionData;
+    Array<VisjectExecutor::Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> CallStack;
+    Array<VisjectExecutor::Graph*, FixedAllocation<32>> GraphStack;
+    Dictionary<VisjectExecutor::Node*, VisjectExecutor::Graph*> Functions;
+    ChunkedArray<AnimGraphImpulse, 256> PoseCache;
+    int32 PoseCacheSize;
+    Dictionary<VisjectExecutor::Box*, Variant> ValueCache;
+};
+
+/// <summary>
 /// The Animation Graph executor runtime for animation pose evaluation.
 /// </summary>
 class AnimGraphExecutor : public VisjectExecutor
@@ -815,23 +786,13 @@ class AnimGraphExecutor : public VisjectExecutor
 private:
 
     AnimGraph& _graph;
-    float _deltaTime = 0.0f;
-    uint64 _currentFrameIndex = 0;
-    int32 _skeletonNodesCount = 0;
     RootMotionMode _rootMotionMode = RootMotionMode::NoExtraction;
-    AnimGraphInstanceData* _data = nullptr;
-    AnimGraphImpulse _emptyNodes;
-    AnimGraphTransitionData _transitionData;
-    Array<Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> _callStack;
-    Array<Graph*, FixedAllocation<32>> _graphStack;
-    Dictionary<Node*, Graph*> _functions;
+    int32 _skeletonNodesCount = 0;
+
+    // Per-thread context to allow async execution
+    static ThreadLocal<AnimGraphContext, 64> Context;
 
 public:
-
-#if USE_EDITOR
-    // Custom event that is called every time the Anim Graph signal flows over the graph (including the data connections). Can be used to read and visualize the animation blending logic.
-    static Delegate<Asset*, ScriptingObject*, uint32, uint32> DebugFlow;
-#endif
 
     /// <summary>
     /// Initializes the managed runtime calls.
@@ -858,34 +819,10 @@ public:
     /// <summary>
     /// Gets the skeleton nodes transformations structure containing identity matrices.
     /// </summary>
-    FORCE_INLINE const AnimGraphImpulse* GetEmptyNodes() const
-    {
-        return &_emptyNodes;
-    }
+    AnimGraphImpulse* GetEmptyNodes();
 
-    /// <summary>
-    /// Gets the skeleton nodes transformations structure containing identity matrices.
-    /// </summary>
-    /// <returns>The data.</returns>
-    FORCE_INLINE AnimGraphImpulse* GetEmptyNodes()
-    {
-        return &_emptyNodes;
-    }
-
-    FORCE_INLINE void InitNodes(AnimGraphImpulse* nodes) const
-    {
-        // Initialize with cached node transformations
-        Platform::MemoryCopy(nodes->Nodes.Get(), _emptyNodes.Nodes.Get(), sizeof(Transform) * _skeletonNodesCount);
-        nodes->RootMotion = _emptyNodes.RootMotion;
-        nodes->Position = _emptyNodes.Position;
-        nodes->Length = _emptyNodes.Length;
-    }
-
-    FORCE_INLINE void InitNode(AnimGraphImpulse* nodes, int32 index) const
-    {
-        // Initialize with cached node transformation
-        nodes->Nodes[index] = GetEmptyNodes()->Nodes[index];
-    }
+    // Initialize impulse with cached node transformations
+    void InitNodes(AnimGraphImpulse* nodes) const;
 
     FORCE_INLINE void CopyNodes(AnimGraphImpulse* dstNodes, AnimGraphImpulse* srcNodes) const
     {
@@ -904,15 +841,9 @@ public:
     }
 
     /// <summary>
-    /// Resets the state bucket.
-    /// </summary>
-    /// <param name="bucketIndex">The zero-based index of the bucket.</param>
-    void ResetBucket(int32 bucketIndex);
-
-    /// <summary>
     /// Resets all the state bucket used by the given graph including sub-graphs (total). Can eb used to reset the animation state of the nested graph (including children).
     /// </summary>
-    void ResetBuckets(AnimGraphBase* graph);
+    void ResetBuckets(AnimGraphContext& context, AnimGraphBase* graph);
 
 private:
 

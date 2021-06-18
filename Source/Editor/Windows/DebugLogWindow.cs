@@ -312,9 +312,9 @@ namespace FlaxEditor.Windows
             _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true).LinkTooltip("Clears all log entries on enter playmode");
             _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error").SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
-            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error64, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
-            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning64, () => UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides warning messages");
-            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info64, () => UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides info messages");
+            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
+            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () => UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides warning messages");
+            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () => UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
 
             // Split panel
@@ -387,10 +387,10 @@ namespace FlaxEditor.Windows
             switch (_timestampsFormats)
             {
             case InterfaceOptions.TimestampsFormats.Utc:
-                desc.Title = string.Format("[{0}] ", DateTime.UtcNow) + desc.Title;
+                desc.Title = $"[{DateTime.UtcNow}] {desc.Title}";
                 break;
             case InterfaceOptions.TimestampsFormats.LocalTime:
-                desc.Title = string.Format("[{0}] ", DateTime.Now) + desc.Title;
+                desc.Title = $"[{DateTime.Now}] {desc.Title}";
                 break;
             case InterfaceOptions.TimestampsFormats.TimeSinceStartup:
                 desc.Title = string.Format("[{0:g}] ", TimeSpan.FromSeconds(Time.TimeSinceStartup)) + desc.Title;
@@ -480,15 +480,15 @@ namespace FlaxEditor.Windows
         {
             if (_iconType == LogType.Warning)
             {
-                Icon = IconWarning;
+                Icon = Editor.Icons.Warning32;
             }
             else if (_iconType == LogType.Error)
             {
-                Icon = IconError;
+                Icon = Editor.Icons.Error32;
             }
             else
             {
-                Icon = IconInfo;
+                Icon = Editor.Icons.Info32;
             }
         }
 
@@ -587,13 +587,10 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Check pending events (in a thread safe manner)
             lock (_locker)
             {
                 if (_pendingEntries.Count > 0)
                 {
-                    // TODO: we should provide max limit for entries count and remove if too many
-
                     // Check if user want's to scroll view by var (or is viewing earlier entry)
                     var panelScroll = (Panel)_entriesPanel.Parent;
                     bool scrollView = (panelScroll.VScrollBar.Maximum - panelScroll.VScrollBar.TargetValue) < LogEntry.DefaultHeight * 1.5f;
@@ -601,14 +598,24 @@ namespace FlaxEditor.Windows
                     // Add pending entries
                     LogEntry newEntry = null;
                     bool anyVisible = false;
+                    _entriesPanel.IsLayoutLocked = true;
+                    var spacing = _entriesPanel.Spacing;
+                    var margin = _entriesPanel.Margin;
+                    var offset = _entriesPanel.Offset;
+                    var width = _entriesPanel.Width - margin.Width;
+                    var top = _entriesPanel.Children.Count != 0 ? _entriesPanel.Children[_entriesPanel.Children.Count - 1].Bottom + spacing : margin.Top;
                     for (int i = 0; i < _pendingEntries.Count; i++)
                     {
                         newEntry = _pendingEntries[i];
                         newEntry.Visible = _groupButtons[(int)newEntry.Group].Checked;
                         anyVisible |= newEntry.Visible;
                         newEntry.Parent = _entriesPanel;
+                        newEntry.Bounds = new Rectangle(margin.Left + offset.X, top + offset.Y, width, newEntry.Height);
+                        top = newEntry.Bottom + spacing;
                         _logCountPerGroup[(int)newEntry.Group]++;
                     }
+                    _entriesPanel.Height = top + margin.Bottom;
+                    _entriesPanel.IsLayoutLocked = false;
                     _pendingEntries.Clear();
                     UpdateCount();
                     Assert.IsNotNull(newEntry);

@@ -570,7 +570,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     }
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
-    stopStreaming();
+    StopStreaming();
 
     // Setup
     MaterialSlots.Resize(1);
@@ -827,7 +827,7 @@ Asset::LoadResult Model::load()
 #endif
 
     // Request resource streaming
-    startStreaming(true);
+    StartStreaming(true);
 
     return LoadResult::Ok;
 }

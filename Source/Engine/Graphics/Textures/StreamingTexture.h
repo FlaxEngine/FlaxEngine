@@ -7,10 +7,12 @@
 #include "Types.h"
 
 /// <summary>
-/// GPU texture object which can change it's resolution (quality) at runtime
+/// GPU texture object which can change it's resolution (quality) at runtime.
 /// </summary>
 class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
 {
+    friend class TextureBase;
+    friend class TexturesStreamingHandler;
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
 protected:
@@ -19,6 +21,7 @@ protected:
     GPUTexture* _texture;
     TextureHeader _header;
     volatile mutable int64 _streamingTasksCount;
+    int32 _minMipCountBlockCompressed;
     bool _isBlockCompressed;
 
 public:
@@ -60,7 +63,6 @@ public:
     /// <summary>
     /// Gets total texture width (in texels)
     /// </summary>
-    /// <returns>Texture width</returns>
     FORCE_INLINE int32 TotalWidth() const
     {
         return _header.Width;
@@ -122,14 +124,6 @@ public:
         return &_header;
     }
 
-    /// <summary>
-    /// Gets a boolean indicating whether this <see cref="StreamingTexture"/> is a using a block compress format (BC1, BC2, BC3, BC4, BC5, BC6H, BC7).
-    /// </summary>
-    FORCE_INLINE bool IsBlockCompressed() const
-    {
-        return _isBlockCompressed;
-    }
-
 public:
 
     /// <summary>
@@ -180,10 +174,7 @@ public:
     String ToString() const override;
 
     // [StreamableResource]
-    int32 GetMaxResidency() const override
-    {
-        return _header.MipLevels;
-    }
+    int32 GetMaxResidency() const override;
     int32 GetCurrentResidency() const override;
     int32 GetAllocatedResidency() const override;
     bool CanBeUpdated() const override;

@@ -19,6 +19,7 @@
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "FlaxEngine.Gen.h"
 
 namespace
@@ -81,6 +82,41 @@ VisualScriptExecutor::VisualScriptExecutor()
     _perGroupProcessCall[7] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupTools;
     _perGroupProcessCall[16] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupFunction;
     _perGroupProcessCall[17] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupFlow;
+}
+
+void VisualScriptExecutor::Invoke(const Guid& scriptId, int32 nodeId, int32 boxId, const Guid& instanceId, Variant& result) const
+{
+    auto script = Content::Load<VisualScript>(scriptId);
+    if (!script)
+        return;
+    const auto node = script->Graph.GetNode(nodeId);
+    if (!node)
+        return;
+    const auto box = node->GetBox(boxId);
+    if (!box)
+        return;
+    auto instance = Scripting::FindObject<ScriptingObject>(instanceId);
+
+    // Add to the calling stack
+    VisualScripting::ScopeContext scope;
+    auto& stack = ThreadStacks.Get();
+    VisualScripting::StackFrame frame;
+    frame.Script = script;
+    frame.Node = node;
+    frame.Box = box;
+    frame.Instance = instance;
+    frame.PreviousFrame = stack.Stack;
+    frame.Scope = &scope;
+    stack.Stack = &frame;
+    stack.StackFramesCount++;
+
+    // Call per group custom processing event
+    const auto func = VisualScriptingExecutor._perGroupProcessCall[node->GroupID];
+    (VisualScriptingExecutor.*func)(box, node, result);
+
+    // Remove from the calling stack
+    stack.StackFramesCount--;
+    stack.Stack = frame.PreviousFrame;
 }
 
 VisjectExecutor::Value VisualScriptExecutor::eatBox(Node* caller, Box* box)
@@ -1274,6 +1310,46 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Delay
+    case 6:
+    {
+        boxBase = node->GetBox(2);
+        if (!boxBase->HasConnection())
+            break;
+        const float duration = (float)tryGetValue(node->GetBox(1), node->Values[0]);
+        if (duration > ZeroTolerance)
+        {
+            class DelayTask : public MainThreadTask
+            {
+            public:
+                Guid Script;
+                Guid Instance;
+                int32 Node;
+                int32 Box;
+
+            protected:
+                bool Run() override
+                {
+                    Variant result;
+                    VisualScriptingExecutor.Invoke(Script, Node, Box, Instance, result);
+                    return false;
+                }
+            };
+            const auto& stack = ThreadStacks.Get().Stack;
+            auto task = New<DelayTask>();
+            task->Script = stack->Script->GetID();;
+            task->Instance = stack->Instance->GetID();;
+            task->Node = ((Node*)boxBase->FirstConnection()->Parent)->ID;
+            task->Box = boxBase->FirstConnection()->ID;
+            task->InitialDelay = duration;
+            task->Start();
+        }
+        else
+        {
+            eatBox(node, boxBase->FirstConnection());
+        }
+        break;
+    }
     }
 }
 
@@ -1990,7 +2066,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
             auto& params = instanceParams->Value.Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
-                StringAnsiView idNameAnsi(i->name.GetString(), i->name.GetStringLength());
+                StringAnsiView idNameAnsi(i->name.GetStringAnsiView());
                 Guid paramId;
                 if (!Guid::Parse(idNameAnsi, paramId))
                 {

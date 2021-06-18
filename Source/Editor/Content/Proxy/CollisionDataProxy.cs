@@ -9,10 +9,35 @@ using FlaxEngine;
 namespace FlaxEditor.Content
 {
     /// <summary>
+    /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="CollisionData"/> assets.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
+    class CollisionDataItem : BinaryAssetItem
+    {
+        /// <inheritdoc />
+        public CollisionDataItem(string path, ref Guid id, string typeName, Type type)
+        : base(path, ref id, typeName, type, ContentItemSearchFilter.Other)
+        {
+        }
+
+        /// <inheritdoc />
+        public override bool OnEditorDrag(object context)
+        {
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return new MeshCollider { CollisionData = FlaxEngine.Content.LoadAsync<CollisionData>(ID) };
+        }
+    }
+
+    /// <summary>
     /// A <see cref="CollisionData"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
-    public class CollisionDataProxy : BinaryAssetProxy
+    class CollisionDataProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Collision Data";
@@ -21,6 +46,12 @@ namespace FlaxEditor.Content
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
             return new CollisionDataWindow(editor, item as AssetItem);
+        }
+
+        /// <inheritdoc />
+        public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
+        {
+            return new CollisionDataItem(path, ref id, typeName, AssetType);
         }
 
         /// <inheritdoc />

@@ -27,7 +27,6 @@ class TextureBase;
 API_CLASS(Static) class FLAXENGINE_API Render2D
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
-public:
 
     /// <summary>
     /// The rendering features and options flags.
@@ -50,21 +49,17 @@ public:
     /// <summary>
     /// Checks if interface is during rendering phrase (Draw calls may be performed without failing).
     /// </summary>
-    /// <returns>True if is during rendering, otherwise false/</returns>
     static bool IsRendering();
 
     /// <summary>
     /// Gets the current rendering viewport.
     /// </summary>
-    /// <returns>The viewport </returns>
     static const Viewport& GetViewport();
 
     /// <summary>
     /// The active rendering features flags.
     /// </summary>
     API_FIELD() static RenderingFeatures Features;
-
-public:
 
     /// <summary>
     /// Called when frame rendering begins by the graphics device.
@@ -301,6 +296,46 @@ public:
     /// <param name="rect">The rectangle to draw.</param>
     /// <param name="color">The color to multiply all texture pixels.</param>
     API_FUNCTION() static void DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color = Color::White);
+
+    /// <summary>
+    /// Draws the texture using 9-slicing.
+    /// </summary>
+    /// <param name="t">The texture to draw.</param>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
+    /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
+    /// <param name="color">The color to multiply all texture pixels.</param>
+    API_FUNCTION() static void Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+
+    /// <summary>
+    /// Draws the texture using 9-slicing (uses point sampler).
+    /// </summary>
+    /// <param name="t">The texture to draw.</param>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
+    /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
+    /// <param name="color">The color to multiply all texture pixels.</param>
+    API_FUNCTION() static void Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+
+    /// <summary>
+    /// Draws a sprite using 9-slicing.
+    /// </summary>
+    /// <param name="spriteHandle">The sprite to draw.</param>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
+    /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
+    /// <param name="color">The color to multiply all texture pixels.</param>
+    API_FUNCTION() static void Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+
+    /// <summary>
+    /// Draws a sprite using 9-slicing (uses point sampler).
+    /// </summary>
+    /// <param name="spriteHandle">The sprite to draw.</param>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
+    /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
+    /// <param name="color">The color to multiply all texture pixels.</param>
+    API_FUNCTION() static void Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
 
     /// <summary>
     /// Performs custom rendering.

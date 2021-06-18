@@ -3,6 +3,12 @@
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
 
+// ReSharper disable CppCStyleCast
+// ReSharper disable CppClangTidyClangDiagnosticCastAlign
+// ReSharper disable CppDefaultCaseNotHandledInSwitchStatement
+// ReSharper disable CppClangTidyCppcoreguidelinesMacroUsage
+// ReSharper disable CppClangTidyClangDiagnosticOldStyleCast
+
 #define RAND Random::Rand()
 #define RAND2 Vector2(RAND, RAND)
 #define RAND3 Vector3(RAND, RAND, RAND)
@@ -62,7 +68,7 @@ namespace
         float scale = 1.0f;
         for (int32 i = 0; i < octaves; i++)
         {
-            const float curWeight = Math::Pow(1.0f - ((float)i / octaves), Math::Lerp(2.0f, 0.2f, roughness));
+            const float curWeight = Math::Pow(1.0f - ((float)i / (float)octaves), Math::Lerp(2.0f, 0.2f, roughness));
 
             noise += Noise3D(position * scale) * curWeight;
             weight += curWeight;
@@ -97,7 +103,8 @@ namespace
 int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
 {
     const auto node = _graph.SpawnModules[index];
-    auto& data = _data->SpawnModulesData[index];
+    auto& context = Context.Get();
+    auto& data = context.Data->SpawnModulesData[index];
 
     // Accumulate the previous frame fraction
     float spawnCount = data.SpawnCounter;
@@ -109,13 +116,13 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     case 100:
     {
         const float rate = Math::Max((float)TryGetValue(node->GetBox(0), node->Values[2]), 0.0f);
-        spawnCount += rate * _deltaTime;
+        spawnCount += rate * context.DeltaTime;
         break;
     }
         // Single Burst
     case 101:
     {
-        const bool isFirstUpdate = (_data->Time - _deltaTime) <= 0.0f;
+        const bool isFirstUpdate = (context.Data->Time - context.DeltaTime) <= 0.0f;
         if (isFirstUpdate)
         {
             const float count = Math::Max((float)TryGetValue(node->GetBox(0), node->Values[2]), 0.0f);
@@ -127,11 +134,11 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     case 102:
     {
         float& nextSpawnTime = data.NextSpawnTime;
-        if (nextSpawnTime - _data->Time <= 0.0f)
+        if (nextSpawnTime - context.Data->Time <= 0.0f)
         {
             const float count = Math::Max((float)TryGetValue(node->GetBox(0), node->Values[2]), 0.0f);
             const float delay = Math::Max((float)TryGetValue(node->GetBox(1), node->Values[3]), 0.0f);
-            nextSpawnTime = _data->Time + delay;
+            nextSpawnTime = context.Data->Time + delay;
             spawnCount += count;
         }
         break;
@@ -140,13 +147,13 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     case 103:
     {
         float& nextSpawnTime = data.NextSpawnTime;
-        if (nextSpawnTime - _data->Time <= 0.0f)
+        if (nextSpawnTime - context.Data->Time <= 0.0f)
         {
             const Vector2 countMinMax = (Vector2)TryGetValue(node->GetBox(0), node->Values[2]);
             const Vector2 delayMinMax = (Vector2)TryGetValue(node->GetBox(1), node->Values[3]);
             const float count = Math::Max(countMinMax.X + RAND * (countMinMax.Y - countMinMax.X), 0.0f);
             const float delay = Math::Max(delayMinMax.X + RAND * (delayMinMax.Y - delayMinMax.X), 0.0f);
-            nextSpawnTime = _data->Time + delay;
+            nextSpawnTime = context.Data->Time + delay;
             spawnCount += count;
         }
         break;
@@ -156,7 +163,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     // Calculate actual spawn amount
     spawnCount = Math::Max(spawnCount, 0.0f);
     const int32 result = Math::FloorToInt(spawnCount);
-    spawnCount -= result;
+    spawnCount -= (float)result;
     data.SpawnCounter = spawnCount;
 
     return result;
@@ -164,8 +171,9 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
 
 void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode* node, int32 particlesStart, int32 particlesEnd)
 {
-    auto stride = _data->Buffer->Stride;
-    auto start = _data->Buffer->GetParticleCPU(particlesStart);
+    auto& context = Context.Get();
+    auto stride = context.Data->Buffer->Stride;
+    auto start = context.Data->Buffer->GetParticleCPU(particlesStart);
 
     switch (node->TypeID)
     {
@@ -175,7 +183,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     {
         auto spriteFacingMode = node->Values[2].AsInt;
         {
-            auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+            auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
             byte* spriteFacingModePtr = start + attribute.Offset;
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
@@ -186,14 +194,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         if ((ParticleSpriteFacingMode)spriteFacingMode == ParticleSpriteFacingMode::CustomFacingVector ||
             (ParticleSpriteFacingMode)spriteFacingMode == ParticleSpriteFacingMode::FixedAxis)
         {
-            auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[1]];
+            auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
             byte* customFacingVectorPtr = start + attribute.Offset;
             auto box = node->GetBox(0);
             if (node->UsePerParticleDataResolve())
             {
                 for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
                 {
-                    _particleIndex = particleIndex;
+                    context.ParticleIndex = particleIndex;
                     const Vector3 vector = (Vector3)GetValue(box, 3);
                     *((Vector3*)customFacingVectorPtr) = vector;
                     customFacingVectorPtr += stride;
@@ -217,7 +225,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     {
         auto modelFacingMode = node->Values[2].AsInt;
         {
-            auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+            auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
             byte* modelFacingModePtr = start + attribute.Offset;
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
@@ -230,11 +238,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Update Age
     case 300:
     {
-        auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* agePtr = start + attribute.Offset;
         for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
         {
-            *((float*)agePtr) += _deltaTime;
+            *((float*)agePtr) += context.DeltaTime;
             agePtr += stride;
         }
         break;
@@ -243,16 +251,16 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 301:
     case 304:
     {
-        auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* velocityPtr = start + attribute.Offset;
         auto box = node->GetBox(0);
         if (node->UsePerParticleDataResolve())
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 const Vector3 force = (Vector3)GetValue(box, 2);
-                *((Vector3*)velocityPtr) += force * _deltaTime;
+                *((Vector3*)velocityPtr) += force * context.DeltaTime;
                 velocityPtr += stride;
             }
         }
@@ -261,7 +269,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
             const Vector3 force = (Vector3)GetValue(box, 2);
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                *((Vector3*)velocityPtr) += force * _deltaTime;
+                *((Vector3*)velocityPtr) += force * context.DeltaTime;
                 velocityPtr += stride;
             }
         }
@@ -270,9 +278,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Conform to Sphere
     case 305:
     {
-        auto& position = _data->Buffer->Layout->Attributes[node->Attributes[0]];
-        auto& velocity = _data->Buffer->Layout->Attributes[node->Attributes[1]];
-        auto& mass = _data->Buffer->Layout->Attributes[node->Attributes[2]];
+        auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& velocity = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
+        auto& mass = context.Data->Buffer->Layout->Attributes[node->Attributes[2]];
 
         byte* positionPtr = start + position.Offset;
         byte* velocityPtr = start + velocity.Offset;
@@ -302,7 +310,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	float ratio = Math::SmoothStep(0.0f, stickDistance * 2.0f, Math::Abs(distToSurface)); \
 	float tgtSpeed = Math::Sign(distToSurface) * attractionSpeed * ratio; \
 	float deltaSpeed = tgtSpeed - spdNormal; \
-	Vector3 deltaVelocity = dir * (Math::Sign(deltaSpeed) * Math::Min(Math::Abs(deltaSpeed), _deltaTime * Math::Lerp(stickForce, attractionForce, ratio)) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+	Vector3 deltaVelocity = dir * (Math::Sign(deltaSpeed) * Math::Min(Math::Abs(deltaSpeed), context.DeltaTime * Math::Lerp(stickForce, attractionForce, ratio)) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
 	*(Vector3*)velocityPtr = velocity + deltaVelocity; \
 	positionPtr += stride; \
 	velocityPtr += stride; \
@@ -312,7 +320,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -332,7 +340,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Kill (sphere)
     case 306:
     {
-        auto& position = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + position.Offset;
 
@@ -350,8 +358,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	if (sign * lengthSqr <= sign * sphereRadiusSqr) \
 	{ \
 		particlesEnd--; \
-		_data->Buffer->CPU.Count--; \
-		Platform::MemoryCopy(_data->Buffer->GetParticleCPU(particleIndex), _data->Buffer->GetParticleCPU(_data->Buffer->CPU.Count), _data->Buffer->Stride); \
+		context.Data->Buffer->CPU.Count--; \
+		Platform::MemoryCopy(context.Data->Buffer->GetParticleCPU(particleIndex), context.Data->Buffer->GetParticleCPU(context.Data->Buffer->CPU.Count), context.Data->Buffer->Stride); \
 		particleIndex--; \
 	} \
 	positionPtr += stride
@@ -360,7 +368,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -380,7 +388,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Kill (box)
     case 307:
     {
-        auto& position = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + position.Offset;
 
@@ -403,8 +411,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	if (collision) \
 	{ \
 		particlesEnd--; \
-		_data->Buffer->CPU.Count--; \
-		Platform::MemoryCopy(_data->Buffer->GetParticleCPU(particleIndex), _data->Buffer->GetParticleCPU(_data->Buffer->CPU.Count), _data->Buffer->Stride); \
+		context.Data->Buffer->CPU.Count--; \
+		Platform::MemoryCopy(context.Data->Buffer->GetParticleCPU(particleIndex), context.Data->Buffer->GetParticleCPU(context.Data->Buffer->CPU.Count), context.Data->Buffer->Stride); \
 		particleIndex--; \
 	} \
 	positionPtr += stride
@@ -413,7 +421,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -441,8 +449,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	if (kill) \
 	{ \
 		particlesEnd--; \
-		_data->Buffer->CPU.Count--; \
-		Platform::MemoryCopy(_data->Buffer->GetParticleCPU(particleIndex), _data->Buffer->GetParticleCPU(_data->Buffer->CPU.Count), _data->Buffer->Stride); \
+		context.Data->Buffer->CPU.Count--; \
+		Platform::MemoryCopy(context.Data->Buffer->GetParticleCPU(particleIndex), context.Data->Buffer->GetParticleCPU(context.Data->Buffer->CPU.Count), context.Data->Buffer->Stride); \
 		particleIndex--; \
 	}
 
@@ -450,7 +458,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -473,9 +481,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto box = node->GetBox(0);
         const bool useSpriteSize = node->Values[3].AsBool;
 
-        auto& velocity = _data->Buffer->Layout->Attributes[node->Attributes[0]];
-        auto& mass = _data->Buffer->Layout->Attributes[node->Attributes[1]];
-        byte* spriteSizePtr = useSpriteSize ? start + _data->Buffer->Layout->Attributes[node->Attributes[2]].Offset : 0;
+        auto& velocity = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& mass = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
+        byte* spriteSizePtr = useSpriteSize ? start + context.Data->Buffer->Layout->Attributes[node->Attributes[2]].Offset : nullptr;
 
         byte* velocityPtr = start + velocity.Offset;
         byte* massPtr = start + mass.Offset;
@@ -486,7 +494,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	float particleDrag = drag; \
     if (useSpriteSize) \
         particleDrag *= ((Vector2*)spriteSizePtr)->MulValues(); \
-    *((Vector3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * _deltaTime) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+    *((Vector3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * context.DeltaTime) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     velocityPtr += stride; \
     massPtr += stride; \
     spriteSizePtr += stride
@@ -495,7 +503,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -515,9 +523,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Turbulence
     case 311:
     {
-        auto& position = _data->Buffer->Layout->Attributes[node->Attributes[0]];
-        auto& velocity = _data->Buffer->Layout->Attributes[node->Attributes[1]];
-        auto& mass = _data->Buffer->Layout->Attributes[node->Attributes[2]];
+        auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& velocity = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
+        auto& mass = context.Data->Buffer->Layout->Attributes[node->Attributes[2]];
 
         byte* positionPtr = start + position.Offset;
         byte* velocityPtr = start + velocity.Offset;
@@ -545,7 +553,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	Vector3 vectorFieldUVW = Vector3::Transform(*((Vector3*)positionPtr), invFieldTransformMatrix); \
 	Vector3 force = Noise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
     force = Vector3::Transform(force, fieldTransformMatrix) * intensity; \
-    *((Vector3*)velocityPtr) += force * (_deltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+    *((Vector3*)velocityPtr) += force * (context.DeltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     positionPtr += stride; \
     velocityPtr += stride; \
     massPtr += stride
@@ -554,7 +562,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -575,7 +583,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 200:
     case 302:
     {
-        auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* dataPtr = start + attribute.Offset;
         int32 dataSize = attribute.GetSize();
         auto box = node->GetBox(0);
@@ -584,7 +592,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 const Value value = GetValue(box, 4).Cast(type);
                 Platform::MemoryCopy(dataPtr, &value.AsPointer, dataSize);
                 dataPtr += stride;
@@ -631,7 +639,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 362:
     case 363:
     {
-        auto& attribute = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* dataPtr = start + attribute.Offset;
         int32 dataSize = attribute.GetSize();
         auto box = node->GetBox(0);
@@ -640,7 +648,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 const Value value = GetValue(box, 2).Cast(type);
                 Platform::MemoryCopy(dataPtr, &value.AsPointer, dataSize);
                 dataPtr += stride;
@@ -660,7 +668,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (sphere surface)
     case 202:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -685,7 +693,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -705,7 +713,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (plane)
     case 203:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -723,7 +731,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -743,7 +751,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (circle)
     case 204:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -766,7 +774,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -786,7 +794,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (disc)
     case 205:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -809,7 +817,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -829,7 +837,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (box surface)
     case 206:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -859,7 +867,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -879,7 +887,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (box volume)
     case 207:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -897,7 +905,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -917,7 +925,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (cylinder)
     case 208:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -942,7 +950,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -962,7 +970,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (line)
     case 209:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -980,7 +988,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1000,7 +1008,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (torus)
     case 210:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -1044,7 +1052,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1064,7 +1072,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (sphere volume)
     case 211:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
 
@@ -1089,7 +1097,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1115,8 +1123,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (spiral)
     case 214:
     {
-        auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]];
-        auto& velocityAttr = _data->Buffer->Layout->Attributes[node->Attributes[1]];
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+        auto& velocityAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
 
         byte* positionPtr = start + positionAttr.Offset;
         byte* velocityPtr = start + velocityAttr.Offset;
@@ -1125,7 +1133,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto rotationSpeedBox = node->GetBox(1);
         auto velocityScaleBox = node->GetBox(2);
 
-        auto& arc = node->SpiralModuleProgress;
+        auto& arc = *(float*)&context.Data->CustomData[node->CustomDataOffset];
 
 #define INPUTS_FETCH() \
 	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
@@ -1145,7 +1153,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1165,9 +1173,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
         // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \
-	auto& positionAttr = _data->Buffer->Layout->Attributes[node->Attributes[0]]; \
-	auto& velocityAttr = _data->Buffer->Layout->Attributes[node->Attributes[1]]; \
-	auto& ageAttr = _data->Buffer->Layout->Attributes[node->Attributes[2]]; \
+	auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]]; \
+	auto& velocityAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[1]]; \
+	auto& ageAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[2]]; \
 	byte* positionPtr = start + positionAttr.Offset; \
 	byte* velocityPtr = start + velocityAttr.Offset; \
 	byte* agePtr = start + ageAttr.Offset; \
@@ -1215,7 +1223,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #define LOGIC() \
 	Vector3 position = *(Vector3*)positionPtr; \
 	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * _deltaTime; \
+	Vector3 nextPos = position + velocity * context.DeltaTime; \
 	Vector3 n = planeNormal; \
 	float distToPlane = Vector3::Dot(nextPos, n) - Vector3::Dot(planePosition, n) - radius; \
 	if (distToPlane < 0.0f) \
@@ -1227,7 +1235,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1257,7 +1265,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #define LOGIC() \
 	Vector3 position = *(Vector3*)positionPtr; \
 	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * _deltaTime; \
+	Vector3 nextPos = position + velocity * context.DeltaTime; \
 	Vector3 dir = nextPos - spherePosition; \
 	float sqrLength = Vector3::Dot(dir, dir); \
 	float totalRadius = sphereRadius + sign * radius; \
@@ -1272,7 +1280,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1302,7 +1310,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #define LOGIC() \
 	Vector3 position = *(Vector3*)positionPtr; \
 	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * _deltaTime; \
+	Vector3 nextPos = position + velocity * context.DeltaTime; \
 	Vector3 dir = nextPos - boxPosition; \
 	Vector3 absDir = Vector3::Abs(dir); \
 	Vector3 halfBoxSize = boxSize * 0.5f + radius * sign; \
@@ -1332,7 +1340,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }
@@ -1364,7 +1372,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #define LOGIC() \
 	Vector3 position = *(Vector3*)positionPtr; \
 	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * _deltaTime; \
+	Vector3 nextPos = position + velocity * context.DeltaTime; \
 	Vector3 dir = nextPos - cylinderPosition; \
 	float halfHeight = cylinderHeight * 0.5f + radius * sign; \
 	float cylinderRadiusT = cylinderRadius + radius * sign; \
@@ -1397,7 +1405,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         {
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                _particleIndex = particleIndex;
+                context.ParticleIndex = particleIndex;
                 INPUTS_FETCH();
                 LOGIC();
             }

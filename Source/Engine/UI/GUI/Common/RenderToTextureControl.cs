@@ -95,6 +95,8 @@ namespace FlaxEngine.GUI
                     return;
                 }
             }
+            if (!_texture || !_texture.IsAllocated)
+                return;
 
             Profiler.BeginEventGPU("RenderToTextureControl");
             var context = GPUDevice.Instance.MainContext;

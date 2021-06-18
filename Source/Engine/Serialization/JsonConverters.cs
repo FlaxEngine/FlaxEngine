@@ -123,6 +123,13 @@ namespace FlaxEngine.Json
 
             writer.WriteStartObject();
             {
+#if FLAX_EDITOR
+                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                {
+                    writer.WritePropertyName("$type");
+                    writer.WriteValue("FlaxEngine.GUI.Margin, FlaxEngine.CSharp");
+                }
+#endif
                 writer.WritePropertyName("Left");
                 writer.WriteValue(valueMargin.Left);
                 writer.WritePropertyName("Right");
@@ -177,21 +184,30 @@ namespace FlaxEngine.Json
                     case JsonToken.PropertyName:
                     {
                         var propertyName = (string)reader.Value;
-                        var propertyValue = (float)reader.ReadAsDouble();
-                        switch (propertyName)
+                        reader.Read();
+                        switch (reader.TokenType)
                         {
-                        case "Left":
-                            value.Left = propertyValue;
+                        case JsonToken.Integer:
+                        case JsonToken.Float:
+                        {
+                            var propertyValue = Convert.ToSingle(reader.Value);
+                            switch (propertyName)
+                            {
+                            case "Left":
+                                value.Left = propertyValue;
+                                break;
+                            case "Right":
+                                value.Right = propertyValue;
+                                break;
+                            case "Top":
+                                value.Top = propertyValue;
+                                break;
+                            case "Bottom":
+                                value.Bottom = propertyValue;
+                                break;
+                            }
                             break;
-                        case "Right":
-                            value.Right = propertyValue;
-                            break;
-                        case "Top":
-                            value.Top = propertyValue;
-                            break;
-                        case "Bottom":
-                            value.Bottom = propertyValue;
-                            break;
+                        }
                         }
                         break;
                     }

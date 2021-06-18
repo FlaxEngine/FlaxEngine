@@ -255,8 +255,15 @@ namespace FlaxEditor.CustomEditors
                 if (instanceValues._referenceValue == null && !instanceValues.Type.IsValueType)
                     return;
 
-                _referenceValue = Info.GetValue(instanceValues._referenceValue);
-                _hasReferenceValue = true;
+                try
+                {
+                    _referenceValue = Info.GetValue(instanceValues._referenceValue);
+                    _hasReferenceValue = true;
+                }
+                catch
+                {
+                    // Ignore error if reference value has different type or is invalid for this member
+                }
             }
         }
 

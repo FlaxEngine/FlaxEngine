@@ -142,6 +142,10 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void RebuildLayout()
         {
+            // Skip rebuilding during init
+            if (CurrentCustomEditor == this)
+                return;
+
             // Special case for root objects to run normal layout build
             if (_presenter.Selection == Values)
             {
@@ -789,8 +793,7 @@ namespace FlaxEditor.CustomEditors
         /// <returns>True if allow to handle this event, otherwise false.</returns>
         protected virtual bool OnDirty(CustomEditor editor, object value, object token = null)
         {
-            ParentEditor.OnDirty(editor, value, token);
-            return true;
+            return ParentEditor.OnDirty(editor, value, token);
         }
 
         /// <summary>

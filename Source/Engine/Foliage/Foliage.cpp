@@ -3,6 +3,7 @@
 #include "Foliage.h"
 #include "FoliageType.h"
 #include "FoliageCluster.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"

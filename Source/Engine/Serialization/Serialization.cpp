@@ -74,7 +74,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
             v.Type = VariantType::Null;
         const auto mTypeName = SERIALIZE_FIND_MEMBER(stream, "TypeName");
         if (mTypeName != stream.MemberEnd() && mTypeName->value.IsString())
-            v.SetTypeName(StringAnsiView(mTypeName->value.GetString(), mTypeName->value.GetStringLength()));
+            v.SetTypeName(StringAnsiView(mTypeName->value.GetStringAnsiView()));
     }
     else
     {
@@ -257,7 +257,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         break;
     case VariantType::String:
         CHECK(value.IsString());
-        v.SetString(StringAnsiView(value.GetString(), value.GetStringLength()));
+        v.SetString(value.GetStringAnsiView());
         break;
     case VariantType::Object:
         Deserialize(value, id, modifier);
@@ -328,7 +328,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         break;
     case VariantType::Typename:
         CHECK(value.IsString());
-        v.SetTypename(StringAnsiView(value.GetString(), value.GetStringLength()));
+        v.SetTypename(value.GetStringAnsiView());
         break;
     default:
         Platform::CheckFailed("", __FILE__, __LINE__);

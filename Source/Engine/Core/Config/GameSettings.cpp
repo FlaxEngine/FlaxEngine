@@ -19,6 +19,7 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Streaming/StreamingSettings.h"
 
 class GameSettingsService : public EngineService
 {
@@ -42,6 +43,7 @@ IMPLEMENT_SETTINGS_GETTER(TimeSettings, Time);
 IMPLEMENT_SETTINGS_GETTER(AudioSettings, Audio);
 IMPLEMENT_SETTINGS_GETTER(PhysicsSettings, Physics);
 IMPLEMENT_SETTINGS_GETTER(InputSettings, Input);
+IMPLEMENT_SETTINGS_GETTER(StreamingSettings, Streaming);
 
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
@@ -130,6 +132,7 @@ bool GameSettings::Load()
     PRELOAD_SETTINGS(Navigation);
     PRELOAD_SETTINGS(Localization);
     PRELOAD_SETTINGS(GameCooking);
+    PRELOAD_SETTINGS(Streaming);
 #undef PRELOAD_SETTINGS
 
     // Apply the game settings to the engine
@@ -157,6 +160,7 @@ void GameSettings::Apply()
     APPLY_SETTINGS(AudioSettings);
     APPLY_SETTINGS(LayersAndTagsSettings);
     APPLY_SETTINGS(PhysicsSettings);
+    APPLY_SETTINGS(StreamingSettings);
     APPLY_SETTINGS(InputSettings);
     APPLY_SETTINGS(GraphicsSettings);
     APPLY_SETTINGS(NavigationSettings);
@@ -202,6 +206,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Navigation);
     DESERIALIZE(Localization);
     DESERIALIZE(GameCooking);
+    DESERIALIZE(Streaming);
 
     // Per-platform settings containers
     DESERIALIZE(WindowsPlatform);

@@ -47,9 +47,6 @@ private:
     uint32 _srMaskDirtyGraphics;
     uint32 _srMaskDirtyCompute;
 
-    uint32 _uaMaskDirtyGraphics;
-    uint32 _uaMaskDirtyCompute;
-
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;
     int32 _psDirtyFlag : 1;
@@ -58,7 +55,7 @@ private:
     GPUTextureViewDX12* _rtDepth;
     GPUTextureViewDX12* _rtHandles[GPU_MAX_RT_BINDED];
     IShaderResourceDX12* _srHandles[GPU_MAX_SR_BINDED];
-    IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED + 1];
+    IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED];
     GPUBufferDX12* _ibHandle;
     GPUBufferDX12* _vbHandles[GPU_MAX_VB_BINDED];
     D3D12_INDEX_BUFFER_VIEW _ibView;
@@ -68,28 +65,17 @@ private:
 
 public:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="device">Graphics device</param>
-    /// <param name="type">Context type</param>
     GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE type);
-
-    /// <summary>
-    /// Destructor
-    /// </summary>
     ~GPUContextDX12();
 
 public:
 
-    /// <summary>
-    /// Gets command list
-    /// </summary>
-    /// <returns>Command list to use</returns>
     FORCE_INLINE ID3D12GraphicsCommandList* GetCommandList() const
     {
         return _commandList;
     }
+
+    uint64 FrameFenceValues[2];
 
 public:
 
@@ -101,6 +87,11 @@ public:
     /// <param name="after">The 'after' state.</param>
     /// <param name="subresourceIndex">The index of the subresource.</param>
     void AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D12_RESOURCE_STATES before, const D3D12_RESOURCE_STATES after, const int32 subresourceIndex);
+
+    /// <summary>
+    /// Adds the UAV barrier. Supports batching barriers.
+    /// </summary>
+    void AddUAVBarrier();
 
     /// <summary>
     /// Set DirectX 12 resource state using resource barrier
@@ -147,7 +138,7 @@ private:
     void flushCBs();
     void flushRBs();
     void flushPS();
-    void onDrawCall();
+    void OnDrawCall();
 
 public:
 

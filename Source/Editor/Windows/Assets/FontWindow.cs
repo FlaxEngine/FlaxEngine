@@ -135,7 +135,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            _textPreview.Font = new FontReference();
+            _textPreview.Font = null;
 
             base.UnlinkItem();
         }

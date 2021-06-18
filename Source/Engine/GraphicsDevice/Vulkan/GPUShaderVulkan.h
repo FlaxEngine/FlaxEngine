@@ -62,7 +62,7 @@ public:
 
 public:
 
-    Allocation Allocate(uint64 size, uint32 alignment, CmdBufferVulkan* cmdBuffer);
+    Allocation Allocate(uint64 size, uint32 alignment, GPUContextVulkan* context);
 
 public:
 

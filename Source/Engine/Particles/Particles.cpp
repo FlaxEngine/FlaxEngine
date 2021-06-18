@@ -1,11 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "ParticleManager.h"
+#include "Particles.h"
+#include "ParticleEffect.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -13,7 +15,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
-#include "ParticleEffect.h"
+#include "Engine/Threading/TaskGraph.h"
 #if COMPILE_WITH_GPU_PARTICLES
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Profiler/ProfilerGPU.h"
@@ -46,10 +48,8 @@ public:
     {
         if (VB)
             return false;
-
         VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer,VB"));
         IB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.IB"));
-
         static SpriteParticleVertex vertexBuffer[] =
         {
             { -0.5f, -0.5f, 0.0f, 0.0f },
@@ -57,20 +57,16 @@ public:
             { +0.5f, +0.5f, 1.0f, 1.0f },
             { -0.5f, +0.5f, 0.0f, 1.0f },
         };
-
         static uint16 indexBuffer[] =
         {
             0,
             1,
             2,
-
             0,
             2,
             3,
         };
-
-        return VB->Init(GPUBufferDescription::Vertex(sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
-                IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
+        return VB->Init(GPUBufferDescription::Vertex(sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) || IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
     }
 
     void Dispose()
@@ -103,17 +99,19 @@ namespace ParticleManagerImpl
 {
     CriticalSection PoolLocker;
     Dictionary<ParticleEmitter*, Array<EmitterCache>> Pool;
-    HashSet<ParticleEffect*> UpdateList(256);
+    Array<ParticleEffect*> UpdateList;
 #if COMPILE_WITH_GPU_PARTICLES
-    HashSet<ParticleEffect*> GpuUpdateList(256);
+    CriticalSection GpuUpdateListLocker;
+    Array<ParticleEffect*> GpuUpdateList;
     RenderTask* GpuRenderTask = nullptr;
 #endif
 }
 
 using namespace ParticleManagerImpl;
 
-bool ParticleManager::EnableParticleBufferPooling = true;
-float ParticleManager::ParticleBufferRecycleTimeout = 10.0f;
+TaskGraphSystem* Particles::System = nullptr;
+bool Particles::EnableParticleBufferPooling = true;
+float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
 SpriteParticleRenderer SpriteRenderer;
 
@@ -149,18 +147,28 @@ public:
     {
     }
 
-    void Update() override;
+    bool Init() override;
     void Dispose() override;
+};
+
+class ParticlesSystem : public TaskGraphSystem
+{
+public:
+    float DeltaTime, UnscaledDeltaTime, Time, UnscaledTime;
+    void Job(int32 index);
+    void Execute(TaskGraph* graph) override;
+    void PostExecute(TaskGraph* graph) override;
 };
 
 ParticleManagerService ParticleManagerServiceInstance;
 
-void ParticleManager::UpdateEffect(ParticleEffect* effect)
+void Particles::UpdateEffect(ParticleEffect* effect)
 {
+    ASSERT_LOW_LAYER(!UpdateList.Contains(effect));
     UpdateList.Add(effect);
 }
 
-void ParticleManager::OnEffectDestroy(ParticleEffect* effect)
+void Particles::OnEffectDestroy(ParticleEffect* effect)
 {
     UpdateList.Remove(effect);
 #if COMPILE_WITH_GPU_PARTICLES
@@ -335,7 +343,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 break;
             int32 count = buffer->CPU.Count;
             ASSERT(buffer->CPU.RibbonOrder.Count() == emitter->Graph.RibbonRenderingModules.Count() * buffer->Capacity);
-            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->Ribbon.RibbonOrderOffset;
+            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
 
             ParticleBufferCPUDataAccessor<Vector3> positionData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]));
 
@@ -483,7 +491,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             Vector2 uvOffset = module->Values[5].AsVector2();
 
             ParticleBufferCPUDataAccessor<float> sortKeyData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]));
-            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->Ribbon.RibbonOrderOffset;
+            int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
             int32 count = buffer->CPU.Count;
 
             // Setup ribbon data
@@ -895,7 +903,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
 #endif
 
-void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect* effect)
+void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effect)
 {
     // Setup
     auto& view = renderContext.View;
@@ -1027,14 +1035,14 @@ void ParticleManager::DrawParticles(RenderContext& renderContext, ParticleEffect
 
 void UpdateGPU(RenderTask* task, GPUContext* context)
 {
+    ScopeLock lock(GpuUpdateListLocker);
     if (GpuUpdateList.IsEmpty())
         return;
 
     PROFILE_GPU("GPU Particles");
 
-    for (auto i = GpuUpdateList.Begin(); i.IsNotEnd(); ++i)
+    for (ParticleEffect* effect : GpuUpdateList)
     {
-        ParticleEffect* effect = i->Item;
         auto& instance = effect->Instance;
         const auto particleSystem = effect->ParticleSystem.Get();
         if (!particleSystem || !particleSystem->IsLoaded())
@@ -1066,13 +1074,14 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 
 #endif
 
-ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
+ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 {
     ParticleBuffer* result = nullptr;
     ASSERT(emitter && emitter->IsLoaded());
 
     if (emitter->EnablePooling && EnableParticleBufferPooling)
     {
+        PoolLocker.Lock();
         const auto entries = Pool.TryGet(emitter);
         if (entries)
         {
@@ -1087,7 +1096,6 @@ ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
                 {
                     Delete(result);
                     result = nullptr;
-
                     if (entries->IsEmpty())
                     {
                         Pool.Remove(emitter);
@@ -1096,6 +1104,7 @@ ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
                 }
             }
         }
+        PoolLocker.Unlock();
     }
 
     if (!result)
@@ -1118,7 +1127,7 @@ ParticleBuffer* ParticleManager::AcquireParticleBuffer(ParticleEmitter* emitter)
     return result;
 }
 
-void ParticleManager::RecycleParticleBuffer(ParticleBuffer* buffer)
+void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 {
     if (buffer->Emitter->EnablePooling && EnableParticleBufferPooling)
     {
@@ -1138,7 +1147,7 @@ void ParticleManager::RecycleParticleBuffer(ParticleBuffer* buffer)
     }
 }
 
-void ParticleManager::OnEmitterUnload(ParticleEmitter* emitter)
+void Particles::OnEmitterUnload(ParticleEmitter* emitter)
 {
     PoolLocker.Lock();
     const auto entries = Pool.TryGet(emitter);
@@ -1154,218 +1163,22 @@ void ParticleManager::OnEmitterUnload(ParticleEmitter* emitter)
     PoolLocker.Unlock();
 
 #if COMPILE_WITH_GPU_PARTICLES
-    for (auto i = GpuUpdateList.Begin(); i.IsNotEnd(); ++i)
+    GpuUpdateListLocker.Lock();
+    for (int32 i = GpuUpdateList.Count() - 1; i >= 0; i--)
     {
-        if (i->Item->Instance.ContainsEmitter(emitter))
-            GpuUpdateList.Remove(i);
+        if (GpuUpdateList[i]->Instance.ContainsEmitter(emitter))
+            GpuUpdateList.RemoveAt(i);
     }
+    GpuUpdateListLocker.Unlock();
 #endif
 }
 
-void ParticleManagerService::Update()
+bool ParticleManagerService::Init()
 {
-    PROFILE_CPU_NAMED("Particles");
-
-    // TODO: implement the thread jobs pipeline to run set of tasks at once (use it for multi threaded rendering and animations evaluation and CPU particles simulation)
-
-    const auto timeSeconds = Platform::GetTimeSeconds();
-    const auto& tickData = Time::Update;
-    const float deltaTimeUnscaled = tickData.UnscaledDeltaTime.GetTotalSeconds();
-    const float timeUnscaled = tickData.UnscaledTime.GetTotalSeconds();
-    const float deltaTime = tickData.DeltaTime.GetTotalSeconds();
-    const float time = tickData.Time.GetTotalSeconds();
-
-    // Update particle effects
-    for (auto i = UpdateList.Begin(); i.IsNotEnd(); ++i)
-    {
-        ParticleEffect* effect = i->Item;
-        auto& instance = effect->Instance;
-        const auto particleSystem = effect->ParticleSystem.Get();
-        if (!particleSystem || !particleSystem->IsLoaded())
-            continue;
-        bool anyEmitterNotReady = false;
-        for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
-        {
-            const auto& track = particleSystem->Tracks[j];
-            if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
-                continue;
-            auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
-            if (!emitter || !emitter->IsLoaded())
-            {
-                anyEmitterNotReady = true;
-                break;
-            }
-        }
-        if (anyEmitterNotReady)
-            continue;
-
-#if USE_EDITOR
-        // Lock in editor only (more reloads during asset live editing)
-        ScopeLock lock(particleSystem->Locker);
-#endif
-
-        // Prepare instance data
-        instance.Sync(particleSystem);
-
-        bool updateBounds = false;
-        bool updateGpu = false;
-
-        // Simulation delta time can be based on a time since last update or the current delta time
-        float dt = effect->UseTimeScale ? deltaTime : deltaTimeUnscaled;
-        float t = effect->UseTimeScale ? time : timeUnscaled;
-#if USE_EDITOR
-        if (!Editor::IsPlayMode)
-        {
-            dt = deltaTimeUnscaled;
-            t = timeUnscaled;
-        }
-#endif
-        const float lastUpdateTime = instance.LastUpdateTime;
-        if (lastUpdateTime > 0 && t > lastUpdateTime)
-        {
-            dt = t - lastUpdateTime;
-        }
-        else if (lastUpdateTime < 0)
-        {
-            // Update bounds after first system update
-            updateBounds = true;
-        }
-        // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
-        if (dt <= 1.0f / 240.0f)
-            continue;
-        dt *= effect->SimulationSpeed;
-        instance.Time += dt;
-        const float fps = particleSystem->FramesPerSecond;
-        const float duration = particleSystem->DurationFrames / fps;
-        if (instance.Time > duration)
-        {
-            if (effect->IsLooping)
-            {
-                // Loop
-                // TODO: accumulate (duration - instance.Time) into next update dt
-                instance.Time = 0;
-                for (int32 j = 0; j < instance.Emitters.Count(); j++)
-                {
-                    auto& e = instance.Emitters[j];
-                    e.Time = 0;
-                    for (auto& s : e.SpawnModulesData)
-                    {
-                        s.NextSpawnTime = 0.0f;
-                    }
-                }
-            }
-            else
-            {
-                // End
-                instance.Time = duration;
-                for (auto& emitterInstance : instance.Emitters)
-                {
-                    if (emitterInstance.Buffer)
-                    {
-                        ParticleManager::RecycleParticleBuffer(emitterInstance.Buffer);
-                        emitterInstance.Buffer = nullptr;
-                    }
-                }
-                continue;
-            }
-        }
-        instance.LastUpdateTime = t;
-
-        // Update all emitter tracks
-        for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
-        {
-            const auto& track = particleSystem->Tracks[j];
-            if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
-                continue;
-            auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
-            auto& data = instance.Emitters[track.AsEmitter.Index];
-            ASSERT(emitter && emitter->IsLoaded());
-            ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
-
-            // Calculate new time position
-            const float startTime = track.AsEmitter.StartFrame / fps;
-            const float durationTime = track.AsEmitter.DurationFrames / fps;
-            const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime;
-
-            // Update instance data
-            data.Sync(effect->Instance, particleSystem, track.AsEmitter.Index);
-            if (!data.Buffer)
-            {
-                data.Buffer = ParticleManager::AcquireParticleBuffer(emitter);
-            }
-            data.Time += dt;
-
-            // Update particles simulation
-            switch (emitter->SimulationMode)
-            {
-            case ParticlesSimulationMode::CPU:
-                emitter->GraphExecutorCPU.Update(emitter, effect, data, dt, canSpawn);
-                updateBounds |= emitter->UseAutoBounds;
-                break;
-#if COMPILE_WITH_GPU_PARTICLES
-            case ParticlesSimulationMode::GPU:
-                emitter->GPU.Update(emitter, effect, data, dt, canSpawn);
-                updateGpu = true;
-                break;
-#endif
-            default:
-            CRASH;
-                break;
-            }
-        }
-
-        // Update bounds if any of the emitters uses auto-bounds
-        if (updateBounds)
-        {
-            effect->UpdateBounds();
-        }
-
-#if COMPILE_WITH_GPU_PARTICLES
-        // Register for GPU update
-        if (updateGpu)
-        {
-            GpuUpdateList.Add(effect);
-        }
-#endif
-    }
-    UpdateList.Clear();
-
-#if COMPILE_WITH_GPU_PARTICLES
-    // Create GPU render task if missing but required
-    if (GpuUpdateList.HasItems() && !GpuRenderTask)
-    {
-        GpuRenderTask = New<RenderTask>();
-        GpuRenderTask->Order = -10000000;
-        GpuRenderTask->Render.Bind(UpdateGPU);
-        ScopeLock lock(RenderTask::TasksLocker);
-        RenderTask::Tasks.Add(GpuRenderTask);
-    }
-    else if (GpuRenderTask)
-    {
-        ScopeLock lock(RenderTask::TasksLocker);
-        GpuRenderTask->Enabled = GpuUpdateList.HasItems();
-    }
-#endif
-
-    // Recycle buffers
-    PoolLocker.Lock();
-    for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
-    {
-        auto& entries = i->Value;
-        for (int32 j = 0; j < entries.Count(); j++)
-        {
-            auto& e = entries[j];
-            if (timeSeconds - e.LastTimeUsed >= ParticleManager::ParticleBufferRecycleTimeout)
-            {
-                Delete(e.Buffer);
-                entries.RemoveAt(j--);
-            }
-        }
-
-        if (entries.IsEmpty())
-            Pool.Remove(i);
-    }
-    PoolLocker.Unlock();
+    Particles::System = New<ParticlesSystem>();
+    Particles::System->Order = 10000;
+    Engine::UpdateGraph->AddSystem(Particles::System);
+    return false;
 }
 
 void ParticleManagerService::Dispose()
@@ -1400,4 +1213,215 @@ void ParticleManagerService::Dispose()
     PoolLocker.Unlock();
 
     SpriteRenderer.Dispose();
+    SAFE_DELETE(Particles::System);
+}
+
+void ParticlesSystem::Job(int32 index)
+{
+    PROFILE_CPU_NAMED("Particles.Job");
+    auto effect = UpdateList[index];
+    auto& instance = effect->Instance;
+    const auto particleSystem = effect->ParticleSystem.Get();
+    if (!particleSystem || !particleSystem->IsLoaded())
+        return;
+    bool anyEmitterNotReady = false;
+    for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
+    {
+        const auto& track = particleSystem->Tracks[j];
+        if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
+            continue;
+        auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
+        if (!emitter || !emitter->IsLoaded())
+        {
+            anyEmitterNotReady = true;
+            break;
+        }
+    }
+    if (anyEmitterNotReady)
+        return;
+
+    // Prepare instance data
+    instance.Sync(particleSystem);
+
+    bool updateBounds = false;
+    bool updateGpu = false;
+
+    // Simulation delta time can be based on a time since last update or the current delta time
+    bool useTimeScale = effect->UseTimeScale;
+#if USE_EDITOR
+    if (!Editor::IsPlayMode)
+        useTimeScale = false;
+#endif
+    float dt = useTimeScale ? DeltaTime : UnscaledDeltaTime;
+    float t = useTimeScale ? Time : UnscaledTime;
+    const float lastUpdateTime = instance.LastUpdateTime;
+    if (lastUpdateTime > 0 && t > lastUpdateTime)
+    {
+        dt = t - lastUpdateTime;
+    }
+    else if (lastUpdateTime < 0)
+    {
+        // Update bounds after first system update
+        updateBounds = true;
+    }
+    // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
+    if (dt <= 1.0f / 240.0f)
+        return;
+    dt *= effect->SimulationSpeed;
+    instance.Time += dt;
+    const float fps = particleSystem->FramesPerSecond;
+    const float duration = (float)particleSystem->DurationFrames / fps;
+    if (instance.Time > duration)
+    {
+        if (effect->IsLooping)
+        {
+            // Loop
+            // TODO: accumulate (duration - instance.Time) into next update dt
+            instance.Time = 0;
+            for (int32 j = 0; j < instance.Emitters.Count(); j++)
+            {
+                auto& e = instance.Emitters[j];
+                e.Time = 0;
+                for (auto& s : e.SpawnModulesData)
+                {
+                    s.NextSpawnTime = 0.0f;
+                }
+            }
+        }
+        else
+        {
+            // End
+            instance.Time = duration;
+            for (auto& emitterInstance : instance.Emitters)
+            {
+                if (emitterInstance.Buffer)
+                {
+                    Particles::RecycleParticleBuffer(emitterInstance.Buffer);
+                    emitterInstance.Buffer = nullptr;
+                }
+            }
+            return;
+        }
+    }
+    instance.LastUpdateTime = t;
+
+    // Update all emitter tracks
+    for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
+    {
+        const auto& track = particleSystem->Tracks[j];
+        if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
+            continue;
+        auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
+        auto& data = instance.Emitters[track.AsEmitter.Index];
+        ASSERT(emitter && emitter->IsLoaded());
+        ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
+
+        // Calculate new time position
+        const float startTime = (float)track.AsEmitter.StartFrame / fps;
+        const float durationTime = (float)track.AsEmitter.DurationFrames / fps;
+        const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime;
+
+        // Update instance data
+        data.Sync(effect->Instance, particleSystem, track.AsEmitter.Index);
+        if (!data.Buffer)
+        {
+            data.Buffer = Particles::AcquireParticleBuffer(emitter);
+        }
+        data.Time += dt;
+
+        // Update particles simulation
+        switch (emitter->SimulationMode)
+        {
+        case ParticlesSimulationMode::CPU:
+            emitter->GraphExecutorCPU.Update(emitter, effect, data, dt, canSpawn);
+            updateBounds |= emitter->UseAutoBounds;
+            break;
+#if COMPILE_WITH_GPU_PARTICLES
+        case ParticlesSimulationMode::GPU:
+            emitter->GPU.Update(emitter, effect, data, dt, canSpawn);
+            updateGpu = true;
+            break;
+#endif
+        default:
+            break;
+        }
+    }
+
+    // Update bounds if any of the emitters uses auto-bounds
+    if (updateBounds)
+    {
+        effect->UpdateBounds();
+    }
+
+#if COMPILE_WITH_GPU_PARTICLES
+    // Register for GPU update
+    if (updateGpu)
+    {
+        ScopeLock lock(GpuUpdateListLocker);
+        GpuUpdateList.Add(effect);
+    }
+#endif
+}
+
+void ParticlesSystem::Execute(TaskGraph* graph)
+{
+    if (UpdateList.Count() == 0)
+        return;
+
+    // Setup data for async update
+    const auto& tickData = Time::Update;
+    DeltaTime = tickData.DeltaTime.GetTotalSeconds();
+    UnscaledDeltaTime = tickData.UnscaledDeltaTime.GetTotalSeconds();
+    Time = tickData.Time.GetTotalSeconds();
+    UnscaledTime = tickData.UnscaledTime.GetTotalSeconds();
+
+    // Schedule work to update all particles in async
+    Function<void(int32)> job;
+    job.Bind<ParticlesSystem, &ParticlesSystem::Job>(this);
+    graph->DispatchJob(job, UpdateList.Count());
+}
+
+void ParticlesSystem::PostExecute(TaskGraph* graph)
+{
+    PROFILE_CPU_NAMED("Particles.PostExecute");
+
+    UpdateList.Clear();
+
+#if COMPILE_WITH_GPU_PARTICLES
+    // Create GPU render task if missing but required
+    if (GpuUpdateList.HasItems() && !GpuRenderTask)
+    {
+        GpuRenderTask = New<RenderTask>();
+        GpuRenderTask->Order = -10000000;
+        GpuRenderTask->Render.Bind(UpdateGPU);
+        ScopeLock lock(RenderTask::TasksLocker);
+        RenderTask::Tasks.Add(GpuRenderTask);
+    }
+    else if (GpuRenderTask)
+    {
+        ScopeLock lock(RenderTask::TasksLocker);
+        GpuRenderTask->Enabled = GpuUpdateList.HasItems();
+    }
+#endif
+
+    // Recycle buffers
+    const auto timeSeconds = Platform::GetTimeSeconds();
+    PoolLocker.Lock();
+    for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
+    {
+        auto& entries = i->Value;
+        for (int32 j = 0; j < entries.Count(); j++)
+        {
+            auto& e = entries[j];
+            if (timeSeconds - e.LastTimeUsed >= Particles::ParticleBufferRecycleTimeout)
+            {
+                Delete(e.Buffer);
+                entries.RemoveAt(j--);
+            }
+        }
+
+        if (entries.IsEmpty())
+            Pool.Remove(i);
+    }
+    PoolLocker.Unlock();
 }

@@ -41,7 +41,7 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <summary>
-        /// Gets or sets the index of the selected frame to view (note: some view modes may not use it).
+        /// Gets or sets the index of the selected frame to view (note: some view modes may not use it). -1 for the last frame.
         /// </summary>
         public int ViewFrameIndex
         {
@@ -188,7 +188,7 @@ namespace FlaxEditor.Windows.Profiler
             for (int i = 0; i < _tabs.ChildrenCount; i++)
             {
                 if (_tabs.Children[i] is ProfilerMode mode)
-                    mode.UpdateView(ViewFrameIndex, _showOnlyLastUpdateEvents);
+                    mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
             }
 
             UpdateButtons();
@@ -207,6 +207,10 @@ namespace FlaxEditor.Windows.Profiler
                 {
                     if (_tabs.Children[i] is ProfilerMode mode)
                         mode.Update(ref sharedData);
+                }
+                {
+                    if (_tabs.SelectedTab is ProfilerMode mode)
+                        mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
                 }
                 sharedData.End();
 

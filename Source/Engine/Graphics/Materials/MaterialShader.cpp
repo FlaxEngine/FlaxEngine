@@ -64,7 +64,7 @@ MaterialShader::MaterialShader(const StringView& name)
 
 MaterialShader::~MaterialShader()
 {
-    ASSERT(!_isLoaded);
+    ASSERT(!_isLoaded && _shader);
     SAFE_DELETE_GPU_RESOURCE(_shader);
 }
 

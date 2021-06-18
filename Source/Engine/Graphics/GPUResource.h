@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
-#include "Engine/Core/NonCopyable.h"
+#include "Engine/Core/Enums.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Config.h"
 
@@ -15,7 +14,7 @@
 /// <summary>
 /// The base class for all GPU resources.
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public PersistentScriptingObject, public NonCopyable
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public PersistentScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
 public:
@@ -35,35 +34,28 @@ protected:
     uint64 _memoryUsage = 0;
 
 public:
+    NON_COPYABLE(GPUResource);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResource"/> class.
     /// </summary>
-    GPUResource()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
-    {
-    }
+    GPUResource();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResource"/> class.
     /// </summary>
     /// <param name="params">The object initialization parameters.</param>
-    GPUResource(const SpawnParams& params)
-        : PersistentScriptingObject(params)
-    {
-    }
+    GPUResource(const SpawnParams& params);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="GPUResource"/> class.
     /// </summary>
-    virtual ~GPUResource()
-    {
-#if !BUILD_RELEASE
-        ASSERT(_memoryUsage == 0);
-#endif
-    }
+    virtual ~GPUResource();
 
 public:
+
+    // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource is used.
+    double LastRenderTime = -1;
 
     /// <summary>
     /// Action fired when resource GPU state gets released. All objects and async tasks using this resource should release references to this object nor use its data.
@@ -75,90 +67,49 @@ public:
     /// <summary>
     /// Gets the resource type.
     /// </summary>
-    /// <returns>The type.</returns>
     virtual ResourceType GetResourceType() const = 0;
 
     /// <summary>
     /// Gets resource object type.
     /// </summary>
-    /// <returns>The object type.</returns>
-    virtual ObjectType GetObjectType() const
-    {
-        return ObjectType::Other;
-    }
+    virtual ObjectType GetObjectType() const;
 
     /// <summary>
-    /// Gets amount of GPU memory used by this resource (in bytes).
-    /// It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
+    /// Gets amount of GPU memory used by this resource (in bytes). It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
     /// </summary>
-    /// <returns>The current memory usage.</returns>
-    API_PROPERTY() FORCE_INLINE uint64 GetMemoryUsage() const
-    {
-        return _memoryUsage;
-    }
+    API_PROPERTY() uint64 GetMemoryUsage() const;
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    /// <returns>The name of the resource.</returns>
-    virtual String GetName() const
-    {
-        return String::Empty;
-    }
+    virtual String GetName() const;
 
 #endif
 
     /// <summary>
     /// Releases GPU resource data.
     /// </summary>
-    API_FUNCTION() void ReleaseGPU()
-    {
-        if (_memoryUsage != 0)
-        {
-            Releasing();
-            OnReleaseGPU();
-            _memoryUsage = 0;
-        }
-    }
+    API_FUNCTION() void ReleaseGPU();
 
     /// <summary>
     /// Action called when GPU device is disposing.
     /// </summary>
-    virtual void OnDeviceDispose()
-    {
-        // By default we want to release resource data but keep it alive
-        ReleaseGPU();
-    }
+    virtual void OnDeviceDispose();
 
 protected:
 
     /// <summary>
     /// Releases GPU resource data (implementation).
     /// </summary>
-    virtual void OnReleaseGPU()
-    {
-    }
+    virtual void OnReleaseGPU();
 
 public:
 
     // [PersistentScriptingObject]
-    String ToString() const override
-    {
-#if GPU_ENABLE_RESOURCE_NAMING
-        return GetName();
-#else
-		return TEXT("GPU Resource");
-#endif
-    }
-
-    void OnDeleteObject() override
-    {
-        ReleaseGPU();
-
-        PersistentScriptingObject::OnDeleteObject();
-    }
+    String ToString() const override;
+    void OnDeleteObject() override;
 };
 
 /// <summary>
@@ -193,9 +144,6 @@ public:
         , _name(name.Get(), name.Length())
 #endif
     {
-        ASSERT(device);
-
-        // Register
         device->Resources.Add(this);
     }
 
@@ -204,7 +152,6 @@ public:
     /// </summary>
     virtual ~GPUResourceBase()
     {
-        // Unregister
         if (_device)
             _device->Resources.Remove(this);
     }
@@ -214,7 +161,6 @@ public:
     /// <summary>
     /// Gets the graphics device.
     /// </summary>
-    /// <returns>The device.</returns>
     FORCE_INLINE DeviceType* GetDevice() const
     {
         return _device;
@@ -231,10 +177,7 @@ public:
 #endif
     void OnDeviceDispose() override
     {
-        // Base
         GPUResource::OnDeviceDispose();
-
-        // Unlink device handle
         _device = nullptr;
     }
 };
@@ -246,17 +189,21 @@ API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPU
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
 protected:
+    static double DummyLastRenderTime;
 
     explicit GPUResourceView(const SpawnParams& params)
         : PersistentScriptingObject(params)
+        , LastRenderTime(&DummyLastRenderTime)
     {
     }
 
 public:
 
+    // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource view is used.
+    double* LastRenderTime;
+
     /// <summary>
     /// Gets the native pointer to the underlying view. It's a platform-specific handle.
     /// </summary>
-    /// <returns>The pointer.</returns>
     virtual void* GetNativePtr() const = 0;
 };

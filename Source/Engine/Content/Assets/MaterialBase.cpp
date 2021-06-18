@@ -2,6 +2,7 @@
 
 #include "MaterialBase.h"
 #include "MaterialInstance.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"

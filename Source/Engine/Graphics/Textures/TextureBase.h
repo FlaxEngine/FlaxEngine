@@ -4,7 +4,6 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "StreamingTexture.h"
-#include "Engine/Core/Log.h"
 
 class TextureData;
 
@@ -15,11 +14,7 @@ class TextureData;
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAsset, public ITextureOwner
 {
 DECLARE_ASSET_HEADER(TextureBase);
-public:
-
     static const uint32 TexturesSerializedVersion = 4;
-
-public:
 
     /// <summary>
     /// The texture init data (external source).
@@ -55,9 +50,6 @@ protected:
 
     StreamingTexture _texture;
     InitData* _customData;
-
-private:
-
     BinaryAsset* _parent;
 
 public:
@@ -131,6 +123,16 @@ public:
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
     API_PROPERTY() uint64 GetTotalMemoryUsage() const;
+    
+    /// <summary>
+    /// Gets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() int32 GetTextureGroup() const;
+
+    /// <summary>
+    /// Sets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
 public:
 
@@ -160,7 +162,7 @@ public:
 
 protected:
 
-    virtual int32 calculateChunkIndex(int32 mipIndex) const;
+    virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
 
@@ -180,43 +182,7 @@ public:
 protected:
 
     // [BinaryAsset]
-    bool init(AssetInitData& initData) override
-    {
-        // Skip for virtual assets
-        if (IsVirtual())
-            return false;
-
-        // Validate
-        if (initData.SerializedVersion != 4)
-        {
-            LOG(Error, "Invalid serialized texture version.");
-            return true;
-        }
-        if (initData.CustomData.Length() != sizeof(TextureHeader))
-        {
-            LOG(Error, "Missing texture header.");
-            return true;
-        }
-
-        // Load header
-        TextureHeader header;
-        Platform::MemoryCopy(&header, initData.CustomData.Get(), sizeof(TextureHeader));
-
-        // Create texture
-        if (_texture.Create(header))
-        {
-            LOG(Error, "Cannot initialize texture.");
-            return true;
-        }
-
-        return false;
-    }
-
-    LoadResult load() override
-    {
-        // Loading textures is very fast xD
-        return LoadResult::Ok;
-    }
-
+    bool init(AssetInitData& initData) override;
+    LoadResult load() override;
     void unload(bool isReloading) override;
 };
