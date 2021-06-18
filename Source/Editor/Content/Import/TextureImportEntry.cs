@@ -286,6 +286,7 @@ namespace FlaxEditor.Content.Import
         /// <summary>
         /// Texture group for streaming (negative if unused). See Streaming Settings.
         /// </summary>
+        [CustomEditor(typeof(CustomEditors.Dedicated.TextureGroupEditor))]
         [EditorOrder(300), Tooltip("Texture group for streaming (negative if unused). See Streaming Settings.")]
         public int TextureGroup = -1;
 
