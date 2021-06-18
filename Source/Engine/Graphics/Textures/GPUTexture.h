@@ -31,11 +31,12 @@ protected:
     {
     }
 
-    void Init(GPUResource* parent, PixelFormat format, MSAALevel msaa)
+    FORCE_INLINE void Init(GPUResource* parent, PixelFormat format, MSAALevel msaa)
     {
         _parent = parent;
         _format = format;
         _msaa = msaa;
+        LastRenderTime = &parent->LastRenderTime;
     }
 
 public:

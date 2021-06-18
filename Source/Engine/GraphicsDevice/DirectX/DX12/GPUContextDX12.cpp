@@ -809,9 +809,7 @@ void GPUContextDX12::ResetCB()
 void GPUContextDX12::BindCB(int32 slot, GPUConstantBuffer* cb)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_CB_BINDED);
-
     auto cbDX12 = static_cast<GPUConstantBufferDX12*>(cb);
-
     if (_cbHandles[slot] != cbDX12)
     {
         _cbDirtyFlag = true;
@@ -828,6 +826,8 @@ void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
         _srMaskDirtyGraphics |= 1 << slot;
         _srMaskDirtyCompute |= 1 << slot;
         _srHandles[slot] = handle;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
     }
 }
 
@@ -835,6 +835,8 @@ void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
     _uaHandles[slot] = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
 }
 
 void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)

@@ -121,18 +121,14 @@ private:
 
 protected:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUContext"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
+    double _lastRenderTime = -1;
     GPUContext(GPUDevice* device);
 
 public:
 
     /// <summary>
-    /// Gets the graphics device handle
+    /// Gets the graphics device.
     /// </summary>
-    /// <returns>Graphics device</returns>
     FORCE_INLINE GPUDevice* GetDevice() const
     {
         return _device;

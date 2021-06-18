@@ -191,6 +191,8 @@ void GPUResource::OnDeleteObject()
     PersistentScriptingObject::OnDeleteObject();
 }
 
+double GPUResourceView::DummyLastRenderTime = -1;
+
 struct GPUDevice::PrivateData
 {
     AssetReference<Shader> QuadShader;

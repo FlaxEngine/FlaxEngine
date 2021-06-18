@@ -13,6 +13,7 @@ GPUContext::GPUContext(GPUDevice* device)
 
 void GPUContext::FrameBegin()
 {
+    _lastRenderTime = Platform::GetTimeSeconds();
 }
 
 void GPUContext::FrameEnd()

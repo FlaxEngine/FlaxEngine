@@ -84,7 +84,7 @@ void StreamableResource::StopStreaming()
     }
 }
 
-void UpdateResource(StreamableResource* resource, DateTime now)
+void UpdateResource(StreamableResource* resource, DateTime now, double currentTime)
 {
     ASSERT(resource && resource->CanBeUpdated());
 
@@ -96,7 +96,7 @@ void UpdateResource(StreamableResource* resource, DateTime now)
     float targetQuality = 1.0f;
     if (resource->IsDynamic())
     {
-        targetQuality = handler->CalculateTargetQuality(resource, now);
+        targetQuality = handler->CalculateTargetQuality(resource, now, currentTime);
         targetQuality = Math::Saturate(targetQuality);
     }
 
@@ -175,7 +175,7 @@ void StreamingManagerService::Update()
     // Configuration
     // TODO: use game settings
     static TimeSpan ManagerUpdatesInterval = TimeSpan::FromMilliseconds(30);
-    static TimeSpan ResourceUpdatesInterval = TimeSpan::FromMilliseconds(200);
+    static TimeSpan ResourceUpdatesInterval = TimeSpan::FromMilliseconds(100);
     static int32 MaxResourcesPerUpdate = 50;
 
     // Check if skip update
@@ -191,6 +191,7 @@ void StreamingManagerService::Update()
 
     // Start update
     int32 resourcesUpdates = Math::Min(MaxResourcesPerUpdate, resourcesCount);
+    double currentTime = Platform::GetTimeSeconds();
 
     // Update high priority queue and then rest of the resources
     // Note: resources in the update queue are updated always, while others only between specified intervals
@@ -208,7 +209,7 @@ void StreamingManagerService::Update()
         // Try to update it
         if (now - resource->Streaming.LastUpdate >= ResourceUpdatesInterval && resource->CanBeUpdated())
         {
-            UpdateResource(resource, now);
+            UpdateResource(resource, now, currentTime);
             resourcesUpdates--;
         }
     }

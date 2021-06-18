@@ -65,6 +65,9 @@ public:
 
 public:
 
+    // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource is used.
+    double LastRenderTime = -1;
+
     /// <summary>
     /// Action fired when resource GPU state gets released. All objects and async tasks using this resource should release references to this object nor use its data.
     /// </summary>
@@ -215,13 +218,18 @@ API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPU
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
 protected:
+    static double DummyLastRenderTime;
 
     explicit GPUResourceView(const SpawnParams& params)
         : PersistentScriptingObject(params)
+        , LastRenderTime(&DummyLastRenderTime)
     {
     }
 
 public:
+
+    // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource view is used.
+    double* LastRenderTime;
 
     /// <summary>
     /// Gets the native pointer to the underlying view. It's a platform-specific handle.

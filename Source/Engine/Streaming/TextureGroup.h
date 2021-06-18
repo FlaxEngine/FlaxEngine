@@ -26,7 +26,19 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextureGroup);
     /// The quality scale factor applied to textures in this group. Can be used to increase or decrease textures resolution. In range 0-1 where 0 means lowest quality, 1 means full quality.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 1)")
-    float QualityScale = 1.0f;
+    float Quality = 1.0f;
+
+    /// <summary>
+    /// The quality scale factor applied when texture is invisible for some time (defined by TimeToInvisible). Used to decrease texture quality when it's not rendered.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(25), Limit(0, 1)")
+    float QualityIfInvisible = 0.5f;
+
+    /// <summary>
+    /// The time (in seconds) after which texture is considered to be invisible (if it's not rendered by a certain amount of time).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(26), Limit(0)")
+    float TimeToInvisible = 20.0f;
 
     /// <summary>
     /// The minimum amount of loaded mip levels for textures in this group. Defines the amount of the mips that should be always loaded. Higher values decrease streaming usage and keep more mips loaded.

@@ -948,26 +948,26 @@ void GPUContextVulkan::BindCB(int32 slot, GPUConstantBuffer* cb)
 void GPUContextVulkan::BindSR(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
-
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
-
     if (_srHandles[slot] != handle)
     {
         _srDirtyFlag = true;
         _srHandles[slot] = handle;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
     }
 }
 
 void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
-
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
-
     if (_uaHandles[slot] != handle)
     {
         _uaDirtyFlag = true;
         _uaHandles[slot] = handle;
+        if (view)
+            *view->LastRenderTime = _lastRenderTime;
     }
 }
 
