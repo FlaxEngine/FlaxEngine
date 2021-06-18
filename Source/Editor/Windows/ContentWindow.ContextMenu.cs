@@ -65,6 +65,13 @@ namespace FlaxEditor.Windows
                 b = cm.AddButton("Open", () => Open(item));
                 b.Enabled = proxy != null || isFolder;
 
+                if (_view.SelectedCount > 1)
+                    b = cm.AddButton("Open (all selected)", () =>
+                    {
+                        foreach (var e in _view.Selection)
+                            Open(e);
+                    });
+
                 cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
 
                 if (item.HasDefaultThumbnail == false)
