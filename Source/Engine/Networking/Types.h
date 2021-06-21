@@ -6,6 +6,7 @@ enum class NetworkChannelType;
 enum class NetworkEventType;
 
 class INetworkDriver;
+class NetworkPeer;
 
 struct NetworkEvent;
 struct NetworkConnection;

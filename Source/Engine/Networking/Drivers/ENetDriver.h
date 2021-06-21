@@ -10,8 +10,6 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
 
-class NetworkPeer;
-
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(ENetDriver);

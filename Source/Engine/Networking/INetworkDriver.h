@@ -3,8 +3,7 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
-
-class NetworkPeer;
+#include "Types.h"
 
 API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkDriver
 {
