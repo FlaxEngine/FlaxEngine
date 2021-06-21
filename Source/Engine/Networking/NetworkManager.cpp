@@ -40,4 +40,5 @@ void NetworkManager::ShutdownHost(NetworkPeer* host)
     host->HostId = -1;
     Hosts.Remove(host);
     
+    Delete(host);
 }
