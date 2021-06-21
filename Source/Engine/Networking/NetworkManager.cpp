@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "NetworkManager.h"
 
@@ -11,11 +11,11 @@
 
 namespace
 {
-    Array<NetworkPeer*, HeapAllocation> Hosts;
+    Array<NetworkPeer*, HeapAllocation> Peers;
     uint32_t LastHostId = 0;
 }
 
-NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
+NetworkPeer* NetworkManager::CreatePeer(const NetworkConfig& config)
 {
     // Validate the address for listen/connect
     NetworkEndPoint endPoint = {};
@@ -23,8 +23,8 @@ NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
     ASSERT(config.Address == String("any") || isValidEndPoint);
     
     // Alloc new host
-    Hosts.Add(New<NetworkPeer>());
-    NetworkPeer* host = Hosts.Last();
+    Peers.Add(New<NetworkPeer>());
+    NetworkPeer* host = Peers.Last();
     host->HostId = LastHostId++;
 
     // Initialize the host
@@ -33,12 +33,12 @@ NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
     return host;
 }
 
-void NetworkManager::ShutdownHost(NetworkPeer* host)
+void NetworkManager::ShutdownPeer(NetworkPeer* peer)
 {
-    ASSERT(host->IsValid());
-    host->Shutdown();
-    host->HostId = -1;
-    Hosts.Remove(host);
+    ASSERT(peer->IsValid());
+    peer->Shutdown();
+    peer->HostId = -1;
+    Peers.Remove(peer);
     
-    Delete(host);
+    Delete(peer);
 }
