@@ -32,7 +32,7 @@ public:
     /// To allow two peers to connect, they must use the same host.
     /// </summary>
     API_FIELD()
-    NetworkTransportType NetworkDriverType = NetworkTransportType::ENet;
+    NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
     // TODO: Expose INetworkDriver as a ref not enum, when C++/C# interfaces are done.
 
 public:
