@@ -52,6 +52,7 @@ public:
 
     /// <summary>
     /// The message when this event is an "message" event - not valid in any other cases.
+    /// If this is an message-event, make sure to return the message using RecycleMessage function of the peer after processing it!
     /// </summary>
     API_FIELD();
     NetworkMessage Message;

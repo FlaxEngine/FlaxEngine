@@ -76,6 +76,7 @@ public:
     /// </summary>
     /// <param name="eventRef">The reference to event structure.</param>
     /// <returns>True when succeeded and the event can be processed.</returns>
+    /// <remarks>If this returns message event, make sure to recycle the message using <see cref="RecycleMessage"/> function after processing it!</remarks>
     API_FUNCTION()
     bool PopEvent(API_PARAM(out) NetworkEvent& eventRef);
 
