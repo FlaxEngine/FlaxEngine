@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "NetworkMessage.h"
 
@@ -14,4 +14,9 @@ void NetworkMessage::ReadBytes(uint8* bytes, const int numBytes)
     ASSERT(Position + numBytes < BufferSize);
     Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
     Position += numBytes;
+}
+
+bool NetworkMessage::IsValid() const
+{
+    return Buffer != nullptr && BufferSize > 0;
 }

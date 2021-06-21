@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,6 +10,9 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
 
+/// <summary>
+/// Low-level network transport interface implementation based on ENet library.
+/// </summary>
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(ENetDriver);

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,10 @@
 
 #include "Engine/Core/Collections/Array.h"
 
-API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public PersistentScriptingObject
+/// <summary>
+/// Low-level network peer class. Provides server-client communication functions, message processing and sending.
+/// </summary>
+API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public PersistentScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkHost);
     friend class NetworkManager;
@@ -22,6 +25,9 @@ public:
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NetworkPeer"/> class.
+    /// </summary>
     NetworkPeer() : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
@@ -35,39 +41,112 @@ private:
     void DisposeMessageBuffers();
 
 public:
+    /// <summary>
+    /// Starts listening for incoming connections.
+    /// Once this is called, this peer becomes a server.
+    /// </summary>
+    /// <returns>True when succeeded.</returns>
     API_FUNCTION()
     bool Listen();
-    
+
+    /// <summary>
+    /// Starts connection handshake with the end point specified in the <seealso cref="NetworkConfig"/> structure.
+    /// Once this is called, this peer becomes a client.
+    /// </summary>
+    /// <returns>True when succeeded.</returns>
     API_FUNCTION()
     bool Connect();
-    
+
+    /// <summary>
+    /// Disconnects from the server.
+    /// </summary>
+    /// <remarks>Can be used only by the client!</remarks>
     API_FUNCTION()
     void Disconnect();
-    
+
+    /// <summary>
+    /// Disconnects given connection from the server.
+    /// </summary>
+    /// <remarks>Can be used only by the server!</remarks>
     API_FUNCTION()
     void Disconnect(const NetworkConnection& connection);
-    
+
+    /// <summary>
+    /// Tries to pop an network event from the queue.
+    /// </summary>
+    /// <param name="eventRef">The reference to event structure.</param>
+    /// <returns>True when succeeded and the event can be processed.</returns>
     API_FUNCTION()
     bool PopEvent(API_PARAM(out) NetworkEvent& eventRef);
 
+    /// <summary>
+    /// Acquires new message from the pool.
+    /// Cannot acquire more messages than the limit specified in the <seealso cref="NetworkConfig"/> structure.
+    /// </summary>
+    /// <returns>The acquired message.</returns>
+    /// <remarks>Make sure to recycle the message to this peer once it is no longer needed!</remarks>
     API_FUNCTION()
     NetworkMessage CreateMessage();
-    
+
+    /// <summary>
+    /// Returns given message to the pool.
+    /// </summary>
+    /// <remarks>Make sure that this message belongs to the peer and has not been recycled already (debug build checks for this)!</remarks>
     API_FUNCTION()
     void RecycleMessage(const NetworkMessage& message);
 
+    /// <summary>
+    /// Acquires new message from the pool and setups it for sending.
+    /// </summary>
+    /// <returns>The acquired message.</returns>
     API_FUNCTION()
     NetworkMessage BeginSendMessage();
-    
+
+    /// <summary>
+    /// Aborts given message send. This effectively deinitializes the message and returns it to the pool. 
+    /// </summary>
+    /// <param name="message">The message.</param>
     API_FUNCTION()
     void AbortSendMessage(const NetworkMessage& message);
-    
+
+    /// <summary>
+    /// Sends given message over specified channel to the server.
+    /// </summary>
+    /// <param name="channelType">The channel to send the message over.</param>
+    /// <param name="message">The message.</param>
+    /// <remarks>Can be used only by the client!</remarks>
+    /// <remarks>
+    /// Do not recycle the message after calling this.
+    /// This function automatically recycles the message.
+    /// </remarks>
     API_FUNCTION()
     bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message);
-    
+
+    /// <summary>
+    /// Sends given message over specified channel to the given client connection (target).
+    /// </summary>
+    /// <param name="channelType">The channel to send the message over.</param>
+    /// <param name="message">The message.</param>
+    /// <param name="target">The client connection to send the message to.</param>
+    /// <remarks>Can be used only by the server!</remarks>
+    /// <remarks>
+    /// Do not recycle the message after calling this.
+    /// This function automatically recycles the message.
+    /// </remarks>
     API_FUNCTION()
     bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target);
-    
+
+    /// <summary>
+    /// Sends given message over specified channel to the given client connection (target).
+    /// </summary>
+    /// <param name="channelType">The channel to send the message over.</param>
+    /// <param name="message">The message.</param>
+    /// <param name="targets">The connections list to send the message to.</param>
+    /// <remarks>Can be used only by the server!</remarks>
+    /// <remarks>
+    /// Do not recycle the message after calling this.
+    /// This function automatically recycles the message.
+    /// </remarks>
     API_FUNCTION()
     bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets);
     

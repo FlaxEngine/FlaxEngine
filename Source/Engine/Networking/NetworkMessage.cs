@@ -12,11 +12,11 @@ namespace FlaxEngine.Networking
         /// Writes raw bytes into the message.
         /// </summary>
         /// <param name="bytes">The bytes that will be written.</param>
-        /// <param name="length">The amount of bytes to write from the <see cref="bytes"/> pointer.</param>
+        /// <param name="length">The amount of bytes to write from the bytes pointer.</param>
         public void WriteBytes(byte* bytes, int length)
         {
             Assert.IsTrue(Position + length <= BufferSize, $"Could not write data of length {length} into message with id={MessageId}! Current write position={Position}");
-            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer + Position), length);
+            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer + Position), (ulong)length);
             Position += (uint)length;
             Length = Position;
         }
@@ -26,13 +26,13 @@ namespace FlaxEngine.Networking
         /// </summary>
         /// <param name="buffer">
         /// The buffer pointer that will be used to store the bytes.
-        /// Should be of the same length as <see cref="length"/> or longer.
+        /// Should be of the same length as length or longer.
         /// </param>
-        /// <param name="length">The minimal amount of bytes that the <see cref="buffer"/> contains.</param>
+        /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
         public void ReadBytes(byte* buffer, int length)
         {
             Assert.IsTrue(Position + length <= Length, $"Could not read data of length {length} from message with id={MessageId} and size of {Length}B! Current read position={Position}");
-            Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(buffer), length);
+            Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(buffer), (ulong)length);
             Position += (uint)length;
         }
 
@@ -40,7 +40,7 @@ namespace FlaxEngine.Networking
         /// Writes raw bytes into the message.
         /// </summary>
         /// <param name="bytes">The bytes that will be written.</param>
-        /// <param name="length">The amount of bytes to write from the <see cref="bytes"/> array.</param>
+        /// <param name="length">The amount of bytes to write from the bytes array.</param>
         public void WriteBytes(byte[] bytes, int length)
         {
             fixed (byte* bytesPtr = bytes)
@@ -54,9 +54,9 @@ namespace FlaxEngine.Networking
         /// </summary>
         /// <param name="buffer">
         /// The buffer that will be used to store the bytes.
-        /// Should be of the same length as <see cref="length"/> or longer.
+        /// Should be of the same length as length or longer.
         /// </param>
-        /// <param name="length">The minimal amount of bytes that the <see cref="buffer"/> contains.</param>
+        /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
         public void ReadBytes(byte[] buffer, int length)
         {
             fixed (byte* bufferPtr = buffer)

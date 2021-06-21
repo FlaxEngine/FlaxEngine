@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,28 +9,52 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Scripting/ScriptingType.h"
 
+/// <summary>
+/// Network message structure. Provides raw data writing and reading to the message buffer.
+/// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkMessage
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkMessage);
 public:
+    /// <summary>
+    /// The raw message buffer.
+    /// </summary>
     API_FIELD()
     uint8* Buffer = nullptr;
-    
+
+    /// <summary>
+    /// The unique, internal message identifier.
+    /// </summary>
     API_FIELD()
     uint32 MessageId = 0;
-    
+
+    /// <summary>
+    /// The size in bytes of the buffer that this message has.
+    /// </summary>
     API_FIELD()
     uint32 BufferSize = 0;
-    
+
+    /// <summary>
+    /// The length in bytes of this message.
+    /// </summary>
     API_FIELD()
     uint32 Length = 0;
-    
+
+    /// <summary>
+    /// The position in bytes in buffer where the next read/write will occur.
+    /// </summary>
     API_FIELD()
     uint32 Position = 0;
 
 public:
+    /// <summary>
+    /// Initializes default values of the <seealso cref="NetworkMessage"/> structure.
+    /// </summary>
     NetworkMessage() = default;
-    
+
+    /// <summary>
+    /// Initializes values of the <seealso cref="NetworkMessage"/> structure.
+    /// </summary>
     NetworkMessage(uint8* buffer, uint32 messageId, uint32 bufferSize, uint32 length, uint32 position) :
         Buffer(buffer), MessageId(messageId), BufferSize(bufferSize), Length(length), Position(position)
     { }
@@ -38,7 +62,21 @@ public:
     ~NetworkMessage() = default;
     
 public:
+    /// <summary>
+    /// Writes raw bytes into the message.
+    /// </summary>
+    /// <param name="bytes">The bytes that will be written.</param>
+    /// <param name="numBytes">The amount of bytes to write from the bytes pointer.</param>
     FORCE_INLINE void WriteBytes(uint8* bytes, int numBytes);
+    
+    /// <summary>
+    /// Reads raw bytes from the message into the given byte array.
+    /// </summary>
+    /// <param name="bytes">
+    /// The buffer pointer that will be used to store the bytes.
+    /// Should be of the same length as length or longer.
+    /// </param>
+    /// <param name="numBytes">The minimal amount of bytes that the buffer contains.</param>
     FORCE_INLINE void ReadBytes(uint8* bytes, int numBytes);
 
 #define DECL_READWRITE(type, name) \
@@ -59,17 +97,26 @@ public:
     DECL_READWRITE(bool, Boolean)
 
 public:
+    /// <summary>
+    /// Writes data of type <see cref="Vector2"/> into the message.
+    /// </summary>
     FORCE_INLINE void WriteVector2(const Vector2& value)
     {
         WriteSingle(value.X);
         WriteSingle(value.Y);
     }
 
+    /// <summary>
+    /// Reads and returns data of type <see cref="Vector2"/> from the message.
+    /// </summary>
     FORCE_INLINE Vector2 ReadVector2()
     {
         return Vector2(ReadSingle(), ReadSingle());
     }
     
+    /// <summary>
+    /// Writes data of type <see cref="Vector3"/> into the message.
+    /// </summary>
     FORCE_INLINE void WriteVector3(const Vector3& value)
     {
         WriteSingle(value.X);
@@ -77,11 +124,17 @@ public:
         WriteSingle(value.Z);
     }
 
+    /// <summary>
+    /// Reads and returns data of type <see cref="Vector3"/> from the message.
+    /// </summary>
     FORCE_INLINE Vector3 ReadVector3()
     {
         return Vector3(ReadSingle(), ReadSingle(), ReadSingle());
     }
-    
+
+    /// <summary>
+    /// Writes data of type <see cref="Vector4"/> into the message.
+    /// </summary>
     FORCE_INLINE void WriteVector4(const Vector4& value)
     {
         WriteSingle(value.X);
@@ -90,11 +143,17 @@ public:
         WriteSingle(value.W);
     }
 
+    /// <summary>
+    /// Reads and returns data of type <see cref="Vector4"/> from the message.
+    /// </summary>
     FORCE_INLINE Vector4 ReadVector4()
     {
         return Vector4(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
     }
     
+    /// <summary>
+    /// Writes data of type <see cref="Quaternion"/> into the message.
+    /// </summary>
     FORCE_INLINE void WriteQuaternion(const Quaternion& value)
     {
         WriteSingle(value.X);
@@ -103,6 +162,9 @@ public:
         WriteSingle(value.W);
     }
 
+    /// <summary>
+    /// Reads and returns data of type <see cref="Quaternion"/> from the message.
+    /// </summary>
     FORCE_INLINE Quaternion ReadQuaternion()
     {
         return Quaternion(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
@@ -125,8 +187,8 @@ public:
     }
 
 public:
-    bool IsValid() const
-    {
-        return Buffer != nullptr && BufferSize > 0;
-    }
+    /// <summary>
+    /// Returns true if the message is valid for reading or writing.
+    /// </summary>
+    bool IsValid() const;
 };
