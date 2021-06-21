@@ -28,7 +28,4 @@ public:
 
     API_FIELD();
     NetworkConnection Sender;
-
-    API_FIELD();
-    int32 HostId;
 };

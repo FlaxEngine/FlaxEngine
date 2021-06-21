@@ -12,6 +12,7 @@
 namespace
 {
     Array<NetworkPeer*, HeapAllocation> Hosts;
+    uint32_t LastHostId = 0;
 }
 
 NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
@@ -22,11 +23,9 @@ NetworkPeer* NetworkManager::CreateHost(const NetworkConfig& config)
     ASSERT(config.Address == String("any") || isValidEndPoint);
     
     // Alloc new host
-    const int hostId = Hosts.Count(); // TODO: Maybe keep the host count under a limit? Maybe some drivers do not support this?
-                                      // TODO: Reuse host ids
     Hosts.Add(New<NetworkPeer>());
     NetworkPeer* host = Hosts.Last();
-    host->HostId = hostId;
+    host->HostId = LastHostId++;
 
     // Initialize the host
     host->Initialize(config);
@@ -38,8 +37,7 @@ void NetworkManager::ShutdownHost(NetworkPeer* host)
 {
     ASSERT(host->IsValid());
     host->Shutdown();
-    Hosts[host->HostId] = nullptr;
     host->HostId = -1;
+    Hosts.Remove(host);
     
-    // Hosts.Remove(host); // Do not remove hosts, because we need to keep the array unmodified to make the id's work
 }

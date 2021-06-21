@@ -95,8 +95,6 @@ void NetworkPeer::Disconnect(const NetworkConnection& connection)
 
 bool NetworkPeer::PopEvent(NetworkEvent& eventRef)
 {
-    // Set host id of the event
-    eventRef.HostId = HostId;
     return NetworkDriver->PopEvent(&eventRef);
 }
 
