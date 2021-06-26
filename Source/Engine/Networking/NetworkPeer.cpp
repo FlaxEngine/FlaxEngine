@@ -9,6 +9,12 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
 
+namespace
+{
+    Array<NetworkPeer*, HeapAllocation> Peers;
+    uint32_t LastHostId = 0;
+}
+
 void NetworkPeer::Initialize(const NetworkConfig& config)
 {
     Config = config;
@@ -155,4 +161,32 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 
     RecycleMessage(message);
     return false;
+}
+
+NetworkPeer* NetworkPeer::CreatePeer(const NetworkConfig& config)
+{
+    // Validate the address for listen/connect
+    NetworkEndPoint endPoint = {};
+    const bool isValidEndPoint = NetworkBase::CreateEndPoint(config.Address, String("7777"), NetworkIPVersion::IPv4, endPoint, false);
+    ASSERT(config.Address == String("any") || isValidEndPoint);
+    
+    // Alloc new host
+    Peers.Add(New<NetworkPeer>());
+    NetworkPeer* host = Peers.Last();
+    host->HostId = LastHostId++;
+
+    // Initialize the host
+    host->Initialize(config);
+    
+    return host;
+}
+
+void NetworkPeer::ShutdownPeer(NetworkPeer* peer)
+{
+    ASSERT(peer->IsValid());
+    peer->Shutdown();
+    peer->HostId = -1;
+    Peers.Remove(peer);
+    
+    Delete(peer);
 }

@@ -14,7 +14,7 @@
 /// </summary>
 API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public PersistentScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkHost);
+DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
     friend class NetworkManager;
 public:
     int HostId = -1;
@@ -150,6 +150,23 @@ public:
     /// </remarks>
     API_FUNCTION()
     bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets);
+
+public:
+    /// <summary>
+    /// Creates new peer using given configuration.
+    /// </summary>
+    /// <param name="config">The configuration to create and setup new peer.</param>
+    /// <returns>The peer.</returns>
+    /// <remarks>Peer should be destroyed using <see cref="ShutdownPeer"/> once it is no longer in use.</remarks>
+    API_FUNCTION()
+    static NetworkPeer* CreatePeer(const NetworkConfig& config);
+
+    /// <summary>
+    /// Shutdowns and destroys given peer.
+    /// </summary>
+    /// <param name="peer">The peer to destroy.</param>
+    API_FUNCTION()
+    static void ShutdownPeer(NetworkPeer* peer);
     
 public:
     bool IsValid() const
