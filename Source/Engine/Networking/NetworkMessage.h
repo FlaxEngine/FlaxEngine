@@ -98,7 +98,7 @@ public:
 
 public:
     /// <summary>
-    /// Writes data of type <see cref="Vector2"/> into the message.
+    /// Writes data of type Vector2 into the message.
     /// </summary>
     FORCE_INLINE void WriteVector2(const Vector2& value)
     {
@@ -107,7 +107,7 @@ public:
     }
 
     /// <summary>
-    /// Reads and returns data of type <see cref="Vector2"/> from the message.
+    /// Reads and returns data of type Vector2 from the message.
     /// </summary>
     FORCE_INLINE Vector2 ReadVector2()
     {
@@ -115,7 +115,7 @@ public:
     }
     
     /// <summary>
-    /// Writes data of type <see cref="Vector3"/> into the message.
+    /// Writes data of type Vector3 into the message.
     /// </summary>
     FORCE_INLINE void WriteVector3(const Vector3& value)
     {
@@ -125,7 +125,7 @@ public:
     }
 
     /// <summary>
-    /// Reads and returns data of type <see cref="Vector3"/> from the message.
+    /// Reads and returns data of type Vector3 from the message.
     /// </summary>
     FORCE_INLINE Vector3 ReadVector3()
     {
@@ -133,7 +133,7 @@ public:
     }
 
     /// <summary>
-    /// Writes data of type <see cref="Vector4"/> into the message.
+    /// Writes data of type Vector4 into the message.
     /// </summary>
     FORCE_INLINE void WriteVector4(const Vector4& value)
     {
@@ -144,7 +144,7 @@ public:
     }
 
     /// <summary>
-    /// Reads and returns data of type <see cref="Vector4"/> from the message.
+    /// Reads and returns data of type Vector4 from the message.
     /// </summary>
     FORCE_INLINE Vector4 ReadVector4()
     {
@@ -152,7 +152,7 @@ public:
     }
     
     /// <summary>
-    /// Writes data of type <see cref="Quaternion"/> into the message.
+    /// Writes data of type Quaternion into the message.
     /// </summary>
     FORCE_INLINE void WriteQuaternion(const Quaternion& value)
     {
@@ -163,7 +163,7 @@ public:
     }
 
     /// <summary>
-    /// Reads and returns data of type <see cref="Quaternion"/> from the message.
+    /// Reads and returns data of type Quaternion from the message.
     /// </summary>
     FORCE_INLINE Quaternion ReadQuaternion()
     {
