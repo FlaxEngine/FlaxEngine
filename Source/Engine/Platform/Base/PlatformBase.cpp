@@ -130,8 +130,8 @@ bool PlatformBase::Init()
 
 void PlatformBase::LogInfo()
 {
-    LOG(Info, "Computer name: {0}", Platform::GetComputerName());
-    LOG(Info, "User name: {0}", Platform::GetUserName());
+    // LOG(Info, "Computer name: {0}", Platform::GetComputerName());
+    // LOG(Info, "User name: {0}", Platform::GetUserName());
 
     const CPUInfo cpuInfo = Platform::GetCPUInfo();
     LOG(Info, "CPU package count: {0}, Core count: {1}, Logical processors: {2}", cpuInfo.ProcessorPackageCount, cpuInfo.ProcessorCoreCount, cpuInfo.LogicalProcessorCount);
