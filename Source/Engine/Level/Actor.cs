@@ -11,7 +11,7 @@ namespace FlaxEngine
         /// </summary>
         [Unmanaged]
         [Tooltip("Returns true if object is fully static on the scene, otherwise false.")]
-        public bool IsStatic => StaticFlags == FlaxEngine.StaticFlags.FullyStatic;
+        public bool IsStatic => StaticFlags == StaticFlags.FullyStatic;
 
         /// <summary>
         /// Returns true if object has static transform.
@@ -231,11 +231,22 @@ namespace FlaxEngine
         /// <returns>All actors matching the specified type</returns>
         public T[] GetChildren<T>() where T : Actor
         {
-            // TODO: use a proper array allocation and converting on backend to reduce memory allocations
-            var children = GetChildren(typeof(T));
-            var output = new T[children.Length];
-            for (int i = 0; i < children.Length; i++)
-                output[i] = (T)children[i];
+            var count = ChildrenCount;
+            var length = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (GetChild(i) is T)
+                    length++;
+            }
+            if (length == 0)
+                return Utils.GetEmptyArray<T>();
+            var output = new T[length];
+            length = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (GetChild(i) is T obj)
+                    output[length++] = obj;
+            }
             return output;
         }
 
@@ -246,11 +257,22 @@ namespace FlaxEngine
         /// <returns>All scripts matching the specified type.</returns>
         public T[] GetScripts<T>() where T : Script
         {
-            // TODO: use a proper array allocation and converting on backend to reduce memory allocations
-            var scripts = GetScripts(typeof(T));
-            var output = new T[scripts.Length];
-            for (int i = 0; i < scripts.Length; i++)
-                output[i] = (T)scripts[i];
+            var count = ScriptsCount;
+            var length = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (GetScript(i) is T)
+                    length++;
+            }
+            if (length == 0)
+                return Utils.GetEmptyArray<T>();
+            var output = new T[length];
+            length = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (GetScript(i) is T obj)
+                    output[length++] = obj;
+            }
             return output;
         }
 
@@ -261,6 +283,8 @@ namespace FlaxEngine
         [NoAnimate]
         public void DestroyChildren(float timeLeft = 0.0f)
         {
+            if (ChildrenCount == 0)
+                return;
             Actor[] children = Children;
             for (var i = 0; i < children.Length; i++)
             {
