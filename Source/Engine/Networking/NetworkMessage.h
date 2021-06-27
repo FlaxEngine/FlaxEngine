@@ -171,18 +171,24 @@ public:
     }
 
 public:
-    FORCE_INLINE void WriteQuaternion(const String& value)
+    /// <summary>
+    /// Writes data of type String into the message. UTF-16 encoded.
+    /// </summary>
+    FORCE_INLINE void WriteString(const String& value)
     {
         WriteUInt16(value.Length()); // TODO: Use 1-byte length when possible
-        WriteBytes((uint8*)value.Get(), value.Length() * 2);
+        WriteBytes((uint8*)value.Get(), value.Length() * sizeof(wchar_t));
     }
 
+    /// <summary>
+    /// Reads and returns data of type String from the message. UTF-16 encoded.
+    /// </summary>
     FORCE_INLINE String ReadString()
     {
         uint16 length = ReadUInt16();
         String value;
         value.Resize(length);
-        ReadBytes((uint8*)value.Get(), value.Length() * 2);
+        ReadBytes((uint8*)value.Get(), length * sizeof(wchar_t));
         return value;
     }
 

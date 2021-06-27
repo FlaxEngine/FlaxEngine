@@ -246,7 +246,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Writes data of type <see cref="string"/> into the message. UTF-8 encoded.
+        /// Writes data of type <see cref="string"/> into the message. UTF-16 encoded.
         /// </summary>
         public void WriteString(string value)
         {
@@ -254,23 +254,21 @@ namespace FlaxEngine.Networking
             
             var data = Encoding.Unicode.GetBytes(value);
             WriteUInt16((ushort)data.Length); // TODO: Use 1-byte length when possible
-            WriteBytes(data, data.Length);
+            WriteBytes(data, data.Length * sizeof(ushort));
         }
 
         /// <summary>
-        /// Reads and returns data of type <see cref="string"/> from the message. UTF-8 encoded.
+        /// Reads and returns data of type <see cref="string"/> from the message. UTF-16 encoded.
         /// </summary>
         public string ReadString()
         {
             // Note: Make sure that this is consistent with the C++ message API!
             
-            var stringLength = ReadUInt16();
-            var bytes = new byte[stringLength];
-            fixed (byte* bytesPtr = bytes)
-            {
-                ReadBytes(bytesPtr, stringLength);
-            }
-            return Encoding.Unicode.GetString(bytes);
+            var stringLength = ReadUInt16(); // In chars
+            var stringSize = stringLength * sizeof(ushort); // In bytes
+            var bytes = stackalloc char[stringSize];
+            ReadBytes((byte*)bytes, stringSize);
+            return new string(bytes);
         }
 
         /// <summary>
