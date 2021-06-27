@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Engine/Content/AssetReference.h"
-#include "Engine/Content/Assets/RawDataAsset.h"
-#include "Engine/Content/Assets/Model.h"
-#include "Engine/Serialization/ISerializable.h"
 #include "Engine/Core/Math/Triangle.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Physics/CollisionData.h"
+#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Content/AssetReference.h"
+#include "Engine/Content/Assets/RawDataAsset.h"
+#include "Engine/Content/Assets/Model.h"
 
 class Scene;
 
@@ -74,7 +74,6 @@ namespace CSG
         /// <summary>
         /// Determines whether this container has CSG data linked.
         /// </summary>
-        /// <returns><c>true</c> if this CSG data container is valid; otherwise, <c>false</c>.</returns>
         bool HasData() const;
 
     public:

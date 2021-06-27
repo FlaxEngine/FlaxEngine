@@ -371,7 +371,7 @@ void Navigation::DrawNavMesh()
         bool skip = false;
         for (auto scene : Level::Scenes)
         {
-            for (auto e : scene->NavigationMeshes)
+            for (auto e : scene->Navigation.Meshes)
             {
                 if (e->Properties == navMesh->Properties)
                 {

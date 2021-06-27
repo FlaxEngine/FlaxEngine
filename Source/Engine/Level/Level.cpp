@@ -588,9 +588,9 @@ public:
         {
             LOG(Info, "Prepare scene objects");
             SceneBeginData beginData;
-            for (int32 i = 0; i < Level::Scenes.Count(); i++)
+            for (auto scene : Level::Scenes)
             {
-                Level::Scenes[i]->BeginPlay(&beginData);
+                scene->BeginPlay(&beginData);
             }
             beginData.OnDone();
         }
