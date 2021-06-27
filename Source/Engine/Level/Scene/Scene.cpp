@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Scene.h"
+#include "SceneAsset.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Content/Content.h"
@@ -22,6 +23,11 @@ REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset", false);
 SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAsset(params, info)
 {
+}
+
+bool SceneAsset::IsInternalType() const
+{
+    return true;
 }
 
 #define CSG_COLLIDER_NAME TEXT("CSG.Collider")
@@ -234,6 +240,18 @@ void Scene::OnCsgModelChanged()
         CreateCsgModel();
     }
 }
+
+#if COMPILE_WITH_CSG_BUILDER
+
+void Scene::OnCSGBuildEnd()
+{
+    if (CSGData.CollisionData && TryGetCsgCollider() == nullptr)
+        CreateCsgCollider();
+    if (CSGData.Model && TryGetCsgModel() == nullptr)
+        CreateCsgModel();
+}
+
+#endif
 
 void Scene::Serialize(SerializeStream& stream, const void* otherObj)
 {

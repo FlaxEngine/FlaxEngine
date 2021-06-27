@@ -4,7 +4,6 @@
 
 #include "../Actor.h"
 #include "../SceneInfo.h"
-#include "Engine/Content/JsonAsset.h"
 #include "SceneLightmapsData.h"
 #include "SceneCSGData.h"
 #include "SceneRendering.h"
@@ -150,13 +149,7 @@ private:
     void OnCsgCollisionDataChanged();
     void OnCsgModelChanged();
 #if COMPILE_WITH_CSG_BUILDER
-    void OnCSGBuildEnd()
-    {
-        if (CSGData.CollisionData && TryGetCsgCollider() == nullptr)
-            CreateCsgCollider();
-        if (CSGData.Model && TryGetCsgModel() == nullptr)
-            CreateCsgModel();
-    }
+    void OnCSGBuildEnd();
 #endif
 
 public:
@@ -174,17 +167,4 @@ protected:
     void PostSpawn() override;
     void BeginPlay(SceneBeginData* data) override;
     void OnTransformChanged() override;
-};
-
-/// <summary>
-/// The scene asset.
-/// </summary>
-API_CLASS(NoSpawn) class SceneAsset : public JsonAsset
-{
-DECLARE_ASSET_HEADER(SceneAsset);
-protected:
-    bool IsInternalType() const override
-    {
-        return true;
-    }
 };

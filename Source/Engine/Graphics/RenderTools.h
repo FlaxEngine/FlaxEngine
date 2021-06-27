@@ -98,6 +98,16 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>The zero-based LOD index. Returns -1 if model should not be rendered.</returns>
     API_FUNCTION() static int32 ComputeSkinnedModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Vector3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
+
+    /// <summary>
+    /// Computes the sorting key for depth value (quantized)
+    /// Reference: http://aras-p.info/blog/2014/01/16/rough-sorting-by-depth/
+    /// </summary>
+    FORCE_INLINE static uint32 ComputeDistanceSortKey(float distance)
+    {
+        const uint32 distanceI = *((uint32*)&distance);
+        return ((uint32)(-(int32)(distanceI >> 31)) | 0x80000000) ^ distanceI;
+    }
 };
 
 // Get texture memory usage

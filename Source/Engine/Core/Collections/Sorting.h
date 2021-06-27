@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Templates.h"
-#include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Platform/Platform.h"
 
@@ -23,110 +21,28 @@ public:
 
         static SortingStack& Get();
 
-    public:
+        int32 Count = 0;
+        int32 Capacity = 0;
+        int32* Data = nullptr;
 
-        int32 _count;
-        int32 _capacity;
-        int32* _data;
+        SortingStack();
+        ~SortingStack();
 
-    public:
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SortingStack"/> class.
-        /// </summary>
-        SortingStack()
-            : _count(0)
-            , _capacity(0)
-            , _data(nullptr)
-        {
-        }
-
-        /// <summary>
-        /// Finalizes an instance of the <see cref="SortingStack"/> class.
-        /// </summary>
-        ~SortingStack()
-        {
-            Allocator::Free(_data);
-        }
-
-    public:
-
-        FORCE_INLINE int32 Count() const
-        {
-            return _count;
-        }
-
-        FORCE_INLINE int32 Capacity() const
-        {
-            return _capacity;
-        }
-
-        FORCE_INLINE bool HasItems() const
-        {
-            return _count > 0;
-        }
-
-    public:
-
-        FORCE_INLINE void Clear()
-        {
-            _count = 0;
-        }
+        void SetCapacity(int32 capacity);
+        void EnsureCapacity(int32 minCapacity);
 
         void Push(const int32 item)
         {
-            EnsureCapacity(_count + 1);
-            _data[_count++] = item;
+            EnsureCapacity(Count + 1);
+            Data[Count++] = item;
         }
 
         int32 Pop()
         {
-            ASSERT(_count > 0);
-            const int32 item = _data[_count - 1];
-            _count--;
+            ASSERT(Count > 0);
+            const int32 item = Data[Count - 1];
+            Count--;
             return item;
-        }
-
-    public:
-
-        void SetCapacity(const int32 capacity)
-        {
-            ASSERT(capacity >= 0);
-
-            if (capacity == _capacity)
-                return;
-
-            int32* newData = nullptr;
-            if (capacity > 0)
-            {
-                newData = (int32*)Allocator::Allocate(capacity * sizeof(int32));
-            }
-
-            if (_data)
-            {
-                if (newData && _count > 0)
-                {
-                    for (int32 i = 0; i < _count && i < capacity; i++)
-                        newData[i] = _data[i];
-                }
-                Allocator::Free(_data);
-            }
-
-            _data = newData;
-            _capacity = capacity;
-            _count = _count < _capacity ? _count : _capacity;
-        }
-
-        void EnsureCapacity(int32 minCapacity)
-        {
-            if (_capacity >= minCapacity)
-                return;
-
-            int32 num = _capacity == 0 ? 64 : _capacity * 2;
-            if (num < minCapacity)
-                num = minCapacity;
-
-            SetCapacity(num);
         }
     };
 
@@ -142,7 +58,6 @@ public:
     {
         if (count < 2)
             return;
-
         auto& stack = SortingStack::Get();
 
         // Push left and right
@@ -150,7 +65,7 @@ public:
         stack.Push(count - 1);
 
         // Keep sorting from stack while is not empty
-        while (stack.HasItems())
+        while (stack.Count)
         {
             // Pop right and left
             int32 right = stack.Pop();
@@ -197,7 +112,6 @@ public:
     {
         if (count < 2)
             return;
-
         auto& stack = SortingStack::Get();
 
         // Push left and right
@@ -205,7 +119,7 @@ public:
         stack.Push(count - 1);
 
         // Keep sorting from stack while is not empty
-        while (stack.HasItems())
+        while (stack.Count)
         {
             // Pop right and left
             int32 right = stack.Pop();
@@ -246,7 +160,6 @@ public:
     {
         if (count < 2)
             return;
-
         auto& stack = SortingStack::Get();
 
         // Push left and right
@@ -254,7 +167,7 @@ public:
         stack.Push(count - 1);
 
         // Keep sorting from stack while is not empty
-        while (stack.HasItems())
+        while (stack.Count != 0)
         {
             // Pop right and left
             int32 right = stack.Pop();
@@ -300,7 +213,6 @@ public:
     {
         if (count < 2)
             return;
-
         auto& stack = SortingStack::Get();
 
         // Push left and right
@@ -308,7 +220,7 @@ public:
         stack.Push(count - 1);
 
         // Keep sorting from stack while is not empty
-        while (stack.HasItems())
+        while (stack.Count)
         {
             // Pop right and left
             int32 right = stack.Pop();
@@ -341,6 +253,93 @@ public:
                 stack.Push(pivot + 1);
                 stack.Push(right);
             }
+        }
+    }
+
+    /// <summary>
+    /// Sorts the linear data array using Radix Sort algorithm (uses temporary keys collection).
+    /// </summary>
+    /// <param name="inputKeys">The data pointer to the input sorting keys array. When this method completes it contains a pointer to the original data or the temporary depending on the algorithm passes count. Use it as a results container.</param>
+    /// <param name="inputValues">The data pointer to the input values array. When this method completes it contains a pointer to the original data or the temporary depending on the algorithm passes count. Use it as a results container.</param>
+    /// <param name="tmpKeys">The data pointer to the temporary sorting keys array.</param>
+    /// <param name="tmpValues">The data pointer to the temporary values array.</param>
+    /// <param name="count">The elements count.</param>
+    template<typename T, typename U>
+    static void RadixSort(T*& inputKeys, U*& inputValues, T* tmpKeys, U* tmpValues, int32 count)
+    {
+        // Based on: https://github.com/bkaradzic/bx/blob/master/include/bx/inline/sort.inl
+        enum
+        {
+            RADIXSORT_BITS = 11,
+            RADIXSORT_HISTOGRAM_SIZE = 1 << RADIXSORT_BITS,
+            RADIXSORT_BIT_MASK = RADIXSORT_HISTOGRAM_SIZE - 1
+        };
+        if (count < 2)
+            return;
+
+        T* keys = inputKeys;
+        T* tempKeys = tmpKeys;
+        U* values = inputValues;
+        U* tempValues = tmpValues;
+
+        uint32 histogram[RADIXSORT_HISTOGRAM_SIZE];
+        uint16 shift = 0;
+        int32 pass = 0;
+        for (; pass < 6; pass++)
+        {
+            Platform::MemoryClear(histogram, sizeof(uint32) * RADIXSORT_HISTOGRAM_SIZE);
+
+            bool sorted = true;
+            T key = keys[0];
+            T prevKey = key;
+            for (int32 i = 0; i < count; i++)
+            {
+                key = keys[i];
+                const uint16 index = (key >> shift) & RADIXSORT_BIT_MASK;
+                ++histogram[index];
+                sorted &= prevKey <= key;
+                prevKey = key;
+            }
+
+            if (sorted)
+            {
+                goto end;
+            }
+
+            uint32 offset = 0;
+            for (int32 i = 0; i < RADIXSORT_HISTOGRAM_SIZE; ++i)
+            {
+                const uint32 cnt = histogram[i];
+                histogram[i] = offset;
+                offset += cnt;
+            }
+
+            for (int32 i = 0; i < count; i++)
+            {
+                const T k = keys[i];
+                const uint16 index = (k >> shift) & RADIXSORT_BIT_MASK;
+                const uint32 dest = histogram[index]++;
+                tempKeys[dest] = k;
+                tempValues[dest] = values[i];
+            }
+
+            T* const swapKeys = tempKeys;
+            tempKeys = keys;
+            keys = swapKeys;
+
+            U* const swapValues = tempValues;
+            tempValues = values;
+            values = swapValues;
+
+            shift += RADIXSORT_BITS;
+        }
+
+    end:
+        if (pass & 1)
+        {
+            // Use temporary keys and values as a result
+            inputKeys = tmpKeys;
+            inputValues = tmpValues;
         }
     }
 };

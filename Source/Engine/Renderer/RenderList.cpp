@@ -9,6 +9,7 @@
 #include "Engine/Graphics/PostProcessBase.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Level/Scene/Lightmap.h"
@@ -31,8 +32,6 @@ namespace
     Array<int32> SortingIndices;
     Array<RenderList*> FreeRenderList;
 }
-
-#define PREPARE_CACHE(list) (list).Clear(); (list).Resize(listSize)
 
 void RendererDirectionalLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
 {
@@ -399,108 +398,6 @@ void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCa
     }
 }
 
-uint32 ComputeDistance(float distance)
-{
-    // Compute sort key (http://aras-p.info/blog/2014/01/16/rough-sorting-by-depth/)
-    uint32 distanceI = *((uint32*)&distance);
-    return ((uint32)(-(int32)(distanceI >> 31)) | 0x80000000) ^ distanceI;
-}
-
-/// <summary>
-/// Sorts the linear data array using Radix Sort algorithm (uses temporary keys collection).
-/// </summary>
-/// <param name="inputKeys">The data pointer to the input sorting keys array. When this method completes it contains a pointer to the original data or the temporary depending on the algorithm passes count. Use it as a results container.</param>
-/// <param name="inputValues">The data pointer to the input values array. When this method completes it contains a pointer to the original data or the temporary depending on the algorithm passes count. Use it as a results container.</param>
-/// <param name="tmpKeys">The data pointer to the temporary sorting keys array.</param>
-/// <param name="tmpValues">The data pointer to the temporary values array.</param>
-/// <param name="count">The elements count.</param>
-template<typename T, typename U>
-static void RadixSort(T*& inputKeys, U* inputValues, T* tmpKeys, U* tmpValues, int32 count)
-{
-    // Based on: https://github.com/bkaradzic/bx/blob/master/include/bx/inline/sort.inl
-    enum
-    {
-        RADIXSORT_BITS = 11,
-        RADIXSORT_HISTOGRAM_SIZE = 1 << RADIXSORT_BITS,
-        RADIXSORT_BIT_MASK = RADIXSORT_HISTOGRAM_SIZE - 1
-    };
-
-    if (count < 2)
-        return;
-
-    T* keys = inputKeys;
-    T* tempKeys = tmpKeys;
-    U* values = inputValues;
-    U* tempValues = tmpValues;
-
-    uint32 histogram[RADIXSORT_HISTOGRAM_SIZE];
-    uint16 shift = 0;
-    int32 pass = 0;
-    for (; pass < 6; pass++)
-    {
-        Platform::MemoryClear(histogram, sizeof(uint32) * RADIXSORT_HISTOGRAM_SIZE);
-
-        bool sorted = true;
-        T key = keys[0];
-        T prevKey = key;
-        for (int32 i = 0; i < count; i++)
-        {
-            key = keys[i];
-            const uint16 index = (key >> shift) & RADIXSORT_BIT_MASK;
-            ++histogram[index];
-            sorted &= prevKey <= key;
-            prevKey = key;
-        }
-
-        if (sorted)
-        {
-            goto end;
-        }
-
-        uint32 offset = 0;
-        for (int32 i = 0; i < RADIXSORT_HISTOGRAM_SIZE; ++i)
-        {
-            const uint32 cnt = histogram[i];
-            histogram[i] = offset;
-            offset += cnt;
-        }
-
-        for (int32 i = 0; i < count; i++)
-        {
-            const T k = keys[i];
-            const uint16 index = (k >> shift) & RADIXSORT_BIT_MASK;
-            const uint32 dest = histogram[index]++;
-            tempKeys[dest] = k;
-            tempValues[dest] = values[i];
-        }
-
-        T* const swapKeys = tempKeys;
-        tempKeys = keys;
-        keys = swapKeys;
-
-        U* const swapValues = tempValues;
-        tempValues = values;
-        values = swapValues;
-
-        shift += RADIXSORT_BITS;
-    }
-
-end:
-    if (pass & 1)
-    {
-        // Use temporary keys as a result
-        inputKeys = tmpKeys;
-
-#if 0
-        // Use temporary values as a result
-        inputValues = tmpValues;
-#else
-        // Odd number of passes needs to do copy to the destination
-        Platform::MemoryCopy(inputValues, tmpValues, sizeof(U) * count);
-#endif
-    }
-}
-
 namespace
 {
     /// <summary>
@@ -530,9 +427,11 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     const Plane plane(renderContext.View.Position, renderContext.View.Direction);
 
     // Peek shared memory
+#define PREPARE_CACHE(list) (list).Clear(); (list).Resize(listSize)
     PREPARE_CACHE(SortingKeys[0]);
     PREPARE_CACHE(SortingKeys[1]);
     PREPARE_CACHE(SortingIndices);
+#undef PREPARE_CACHE
     uint64* sortedKeys = SortingKeys[0].Get();
 
     // Generate sort keys (by depth) and batch keys (higher bits)
@@ -541,7 +440,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     {
         auto& drawCall = DrawCalls[list.Indices[i]];
         const auto distance = CollisionsHelper::DistancePlanePoint(plane, drawCall.ObjectPosition);
-        const uint32 sortKey = ComputeDistance(distance) ^ sortKeyXor;
+        const uint32 sortKey = RenderTools::ComputeDistanceSortKey(distance) ^ sortKeyXor;
         int32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
@@ -560,7 +459,10 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
 
     // Sort draw calls indices
-    RadixSort(sortedKeys, list.Indices.Get(), SortingKeys[1].Get(), SortingIndices.Get(), listSize);
+    int32* resultIndices = list.Indices.Get();
+    Sorting::RadixSort(sortedKeys, resultIndices, SortingKeys[1].Get(), SortingIndices.Get(), listSize);
+    if (resultIndices != list.Indices.Get())
+        Platform::MemoryCopy(list.Indices.Get(), resultIndices, sizeof(int32) * listSize);
 
     // Perform draw calls batching
     list.Batches.Clear();
