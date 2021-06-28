@@ -734,7 +734,7 @@ VkSampler HelperResourcesVulkan::GetStaticSampler(StaticSamplers type)
 {
     if (!_staticSamplers[0])
     {
-        const bool supportsMirrorClampToEdge = _device->OptionalDeviceExtensions.HasMirrorClampToEdge;
+        const bool supportsMirrorClampToEdge = GPUDeviceVulkan::OptionalDeviceExtensions.HasMirrorClampToEdge;
 
         VkSamplerCreateInfo createInfo;
         RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);

@@ -327,7 +327,6 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Resource Binding Tier: {0}", options.ResourceBindingTier);
     LOG(Info, "Conservative Rasterization Tier: {0}", options.ConservativeRasterizationTier);
     LOG(Info, "Resource Heap Tier: {0}", options.ResourceHeapTier);
-    LOG(Info, "ROVs Supported: {0}", options.ROVsSupported != 0);
 
     // Init device limits
     {

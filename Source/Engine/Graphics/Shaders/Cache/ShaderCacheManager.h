@@ -21,33 +21,12 @@ public:
 
     struct CachedEntryHandle
     {
-        Guid ID;
+        Guid ID = Guid::Empty;
         String Path;
 
-        CachedEntryHandle()
-        {
-            ID = Guid::Empty;
-        }
-
-        bool IsValid() const
-        {
-            return ID.IsValid();
-        }
-
-        bool Exists() const
-        {
-            return FileSystem::FileExists(Path);
-        }
-
-        bool Delete() const
-        {
-            return FileSystem::DeleteFile(Path);
-        }
-
-        DateTime GetModificationDate() const
-        {
-            return FileSystem::GetFileLastEditTime(Path);
-        }
+        bool IsValid() const;
+        bool Exists() const;
+        DateTime GetModificationDate() const;
     };
 
 public:

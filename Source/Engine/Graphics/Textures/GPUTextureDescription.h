@@ -80,8 +80,6 @@ API_ENUM() enum class TextureDimensions
     CubeTexture,
 };
 
-const Char* ToString(TextureDimensions value);
-
 /// <summary>
 /// A common description for all GPU textures.
 /// </summary>
@@ -225,13 +223,6 @@ public:
     {
         return ArraySize != 1;
     }
-
-public:
-
-    /// <summary>
-    /// Clears description.
-    /// </summary>
-    void Clear();
 
 public:
 
@@ -408,63 +399,24 @@ public:
     static GPUTextureDescription NewCube(int32 size, PixelFormat format, GPUTextureFlags textureFlags, int32 mipCount);
 
 public:
-
-    /// <summary>
-    /// Gets the staging description for this instance.
-    /// </summary>
-    /// <returns>A staging texture description</returns>
-    GPUTextureDescription ToStagingUpload() const
-    {
-        auto copy = *this;
-        copy.Flags = GPUTextureFlags::None;
-        copy.Usage = GPUResourceUsage::StagingUpload;
-        return copy;
-    }
-
-    /// <summary>
-    /// Gets the staging description for this instance.
-    /// </summary>
-    /// <returns>A staging texture description</returns>
-    GPUTextureDescription ToStagingReadback() const
-    {
-        auto copy = *this;
-        copy.Flags = GPUTextureFlags::None;
-        copy.Usage = GPUResourceUsage::StagingReadback;
-        return copy;
-    }
+    
+    void Clear();
+    GPUTextureDescription ToStagingUpload() const;
+    GPUTextureDescription ToStagingReadback() const;
+    bool Equals(const GPUTextureDescription& other) const;
+    String ToString() const;
 
 public:
 
-    /// <summary>
-    /// Compares with other instance of GPUTextureDescription
-    /// </summary>
-    /// <param name="other">The other object to compare.</param>
-    /// <returns>True if objects are the same, otherwise false.</returns>
-    bool Equals(const GPUTextureDescription& other) const;
-
-    /// <summary>
-    /// Implements the operator ==.
-    /// </summary>
-    /// <param name="other">The other description.</param>
-    /// <returns>The result of the operator.</returns>
     FORCE_INLINE bool operator==(const GPUTextureDescription& other) const
     {
         return Equals(other);
     }
 
-    /// <summary>
-    /// Implements the operator !=.
-    /// </summary>
-    /// <param name="other">The other description.</param>
-    /// <returns>The result of the operator.</returns>
     FORCE_INLINE bool operator!=(const GPUTextureDescription& other) const
     {
         return !Equals(other);
     }
-
-public:
-
-    String ToString() const;
 };
 
 uint32 GetHash(const GPUTextureDescription& key);

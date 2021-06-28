@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Config.h"
-#include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
 /// Graphics rendering backend system types.

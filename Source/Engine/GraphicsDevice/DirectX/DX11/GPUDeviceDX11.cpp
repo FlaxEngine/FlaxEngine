@@ -345,7 +345,7 @@ bool GPUDeviceDX11::Init()
             limits.MaximumTexture2DSize = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
             limits.MaximumTexture2DArraySize = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture3DSize = D3D10_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-            limits.MaximumTextureCubeSize = D3D11_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumTextureCubeSize = D3D10_REQ_TEXTURECUBE_DIMENSION;
         }
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)

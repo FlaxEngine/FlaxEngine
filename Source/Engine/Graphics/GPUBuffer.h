@@ -18,10 +18,7 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUBufferView : public GPUResour
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUBufferView);
 protected:
 
-    GPUBufferView()
-        : GPUResourceView(SpawnParams(Guid::New(), TypeInitializer))
-    {
-    }
+    GPUBufferView();
 };
 
 /// <summary>
@@ -39,23 +36,7 @@ protected:
     GPUBufferDescription _desc;
     bool _isLocked = false;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUBuffer"/> class.
-    /// </summary>
-    GPUBuffer()
-    {
-        // Buffer with size 0 is considered to be invalid
-        _desc.Size = 0;
-    }
-
-public:
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUBuffer"/> class.
-    /// </summary>
-    virtual ~GPUBuffer()
-    {
-    }
+    GPUBuffer();
 
 public:
 

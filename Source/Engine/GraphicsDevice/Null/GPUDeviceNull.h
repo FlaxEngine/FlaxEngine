@@ -26,18 +26,8 @@ private:
 
 public:
 
-    // Create new graphics device (returns null if failed)
-    // @returns Created device or null
     static GPUDevice* Create();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUDeviceNull"/> class.
-    /// </summary>
     GPUDeviceNull();
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUDeviceNull"/> class.
-    /// </summary>
     ~GPUDeviceNull();
 
 public:

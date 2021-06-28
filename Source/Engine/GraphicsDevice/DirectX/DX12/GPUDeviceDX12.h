@@ -60,20 +60,8 @@ private:
 
 public:
 
-    // Create new graphics device (returns null if failed)
-    // @returns Created device or null
     static GPUDevice* Create();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUDeviceDX12"/> class.
-    /// </summary>
-    /// <param name="dxgiFactory">The DXGI factory handle.</param>
-    /// <param name="adapter">The GPU device adapter.</param>
     GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUDeviceDX12"/> class.
-    /// </summary>
     ~GPUDeviceDX12();
 
 public:
