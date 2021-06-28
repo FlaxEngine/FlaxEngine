@@ -94,8 +94,6 @@ private:
     int32 _psDirtyFlag : 1;
     int32 _rtDirtyFlag : 1;
     int32 _cbDirtyFlag : 1;
-    int32 _srDirtyFlag : 1;
-    int32 _uaDirtyFlag : 1;
 
     int32 _rtCount;
     int32 _vbCount;
@@ -107,6 +105,7 @@ private:
     DescriptorOwnerResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
     DescriptorOwnerResourceVulkan* _srHandles[GPU_MAX_SR_BINDED];
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
+    VkSampler _samplerHandles[GPU_MAX_SAMPLER_BINDED];
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
@@ -188,6 +187,7 @@ public:
     void BindUA(int32 slot, GPUResourceView* view) override;
     void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
+    void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;
     void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
     void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;

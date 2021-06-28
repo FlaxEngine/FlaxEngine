@@ -16,6 +16,7 @@ class GPUShaderProgramCS;
 class GPUBuffer;
 class GPUPipelineState;
 class GPUTexture;
+class GPUSampler;
 class GPUDevice;
 class GPUResource;
 class GPUResourceView;
@@ -395,6 +396,13 @@ public:
     /// </summary>
     /// <param name="indexBuffer">The index buffer.</param>
     API_FUNCTION() virtual void BindIB(GPUBuffer* indexBuffer) = 0;
+
+    /// <summary>
+    /// Binds the texture sampler to the pipeline.
+    /// </summary>
+    /// <param name="slot">The slot index.</param>
+    /// <param name="sampler">The sampler.</param>
+    API_FUNCTION() virtual void BindSampler(int32 slot, GPUSampler* sampler) = 0;
 
 public:
 

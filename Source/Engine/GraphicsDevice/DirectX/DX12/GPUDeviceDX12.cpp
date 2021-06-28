@@ -9,6 +9,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUTimerQueryDX12.h"
 #include "GPUBufferDX12.h"
+#include "GPUSamplerDX12.h"
 #include "GPUSwapChainDX12.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
@@ -191,7 +192,9 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
     , Heap_DSV(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64, false)
+    , Heap_Sampler(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, false)
     , RingHeap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 512 * 1024, true)
+    , RingHeap_Sampler(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1 * 1024, true)
 {
 }
 
@@ -350,6 +353,7 @@ bool GPUDeviceDX12::Init()
         limits.MaximumTexture2DArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
         limits.MaximumTexture3DSize = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
         limits.MaximumTextureCubeSize = D3D12_REQ_TEXTURECUBE_DIMENSION;
+        limits.MaximumSamplerAnisotropy = D3D12_DEFAULT_MAX_ANISOTROPY;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -378,6 +382,8 @@ bool GPUDeviceDX12::Init()
         return true;
     _mainContext = New<GPUContextDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (RingHeap_CBV_SRV_UAV.Init())
+        return true;
+    if (RingHeap_Sampler.Init())
         return true;
 
     // Create empty views
@@ -458,7 +464,7 @@ bool GPUDeviceDX12::Init()
     // TODO: maybe create set of different root signatures? for UAVs, for compute, for simple drawing, for post fx?
     {
         // Descriptor tables
-        D3D12_DESCRIPTOR_RANGE r[2];
+        D3D12_DESCRIPTOR_RANGE r[3];
         // TODO: separate ranges for pixel/vertex visibility and one shared for all?
         {
             D3D12_DESCRIPTOR_RANGE& range = r[0];
@@ -476,9 +482,17 @@ bool GPUDeviceDX12::Init()
             range.RegisterSpace = 0;
             range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
         }
+        {
+            D3D12_DESCRIPTOR_RANGE& range = r[2];
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+            range.NumDescriptors = GPU_MAX_SAMPLER_BINDED - GPU_STATIC_SAMPLERS_COUNT;
+            range.BaseShaderRegister = GPU_STATIC_SAMPLERS_COUNT;
+            range.RegisterSpace = 0;
+            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+        }
 
         // Root parameters
-        D3D12_ROOT_PARAMETER rootParameters[4];
+        D3D12_ROOT_PARAMETER rootParameters[5];
         {
             D3D12_ROOT_PARAMETER& rootParam = rootParameters[0];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -507,11 +521,18 @@ bool GPUDeviceDX12::Init()
             rootParam.DescriptorTable.NumDescriptorRanges = 1;
             rootParam.DescriptorTable.pDescriptorRanges = &r[1];
         }
-
-        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
+        {
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[4];
+            rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+            rootParam.DescriptorTable.NumDescriptorRanges = 1;
+            rootParam.DescriptorTable.pDescriptorRanges = &r[2];
+        }
 
         // Static samplers
         D3D12_STATIC_SAMPLER_DESC staticSamplers[6];
+        static_assert(GPU_STATIC_SAMPLERS_COUNT == ARRAY_COUNT(staticSamplers), "Update static samplers setup.");
+        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
         // Linear Clamp
         staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -718,7 +739,9 @@ void GPUDeviceDX12::Dispose()
     Heap_CBV_SRV_UAV.ReleaseGPU();
     Heap_RTV.ReleaseGPU();
     Heap_DSV.ReleaseGPU();
+    Heap_Sampler.ReleaseGPU();
     RingHeap_CBV_SRV_UAV.ReleaseGPU();
+    RingHeap_Sampler.ReleaseGPU();
     SAFE_DELETE(UploadBuffer);
     SAFE_DELETE(DrawIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
@@ -764,6 +787,11 @@ GPUTimerQuery* GPUDeviceDX12::CreateTimerQuery()
 GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferDX12>(this, name);
+}
+
+GPUSampler* GPUDeviceDX12::CreateSampler()
+{
+    return New<GPUSamplerDX12>(this);
 }
 
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)

@@ -141,7 +141,9 @@ public:
     DescriptorHeapPoolDX12 Heap_CBV_SRV_UAV;
     DescriptorHeapPoolDX12 Heap_RTV;
     DescriptorHeapPoolDX12 Heap_DSV;
+    DescriptorHeapPoolDX12 Heap_Sampler;
     DescriptorHeapRingBufferDX12 RingHeap_CBV_SRV_UAV;
+    DescriptorHeapRingBufferDX12 RingHeap_Sampler;
 
 public:
 
@@ -188,6 +190,7 @@ public:
     GPUPipelineState* CreatePipelineState() override;
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
 };
 

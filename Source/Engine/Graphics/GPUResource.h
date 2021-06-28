@@ -22,7 +22,7 @@ public:
     /// <summary>
     /// GPU Resources types.
     /// </summary>
-    DECLARE_ENUM_9(ResourceType, RenderTarget, Texture, CubeTexture, VolumeTexture, Buffer, Shader, PipelineState, Descriptor, Query);
+    DECLARE_ENUM_10(ResourceType, RenderTarget, Texture, CubeTexture, VolumeTexture, Buffer, Shader, PipelineState, Descriptor, Query, Sampler);
 
     /// <summary>
     /// GPU Resources object types. Used to detect Texture objects from subset of Types:  RenderTarget, Texture, CubeTexture, VolumeTexture which use the same API object.

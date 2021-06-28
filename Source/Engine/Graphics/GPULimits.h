@@ -314,4 +314,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPULimits);
     /// The maximum size of the cube texture (both width and height).
     /// </summary>
     API_FIELD() int32 MaximumTextureCubeSize;
+
+    /// <summary>
+    /// The maximum degree of anisotropic filtering used for texture sampling.
+    /// </summary>
+    API_FIELD() float MaximumSamplerAnisotropy;
 };

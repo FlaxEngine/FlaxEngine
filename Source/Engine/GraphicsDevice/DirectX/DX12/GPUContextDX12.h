@@ -12,6 +12,7 @@
 class GPUDeviceDX12;
 class GPUPipelineStateDX12;
 class GPUBufferDX12;
+class GPUSamplerDX12;
 class GPUConstantBufferDX12;
 class GPUTextureViewDX12;
 
@@ -51,6 +52,7 @@ private:
     int32 _rtDirtyFlag : 1;
     int32 _psDirtyFlag : 1;
     int32 _cbDirtyFlag : 1;
+    int32 _samplersDirtyFlag : 1;
 
     GPUTextureViewDX12* _rtDepth;
     GPUTextureViewDX12* _rtHandles[GPU_MAX_RT_BINDED];
@@ -62,6 +64,7 @@ private:
     D3D12_VERTEX_BUFFER_VIEW _vbViews[GPU_MAX_VB_BINDED];
     D3D12_RESOURCE_BARRIER _rbBuffer[DX12_RB_BUFFER_SIZE];
     GPUConstantBufferDX12* _cbHandles[GPU_MAX_CB_BINDED];
+    GPUSamplerDX12* _samplers[GPU_MAX_SAMPLER_BINDED - GPU_STATIC_SAMPLERS_COUNT];
 
 public:
 
@@ -136,6 +139,7 @@ private:
     void flushRTVs();
     void flushUAVs();
     void flushCBs();
+    void flushSamplers();
     void flushRBs();
     void flushPS();
     void OnDrawCall();
@@ -167,6 +171,7 @@ public:
     void BindUA(int32 slot, GPUResourceView* view) override;
     void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
+    void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;
     void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
     void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;

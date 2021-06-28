@@ -18,6 +18,7 @@ class GPUShader;
 class GPUTimerQuery;
 class GPUTexture;
 class GPUBuffer;
+class GPUSampler;
 class GPUPipelineState;
 class GPUSwapChain;
 class Shader;
@@ -359,6 +360,12 @@ public:
     /// <param name="name">The resource name.</param>
     /// <returns>The buffer.</returns>
     API_FUNCTION() virtual GPUBuffer* CreateBuffer(const StringView& name = StringView::Empty) = 0;
+
+    /// <summary>
+    /// Creates the texture sampler.
+    /// </summary>
+    /// <returns>The sampler.</returns>
+    API_FUNCTION() virtual GPUSampler* CreateSampler() = 0;
 
     /// <summary>
     /// Creates the native window swap chain.

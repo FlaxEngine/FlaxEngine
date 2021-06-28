@@ -385,46 +385,24 @@ public:
 /// </summary>
 class HelperResourcesVulkan
 {
-public:
-
-    enum class StaticSamplers
-    {
-        SamplerLinearClamp =0,
-        SamplerPointClamp = 1,
-        SamplerLinearWrap = 2,
-        SamplerPointWrap = 3,
-        ShadowSampler = 4,
-        ShadowSamplerPCF = 5,
-
-        MAX
-    };
-
 private:
 
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
     GPUBufferVulkan* _dummyBuffer;
     GPUBufferVulkan* _dummyVB;
-    VkSampler _staticSamplers[static_cast<int32>(StaticSamplers::MAX)];
+    VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DummyResourcesVulkan"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
     HelperResourcesVulkan(GPUDeviceVulkan* device);
 
 public:
 
-    VkSampler GetStaticSampler(StaticSamplers type);
-
+    VkSampler* GetStaticSamplers();
     GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
-
     GPUBufferVulkan* GetDummyBuffer();
-
     GPUBufferVulkan* GetDummyVertexBuffer();
-
     void Dispose();
 };
 
@@ -739,6 +717,7 @@ public:
     GPUPipelineState* CreatePipelineState() override;
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
 };
 

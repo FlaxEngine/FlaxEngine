@@ -11,6 +11,7 @@
 #include "UploadBufferDX12.h"
 #include "GPUTextureDX12.h"
 #include "GPUBufferDX12.h"
+#include "GPUSamplerDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -74,6 +75,7 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _rtDirtyFlag(0)
     , _psDirtyFlag(0)
     , _cbDirtyFlag(0)
+    , _samplersDirtyFlag(0)
     , _rtDepth(nullptr)
     , _ibHandle(nullptr)
 {
@@ -213,6 +215,7 @@ void GPUContextDX12::Reset()
     _currentState = nullptr;
     _rtDirtyFlag = false;
     _cbDirtyFlag = false;
+    _samplersDirtyFlag = false;
     _rtCount = 0;
     _rtDepth = nullptr;
     _srMaskDirtyGraphics = 0;
@@ -226,8 +229,9 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryClear(_vbHandles, sizeof(_vbHandles));
-    Platform::MemoryClear(&_ibHandle, sizeof(_ibHandle));
+    _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
+    Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
 
     // Bind Root Signature
@@ -235,7 +239,7 @@ void GPUContextDX12::Reset()
     _commandList->SetComputeRootSignature(_device->GetRootSignature());
 
     // Bind heaps
-    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap() };
+    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
     _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
 }
 
@@ -449,26 +453,56 @@ void GPUContextDX12::flushUAVs()
 
 void GPUContextDX12::flushCBs()
 {
-    // Check if need to flush constant buffers
-    if (_cbDirtyFlag)
+    if (!_cbDirtyFlag)
+        return;
+    _cbDirtyFlag = false;
+    for (uint32 slotIndex = 0; slotIndex < ARRAY_COUNT(_cbHandles); slotIndex++)
     {
-        // Clear flag
-        _cbDirtyFlag = false;
-
-        // Flush with the driver
-        for (uint32 slotIndex = 0; slotIndex < ARRAY_COUNT(_cbHandles); slotIndex++)
+        auto cb = _cbHandles[slotIndex];
+        if (cb)
         {
-            auto cb = _cbHandles[slotIndex];
-            if (cb)
-            {
-                ASSERT(cb->GPUAddress != 0);
-                if (_isCompute)
-                    _commandList->SetComputeRootConstantBufferView(slotIndex, cb->GPUAddress);
-                else
-                    _commandList->SetGraphicsRootConstantBufferView(slotIndex, cb->GPUAddress);
-            }
+            ASSERT(cb->GPUAddress != 0);
+            if (_isCompute)
+                _commandList->SetComputeRootConstantBufferView(slotIndex, cb->GPUAddress);
+            else
+                _commandList->SetGraphicsRootConstantBufferView(slotIndex, cb->GPUAddress);
         }
     }
+}
+
+void GPUContextDX12::flushSamplers()
+{
+    if (!_samplersDirtyFlag)
+        return;
+    _samplersDirtyFlag = false;
+    int32 lastSlot = -1;
+    for (int32 slotIndex = ARRAY_COUNT(_samplers) - 1; slotIndex >= 0; slotIndex--)
+    {
+        auto sampler = _samplers[slotIndex];
+        if (sampler)
+        {
+            lastSlot = slotIndex;
+            break;
+        }
+    }
+    if (lastSlot < 0)
+        return;
+    const uint32 samplersCount = lastSlot + 1;
+    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[ARRAY_COUNT(_samplers)];
+    for (uint32 i = 0; i < samplersCount; i++)
+    {
+        const auto handle = _samplers[i];
+        if (handle != nullptr)
+        {
+            srcDescriptorRangeStarts[i] = handle->HandleCPU;
+        }
+    }
+    auto allocation = _device->RingHeap_Sampler.AllocateTable(samplersCount);
+    _device->GetDevice()->CopyDescriptors(1, &allocation.CPU, &samplersCount, samplersCount, srcDescriptorRangeStarts, nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    if (_isCompute)
+        _commandList->SetComputeRootDescriptorTable(4, allocation.GPU);
+    else
+        _commandList->SetGraphicsRootDescriptorTable(4, allocation.GPU);
 }
 
 void GPUContextDX12::flushRBs()
@@ -563,6 +597,7 @@ void GPUContextDX12::OnDrawCall()
     flushRBs();
     flushPS();
     flushCBs();
+    flushSamplers();
 
 #if BUILD_DEBUG
     // Additional verification of the state
@@ -835,8 +870,8 @@ void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
     _uaHandles[slot] = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-        if (view)
-            *view->LastRenderTime = _lastRenderTime;
+    if (view)
+        *view->LastRenderTime = _lastRenderTime;
 }
 
 void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
@@ -890,6 +925,17 @@ void GPUContextDX12::BindIB(GPUBuffer* indexBuffer)
     }
 }
 
+void GPUContextDX12::BindSampler(int32 slot, GPUSampler* sampler)
+{
+    ASSERT(slot >= GPU_STATIC_SAMPLERS_COUNT && slot < GPU_MAX_SAMPLER_BINDED);
+    const auto handle = sampler ? static_cast<GPUSamplerDX12*>(sampler) : nullptr;
+    if (_samplers[slot - GPU_STATIC_SAMPLERS_COUNT] != handle)
+    {
+        _samplersDirtyFlag = true;
+        _samplers[slot - GPU_STATIC_SAMPLERS_COUNT] = handle;
+    }
+}
+
 void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
 {
     ASSERT(data && cb);
@@ -927,6 +973,7 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     flushUAVs();
     flushRBs();
     flushCBs();
+    flushSamplers();
 
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();
@@ -959,6 +1006,7 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     flushUAVs();
     flushRBs();
     flushCBs();
+    flushSamplers();
 
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();

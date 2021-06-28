@@ -8,6 +8,7 @@
 #include "GPUPipelineStateDX11.h"
 #include "GPUTextureDX11.h"
 #include "GPUBufferDX11.h"
+#include "GPUSamplerDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -382,6 +383,15 @@ void GPUContextDX11::BindIB(GPUBuffer* indexBuffer)
         _ibHandle = ibDX11;
         _context->IASetIndexBuffer(ibDX11->GetBuffer(), RenderToolsDX::ToDxgiFormat(ibDX11->GetFormat()), 0);
     }
+}
+
+void GPUContextDX11::BindSampler(int32 slot, GPUSampler* sampler)
+{
+    const auto samplerDX11 = sampler ? static_cast<GPUSamplerDX11*>(sampler)->SamplerState : nullptr;
+    _context->VSSetSamplers(slot, 1, &samplerDX11);
+    _context->DSSetSamplers(slot, 1, &samplerDX11);
+    _context->PSSetSamplers(slot, 1, &samplerDX11);
+    _context->CSSetSamplers(slot, 1, &samplerDX11);
 }
 
 void GPUContextDX11::UpdateCB(GPUConstantBuffer* cb, const void* data)

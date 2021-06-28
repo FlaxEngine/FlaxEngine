@@ -13,6 +13,7 @@
 #include "GPUTextureVulkan.h"
 #include "GPUTimerQueryVulkan.h"
 #include "GPUBufferVulkan.h"
+#include "GPUSamplerVulkan.h"
 #include "GPUSwapChainVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "QueueVulkan.h"
@@ -369,7 +370,7 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 #undef SWITCH_CASE
                 default:
 #if !BUILD_RELEASE
-                CRASH;
+                    CRASH;
 #endif
                     break;
                 }
@@ -730,8 +731,9 @@ void InitSampler(VkSamplerCreateInfo& createInfo, bool supportsMirrorClampToEdge
     createInfo.compareOp = RenderToolsVulkan::ToVulkanSamplerCompareFunction(compareFunction);
 }
 
-VkSampler HelperResourcesVulkan::GetStaticSampler(StaticSamplers type)
+VkSampler* HelperResourcesVulkan::GetStaticSamplers()
 {
+    static_assert(GPU_STATIC_SAMPLERS_COUNT == 6, "Update static samplers setup.");
     if (!_staticSamplers[0])
     {
         const bool supportsMirrorClampToEdge = GPUDeviceVulkan::OptionalDeviceExtensions.HasMirrorClampToEdge;
@@ -769,8 +771,7 @@ VkSampler HelperResourcesVulkan::GetStaticSampler(StaticSamplers type)
         InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[5]));
     }
-
-    return _staticSamplers[static_cast<int32>(type)];
+    return _staticSamplers;
 }
 
 GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType type)
@@ -797,7 +798,7 @@ GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType
         index = 5;
         break;
     default:
-    CRASH;
+        CRASH;
         return nullptr;
     }
 
@@ -1172,7 +1173,7 @@ GPUDevice* GPUDeviceVulkan::Create()
     volkLoadInstance(Instance);
 #endif
 
-// Setup debug layer
+    // Setup debug layer
 #if VULKAN_USE_DEBUG_LAYER
     SetupDebugLayerCallback();
 #endif
@@ -1692,6 +1693,7 @@ bool GPUDeviceVulkan::Init()
         limits.MaximumTexture2DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;
         limits.MaximumTexture3DSize = PhysicalDeviceLimits.maxImageDimension3D;
         limits.MaximumTextureCubeSize = PhysicalDeviceLimits.maxImageDimensionCube;
+        limits.MaximumSamplerAnisotropy = PhysicalDeviceLimits.maxSamplerAnisotropy;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -1955,6 +1957,11 @@ GPUTimerQuery* GPUDeviceVulkan::CreateTimerQuery()
 GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferVulkan>(this, name);
+}
+
+GPUSampler* GPUDeviceVulkan::CreateSampler()
+{
+    return New<GPUSamplerVulkan>(this);
 }
 
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)

@@ -99,6 +99,7 @@ public:
     GPUPipelineState* CreatePipelineState() override;
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
 };
 

@@ -9,6 +9,7 @@
 #include "GPUTextureDX11.h"
 #include "GPUTimerQueryDX11.h"
 #include "GPUBufferDX11.h"
+#include "GPUSamplerDX11.h"
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
@@ -324,6 +325,7 @@ bool GPUDeviceDX11::Init()
             limits.MaximumTexture2DArraySize = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture3DSize = D3D11_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
             limits.MaximumTextureCubeSize = D3D11_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumSamplerAnisotropy = D3D11_DEFAULT_MAX_ANISOTROPY;
         }
         else
         {
@@ -346,6 +348,7 @@ bool GPUDeviceDX11::Init()
             limits.MaximumTexture2DArraySize = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture3DSize = D3D10_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
             limits.MaximumTextureCubeSize = D3D10_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumSamplerAnisotropy = D3D10_DEFAULT_MAX_ANISOTROPY;
         }
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
@@ -683,6 +686,11 @@ GPUTimerQuery* GPUDeviceDX11::CreateTimerQuery()
 GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferDX11>(this, name);
+}
+
+GPUSampler* GPUDeviceDX11::CreateSampler()
+{
+    return New<GPUSamplerDX11>(this);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

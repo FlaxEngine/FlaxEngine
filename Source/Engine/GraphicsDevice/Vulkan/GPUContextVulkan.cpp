@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Color.h"
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
+#include "GPUSamplerVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
@@ -447,7 +448,8 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
         case VK_DESCRIPTOR_TYPE_SAMPLER:
         {
             // Sampler
-            const VkSampler sampler = _device->HelperResources.GetStaticSampler((HelperResourcesVulkan::StaticSamplers)descriptor.Slot);
+            const VkSampler sampler = _samplerHandles[descriptor.Slot];
+            ASSERT(sampler);
             needsWrite |= dsWriter.WriteSampler(descriptorIndex, sampler);
             break;
         }
@@ -715,8 +717,6 @@ void GPUContextVulkan::FrameBegin()
     _psDirtyFlag = 0;
     _rtDirtyFlag = 0;
     _cbDirtyFlag = 0;
-    _srDirtyFlag = 0;
-    _uaDirtyFlag = 0;
     _rtCount = 0;
     _vbCount = 0;
     _renderPass = nullptr;
@@ -726,6 +726,8 @@ void GPUContextVulkan::FrameBegin()
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
+    Platform::MemoryCopy(_samplerHandles, _device->HelperResources.GetStaticSamplers(), sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
+    Platform::MemoryClear(_samplerHandles + GPU_STATIC_SAMPLERS_COUNT, sizeof(_samplerHandles) - sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
 
 #if VULKAN_RESET_QUERY_POOLS
     // Reset pending queries
@@ -916,13 +918,11 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
 
 void GPUContextVulkan::ResetSR()
 {
-    _srDirtyFlag = false;
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
 }
 
 void GPUContextVulkan::ResetUA()
 {
-    _uaDirtyFlag = false;
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
 }
 
@@ -951,7 +951,6 @@ void GPUContextVulkan::BindSR(int32 slot, GPUResourceView* view)
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
     if (_srHandles[slot] != handle)
     {
-        _srDirtyFlag = true;
         _srHandles[slot] = handle;
         if (view)
             *view->LastRenderTime = _lastRenderTime;
@@ -964,7 +963,6 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
     if (_uaHandles[slot] != handle)
     {
-        _uaDirtyFlag = true;
         _uaHandles[slot] = handle;
         if (view)
             *view->LastRenderTime = _lastRenderTime;
@@ -995,6 +993,16 @@ void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     const auto ibVulkan = static_cast<GPUBufferVulkan*>(indexBuffer)->GetHandle();
     vkCmdBindIndexBuffer(cmdBuffer->GetHandle(), ibVulkan, 0, indexBuffer->GetFormat() == PixelFormat::R32_UInt ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
+}
+
+void GPUContextVulkan::BindSampler(int32 slot, GPUSampler* sampler)
+{
+    ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    const auto handle = sampler ? ((GPUSamplerVulkan*)sampler)->Sampler : nullptr;
+    if (_samplerHandles[slot] != handle)
+    {
+        _samplerHandles[slot] = handle;
+    }
 }
 
 void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)
