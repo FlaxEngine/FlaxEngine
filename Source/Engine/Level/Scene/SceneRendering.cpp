@@ -4,9 +4,13 @@
 #include "Scene.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Level/Actors/PostFxVolume.h"
 
+#define SCENE_RENDERING_USE_PROFILER 0
 #define SCENE_RENDERING_USE_SIMD 0
+
+#if SCENE_RENDERING_USE_PROFILER
+#include "Engine/Profiler/ProfilerCPU.h"
+#endif
 
 #if SCENE_RENDERING_USE_SIMD
 
@@ -22,14 +26,49 @@ ALIGN_BEGIN(16) struct CullDataSIMD
 
 #endif
 
-SceneRendering::SceneRendering(::Scene* scene)
-    : Scene(scene)
+int32 SceneRendering::DrawEntries::Add(Actor* obj)
 {
+    int32 key = 0;
+    for (; key < List.Count(); key++)
+    {
+        if (List[key].Actor == nullptr)
+            break;
+    }
+    if (key == List.Count())
+        List.AddOne();
+    auto& e = List[key];
+    e.Actor = obj;
+    e.LayerMask = obj->GetLayerMask();
+    e.Bounds = obj->GetSphere();
+    return key;
 }
 
-void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, const Array<Actor*>& actors)
+void SceneRendering::DrawEntries::Update(Actor* obj, int32 key)
+{
+    auto& e = List[key];
+    ASSERT_LOW_LAYER(obj == e.Actor);
+    e.LayerMask = obj->GetLayerMask();
+    e.Bounds = obj->GetSphere();
+}
+
+void SceneRendering::DrawEntries::Remove(Actor* obj, int32 key)
+{
+    if (List.IsEmpty())
+        return;
+    auto& e = List[key];
+    ASSERT_LOW_LAYER(obj == e.Actor);
+    e.Actor = nullptr;
+}
+
+void SceneRendering::DrawEntries::Clear()
+{
+    List.Clear();
+}
+
+void SceneRendering::DrawEntries::CullAndDraw(RenderContext& renderContext)
 {
     auto& view = renderContext.View;
+    const BoundingFrustum frustum = view.CullingFrustum;
 #if SCENE_RENDERING_USE_SIMD
 	CullDataSIMD cullData;
 	{
@@ -97,8 +136,10 @@ void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, c
 	float4 pz2 = SIMD::Load(&cullData.zs[4]);
 	float4 pd2 = SIMD::Load(&cullData.ds[4]);
 
-	for (int32 i = 0; i < actors.Count(); i++)
+	for (int32 i = 0; i < List.Count(); i++)
 	{
+        auto& e = List[i];
+
 		const auto& sphere = actors[i]->GetSphere();
 		float4 cx = SIMD::Splat(sphere.Center.X);
 		float4 cy = SIMD::Splat(sphere.Center.Y);
@@ -121,21 +162,28 @@ void CullAndDraw(const BoundingFrustum& frustum, RenderContext& renderContext, c
 		if (SIMD::MoveMask(t))
 			continue;
 
-		actors[i]->Draw(renderContext);
+		e.Actor->Draw(renderContext);
 	}
 #else
-    for (int32 i = 0; i < actors.Count(); i++)
+    for (int32 i = 0; i < List.Count(); i++)
     {
-        auto actor = actors[i];
-        if (view.RenderLayersMask.HasLayer(actor->GetLayer()) && frustum.Intersects(actor->GetSphere()))
-            actor->Draw(renderContext);
+        auto e = List[i];
+        if (view.RenderLayersMask.Mask & e.LayerMask && frustum.Intersects(e.Bounds))
+        {
+#if SCENE_RENDERING_USE_PROFILER
+            PROFILE_CPU();
+            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
+            e.Actor->Draw(renderContext);
+        }
     }
 #endif
 }
 
-void CullAndDrawOffline(const BoundingFrustum& frustum, RenderContext& renderContext, const Array<Actor*>& actors)
+void SceneRendering::DrawEntries::CullAndDrawOffline(RenderContext& renderContext)
 {
     auto& view = renderContext.View;
+    const BoundingFrustum frustum = view.CullingFrustum;
 #if SCENE_RENDERING_USE_SIMD
 	CullDataSIMD cullData;
 	{
@@ -231,13 +279,24 @@ void CullAndDrawOffline(const BoundingFrustum& frustum, RenderContext& renderCon
 			actors[i]->Draw(renderContext);
 	}
 #else
-    for (int32 i = 0; i < actors.Count(); i++)
+    for (int32 i = 0; i < List.Count(); i++)
     {
-        auto actor = actors[i];
-        if (actor->GetStaticFlags() & view.StaticFlagsMask && view.RenderLayersMask.HasLayer(actor->GetLayer()) && frustum.Intersects(actor->GetSphere()))
-            actor->Draw(renderContext);
+        auto e = List[i];
+        if (view.RenderLayersMask.Mask & e.LayerMask && frustum.Intersects(e.Bounds) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
+        {
+#if SCENE_RENDERING_USE_PROFILER
+            PROFILE_CPU();
+            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
+            e.Actor->Draw(renderContext);
+        }
     }
 #endif
+}
+
+SceneRendering::SceneRendering(::Scene* scene)
+    : Scene(scene)
+{
 }
 
 void SceneRendering::Draw(RenderContext& renderContext)
@@ -248,13 +307,12 @@ void SceneRendering::Draw(RenderContext& renderContext)
     auto& view = renderContext.View;
 
     // Draw all visual components
-    const BoundingFrustum frustum = view.CullingFrustum;
     if (view.IsOfflinePass)
     {
-        CullAndDrawOffline(frustum, renderContext, Geometry);
+        Geometry.CullAndDrawOffline(renderContext);
         if (view.Pass & DrawPass::GBuffer)
         {
-            CullAndDrawOffline(frustum, renderContext, Common);
+            Common.CullAndDrawOffline(renderContext);
             for (int32 i = 0; i < CommonNoCulling.Count(); i++)
             {
                 auto actor = CommonNoCulling[i];
@@ -265,15 +323,21 @@ void SceneRendering::Draw(RenderContext& renderContext)
     }
     else
     {
-        CullAndDraw(frustum, renderContext, Geometry);
+        Geometry.CullAndDraw(renderContext);
         if (view.Pass & DrawPass::GBuffer)
         {
-            CullAndDraw(frustum, renderContext, Common);
+            Common.CullAndDraw(renderContext);
             for (int32 i = 0; i < CommonNoCulling.Count(); i++)
             {
                 auto actor = CommonNoCulling[i];
                 if (view.RenderLayersMask.HasLayer(actor->GetLayer()))
+                {
+#if SCENE_RENDERING_USE_PROFILER
+                    PROFILE_CPU();
+                    ___tracy_scoped_zone.Name(*actor->GetName(), actor->GetName().Length());
+#endif
                     actor->Draw(renderContext);
+                }
             }
         }
     }
@@ -294,6 +358,9 @@ void SceneRendering::Draw(RenderContext& renderContext)
 
 void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 {
+#if SCENE_RENDERING_USE_PROFILER
+    PROFILE_CPU();
+#endif
     for (int32 i = 0; i < PostFxProviders.Count(); i++)
     {
         PostFxProviders[i]->Collect(renderContext);

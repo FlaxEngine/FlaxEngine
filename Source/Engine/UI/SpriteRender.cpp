@@ -170,6 +170,12 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
         _paramColor->SetValue(_color);
 }
 
+void SpriteRender::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+}
+
 void SpriteRender::OnEndPlay()
 {
     // Base
@@ -187,7 +193,7 @@ void SpriteRender::OnEndPlay()
 
 void SpriteRender::OnEnable()
 {
-    GetSceneRendering()->AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 
     // Base
     Actor::OnEnable();
@@ -195,7 +201,7 @@ void SpriteRender::OnEnable()
 
 void SpriteRender::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this);
+    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
@@ -211,4 +217,6 @@ void SpriteRender::OnTransformChanged()
     _transform.GetWorld(world);
     BoundingSphere::Transform(localSphere, world, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }

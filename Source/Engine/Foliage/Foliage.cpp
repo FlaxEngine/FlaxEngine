@@ -7,7 +7,6 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
@@ -68,6 +67,8 @@ void Foliage::EnsureRoot()
     // Cache bounds
     _box = Root->Bounds;
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void Foliage::AddToCluster(FoliageCluster* cluster, FoliageInstance& instance)
@@ -785,9 +786,15 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     }
 }
 
+void Foliage::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+}
+
 void Foliage::OnEnable()
 {
-    GetScene()->Rendering.AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 
     // Base
     Actor::OnEnable();
@@ -795,7 +802,7 @@ void Foliage::OnEnable()
 
 void Foliage::OnDisable()
 {
-    GetScene()->Rendering.RemoveGeometry(this);
+    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

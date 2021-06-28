@@ -62,7 +62,7 @@ public:
 
     LayersMask operator&(const LayersMask& other) const
     {
-        return Mask && other.Mask;
+        return Mask & other.Mask;
     }
 
     LayersMask operator|(const LayersMask& other) const

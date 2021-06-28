@@ -19,6 +19,7 @@ DECLARE_SCENE_OBJECT(Foliage);
 private:
 
     bool _disableFoliageTypeEvents;
+    int32 _sceneRenderingKey = -1;
 
 public:
 
@@ -191,6 +192,7 @@ public:
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void OnLayerChanged() override;
 
 protected:
 

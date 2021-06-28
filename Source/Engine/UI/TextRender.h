@@ -40,6 +40,7 @@ private:
     Color _color;
     TextLayoutOptions _layoutOptions;
     int32 _size;
+    int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
     Matrix _world;
@@ -169,6 +170,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

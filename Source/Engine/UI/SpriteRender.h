@@ -23,6 +23,7 @@ private:
     MaterialParameter* _paramImageMAD = nullptr;
     MaterialParameter* _paramColor = nullptr;
     AssetReference<Asset> _quadModel;
+    int32 _sceneRenderingKey = -1;
 
 public:
 
@@ -97,6 +98,7 @@ public:
     void DrawGeneric(RenderContext& renderContext) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void OnLayerChanged() override;
     void OnEndPlay() override;
 
 protected:

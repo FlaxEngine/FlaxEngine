@@ -439,6 +439,8 @@ void AnimatedModel::UpdateBounds()
 
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -758,4 +760,6 @@ void AnimatedModel::OnTransformChanged()
     _transform.GetWorld(_world);
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }

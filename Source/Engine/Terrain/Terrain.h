@@ -53,6 +53,7 @@ private:
     char _collisionLod;
     byte _lodCount;
     uint16 _chunkSize;
+    int32 _sceneRenderingKey = -1;
     float _scaleInLightmap;
     float _lodDistribution;
     Vector3 _boundsExtent;
@@ -444,6 +445,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -455,7 +457,6 @@ protected:
     void OnEnable() override;
     void OnDisable() override;
     void OnTransformChanged() override;
-    void OnLayerChanged() override;
     void OnActiveInTreeChanged() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
