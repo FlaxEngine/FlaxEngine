@@ -67,7 +67,7 @@ bool GPUDeviceNull::Init()
         limits.MaximumTexture2DArraySize = 512;
         limits.MaximumTexture3DSize = 2048;
         limits.MaximumTextureCubeSize = 16384;
-        limits.MaximumSamplerAnisotropy = 0;
+        limits.MaximumSamplerAnisotropy = 1;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {

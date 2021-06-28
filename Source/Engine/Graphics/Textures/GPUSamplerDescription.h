@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Graphics/Enums.h"
+#include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// GPU sampler filter modes.
@@ -117,7 +117,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPUSamplerDescription);
     API_FIELD() float MaxMipLevel;
 
     /// <summary>
-    /// The maximum anisotropy value.
+    /// The maximum number of samples that can be used to improve the quality of sample footprints that are anisotropic.
     /// </summary>
     API_FIELD() int32 MaxAnisotropy;
 
