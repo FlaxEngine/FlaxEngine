@@ -188,10 +188,8 @@ void AmbientOcclusionPass::Dispose()
     // Delete pipeline states
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepths);
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthsHalf);
-    for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
-        SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthMip[i]);
-    for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-        SAFE_DELETE_GPU_RESOURCE(_psGenerate[i]);
+    SAFE_DELETE_GPU_RESOURCES(_psPrepareDepthMip);
+    SAFE_DELETE_GPU_RESOURCES(_psGenerate);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlur);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlurWide);
     SAFE_DELETE_GPU_RESOURCE(_psNonSmartBlur);

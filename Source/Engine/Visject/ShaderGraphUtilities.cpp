@@ -136,11 +136,9 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
 
 const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters, int32 startRegister)
 {
-    int32 registerIndex = startRegister;
     for (int32 i = 0; i < parameters.Count(); i++)
     {
         auto& param = parameters[i];
-
         const Char* format;
         switch (param.Type)
         {
@@ -164,18 +162,45 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             format = nullptr;
             break;
         }
-
         if (format)
         {
             param.Offset = 0;
-            param.RegisterIndex = registerIndex;
-            writer.WriteLine(format, param.ShaderName, static_cast<int32>(registerIndex));
-            registerIndex++;
-
-            // Validate Shader Resource count limit
+            param.RegisterIndex = (byte)startRegister;
+            writer.WriteLine(format, param.ShaderName, startRegister);
+            startRegister++;
             if (param.RegisterIndex >= GPU_MAX_SR_BINDED)
             {
                 return TEXT("Too many textures used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SR_BINDED) " (including lightmaps and utility textures for lighting).");
+            }
+        }
+    }
+    return nullptr;
+}
+
+const Char* ShaderGraphUtilities::GenerateSamplers(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters, int32 startRegister)
+{
+    for (int32 i = 0; i < parameters.Count(); i++)
+    {
+        auto& param = parameters[i];
+        const Char* format;
+        switch (param.Type)
+        {
+        case MaterialParameterType::TextureGroupSampler:
+            format = TEXT("sampler {0} : register(s{1});");
+            break;
+        default:
+            format = nullptr;
+            break;
+        }
+        if (format)
+        {
+            param.Offset = 0;
+            param.RegisterIndex = (byte)startRegister;
+            writer.WriteLine(format, param.ShaderName, startRegister);
+            startRegister++;
+            if (param.RegisterIndex >= GPU_MAX_SAMPLER_BINDED)
+            {
+                return TEXT("Too many samplers used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SAMPLER_BINDED) ".");
             }
         }
     }

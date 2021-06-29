@@ -12,6 +12,7 @@ namespace ShaderGraphUtilities
 {
     void GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters);
     const Char* GenerateShaderResources(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters, int32 startRegister);
+    const Char* GenerateSamplers(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters, int32 startRegister);
     template<typename T>
     void SampleCurve(TextWriterUnicode& writer, const BezierCurve<T>& curve, const String& time, const String& value);
 }

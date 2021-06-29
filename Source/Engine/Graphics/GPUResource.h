@@ -10,6 +10,7 @@
 /// Releases GPU resource memory and deletes object.
 /// </summary>
 #define SAFE_DELETE_GPU_RESOURCE(x) if (x) { (x)->DeleteObjectNow(); (x) = nullptr; }
+#define SAFE_DELETE_GPU_RESOURCES(x) for (auto& e : (x)) if (e) { e->DeleteObjectNow(); e = nullptr; }
 
 /// <summary>
 /// The base class for all GPU resources.

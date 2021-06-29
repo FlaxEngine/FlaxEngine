@@ -12,6 +12,14 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
+namespace FlaxEngine
+{
+    partial struct TextureGroup
+    {
+        internal bool IsAnisotropic => SamplerFilter == GPUSamplerFilter.Anisotropic;
+    }
+}
+
 namespace FlaxEditor.Utilities
 {
     /// <summary>

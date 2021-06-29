@@ -863,11 +863,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
 
 void HelperResourcesVulkan::Dispose()
 {
-    for (int32 i = 0; i < ARRAY_COUNT(_dummyTextures); i++)
-    {
-        SAFE_DELETE_GPU_RESOURCE(_dummyTextures[i]);
-    }
-
+    SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
     SAFE_DELETE_GPU_RESOURCE(_dummyBuffer);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
 

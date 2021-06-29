@@ -285,6 +285,7 @@ protected:
     SerializedMaterialParam findOrAddNormalMap(const Guid& id);
     SerializedMaterialParam findOrAddCubeTexture(const Guid& id);
     SerializedMaterialParam findOrAddSceneTexture(MaterialSceneTextures type);
+    SerializedMaterialParam& findOrAddTextureGroupSampler(int32 index);
 
     static String getLocalName(int32 index);
     static String getParamName(int32 index);

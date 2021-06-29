@@ -1273,6 +1273,30 @@ SerializedMaterialParam ShaderGenerator::findOrAddSceneTexture(MaterialSceneText
     return param;
 }
 
+SerializedMaterialParam& ShaderGenerator::findOrAddTextureGroupSampler(int32 index)
+{
+    // Find
+    for (int32 i = 0; i < _parameters.Count(); i++)
+    {
+        SerializedMaterialParam& param = _parameters[i];
+        if (!param.IsPublic && param.Type == MaterialParameterType::TextureGroupSampler && param.AsInteger == index)
+        {
+            return param;
+        }
+    }
+
+    // Create
+    SerializedMaterialParam& param = _parameters.AddOne();
+    param.Type = MaterialParameterType::TextureGroupSampler;
+    param.IsPublic = false;
+    param.Override = true;
+    param.Name = TEXT("Texture Group Sampler");
+    param.ShaderName = getParamName(_parameters.Count());
+    param.AsInteger = index;
+    param.ID = Guid(_parameters.Count(), 0, 0, 3); // Assign temporary id
+    return param;
+}
+
 String ShaderGenerator::getLocalName(int32 index)
 {
     return TEXT("local") + StringUtils::ToString(index);

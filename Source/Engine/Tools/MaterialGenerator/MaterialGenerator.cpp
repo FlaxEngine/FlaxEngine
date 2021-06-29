@@ -422,7 +422,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
     // Resources
     {
-        int32 srv = 0;
+        int32 srv = 0, sampler = GPU_STATIC_SAMPLERS_COUNT;
         switch (baseLayer->Domain)
         {
         case MaterialDomain::Surface:
@@ -466,7 +466,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         }
         if (_parameters.HasItems())
         {
-            const auto error = ShaderGraphUtilities::GenerateShaderResources(_writer, _parameters, srv);
+            auto error = ShaderGraphUtilities::GenerateShaderResources(_writer, _parameters, srv);
+            if (!error)
+                error = ShaderGraphUtilities::GenerateSamplers(_writer, _parameters, sampler);
             if (error)
             {
                 OnError(nullptr, nullptr, error);

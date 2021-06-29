@@ -123,6 +123,11 @@ enum class MaterialParameterType : byte
     /// The gameplay global.
     /// </summary>
     GameplayGlobal = 18,
+
+    /// <summary>
+    /// The texture sampler derived from texture group settings.
+    /// </summary>
+    TextureGroupSampler = 19,
 };
 
 const Char* ToString(MaterialParameterType value);

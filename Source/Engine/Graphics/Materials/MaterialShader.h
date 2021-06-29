@@ -52,10 +52,7 @@ protected:
 
         void Release()
         {
-            for (int32 i = 0; i < ARRAY_COUNT(PS); i++)
-            {
-                SAFE_DELETE_GPU_RESOURCE(PS[i]);
-            }
+            SAFE_DELETE_GPU_RESOURCES(PS);
         }
     };
 

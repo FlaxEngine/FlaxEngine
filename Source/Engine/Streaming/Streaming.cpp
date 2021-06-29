@@ -9,6 +9,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Textures/GPUSampler.h"
 #include "Engine/Serialization/Serialization.h"
 
 namespace StreamingManagerImpl
@@ -17,6 +18,8 @@ namespace StreamingManagerImpl
     int32 LastUpdateResourcesIndex = 0;
     CriticalSection ResourcesLock;
     Array<StreamableResource*> Resources;
+    Array<GPUSampler*, InlinedAllocation<32>> TextureGroupSamplers;
+    GPUSampler* FallbackSampler = nullptr;
 }
 
 using namespace StreamingManagerImpl;
@@ -30,6 +33,7 @@ public:
     }
 
     void Update() override;
+    void BeforeExit() override;
 };
 
 StreamingManagerService StreamingManagerServiceInstance;
@@ -39,6 +43,8 @@ Array<TextureGroup, InlinedAllocation<32>> Streaming::TextureGroups;
 void StreamingSettings::Apply()
 {
     Streaming::TextureGroups = TextureGroups;
+    SAFE_DELETE_GPU_RESOURCES(TextureGroupSamplers);
+    TextureGroupSamplers.Resize(TextureGroups.Count(), false);
 }
 
 void StreamingSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -217,6 +223,13 @@ void StreamingManagerService::Update()
     // TODO: add StreamingManager stats, update time per frame, updates per frame, etc.
 }
 
+void StreamingManagerService::BeforeExit()
+{
+    SAFE_DELETE_GPU_RESOURCE(FallbackSampler);
+    SAFE_DELETE_GPU_RESOURCES(TextureGroupSamplers);
+    TextureGroupSamplers.Resize(0);
+}
+
 void Streaming::RequestStreamingUpdate()
 {
     PROFILE_CPU();
@@ -224,4 +237,36 @@ void Streaming::RequestStreamingUpdate()
     for (auto e : Resources)
         e->RequestStreamingUpdate();
     ResourcesLock.Unlock();
+}
+
+GPUSampler* Streaming::GetTextureGroupSampler(int32 index)
+{
+    GPUSampler* sampler = nullptr;
+    if (index >= 0 && index < TextureGroupSamplers.Count())
+    {
+        // Sampler from texture group options
+        auto& group = TextureGroups[index];
+        auto desc = GPUSamplerDescription::New(group.SamplerFilter);
+        desc.MaxAnisotropy = group.MaxAnisotropy;
+        sampler = TextureGroupSamplers[index];
+        if (!sampler)
+        {
+            sampler = GPUSampler::New();
+            sampler->Init(desc);
+            TextureGroupSamplers[index] = sampler;
+        }
+        if (sampler->GetDescription().Filter != desc.Filter || sampler->GetDescription().MaxAnisotropy != desc.MaxAnisotropy)
+            sampler->Init(desc);
+    }
+    if (!sampler)
+    {
+        // Default sampler to prevent issue
+        if (!FallbackSampler)
+        {
+            FallbackSampler = GPUSampler::New();
+            FallbackSampler->Init(GPUSamplerDescription::New(GPUSamplerFilter::Trilinear));
+        }
+        sampler = FallbackSampler;
+    }
+    return sampler;
 }

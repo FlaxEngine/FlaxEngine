@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ISerializable.h"
+#include "Engine/Graphics/Textures/GPUSamplerDescription.h"
 #if USE_EDITOR
 #include "Engine/Core/Collections/Dictionary.h"
 #endif
@@ -21,6 +22,18 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextureGroup);
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10)")
     String Name;
+
+    /// <summary>
+    /// The default filtering method for samplers using this texture group.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(15)")
+    GPUSamplerFilter SamplerFilter = GPUSamplerFilter::Trilinear;
+
+    /// <summary>
+    /// The maximum number of samples that can be used to improve the quality of sample footprints that are anisotropic. Higher values improve texturing but reduce performance. Limited by GPU capabilities and used only if SamplerFilter is Anisotropic.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(16), Limit(1, 16), VisibleIf(\"IsAnisotropic\")")
+    int32 MaxAnisotropy = 16;
 
     /// <summary>
     /// The quality scale factor applied to textures in this group. Can be used to increase or decrease textures resolution. In range 0-1 where 0 means lowest quality, 1 means full quality.

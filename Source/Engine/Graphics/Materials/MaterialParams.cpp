@@ -11,6 +11,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Streaming/Streaming.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
 {
@@ -153,6 +154,9 @@ const Char* ToString(MaterialParameterType value)
     case MaterialParameterType::GameplayGlobal:
         result = TEXT("GameplayGlobal");
         break;
+    case MaterialParameterType::TextureGroupSampler:
+        result = TEXT("TextureGroupSampler");
+        break;
     default:
         result = TEXT("");
         break;
@@ -169,6 +173,7 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Integer:
     case MaterialParameterType::SceneTexture:
     case MaterialParameterType::ChannelMask:
+    case MaterialParameterType::TextureGroupSampler:
         return _asInteger;
     case MaterialParameterType::Float:
         return _asFloat;
@@ -209,6 +214,7 @@ void MaterialParameter::SetValue(const Variant& value)
     case MaterialParameterType::Integer:
     case MaterialParameterType::SceneTexture:
     case MaterialParameterType::ChannelMask:
+    case MaterialParameterType::TextureGroupSampler:
         _asInteger = (int32)value;
         break;
     case MaterialParameterType::Float:
@@ -446,6 +452,9 @@ void MaterialParameter::Bind(BindMeta& meta) const
             }
         }
         break;
+    case MaterialParameterType::TextureGroupSampler:
+        meta.Context->BindSampler(_registerIndex, Streaming::GetTextureGroupSampler(_asInteger));
+        break;
     default:
         break;
     }
@@ -475,6 +484,7 @@ void MaterialParameter::clone(const MaterialParameter* param)
         break;
     case MaterialParameterType::Integer:
     case MaterialParameterType::SceneTexture:
+    case MaterialParameterType::TextureGroupSampler:
         _asInteger = param->_asInteger;
         break;
     case MaterialParameterType::Float:
@@ -654,6 +664,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::Integer:
                 case MaterialParameterType::SceneTexture:
                 case MaterialParameterType::ChannelMask:
+                case MaterialParameterType::TextureGroupSampler:
                     stream->ReadInt32(&param->_asInteger);
                     break;
                 case MaterialParameterType::Float:
@@ -727,6 +738,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     break;
                 case MaterialParameterType::Integer:
                 case MaterialParameterType::SceneTexture:
+                case MaterialParameterType::TextureGroupSampler:
                     stream->ReadInt32(&param->_asInteger);
                     break;
                 case MaterialParameterType::Float:
@@ -801,6 +813,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::Integer:
                 case MaterialParameterType::SceneTexture:
                 case MaterialParameterType::ChannelMask:
+                case MaterialParameterType::TextureGroupSampler:
                     stream->ReadInt32(&param->_asInteger);
                     break;
                 case MaterialParameterType::Float:
@@ -893,6 +906,7 @@ void MaterialParams::Save(WriteStream* stream)
         case MaterialParameterType::Integer:
         case MaterialParameterType::SceneTexture:
         case MaterialParameterType::ChannelMask:
+        case MaterialParameterType::TextureGroupSampler:
             stream->WriteInt32(param->_asInteger);
             break;
         case MaterialParameterType::Float:
@@ -967,6 +981,7 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
             case MaterialParameterType::SceneTexture:
             case MaterialParameterType::ChannelMask:
             case MaterialParameterType::Integer:
+            case MaterialParameterType::TextureGroupSampler:
                 stream->WriteInt32(param.AsInteger);
                 break;
             case MaterialParameterType::Float:

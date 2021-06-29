@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Content.Settings;
+using FlaxEditor.GUI;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface.Archetypes
@@ -11,30 +13,77 @@ namespace FlaxEditor.Surface.Archetypes
     [HideInEditor]
     public static class Textures
     {
-        /// <summary>
-        /// Common samplers types.
-        /// </summary>
-        public enum CommonSamplerType
+        internal enum CommonSamplerType
         {
-            /// <summary>
-            /// The linear clamp
-            /// </summary>
             LinearClamp = 0,
-
-            /// <summary>
-            /// The point clamp
-            /// </summary>
             PointClamp = 1,
-
-            /// <summary>
-            /// The linear wrap
-            /// </summary>
             LinearWrap = 2,
-
-            /// <summary>
-            /// The point wrap
-            /// </summary>
             PointWrap = 3,
+            TextureGroup = 4,
+        }
+
+        internal class SampleTextureNode : SurfaceNode
+        {
+            private ComboBox _textureGroupPicker;
+
+            public SampleTextureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateUI();
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                UpdateUI();
+            }
+
+            private void UpdateUI()
+            {
+                if ((int)Values[0] == (int)CommonSamplerType.TextureGroup)
+                {
+                    if (_textureGroupPicker == null)
+                    {
+                        _textureGroupPicker = new ComboBox
+                        {
+                            Location = new Vector2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
+                            Width = 100,
+                            Parent = this,
+                        };
+                        _textureGroupPicker.SelectedIndexChanged += OnSelectedTextureGroupChanged;
+                        var groups = GameSettings.Load<StreamingSettings>();
+                        if (groups?.TextureGroups != null)
+                        {
+                            for (int i = 0; i < groups.TextureGroups.Length; i++)
+                                _textureGroupPicker.AddItem(groups.TextureGroups[i].Name);
+                        }
+                    }
+                    else
+                    {
+                        _textureGroupPicker.Visible = true;
+                    }
+                    _textureGroupPicker.SelectedIndexChanged -= OnSelectedTextureGroupChanged;
+                    _textureGroupPicker.SelectedIndex = (int)Values[2];
+                    _textureGroupPicker.SelectedIndexChanged += OnSelectedTextureGroupChanged;
+                }
+                else if (_textureGroupPicker != null)
+                {
+                    _textureGroupPicker.Visible = false;
+                }
+                ResizeAuto();
+            }
+
+            private void OnSelectedTextureGroupChanged(ComboBox comboBox)
+            {
+                SetValue(2, _textureGroupPicker.SelectedIndex);
+            }
         }
 
         /// <summary>
@@ -213,6 +262,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 9,
+                Create = (id, context, arch, groupArch) => new SampleTextureNode(id, context, arch, groupArch),
                 Title = "Sample Texture",
                 Description = "Custom texture sampling",
                 Flags = NodeFlags.MaterialGraph,
@@ -222,6 +272,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     0,
                     -1.0f,
+                    0,
                 },
                 Elements = new[]
                 {
@@ -230,7 +281,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(2, "Level", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Vector2), 3),
                     NodeElementArchetype.Factory.Output(0, "Color", typeof(Vector4), 4),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4 + 4, "Sampler"),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
                     NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 0, typeof(CommonSamplerType))
                 }
             },
