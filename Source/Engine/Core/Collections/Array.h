@@ -58,7 +58,7 @@ public:
         if (_count > 0)
         {
             _allocation.Allocate(_count);
-            Memory::ConstructItems(Get(), initList.begin(), _count);
+            Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
         }
     }
 
@@ -74,7 +74,7 @@ public:
         if (length > 0)
         {
             _allocation.Allocate(length);
-            Memory::ConstructItems(Get(), data, length);
+            Memory::ConstructItems(_allocation.Get(), data, length);
         }
     }
 
@@ -88,7 +88,7 @@ public:
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(Get(), other.Get(), other._count);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
         }
     }
 
@@ -104,8 +104,8 @@ public:
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(Get(), other.Get(), other._count);
-            Memory::ConstructItems(Get() + other._count, extraSize);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
+            Memory::ConstructItems(_allocation.Get() + other._count, extraSize);
         }
     }
 
@@ -121,7 +121,7 @@ public:
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(Get(), other._data, other._count);
+            Memory::ConstructItems(_allocation.Get(), other._data, other._count);
         }
     }
 
@@ -145,13 +145,12 @@ public:
     /// <returns>The reference to this.</returns>
     Array& operator=(std::initializer_list<T> initList) noexcept
     {
-        Memory::DestructItems(Get(), _count);
-
+        Memory::DestructItems(_allocation.Get(), _count);
         _count = _capacity = (int32)initList.size();
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(Get(), initList.begin(), _count);
+            Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
         }
         return *this;
     }
@@ -165,7 +164,7 @@ public:
     {
         if (this != &other)
         {
-            Memory::DestructItems(Get(), _count);
+            Memory::DestructItems(_allocation.Get(), _count);
             if (_capacity < other._count)
             {
                 _allocation.Free();
@@ -173,7 +172,7 @@ public:
                 _allocation.Allocate(_capacity);
             }
             _count = other._count;
-            Memory::ConstructItems(Get(), other.Get(), _count);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), _count);
         }
         return *this;
     }
@@ -187,7 +186,7 @@ public:
     {
         if (this != &other)
         {
-            Memory::DestructItems(Get(), _count);
+            Memory::DestructItems(_allocation.Get(), _count);
             _allocation.Free();
             _count = other._count;
             _capacity = other._capacity;
@@ -203,7 +202,7 @@ public:
     /// </summary>
     ~Array()
     {
-        Memory::DestructItems(Get(), _count);
+        Memory::DestructItems(_allocation.Get(), _count);
     }
 
 public:
@@ -211,7 +210,6 @@ public:
     /// <summary>
     /// Gets the amount of the items in the collection.
     /// </summary>
-    /// <returns>The amount of items.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _count;
@@ -220,7 +218,6 @@ public:
     /// <summary>
     /// Gets the amount of the items that can be contained by collection without resizing.
     /// </summary>
-    /// <returns>The collection capacity.</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return _capacity;
@@ -229,7 +226,6 @@ public:
     /// <summary>
     /// Returns true if collection isn't empty.
     /// </summary>
-    /// <returns>True if collection isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _count != 0;
@@ -238,7 +234,6 @@ public:
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if collection is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _count == 0;
@@ -247,7 +242,6 @@ public:
     /// <summary>
     /// Gets the pointer to the first item in the collection (linear allocation).
     /// </summary>
-    /// <returns>The data pointer.</returns>
     FORCE_INLINE T* Get()
     {
         return _allocation.Get();
@@ -256,7 +250,6 @@ public:
     /// <summary>
     /// Gets the pointer to the first item in the collection (linear allocation).
     /// </summary>
-    /// <returns>The data pointer.</returns>
     FORCE_INLINE const T* Get() const
     {
         return _allocation.Get();
@@ -269,7 +262,7 @@ public:
     FORCE_INLINE T& At(int32 index)
     {
         ASSERT(index >= 0 && index < _count);
-        return Get()[index];
+        return _allocation.Get()[index];
     }
 
     /// <summary>
@@ -279,7 +272,7 @@ public:
     FORCE_INLINE const T& At(int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
-        return Get()[index];
+        return _allocation.Get()[index];
     }
 
     /// <summary>
@@ -289,7 +282,7 @@ public:
     FORCE_INLINE T& operator[](int32 index)
     {
         ASSERT(index >= 0 && index < _count);
-        return Get()[index];
+        return _allocation.Get()[index];
     }
 
     /// <summary>
@@ -299,69 +292,65 @@ public:
     FORCE_INLINE const T& operator[](int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
-        return Get()[index];
+        return _allocation.Get()[index];
     }
 
     /// <summary>
     /// Gets the last item.
     /// </summary>
-    /// <returns>The last item.</returns>
     FORCE_INLINE T& Last()
     {
         ASSERT(_count > 0);
-        return Get()[_count - 1];
+        return _allocation.Get()[_count - 1];
     }
 
     /// <summary>
     /// Gets the last item.
     /// </summary>
-    /// <returns>The last item.</returns>
     FORCE_INLINE const T& Last() const
     {
         ASSERT(_count > 0);
-        return Get()[_count - 1];
+        return _allocation.Get()[_count - 1];
     }
 
     /// <summary>
     /// Gets the first item.
     /// </summary>
-    /// <returns>The first item.</returns>
     FORCE_INLINE T& First()
     {
         ASSERT(_count > 0);
-        return Get()[0];
+        return _allocation.Get()[0];
     }
 
     /// <summary>
     /// Gets the first item.
     /// </summary>
-    /// <returns>The first item.</returns>
     FORCE_INLINE const T& First() const
     {
         ASSERT(_count > 0);
-        return Get()[0];
+        return _allocation.Get()[0];
     }
 
 public:
 
     FORCE_INLINE T* begin()
     {
-        return &Get()[0];
+        return &_allocation.Get()[0];
     }
 
     FORCE_INLINE T* end()
     {
-        return &Get()[_count];
+        return &_allocation.Get()[_count];
     }
 
     FORCE_INLINE const T* begin() const
     {
-        return &Get()[0];
+        return &_allocation.Get()[0];
     }
 
     FORCE_INLINE const T* end() const
     {
-        return &Get()[_count];
+        return &_allocation.Get()[_count];
     }
 
 public:
@@ -371,7 +360,7 @@ public:
     /// </summary>
     FORCE_INLINE void Clear()
     {
-        Memory::DestructItems(Get(), _count);
+        Memory::DestructItems(_allocation.Get(), _count);
         _count = 0;
     }
 
@@ -418,12 +407,12 @@ public:
     {
         if (_count > size)
         {
-            Memory::DestructItems(Get() + size, _count - size);
+            Memory::DestructItems(_allocation.Get() + size, _count - size);
         }
         else
         {
             EnsureCapacity(size, preserveContents);
-            Memory::ConstructItems(Get() + _count, size - _count);
+            Memory::ConstructItems(_allocation.Get() + _count, size - _count);
         }
         _count = size;
     }
@@ -448,7 +437,7 @@ public:
     /// <param name="value">The value to assign to all the collection items.</param>
     void SetAll(const T& value)
     {
-        T* data = Get();
+        T* data = _allocation.Get();
         for (int32 i = 0; i < _count; i++)
             data[i] = value;
     }
@@ -461,9 +450,9 @@ public:
     void Set(const T* data, int32 count)
     {
         EnsureCapacity(count, false);
-        Memory::DestructItems(Get(), _count);
+        Memory::DestructItems(_allocation.Get(), _count);
         _count = count;
-        Memory::ConstructItems(Get(), data, _count);
+        Memory::ConstructItems(_allocation.Get(), data, _count);
     }
 
     /// <summary>
@@ -473,7 +462,7 @@ public:
     void Add(const T& item)
     {
         EnsureCapacity(_count + 1);
-        Memory::ConstructItems(Get() + _count, &item, 1);
+        Memory::ConstructItems(_allocation.Get() + _count, &item, 1);
         _count++;
     }
 
@@ -485,7 +474,7 @@ public:
     void Add(const T* items, int32 count)
     {
         EnsureCapacity(_count + count);
-        Memory::ConstructItems(Get() + _count, items, count);
+        Memory::ConstructItems(_allocation.Get() + _count, items, count);
         _count += count;
     }
 
@@ -516,7 +505,7 @@ public:
     FORCE_INLINE void AddDefault(int32 count = 1)
     {
         EnsureCapacity(_count + count);
-        Memory::ConstructItems(Get() + _count, count);
+        Memory::ConstructItems(_allocation.Get() + _count, count);
         _count += count;
     }
 
@@ -537,9 +526,9 @@ public:
     FORCE_INLINE T& AddOne()
     {
         EnsureCapacity(_count + 1);
-        Memory::ConstructItems(Get() + _count, 1);
+        Memory::ConstructItems(_allocation.Get() + _count, 1);
         _count++;
-        return Get()[_count - 1];
+        return _allocation.Get()[_count - 1];
     }
 
     /// <summary>
@@ -552,7 +541,7 @@ public:
     void AddZeroed(int32 count = 1)
     {
         EnsureCapacity(_count + count);
-        Platform::MemoryClear(Get() + _count, count * sizeof(T));
+        Platform::MemoryClear(_allocation.Get() + _count, count * sizeof(T));
         _count += count;
     }
 
@@ -565,7 +554,7 @@ public:
     {
         ASSERT(index >= 0 && index <= _count);
         EnsureCapacity(_count + 1);
-        T* data = Get();
+        T* data = _allocation.Get();
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = data[i];
@@ -581,7 +570,7 @@ public:
     {
         ASSERT(index >= 0 && index <= _count);
         EnsureCapacity(_count + 1);
-        T* data = Get();
+        T* data = _allocation.Get();
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = data[i];
@@ -596,7 +585,7 @@ public:
     template<typename TComparableType>
     bool Contains(const TComparableType& item) const
     {
-        const T* data = Get();
+        const T* data = _allocation.Get();
         for (int32 i = 0; i < _count; i++)
         {
             if (data[i] == item)
@@ -627,7 +616,7 @@ public:
     {
         for (int32 i = Count() - 1; i >= 0; i--)
         {
-            if (Get()[i] == item)
+            if (_allocation.Get()[i] == item)
             {
                 RemoveAtKeepOrder(i);
                 if (IsEmpty())
@@ -644,7 +633,7 @@ public:
     {
         ASSERT(index < _count && index >= 0);
         _count--;
-        T* data = Get();
+        T* data = _allocation.Get();
         if (index < _count)
         {
             T* dst = data + index;
@@ -678,7 +667,7 @@ public:
     {
         for (int32 i = Count() - 1; i >= 0; i--)
         {
-            if (Get()[i] == item)
+            if (_allocation.Get()[i] == item)
             {
                 RemoveAt(i);
                 if (IsEmpty())
@@ -695,7 +684,7 @@ public:
     {
         ASSERT(index < _count && index >= 0);
         _count--;
-        T* data = Get();
+        T* data = _allocation.Get();
         if (_count)
             data[index] = data[_count];
         Memory::DestructItems(data + _count, 1);
@@ -708,7 +697,7 @@ public:
     {
         ASSERT(_count > 0);
         _count--;
-        Memory::DestructItems(Get() + _count, 1);
+        Memory::DestructItems(_allocation.Get() + _count, 1);
     }
 
     /// <summary>
@@ -727,8 +716,8 @@ public:
     /// </summary>
     void Reverse()
     {
-        T* data = Get();
-        const int32 count = static_cast<int32>(_count / 2);
+        T* data = _allocation.Get();
+        const int32 count = _count / 2;
         for (int32 i = 0; i < count; i++)
         {
             ::Swap(data[i], data[_count - i - 1]);
@@ -762,7 +751,7 @@ public:
     FORCE_INLINE T& Peek()
     {
         ASSERT(_count > 0);
-        return Get()[_count - 1];
+        return _allocation.Get()[_count - 1];
     }
 
     /// <summary>
@@ -771,7 +760,7 @@ public:
     FORCE_INLINE const T& Peek() const
     {
         ASSERT(_count > 0);
-        return Get()[_count - 1];
+        return _allocation.Get()[_count - 1];
     }
 
 public:
@@ -822,7 +811,7 @@ public:
     {
         if (_count > 0)
         {
-            const T* RESTRICT start = Get();
+            const T* RESTRICT start = _allocation.Get();
             for (const T * RESTRICT data = start, *RESTRICT dataEnd = data + _count; data != dataEnd; ++data)
             {
                 if (*data == item)
@@ -855,7 +844,7 @@ public:
     {
         if (_count > 0)
         {
-            const T* RESTRICT end = Get() + _count;
+            const T* RESTRICT end = _allocation.Get() + _count;
             for (const T * RESTRICT data = end, *RESTRICT dataStart = data - _count; data != dataStart;)
             {
                 --data;
@@ -868,16 +857,11 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares collection contents with the other collection.
-    /// </summary>
-    /// <param name="other">The other collection to compare with.</param>
-    /// <returns>True if collection have the same set of items, otherwise false.</returns>
     bool operator==(const Array& other) const
     {
         if (_count == other._count)
         {
-            const T* data = Get();
+            const T* data = _allocation.Get();
             const T* otherData = other.Get();
             for (int32 i = 0; i < _count; i++)
             {
@@ -888,11 +872,6 @@ public:
         return true;
     }
 
-    /// <summary>
-    /// Compares collection contents with the other collection.
-    /// </summary>
-    /// <param name="other">The other collection to compare with.</param>
-    /// <returns>True if collection don't have the same set of items, otherwise false.</returns>
     bool operator!=(const Array& other) const
     {
         return !operator==(other);
@@ -1026,7 +1005,6 @@ public:
     /// <summary>
     /// Gets iterator for beginning of the collection.
     /// </summary>
-    /// <returns>Iterator for beginning of the collection.</returns>
     FORCE_INLINE Iterator Begin() const
     {
         return Iterator(this, 0);
@@ -1035,7 +1013,6 @@ public:
     /// <summary>
     /// Gets iterator for ending of the collection.
     /// </summary>
-    /// <returns>Iterator for ending of the collection.</returns>
     FORCE_INLINE Iterator End() const
     {
         return Iterator(this, _count);
