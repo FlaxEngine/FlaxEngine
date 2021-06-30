@@ -330,28 +330,44 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         // So during loading first material it will wait for child materials loaded calling this function
 
         Task* task = loadingTask;
+        Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
         while (!Engine::ShouldExit())
         {
             // Try to execute content tasks
             while (task->IsQueued() && !Engine::ShouldExit())
             {
-                // Pick this task from the queue
+                // Dequeue task from the loading queue
                 ContentLoadTask* tmp;
                 if (ContentLoadingManagerImpl::Tasks.try_dequeue(tmp))
                 {
                     if (tmp == task)
                     {
+                        if (localQueue.Count() != 0)
+                        {
+                            // Put back queued tasks
+                            ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                            localQueue.Clear();
+                        }
+
                         thread->Run(tmp);
                     }
                     else
                     {
-                        ContentLoadingManagerImpl::Tasks.enqueue(tmp);
+                        localQueue.Add(tmp);
                     }
                 }
+                else
+                {
+                    // No task in queue but it's queued so other thread could have stolen it into own local queue
+                    break;
+                }
             }
-
-            // Wait some time
-            //Platform::Sleep(1);
+            if (localQueue.Count() != 0)
+            {
+                // Put back queued tasks
+                ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                localQueue.Clear();
+            }
 
             // Check if task is done
             if (task->IsEnded())
@@ -383,7 +399,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         Content::tryCallOnLoaded(this);
     }
 
-    return IsLoaded() == false;
+    return _isLoaded == 0;
 }
 
 void Asset::InitAsVirtual()
