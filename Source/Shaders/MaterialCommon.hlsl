@@ -154,6 +154,22 @@ struct GBufferOutput
 	float4 RT3   : SV_Target4;
 };
 
+float3x3 CalcTangentBasis(float3 normal, float3 pos, float2 uv)
+{
+	// References:
+	// http://www.thetenthplanet.de/archives/1180
+	// https://zhangdoa.com/posts/normal-and-normal-mapping
+	float3 dp1 = ddx(pos);
+	float3 dp2 = ddy(pos);
+	float2 duv1 = ddx(uv);
+	float2 duv2 = ddy(uv);
+	float3 dp2perp = cross(dp2, normal);
+	float3 dp1perp = cross(normal, dp1);
+	float3 tangent = normalize(dp2perp * duv1.x + dp1perp * duv2.x);
+	float3 bitangent = normalize(dp2perp * duv1.y + dp1perp * duv2.y);
+	return float3x3(tangent, bitangent, normal);
+}
+
 float3x3 CalcTangentBasisFromWorldNormal(float3 normal)
 {
 	float3 tangent = cross(normal, float3(1, 0, 0));
