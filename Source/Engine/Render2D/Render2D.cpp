@@ -895,7 +895,7 @@ void CalculateKernelSize(float strength, int32& kernelSize, int32& downSample)
         kernelSize++;
     }
 
-    kernelSize = Math::Clamp(kernelSize, 3, 255);
+    kernelSize = Math::Clamp(kernelSize, 3, RENDER2D_BLUR_MAX_SAMPLES / 2);
 }
 
 static float GetWeight(float dist, float strength)
