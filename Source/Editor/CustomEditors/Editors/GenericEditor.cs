@@ -450,10 +450,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             var newType = Values.Type;
                             SetValue(newType.CreateInstance());
-                            if (ParentEditor != null)
-                                ParentEditor.RebuildLayoutOnRefresh();
-                            else
-                                RebuildLayoutOnRefresh();
+                            RebuildLayoutOnRefresh();
                         };
                     }
 
