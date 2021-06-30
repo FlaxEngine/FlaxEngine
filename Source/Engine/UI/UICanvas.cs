@@ -643,7 +643,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
-                _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
                 _guiRoot.IndexInParent = 0;
             }
 #endif
@@ -693,7 +693,7 @@ namespace FlaxEngine
         {
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
-                _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
                 _guiRoot.IndexInParent = 0;
             }
         }
