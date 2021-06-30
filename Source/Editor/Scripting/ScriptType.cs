@@ -748,7 +748,7 @@ namespace FlaxEditor.Scripting
         /// <summary>
         /// Gets a value indicating whether the type is declared public.
         /// </summary>
-        public bool IsPublic => _managed != null ? _managed.IsPublic : _custom != null && _custom.IsPublic;
+        public bool IsPublic => _managed != null ? _managed.IsPublic || _managed.IsNestedPublic : _custom != null && _custom.IsPublic;
 
         /// <summary>
         /// Gets a value indicating whether the type is abstract and must be overridden.

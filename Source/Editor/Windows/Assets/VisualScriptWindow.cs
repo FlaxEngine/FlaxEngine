@@ -85,7 +85,7 @@ namespace FlaxEditor.Windows.Assets
 
             private static bool IsValid(Type type)
             {
-                return type.IsPublic && !type.IsSealed && !type.IsGenericType;
+                return (type.IsPublic || type.IsNestedPublic) && !type.IsSealed && !type.IsGenericType;
             }
 
             public void OnLoad(VisualScriptWindow window)
