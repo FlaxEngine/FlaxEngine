@@ -58,6 +58,7 @@ void SceneRendering::DrawEntries::Remove(Actor* obj, int32 key)
     auto& e = List[key];
     ASSERT_LOW_LAYER(obj == e.Actor);
     e.Actor = nullptr;
+    e.LayerMask = 0;
 }
 
 void SceneRendering::DrawEntries::Clear()
