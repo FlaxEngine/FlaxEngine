@@ -2,7 +2,6 @@
 
 #pragma once
 
-// Forward declarations
 class Foliage;
 class FoliageCluster;
 class FoliageType;

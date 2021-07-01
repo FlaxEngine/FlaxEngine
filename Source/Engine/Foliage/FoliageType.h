@@ -206,7 +206,6 @@ public:
     /// <summary>
     /// Determines whether this instance is ready (model is loaded).
     /// </summary>
-    /// <returns><c>true</c> if foliage type model is loaded and instance type is ready; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsReady() const
     {
         return _isReady != 0;
@@ -215,7 +214,6 @@ public:
     /// <summary>
     /// Gets the random scale for the foliage instance of this type.
     /// </summary>
-    /// <returns>The scale vector.</returns>
     Vector3 GetRandomScale() const;
 
 private:

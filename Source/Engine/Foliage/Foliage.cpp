@@ -492,10 +492,8 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
     // Draw visible children
     if (cluster->Children[0])
     {
-#if BUILD_DEBUG
         // Don't store instances in non-leaf nodes
-        ASSERT(cluster->Instances.IsEmpty());
-#endif
+        ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
 
 #define DRAW_CLUSTER(idx) \
 		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \

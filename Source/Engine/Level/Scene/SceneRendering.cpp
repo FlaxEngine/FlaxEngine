@@ -18,10 +18,10 @@
 
 ALIGN_BEGIN(16) struct CullDataSIMD
 {
-	float xs[8];
-	float ys[8];
-	float zs[8];
-	float ds[8];
+    float xs[8];
+    float ys[8];
+    float zs[8];
+    float ds[8];
 } ALIGN_END(16);
 
 #endif
@@ -70,100 +70,106 @@ void SceneRendering::DrawEntries::CullAndDraw(RenderContext& renderContext)
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.CullingFrustum;
 #if SCENE_RENDERING_USE_SIMD
-	CullDataSIMD cullData;
-	{
-		// Near
-		auto plane = view.Frustum.GetNear();
-		cullData.xs[0] = plane.Normal.X;
-		cullData.ys[0] = plane.Normal.Y;
-		cullData.zs[0] = plane.Normal.Z;
-		cullData.ds[0] = plane.D;
+    CullDataSIMD cullData;
+    {
+        // Near
+        auto plane = view.Frustum.GetNear();
+        cullData.xs[0] = plane.Normal.X;
+        cullData.ys[0] = plane.Normal.Y;
+        cullData.zs[0] = plane.Normal.Z;
+        cullData.ds[0] = plane.D;
 
-		// Far
-		plane = view.Frustum.GetFar();
-		cullData.xs[1] = plane.Normal.X;
-		cullData.ys[1] = plane.Normal.Y;
-		cullData.zs[1] = plane.Normal.Z;
-		cullData.ds[1] = plane.D;
+        // Far
+        plane = view.Frustum.GetFar();
+        cullData.xs[1] = plane.Normal.X;
+        cullData.ys[1] = plane.Normal.Y;
+        cullData.zs[1] = plane.Normal.Z;
+        cullData.ds[1] = plane.D;
 
-		// Left
-		plane = view.Frustum.GetLeft();
-		cullData.xs[2] = plane.Normal.X;
-		cullData.ys[2] = plane.Normal.Y;
-		cullData.zs[2] = plane.Normal.Z;
-		cullData.ds[2] = plane.D;
+        // Left
+        plane = view.Frustum.GetLeft();
+        cullData.xs[2] = plane.Normal.X;
+        cullData.ys[2] = plane.Normal.Y;
+        cullData.zs[2] = plane.Normal.Z;
+        cullData.ds[2] = plane.D;
 
-		// Right
-		plane = view.Frustum.GetRight();
-		cullData.xs[3] = plane.Normal.X;
-		cullData.ys[3] = plane.Normal.Y;
-		cullData.zs[3] = plane.Normal.Z;
-		cullData.ds[3] = plane.D;
+        // Right
+        plane = view.Frustum.GetRight();
+        cullData.xs[3] = plane.Normal.X;
+        cullData.ys[3] = plane.Normal.Y;
+        cullData.zs[3] = plane.Normal.Z;
+        cullData.ds[3] = plane.D;
 
-		// Top
-		plane = view.Frustum.GetTop();
-		cullData.xs[4] = plane.Normal.X;
-		cullData.ys[4] = plane.Normal.Y;
-		cullData.zs[4] = plane.Normal.Z;
-		cullData.ds[4] = plane.D;
+        // Top
+        plane = view.Frustum.GetTop();
+        cullData.xs[4] = plane.Normal.X;
+        cullData.ys[4] = plane.Normal.Y;
+        cullData.zs[4] = plane.Normal.Z;
+        cullData.ds[4] = plane.D;
 
-		// Bottom
-		plane = view.Frustum.GetBottom();
-		cullData.xs[5] = plane.Normal.X;
-		cullData.ys[5] = plane.Normal.Y;
-		cullData.zs[5] = plane.Normal.Z;
-		cullData.ds[5] = plane.D;
+        // Bottom
+        plane = view.Frustum.GetBottom();
+        cullData.xs[5] = plane.Normal.X;
+        cullData.ys[5] = plane.Normal.Y;
+        cullData.zs[5] = plane.Normal.Z;
+        cullData.ds[5] = plane.D;
 
-		// Extra 0
-		cullData.xs[6] = 0;
-		cullData.ys[6] = 0;
-		cullData.zs[6] = 0;
-		cullData.ds[6] = 0;
+        // Extra 0
+        cullData.xs[6] = 0;
+        cullData.ys[6] = 0;
+        cullData.zs[6] = 0;
+        cullData.ds[6] = 0;
 
-		// Extra 1
-		cullData.xs[7] = 0;
-		cullData.ys[7] = 0;
-		cullData.zs[7] = 0;
-		cullData.ds[7] = 0;
-	}
+        // Extra 1
+        cullData.xs[7] = 0;
+        cullData.ys[7] = 0;
+        cullData.zs[7] = 0;
+        cullData.ds[7] = 0;
+    }
 
-	float4 px = SIMD::Load(cullData.xs);
-	float4 py = SIMD::Load(cullData.ys);
-	float4 pz = SIMD::Load(cullData.zs);
-	float4 pd = SIMD::Load(cullData.ds);
-	float4 px2 = SIMD::Load(&cullData.xs[4]);
-	float4 py2 = SIMD::Load(&cullData.ys[4]);
-	float4 pz2 = SIMD::Load(&cullData.zs[4]);
-	float4 pd2 = SIMD::Load(&cullData.ds[4]);
+    SimdVector4 px = SIMD::Load(cullData.xs);
+    SimdVector4 py = SIMD::Load(cullData.ys);
+    SimdVector4 pz = SIMD::Load(cullData.zs);
+    SimdVector4 pd = SIMD::Load(cullData.ds);
+    SimdVector4 px2 = SIMD::Load(&cullData.xs[4]);
+    SimdVector4 py2 = SIMD::Load(&cullData.ys[4]);
+    SimdVector4 pz2 = SIMD::Load(&cullData.zs[4]);
+    SimdVector4 pd2 = SIMD::Load(&cullData.ds[4]);
 
-	for (int32 i = 0; i < List.Count(); i++)
-	{
-        auto& e = List[i];
+    for (int32 i = 0; i < List.Count(); i++)
+    {
+        auto e = List[i];
 
-		const auto& sphere = actors[i]->GetSphere();
-		float4 cx = SIMD::Splat(sphere.Center.X);
-		float4 cy = SIMD::Splat(sphere.Center.Y);
-		float4 cz = SIMD::Splat(sphere.Center.Z);
-		float4 r = SIMD::Splat(-sphere.Radius);
+        SimdVector4 cx = SIMD::Splat(e.Bounds.Center.X);
+        SimdVector4 cy = SIMD::Splat(e.Bounds.Center.Y);
+        SimdVector4 cz = SIMD::Splat(e.Bounds.Center.Z);
+        SimdVector4 r = SIMD::Splat(-e.Bounds.Radius);
 
-		float4 t = SIMD::Mul(cx, px);
-		t = SIMD::Add(t, SIMD::Mul(cy, py));
-		t = SIMD::Add(t, SIMD::Mul(cz, pz));
-		t = SIMD::Add(t, pd);
-		t = SIMD::Sub(t, r);
-		if (SIMD::MoveMask(t))
-			continue;
+        SimdVector4 t = SIMD::Mul(cx, px);
+        t = SIMD::Add(t, SIMD::Mul(cy, py));
+        t = SIMD::Add(t, SIMD::Mul(cz, pz));
+        t = SIMD::Add(t, pd);
+        t = SIMD::Sub(t, r);
+        if (SIMD::MoveMask(t))
+            continue;
 
-		t = SIMD::Mul(cx, px2);
-		t = SIMD::Add(t, SIMD::Mul(cy, py2));
-		t = SIMD::Add(t, SIMD::Mul(cz, pz2));
-		t = SIMD::Add(t, pd2);
-		t = SIMD::Sub(t, r);
-		if (SIMD::MoveMask(t))
-			continue;
+        t = SIMD::Mul(cx, px2);
+        t = SIMD::Add(t, SIMD::Mul(cy, py2));
+        t = SIMD::Add(t, SIMD::Mul(cz, pz2));
+        t = SIMD::Add(t, pd2);
+        t = SIMD::Sub(t, r);
+        if (SIMD::MoveMask(t))
+            continue;
 
-		e.Actor->Draw(renderContext);
-	}
+        if (view.RenderLayersMask.Mask & e.LayerMask)
+        {
+#if SCENE_RENDERING_USE_PROFILER
+            PROFILE_CPU();
+            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
+            e.Actor->Draw(renderContext);
+        }
+    }
 #else
     for (int32 i = 0; i < List.Count(); i++)
     {
@@ -185,99 +191,106 @@ void SceneRendering::DrawEntries::CullAndDrawOffline(RenderContext& renderContex
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.CullingFrustum;
 #if SCENE_RENDERING_USE_SIMD
-	CullDataSIMD cullData;
-	{
-		// Near
-		auto plane = view.Frustum.GetNear();
-		cullData.xs[0] = plane.Normal.X;
-		cullData.ys[0] = plane.Normal.Y;
-		cullData.zs[0] = plane.Normal.Z;
-		cullData.ds[0] = plane.D;
+    CullDataSIMD cullData;
+    {
+        // Near
+        auto plane = view.Frustum.GetNear();
+        cullData.xs[0] = plane.Normal.X;
+        cullData.ys[0] = plane.Normal.Y;
+        cullData.zs[0] = plane.Normal.Z;
+        cullData.ds[0] = plane.D;
 
-		// Far
-		plane = view.Frustum.GetFar();
-		cullData.xs[1] = plane.Normal.X;
-		cullData.ys[1] = plane.Normal.Y;
-		cullData.zs[1] = plane.Normal.Z;
-		cullData.ds[1] = plane.D;
+        // Far
+        plane = view.Frustum.GetFar();
+        cullData.xs[1] = plane.Normal.X;
+        cullData.ys[1] = plane.Normal.Y;
+        cullData.zs[1] = plane.Normal.Z;
+        cullData.ds[1] = plane.D;
 
-		// Left
-		plane = view.Frustum.GetLeft();
-		cullData.xs[2] = plane.Normal.X;
-		cullData.ys[2] = plane.Normal.Y;
-		cullData.zs[2] = plane.Normal.Z;
-		cullData.ds[2] = plane.D;
+        // Left
+        plane = view.Frustum.GetLeft();
+        cullData.xs[2] = plane.Normal.X;
+        cullData.ys[2] = plane.Normal.Y;
+        cullData.zs[2] = plane.Normal.Z;
+        cullData.ds[2] = plane.D;
 
-		// Right
-		plane = view.Frustum.GetRight();
-		cullData.xs[3] = plane.Normal.X;
-		cullData.ys[3] = plane.Normal.Y;
-		cullData.zs[3] = plane.Normal.Z;
-		cullData.ds[3] = plane.D;
+        // Right
+        plane = view.Frustum.GetRight();
+        cullData.xs[3] = plane.Normal.X;
+        cullData.ys[3] = plane.Normal.Y;
+        cullData.zs[3] = plane.Normal.Z;
+        cullData.ds[3] = plane.D;
 
-		// Top
-		plane = view.Frustum.GetTop();
-		cullData.xs[4] = plane.Normal.X;
-		cullData.ys[4] = plane.Normal.Y;
-		cullData.zs[4] = plane.Normal.Z;
-		cullData.ds[4] = plane.D;
+        // Top
+        plane = view.Frustum.GetTop();
+        cullData.xs[4] = plane.Normal.X;
+        cullData.ys[4] = plane.Normal.Y;
+        cullData.zs[4] = plane.Normal.Z;
+        cullData.ds[4] = plane.D;
 
-		// Bottom
-		plane = view.Frustum.GetBottom();
-		cullData.xs[5] = plane.Normal.X;
-		cullData.ys[5] = plane.Normal.Y;
-		cullData.zs[5] = plane.Normal.Z;
-		cullData.ds[5] = plane.D;
+        // Bottom
+        plane = view.Frustum.GetBottom();
+        cullData.xs[5] = plane.Normal.X;
+        cullData.ys[5] = plane.Normal.Y;
+        cullData.zs[5] = plane.Normal.Z;
+        cullData.ds[5] = plane.D;
 
-		// Extra 0
-		cullData.xs[6] = 0;
-		cullData.ys[6] = 0;
-		cullData.zs[6] = 0;
-		cullData.ds[6] = 0;
+        // Extra 0
+        cullData.xs[6] = 0;
+        cullData.ys[6] = 0;
+        cullData.zs[6] = 0;
+        cullData.ds[6] = 0;
 
-		// Extra 1
-		cullData.xs[7] = 0;
-		cullData.ys[7] = 0;
-		cullData.zs[7] = 0;
-		cullData.ds[7] = 0;
-	}
+        // Extra 1
+        cullData.xs[7] = 0;
+        cullData.ys[7] = 0;
+        cullData.zs[7] = 0;
+        cullData.ds[7] = 0;
+    }
 
-	float4 px = SIMD::Load(cullData.xs);
-	float4 py = SIMD::Load(cullData.ys);
-	float4 pz = SIMD::Load(cullData.zs);
-	float4 pd = SIMD::Load(cullData.ds);
-	float4 px2 = SIMD::Load(&cullData.xs[4]);
-	float4 py2 = SIMD::Load(&cullData.ys[4]);
-	float4 pz2 = SIMD::Load(&cullData.zs[4]);
-	float4 pd2 = SIMD::Load(&cullData.ds[4]);
+    SimdVector4 px = SIMD::Load(cullData.xs);
+    SimdVector4 py = SIMD::Load(cullData.ys);
+    SimdVector4 pz = SIMD::Load(cullData.zs);
+    SimdVector4 pd = SIMD::Load(cullData.ds);
+    SimdVector4 px2 = SIMD::Load(&cullData.xs[4]);
+    SimdVector4 py2 = SIMD::Load(&cullData.ys[4]);
+    SimdVector4 pz2 = SIMD::Load(&cullData.zs[4]);
+    SimdVector4 pd2 = SIMD::Load(&cullData.ds[4]);
 
-	for (int32 i = 0; i < actors.Count(); i++)
-	{
-		const auto& sphere = actors[i]->GetSphere();
-		float4 cx = SIMD::Splat(sphere.Center.X);
-		float4 cy = SIMD::Splat(sphere.Center.Y);
-		float4 cz = SIMD::Splat(sphere.Center.Z);
-		float4 r = SIMD::Splat(-sphere.Radius);
+    for (int32 i = 0; i < List.Count(); i++)
+    {
+        auto e = List[i];
 
-		float4 t = SIMD::Mul(cx, px);
-		t = SIMD::Add(t, SIMD::Mul(cy, py));
-		t = SIMD::Add(t, SIMD::Mul(cz, pz));
-		t = SIMD::Add(t, pd);
-		t = SIMD::Sub(t, r);
-		if (SIMD::MoveMask(t))
-			continue;
+        SimdVector4 cx = SIMD::Splat(e.Bounds.Center.X);
+        SimdVector4 cy = SIMD::Splat(e.Bounds.Center.Y);
+        SimdVector4 cz = SIMD::Splat(e.Bounds.Center.Z);
+        SimdVector4 r = SIMD::Splat(-e.Bounds.Radius);
 
-		t = SIMD::Mul(cx, px2);
-		t = SIMD::Add(t, SIMD::Mul(cy, py2));
-		t = SIMD::Add(t, SIMD::Mul(cz, pz2));
-		t = SIMD::Add(t, pd2);
-		t = SIMD::Sub(t, r);
-		if (SIMD::MoveMask(t))
-			continue;
+        SimdVector4 t = SIMD::Mul(cx, px);
+        t = SIMD::Add(t, SIMD::Mul(cy, py));
+        t = SIMD::Add(t, SIMD::Mul(cz, pz));
+        t = SIMD::Add(t, pd);
+        t = SIMD::Sub(t, r);
+        if (SIMD::MoveMask(t))
+            continue;
 
-		if (actors[i]->GetStaticFlags() & renderContext.View.StaticFlagsMask)
-			actors[i]->Draw(renderContext);
-	}
+        t = SIMD::Mul(cx, px2);
+        t = SIMD::Add(t, SIMD::Mul(cy, py2));
+        t = SIMD::Add(t, SIMD::Mul(cz, pz2));
+        t = SIMD::Add(t, pd2);
+        t = SIMD::Sub(t, r);
+        if (SIMD::MoveMask(t))
+            continue;
+
+        if (view.RenderLayersMask.Mask & e.LayerMask && e.Actor->GetStaticFlags() & renderContext.View.StaticFlagsMask)
+        {
+#if SCENE_RENDERING_USE_PROFILER
+            PROFILE_CPU();
+            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
+            e.Actor->Draw(renderContext);
+        }
+    }
 #else
     for (int32 i = 0; i < List.Count(); i++)
     {

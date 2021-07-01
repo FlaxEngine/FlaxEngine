@@ -361,8 +361,6 @@ void RenderList::Clear()
 
 void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals)
 {
-    ASSERT_LOW_LAYER(drawCall.Geometry.IndexBuffer);
-
     // Mix object mask with material mask
     const auto mask = (DrawPass)(drawModes & drawCall.Material->GetDrawModes());
     if (mask == DrawPass::None)
