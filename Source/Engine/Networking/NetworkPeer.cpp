@@ -12,7 +12,7 @@
 namespace
 {
     Array<NetworkPeer*, HeapAllocation> Peers;
-    uint32_t LastHostId = 0;
+    uint32 LastHostId = 0;
 }
 
 void NetworkPeer::Initialize(const NetworkConfig& config)
@@ -153,7 +153,7 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
     return false;
 }
 
-bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection> targets)
+bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection>& targets)
 {
     ASSERT(message.IsValid());
     

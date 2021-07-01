@@ -11,7 +11,16 @@
 API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
+    
 public:
+    
+    /// <summary>
+    /// Finalizes an instance of the <see cref="INetworkDriver"/> class.
+    /// </summary>
+    virtual ~INetworkDriver() = default;
+
+public:
+    
     /// <summary>
     /// Initializes the instance of this network driver using given configuration.
     /// </summary>
@@ -93,7 +102,7 @@ public:
     /// Do not recycle the message after calling this.
     /// This function automatically recycles the message.
     /// </remarks>
-    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) = 0;
+    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets) = 0;
 
     // TODO: Stats API
     // TODO: Simulation API

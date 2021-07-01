@@ -29,7 +29,7 @@ public:
     
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target) override;
-    void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets) override;
+    void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets) override;
 
 private:
     bool IsServer() const
@@ -43,6 +43,6 @@ private:
     void* _host = nullptr;
     void* _peer = nullptr;
     
-    Dictionary<uint32_t, void*> _peerMap;
+    Dictionary<uint32, void*> _peerMap;
 };
 

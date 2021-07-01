@@ -57,7 +57,7 @@ void ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 {
     _networkHost = host;
     _config = config;
-    _peerMap = Dictionary<uint32_t, void*>();
+    _peerMap = Dictionary<uint32, void*>();
 
     if (enet_initialize () != 0) {
         LOG(Error, "Failed to initialize ENet driver!");
@@ -173,7 +173,7 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
     if(result > 0)
     {
         // Copy sender data
-        const uint32_t connectionId = enet_peer_get_id(event.peer);
+        const uint32 connectionId = enet_peer_get_id(event.peer);
         eventPtr->Sender = NetworkConnection();
         eventPtr->Sender.ConnectionId = connectionId;
         
@@ -189,14 +189,14 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
         case ENET_EVENT_TYPE_DISCONNECT:
             eventPtr->EventType = NetworkEventType::Disconnected;
             
-            if(IsServer() && _peerMap.ContainsKey(connectionId))
+            if(IsServer())
                 _peerMap.Remove(connectionId);
             break;
             
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             eventPtr->EventType = NetworkEventType::Timeout;
             
-            if(IsServer() && _peerMap.ContainsKey(connectionId))
+            if(IsServer())
                 _peerMap.Remove(connectionId);
             break;
             
@@ -235,7 +235,7 @@ void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessag
     SendPacketToPeer(peer, channelType, message);
 }
 
-void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation> targets)
+void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets)
 {
     ASSERT(IsServer());
     

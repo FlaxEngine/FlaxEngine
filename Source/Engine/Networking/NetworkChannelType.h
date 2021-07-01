@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Core/Config.h"
 
 /// <summary>
 /// The low-level network channel type for message sending.
