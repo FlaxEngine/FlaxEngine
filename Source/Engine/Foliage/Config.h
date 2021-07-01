@@ -13,6 +13,9 @@ struct FoliageInstance;
 // Enables using single quad-tree acceleration structure per foliage actor, otherwise will use quad-tree per foliage type to optimize drawing performance at a cost of higher memory usage.
 #define FOLIAGE_USE_SINGLE_QUAD_TREE 0
 
+// Enables using manual draw calls batching instead of using automated generic solution in RenderList. Boosts performance for large foliage.
+#define FOLIAGE_USE_DRAW_CALLS_BATCHING 1
+
 // Size of the instance allocation chunks (number of instances per allocated page)
 #define FOLIAGE_INSTANCE_CHUNKS_SIZE (4096*4)
 
