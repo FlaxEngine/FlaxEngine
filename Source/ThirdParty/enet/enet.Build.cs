@@ -14,7 +14,7 @@ public class ENet : DepsModule
     {
         base.Init();
 
-        LicenseType = LicenseTypes.Custom;
+        LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "enet License.txt";
 
         // Merge third-party modules into engine binary
