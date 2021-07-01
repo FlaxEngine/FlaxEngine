@@ -7,6 +7,18 @@
 #include "Engine/Animations/AlphaBlend.h"
 #include "Engine/Animations/InverseKinematics.h"
 
+namespace
+{
+    void BlendAdditiveWeightedRotation(Quaternion& base, Quaternion& additive, float weight)
+    {
+        // Pick a shortest path between rotation to fix blending artifacts
+        additive *= weight;
+        if (Quaternion::Dot(base, additive) < 0)
+            additive *= -1;
+        base += additive;
+    }
+}
+
 int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
 {
     // TODO: cache the root node index (use dictionary with Animation* -> int32 for fast lookups)
@@ -288,31 +300,46 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     const auto mappingC = animC->GetMapping(_graph.BaseModel);
     Transform tmp, t;
     const auto emptyNodes = GetEmptyNodes();
+    ASSERT(Math::Abs(alphaA + alphaB + alphaC - 1.0f) <= ANIM_GRAPH_BLEND_THRESHOLD); // Assumes weights are normalized
     for (int32 i = 0; i < nodes->Nodes.Count(); i++)
     {
         const int32 nodeToChannelA = mappingA->At(i);
-        const int32 nodeToChannelB = mappingB->At(i);
-        const int32 nodeToChannelC = mappingC->At(i);
-        tmp = t = emptyNodes->Nodes[i];
-
-        // Calculate the animated node transformations
+        t = emptyNodes->Nodes[i];
         if (nodeToChannelA != -1)
         {
+            // Override
+            tmp = t;
             animA->Data.Channels[nodeToChannelA].Evaluate(animPosA, &tmp, false);
-            Transform::Lerp(t, tmp, alphaA, t);
+            t.Translation = tmp.Translation * alphaA;
+            t.Orientation = tmp.Orientation * alphaA;
+            t.Scale = tmp.Scale * alphaA;
         }
+        nodes->Nodes[i] = t;
+    }
+    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
+    {
+        const int32 nodeToChannelB = mappingB->At(i);
+        const int32 nodeToChannelC = mappingC->At(i);
+        t = nodes->Nodes[i];
         if (nodeToChannelB != -1)
         {
+            // Additive
+            tmp = emptyNodes->Nodes[i];
             animB->Data.Channels[nodeToChannelB].Evaluate(animPosB, &tmp, false);
-            Transform::Lerp(t, tmp, alphaB, t);
+            t.Translation += tmp.Translation * alphaB;
+            t.Scale += tmp.Scale * alphaB;
+            BlendAdditiveWeightedRotation(t.Orientation, tmp.Orientation, alphaB);
         }
         if (nodeToChannelC != -1)
         {
+            // Additive
+            tmp = emptyNodes->Nodes[i];
             animC->Data.Channels[nodeToChannelC].Evaluate(animPosC, &tmp, false);
-            Transform::Lerp(t, tmp, alphaC, t);
+            t.Translation += tmp.Translation * alphaC;
+            t.Scale += tmp.Scale * alphaC;
+            BlendAdditiveWeightedRotation(t.Orientation, tmp.Orientation, alphaC);
         }
-
-        // Write blended transformation
+        t.Orientation.Normalize();
         nodes->Nodes[i] = t;
     }
 
