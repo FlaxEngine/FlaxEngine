@@ -10,6 +10,9 @@ struct FoliageInstance;
 // Enable/disable foliage editing and changing at runtime. If your game need to use procedural foliage then enable this option.
 #define FOLIAGE_EDITING (USE_EDITOR)
 
+// Enables using single quad-tree acceleration structure per foliage actor, otherwise will use quad-tree per foliage type to optimize drawing performance at a cost of higher memory usage.
+#define FOLIAGE_USE_SINGLE_QUAD_TREE 0
+
 // Size of the instance allocation chunks (number of instances per allocated page)
 #define FOLIAGE_INSTANCE_CHUNKS_SIZE (4096*4)
 

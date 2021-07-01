@@ -16,62 +16,9 @@ Foliage::Foliage(const SpawnParams& params)
     : Actor(params)
 {
     _disableFoliageTypeEvents = false;
-    Root = nullptr;
 }
 
-void Foliage::EnsureRoot()
-{
-    // Skip if root is already here or there is no instances at all
-    if (Root || Instances.IsEmpty())
-        return;
-    ASSERT(Clusters.IsEmpty());
-
-    PROFILE_CPU();
-
-    // Calculate total bounds of valid instances
-    BoundingBox totalBounds;
-    {
-        bool anyValid = false;
-        // TODO: inline code and use SIMD
-        BoundingBox box;
-        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
-        {
-            if (!FoliageTypes[i->Type].IsReady())
-                continue;
-
-            BoundingBox::FromSphere(i->Bounds, box);
-            ASSERT(!i->Bounds.Center.IsNanOrInfinity());
-
-            if (anyValid)
-            {
-                BoundingBox::Merge(totalBounds, box, totalBounds);
-            }
-            else
-            {
-                totalBounds = box;
-                anyValid = true;
-            }
-        }
-
-        // Skip if nothing is valid
-        if (!anyValid)
-            return;
-    }
-    ASSERT(!totalBounds.Minimum.IsNanOrInfinity() && !totalBounds.Maximum.IsNanOrInfinity());
-
-    // Setup first and topmost cluster
-    Clusters.Resize(1);
-    Root = &Clusters[0];
-    Root->Init(totalBounds);
-
-    // Cache bounds
-    _box = Root->Bounds;
-    BoundingSphere::FromBox(_box, _sphere);
-    if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
-}
-
-void Foliage::AddToCluster(FoliageCluster* cluster, FoliageInstance& instance)
+void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance)
 {
     ASSERT(instance.Bounds.Radius > ZeroTolerance);
     ASSERT(cluster->Bounds.Intersects(instance.Bounds));
@@ -101,12 +48,12 @@ void Foliage::AddToCluster(FoliageCluster* cluster, FoliageInstance& instance)
     else
     {
         // Subdivide cluster
-        const int32 count = Clusters.Count();
-        Clusters.Resize(count + 4);
-        cluster->Children[0] = &Clusters[count + 0];
-        cluster->Children[1] = &Clusters[count + 1];
-        cluster->Children[2] = &Clusters[count + 2];
-        cluster->Children[3] = &Clusters[count + 3];
+        const int32 count = clusters.Count();
+        clusters.Resize(count + 4);
+        cluster->Children[0] = &clusters[count + 0];
+        cluster->Children[1] = &clusters[count + 1];
+        cluster->Children[2] = &clusters[count + 2];
+        cluster->Children[3] = &clusters[count + 3];
 
         // Setup children
         const Vector3 min = cluster->Bounds.Minimum;
@@ -120,10 +67,69 @@ void Foliage::AddToCluster(FoliageCluster* cluster, FoliageInstance& instance)
         // Move instances to a proper cells
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
         {
-            AddToCluster(cluster, *cluster->Instances[i]);
+            AddToCluster(clusters, cluster, *cluster->Instances[i]);
         }
         cluster->Instances.Clear();
-        AddToCluster(cluster, instance);
+        AddToCluster(clusters, cluster, instance);
+    }
+}
+
+void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw)
+{
+    // Skip clusters that around too far from view
+    if (Vector3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center) - cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+        return;
+
+    //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
+
+    // Draw visible children
+    if (cluster->Children[0])
+    {
+        // Don't store instances in non-leaf nodes
+        ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
+
+#define DRAW_CLUSTER(idx) \
+		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \
+			DrawCluster(renderContext, cluster->Children[idx], draw)
+        DRAW_CLUSTER(0);
+        DRAW_CLUSTER(1);
+        DRAW_CLUSTER(2);
+        DRAW_CLUSTER(3);
+#undef 	DRAW_CLUSTER
+    }
+    else
+    {
+        // Draw visible instances
+        const auto frame = Engine::FrameCount;
+        for (int32 i = 0; i < cluster->Instances.Count(); i++)
+        {
+            auto& instance = *cluster->Instances[i];
+            auto& type = FoliageTypes[instance.Type];
+
+            // Check if can draw this instance
+            if (type._canDraw &&
+                Vector3::Distance(renderContext.View.Position, instance.Bounds.Center) - instance.Bounds.Radius < instance.CullDistance &&
+                renderContext.View.CullingFrustum.Intersects(instance.Bounds))
+            {
+                // Disable motion blur
+                instance.DrawState.PrevWorld = instance.World;
+
+                // Draw model
+                draw.Lightmap = GetScene()->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
+                draw.LightmapUVs = &instance.Lightmap.UVsArea;
+                draw.Buffer = &type.Entries;
+                draw.World = &instance.World;
+                draw.DrawState = &instance.DrawState;
+                draw.Bounds = instance.Bounds;
+                draw.PerInstanceRandom = instance.Random;
+                draw.DrawModes = type._drawModes;
+                type.Model->Draw(renderContext, draw);
+
+                //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
+
+                instance.DrawState.PrevFrame = frame;
+            }
+        }
     }
 }
 
@@ -364,16 +370,121 @@ void Foliage::RebuildClusters()
 {
     PROFILE_CPU();
 
-    // Remove previous clusters data
-    Root = nullptr;
-    Clusters.Clear();
+    // Faster path if foliage is empty or no types is ready
+    bool anyTypeValid = false;
+    for (auto& type : FoliageTypes)
+        anyTypeValid |= type.IsReady();
+    if (!anyTypeValid || Instances.IsEmpty())
+    {
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+        Root = nullptr;
+        Clusters.Clear();
+#else
+        for (auto& type : FoliageTypes)
+        {
+            type.Root = nullptr;
+            type.Clusters.Clear();
+        }
+#endif
+        _box = BoundingBox(_transform.Translation, _transform.Translation);
+        _sphere = BoundingSphere(_transform.Translation, 0.0f);
+        if (_sceneRenderingKey != -1)
+            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        return;
+    }
 
-    EnsureRoot();
+    // Clear clusters and initialize root
+    {
+        PROFILE_CPU_NAMED("Init Root");
+
+        BoundingBox totalBounds, box;
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+        {
+            // Calculate total bounds of all instances
+            auto i = Instances.Begin();
+            for (; i.IsNotEnd(); ++i)
+            {
+                if (!FoliageTypes[i->Type].IsReady())
+                    continue;
+                BoundingBox::FromSphere(i->Bounds, box);
+                totalBounds = box;
+                break;
+            }
+            ++i;
+            // TODO: inline code and use SIMD
+            for (; i.IsNotEnd(); ++i)
+            {
+                if (!FoliageTypes[i->Type].IsReady())
+                    continue;
+                BoundingBox::FromSphere(i->Bounds, box);
+                BoundingBox::Merge(totalBounds, box, totalBounds);
+            }
+        }
+
+        // Setup first and topmost cluster
+        Clusters.Resize(1);
+        Root = &Clusters[0];
+        Root->Init(totalBounds);
+#else
+        bool hasTotalBounds = false;
+        for (auto& type : FoliageTypes)
+        {
+            if (!type.IsReady())
+            {
+                type.Root = nullptr;
+                type.Clusters.Clear();
+                continue;
+            }
+
+            // Calculate total bounds of all instances of this type
+            BoundingBox totalBoundsType;
+            auto i = Instances.Begin();
+            for (; i.IsNotEnd(); ++i)
+            {
+                if (i->Type == type.Index)
+                {
+                    BoundingBox::FromSphere(i->Bounds, box);
+                    totalBoundsType = box;
+                    break;
+                }
+            }
+            ++i;
+            // TODO: inline code and use SIMD
+            for (; i.IsNotEnd(); ++i)
+            {
+                if (i->Type == type.Index)
+                {
+                    BoundingBox::FromSphere(i->Bounds, box);
+                    BoundingBox::Merge(totalBoundsType, box, totalBoundsType);
+                }
+            }
+
+            // Setup first and topmost cluster
+            type.Clusters.Resize(1);
+            type.Root = &type.Clusters[0];
+            type.Root->Init(totalBoundsType);
+            if (hasTotalBounds)
+            {
+                BoundingBox::Merge(totalBounds, totalBoundsType, totalBounds);
+            }
+            else
+            {
+                totalBounds = totalBoundsType;
+                hasTotalBounds = true;
+            }
+        }
+        ASSERT(hasTotalBounds);
+#endif
+        ASSERT(!totalBounds.Minimum.IsNanOrInfinity() && !totalBounds.Maximum.IsNanOrInfinity());
+        _box = totalBounds;
+        BoundingSphere::FromBox(_box, _sphere);
+        if (_sceneRenderingKey != -1)
+            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+    }
 
     // Insert all instances to the clusters
     {
         PROFILE_CPU_NAMED("Create Clusters");
-
         const float globalDensityScale = GetGlobalDensityScale();
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
@@ -383,17 +494,31 @@ void Foliage::RebuildClusters()
 
             if (type.IsReady() && instance.Random < densityScale)
             {
-                AddToCluster(Root, instance);
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+                AddToCluster(Clusters, Root, instance);
+#else
+                AddToCluster(type.Clusters, type.Root, instance);
+#endif
             }
         }
     }
 
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
     {
         PROFILE_CPU_NAMED("Update Cache");
-
         Root->UpdateTotalBoundsAndCullDistance();
     }
+#else
+    for (auto& type : FoliageTypes)
+    {
+        if (type.Root)
+        {
+            PROFILE_CPU_NAMED("Update Cache");
+            type.Root->UpdateTotalBoundsAndCullDistance();
+        }
+    }
+#endif
 }
 
 void Foliage::UpdateCullDistance()
@@ -402,7 +527,6 @@ void Foliage::UpdateCullDistance()
 
     {
         PROFILE_CPU_NAMED("Instances");
-
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
             auto& instance = *i;
@@ -411,12 +535,22 @@ void Foliage::UpdateCullDistance()
         }
     }
 
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
     {
         PROFILE_CPU_NAMED("Clusters");
-
         Root->UpdateCullDistance();
     }
+#else
+    for (auto& type : FoliageTypes)
+    {
+        if (type.Root)
+        {
+            PROFILE_CPU_NAMED("Clusters");
+            type.Root->UpdateCullDistance();
+        }
+    }
+#endif
 }
 
 static float GlobalDensityScale = 1.0f;
@@ -455,105 +589,54 @@ bool Foliage::Intersects(const Ray& ray, float& distance, Vector3& normal, int32
     PROFILE_CPU();
 
     instanceIndex = -1;
-
-    if (Root)
-    {
-        FoliageInstance* instance;
-        if (Root->Intersects(this, ray, distance, normal, instance))
-        {
-            int32 j = 0;
-            for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
-            {
-                if (&*i == instance)
-                {
-                    instanceIndex = j;
-                    break;
-                }
-                j++;
-            }
-
-            return true;
-        }
-    }
-
-    distance = MAX_float;
     normal = Vector3::Up;
-    return false;
-}
+    distance = MAX_float;
 
-void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw)
-{
-    // Skip clusters that around too far from view
-    if (Vector3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center) - cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
-        return;
-
-    //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
-
-    // Draw visible children
-    if (cluster->Children[0])
+    FoliageInstance* instance = nullptr;
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    if (Root)
+        Root->Intersects(this, ray, distance, normal, instance);
+#else
+    float tmpDistance;
+    Vector3 tmpNormal;
+    FoliageInstance* tmpInstance;
+    for (auto& type : FoliageTypes)
     {
-        // Don't store instances in non-leaf nodes
-        ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
-
-#define DRAW_CLUSTER(idx) \
-		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \
-			DrawCluster(renderContext, cluster->Children[idx], draw)
-        DRAW_CLUSTER(0);
-        DRAW_CLUSTER(1);
-        DRAW_CLUSTER(2);
-        DRAW_CLUSTER(3);
-#undef 	DRAW_CLUSTER
-    }
-    else
-    {
-        // Draw visible instances
-        const auto frame = Engine::FrameCount;
-        for (int32 i = 0; i < cluster->Instances.Count(); i++)
+        if (type.Root && type.Root->Intersects(this, ray, tmpDistance, tmpNormal, tmpInstance) && tmpDistance < distance)
         {
-            auto& instance = *cluster->Instances[i];
-            auto& type = FoliageTypes[instance.Type];
-
-            // Check if can draw this instance
-            if (type._canDraw &&
-                Vector3::Distance(renderContext.View.Position, instance.Bounds.Center) - instance.Bounds.Radius < instance.CullDistance &&
-                renderContext.View.CullingFrustum.Intersects(instance.Bounds))
-            {
-                // Disable motion blur
-                instance.DrawState.PrevWorld = instance.World;
-
-                // Draw model
-                draw.Lightmap = GetScene()->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
-                draw.LightmapUVs = &instance.Lightmap.UVsArea;
-                draw.Buffer = &type.Entries;
-                draw.World = &instance.World;
-                draw.DrawState = &instance.DrawState;
-                draw.Bounds = instance.Bounds;
-                draw.PerInstanceRandom = instance.Random;
-                draw.DrawModes = type._drawModes;
-                type.Model->Draw(renderContext, draw);
-
-                //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
-
-                instance.DrawState.PrevFrame = frame;
-            }
+            distance = tmpDistance;
+            normal = tmpNormal;
+            instance = tmpInstance;
         }
     }
+#endif
+    if (instance != nullptr)
+    {
+        int32 j = 0;
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (&*i == instance)
+            {
+                instanceIndex = j;
+                return true;
+            }
+            j++;
+        }
+    }
+    return false;
 }
 
 void Foliage::Draw(RenderContext& renderContext)
 {
-    // Skip if no instances spawned
-    if (Instances.IsEmpty() || !Root)
+    if (Instances.IsEmpty())
         return;
     auto& view = renderContext.View;
 
     PROFILE_CPU();
 
     // Cache data per foliage instance type
-    for (int32 i = 0; i < FoliageTypes.Count(); i++)
+    for (auto& type : FoliageTypes)
     {
-        auto& type = FoliageTypes[i];
-
         const auto drawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
         type._canDraw = type.IsReady() && drawModes != DrawPass::None;
         type._drawModes = drawModes;
@@ -577,7 +660,17 @@ void Foliage::Draw(RenderContext& renderContext)
     draw.LODBias = 0;
     draw.ForcedLOD = -1;
     draw.VertexColors = nullptr;
-    DrawCluster(renderContext, Root, draw);
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    if (Root)
+        DrawCluster(renderContext, Root, draw);
+#else
+    for (auto& type : FoliageTypes)
+    {
+        if (!type.Root)
+            continue;
+        DrawCluster(renderContext, type.Root, draw);
+    }
+#endif
 }
 
 void Foliage::DrawGeneric(RenderContext& renderContext)
@@ -639,10 +732,10 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
 
     stream.JKEY("Foliage");
     stream.StartArray();
-    for (int32 i = 0; i < FoliageTypes.Count(); i++)
+    for (auto& type : FoliageTypes)
     {
         stream.StartObject();
-        FoliageTypes[i].Serialize(stream, nullptr);
+        type.Serialize(stream, nullptr);
         stream.EndObject();
     }
     stream.EndArray();
@@ -675,9 +768,11 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     PROFILE_CPU();
 
     // Clear
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
     Root = nullptr;
-    Instances.Release();
     Clusters.Release();
+#endif
+    Instances.Release();
     FoliageTypes.Resize(0, false);
 
     // Deserialize foliage types

@@ -7,7 +7,6 @@
 #include "FoliageCluster.h"
 #include "FoliageType.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Core/Collections/ChunkedArray.h"
 
 /// <summary>
 /// Represents a foliage actor that contains a set of instanced meshes.
@@ -24,19 +23,21 @@ private:
 public:
 
     /// <summary>
-    /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
-    /// </summary>
-    FoliageCluster* Root;
-
-    /// <summary>
     /// The allocated foliage instances. It's read-only.
     /// </summary>
     ChunkedArray<FoliageInstance, FOLIAGE_INSTANCE_CHUNKS_SIZE> Instances;
+
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    /// <summary>
+    /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
+    /// </summary>
+    FoliageCluster* Root = nullptr;
 
     /// <summary>
     /// The allocated foliage clusters. It's read-only.
     /// </summary>
     ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE> Clusters;
+#endif
 
     /// <summary>
     /// The foliage instances types used by the current foliage actor. It's read-only.
@@ -141,35 +142,16 @@ public:
     /// <summary>
     /// Gets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() static float GetGlobalDensityScale();
 
     /// <summary>
     /// Sets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() static void SetGlobalDensityScale(float value);
 
 private:
 
-    /// <summary>
-    /// Ensures that the root node of the foliage was added.
-    /// </summary>
-    void EnsureRoot();
-
-    /// <summary>
-    /// Adds the given foliage instance to the cluster.
-    /// </summary>
-    /// <param name="cluster">The root cluster.</param>
-    /// <param name="instance">The instance.</param>
-    void AddToCluster(FoliageCluster* cluster, FoliageInstance& instance);
-
-    /// <summary>
-    /// Draws the cluster.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <param name="cluster">The cluster.</param>
-    /// <param name="draw">The draw data.</param>
+    void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
     void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw);
 
 public:
