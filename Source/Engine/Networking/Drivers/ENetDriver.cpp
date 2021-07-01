@@ -235,7 +235,7 @@ void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessag
     SendPacketToPeer(peer, channelType, message);
 }
 
-void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets)
+void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
 {
     ASSERT(IsServer());
     

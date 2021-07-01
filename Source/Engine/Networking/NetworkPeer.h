@@ -149,7 +149,7 @@ public:
     /// This function automatically recycles the message.
     /// </remarks>
     API_FUNCTION()
-    bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets);
+    bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets);
 
 public:
     /// <summary>

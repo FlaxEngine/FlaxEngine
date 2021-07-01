@@ -153,7 +153,7 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
     return false;
 }
 
-bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection>& targets)
+bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection>& targets)
 {
     ASSERT(message.IsValid());
     

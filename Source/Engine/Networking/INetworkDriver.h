@@ -102,7 +102,7 @@ public:
     /// Do not recycle the message after calling this.
     /// This function automatically recycles the message.
     /// </remarks>
-    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, Array<NetworkConnection, HeapAllocation>& targets) = 0;
+    virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) = 0;
 
     // TODO: Stats API
     // TODO: Simulation API
