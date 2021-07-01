@@ -67,7 +67,12 @@ public:
     /// </summary>
     /// <param name="bytes">The bytes that will be written.</param>
     /// <param name="numBytes">The amount of bytes to write from the bytes pointer.</param>
-    FORCE_INLINE void WriteBytes(uint8* bytes, int numBytes);
+    FORCE_INLINE void WriteBytes(uint8* bytes, const int numBytes)
+    {
+        ASSERT(Position + numBytes < BufferSize);
+        Platform::MemoryCopy(Buffer + Position, bytes, numBytes);
+        Position += numBytes;
+    }
     
     /// <summary>
     /// Reads raw bytes from the message into the given byte array.
@@ -77,7 +82,12 @@ public:
     /// Should be of the same length as length or longer.
     /// </param>
     /// <param name="numBytes">The minimal amount of bytes that the buffer contains.</param>
-    FORCE_INLINE void ReadBytes(uint8* bytes, int numBytes);
+    FORCE_INLINE void ReadBytes(uint8* bytes, const int numBytes)
+    {
+        ASSERT(Position + numBytes < BufferSize);
+        Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
+        Position += numBytes;
+    }
 
 #define DECL_READWRITE(type, name) \
     FORCE_INLINE void Write##name(type value) { WriteBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); } \
@@ -196,5 +206,8 @@ public:
     /// <summary>
     /// Returns true if the message is valid for reading or writing.
     /// </summary>
-    bool IsValid() const;
+    bool IsValid() const
+    {
+        return Buffer != nullptr && BufferSize > 0;
+    }
 };
