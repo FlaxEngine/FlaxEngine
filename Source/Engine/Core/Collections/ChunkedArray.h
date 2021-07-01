@@ -20,22 +20,15 @@ private:
     // TODO: don't use Array but small struct and don't InlinedArray or Chunk* but Chunk (less dynamic allocations)
     typedef Array<T> Chunk;
 
-    int32 _count;
+    int32 _count = 0;
     Array<Chunk*, InlinedAllocation<32>> _chunks;
 
 public:
 
-    /// <summary>
-    /// Default constructor
-    /// </summary>
     ChunkedArray()
-        : _count(0)
     {
     }
 
-    /// <summary>
-    /// Destructor
-    /// </summary>
     ~ChunkedArray()
     {
         _chunks.ClearDelete();
@@ -426,13 +419,21 @@ public:
     /// <param name="newSize">The new size.</param>
     void Resize(int32 newSize)
     {
-        if (newSize < Count())
+        while (newSize < Count())
         {
-            MISSING_CODE("shrinking ChunkedArray on Resize");
+            auto& chunk = _chunks.Last();
+            int32 itemsLeft = Count() - newSize;
+            int32 itemsToRemove = Math::Min(chunk->Count(), itemsLeft);
+            chunk->Resize(chunk->Count() - itemsToRemove);
+            _count -= itemsToRemove;
+            if (chunk->Count() == 0)
+            {
+                Delete(chunk);
+                _chunks.RemoveLast();
+            }
         }
-        else
+        if (newSize > Count())
         {
-            // Require enough space at once
             EnsureCapacity(newSize);
 
             // Add more items until reach the new size
@@ -445,9 +446,9 @@ public:
 
                 // Insert some items to this chunk if can
                 const int32 spaceLeft = chunk->Capacity() - chunk->Count();
-                int32 itemsToInsert = Math::Min(itemsReaming, spaceLeft);
-                chunk->Resize(chunk->Count() + itemsToInsert);
-                _count += itemsToInsert;
+                int32 itemsToAdd = Math::Min(itemsReaming, spaceLeft);
+                chunk->Resize(chunk->Count() + itemsToAdd);
+                _count += itemsToAdd;
 
                 // Update counter
                 itemsReaming = newSize - Count();
@@ -481,29 +482,16 @@ public:
 
 public:
 
-    /// <summary>
-    /// Gets iterator for beginning of the collection.
-    /// </summary>
-    /// <returns>Iterator for beginning of the collection.</returns>
     Iterator Begin() const
     {
         return Iterator(this, 0);
     }
 
-    /// <summary>
-    /// Gets iterator for ending of the collection.
-    /// </summary>
-    /// <returns>Iterator for ending of the collection.</returns>
     Iterator End() const
     {
         return Iterator(this, Count());
     }
 
-    /// <summary>
-    /// Gets iterator for the specified index.
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>Iterator for the specified index.</returns>
     Iterator IteratorAt(int32 index) const
     {
         return Iterator(this, index);
