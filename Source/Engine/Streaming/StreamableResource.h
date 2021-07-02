@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/SamplesBuffer.h"
 
 class StreamingGroup;
@@ -105,9 +104,9 @@ public:
 
     struct StreamingCache
     {
-        DateTime LastUpdate = 0;
+        int64 LastUpdate = 0;
         int32 TargetResidency = 0;
-        DateTime TargetResidencyChange = 0;
+        int64 TargetResidencyChange = 0;
         SamplesBuffer<float, 5> QualitySamples;
     };
 
@@ -118,7 +117,7 @@ public:
     /// </summary>
     void RequestStreamingUpdate()
     {
-        Streaming.LastUpdate.Ticks = 0;
+        Streaming.LastUpdate = 0;
     }
 
 protected:

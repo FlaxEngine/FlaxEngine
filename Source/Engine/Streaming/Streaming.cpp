@@ -130,17 +130,14 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
     auto allocatedResidency = resource->GetAllocatedResidency();
     auto targetResidency = handler->CalculateResidency(resource, targetQuality);
     ASSERT(allocatedResidency >= currentResidency && allocatedResidency >= 0);
-
-    // Assign last update time
-    auto updateTimeDelta = now - resource->Streaming.LastUpdate;
-    resource->Streaming.LastUpdate = now;
+    resource->Streaming.LastUpdate = now.Ticks;
 
     // Check if a target residency level has been changed
     if (targetResidency != resource->Streaming.TargetResidency)
     {
         // Register change
         resource->Streaming.TargetResidency = targetResidency;
-        resource->Streaming.TargetResidencyChange = now;
+        resource->Streaming.TargetResidencyChange = now.Ticks;
     }
 
     // Check if need to change resource current residency
@@ -233,7 +230,7 @@ void StreamingSystem::Job(int32 index)
         const auto resource = Resources[LastUpdateResourcesIndex];
 
         // Try to update it
-        if (now - resource->Streaming.LastUpdate >= ResourceUpdatesInterval && resource->CanBeUpdated())
+        if (now - DateTime(resource->Streaming.LastUpdate) >= ResourceUpdatesInterval && resource->CanBeUpdated())
         {
             UpdateResource(resource, now, currentTime);
             resourcesUpdates--;
