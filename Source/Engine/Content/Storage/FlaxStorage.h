@@ -142,9 +142,6 @@ public:
     struct LockData
     {
         friend FlaxStorage;
-
-    public:
-
         static LockData Invalid;
 
     private:
@@ -166,8 +163,12 @@ public:
             if (_storage)
                 _storage->LockChunks();
         }
-
-    public:
+        
+        LockData(LockData&& other) noexcept
+            : _storage(other._storage)
+        {
+            other._storage = nullptr;
+        }
 
         ~LockData()
         {
@@ -184,12 +185,8 @@ public:
             }
         }
 
-    public:
-
-        // Assignment operator
         LockData& operator=(const LockData& other)
         {
-            // Protect against invalid self-assignment
             if (this != &other)
             {
                 if (_storage)
@@ -198,9 +195,18 @@ public:
                 if (_storage)
                     _storage->LockChunks();
             }
-
             return *this;
         }
+
+        LockData& operator=(LockData&& other) noexcept
+        {
+            if (this == &other)
+                return *this;
+            _storage = other._storage;
+            other._storage = nullptr;
+            return *this;
+        }
+
     };
 
     /// <summary>
@@ -224,7 +230,6 @@ public:
     /// <summary>
     /// Gets the references count.
     /// </summary>
-    /// <returns>Amount of references to that storage container.</returns>
     FORCE_INLINE uint32 GetRefCount() const
     {
         return _refCount;
@@ -233,13 +238,11 @@ public:
     /// <summary>
     /// Checks if storage container should be disposed (it's not used anymore).
     /// </summary>
-    /// <returns>True if should be disposed, otherwise false.</returns>
     bool ShouldDispose() const;
 
     /// <summary>
     /// Gets the path.
     /// </summary>
-    /// <returns>File path</returns>
     FORCE_INLINE const String& GetPath() const
     {
         return _path;
@@ -248,7 +251,6 @@ public:
     /// <summary>
     /// Determines whether this instance is loaded.
     /// </summary>
-    /// <returns>True if this instance is loaded, otherwise false.</returns>
     FORCE_INLINE bool IsLoaded() const
     {
         return _version != 0;
@@ -257,7 +259,6 @@ public:
     /// <summary>
     /// Determines whether this instance is disposed.
     /// </summary>
-    /// <returns>True if this instance is disposed, otherwise false.</returns>
     FORCE_INLINE bool IsDisposed() const
     {
         return _version == 0;
@@ -266,19 +267,16 @@ public:
     /// <summary>
     /// Gets total memory used by chunks (in bytes).
     /// </summary>
-    /// <returns>Memory usage in bytes.</returns>
     uint32 GetMemoryUsage() const;
 
     /// <summary>
     /// Determines whether this storage container is a package.
     /// </summary>
-    /// <returns>True if this container is a package, otherwise false.</returns>
     virtual bool IsPackage() const = 0;
 
     /// <summary>
     /// Checks whenever storage container allows the data modifications.
     /// </summary>
-    /// <returns>True if can write data to the storage, otherwise it's readonly.</returns>
     virtual bool AllowDataModifications() const = 0;
 
     /// <summary>
@@ -298,7 +296,6 @@ public:
     /// <summary>
     /// Gets amount of entries in the storage.
     /// </summary>
-    /// <returns>Entries count.</returns>
     virtual int32 GetEntriesCount() const = 0;
 
     /// <summary>

@@ -22,6 +22,11 @@ String AssetHeader::ToString() const
     return String::Format(TEXT("ID: {0}, TypeName: {1}, Chunks Count: {2}"), ID, TypeName, GetChunksCount());
 }
 
+void FlaxChunk::RegisterUsage()
+{
+    Platform::AtomicStore(&LastAccessTime, DateTime::NowUTC().Ticks);
+}
+
 const int32 FlaxStorage::MagicCode = 1180124739;
 
 FlaxStorage::LockData FlaxStorage::LockData::Invalid(nullptr);
@@ -231,7 +236,7 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
 
 bool FlaxStorage::ShouldDispose() const
 {
-    return _refCount == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500) && Platform::AtomicRead((int64*)&_chunksLock) == 0;
+    return _refCount == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
@@ -319,9 +324,10 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            FlaxChunkFlags flags;
-            stream->ReadInt32(reinterpret_cast<int32*>(&flags));
-            AddChunk(New<FlaxChunk>(e, flags));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            stream->ReadInt32(reinterpret_cast<int32*>(&chunk->Flags));
+            AddChunk(chunk);
         }
 
         break;
@@ -369,9 +375,10 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            FlaxChunkFlags flags;
-            stream->ReadInt32(reinterpret_cast<int32*>(&flags));
-            AddChunk(New<FlaxChunk>(e, flags));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            stream->ReadInt32(reinterpret_cast<int32*>(&chunk->Flags));
+            AddChunk(chunk);
         }
 
         break;
@@ -403,7 +410,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -436,7 +445,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -473,7 +484,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -529,7 +542,9 @@ bool FlaxStorage::Load()
             auto& oldChunk = chunks[i];
             if (oldChunk.Size > 0)
             {
-                AddChunk(New<FlaxChunk>(oldChunk.Adress, oldChunk.Size));
+                auto chunk = New<FlaxChunk>();
+                chunk->LocationInFile = FlaxChunk::Location(oldChunk.Adress, oldChunk.Size);
+                AddChunk(chunk);
             }
         }
 
@@ -1305,7 +1320,7 @@ void FlaxStorage::Tick()
     for (int32 i = 0; i < _chunks.Count(); i++)
     {
         auto chunk = _chunks[i];
-        const bool wasUsed = (now - chunk->LastAccessTime) < ContentStorageManager::UnusedDataChunksLifetime;
+        const bool wasUsed = (now - DateTime(Platform::AtomicRead(&chunk->LastAccessTime))) < ContentStorageManager::UnusedDataChunksLifetime;
         if (!wasUsed && chunk->IsLoaded())
         {
             chunk->Unload();
