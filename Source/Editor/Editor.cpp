@@ -19,6 +19,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -580,6 +581,7 @@ void EditorImpl::OnUpdate()
     if (!hasFocus)
     {
         // Sleep for a bit to not eat up all CPU time
+        PROFILE_CPU_NAMED("Sleep");
         Platform::Sleep(5);
     }
     HasFocus = hasFocus;
