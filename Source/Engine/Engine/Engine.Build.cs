@@ -25,6 +25,7 @@ public class Engine : EngineModule
         options.PublicDependencies.Add("Input");
         options.PublicDependencies.Add("Level");
         options.PublicDependencies.Add("Navigation");
+        options.PublicDependencies.Add("Networking");
         options.PublicDependencies.Add("Physics");
         options.PublicDependencies.Add("Particles");
         options.PublicDependencies.Add("Scripting");
