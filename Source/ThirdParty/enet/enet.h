@@ -5723,17 +5723,25 @@ extern "C" {
             return -1;
         }
 
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         timeBeginPeriod(1);
+#endif
         return 0;
     }
 
     void enet_deinitialize(void) {
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         timeEndPeriod(1);
+#endif
         WSACleanup();
     }
 
     enet_uint64 enet_host_random_seed(void) {
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         return (enet_uint64) timeGetTime();
+#else
+        return (enet_uint64) time(NULL);
+#endif
     }
 
     int enet_address_set_host_ip_old(ENetAddress *address, const char *name) {

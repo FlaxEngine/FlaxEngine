@@ -15,12 +15,14 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/CommandLine.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
 #include <timeapi.h>
 #include <Psapi.h>
 #include <objbase.h>
+#include <cstdio>
 #if CRASH_LOG_ENABLE
 #include <dbghelp.h>
 #endif
@@ -593,6 +595,28 @@ bool WindowsPlatform::Init()
 {
     if (Win32Platform::Init())
         return true;
+   
+    // Init console output (engine is linked with /SUBSYSTEM:WINDOWS so it lacks of proper console output on Windows)
+    if (CommandLine::Options.Std)
+    {
+        // Attaches output of application to parent console, returns true if running in console-mode
+        // [Reference: https://www.tillett.info/2013/05/13/how-to-create-a-windows-program-that-works-as-both-as-a-gui-and-console-application]
+        if (AttachConsole(ATTACH_PARENT_PROCESS))
+        {
+            const HANDLE consoleHandleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (consoleHandleOut != INVALID_HANDLE_VALUE)
+            {
+                freopen("CONOUT$", "w", stdout);
+                setvbuf(stdout, NULL, _IONBF, 0);
+            }
+            const HANDLE consoleHandleError = GetStdHandle(STD_ERROR_HANDLE);
+            if (consoleHandleError != INVALID_HANDLE_VALUE)
+            {
+                freopen("CONOUT$", "w", stderr);
+                setvbuf(stderr, NULL, _IONBF, 0);
+            }
+        }
+    }
 
     // Check if can run Engine on current platform (requires Windows Vista SP1 or above)
     if (!IsWindowsVistaSP1OrGreater() && !IsWindowsServer())
