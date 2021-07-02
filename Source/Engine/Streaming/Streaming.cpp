@@ -4,9 +4,11 @@
 #include "StreamableResource.h"
 #include "StreamingGroup.h"
 #include "StreamingSettings.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/TaskGraph.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Textures/GPUSampler.h"
@@ -14,7 +16,6 @@
 
 namespace StreamingManagerImpl
 {
-    DateTime LastUpdateTime(0);
     int32 LastUpdateResourcesIndex = 0;
     CriticalSection ResourcesLock;
     Array<StreamableResource*> Resources;
@@ -24,19 +25,31 @@ namespace StreamingManagerImpl
 
 using namespace StreamingManagerImpl;
 
-class StreamingManagerService : public EngineService
+class StreamingService : public EngineService
 {
 public:
-    StreamingManagerService()
-        : EngineService(TEXT("Streaming Manager"), 100)
+    StreamingService()
+        : EngineService(TEXT("Streaming"), 100)
     {
     }
 
-    void Update() override;
+    bool Init() override;
     void BeforeExit() override;
 };
 
-StreamingManagerService StreamingManagerServiceInstance;
+class StreamingSystem : public TaskGraphSystem
+{
+public:
+    void Job(int32 index);
+    void Execute(TaskGraph* graph) override;
+};
+
+namespace
+{
+    TaskGraphSystem* System = nullptr;
+}
+
+StreamingService StreamingServiceInstance;
 
 Array<TextureGroup, InlinedAllocation<32>> Streaming::TextureGroups;
 
@@ -176,26 +189,33 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
     // low mem should be updated once per a few frames
 }
 
-void StreamingManagerService::Update()
+bool StreamingService::Init()
 {
-    // Configuration
-    // TODO: use game settings
-    static TimeSpan ManagerUpdatesInterval = TimeSpan::FromMilliseconds(30);
-    static TimeSpan ResourceUpdatesInterval = TimeSpan::FromMilliseconds(100);
-    static int32 MaxResourcesPerUpdate = 50;
+    System = New<StreamingSystem>();
+    Engine::UpdateGraph->AddSystem(System);
+    return false;
+}
 
-    // Check if skip update
-    auto now = DateTime::NowUTC();
-    auto delta = now - LastUpdateTime;
-    ScopeLock lock(ResourcesLock);
-    const int32 resourcesCount = Resources.Count();
-    if (resourcesCount == 0 || delta < ManagerUpdatesInterval || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready)
-        return;
-    LastUpdateTime = now;
+void StreamingService::BeforeExit()
+{
+    SAFE_DELETE_GPU_RESOURCE(FallbackSampler);
+    SAFE_DELETE_GPU_RESOURCES(TextureGroupSamplers);
+    TextureGroupSamplers.Resize(0);
+    SAFE_DELETE(System);
+}
 
-    PROFILE_CPU();
+void StreamingSystem::Job(int32 index)
+{
+    PROFILE_CPU_NAMED("Streaming.Job");
+
+    // TODO: use streaming settings
+    TimeSpan ResourceUpdatesInterval = TimeSpan::FromMilliseconds(100);
+    int32 MaxResourcesPerUpdate = 50;
 
     // Start update
+    ScopeLock lock(ResourcesLock);
+    auto now = DateTime::NowUTC();
+    const int32 resourcesCount = Resources.Count();
     int32 resourcesUpdates = Math::Min(MaxResourcesPerUpdate, resourcesCount);
     double currentTime = Platform::GetTimeSeconds();
 
@@ -223,11 +243,15 @@ void StreamingManagerService::Update()
     // TODO: add StreamingManager stats, update time per frame, updates per frame, etc.
 }
 
-void StreamingManagerService::BeforeExit()
+void StreamingSystem::Execute(TaskGraph* graph)
 {
-    SAFE_DELETE_GPU_RESOURCE(FallbackSampler);
-    SAFE_DELETE_GPU_RESOURCES(TextureGroupSamplers);
-    TextureGroupSamplers.Resize(0);
+    if (Resources.Count() == 0 || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready)
+        return;
+
+    // Schedule work to update all storage containers in async
+    Function<void(int32)> job;
+    job.Bind<StreamingSystem, &StreamingSystem::Job>(this);
+    graph->DispatchJob(job, 1);
 }
 
 void Streaming::RequestStreamingUpdate()
