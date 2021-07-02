@@ -95,6 +95,12 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     Time = tickData.Time.GetTotalSeconds();
     UnscaledTime = tickData.UnscaledTime.GetTotalSeconds();
 
+#if USE_EDITOR
+    // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn;'t crash on highly multi-threaded code
+    if (Animations::DebugFlow.IsBinded())
+        Animations::DebugFlow(nullptr, nullptr, 0, 0);
+#endif
+
     // Schedule work to update all animated models in async
     Function<void(int32)> job;
     job.Bind<AnimationsSystem, &AnimationsSystem::Job>(this);
