@@ -409,7 +409,7 @@ bool MCore::LoadEngine()
             mono_trace_set_level_string("warning");
         }
 
-#if MONO_DEBUG_ENABLE
+#if MONO_DEBUG_ENABLE && !PLATFORM_SWITCH
         StringAnsi debuggerIp = "127.0.0.1";
         uint16 debuggerPort = 41000 + Platform::GetCurrentProcessId() % 1000;
         if (CommandLine::Options.DebuggerAddress.HasValue())
@@ -484,7 +484,15 @@ bool MCore::LoadEngine()
 	mono_dl_fallback_register(OnMonoLinuxDlOpen, OnMonoLinuxDlSym, nullptr, nullptr);
 #endif
 #endif
-    mono_config_parse(nullptr);
+    const char* configPath = nullptr;
+#if PLATFORM_SWITCH
+    MString configPathBuf = (Globals::MonoPath / TEXT("/etc/mono/config")).ToStringAnsi();
+    configPath = *configPathBuf;
+    const MString assembliesPath = (Globals::MonoPath / TEXT("/lib/mono/4.5")).ToStringAnsi();
+    //mono_set_assemblies_path(*assembliesPath);
+    //setenv("MONO_PATH", *assembliesPath, 1);
+#endif
+    mono_config_parse(configPath);
 
 #if USE_MONO_PROFILER
     // Init profiler

@@ -549,6 +549,7 @@ void EngineImpl::InitPaths()
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
 
+#if !PLATFORM_SWITCH
     // Setup directories
     if (FileSystem::DirectoryExists(Globals::TemporaryFolder))
         FileSystem::DeleteDirectory(Globals::TemporaryFolder);
@@ -559,6 +560,7 @@ void EngineImpl::InitPaths()
         if (FileSystem::CreateDirectory(Globals::TemporaryFolder))
             Platform::Fatal(TEXT("Cannot create temporary directory."));
     }
+#endif
 #if USE_EDITOR
     if (!FileSystem::DirectoryExists(Globals::ProjectContentFolder))
         FileSystem::CreateDirectory(Globals::ProjectContentFolder);

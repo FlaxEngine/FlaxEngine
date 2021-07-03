@@ -13,6 +13,8 @@
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #include <iostream>
 
+#define LOG_ENABLE_FILE (!PLATFORM_SWITCH)
+
 namespace
 {
     bool LogAfterInit = false, IsDuringLog = false;
@@ -169,7 +171,7 @@ void Log::Logger::Dispose()
 
 bool Log::Logger::IsLogEnabled()
 {
-#if LOG_ENABLE
+#if LOG_ENABLE && LOG_ENABLE_FILE
     return !CommandLine::Options.NoLog.HasValue();
 #else
 	return false;
