@@ -52,9 +52,9 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
         FileSystem::DirectoryGetFiles(config.Assemblies, dir, TEXT("*.dll"), DirectorySearchOption::TopDirectoryOnly);
     for (auto& binaryModule : data.BinaryModules)
         if (binaryModule.ManagedPath.HasChars())
-            config.Assemblies.Add(data.CodeOutputPath / binaryModule.ManagedPath);
+            config.Assemblies.Add(data.ManagedCodeOutputPath / binaryModule.ManagedPath);
     // TODO: move AOT to Flax.Build and perform it on all C# assemblies used in target build
-    config.Assemblies.Add(data.CodeOutputPath / TEXT("Newtonsoft.Json.dll"));
+    config.Assemblies.Add(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.dll"));
 
     // Perform AOT for the assemblies
     for (int32 i = 0; i < config.Assemblies.Count(); i++)

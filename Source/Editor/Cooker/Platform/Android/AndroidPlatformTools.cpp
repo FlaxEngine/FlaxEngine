@@ -105,7 +105,8 @@ void AndroidPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folder to be located inside the Gradle assets directory
     data.DataOutputPath /= TEXT("app/assets");
-    data.CodeOutputPath /= TEXT("app/assets");
+    data.NativeCodeOutputPath /= TEXT("app/assets");
+    data.ManagedCodeOutputPath /= TEXT("app/assets");
 
     PlatformTools::OnBuildStarted(data);
 }

@@ -158,9 +158,14 @@ struct FLAXENGINE_API CookingData
     String DataOutputPath;
 
     /// <summary>
-    /// The output path for binaries (executable and code libraries).
+    /// The output path for binaries (native executable and native code libraries).
     /// </summary>
-    String CodeOutputPath;
+    String NativeCodeOutputPath;
+
+    /// <summary>
+    /// The output path for binaries (C# code libraries).
+    /// </summary>
+    String ManagedCodeOutputPath;
 
     /// <summary>
     /// The platform tools.

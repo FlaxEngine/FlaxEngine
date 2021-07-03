@@ -25,7 +25,7 @@ bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
 {
     // Override Newtonsoft.Json.dll for some platforms (that don't support runtime code generation)
     const String customBinPath = data.GetPlatformBinariesRoot() / TEXT("Newtonsoft.Json.dll");
-    const String assembliesPath = data.CodeOutputPath;
+    const String assembliesPath = data.ManagedCodeOutputPath;
     if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
     {
         data.Error(TEXT("Failed to copy deploy custom assembly."));
