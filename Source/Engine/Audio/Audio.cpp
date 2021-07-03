@@ -18,6 +18,9 @@
 #if AUDIO_API_PS4
 #include "Platforms/PS4/Engine/Audio/AudioBackendPS4.h"
 #endif
+#if AUDIO_API_SWITCH
+#include "Platforms/Switch/Engine/Audio/AudioBackendSwitch.h"
+#endif
 #if AUDIO_API_OPENAL
 #include "OpenAL/AudioBackendOAL.h"
 #endif
@@ -187,6 +190,12 @@ bool AudioService::Init()
     if (!backend)
     {
         backend = New<AudioBackendPS4>();
+    }
+#endif
+#if AUDIO_API_SWITCH
+    if (!backend)
+    {
+        backend = New<AudioBackendSwitch>();
     }
 #endif
 #if AUDIO_API_OPENAL
