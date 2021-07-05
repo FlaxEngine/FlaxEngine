@@ -49,7 +49,6 @@ private:
     void OnBaseUnset();
     void OnBaseUnloaded(Asset* p);
     void OnBaseParamsChanged();
-    void OnUnload();
 
 public:
 
