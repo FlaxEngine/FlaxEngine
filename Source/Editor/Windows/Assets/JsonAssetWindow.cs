@@ -23,6 +23,11 @@ namespace FlaxEditor.Windows.Assets
         private object _object;
         private bool _isRegisteredForScriptsReload;
 
+        /// <summary>
+        /// Gets the instance of the Json asset object that is being edited.
+        /// </summary>
+        public object Instance => _object;
+
         /// <inheritdoc />
         public JsonAssetWindow(Editor editor, AssetItem item)
         : base(editor, item)

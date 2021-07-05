@@ -201,7 +201,6 @@ namespace FlaxEditor.Modules
                     return win;
                 }
             }
-
             return null;
         }
 
