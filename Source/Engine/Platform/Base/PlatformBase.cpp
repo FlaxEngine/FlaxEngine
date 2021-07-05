@@ -172,7 +172,7 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
     if (!ptr)
         return;
 
-#if TRACY_ENABLE
+#if TRACY_ENABLE && !USE_EDITOR
     // Track memory allocation in Tracy
     //tracy::Profiler::MemAlloc(ptr, size, false);
     tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
