@@ -66,7 +66,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Writes data of type <see cref="UInt64"/> into the message.
+        /// Writes data of type <see cref="Int64"/> into the message.
         /// </summary>
         public void WriteInt64(long value)
         {
@@ -74,7 +74,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Reads and returns data of type <see cref="UInt64"/> from the message.
+        /// Reads and returns data of type <see cref="Int64"/> from the message.
         /// </summary>
         public long ReadInt64()
         {
@@ -84,7 +84,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Writes data of type <see cref="UInt32"/> into the message.
+        /// Writes data of type <see cref="Int32"/> into the message.
         /// </summary>
         public void WriteInt32(int value)
         {
@@ -92,7 +92,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Reads and returns data of type <see cref="UInt32"/> from the message.
+        /// Reads and returns data of type <see cref="Int32"/> from the message.
         /// </summary>
         public int ReadInt32()
         {
@@ -102,7 +102,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Writes data of type <see cref="UInt16"/> into the message.
+        /// Writes data of type <see cref="Int16"/> into the message.
         /// </summary>
         public void WriteInt16(short value)
         {
@@ -110,7 +110,7 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
-        /// Reads and returns data of type <see cref="UInt16"/> from the message.
+        /// Reads and returns data of type <see cref="Int16"/> from the message.
         /// </summary>
         public short ReadInt16()
         {
