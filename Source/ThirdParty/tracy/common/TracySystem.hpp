@@ -59,6 +59,7 @@ public:
     ~ScopedZone();
 
     void Text( const char* txt, size_t size );
+    void Text( const Char* txt, size_t size );
     void Name( const char* txt, size_t size );
     void Name( const Char* txt, size_t size );
     void Color( uint32_t color );

@@ -588,6 +588,7 @@ void EngineImpl::InitMainWindow()
         return;
     }
 #endif
+    PROFILE_CPU_NAMED("Engine::InitMainWindow");
 
     // Create window
     Engine::MainWindow = Application::CreateMainWindow();

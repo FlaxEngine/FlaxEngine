@@ -112,6 +112,22 @@ inline void ScopedZone::Text( const char* txt, size_t size )
     TracyLfqCommit;
 }
 
+inline void ScopedZone::Text(const Char* txt, size_t size)
+{
+    assert( size < std::numeric_limits<uint16_t>::max() );
+    if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
+    auto ptr = (char*)tracy_malloc( size );
+    for( int i = 0; i < size; i++)
+        ptr[i] = (char)txt[i];
+    TracyLfqPrepare( QueueType::ZoneText );
+    MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+    MemWrite( &item->zoneTextFat.size, (uint16_t)size );
+    TracyLfqCommit;
+}
+
 inline void ScopedZone::Name( const char* txt, size_t size )
 {
     assert( size < std::numeric_limits<uint16_t>::max() );

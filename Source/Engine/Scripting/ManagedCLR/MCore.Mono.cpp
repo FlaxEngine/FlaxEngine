@@ -342,6 +342,7 @@ static void* OnMonoLinuxDlSym(void* handle, const char* name, char** err, void* 
 
 bool MCore::LoadEngine()
 {
+    PROFILE_CPU();
     ASSERT(Globals::MonoPath.IsANSI());
 
 #if 0
@@ -609,16 +610,19 @@ void MCore::ExitThread()
 
 void MCore::GC::Collect()
 {
+    PROFILE_CPU();
     mono_gc_collect(mono_gc_max_generation());
 }
 
 void MCore::GC::Collect(int32 generation)
 {
+    PROFILE_CPU();
     mono_gc_collect(generation);
 }
 
 void MCore::GC::WaitForPendingFinalizers()
 {
+    PROFILE_CPU();
     if (mono_gc_pending_finalizers())
     {
         mono_gc_finalize_notify();

@@ -409,6 +409,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
 
 bool Scripting::Load()
 {
+    PROFILE_CPU();
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 
@@ -472,6 +473,7 @@ bool Scripting::Load()
 
 void Scripting::Release()
 {
+    PROFILE_CPU();
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 
@@ -718,7 +720,6 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
 {
     if (!id.IsValid())
         return nullptr;
-
     PROFILE_CPU();
 
     // Try to map object id
@@ -798,7 +799,6 @@ ScriptingObject* Scripting::FindObject(const MonoObject* managedInstance)
 {
     if (managedInstance == nullptr)
         return nullptr;
-
     PROFILE_CPU();
 
     // TODO: optimize it by reading the unmanagedPtr or _internalId from managed Object property

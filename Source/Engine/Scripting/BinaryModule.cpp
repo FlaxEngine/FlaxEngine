@@ -4,6 +4,7 @@
 #include "ScriptingObject.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MType.h"
@@ -589,6 +590,7 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
 
 void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 {
+    PROFILE_CPU();
     for (ScriptingType& type : Types)
     {
         type.InitRuntime();
@@ -597,6 +599,7 @@ void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 
 void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 {
+    PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
 
     const auto& classes = assembly->GetClasses();
@@ -750,6 +753,8 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 
 void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
 {
+    PROFILE_CPU();
+
     // Clear managed-only types
     for (int32 i = _firstManagedTypeIndex; i < Types.Count(); i++)
     {

@@ -17,6 +17,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
@@ -49,9 +50,10 @@ String MAssembly::ToString() const
 
 bool MAssembly::Load(const String& assemblyPath)
 {
-    // Skip if already loaded
     if (IsLoaded())
         return false;
+    PROFILE_CPU();
+    ZoneText(*assemblyPath, assemblyPath.Length());
 
     // Check file path
     if (!FileSystem::FileExists(assemblyPath))
@@ -83,9 +85,13 @@ bool MAssembly::Load(const String& assemblyPath)
 
 bool MAssembly::Load(MonoImage* monoImage)
 {
-    // Skip if already loaded
     if (IsLoaded())
         return false;
+    PROFILE_CPU();
+#if TRACY_ENABLE
+    const StringAnsiView monoImageName(mono_image_get_name(monoImage));
+    ZoneText(*monoImageName, monoImageName.Length());
+#endif
 
     // Ensure to be unloaded
     Unload();
@@ -114,6 +120,7 @@ void MAssembly::Unload(bool isReloading)
 {
     if (!IsLoaded())
         return;
+    PROFILE_CPU();
 
     Unloading(this);
 
@@ -223,6 +230,11 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
+    PROFILE_CPU();
+#if TRACY_ENABLE
+    const StringAnsiView monoImageName(mono_image_get_name(_monoImage));
+    ZoneText(*monoImageName, monoImageName.Length());
+#endif
     ScopeLock lock(_locker);
     if (_hasCachedClasses)
         return _classes;

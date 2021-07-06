@@ -328,6 +328,8 @@ FoliageType* Foliage::GetFoliageType(int32 index)
 
 void Foliage::AddFoliageType(Model* model)
 {
+    PROFILE_CPU();
+
     // Ensure to have unique model
     CHECK(model);
     for (int32 i = 0; i < FoliageTypes.Count(); i++)
@@ -352,6 +354,8 @@ void Foliage::AddFoliageType(Model* model)
 
 void Foliage::RemoveFoliageType(int32 index)
 {
+    PROFILE_CPU();
+
     // Remove instances using this foliage type
     if (FoliageTypes.Count() != 1)
     {
