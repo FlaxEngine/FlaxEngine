@@ -11,13 +11,14 @@
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 
-void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv)
+void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
     auto context = params.GPUContext;
     auto cache = params.RenderContext.List;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    auto& data = *(Data*)cb;
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 dirLightShaderRegisterIndex = srv + 2;
@@ -116,16 +117,17 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, byte*& 
         }
     }
 
-    cb += sizeof(Data);
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
 }
 
-bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv)
+bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    auto& data = *(Data*)cb;
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
 
     const bool useLightmap = view.Flags & ViewFlags::GI
 #if USE_EDITOR
@@ -145,8 +147,8 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, in
         data.LightmapArea = drawCall.Features.LightmapUVsArea;
     }
 
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
-    cb += sizeof(Data);
     return useLightmap;
 }
 

@@ -309,7 +309,7 @@ public:
         /// <summary>
         /// The pointer to the constants buffer in the memory.
         /// </summary>
-        byte* Constants;
+        Span<byte> Constants;
 
         /// <summary>
         /// The input scene color. It's optional and used in forward/postFx rendering.

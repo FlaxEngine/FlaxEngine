@@ -317,28 +317,36 @@ void MaterialParameter::Bind(BindMeta& meta) const
     switch (_type)
     {
     case MaterialParameterType::Bool:
-        *((int32*)(meta.Constants + _offset)) = _asBool;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(bool));
+        *((int32*)(meta.Constants.Get() + _offset)) = _asBool;
         break;
     case MaterialParameterType::Integer:
-        *((int32*)(meta.Constants + _offset)) = _asInteger;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(int32));
+        *((int32*)(meta.Constants.Get() + _offset)) = _asInteger;
         break;
     case MaterialParameterType::Float:
-        *((float*)(meta.Constants + _offset)) = _asFloat;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(float));
+        *((float*)(meta.Constants.Get() + _offset)) = _asFloat;
         break;
     case MaterialParameterType::Vector2:
-        *((Vector2*)(meta.Constants + _offset)) = _asVector2;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
+        *((Vector2*)(meta.Constants.Get() + _offset)) = _asVector2;
         break;
     case MaterialParameterType::Vector3:
-        *((Vector3*)(meta.Constants + _offset)) = _asVector3;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
+        *((Vector3*)(meta.Constants.Get() + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *((Vector4*)(meta.Constants + _offset)) = *(Vector4*)&AsData;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
+        *((Vector4*)(meta.Constants.Get() + _offset)) = *(Vector4*)&AsData;
         break;
     case MaterialParameterType::Color:
-        *((Color*)(meta.Constants + _offset)) = _asColor;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
+        *((Color*)(meta.Constants.Get() + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
-        Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants + _offset));
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Matrix));
+        Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants.Get() + _offset));
         break;
     case MaterialParameterType::NormalMap:
     {
@@ -415,7 +423,8 @@ void MaterialParameter::Bind(BindMeta& meta) const
         break;
     }
     case MaterialParameterType::ChannelMask:
-        *((Vector4*)(meta.Constants + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(int32));
+        *((Vector4*)(meta.Constants.Get() + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
         break;
     case MaterialParameterType::GameplayGlobal:
         if (_asAsset)
@@ -426,26 +435,33 @@ void MaterialParameter::Bind(BindMeta& meta) const
                 switch (e->Value.Type.Type)
                 {
                 case VariantType::Bool:
-                    *((bool*)(meta.Constants + _offset)) = e->Value.AsBool;
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(bool));
+                    *((bool*)(meta.Constants.Get() + _offset)) = e->Value.AsBool;
                     break;
                 case VariantType::Int:
-                    *((int32*)(meta.Constants + _offset)) = e->Value.AsInt;
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(int32));
+                    *((int32*)(meta.Constants.Get() + _offset)) = e->Value.AsInt;
                     break;
                 case VariantType::Uint:
-                    *((uint32*)(meta.Constants + _offset)) = e->Value.AsUint;
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(uint32));
+                    *((uint32*)(meta.Constants.Get() + _offset)) = e->Value.AsUint;
                     break;
                 case VariantType::Float:
-                    *((float*)(meta.Constants + _offset)) = e->Value.AsFloat;
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(float));
+                    *((float*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat;
                     break;
                 case VariantType::Vector2:
-                    *((Vector2*)(meta.Constants + _offset)) = e->Value.AsVector2();
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
+                    *((Vector2*)(meta.Constants.Get() + _offset)) = e->Value.AsVector2();
                     break;
                 case VariantType::Vector3:
-                    *((Vector3*)(meta.Constants + _offset)) = e->Value.AsVector3();
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
+                    *((Vector3*)(meta.Constants.Get() + _offset)) = e->Value.AsVector3();
                     break;
                 case VariantType::Vector4:
                 case VariantType::Color:
-                    *((Vector4*)(meta.Constants + _offset)) = e->Value.AsVector4();
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
+                    *((Vector4*)(meta.Constants.Get() + _offset)) = e->Value.AsVector4();
                     break;
                 default: ;
                 }
