@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../Collections/Array.h"
+#include "Engine/Core/Math/Math.h"
 
 /// <summary>
 /// Template for dynamic array with variable capacity that uses fixed size memory chunks for data storage rather than linear allocation.

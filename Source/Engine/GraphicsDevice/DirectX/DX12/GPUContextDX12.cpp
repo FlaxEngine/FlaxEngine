@@ -1371,6 +1371,7 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
         if (srcTextureDX12->IsStaging() || dstTextureDX12->IsStaging())
         {
             Log::NotImplementedException(TEXT("Copy region of staging resources is not supported yet."));
+            return;
         }
 
         // Create copy locations structures
