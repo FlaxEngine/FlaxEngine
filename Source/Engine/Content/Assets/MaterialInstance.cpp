@@ -115,16 +115,6 @@ void MaterialInstance::OnBaseParamsChanged()
     ParamsChanged();
 }
 
-void MaterialInstance::OnUnload()
-{
-    if (_baseMaterial)
-    {
-        OnBaseUnset();
-        _baseMaterial = nullptr;
-    }
-    Params.Dispose();
-}
-
 bool MaterialInstance::IsMaterialInstance() const
 {
     return true;
@@ -242,7 +232,12 @@ Asset::LoadResult MaterialInstance::load()
 
 void MaterialInstance::unload(bool isReloading)
 {
-    OnUnload();
+    if (_baseMaterial)
+    {
+        OnBaseUnset();
+        _baseMaterial = nullptr;
+    }
+    Params.Dispose();
 }
 
 AssetChunksFlag MaterialInstance::getChunksToPreload() const

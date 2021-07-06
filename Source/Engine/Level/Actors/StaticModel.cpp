@@ -193,6 +193,8 @@ void StaticModel::UpdateBounds()
         _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 bool StaticModel::HasContentLoaded() const
@@ -245,7 +247,7 @@ void StaticModel::Draw(RenderContext& renderContext)
         draw.DrawState = &_drawState;
         draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         draw.LightmapUVs = &Lightmap.UVsArea;
-        draw.Flags = GetStaticFlags();
+        draw.Flags = _staticFlags;
         draw.DrawModes = drawModes;
         draw.Bounds = _sphere;
         draw.PerInstanceRandom = GetPerInstanceRandom();

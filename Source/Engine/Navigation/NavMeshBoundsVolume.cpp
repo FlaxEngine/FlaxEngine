@@ -37,12 +37,12 @@ void NavMeshBoundsVolume::OnEnable()
     // Base
     Actor::OnEnable();
 
-    GetScene()->NavigationVolumes.Add(this);
+    GetScene()->Navigation.Volumes.Add(this);
 }
 
 void NavMeshBoundsVolume::OnDisable()
 {
-    GetScene()->NavigationVolumes.Remove(this);
+    GetScene()->Navigation.Volumes.Remove(this);
 
     // Base
     Actor::OnDisable();

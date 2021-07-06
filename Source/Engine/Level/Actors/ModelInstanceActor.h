@@ -12,6 +12,10 @@
 API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
 {
 DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
+protected:
+
+    int32 _sceneRenderingKey = -1;
+
 public:
 
     /// <summary>
@@ -78,6 +82,11 @@ public:
     {
         return false;
     }
+
+public:
+
+    // [Actor]
+    void OnLayerChanged() override;
 
 protected:
 

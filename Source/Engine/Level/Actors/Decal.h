@@ -18,6 +18,7 @@ private:
     Vector3 _size;
     OrientedBoundingBox _bounds;
     Matrix _world;
+    int32 _sceneRenderingKey = -1;
 
 public:
 
@@ -77,6 +78,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     void Draw(RenderContext& renderContext) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

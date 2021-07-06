@@ -16,6 +16,7 @@ private:
 
     Vector3 _direction;
     float _radius;
+    int32 _sceneRenderingKey = -1;
 
 public:
 
@@ -101,6 +102,7 @@ public:
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;

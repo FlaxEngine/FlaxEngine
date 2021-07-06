@@ -21,6 +21,7 @@ private:
     float _cosOuterCone;
     float _cosInnerCone;
     float _invCosConeDifference;
+    int32 _sceneRenderingKey = -1;
 
 public:
 

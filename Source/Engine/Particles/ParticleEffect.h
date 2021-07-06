@@ -184,6 +184,7 @@ private:
     uint64 _lastUpdateFrame;
     float _lastMinDstSqr;
     Matrix _world;
+    int32 _sceneRenderingKey = -1;
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
@@ -388,6 +389,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 #if USE_EDITOR

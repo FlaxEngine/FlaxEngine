@@ -156,14 +156,14 @@ void NavMesh::OnEnable()
     // Base
     Actor::OnEnable();
 
-    GetScene()->NavigationMeshes.Add(this);
+    GetScene()->Navigation.Meshes.Add(this);
     AddTiles();
 }
 
 void NavMesh::OnDisable()
 {
     RemoveTiles();
-    GetScene()->NavigationMeshes.Remove(this);
+    GetScene()->Navigation.Meshes.Remove(this);
 
     // Base
     Actor::OnDisable();

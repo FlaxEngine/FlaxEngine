@@ -15,7 +15,9 @@ PointLight::PointLight(const SpawnParams& params)
     ShadowsDistance = 2000.0f;
     ShadowsFadeDistance = 100.0f;
     ShadowsDepthBias = 0.5f;
-    UpdateBounds();
+    _direction = Vector3::Forward;
+    _sphere = BoundingSphere(Vector3::Zero, _radius);
+    BoundingBox::FromSphere(_sphere, _box);
 }
 
 float PointLight::ComputeBrightness() const
@@ -62,11 +64,14 @@ void PointLight::UpdateBounds()
     // Cache bounding box
     _sphere = BoundingSphere(GetPosition(), GetScaledRadius());
     BoundingBox::FromSphere(_sphere, _box);
+
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
 }
 
 void PointLight::OnEnable()
 {
-    GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -80,7 +85,7 @@ void PointLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this);
+    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();
@@ -156,6 +161,12 @@ void PointLight::OnDebugDrawSelected()
 }
 
 #endif
+
+void PointLight::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+}
 
 void PointLight::Serialize(SerializeStream& stream, const void* otherObj)
 {

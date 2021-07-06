@@ -329,6 +329,8 @@ void TextRender::UpdateLayout()
     _localBox = box;
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 bool TextRender::HasContentLoaded() const
@@ -421,6 +423,12 @@ void TextRender::OnDebugDrawSelected()
 
 #endif
 
+void TextRender::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+}
+
 bool TextRender::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
 {
 #if USE_PRECISE_MESH_INTERSECTS
@@ -480,8 +488,6 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
 
 void TextRender::OnEnable()
 {
-    GetSceneRendering()->AddGeometry(this);
-
     // Base
     Actor::OnEnable();
 
@@ -489,6 +495,7 @@ void TextRender::OnEnable()
     {
         UpdateLayout();
     }
+    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 }
 
 void TextRender::OnDisable()
@@ -498,7 +505,7 @@ void TextRender::OnDisable()
         _isLocalized = false;
         Localization::LocalizationChanged.Unbind<TextRender, &TextRender::UpdateLayout>(this);
     }
-    GetSceneRendering()->RemoveGeometry(this);
+    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
@@ -512,4 +519,6 @@ void TextRender::OnTransformChanged()
     _transform.GetWorld(_world);
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }

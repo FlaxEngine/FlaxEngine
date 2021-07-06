@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Config.h"
+#include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/ISerializable.h"
 
@@ -86,6 +87,18 @@ public:
     /// The shared model instance entries.
     /// </summary>
     ModelInstanceEntries Entries;
+    
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+    /// <summary>
+    /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
+    /// </summary>
+    FoliageCluster* Root = nullptr;
+
+    /// <summary>
+    /// The allocated foliage clusters. It's read-only.
+    /// </summary>
+    ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE> Clusters;
+#endif
 
 public:
 
@@ -206,7 +219,6 @@ public:
     /// <summary>
     /// Determines whether this instance is ready (model is loaded).
     /// </summary>
-    /// <returns><c>true</c> if foliage type model is loaded and instance type is ready; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsReady() const
     {
         return _isReady != 0;
@@ -215,7 +227,6 @@ public:
     /// <summary>
     /// Gets the random scale for the foliage instance of this type.
     /// </summary>
-    /// <returns>The scale vector.</returns>
     Vector3 GetRandomScale() const;
 
 private:

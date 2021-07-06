@@ -4,6 +4,8 @@
 
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Level/Actor.h"
 #include "Engine/Level/Types.h"
 
 class SceneRenderTask;
@@ -14,7 +16,7 @@ struct RenderView;
 /// <summary>
 /// Interface for actors that can override the default rendering settings (eg. PostFxVolume actor).
 /// </summary>
-class IPostFxSettingsProvider
+class FLAXENGINE_API IPostFxSettingsProvider
 {
 public:
 
@@ -35,24 +37,37 @@ public:
 /// <summary>
 /// Scene rendering helper subsystem that boosts the level rendering by providing efficient objects cache and culling implementation.
 /// </summary>
-class SceneRendering
+class FLAXENGINE_API SceneRendering
 {
     friend Scene;
-
 #if USE_EDITOR
     typedef Function<void(RenderView&)> PhysicsDebugCallback;
+    friend class ViewportIconsRendererService;
 #endif
+    struct DrawEntry
+    {
+        Actor* Actor;
+        uint32 LayerMask;
+        BoundingSphere Bounds;
+    };
+
+    struct DrawEntries
+    {
+        Array<DrawEntry> List;
+
+        int32 Add(Actor* obj);
+        void Update(Actor* obj, int32 key);
+        void Remove(Actor* obj, int32 key);
+        void Clear();
+        void CullAndDraw(RenderContext& renderContext);
+        void CullAndDrawOffline(RenderContext& renderContext);
+    };
 
 private:
 
-    // Private data
     Scene* Scene;
-
-public:
-
-    // Things to draw
-    Array<Actor*> Geometry;
-    Array<Actor*> Common;
+    DrawEntries Geometry;
+    DrawEntries Common;
     Array<Actor*> CommonNoCulling;
     Array<IPostFxSettingsProvider*> PostFxProviders;
 #if USE_EDITOR
@@ -83,24 +98,36 @@ public:
 
 public:
 
-    FORCE_INLINE void AddGeometry(Actor* obj)
+    FORCE_INLINE int32 AddGeometry(Actor* obj)
     {
-        Geometry.Add(obj);
+        return Geometry.Add(obj);
     }
 
-    FORCE_INLINE void RemoveGeometry(Actor* obj)
+    FORCE_INLINE void UpdateGeometry(Actor* obj, int32 key)
     {
-        Geometry.Remove(obj);
+        Geometry.Update(obj, key);
     }
 
-    FORCE_INLINE void AddCommon(Actor* obj)
+    FORCE_INLINE void RemoveGeometry(Actor* obj, int32& key)
     {
-        Common.Add(obj);
+        Geometry.Remove(obj, key);
+        key = -1;
     }
 
-    FORCE_INLINE void RemoveCommon(Actor* obj)
+    FORCE_INLINE int32 AddCommon(Actor* obj)
     {
-        Common.Remove(obj);
+        return Common.Add(obj);
+    }
+
+    FORCE_INLINE void UpdateCommon(Actor* obj, int32 key)
+    {
+        Common.Update(obj, key);
+    }
+
+    FORCE_INLINE void RemoveCommon(Actor* obj, int32& key)
+    {
+        Common.Remove(obj, key);
+        key = -1;
     }
 
     FORCE_INLINE void AddCommonNoCulling(Actor* obj)

@@ -469,6 +469,17 @@ public:
     /// <summary>
     /// Adds the specified item to the collection.
     /// </summary>
+    /// <param name="item">The item to add.</param>
+    void Add(T&& item)
+    {
+        EnsureCapacity(_count + 1);
+        Memory::MoveItems(_allocation.Get() + _count, &item, 1);
+        _count++;
+    }
+
+    /// <summary>
+    /// Adds the specified item to the collection.
+    /// </summary>
     /// <param name="items">The items to add.</param>
     /// <param name="count">The items count.</param>
     void Add(const T* items, int32 count)

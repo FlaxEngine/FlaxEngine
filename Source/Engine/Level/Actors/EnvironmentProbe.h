@@ -16,6 +16,7 @@ private:
 
     float _radius;
     bool _isUsingCustomProbe;
+    int32 _sceneRenderingKey = -1;
     AssetReference<CubeTexture> _probe;
 
 public:
@@ -138,6 +139,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
+    void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
