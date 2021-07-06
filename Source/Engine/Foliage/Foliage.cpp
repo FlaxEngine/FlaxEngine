@@ -496,34 +496,33 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
 {
     if (_disableFoliageTypeEvents)
         return;
-    ASSERT(index >= 0 && index < FoliageTypes.Count());
-    auto type = &FoliageTypes[index];
-    ASSERT(type->IsReady());
-
-    // TODO: maybe deffer OnFoliageTypeModelLoaded handling to game logic update because many foliage types may fire it during the same frame - save some CPU time
-
     PROFILE_CPU();
+    auto& type = FoliageTypes[index];
+    ASSERT(type.IsReady());
 
     // Update bounds for instances using this type
     bool hasAnyInstance = false;
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+    BoundingBox totalBoundsType, box;
+#endif
     {
         PROFILE_CPU_NAMED("Update Bounds");
-
         Vector3 corners[8];
-        auto& meshes = type->Model->LODs[0].Meshes;
+        auto& meshes = type.Model->LODs[0].Meshes;
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
             auto& instance = *i;
             if (instance.Type != index)
                 continue;
             instance.Bounds = BoundingSphere::Empty;
-            hasAnyInstance = true;
 
             // Include all meshes
             for (int32 j = 0; j < meshes.Count(); j++)
             {
+                // TODO: cache bounds for all model meshes and reuse later
                 meshes[j].GetCorners(corners);
 
+                // TODO: use SIMD
                 for (int32 k = 0; k < 8; k++)
                 {
                     Vector3::Transform(corners[k], instance.World, corners[k]);
@@ -531,15 +530,66 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
                 BoundingSphere meshBounds;
                 BoundingSphere::FromPoints(corners, 8, meshBounds);
                 ASSERT(meshBounds.Radius > ZeroTolerance);
-
                 BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
             }
+
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+            // TODO: use SIMD
+            BoundingBox::FromSphere(instance.Bounds, box);
+            if (hasAnyInstance)
+                BoundingBox::Merge(totalBoundsType, box, totalBoundsType);
+            else
+                totalBoundsType = box;
+#endif
+            hasAnyInstance = true;
         }
     }
     if (!hasAnyInstance)
         return;
 
+    // Refresh quad-tree
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
     RebuildClusters();
+#else
+    {
+        PROFILE_CPU_NAMED("Setup");
+
+        // Setup first and topmost cluster
+        type.Clusters.Resize(1);
+        type.Root = &type.Clusters[0];
+        type.Root->Init(totalBoundsType);
+
+        // Update bounds of the foliage
+        _box = totalBoundsType;
+        for (auto& e : FoliageTypes)
+        {
+            if (e.Index != index && e.Root)
+                BoundingBox::Merge(_box, e.Root->Bounds, _box);
+        }
+        BoundingSphere::FromBox(_box, _sphere);
+        if (_sceneRenderingKey != -1)
+            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+    }
+    {
+        PROFILE_CPU_NAMED("Create Clusters");
+
+        // Create clusters for foliage type quad tree
+        const float globalDensityScale = GetGlobalDensityScale();
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+        {
+            auto& instance = *i;
+            const float densityScale = type.UseDensityScaling ? globalDensityScale * type.DensityScalingScale : 1.0f;
+            if (instance.Type == index && instance.Random < densityScale)
+            {
+                AddToCluster(type.Clusters, type.Root, instance);
+            }
+        }
+    }
+    {
+        PROFILE_CPU_NAMED("Update Cache");
+        type.Root->UpdateTotalBoundsAndCullDistance();
+    }
+#endif
 }
 
 void Foliage::RebuildClusters()
@@ -547,10 +597,10 @@ void Foliage::RebuildClusters()
     PROFILE_CPU();
 
     // Faster path if foliage is empty or no types is ready
-    bool anyTypeValid = false;
+    bool anyTypeReady = false;
     for (auto& type : FoliageTypes)
-        anyTypeValid |= type.IsReady();
-    if (!anyTypeValid || Instances.IsEmpty())
+        anyTypeReady |= type.IsReady();
+    if (!anyTypeReady || Instances.IsEmpty())
     {
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
         Root = nullptr;
