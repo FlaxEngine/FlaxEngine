@@ -70,12 +70,6 @@ inline uint32 GetHash(const void* key)
     return (uint32)((int64)(key) >> shift);
 }
 
-inline uint32 GetHash(void* key)
-{
-    static const int64 shift = 3;
-    return (uint32)((int64)(key) >> shift);
-}
-
 template<typename EnumType>
 inline typename TEnableIf<TIsEnum<EnumType>::Value, uint32>::Type GetHash(const EnumType key)
 {
