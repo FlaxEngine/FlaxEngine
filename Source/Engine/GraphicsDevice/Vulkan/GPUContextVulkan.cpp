@@ -6,6 +6,7 @@
 #include "CmdBufferVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Rectangle.h"
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
@@ -13,7 +14,8 @@
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
 #include "GPUTextureVulkan.h"
-#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Debug/Exceptions/NotImplementedException.h"
 
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(VkDispatchIndirectCommand), "Wrong size of GPUDrawIndirectArgs.");
@@ -1554,15 +1556,127 @@ void GPUContextVulkan::CopyResource(GPUResource* dstResource, GPUResource* srcRe
     }
     else
     {
-        // TODO: implement it
-        MISSING_CODE("GPUContextVulkan::CopyResource");
+        Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
     }
 }
 
 void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource)
 {
-    // TODO: implement it
-    MISSING_CODE("GPUContextVulkan::CopySubresource");
+    ASSERT(dstResource && srcResource);
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+
+    // Ensure to end active render pass
+    if (cmdBuffer->IsInsideRenderPass())
+        EndRenderPass();
+
+    auto dstTextureVulkan = static_cast<GPUTextureVulkan*>(dstResource);
+    auto srcTextureVulkan = static_cast<GPUTextureVulkan*>(srcResource);
+
+    auto dstBufferVulkan = static_cast<GPUBufferVulkan*>(dstResource);
+    auto srcBufferVulkan = static_cast<GPUBufferVulkan*>(srcResource);
+
+    auto srcType = srcResource->GetObjectType();
+    auto dstType = dstResource->GetObjectType();
+
+    // Buffer -> Buffer
+    if (srcType == GPUResource::ObjectType::Buffer && dstType == GPUResource::ObjectType::Buffer)
+    {
+        ASSERT(dstSubresource == 0 && srcSubresource == 0);
+
+        // Transition resources
+        AddBufferBarrier(dstBufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
+        AddBufferBarrier(srcBufferVulkan, VK_ACCESS_TRANSFER_READ_BIT);
+        FlushBarriers();
+
+        // Copy
+        VkBufferCopy bufferCopy;
+        bufferCopy.srcOffset = 0;
+        bufferCopy.dstOffset = 0;
+        bufferCopy.size = srcBufferVulkan->GetSize();
+        ASSERT(bufferCopy.size == dstBufferVulkan->GetSize());
+        vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
+    }
+        // Texture -> Texture
+    else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
+    {
+        const int32 dstMipMaps = dstTextureVulkan->MipLevels();
+        const int32 dstMipIndex = dstSubresource % dstMipMaps;
+        const int32 dstArrayIndex = dstSubresource / dstMipMaps;
+        const int32 srcMipMaps = srcTextureVulkan->MipLevels();
+        const int32 srcMipIndex = srcSubresource % srcMipMaps;
+        const int32 srcArrayIndex = srcSubresource / srcMipMaps;
+
+        if (dstTextureVulkan->IsStaging())
+        {
+            // Staging Texture -> Staging Texture
+            if (srcTextureVulkan->IsStaging())
+            {
+                ASSERT(dstTextureVulkan->StagingBuffer && srcTextureVulkan->StagingBuffer);
+                CopyResource(dstTextureVulkan->StagingBuffer, srcTextureVulkan->StagingBuffer);
+            }
+                // Texture -> Staging Texture
+            else
+            {
+                // Transition resources
+                ASSERT(dstTextureVulkan->StagingBuffer);
+                AddBufferBarrier(dstTextureVulkan->StagingBuffer, VK_ACCESS_TRANSFER_WRITE_BIT);
+                AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                FlushBarriers();
+
+                // Copy
+                int32 copyOffset = 0;
+                uint32 subResourceCount = 0;
+                for (int32 arraySlice = 0; arraySlice < dstTextureVulkan->ArraySize() && subResourceCount < dstSubresource; arraySlice++)
+                {
+                    for (int32 mipLevel = 0; mipLevel < dstMipMaps && subResourceCount < dstSubresource; mipLevel++)
+                    {
+                        // TODO: pitch/slice alignment on Vulkan?
+                        copyOffset += dstTextureVulkan->ComputeSubresourceSize(mipLevel, 1, 1);
+                        subResourceCount++;
+                    }
+                }
+                VkBufferImageCopy region;
+                region.bufferOffset = copyOffset;
+                region.bufferRowLength = Math::Max<uint32_t>(dstTextureVulkan->Width() >> dstMipIndex, 1);
+                region.bufferImageHeight = Math::Max<uint32_t>(dstTextureVulkan->Height() >> dstMipIndex, 1);
+                region.imageOffset = { 0, 0, 0 };
+                region.imageExtent = { Math::Max<uint32_t>(srcTextureVulkan->Width() >> srcMipIndex, 1), Math::Max<uint32_t>(srcTextureVulkan->Height() >> srcMipIndex, 1), Math::Max<uint32_t>(srcTextureVulkan->Depth() >> srcMipIndex, 1) };
+                region.imageSubresource.baseArrayLayer = srcArrayIndex;
+                region.imageSubresource.layerCount = 1;
+                region.imageSubresource.mipLevel = srcMipIndex;
+                region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                vkCmdCopyImageToBuffer(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->StagingBuffer->GetHandle(), 1, &region);
+            }
+        }
+        else
+        {
+            // Transition resources
+            AddImageBarrier(dstTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            FlushBarriers();
+
+            // Copy
+            int32 mipWidth, mipHeight, mipDepth;
+            srcTextureVulkan->GetMipSize(srcMipIndex, mipWidth, mipHeight, mipDepth);
+            VkImageCopy region;;
+            region.extent = { Math::Max<uint32_t>(mipWidth, 1), Math::Max<uint32_t>(mipWidth, 1), Math::Max<uint32_t>(mipDepth, 1) };
+            region.srcOffset = { 0, 0, 0 };
+            region.srcSubresource.baseArrayLayer = srcArrayIndex;
+            region.srcSubresource.layerCount = 1;
+            region.srcSubresource.mipLevel = srcMipIndex;
+            region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.dstOffset = { 0, 0, 0 };
+            region.dstSubresource.baseArrayLayer = dstArrayIndex;
+            region.dstSubresource.layerCount = 1;
+            region.dstSubresource.mipLevel = dstMipIndex;
+            region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            vkCmdCopyImage(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        }
+    }
+    else
+    {
+        Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
+    }
 }
 
 #endif
