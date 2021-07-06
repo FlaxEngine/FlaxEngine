@@ -16,7 +16,7 @@ namespace FlaxEngine.Networking
         public void WriteBytes(byte* bytes, int length)
         {
             Assert.IsTrue(Position + length <= BufferSize, $"Could not write data of length {length} into message with id={MessageId}! Current write position={Position}");
-            Utils.MemoryCopy(new IntPtr(bytes), new IntPtr(Buffer + Position), (ulong)length);
+            Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(bytes), (ulong)length);
             Position += (uint)length;
             Length = Position;
         }
