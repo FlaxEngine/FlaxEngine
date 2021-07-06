@@ -348,11 +348,9 @@ void AtmospherePreComputeService::Update()
 
         // Init service
         if (!_shader)
-        {
             _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AtmospherePreCompute"));
-            if (_shader && !_shader->IsLoaded())
-                return;
-        }
+        if (_shader && !_shader->IsLoaded())
+            return;
         if (init())
         {
             LOG(Fatal, "Cannot setup Atmosphere Pre Compute!");

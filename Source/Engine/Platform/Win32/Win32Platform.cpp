@@ -150,16 +150,10 @@ bool Win32Platform::Init()
     CpuInfo.L1CacheSize = processorL1CacheSize;
     CpuInfo.L2CacheSize = processorL2CacheSize;
     CpuInfo.L3CacheSize = processorL3CacheSize;
-
-    // Get page size
     SYSTEM_INFO siSysInfo;
     GetSystemInfo(&siSysInfo);
     CpuInfo.PageSize = siSysInfo.dwPageSize;
-
-    // Get clock speed
-    CpuInfo.ClockSpeed = GetClockFrequency();
-
-    // Get cache line size
+    CpuInfo.ClockSpeed = ClockFrequency;
     {
         int args[4];
         __cpuid(args, 0x80000006);

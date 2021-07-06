@@ -986,25 +986,17 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
 #endif
 
     // Register asset
-    {
-        AssetsLocker.Lock();
-
+    ASSERT(result->GetID() == id);
+    AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-        // Asset id has to be unique
-        if (Assets.ContainsKey(id))
-        {
-            CRASH;
-        }
-
-#endif
-
-        // Add to the list
-        ASSERT(result->GetID() == id);
-        Assets.Add(id, result);
-
-        AssetsLocker.Unlock();
+    // Asset id has to be unique
+    if (Assets.ContainsKey(id))
+    {
+        CRASH;
     }
+#endif
+    Assets.Add(id, result);
+    AssetsLocker.Unlock();
 
     // Start asset loading
     result->startLoading();
