@@ -32,7 +32,7 @@ namespace FlaxEngine.Networking
         public void ReadBytes(byte* buffer, int length)
         {
             Assert.IsTrue(Position + length <= Length, $"Could not read data of length {length} from message with id={MessageId} and size of {Length}B! Current read position={Position}");
-            Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(buffer), (ulong)length);
+            Utils.MemoryCopy(new IntPtr(buffer), new IntPtr(Buffer + Position), (ulong)length);
             Position += (uint)length;
         }
 
