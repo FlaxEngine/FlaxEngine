@@ -579,8 +579,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     GPUTextureView* localShadowedLightScattering = nullptr;
     {
         // Get lights to render
-        Array<const RendererPointLightData*> pointLights;
-        Array<const RendererSpotLightData*> spotLights;
+        Array<const RendererPointLightData*, InlinedAllocation<64, RenderListAllocation>> pointLights;
+        Array<const RendererSpotLightData*, InlinedAllocation<64, RenderListAllocation>> spotLights;
         for (int32 i = 0; i < renderContext.List->PointLights.Count(); i++)
         {
             const auto& light = renderContext.List->PointLights[i];

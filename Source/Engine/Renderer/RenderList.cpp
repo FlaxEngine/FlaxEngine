@@ -31,6 +31,14 @@ namespace
     Array<uint64> SortingKeys[2];
     Array<int32> SortingIndices;
     Array<RenderList*> FreeRenderList;
+
+    struct MemPoolEntry
+    {
+        void* Ptr;
+        uintptr Size;
+    };
+
+    Array<MemPoolEntry> MemPool;
 }
 
 void RendererDirectionalLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
@@ -101,6 +109,30 @@ void RendererSkyLightData::SetupLightData(LightData* data, const RenderView& vie
     data->RadiusInv = 1.0f / Radius;
 }
 
+void* RenderListAllocation::Allocate(uintptr size)
+{
+    void* result = nullptr;
+    for (int32 i = 0; i < MemPool.Count(); i++)
+    {
+        if (MemPool[i].Size == size)
+        {
+            result = MemPool[i].Ptr;
+            MemPool.RemoveAt(i);
+            break;
+        }
+    }
+    if (!result)
+    {
+        result = Platform::Allocate(size, 16);
+    }
+    return result;
+}
+
+void RenderListAllocation::Free(void* ptr, uintptr size)
+{
+    MemPool.Add({ ptr, size });
+}
+
 RenderList* RenderList::GetFromPool()
 {
     if (FreeRenderList.HasItems())
@@ -132,6 +164,9 @@ void RenderList::CleanupCache()
     SortingKeys[1].Resize(0);
     SortingIndices.Resize(0);
     FreeRenderList.ClearDelete();
+    for (auto& e : MemPool)
+        Platform::Free(e.Ptr);
+    MemPool.Clear();
 }
 
 bool RenderList::BlendableSettings::operator<(const BlendableSettings& other) const
