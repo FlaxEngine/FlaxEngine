@@ -371,12 +371,14 @@ namespace FlaxEditor.Modules
         /// <param name="fullCleanup">True if cleanup all data (including serialized and cached data). Otherwise will just clear living references to the scene objects.</param>
         public void ClearRefsToSceneObjects(bool fullCleanup = false)
         {
+            Profiler.BeginEvent("SceneModule.ClearRefsToSceneObjects");
             Editor.SceneEditing.Deselect();
 
             if (fullCleanup)
             {
                 Undo.Clear();
             }
+            Profiler.EndEvent();
         }
 
         private void OnSceneLoaded(Scene scene, Guid sceneId)

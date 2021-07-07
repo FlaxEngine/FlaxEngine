@@ -37,6 +37,7 @@
 #include "Engine/Utilities/Encryption.h"
 #include "Engine/Navigation/Navigation.h"
 #include "Engine/Particles/ParticleEmitter.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
@@ -1007,11 +1008,16 @@ public:
 
     static void DeserializeSceneObject(SceneObject* sceneObject, MonoString* jsonObj)
     {
+        PROFILE_CPU_NAMED("DeserializeSceneObject");
+
         StringAnsi json;
         MUtils::ToString(jsonObj, json);
 
         rapidjson_flax::Document document;
-        document.Parse(json.Get(), json.Length());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            document.Parse(json.Get(), json.Length());
+        }
         if (document.HasParseError())
         {
             Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -1022,7 +1028,10 @@ public:
         modifier->EngineBuild = FLAXENGINE_VERSION_BUILD;
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
 
-        sceneObject->Deserialize(document, modifier.Value);
+        {
+            PROFILE_CPU_NAMED("Deserialize");
+            sceneObject->Deserialize(document, modifier.Value);
+        }
     }
 
     static void LoadAsset(Guid* id)

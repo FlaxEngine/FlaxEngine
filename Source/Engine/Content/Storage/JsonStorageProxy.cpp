@@ -8,6 +8,7 @@
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Level/Types.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/rapidjson/document.h>
 
 bool JsonStorageProxy::IsValidExtension(const StringView& extension)
@@ -17,6 +18,7 @@ bool JsonStorageProxy::IsValidExtension(const StringView& extension)
 
 bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, String& resultDataTypeName)
 {
+    PROFILE_CPU();
     // TODO: we could just open file and start reading until we find 'ID:..' without parsing whole file - could be much more faster
 
     // Load file
@@ -28,7 +30,10 @@ bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, Stri
 
     // Parse data
     rapidjson_flax::Document document;
-    document.Parse((const char*)fileData.Get(), fileData.Count());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse((const char*)fileData.Get(), fileData.Count());
+    }
     if (document.HasParseError())
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), path);
@@ -81,6 +86,7 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
 bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
 {
 #if USE_EDITOR
+    PROFILE_CPU();
 
     // Load file
     Array<byte> fileData;
@@ -91,7 +97,10 @@ bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
 
     // Parse data
     rapidjson_flax::Document document;
-    document.Parse((const char*)fileData.Get(), fileData.Count());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse((const char*)fileData.Get(), fileData.Count());
+    }
     if (document.HasParseError())
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset(), path);

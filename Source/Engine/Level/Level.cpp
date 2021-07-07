@@ -496,6 +496,7 @@ public:
         // - load scenes (from temporary files)
         // Note: we don't want to override original scene files
 
+        PROFILE_CPU_NAMED("Level.ReloadScripts");
         LOG(Info, "Scripts reloading start");
         const auto startTime = DateTime::NowUTC();
 
@@ -565,7 +566,10 @@ public:
             // Parse json
             const auto& sceneData = scenes[i].Data;
             ISerializable::SerializeDocument document;
-            document.Parse(sceneData.GetString(), sceneData.GetSize());
+            {
+                PROFILE_CPU_NAMED("Json.Parse");
+                document.Parse(sceneData.GetString(), sceneData.GetSize());
+            }
             if (document.HasParseError())
             {
                 LOG(Error, "Failed to deserialize scene {0}. Result: {1}", scenes[i].Name, GetParseError_En(document.GetParseError()));
@@ -851,7 +855,10 @@ bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scen
 
     // Parse scene JSON file
     rapidjson_flax::Document document;
-    document.Parse(sceneData.Get<char>(), sceneData.Length());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse(sceneData.Get<char>(), sceneData.Length());
+    }
     if (document.HasParseError())
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -869,9 +876,7 @@ bool Level::loadScene(rapidjson_flax::Document& document, bool autoInitialize, S
         LOG(Error, "Missing Data member.");
         return true;
     }
-
     const int32 saveEngineBuild = JsonTools::GetInt(document, "EngineBuild", 0);
-
     return loadScene(data->value, saveEngineBuild, autoInitialize, outScene);
 }
 

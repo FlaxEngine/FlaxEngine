@@ -259,7 +259,10 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
 
     // Parse Json data
     rapidjson_flax::Document document;
-    document.Parse((char*)fileData.Get(), fileData.Count());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse((char*)fileData.Get(), fileData.Count());
+    }
     if (document.HasParseError())
     {
         LOG(Error, "Failed to file contents.");

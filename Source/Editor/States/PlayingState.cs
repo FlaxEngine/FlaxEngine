@@ -87,15 +87,18 @@ namespace FlaxEditor.States
 
         private void CacheSelection()
         {
+            Profiler.BeginEvent("PlayingState.CacheSelection");
             _selectedObjects.Clear();
             for (int i = 0; i < Editor.SceneEditing.Selection.Count; i++)
             {
                 _selectedObjects.Add(Editor.SceneEditing.Selection[i].ID);
             }
+            Profiler.EndEvent();
         }
 
         private void RestoreSelection()
         {
+            Profiler.BeginEvent("PlayingState.RestoreSelection");
             var count = Editor.SceneEditing.Selection.Count;
             Editor.SceneEditing.Selection.Clear();
             for (int i = 0; i < _selectedObjects.Count; i++)
@@ -106,6 +109,7 @@ namespace FlaxEditor.States
             }
             if (Editor.SceneEditing.Selection.Count != count)
                 Editor.SceneEditing.OnSelectionChanged();
+            Profiler.EndEvent();
         }
 
         /// <inheritdoc />
@@ -114,6 +118,7 @@ namespace FlaxEditor.States
         /// <inheritdoc />
         public override void OnEnter()
         {
+            Profiler.BeginEvent("PlayingState.OnEnter");
             Editor.OnPlayBeginning();
 
             CacheSelection();
@@ -137,6 +142,7 @@ namespace FlaxEditor.States
             RestoreSelection();
 
             Editor.OnPlayBegin();
+            Profiler.EndEvent();
         }
 
         private void SetupEditorEnvOptions()
@@ -156,6 +162,7 @@ namespace FlaxEditor.States
         /// <inheritdoc />
         public override void OnExit(State nextState)
         {
+            Profiler.BeginEvent("PlayingState.OnExit");
             IsPaused = true;
 
             // Remove references to the scene objects
@@ -178,6 +185,7 @@ namespace FlaxEditor.States
             RestoreSelection();
 
             Editor.OnPlayEnd();
+            Profiler.EndEvent();
         }
     }
 }

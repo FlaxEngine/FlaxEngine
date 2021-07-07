@@ -85,18 +85,22 @@ namespace FlaxEngine
 #if FLAX_EDITOR
         internal static void InitializeGamePlugins()
         {
+            Profiler.BeginEvent("PluginManager.InitializeGamePlugins");
             for (var i = 0; i < _gamePlugins.Count; i++)
             {
                 InvokeInitialize(_gamePlugins[i]);
             }
+            Profiler.EndEvent();
         }
 
         internal static void DeinitializeGamePlugins()
         {
+            Profiler.BeginEvent("PluginManager.DeinitializeGamePlugins");
             for (var i = _gamePlugins.Count - 1; i >= 0; i--)
             {
                 InvokeDeinitialize(_gamePlugins[i]);
             }
+            Profiler.EndEvent();
         }
 #endif
 

@@ -16,6 +16,7 @@
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Utilities/StringConverter.h"
 
@@ -31,6 +32,7 @@ String JsonAssetBase::GetData() const
 {
     if (Data == nullptr)
         return String::Empty;
+    PROFILE_CPU_NAMED("JsonAsset.GetData");
 
     // Get serialized data
     rapidjson_flax::StringBuffer buffer;
@@ -133,7 +135,10 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 #endif
 
     // Parse json document
-    Document.Parse(data.Get<char>(), data.Length());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        Document.Parse(data.Get<char>(), data.Length());
+    }
     if (Document.HasParseError())
     {
         Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());

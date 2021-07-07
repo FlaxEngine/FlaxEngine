@@ -19,6 +19,7 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Streaming/StreamingSettings.h"
 
 class GameSettingsService : public EngineService
@@ -74,6 +75,7 @@ GameSettings* GameSettings::Get()
     {
         // Load root game settings asset.
         // It may be missing in editor during dev but must be ready in the build game.
+        PROFILE_CPU();
         const auto assetPath = Globals::ProjectContentFolder / TEXT("GameSettings.json");
         GameSettingsAsset = Content::LoadAsync<JsonAsset>(assetPath);
         if (GameSettingsAsset == nullptr)
@@ -99,6 +101,8 @@ GameSettings* GameSettings::Get()
 
 bool GameSettings::Load()
 {
+    PROFILE_CPU();
+
     // Load main settings asset
     auto settings = Get();
     if (!settings)
@@ -143,7 +147,7 @@ bool GameSettings::Load()
 
 void GameSettings::Apply()
 {
-    // TODO: impl this
+    PROFILE_CPU();
 #define APPLY_SETTINGS(type) \
     { \
         type* obj = type::Get(); \

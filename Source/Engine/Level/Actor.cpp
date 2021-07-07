@@ -1599,7 +1599,10 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
         // Load JSON 
         rapidjson_flax::Document document;
-        document.Parse(buffer, bufferSize);
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            document.Parse(buffer, bufferSize);
+        }
         if (document.HasParseError())
         {
             Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -1638,7 +1641,10 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
         // Load JSON 
         rapidjson_flax::Document document;
-        document.Parse(buffer, bufferSize);
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            document.Parse(buffer, bufferSize);
+        }
         if (document.HasParseError())
         {
             Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -1763,7 +1769,10 @@ void Actor::FromJson(const StringAnsiView& json)
 
     // Load JSON
     rapidjson_flax::Document document;
-    document.Parse(json.Get(), json.Length());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse(json.Get(), json.Length());
+    }
     if (document.HasParseError())
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());

@@ -217,7 +217,10 @@ void PrefabInstanceData::SerializePrefabInstances(Array<PrefabInstanceData>& pre
         writer.EndArray();
 
         // Parse json to get DOM
-        instance.Data.Parse(tmpBuffer.GetString(), tmpBuffer.GetSize());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            instance.Data.Parse(tmpBuffer.GetString(), tmpBuffer.GetSize());
+        }
         if (instance.Data.HasParseError())
         {
             LOG(Warning, "Failed to parse serialized scene objects data.");
@@ -462,7 +465,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
         writer.EndArray();
 
         // Parse json to get DOM
-        defaultInstanceData.Parse(tmpBuffer.GetString(), tmpBuffer.GetSize());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            defaultInstanceData.Parse(tmpBuffer.GetString(), tmpBuffer.GetSize());
+        }
         if (defaultInstanceData.HasParseError())
         {
             LOG(Warning, "Failed to parse serialized scene objects data.");
@@ -666,7 +672,10 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
     newPrefabInstanceIdToDataIndex.EnsureCapacity(ObjectsCount * 4);
     {
         // Parse json to DOM document
-        diffDataDocument.Parse(dataBuffer.GetString(), dataBuffer.GetSize());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            diffDataDocument.Parse(dataBuffer.GetString(), dataBuffer.GetSize());
+        }
         if (diffDataDocument.HasParseError())
         {
             LOG(Warning, "Failed to parse serialized scene objects data.");
