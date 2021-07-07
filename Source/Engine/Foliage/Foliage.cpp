@@ -968,7 +968,9 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
     stream.JKEY("Instances");
     stream.StartArray();
     InstanceEncoded enc;
-    char base64[InstanceEncoded::Base64Size];
+    char base64[InstanceEncoded::Base64Size + 2];
+    base64[0] = '\"';
+    base64[InstanceEncoded::Base64Size + 1] = '\"';
     for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
     {
         auto& instance = *i;
@@ -978,9 +980,9 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
         enc.Transform = instance.Transform;
         enc.Lightmap = instance.Lightmap;
 
-        Encryption::Base64Encode((const byte*)&enc, sizeof(enc), base64);
+        Encryption::Base64Encode((const byte*)&enc, sizeof(enc), base64 + 1);
 
-        stream.String(base64, InstanceEncoded::Base64Size);
+        stream.RawValue(base64, InstanceEncoded::Base64Size + 2);
     }
     stream.EndArray();
 }
