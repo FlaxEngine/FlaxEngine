@@ -251,6 +251,20 @@ void StreamingSystem::Execute(TaskGraph* graph)
     graph->DispatchJob(job, 1);
 }
 
+StreamingStats Streaming::GetStats()
+{
+    StreamingStats stats;
+    ResourcesLock.Lock();
+    stats.ResourcesCount = Resources.Count();
+    for (auto e : Resources)
+    {
+        if (e->Streaming.TargetResidency > e->GetCurrentResidency())
+            stats.StreamingResourcesCount++;
+    }
+    ResourcesLock.Unlock();
+    return stats;
+}
+
 void Streaming::RequestStreamingUpdate()
 {
     PROFILE_CPU();
