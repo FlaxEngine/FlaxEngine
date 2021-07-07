@@ -157,7 +157,7 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
             int32 Length;
         } AsBlob;
 
-        Dictionary<Variant, Variant>* AsDictionary;
+        Dictionary<Variant, Variant, HeapAllocation>* AsDictionary;
 
         byte AsData[16];
     };
@@ -222,7 +222,7 @@ public:
     explicit Variant(const Matrix& v);
     Variant(Array<Variant, HeapAllocation>&& v);
     Variant(const Array<Variant, HeapAllocation>& v);
-    explicit Variant(const Dictionary<Variant, Variant>& v);
+    explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
     explicit Variant(const CommonValue& v);
 
     ~Variant();

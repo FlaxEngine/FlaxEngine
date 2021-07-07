@@ -83,7 +83,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(PrefabManager);
     /// <param name="objectsCache">The options output objects cache that can be filled with prefab object id mapping to deserialized object (actor or script).</param>
     /// <param name="withSynchronization">True if perform prefab changes synchronization for the spawned objects. It will check if need to add new objects due to nested prefab modifications.</param>
     /// <returns>The created actor (root) or null if failed.</returns>
-    static Actor* SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization = false);
+    static Actor* SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*, HeapAllocation>* objectsCache, bool withSynchronization = false);
 
 #if USE_EDITOR
 
@@ -118,7 +118,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(PrefabManager);
     /// <summary>
     /// The prefabs references mapping table. Maps the prefab asset id to the collection of the root actors of the prefab instances.
     /// </summary>
-    static Dictionary<Guid, Array<Actor*, HeapAllocation>> PrefabsReferences;
+    static Dictionary<Guid, Array<Actor*, HeapAllocation>, HeapAllocation> PrefabsReferences;
 
     /// <summary>
     /// Locks PrefabsReferences to be used in a multi threaded environment.

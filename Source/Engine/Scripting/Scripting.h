@@ -111,7 +111,7 @@ public:
 
 public:
 
-    typedef Dictionary<Guid, Guid> IdsMappingTable;
+    typedef Dictionary<Guid, Guid, HeapAllocation> IdsMappingTable;
 
     /// <summary>
     /// The objects lookup identifier mapping used to override the object ids on FindObject call (used by the object references deserialization).

@@ -293,7 +293,7 @@ public:
     /// <summary>
     /// The scripting types cache that maps the managed class to the scripting type index. Build after assembly is loaded and scripting types get the managed classes information.
     /// </summary>
-    Dictionary<MonoClass*, int32> ClassToTypeIndex;
+    Dictionary<MonoClass*, int32, HeapAllocation> ClassToTypeIndex;
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);

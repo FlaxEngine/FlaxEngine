@@ -129,7 +129,7 @@ public:
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
-    FORCE_INLINE Array(Array&& other) noexcept
+    Array(Array&& other) noexcept
     {
         _count = other._count;
         _capacity = other._capacity;
@@ -896,9 +896,7 @@ public:
     struct Iterator
     {
         friend Array;
-
     private:
-
         Array* _array;
         int32 _index;
 
@@ -928,6 +926,12 @@ public:
         {
         }
 
+        Iterator(Iterator&& i)
+            : _array(i._array)
+            , _index(i._index)
+        {
+        }
+
     public:
 
         FORCE_INLINE Array* GetArray() const
@@ -940,25 +944,15 @@ public:
             return _index;
         }
 
-    public:
-
-        /// <summary>
-        /// Checks if iterator is in the end of the collection.
-        /// </summary>
         FORCE_INLINE bool IsEnd() const
         {
             return _index == _array->Count();
         }
 
-        /// <summary>
-        /// Checks if iterator is not in the end of the collection.
-        /// </summary>
         FORCE_INLINE bool IsNotEnd() const
         {
             return _index != _array->Count();
         }
-
-    public:
 
         FORCE_INLINE T& operator*() const
         {

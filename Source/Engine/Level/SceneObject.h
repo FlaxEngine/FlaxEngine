@@ -39,7 +39,7 @@ public:
 /// <summary>
 /// The actors collection lookup type (id -> actor).
 /// </summary>
-typedef Dictionary<Guid, Actor*> ActorsLookup;
+typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 
 #define DECLARE_SCENE_OBJECT(type) \
     DECLARE_SCRIPTING_TYPE(type)

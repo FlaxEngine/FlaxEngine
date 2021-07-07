@@ -95,7 +95,7 @@ template<typename T, typename AllocationType>
 class Array;
 template<typename T, typename U>
 class Pair;
-template<typename KeyType, typename ValueType>
+template<typename KeyType, typename ValueType, typename AllocationType>
 class Dictionary;
 template<typename>
 class Function;

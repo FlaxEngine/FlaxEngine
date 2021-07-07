@@ -868,7 +868,7 @@ public:
     /// <param name="data">The input data.</param>
     /// <param name="idsMapping">The serialized objects Ids mapping. Can be used to convert the spawned objects ids and references to them.</param>
     /// <returns>The output actors.</returns>
-    API_FUNCTION() static Array<Actor*> FromBytes(const Span<byte>& data, const Dictionary<Guid, Guid>& idsMapping);
+    API_FUNCTION() static Array<Actor*> FromBytes(const Span<byte>& data, const Dictionary<Guid, Guid, HeapAllocation>& idsMapping);
 
     /// <summary>
     /// Tries the get serialized objects ids from the raw bytes.

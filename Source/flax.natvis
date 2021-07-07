@@ -41,19 +41,19 @@
 		</Expand>
 	</Type>
 	
-  <!-- Dictionary<Key, Value> -->
-	<Type Name="Dictionary&lt;*,*&gt;">
-		<DisplayString>{{ Size={_elementsCount} Capacity={_tableSize} }}</DisplayString>
+  <!-- Dictionary<Key, Value, HeapAllocation> -->
+	<Type Name="Dictionary&lt;*,*,*&gt;">
+		<DisplayString>{{ Size={_elementsCount} Capacity={_size} }}</DisplayString>
 		<Expand>
 			<Item Name="[Size]" ExcludeView="simple">_elementsCount</Item>
-			<Item Name="[Capacity]" ExcludeView="simple">_tableSize</Item>
+			<Item Name="[Capacity]" ExcludeView="simple">_size</Item>
       <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
         <Variable Name="i" InitialValue="0" />
         <Size>_elementsCount</Size>
         <Loop>
-          <Break Condition="i == _tableSize" />
-          <If Condition="_table[i]._state == 2">  
-            <Item>_table[i]</Item>
+          <Break Condition="i == _size" />
+          <If Condition="_allocation._data[i]._state == 2">  
+            <Item>_allocation._data[i]</Item>
           </If>
           <Exec>i++</Exec>
         </Loop>

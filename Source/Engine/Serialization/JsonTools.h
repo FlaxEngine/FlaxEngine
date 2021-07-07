@@ -46,7 +46,7 @@ public:
             target.AddMember(itr->name, itr->value, allocator);
     }
 
-    static void ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping);
+    static void ChangeIds(Document& doc, const Dictionary<Guid, Guid, HeapAllocation>& mapping);
 
 public:
 

@@ -121,7 +121,7 @@ public:
     /// Gets the raw dictionary of assets (loaded or during load).
     /// </summary>
     /// <returns>The collection of assets.</returns>
-    static const Dictionary<Guid, Asset*>& GetAssetsRaw();
+    static const Dictionary<Guid, Asset*, HeapAllocation>& GetAssetsRaw();
 
     /// <summary>
     /// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.

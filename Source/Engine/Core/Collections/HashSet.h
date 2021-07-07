@@ -423,8 +423,6 @@ public:
     {
         if (Capacity() >= minCapacity)
             return;
-
-        // TODO: improve this, better collection growing and shrinking on remove
         int32 num = Capacity() == 0 ? DICTIONARY_DEFAULT_CAPACITY : Capacity() * 2;
         SetCapacity(Math::Clamp<int32>(num, minCapacity, MAX_int32 - 1410));
     }
