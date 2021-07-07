@@ -45,6 +45,8 @@ int32 SceneRendering::DrawEntries::Add(Actor* obj)
 
 void SceneRendering::DrawEntries::Update(Actor* obj, int32 key)
 {
+    if (List.IsEmpty())
+        return;
     auto& e = List[key];
     ASSERT_LOW_LAYER(obj == e.Actor);
     e.LayerMask = obj->GetLayerMask();
