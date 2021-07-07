@@ -14,7 +14,7 @@ class AudioBackend
     friend AudioBackend;
     friend class AudioService;
 
-private:
+public:
 
     static AudioBackend* Instance;
 

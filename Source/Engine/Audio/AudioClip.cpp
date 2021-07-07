@@ -413,6 +413,8 @@ Asset::LoadResult AudioClip::load()
         return LoadResult::MissingDataChunk;
 
     // Create single buffer
+    if (!AudioBackend::Instance)
+        return LoadResult::Failed;
     uint32 bufferId;
     AudioBackend::Buffer::Create(bufferId);
     Buffers[0] = bufferId;
