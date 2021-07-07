@@ -12,6 +12,20 @@ class FlaxFile;
 class IAssetFactory;
 class AssetsCache;
 
+// Content and assets statistics container.
+API_STRUCT() struct FLAXENGINE_API ContentStats
+{
+DECLARE_SCRIPTING_TYPE_MINIMAL(ContentStats);
+    // Amount of asset objects in memory.
+    API_FIELD() int32 AssetsCount = 0;
+    // Amount of loaded assets.
+    API_FIELD() int32 LoadedAssetsCount = 0;
+    // Amount of loading assets.
+    API_FIELD() int32 LoadingAssetsCount = 0;
+    // Amount of virtual assets (don't have representation in file).
+    API_FIELD() int32 VirtualAssetsCount = 0;
+};
+
 /// <summary>
 /// Loads and manages assets.
 /// </summary>
@@ -92,10 +106,9 @@ public:
 public:
 
     /// <summary>
-    /// Gets amount of the assets (in memory).
+    /// Gets content statistics.
     /// </summary>
-    /// <returns>Amount of assets in the assets.</returns>
-    API_PROPERTY() static int32 GetAssetCount();
+    API_PROPERTY() static ContentStats GetStats();
 
     /// <summary>
     /// Gets the assets (loaded or during load).
