@@ -292,6 +292,30 @@ namespace FlaxEditor
             }
             _areModulesInited = true;
 
+            // Preload initial scene asset
+            {
+                var startupSceneMode = Options.Options.General.StartupSceneMode;
+                if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
+                    startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
+                switch (startupSceneMode)
+                {
+                case GeneralOptions.StartupSceneModes.ProjectDefault:
+                {
+                    if (string.IsNullOrEmpty(GameProject.DefaultScene))
+                        break;
+                    JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
+                    Internal_LoadAsset(ref defaultSceneId);
+                    break;
+                }
+                case GeneralOptions.StartupSceneModes.LastOpened:
+                {
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
+                        Internal_LoadAsset(ref lastSceneId);
+                    break;
+                }
+                }
+            }
+
             InitializationStart?.Invoke();
 
             // Start Editor initialization ending phrase (will wait for scripts compilation result)
@@ -1417,6 +1441,9 @@ namespace FlaxEditor
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_DeserializeSceneObject(IntPtr sceneObject, string json);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void Internal_LoadAsset(ref Guid id);
 
         #endregion
     }

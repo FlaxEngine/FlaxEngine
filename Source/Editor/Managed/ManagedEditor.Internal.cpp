@@ -1025,6 +1025,11 @@ public:
         sceneObject->Deserialize(document, modifier.Value);
     }
 
+    static void LoadAsset(Guid* id)
+    {
+        Content::LoadAsync<Asset>(*id);
+    }
+
     static void InitRuntime()
     {
         ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &IsDevInstance);
@@ -1070,6 +1075,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", &GetVisualScriptPreviousScopeFrame);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EvaluateVisualScriptLocal);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &DeserializeSceneObject);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &LoadAsset);
     }
 };
 
