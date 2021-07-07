@@ -51,7 +51,7 @@ ThreadPoolService ThreadPoolServiceInstance;
 bool ThreadPoolService::Init()
 {
     // Spawn threads
-    const int32 numThreads = Math::Max<int32>(2, Platform::GetCPUInfo().ProcessorCoreCount - 1);
+    const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT);
     LOG(Info, "Spawning {0} Thread Pool workers", numThreads);
     for (int32 i = ThreadPoolImpl::Threads.Count(); i < numThreads; i++)
     {

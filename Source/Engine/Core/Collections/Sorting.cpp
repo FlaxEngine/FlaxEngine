@@ -4,7 +4,7 @@
 #include "Engine/Threading/ThreadLocal.h"
 
 // Use a cached storage for the sorting (one per thread to reduce locking)
-ThreadLocal<Sorting::SortingStack, 64> SortingStacks;
+ThreadLocal<Sorting::SortingStack> SortingStacks;
 
 Sorting::SortingStack& Sorting::SortingStack::Get()
 {

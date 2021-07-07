@@ -116,7 +116,7 @@ public:
     /// <summary>
     /// The objects lookup identifier mapping used to override the object ids on FindObject call (used by the object references deserialization).
     /// </summary>
-    static ThreadLocal<IdsMappingTable*, 32, true> ObjectsLookupIdMapping;
+    static ThreadLocal<IdsMappingTable*, PLATFORM_THREADS_LIMIT, true> ObjectsLookupIdMapping;
 
     /// <summary>
     /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.

@@ -7,7 +7,7 @@
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 
-ThreadLocal<ParticleEmitterGraphCPUContext, 64> ParticleEmitterGraphCPUExecutor::Context;
+ThreadLocal<ParticleEmitterGraphCPUContext> ParticleEmitterGraphCPUExecutor::Context;
 
 namespace
 {

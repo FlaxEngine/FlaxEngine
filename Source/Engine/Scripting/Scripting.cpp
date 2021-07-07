@@ -112,7 +112,7 @@ Action Scripting::ScriptsLoaded;
 Action Scripting::ScriptsUnload;
 Action Scripting::ScriptsReloading;
 Action Scripting::ScriptsReloaded;
-ThreadLocal<Scripting::IdsMappingTable*, 32, true> Scripting::ObjectsLookupIdMapping;
+ThreadLocal<Scripting::IdsMappingTable*, PLATFORM_THREADS_LIMIT, true> Scripting::ObjectsLookupIdMapping;
 ScriptingService ScriptingServiceInstance;
 
 bool initFlaxEngine();

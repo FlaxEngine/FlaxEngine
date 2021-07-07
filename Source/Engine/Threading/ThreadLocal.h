@@ -5,16 +5,14 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Threading.h"
-
-// Maximum amount of threads with an access to the thread local variable (we use static limit due to engine threading design)
-#define THREAD_LOCAL_MAX_CAPACITY 16
+#include "Engine/Platform/Platform.h"
 
 /// <summary>
 /// Per-thread local variable storage.
 /// Implemented using atomic with per-thread storage indexed via thread id hashing.
 /// ForConsider using 'THREADLOCAL' define before the variable instead.
 /// </summary>
-template<typename T, int32 MaxThreads = THREAD_LOCAL_MAX_CAPACITY, bool ClearMemory = true>
+template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT, bool ClearMemory = true>
 class ThreadLocal
 {
 protected:
@@ -104,7 +102,7 @@ protected:
 /// <summary>
 /// Per thread local object
 /// </summary>
-template<typename T, int32 MaxThreads = THREAD_LOCAL_MAX_CAPACITY>
+template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT>
 class ThreadLocalObject : public ThreadLocal<T*, MaxThreads>
 {
 public:

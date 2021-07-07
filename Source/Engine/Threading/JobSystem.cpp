@@ -85,7 +85,7 @@ public:
 namespace
 {
     JobSystemService JobSystemInstance;
-    Thread* Threads[32] = {};
+    Thread* Threads[PLATFORM_THREADS_LIMIT] = {};
     int32 ThreadsCount = 0;
     bool JobStartingOnDispatch = true;
     volatile int64 ExitFlag = 0;

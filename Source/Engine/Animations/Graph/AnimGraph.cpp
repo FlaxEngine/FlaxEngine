@@ -6,7 +6,7 @@
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
 
-ThreadLocal<AnimGraphContext, 64> AnimGraphExecutor::Context;
+ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
 
 RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
 

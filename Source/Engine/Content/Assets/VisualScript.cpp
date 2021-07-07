@@ -30,7 +30,7 @@ namespace
         VisualScripting::StackFrame* Stack;
     };
 
-    ThreadLocal<VisualScriptThread, 32> ThreadStacks;
+    ThreadLocal<VisualScriptThread> ThreadStacks;
     VisualScriptingBinaryModule VisualScriptingModule;
     VisualScriptExecutor VisualScriptingExecutor;
 
