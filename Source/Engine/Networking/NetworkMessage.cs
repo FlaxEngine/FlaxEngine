@@ -276,6 +276,24 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
+        /// Writes data of type <see cref="Guid"/> into the message.
+        /// </summary>
+        public void WriteGuid(Guid value)
+        {
+            WriteBytes((byte*)&value, sizeof(Guid));
+        }
+
+        /// <summary>
+        /// Reads and returns data of type <see cref="Guid"/> from the message.
+        /// </summary>
+        public Guid ReadGuid()
+        {
+            var guidData = stackalloc Guid[1];
+            ReadBytes((byte*)guidData, sizeof(Guid));
+            return guidData[0];
+        }
+
+        /// <summary>
         /// Writes data of type <see cref="Vector2"/> into the message.
         /// </summary>
         public void WriteVector2(Vector2 value)

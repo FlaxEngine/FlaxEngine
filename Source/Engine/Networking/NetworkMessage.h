@@ -201,6 +201,24 @@ public:
         ReadBytes((uint8*)value.Get(), length * sizeof(wchar_t));
         return value;
     }
+    
+    /// <summary>
+    /// Writes data of type Guid into the message.
+    /// </summary>
+    FORCE_INLINE void WriteGuid(const Guid& value)
+    {
+        WriteBytes((uint8*)&value, sizeof(Guid));
+    }
+
+    /// <summary>
+    /// Reads and returns data of type Guid from the message.
+    /// </summary>
+    FORCE_INLINE Guid ReadGuid()
+    {
+        Guid value = Guid();
+        ReadBytes((uint8*)&value, sizeof(Guid));
+        return value;
+    }
 
 public:
     /// <summary>
