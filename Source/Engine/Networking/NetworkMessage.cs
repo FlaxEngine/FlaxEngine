@@ -253,8 +253,11 @@ namespace FlaxEngine.Networking
             // Note: Make sure that this is consistent with the C++ message API!
             
             var data = Encoding.Unicode.GetBytes(value);
-            WriteUInt16((ushort)data.Length); // TODO: Use 1-byte length when possible
-            WriteBytes(data, data.Length * sizeof(ushort));
+            var dataLength = data.Length;
+            var stringLength = value.Length;
+            
+            WriteUInt16((ushort)stringLength); // TODO: Use 1-byte length when possible
+            WriteBytes(data, dataLength);
         }
 
         /// <summary>
@@ -265,10 +268,11 @@ namespace FlaxEngine.Networking
             // Note: Make sure that this is consistent with the C++ message API!
             
             var stringLength = ReadUInt16(); // In chars
-            var stringSize = stringLength * sizeof(ushort); // In bytes
-            var bytes = stackalloc char[stringSize];
-            ReadBytes((byte*)bytes, stringSize);
-            return new string(bytes);
+            var dataLength = stringLength * sizeof(char); // In bytes
+            var bytes = stackalloc char[stringLength];
+            
+            ReadBytes((byte*)bytes, dataLength);
+            return new string(bytes, 0, stringLength);
         }
 
         /// <summary>
