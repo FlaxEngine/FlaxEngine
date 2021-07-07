@@ -16,11 +16,12 @@ class AssetsCache;
 API_STRUCT() struct FLAXENGINE_API ContentStats
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(ContentStats);
+
     // Amount of asset objects in memory.
     API_FIELD() int32 AssetsCount = 0;
     // Amount of loaded assets.
     API_FIELD() int32 LoadedAssetsCount = 0;
-    // Amount of loading assets.
+    // Amount of loading assets. Zero if all assets are loaded in.
     API_FIELD() int32 LoadingAssetsCount = 0;
     // Amount of virtual assets (don't have representation in file).
     API_FIELD() int32 VirtualAssetsCount = 0;

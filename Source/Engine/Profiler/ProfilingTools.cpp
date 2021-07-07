@@ -57,7 +57,8 @@ void ProfilingToolsService::Update()
     for (int32 i = 0; i < threads.Count(); i++)
     {
         auto t = threads[i];
-
+        if (t == nullptr)
+            continue;
         ProfilingTools::ThreadStats* pt = nullptr;
         for (auto& e : ProfilingTools::EventsCPU)
         {
