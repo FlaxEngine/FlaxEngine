@@ -10,6 +10,7 @@
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Threading/Threading.h"
 #if TERRAIN_EDITING
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"

@@ -9,6 +9,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonWriters.h"

@@ -13,6 +13,7 @@
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask

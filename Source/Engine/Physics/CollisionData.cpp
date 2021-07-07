@@ -8,6 +8,7 @@
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/CollisionCooking.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
 #include <ThirdParty/PhysX/geometry/PxTriangleMesh.h>
 #include <ThirdParty/PhysX/geometry/PxConvexMesh.h>

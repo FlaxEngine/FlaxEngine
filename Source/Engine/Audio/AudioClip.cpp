@@ -12,6 +12,7 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
+#include "Engine/Threading/Threading.h"
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClipUpgrader, false);
 

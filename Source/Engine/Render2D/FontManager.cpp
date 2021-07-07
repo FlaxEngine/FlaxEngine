@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 #include <ThirdParty/freetype/ftsynth.h>
 #include <ThirdParty/freetype/ftbitmap.h>

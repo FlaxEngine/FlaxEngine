@@ -11,6 +11,7 @@
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Foliage/Foliage.h"
+#include "Engine/Threading/Threading.h"
 
 bool canUseMaterialWithLightmap(MaterialBase* material, ShadowsOfMordor::Builder::SceneBuildCache* scene)
 {

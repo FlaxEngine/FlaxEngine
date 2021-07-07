@@ -12,6 +12,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"

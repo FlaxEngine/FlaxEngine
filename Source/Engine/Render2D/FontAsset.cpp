@@ -7,6 +7,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/FontAssetUpgrader.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 #if USE_EDITOR
 #include "Engine/Platform/FileSystem.h"

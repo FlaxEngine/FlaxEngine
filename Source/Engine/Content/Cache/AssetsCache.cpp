@@ -11,6 +11,7 @@
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/Content/Storage/JsonStorageProxy.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
 

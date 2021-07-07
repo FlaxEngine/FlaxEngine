@@ -10,6 +10,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 namespace

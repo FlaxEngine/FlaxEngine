@@ -8,6 +8,7 @@
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Graphics/Materials/MaterialShaderFeatures.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Threading/Threading.h"
 
 /// <summary>
 /// Material shader source code template has special marks for generated code.

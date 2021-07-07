@@ -12,6 +12,7 @@
 #include "Engine/Threading/ThreadPoolTask.h"
 #if USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Threading/Threading.h"
 #endif
 
 REGISTER_BINARY_ASSET_ABSTRACT(BinaryAsset, "FlaxEngine.BinaryAsset");

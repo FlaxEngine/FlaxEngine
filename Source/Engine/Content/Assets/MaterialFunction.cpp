@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MaterialFunction.h"
+#include "Engine/Threading/Threading.h"
 #if COMPILE_WITH_MATERIAL_GRAPH
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"

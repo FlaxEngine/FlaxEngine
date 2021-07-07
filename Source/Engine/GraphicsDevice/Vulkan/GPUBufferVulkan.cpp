@@ -3,9 +3,9 @@
 #if GRAPHICS_API_VULKAN
 
 #include "GPUBufferVulkan.h"
-#include "RenderToolsVulkan.h"
-#include "Engine/Threading/ThreadLocal.h"
 #include "GPUContextVulkan.h"
+#include "RenderToolsVulkan.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadBufferTask.h"
 
 void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, PixelFormat format)

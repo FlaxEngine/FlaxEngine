@@ -8,6 +8,9 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Graphics/PostProcessSettings.h"
+#if USE_EDITOR
+#include "Engine/Threading/Threading.h"
+#endif
 
 REGISTER_BINARY_ASSET(SceneAnimation, "FlaxEngine.SceneAnimation", false);
 

@@ -10,6 +10,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)

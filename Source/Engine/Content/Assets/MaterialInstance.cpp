@@ -7,6 +7,7 @@
 #include "Engine/Content/Upgraders/MaterialInstanceUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(MaterialInstance, "FlaxEngine.MaterialInstance", MaterialInstanceUpgrader, true);
 

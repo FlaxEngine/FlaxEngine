@@ -4,6 +4,7 @@
 
 #include "Task.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Threading/Threading.h"
 
 // Invokes a target method on a main thread (using task or directly if already on main thread)
 // Example: INVOKE_ON_MAIN_THREAD(Collector, Collector::SyncData, this);

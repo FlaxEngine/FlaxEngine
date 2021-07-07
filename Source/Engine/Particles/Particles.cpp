@@ -18,6 +18,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Threading/TaskGraph.h"
 #if COMPILE_WITH_GPU_PARTICLES
+#include "Engine/Threading/Threading.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Renderer/Utils/BitonicSort.h"

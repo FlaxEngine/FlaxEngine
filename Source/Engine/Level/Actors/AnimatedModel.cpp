@@ -3,6 +3,7 @@
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
 #include "Engine/Core/Math/Matrix3x4.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR

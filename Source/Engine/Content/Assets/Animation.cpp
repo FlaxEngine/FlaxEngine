@@ -6,6 +6,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/CurveSerialization.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"

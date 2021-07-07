@@ -4,6 +4,7 @@
 #include "FontAsset.h"
 #include "FontManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 
 Font::Font(FontAsset* parentAsset, int32 size)

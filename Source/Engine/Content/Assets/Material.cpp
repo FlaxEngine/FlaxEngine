@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 #if COMPILE_WITH_SHADER_COMPILER
 #include "MaterialFunction.h"
 #include "Engine/Serialization/MemoryWriteStream.h"

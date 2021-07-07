@@ -3,6 +3,7 @@
 #include "ParticleEmitterFunction.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Core/Types/DataContainer.h"
 #endif

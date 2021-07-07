@@ -41,6 +41,7 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
+#include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 

@@ -3,8 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
-#include "Engine/Core/Collections/Array.h"
-#include "Threading.h"
 #include "Engine/Platform/Platform.h"
 
 /// <summary>

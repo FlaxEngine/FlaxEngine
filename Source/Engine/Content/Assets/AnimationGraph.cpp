@@ -8,6 +8,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Threading/Threading.h"
 
 REGISTER_BINARY_ASSET(AnimationGraph, "FlaxEngine.AnimationGraph", false);
 
