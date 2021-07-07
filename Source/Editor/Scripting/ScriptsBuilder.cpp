@@ -22,6 +22,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
 
@@ -212,6 +213,7 @@ void ScriptsBuilder::Compile()
 
 bool ScriptsBuilder::RunBuildTool(const StringView& args)
 {
+    PROFILE_CPU();
     const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
     if (!FileSystem::FileExists(buildToolPath))
     {
@@ -269,6 +271,7 @@ void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& classNam
 
 MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 {
+    PROFILE_CPU();
     const MString scriptNameStd = scriptName.ToStringAnsi();
 
     const ScriptingTypeHandle scriptingType = Scripting::FindScriptingType(scriptNameStd);

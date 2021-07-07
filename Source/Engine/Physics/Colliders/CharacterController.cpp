@@ -409,7 +409,9 @@ void CharacterController::OnTransformChanged()
         const PxExtendedVec3 pos(_transform.Translation.X, _transform.Translation.Y, _transform.Translation.Z);
         _controller->setPosition(pos);
 
-        UpdateScale();
+        const Vector3 scale = GetScale();
+        if (!Vector3::NearEqual(_cachedScale, scale))
+            UpdateGeometry();
         UpdateBounds();
     }
     else if (!_controller)
