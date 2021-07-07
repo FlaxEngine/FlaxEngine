@@ -249,7 +249,7 @@ public:
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz )
     {
-        return AllocSourceLocation( line, source, sourceSz, function, functionSz, nullptr, 0 );
+        return AllocSourceLocation( line, source, sourceSz, function, functionSz, (const char*)nullptr, 0 );
     }
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz )
@@ -268,6 +268,28 @@ public:
         if( nameSz != 0 )
         {
             memcpy( ptr + 10 + functionSz + 1 + sourceSz + 1, name, nameSz );
+        }
+        return uint64_t( ptr );
+    }
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz )
+    {
+        const auto sz32 = uint32_t( 2 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
+        assert( sz32 <= std::numeric_limits<uint16_t>::max() );
+        const auto sz = uint16_t( sz32 );
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, &sz, 2 );
+        memset( ptr + 2, 0, 4 );
+        memcpy( ptr + 6, &line, 4 );
+        memcpy( ptr + 10, function, functionSz );
+        ptr[10 + functionSz] = '\0';
+        memcpy( ptr + 10 + functionSz + 1, source, sourceSz );
+        ptr[10 + functionSz + 1 + sourceSz] = '\0';
+        if( nameSz != 0 )
+        {
+            char* dst = ptr + 10 + functionSz + 1 + sourceSz + 1;
+            for ( size_t i = 0; i < nameSz; i++)
+                dst[i] = (char)name[i];
         }
         return uint64_t( ptr );
     }

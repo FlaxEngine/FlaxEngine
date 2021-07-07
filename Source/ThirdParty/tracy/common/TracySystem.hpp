@@ -46,6 +46,9 @@ struct TRACY_API SourceLocationData
 class TRACY_API ScopedZone
 {
 public:
+    static void Begin( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz );
+    static void End();
+
     ScopedZone( const ScopedZone& ) = delete;
     ScopedZone( ScopedZone&& ) = delete;
     ScopedZone& operator=( const ScopedZone& ) = delete;

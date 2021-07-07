@@ -21,13 +21,20 @@ namespace ProfilerInternal
     void BeginEvent(MonoString* nameObj)
     {
 #if COMPILE_WITH_PROFILER
-        ProfilerCPU::BeginEvent((const Char*)mono_string_chars(nameObj));
+        const StringView name(mono_string_chars(nameObj), mono_string_length(nameObj));
+        ProfilerCPU::BeginEvent(*name);
+#if TRACY_ENABLE
+        tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
+#endif
 #endif
     }
 
     void EndEvent()
     {
 #if COMPILE_WITH_PROFILER
+#if TRACY_ENABLE
+        tracy::ScopedZone::End();
+#endif
         ProfilerCPU::EndEvent();
 #endif
     }
