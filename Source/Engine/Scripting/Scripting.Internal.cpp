@@ -21,7 +21,7 @@ namespace ProfilerInternal
     void BeginEvent(MonoString* nameObj)
     {
 #if COMPILE_WITH_PROFILER
-        const StringView name(mono_string_chars(nameObj), mono_string_length(nameObj));
+        const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
         ProfilerCPU::BeginEvent(*name);
 #if TRACY_ENABLE
         tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
