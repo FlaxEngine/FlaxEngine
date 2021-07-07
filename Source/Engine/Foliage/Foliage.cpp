@@ -81,48 +81,40 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
 
-void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, const ModelLOD& modelLod, float lodDitherFactor)
+void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
-    for (const auto& mesh : modelLod.Meshes)
+    const auto& meshes = model->LODs[lod].Meshes;
+    for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
     {
-        const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
-        if (!entry.Visible || !mesh.IsInitialized())
-            return;
-        const MaterialSlot& slot = model->MaterialSlots[mesh.GetMaterialSlotIndex()];
-        const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-        const auto drawModes = static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode));
+        auto& drawCall = drawCallsLists[lod][meshIndex];
+        if (!drawCall.DrawCall.Material)
+            continue;
 
-        // Select material
-        MaterialBase* material;
-        if (entry.Material && entry.Material->IsLoaded())
-            material = entry.Material;
-        else if (slot.Material && slot.Material->IsLoaded())
-            material = slot.Material;
-        else
-            material = GPUDevice::Instance->GetDefaultMaterial();
-        if (!material || !material->IsSurface() || drawModes == DrawPass::None)
-            return;
+        DrawKey key;
+        key.Mat = drawCall.DrawCall.Material;
+        key.Geo = &meshes[meshIndex];
+        key.Lightmap = instance.Lightmap.TextureIndex;
+        auto* e = result.TryGet(key);
+        if (!e)
+        {
+            e = &result[key];
+            e->DrawCall.Material = key.Mat;
+            e->DrawCall.Surface.Lightmap = _staticFlags & StaticFlags::Lightmap ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+        }
 
-        // Submit draw call
-        DrawCall drawCall;
-        mesh.GetDrawCallGeometry(drawCall);
-        drawCall.InstanceCount = 1;
-        drawCall.Material = material;
-        drawCall.World = instance.World;
-        drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-        drawCall.Surface.PrevWorld = instance.World;
-        drawCall.Surface.Lightmap = _staticFlags & StaticFlags::Lightmap ? _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex) : nullptr;
-        drawCall.Surface.LightmapUVsArea = instance.Lightmap.UVsArea;
-        drawCall.Surface.Skinning = nullptr;
-        drawCall.Surface.LODDitherFactor = lodDitherFactor;
-        drawCall.WorldDeterminantSign = 1;
-        drawCall.PerInstanceRandom = instance.Random;
-        renderContext.List->AddDrawCall(drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
+        // Add instance to the draw batch
+        auto& instanceData = e->Instances.AddOne();
+        instanceData.InstanceOrigin = Vector3(instance.World.M41, instance.World.M42, instance.World.M43);
+        instanceData.PerInstanceRandom = instance.Random;
+        instanceData.InstanceTransform1 = Vector3(instance.World.M11, instance.World.M12, instance.World.M13);
+        instanceData.LODDitherFactor = lodDitherFactor;
+        instanceData.InstanceTransform2 = Vector3(instance.World.M21, instance.World.M22, instance.World.M23);
+        instanceData.InstanceTransform3 = Vector3(instance.World.M31, instance.World.M32, instance.World.M33);
+        instanceData.InstanceLightmapArea = Half4(instance.Lightmap.UVsArea);
     }
 }
 
-void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type)
+void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
     if (Vector3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center) - cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
@@ -138,7 +130,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 
 #define DRAW_CLUSTER(idx) \
 		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \
-			DrawCluster(renderContext, cluster->Children[idx], type)
+			DrawCluster(renderContext, cluster->Children[idx], type, drawCallsLists, result)
         DRAW_CLUSTER(0);
         DRAW_CLUSTER(1);
         DRAW_CLUSTER(2);
@@ -182,7 +174,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                         {
                             const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
                             const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
-                            DrawInstance(renderContext, instance, type, model, model->LODs[prevLOD], normalizedProgress);
+                            DrawInstance(renderContext, instance, type, model, prevLOD, normalizedProgress, drawCallsLists, result);
                         }
                     }
                     instance.DrawState.PrevFrame = frame;
@@ -219,19 +211,19 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 // Draw
                 if (instance.DrawState.PrevLOD == lodIndex)
                 {
-                    DrawInstance(renderContext, instance, type, model, model->LODs[lodIndex], 0.0f);
+                    DrawInstance(renderContext, instance, type, model, lodIndex, 0.0f, drawCallsLists, result);
                 }
                 else if (instance.DrawState.PrevLOD == -1)
                 {
                     const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
-                    DrawInstance(renderContext, instance, type, model, model->LODs[lodIndex], 1.0f - normalizedProgress);
+                    DrawInstance(renderContext, instance, type, model, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
                 }
                 else
                 {
                     const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
                     const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
-                    DrawInstance(renderContext, instance, type, model, model->LODs[prevLOD], normalizedProgress);
-                    DrawInstance(renderContext, instance, type, model, model->LODs[lodIndex], normalizedProgress - 1.0f);
+                    DrawInstance(renderContext, instance, type, model, prevLOD, normalizedProgress, drawCallsLists, result);
+                    DrawInstance(renderContext, instance, type, model, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
                 }
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
@@ -878,13 +870,17 @@ void Foliage::Draw(RenderContext& renderContext)
     }
 
     // Draw visible clusters
-#if FOLIAGE_USE_SINGLE_QUAD_TREE
+#if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
     draw.DrawModes = (DrawPass)(DrawPass::Default & view.Pass);
     draw.LODBias = 0;
     draw.ForcedLOD = -1;
     draw.VertexColors = nullptr;
+#else
+    DrawCallsList drawCallsLists[MODEL_MAX_LODS];
+#endif
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
         DrawCluster(renderContext, Root, draw);
 #else
@@ -892,7 +888,112 @@ void Foliage::Draw(RenderContext& renderContext)
     {
         if (type.Root && type._canDraw && type.Model->CanBeRendered())
         {
-            DrawCluster(renderContext, type.Root, type);
+#if FOLIAGE_USE_DRAW_CALLS_BATCHING
+            // Initialize draw calls for foliage type all LODs meshes
+            for (int32 lod = 0; lod < type.Model->LODs.Count(); lod++)
+            {
+                auto& modelLod = type.Model->LODs[lod];
+                DrawCallsList& drawCallsList = drawCallsLists[lod];
+                const auto& meshes = modelLod.Meshes;
+                drawCallsList.Resize(meshes.Count());
+                for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
+                {
+                    const auto& mesh = meshes[meshIndex];
+                    auto& drawCall = drawCallsList[meshIndex];
+                    drawCall.DrawCall.Material = nullptr;
+
+                    // Check entry visibility
+                    const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
+                    if (!entry.Visible || !mesh.IsInitialized())
+                        continue;
+                    const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+
+                    // Select material
+                    MaterialBase* material;
+                    if (entry.Material && entry.Material->IsLoaded())
+                        material = entry.Material;
+                    else if (slot.Material && slot.Material->IsLoaded())
+                        material = slot.Material;
+                    else
+                        material = GPUDevice::Instance->GetDefaultMaterial();
+                    if (!material || !material->IsSurface())
+                        continue;
+
+                    // Select draw modes
+                    const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
+                    const auto drawModes = static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes();
+                    if (drawModes == 0)
+                        continue;
+
+                    drawCall.DrawCall.Material = material;
+                }
+            }
+
+            // Draw instances of the foliage type
+            BatchedDrawCalls result;
+            DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
+
+            // Submit draw calls with valid instances added
+            for (auto& e : result)
+            {
+                auto& drawCall = e.Value;
+                if (drawCall.Instances.IsEmpty())
+                    continue;
+                const auto& mesh = *e.Key.Geo;
+                const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
+                const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+                const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
+                const auto drawModes = (DrawPass)(static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & drawCall.DrawCall.Material->GetDrawModes());
+
+                // Setup draw call
+                mesh.GetDrawCallGeometry(drawCall.DrawCall);
+                drawCall.DrawCall.InstanceCount = 1;
+                auto& firstInstance = drawCall.Instances[0];
+                drawCall.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
+                drawCall.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
+                auto lightmapArea = firstInstance.InstanceLightmapArea.ToVector4();
+                drawCall.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+                drawCall.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
+                drawCall.DrawCall.World.SetRow1(Vector4(firstInstance.InstanceTransform1, 0.0f));
+                drawCall.DrawCall.World.SetRow2(Vector4(firstInstance.InstanceTransform2, 0.0f));
+                drawCall.DrawCall.World.SetRow3(Vector4(firstInstance.InstanceTransform3, 0.0f));
+                drawCall.DrawCall.World.SetRow4(Vector4(firstInstance.InstanceOrigin, 1.0f));
+                drawCall.DrawCall.Surface.PrevWorld = drawCall.DrawCall.World;
+                drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+                drawCall.DrawCall.Surface.Skinning = nullptr;
+                drawCall.DrawCall.WorldDeterminantSign = 1;
+
+                const int32 batchIndex = renderContext.List->BatchedDrawCalls.Count();
+                renderContext.List->BatchedDrawCalls.Add(MoveTemp(drawCall));
+
+                // Add draw call to proper draw lists
+                if (drawModes & DrawPass::Depth)
+                {
+                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Depth].PreBatchedDrawCalls.Add(batchIndex);
+                }
+                if (drawModes & DrawPass::GBuffer)
+                {
+                    if (entry.ReceiveDecals)
+                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
+                    else
+                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
+                }
+                if (drawModes & DrawPass::Forward)
+                {
+                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].PreBatchedDrawCalls.Add(batchIndex);
+                }
+                if (drawModes & DrawPass::Distortion)
+                {
+                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
+                }
+                if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
+                {
+                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
+                }
+            }
+#else
+            DrawCluster(renderContext, type.Root, draw);
+#endif
         }
     }
 #endif

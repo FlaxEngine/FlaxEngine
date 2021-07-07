@@ -153,8 +153,30 @@ private:
 
     void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
-    void DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, const ModelLOD& modelLod, float lodDitherFactor);
-    void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type);
+    struct DrawKey
+    {
+        IMaterial* Mat;
+        const Mesh* Geo;
+        int32 Lightmap;
+
+        friend bool operator==(const DrawKey& lhs, const DrawKey& rhs)
+        {
+            return lhs.Mat == rhs.Mat && lhs.Geo == rhs.Geo && lhs.Lightmap == rhs.Lightmap;
+        }
+
+        friend uint32 GetHash(const DrawKey& key)
+        {
+            uint32 hash = (uint32)((int64)(key.Mat) >> 3);
+            hash ^= (uint32)((int64)(key.Geo) >> 3) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            hash ^= (uint32)key.Lightmap;
+            return hash;
+        }
+    };
+
+    typedef Array<struct BatchedDrawCall, InlinedAllocation<8>> DrawCallsList;
+    typedef Dictionary<DrawKey, struct BatchedDrawCall> BatchedDrawCalls;
+    void DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
 #else
     void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw);
 #endif

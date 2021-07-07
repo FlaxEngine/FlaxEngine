@@ -203,6 +203,12 @@ struct DrawBatch
     }
 };
 
+struct BatchedDrawCall
+{
+    DrawCall DrawCall;
+    Array<struct InstanceData> Instances;
+};
+
 /// <summary>
 /// Represents a list of draw calls.
 /// </summary>
@@ -214,6 +220,11 @@ struct DrawCallsList
     Array<int32> Indices;
 
     /// <summary>
+    /// The list of external draw calls indices to render.
+    /// </summary>
+    Array<int32> PreBatchedDrawCalls;
+
+    /// <summary>
     /// The draw calls batches (for instancing).
     /// </summary>
     Array<DrawBatch> Batches;
@@ -223,17 +234,8 @@ struct DrawCallsList
     /// </summary>
     bool CanUseInstancing;
 
-    void Clear()
-    {
-        Indices.Clear();
-        Batches.Clear();
-        CanUseInstancing = true;
-    }
-
-    bool IsEmpty() const
-    {
-        return Indices.IsEmpty();
-    }
+    void Clear();
+    bool IsEmpty() const;
 };
 
 /// <summary>
@@ -242,7 +244,6 @@ struct DrawCallsList
 API_CLASS(Sealed) class FLAXENGINE_API RenderList : public PersistentScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderList);
-public:
 
     /// <summary>
     /// Allocates the new renderer list object or reuses already allocated one.
@@ -267,6 +268,11 @@ public:
     /// Draw calls list (for all draw passes).
     /// </summary>
     Array<DrawCall> DrawCalls;
+
+    /// <summary>
+    /// Draw calls list with pre-batched instances (for all draw passes).
+    /// </summary>
+    Array<BatchedDrawCall> BatchedDrawCalls;
 
     /// <summary>
     /// The draw calls lists. Each for the separate draw pass.
