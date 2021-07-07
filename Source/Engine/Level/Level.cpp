@@ -472,7 +472,6 @@ public:
             LOG(Error, "Failed to save scene {0}", TargetScene ? TargetScene->GetName() : String::Empty);
             return true;
         }
-
         return false;
     }
 };
@@ -1079,10 +1078,8 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
     CallSceneEvent(SceneEventType::OnSceneLoaded, scene, sceneId);
 
     LOG(Info, "Scene loaded in {0} ms", (int32)(DateTime::NowUTC() - startTime).GetTotalMilliseconds());
-
     if (outScene)
         *outScene = scene;
-
     return false;
 }
 
@@ -1138,6 +1135,7 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 
 bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson)
 {
+    PROFILE_CPU_NAMED("Level.SaveScene");
     if (prettyJson)
     {
         PrettyJsonWriter writerObj(outBuffer);
@@ -1152,8 +1150,6 @@ bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer,
 
 bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer)
 {
-    PROFILE_CPU_NAMED("Level.SaveScene");
-
     ASSERT(scene);
     const auto sceneId = scene->GetID();
 
