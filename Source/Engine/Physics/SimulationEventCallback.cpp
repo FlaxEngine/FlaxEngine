@@ -2,11 +2,9 @@
 
 #include "SimulationEventCallback.h"
 #include "Utilities.h"
-#include "FlaxEngine.Gen.h"
 #include "Colliders/Collider.h"
 #include "Joints/Joint.h"
 #include "Actors/RigidBody.h"
-#include "Engine/Core/Log.h"
 #include <ThirdParty/PhysX/extensions/PxJoint.h>
 #include <ThirdParty/PhysX/PxShape.h>
 
@@ -37,6 +35,20 @@ namespace
             }
         }
     }
+}
+
+void SimulationEventCallback::Clear()
+{
+    PrevCollisions.Swap(Collisions);
+    Collisions.Clear();
+
+    NewCollisions.Clear();
+    RemovedCollisions.Clear();
+
+    NewTriggerPairs.Clear();
+    LostTriggerPairs.Clear();
+
+    BrokenJoints.Clear();
 }
 
 void SimulationEventCallback::CollectResults()

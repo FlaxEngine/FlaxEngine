@@ -60,19 +60,7 @@ public:
     /// <summary>
     /// Clears the data.
     /// </summary>
-    void Clear()
-    {
-        PrevCollisions = Collisions;
-        Collisions.Clear();
-
-        NewCollisions.Clear();
-        RemovedCollisions.Clear();
-
-        NewTriggerPairs.Clear();
-        LostTriggerPairs.Clear();
-
-        BrokenJoints.Clear();
-    }
+    void Clear();
 
     /// <summary>
     /// Generates the new/old/removed collisions and a valid trigger pairs.

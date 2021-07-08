@@ -556,6 +556,18 @@ public:
         SetCapacity(0, false);
     }
 
+    /// <summary>
+    /// Swaps the contents of collection with the other object without copy operation. Performs fast internal data exchange.
+    /// </summary>
+    /// <param name="other">The other collection.</param>
+    void Swap(Dictionary& other)
+    {
+        ::Swap(_elementsCount, other._elementsCount);
+        ::Swap(_deletedCount, other._deletedCount);
+        ::Swap(_size, other._size);
+        _allocation.Swap(other._allocation);
+    }
+
 public:
 
     /// <summary>
