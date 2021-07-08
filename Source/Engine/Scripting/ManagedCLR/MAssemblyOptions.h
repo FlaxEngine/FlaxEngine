@@ -9,8 +9,6 @@
 /// </summary>
 struct MAssemblyOptions
 {
-public:
-
     /// <summary>
     /// Should assembly cache classes on Load method.
     /// </summary>
@@ -22,32 +20,13 @@ public:
     int32 KeepManagedFileLocked : 1;
 
     /// <summary>
-    /// Initial dictionary size (prevents memory partition for bigger assemblies).
-    /// </summary>
-    int32 DictionaryInitialSize;
-
-public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MAssemblyOptions"/> struct.
-    /// </summary>
-    MAssemblyOptions()
-        : PreCacheOnLoad(true)
-        , KeepManagedFileLocked(false)
-        , DictionaryInitialSize(1024)
-    {
-    }
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="MAssemblyOptions"/> struct.
     /// </summary>
     /// <param name="preCacheOnLoad">if set to <c>true</c> to precache assembly metadata on load.</param>
     /// <param name="keepManagedFileLocked">if set to <c>true</c> keep managed file locked after load.</param>
-    /// <param name="dictionaryInitialSize">Initial size of the dictionary for the classes and metadata.</param>
-    MAssemblyOptions(bool preCacheOnLoad, bool keepManagedFileLocked = false, int32 dictionaryInitialSize = 1024)
+    MAssemblyOptions(bool preCacheOnLoad = true, bool keepManagedFileLocked = false)
         : PreCacheOnLoad(preCacheOnLoad)
         , KeepManagedFileLocked(keepManagedFileLocked)
-        , DictionaryInitialSize(dictionaryInitialSize)
     {
     }
 };

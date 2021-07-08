@@ -376,8 +376,6 @@ void MAssembly::OnLoading()
     Loading(this);
 
     _isLoading = true;
-    if (_classes.Capacity() == 0)
-        _classes.EnsureCapacity(_options.DictionaryInitialSize);
 
     // Pick a domain
     if (_domain == nullptr)
