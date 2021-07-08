@@ -1550,7 +1550,7 @@ template <typename Char> struct named_arg_base {
 
   template <typename Context> basic_format_arg<Context> deserialize() const {
     basic_format_arg<Context> arg;
-    std::memcpy(&arg, data, sizeof(basic_format_arg<Context>));
+    ::memcpy(&arg, data, sizeof(basic_format_arg<Context>));
     return arg;
   }
 };

@@ -1106,14 +1106,14 @@ template <typename Char> class float_writer {
       if (num_digits_ > 1 || specs_.showpoint) *it++ = decimal_point_;
       it = copy_str<Char>(digits_ + 1, digits_ + num_digits_, it);
       if (num_zeros > 0 && specs_.showpoint)
-        it = std::fill_n(it, num_zeros, static_cast<Char>('0'));
+        it = internal::fill_n(it, num_zeros, static_cast<Char>('0'));
       *it++ = static_cast<Char>(specs_.upper ? 'E' : 'e');
       return write_exponent<Char>(full_exp - 1, it);
     }
     if (num_digits_ <= full_exp) {
       // 1234e7 -> 12340000000[.0+]
       it = copy_str<Char>(digits_, digits_ + num_digits_, it);
-      it = std::fill_n(it, full_exp - num_digits_, static_cast<Char>('0'));
+      it = internal::fill_n(it, full_exp - num_digits_, static_cast<Char>('0'));
       if (specs_.showpoint || specs_.precision < 0) {
         *it++ = decimal_point_;
         int num_zeros = specs_.precision - full_exp;
@@ -1126,7 +1126,7 @@ template <typename Char> class float_writer {
         if (num_zeros > 1000)
           throw std::runtime_error("fuzz mode - avoiding excessive cpu use");
 #endif
-        it = std::fill_n(it, num_zeros, static_cast<Char>('0'));
+        it = internal::fill_n(it, num_zeros, static_cast<Char>('0'));
       }
     } else if (full_exp > 0) {
       // 1234e-2 -> 12.34[0+]
@@ -1144,7 +1144,7 @@ template <typename Char> class float_writer {
       if (specs_.precision > num_digits_) {
         // Add trailing zeros.
         int num_zeros = specs_.precision - num_digits_;
-        it = std::fill_n(it, num_zeros, static_cast<Char>('0'));
+        it = internal::fill_n(it, num_zeros, static_cast<Char>('0'));
       }
     } else {
       // 1234e-6 -> 0.001234
@@ -1160,7 +1160,7 @@ template <typename Char> class float_writer {
         while (num_digits > 0 && digits_[num_digits - 1] == '0') --num_digits;
       if (num_zeros != 0 || num_digits != 0 || specs_.showpoint) {
         *it++ = decimal_point_;
-        it = std::fill_n(it, num_zeros, static_cast<Char>('0'));
+        it = internal::fill_n(it, num_zeros, static_cast<Char>('0'));
         it = copy_str<Char>(digits_, digits_ + num_digits, it);
       }
     }
@@ -1389,8 +1389,8 @@ template <typename Char> struct nonfinite_writer {
 template <typename OutputIt, typename Char>
 FMT_NOINLINE OutputIt fill(OutputIt it, size_t n, const fill_t<Char>& fill) {
   auto fill_size = fill.size();
-  if (fill_size == 1) return std::fill_n(it, n, fill[0]);
-  for (size_t i = 0; i < n; ++i) it = std::copy_n(fill.data(), fill_size, it);
+  if (fill_size == 1) return internal::fill_n(it, n, fill[0]);
+  for (size_t i = 0; i < n; ++i) it = internal::copy_n(fill.data(), fill_size, it);
   return it;
 }
 
@@ -1425,7 +1425,7 @@ template <typename Range> class basic_writer {
     template <typename It> void operator()(It&& it) const {
       if (prefix.size() != 0)
         it = copy_str<char_type>(prefix.begin(), prefix.end(), it);
-      it = std::fill_n(it, padding, fill);
+      it = internal::fill_n(it, padding, fill);
       f(it);
     }
   };
@@ -1789,7 +1789,7 @@ template <typename Range> class basic_writer {
   void write(wstring_view value) {
     static_assert(std::is_same<char_type, wchar_t>::value, "");
     auto&& it = reserve(value.size());
-    it = std::copy(value.begin(), value.end(), it);
+    it = internal::copy(value.begin(), value.end(), it);
   }
 
   template <typename Char>
@@ -2549,7 +2549,7 @@ template <>
 inline bool find<false, char>(const char* first, const char* last, char value,
                               const char*& out) {
   out = static_cast<const char*>(
-      std::memchr(first, value, internal::to_unsigned(last - first)));
+      ::memchr(first, value, internal::to_unsigned(last - first)));
   return out != nullptr;
 }
 
@@ -2717,12 +2717,6 @@ void handle_dynamic_spec(int& value, arg_ref<typename Context::char_type> ref,
   }
 }
 }  // namespace internal
-
-template <typename Range>
-using basic_writer FMT_DEPRECATED_ALIAS = internal::basic_writer<Range>;
-using writer FMT_DEPRECATED_ALIAS = internal::writer;
-using wwriter FMT_DEPRECATED_ALIAS =
-    internal::basic_writer<buffer_range<wchar_t>>;
 
 /** The default argument formatter. */
 template <typename Range>
@@ -3071,7 +3065,7 @@ struct format_handler : internal::error_handler {
     auto size = internal::to_unsigned(end - begin);
     auto out = context.out();
     auto&& it = internal::reserve(out, size);
-    it = std::copy_n(begin, size, it);
+    it = internal::copy_n(begin, size, it);
     context.advance_to(out);
   }
 
@@ -3171,77 +3165,6 @@ template <> struct formatter<bytes> {
  private:
   internal::dynamic_format_specs<char> specs_;
 };
-
-template <typename It, typename Char> struct arg_join : internal::view {
-  It begin;
-  It end;
-  basic_string_view<Char> sep;
-
-  arg_join(It b, It e, basic_string_view<Char> s) : begin(b), end(e), sep(s) {}
-};
-
-template <typename It, typename Char>
-struct formatter<arg_join<It, Char>, Char>
-    : formatter<typename std::iterator_traits<It>::value_type, Char> {
-  template <typename FormatContext>
-  auto format(const arg_join<It, Char>& value, FormatContext& ctx)
-      -> decltype(ctx.out()) {
-    using base = formatter<typename std::iterator_traits<It>::value_type, Char>;
-    auto it = value.begin;
-    auto out = ctx.out();
-    if (it != value.end) {
-      out = base::format(*it++, ctx);
-      while (it != value.end) {
-        out = std::copy(value.sep.begin(), value.sep.end(), out);
-        ctx.advance_to(out);
-        out = base::format(*it++, ctx);
-      }
-    }
-    return out;
-  }
-};
-
-/**
-  Returns an object that formats the iterator range `[begin, end)` with elements
-  separated by `sep`.
- */
-template <typename It>
-arg_join<It, char> join(It begin, It end, string_view sep) {
-  return {begin, end, sep};
-}
-
-template <typename It>
-arg_join<It, wchar_t> join(It begin, It end, wstring_view sep) {
-  return {begin, end, sep};
-}
-
-/**
-  \rst
-  Returns an object that formats `range` with elements separated by `sep`.
-
-  **Example**::
-
-    std::vector<int> v = {1, 2, 3};
-    fmt::print("{}", fmt::join(v, ", "));
-    // Output: "1, 2, 3"
-
-  ``fmt::join`` applies passed format specifiers to the range elements::
-
-    fmt::print("{:02}", fmt::join(v, ", "));
-    // Output: "01, 02, 03"
-  \endrst
- */
-template <typename Range>
-arg_join<internal::iterator_t<const Range>, char> join(const Range& range,
-                                                       string_view sep) {
-  return join(std::begin(range), std::end(range), sep);
-}
-
-template <typename Range>
-arg_join<internal::iterator_t<const Range>, wchar_t> join(const Range& range,
-                                                          wstring_view sep) {
-  return join(std::begin(range), std::end(range), sep);
-}
 
 #if FMT_USE_STRING
 /**

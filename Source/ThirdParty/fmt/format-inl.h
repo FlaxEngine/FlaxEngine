@@ -10,6 +10,7 @@
 
 #include "format.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <climits>
