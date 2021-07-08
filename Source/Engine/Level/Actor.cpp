@@ -1090,7 +1090,7 @@ void Actor::OnTransformChanged()
 
     if (_parent)
     {
-        _parent->GetTransform().LocalToWorld(_localTransform, _transform);
+        _parent->_transform.LocalToWorld(_localTransform, _transform);
     }
     else
     {

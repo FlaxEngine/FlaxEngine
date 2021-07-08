@@ -182,10 +182,15 @@ void StaticModel::UpdateBounds()
 {
     if (Model && Model->IsLoaded())
     {
-        Transform t = _transform;
-        t.Scale *= _boundsScale;
         Matrix world;
-        t.GetWorld(world);
+        if (Math::IsOne(_boundsScale))
+            world = _world;
+        else
+        {
+            Transform t = _transform;
+            t.Scale *= _boundsScale;
+            t.GetWorld(world);
+        }
         _box = Model->GetBox(world);
     }
     else
