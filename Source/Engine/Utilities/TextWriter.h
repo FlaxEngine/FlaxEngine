@@ -93,7 +93,7 @@ public:
     void WriteLine(const CharType* format, const Args& ... args)
     {
         fmt::basic_memory_buffer<CharType, fmt::inline_buffer_size, std_flax::allocator<CharType>> w;
-        format_to(w, format, args...);
+        fmt_flax::format(w, format, args...);
         const int32 len = (int32)w.size();
         _buffer.WriteBytes((void*)w.data(), len * sizeof(CharType));
         WriteLine();
@@ -133,7 +133,7 @@ public:
     void Write(const CharType* format, const Args& ... args)
     {
         fmt::basic_memory_buffer<CharType, fmt::inline_buffer_size, std_flax::allocator<CharType>> w;
-        format_to(w, format, args...);
+        fmt_flax::format(w, format, args...);
         const int32 len = (int32)w.size();
         _buffer.WriteBytes((void*)w.data(), len * sizeof(CharType));
     }

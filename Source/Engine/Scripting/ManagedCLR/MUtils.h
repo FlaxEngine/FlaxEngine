@@ -82,8 +82,6 @@ namespace MUtils
 template<typename T, typename Enable = void>
 struct MConverter
 {
-    static_assert(fmt::internal::no_formatter_error<T>::value, "Unsupported type for Scripting API.");
-
     MonoObject* Box(const T& data, MonoClass* klass);
     void Unbox(T& result, MonoObject* data);
     void ToManagedArray(MonoArray* result, const Span<T>& data);
