@@ -88,6 +88,14 @@ namespace FlaxEditor.Windows
                 set => Graphics.AllowCSMBlending = value;
             }
 
+            [NoSerialize, DefaultValue(1.0f), Limit(0, 1)]
+            [EditorOrder(1500), EditorDisplay("Quality"), Tooltip("The global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.")]
+            public float FoliageDensityScale
+            {
+                get => Foliage.GlobalDensityScale;
+                set => Foliage.GlobalDensityScale = value;
+            }
+
             [NoSerialize]
             [EditorOrder(2000), EditorDisplay("Textures", EditorDisplayAttribute.InlineStyle), Tooltip("Textures streaming configuration.")]
             public TextureGroup[] TextureGroups
