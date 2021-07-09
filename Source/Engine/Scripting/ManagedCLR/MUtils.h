@@ -20,55 +20,12 @@ namespace MUtils
     extern FLAXENGINE_API void ToString(MonoString* str, Variant& result);
     extern FLAXENGINE_API void ToString(MonoString* str, MString& result);
 
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const char* str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringAnsi& str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const String& str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <param name="domain">The context domain.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const String& str, MonoDomain* domain);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringAnsiView& str);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringView& str);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <param name="domain">The context domain.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringView& str, MonoDomain* domain);
 
     extern FLAXENGINE_API VariantType UnboxVariantType(MonoReflectionType* value);
