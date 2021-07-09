@@ -103,7 +103,7 @@ namespace FlaxEditor.Windows.Assets
             b.Enabled = hasSthSelected && !isRootSelected;
 
             b = contextMenu.AddButton("Set Root", SetRoot);
-            b.Enabled = isSingleActorSelected && !isRootSelected && hasPrefabLink;
+            b.Enabled = isSingleActorSelected && !isRootSelected && hasPrefabLink && Editor.Internal_CanSetToRoot(FlaxEngine.Object.GetUnmanagedPtr(Asset), FlaxEngine.Object.GetUnmanagedPtr(((ActorNode)Selection[0]).Actor));
 
             // Prefab options
 

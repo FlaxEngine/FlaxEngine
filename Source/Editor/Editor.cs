@@ -1445,6 +1445,9 @@ namespace FlaxEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_LoadAsset(ref Guid id);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
+
         #endregion
     }
 }

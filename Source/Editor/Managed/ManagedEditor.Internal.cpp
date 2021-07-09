@@ -26,13 +26,14 @@
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/ContentImporters/CreateJson.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Level/Actor.h"
+#include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Audio/AudioClip.h"
-#include "Engine/Level/Actor.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Utilities/Encryption.h"
 #include "Engine/Navigation/Navigation.h"
@@ -43,6 +44,7 @@
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
+#include "Engine/Serialization/JsonTools.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
@@ -1040,6 +1042,28 @@ public:
         Content::LoadAsync<Asset>(*id);
     }
 
+    static bool CanSetToRoot(Prefab* prefab, Actor* targetActor)
+    {
+        // Reference: Prefab::ApplyAll(Actor* targetActor)
+        if (targetActor->GetPrefabID() != prefab->GetID())
+            return false;
+        if (targetActor->GetPrefabObjectID() != prefab->GetRootObjectId())
+        {
+            const ISerializable::DeserializeStream** newRootDataPtr = prefab->ObjectsDataCache.TryGet(targetActor->GetPrefabObjectID());
+            if (!newRootDataPtr || !*newRootDataPtr)
+                return false;
+            const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
+            Guid prefabId, prefabObjectID;
+            if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
+            {
+                const auto nestedPrefab = Content::Load<Prefab>(prefabId);
+                if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     static void InitRuntime()
     {
         ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &IsDevInstance);
@@ -1086,6 +1110,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EvaluateVisualScriptLocal);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &DeserializeSceneObject);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &LoadAsset);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &CanSetToRoot);
     }
 };
 

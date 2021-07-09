@@ -281,7 +281,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         const auto prefabObjectId = JsonTools::GetGuid(stream, "ID");
 
         if (objectsCache)
-            objectsCache->Add(prefabObjectId, dynamic_cast<ScriptingObject*>(obj));
+            objectsCache->Add(prefabObjectId, obj);
         obj->LinkPrefab(prefabId, prefabObjectId);
     }
 
