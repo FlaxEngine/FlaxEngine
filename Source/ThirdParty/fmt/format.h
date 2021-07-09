@@ -587,7 +587,7 @@ using uint32_or_64_or_128_t = conditional_t<
     conditional_t<std::numeric_limits<T>::digits <= 64, uint64_t, uint128_t>>;
 
 // Static data is placed in this class template for the header-only config.
-template <typename T = void> struct FMT_EXTERN_TEMPLATE_API basic_data {
+struct FMT_API basic_data {
   static const uint64_t powers_of_10_64[];
   static const uint32_t zero_or_powers_of_10_32[];
   static const uint64_t zero_or_powers_of_10_64[];
@@ -595,17 +595,10 @@ template <typename T = void> struct FMT_EXTERN_TEMPLATE_API basic_data {
   static const int16_t pow10_exponents[];
   static const char digits[];
   static const char hex_digits[];
-  static const char foreground_color[];
-  static const char background_color[];
-  static const char reset_color[5];
-  static const wchar_t wreset_color[5];
   static const char signs[];
 };
 
-FMT_EXTERN template struct basic_data<void>;
-
-// This is a struct rather than an alias to avoid shadowing warnings in gcc.
-struct data : basic_data<> {};
+typedef basic_data data;
 
 #ifdef FMT_BUILTIN_CLZLL
 // Returns the number of decimal digits in n. Leading zeros are not counted
