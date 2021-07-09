@@ -421,7 +421,10 @@ namespace Flax.Build.Graph
         {
             var path = CachePath;
             if (File.Exists(path))
+            {
+                Log.Info("Removing: " + path);
                 File.Delete(path);
+            }
         }
 
         /// <summary>
