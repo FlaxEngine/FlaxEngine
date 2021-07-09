@@ -936,35 +936,35 @@ void Foliage::Draw(RenderContext& renderContext)
             // Submit draw calls with valid instances added
             for (auto& e : result)
             {
-                auto& drawCall = e.Value;
-                if (drawCall.Instances.IsEmpty())
+                auto& batch = e.Value;
+                if (batch.Instances.IsEmpty())
                     continue;
                 const auto& mesh = *e.Key.Geo;
                 const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
                 const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
                 const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-                const auto drawModes = (DrawPass)(static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & drawCall.DrawCall.Material->GetDrawModes());
+                const auto drawModes = (DrawPass)(static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & batch.DrawCall.Material->GetDrawModes());
 
                 // Setup draw call
-                mesh.GetDrawCallGeometry(drawCall.DrawCall);
-                drawCall.DrawCall.InstanceCount = 1;
-                auto& firstInstance = drawCall.Instances[0];
-                drawCall.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
-                drawCall.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
+                mesh.GetDrawCallGeometry(batch.DrawCall);
+                batch.DrawCall.InstanceCount = 1;
+                auto& firstInstance = batch.Instances[0];
+                batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
+                batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
                 auto lightmapArea = firstInstance.InstanceLightmapArea.ToVector4();
-                drawCall.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                drawCall.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
-                drawCall.DrawCall.World.SetRow1(Vector4(firstInstance.InstanceTransform1, 0.0f));
-                drawCall.DrawCall.World.SetRow2(Vector4(firstInstance.InstanceTransform2, 0.0f));
-                drawCall.DrawCall.World.SetRow3(Vector4(firstInstance.InstanceTransform3, 0.0f));
-                drawCall.DrawCall.World.SetRow4(Vector4(firstInstance.InstanceOrigin, 1.0f));
-                drawCall.DrawCall.Surface.PrevWorld = drawCall.DrawCall.World;
-                drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-                drawCall.DrawCall.Surface.Skinning = nullptr;
-                drawCall.DrawCall.WorldDeterminantSign = 1;
+                batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+                batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
+                batch.DrawCall.World.SetRow1(Vector4(firstInstance.InstanceTransform1, 0.0f));
+                batch.DrawCall.World.SetRow2(Vector4(firstInstance.InstanceTransform2, 0.0f));
+                batch.DrawCall.World.SetRow3(Vector4(firstInstance.InstanceTransform3, 0.0f));
+                batch.DrawCall.World.SetRow4(Vector4(firstInstance.InstanceOrigin, 1.0f));
+                batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
+                batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+                batch.DrawCall.Surface.Skinning = nullptr;
+                batch.DrawCall.WorldDeterminantSign = 1;
 
                 const int32 batchIndex = renderContext.List->BatchedDrawCalls.Count();
-                renderContext.List->BatchedDrawCalls.Add(MoveTemp(drawCall));
+                renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
 
                 // Add draw call to proper draw lists
                 if (drawModes & DrawPass::Depth)
@@ -978,10 +978,6 @@ void Foliage::Draw(RenderContext& renderContext)
                     else
                         renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
                 }
-                if (drawModes & DrawPass::Forward)
-                {
-                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].PreBatchedDrawCalls.Add(batchIndex);
-                }
                 if (drawModes & DrawPass::Distortion)
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
@@ -989,6 +985,28 @@ void Foliage::Draw(RenderContext& renderContext)
                 if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
+                }
+                if (drawModes & DrawPass::Forward)
+                {
+                    // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
+                    batch = renderContext.List->BatchedDrawCalls[batchIndex];
+                    DrawCall drawCall = batch.DrawCall;
+                    for (int32 j = 0; j < batch.Instances.Count(); j++)
+                    {
+                        auto& instance = batch.Instances[j];
+                        drawCall.ObjectPosition = instance.InstanceOrigin;
+                        drawCall.PerInstanceRandom = instance.PerInstanceRandom;
+                        lightmapArea = instance.InstanceLightmapArea.ToVector4();
+                        drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+                        drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
+                        drawCall.World.SetRow1(Vector4(instance.InstanceTransform1, 0.0f));
+                        drawCall.World.SetRow2(Vector4(instance.InstanceTransform2, 0.0f));
+                        drawCall.World.SetRow3(Vector4(instance.InstanceTransform3, 0.0f));
+                        drawCall.World.SetRow4(Vector4(instance.InstanceOrigin, 1.0f));
+                        const int32 drawCallIndex = renderContext.List->DrawCalls.Count();
+                        renderContext.List->DrawCalls.Add(drawCall);
+                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
+                    }
                 }
             }
 #else
