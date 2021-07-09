@@ -918,8 +918,7 @@ void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const 
 
 void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Quaternion& keyframe)
 {
-    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, localFrame.Scaling));
-    //frameTrans.NormalizeScale();
+    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, {1.0, 1.0, 1.0 }));
     Quaternion::RotationMatrix(frameTrans, keyframe);
 }
 
