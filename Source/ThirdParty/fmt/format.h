@@ -35,6 +35,7 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <limits>
 
 #include "core.h"
 
@@ -221,11 +222,6 @@ FMT_END_NAMESPACE
 #  define FMT_NUMERIC_ALIGN 1
 #endif
 
-// Enable the deprecated percent specifier.
-#ifndef FMT_DEPRECATED_PERCENT
-#  define FMT_DEPRECATED_PERCENT 0
-#endif
-
 FMT_BEGIN_NAMESPACE
 namespace internal {
 
@@ -284,43 +280,6 @@ template <> constexpr int num_bits<fallback_uintptr>() {
                           std::numeric_limits<unsigned char>::digits);
 }
 
-// An approximation of iterator_t for pre-C++20 systems.
-template <typename T>
-using iterator_t = decltype(std::begin(std::declval<T&>()));
-
-// Detect the iterator category of *any* given type in a SFINAE-friendly way.
-// Unfortunately, older implementations of std::iterator_traits are not safe
-// for use in a SFINAE-context.
-template <typename It, typename Enable = void>
-struct iterator_category : std::false_type {};
-
-template <typename T> struct iterator_category<T*> {
-  using type = std::random_access_iterator_tag;
-};
-
-template <typename It>
-struct iterator_category<It, void_t<typename It::iterator_category>> {
-  using type = typename It::iterator_category;
-};
-
-// Detect if *any* given type models the OutputIterator concept.
-template <typename It> class is_output_iterator {
-  // Check for mutability because all iterator categories derived from
-  // std::input_iterator_tag *may* also meet the requirements of an
-  // OutputIterator, thereby falling into the category of 'mutable iterators'
-  // [iterator.requirements.general] clause 4. The compiler reveals this
-  // property only at the point of *actually dereferencing* the iterator!
-  template <typename U>
-  static decltype(*(std::declval<U>())) test(std::input_iterator_tag);
-  template <typename U> static char& test(std::output_iterator_tag);
-  template <typename U> static const char& test(...);
-
-  using type = decltype(test<It>(typename iterator_category<It>::type{}));
-
- public:
-  enum { value = !std::is_const<remove_reference_t<type>>::value };
-};
-
 #if FMT_USE_STRING
 // A workaround for std::string not having mutable data() until C++17.
 template <typename Char> inline Char* get_data(std::basic_string<Char>& s) {
@@ -332,24 +291,13 @@ inline typename Container::value_type* get_data(Container& c) {
   return c.data();
 }
 
-#if defined(_SECURE_SCL) && _SECURE_SCL
-// Make a checked iterator to avoid MSVC warnings.
-template <typename T> using checked_ptr = stdext::checked_array_iterator<T*>;
-template <typename T> checked_ptr<T> make_checked(T* p, std::size_t size) {
-  return {p, size};
-}
-#else
-template <typename T> using checked_ptr = T*;
-template <typename T> inline T* make_checked(T* p, std::size_t) { return p; }
-#endif
-
 template <typename Container, FMT_ENABLE_IF(is_contiguous<Container>::value)>
-inline checked_ptr<typename Container::value_type> reserve(
+inline typename Container::value_type* reserve(
     fmt::back_insert_iterator<Container>& it, std::size_t n) {
   Container& c = get_container(it);
   std::size_t size = c.size();
   c.resize(size + n);
-  return make_checked(get_data(c) + size, n);
+  return get_data(c) + size;
 }
 
 template <typename Iterator>
@@ -364,7 +312,6 @@ class counting_iterator {
   std::size_t count_;
 
  public:
-  using iterator_category = std::output_iterator_tag;
   using difference_type = std::ptrdiff_t;
   using pointer = void;
   using reference = void;
@@ -390,79 +337,6 @@ class counting_iterator {
   }
 
   value_type operator*() const { return {}; }
-};
-
-template <typename OutputIt> class truncating_iterator_base {
- protected:
-  OutputIt out_;
-  std::size_t limit_;
-  std::size_t count_;
-
-  truncating_iterator_base(OutputIt out, std::size_t limit)
-      : out_(out), limit_(limit), count_(0) {}
-
- public:
-  using iterator_category = std::output_iterator_tag;
-  using value_type = typename std::iterator_traits<OutputIt>::value_type;
-  using difference_type = void;
-  using pointer = void;
-  using reference = void;
-  using _Unchecked_type =
-      truncating_iterator_base;  // Mark iterator as checked.
-
-  OutputIt base() const { return out_; }
-  std::size_t count() const { return count_; }
-};
-
-// An output iterator that truncates the output and counts the number of objects
-// written to it.
-template <typename OutputIt,
-          typename Enable = typename std::is_void<
-              typename std::iterator_traits<OutputIt>::value_type>::type>
-class truncating_iterator;
-
-template <typename OutputIt>
-class truncating_iterator<OutputIt, std::false_type>
-    : public truncating_iterator_base<OutputIt> {
-  mutable typename truncating_iterator_base<OutputIt>::value_type blackhole_;
-
- public:
-  using value_type = typename truncating_iterator_base<OutputIt>::value_type;
-
-  truncating_iterator(OutputIt out, std::size_t limit)
-      : truncating_iterator_base<OutputIt>(out, limit) {}
-
-  truncating_iterator& operator++() {
-    if (this->count_++ < this->limit_) ++this->out_;
-    return *this;
-  }
-
-  truncating_iterator operator++(int) {
-    auto it = *this;
-    ++*this;
-    return it;
-  }
-
-  value_type& operator*() const {
-    return this->count_ < this->limit_ ? *this->out_ : blackhole_;
-  }
-};
-
-template <typename OutputIt>
-class truncating_iterator<OutputIt, std::true_type>
-    : public truncating_iterator_base<OutputIt> {
- public:
-  truncating_iterator(OutputIt out, std::size_t limit)
-      : truncating_iterator_base<OutputIt>(out, limit) {}
-
-  template <typename T> truncating_iterator& operator=(T val) {
-    if (this->count_++ < this->limit_) *this->out_++ = val;
-    return *this;
-  }
-
-  truncating_iterator& operator++() { return *this; }
-  truncating_iterator& operator++(int) { return *this; }
-  truncating_iterator& operator*() { return *this; }
 };
 
 // A range with the specified output iterator and value type.
@@ -496,27 +370,10 @@ inline size_t count_code_points(basic_string_view<char> s) {
   return num_code_points;
 }
 
-inline size_t count_code_points(basic_string_view<char8_type> s) {
-  return count_code_points(basic_string_view<char>(
-      reinterpret_cast<const char*>(s.data()), s.size()));
-}
-
 template <typename Char>
 inline size_t code_point_index(basic_string_view<Char> s, size_t n) {
   size_t size = s.size();
   return n < size ? n : size;
-}
-
-// Calculates the index of the nth code point in a UTF-8 string.
-inline size_t code_point_index(basic_string_view<char8_type> s, size_t n) {
-  const char8_type* data = s.data();
-  size_t num_code_points = 0;
-  for (size_t i = 0, size = s.size(); i != size; ++i) {
-    if ((data[i] & 0xc0) != 0x80 && ++num_code_points > n) {
-      return i;
-    }
-  }
-  return s.size();
 }
 
 template<class InputIt, class OutputIt>
@@ -543,24 +400,9 @@ OutputIt fill_n(OutputIt first, Size count, const T& value) {
   return first;
 }
 
-template <typename InputIt, typename OutChar>
-using needs_conversion = bool_constant<
-    std::is_same<typename std::iterator_traits<InputIt>::value_type,
-                 char>::value &&
-    std::is_same<OutChar, char8_type>::value>;
-
-template <typename OutChar, typename InputIt, typename OutputIt,
-          FMT_ENABLE_IF(!needs_conversion<InputIt, OutChar>::value)>
+template <typename OutChar, typename InputIt, typename OutputIt>
 OutputIt copy_str(InputIt begin, InputIt end, OutputIt it) {
   return internal::copy(begin, end, it);
-}
-
-template <typename OutChar, typename InputIt, typename OutputIt,
-          FMT_ENABLE_IF(needs_conversion<InputIt, OutChar>::value)>
-OutputIt copy_str(InputIt begin, InputIt end, OutputIt it) {
-  while (begin != end)
-    *it++ = static_cast<char8_type>(*begin++);
-  return it;
 }
 
 #ifndef FMT_USE_GRISU
@@ -577,7 +419,7 @@ template <typename U>
 void buffer<T>::append(const U* begin, const U* end) {
   std::size_t new_size = size_ + to_unsigned(end - begin);
   reserve(new_size);
-  std::uninitialized_copy(begin, end, make_checked(ptr_, capacity_) + size_);
+  ::memcpy(ptr_ + size_, begin, (end - begin) * sizeof(U));
   size_ = new_size;
 }
 }  // namespace internal
@@ -1059,7 +901,6 @@ struct float_specs {
   sign_t sign : 8;
   bool upper : 1;
   bool locale : 1;
-  bool percent : 1;
   bool binary32 : 1;
   bool use_grisu : 1;
   bool showpoint : 1;
@@ -1262,12 +1103,6 @@ FMT_CONSTEXPR float_specs parse_float_type_spec(
     result.format = float_format::fixed;
     result.showpoint |= specs.precision != 0;
     break;
-#if FMT_DEPRECATED_PERCENT
-  case '%':
-    result.format = float_format::fixed;
-    result.percent = true;
-    break;
-#endif
   case 'A':
     result.upper = true;
     FMT_FALLTHROUGH;
@@ -1583,8 +1418,7 @@ template <typename Range> class basic_writer {
                 ++group;
               }
               buffer -= s.size();
-              std::uninitialized_copy(s.data(), s.data() + s.size(),
-                                      make_checked(buffer, s.size()));
+              ::memcpy(buffer, s.data(), s.size() * sizeof(char_type));
             });
       }
     };
@@ -1757,12 +1591,7 @@ template <typename Range> class basic_writer {
     }
     if (const_check(std::is_same<T, float>())) fspecs.binary32 = true;
     fspecs.use_grisu = use_grisu<T>();
-    if (const_check(FMT_DEPRECATED_PERCENT) && fspecs.percent) value *= 100;
     int exp = format_float(promote_float(value), precision, fspecs, buffer);
-    if (const_check(FMT_DEPRECATED_PERCENT) && fspecs.percent) {
-      buffer.push_back('%');
-      --exp;  // Adjust decimal place position.
-    }
     fspecs.precision = precision;
     char_type point = fspecs.locale ? decimal_point<char_type>(locale_)
                                     : static_cast<char_type>('.');
@@ -1861,7 +1690,6 @@ class arg_formatter_base {
 
  protected:
   writer_type& writer() { return writer_; }
-  FMT_DEPRECATED format_specs* spec() { return specs_; }
   format_specs* specs() { return specs_; }
   iterator out() { return writer_.out(); }
 
@@ -3118,17 +2946,6 @@ typename Context::iterator vformat_to(
   return h.context.out();
 }
 
-// Casts ``p`` to ``const void*`` for pointer formatting.
-// Example:
-//   auto s = format("{}", ptr(p));
-template <typename T> inline const void* ptr(const T* p) { return p; }
-template <typename T> inline const void* ptr(const std::unique_ptr<T>& p) {
-  return p.get();
-}
-template <typename T> inline const void* ptr(const std::shared_ptr<T>& p) {
-  return p.get();
-}
-
 class bytes {
  private:
   string_view data_;
@@ -3230,7 +3047,6 @@ using format_args_t = basic_format_args<format_context_t<OutputIt, Char>>;
 
 template <typename S, typename OutputIt, typename... Args,
           FMT_ENABLE_IF(
-              internal::is_output_iterator<OutputIt>::value &&
               !internal::is_contiguous_back_insert_iterator<OutputIt>::value)>
 inline OutputIt vformat_to(
     OutputIt out, const S& format_str,
@@ -3253,7 +3069,6 @@ inline OutputIt vformat_to(
  */
 template <typename OutputIt, typename S, typename... Args,
           FMT_ENABLE_IF(
-              internal::is_output_iterator<OutputIt>::value &&
               !internal::is_contiguous_back_insert_iterator<OutputIt>::value &&
               internal::is_string<S>::value)>
 inline OutputIt format_to(OutputIt out, const S& format_str, Args&&... args) {
@@ -3261,56 +3076,6 @@ inline OutputIt format_to(OutputIt out, const S& format_str, Args&&... args) {
   using context = format_context_t<OutputIt, char_t<S>>;
   return vformat_to(out, to_string_view(format_str),
                     make_format_args<context>(args...));
-}
-
-template <typename OutputIt> struct format_to_n_result {
-  /** Iterator past the end of the output range. */
-  OutputIt out;
-  /** Total (not truncated) output size. */
-  std::size_t size;
-};
-
-template <typename OutputIt, typename Char = typename OutputIt::value_type>
-using format_to_n_context =
-    format_context_t<internal::truncating_iterator<OutputIt>, Char>;
-
-template <typename OutputIt, typename Char = typename OutputIt::value_type>
-using format_to_n_args = basic_format_args<format_to_n_context<OutputIt, Char>>;
-
-template <typename OutputIt, typename Char, typename... Args>
-inline format_arg_store<format_to_n_context<OutputIt, Char>, Args...>
-make_format_to_n_args(const Args&... args) {
-  return format_arg_store<format_to_n_context<OutputIt, Char>, Args...>(
-      args...);
-}
-
-template <typename OutputIt, typename Char, typename... Args,
-          FMT_ENABLE_IF(internal::is_output_iterator<OutputIt>::value)>
-inline format_to_n_result<OutputIt> vformat_to_n(
-    OutputIt out, std::size_t n, basic_string_view<Char> format_str,
-    format_to_n_args<type_identity_t<OutputIt>, type_identity_t<Char>> args) {
-  auto it = vformat_to(internal::truncating_iterator<OutputIt>(out, n),
-                       format_str, args);
-  return {it.base(), it.count()};
-}
-
-/**
- \rst
- Formats arguments, writes up to ``n`` characters of the result to the output
- iterator ``out`` and returns the total output size and the iterator past the
- end of the output range.
- \endrst
- */
-template <typename OutputIt, typename S, typename... Args,
-          FMT_ENABLE_IF(internal::is_string<S>::value&&
-                            internal::is_output_iterator<OutputIt>::value)>
-inline format_to_n_result<OutputIt> format_to_n(OutputIt out, std::size_t n,
-                                                const S& format_str,
-                                                const Args&... args) {
-  internal::check_format_string<Args...>(format_str);
-  using context = format_to_n_context<OutputIt, char_t<S>>;
-  return vformat_to_n(out, n, to_string_view(format_str),
-                      make_format_args<context>(args...));
 }
 
 #if FMT_USE_STRING

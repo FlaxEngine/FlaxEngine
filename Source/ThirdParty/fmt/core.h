@@ -44,7 +44,6 @@ namespace fmt {
   }
 };
 #else
-#include <memory>
 namespace fmt {
 // std::back_insert_iterator impl to not include <iterator>
 template<class _Category, class _Ty, class _Diff = intptr, class _Pointer = _Ty *, class _Reference = _Ty&>
@@ -403,19 +402,6 @@ FMT_CONSTEXPR typename std::make_unsigned<Int>::type to_unsigned(Int value) {
   FMT_ASSERT(value >= 0, "negative value");
   return static_cast<typename std::make_unsigned<Int>::type>(value);
 }
-
-constexpr unsigned char micro[] = "\u00B5";
-
-template <typename Char> constexpr bool is_unicode() {
-  return FMT_UNICODE || sizeof(Char) != 1 ||
-         (sizeof(micro) == 3 && micro[0] == 0xC2 && micro[1] == 0xB5);
-}
-
-#ifdef __cpp_char8_t
-using char8_type = char8_t;
-#else
-enum char8_type : unsigned char {};
-#endif
 }  // namespace internal
 
 template <typename... Ts>
@@ -434,7 +420,6 @@ template <typename Char> class basic_string_view {
   size_t size_;
 
  public:
-  using char_type FMT_DEPRECATED_ALIAS = Char;
   using value_type = Char;
   using iterator = const Char*;
 
@@ -520,16 +505,10 @@ template <typename Char> class basic_string_view {
 using string_view = basic_string_view<char>;
 using wstring_view = basic_string_view<wchar_t>;
 
-#ifndef __cpp_char8_t
-// char8_t is deprecated; use char instead.
-using char8_t FMT_DEPRECATED_ALIAS = internal::char8_type;
-#endif
-
 /** Specifies if ``T`` is a character type. Can be specialized by users. */
 template <typename T> struct is_char : std::false_type {};
 template <> struct is_char<char> : std::true_type {};
 template <> struct is_char<wchar_t> : std::true_type {};
-template <> struct is_char<internal::char8_type> : std::true_type {};
 template <> struct is_char<char16_t> : std::true_type {};
 template <> struct is_char<char32_t> : std::true_type {};
 
@@ -696,12 +675,6 @@ class basic_format_parse_context : private ErrorHandler {
 using format_parse_context = basic_format_parse_context<char>;
 using wformat_parse_context = basic_format_parse_context<wchar_t>;
 
-template <typename Char, typename ErrorHandler = internal::error_handler>
-using basic_parse_context FMT_DEPRECATED_ALIAS =
-    basic_format_parse_context<Char, ErrorHandler>;
-using parse_context FMT_DEPRECATED_ALIAS = basic_format_parse_context<char>;
-using wparse_context FMT_DEPRECATED_ALIAS = basic_format_parse_context<wchar_t>;
-
 template <typename Context> class basic_format_arg;
 template <typename Context> class basic_format_args;
 
@@ -711,11 +684,6 @@ struct formatter {
   // A deleted default constructor indicates a disabled formatter.
   formatter() = delete;
 };
-
-template <typename T, typename Char, typename Enable = void>
-struct FMT_DEPRECATED convert_to_int
-    : bool_constant<!std::is_arithmetic<T>::value &&
-                    std::is_convertible<T, int>::value> {};
 
 // Specifies if T has an enabled formatter specialization. A type can be
 // formattable even if it doesn't have a formatter e.g. via a conversion.
