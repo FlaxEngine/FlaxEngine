@@ -427,8 +427,6 @@ Task* StreamingTexture::CreateStreamingTask(int32 residency)
     }
     else
     {
-        ASSERT(IsInMainThread());
-
         // Check if trim the mips down to 0 (full texture release)
         if (residency == 0)
         {
@@ -437,7 +435,7 @@ Task* StreamingTexture::CreateStreamingTask(int32 residency)
         }
         else
         {
-            // TODO: create task for reducing texture quality, or update SRV now (it's MainThread now so it's safe)
+            // TODO: create task for reducing texture quality, or update SRV now
             MISSING_CODE("add support for streaming quality down");
         }
     }

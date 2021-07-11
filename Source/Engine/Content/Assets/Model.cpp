@@ -714,8 +714,6 @@ Task* Model::CreateStreamingTask(int32 residency)
     }
     else
     {
-        ASSERT(IsInMainThread());
-
         // Do the quick data release
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
