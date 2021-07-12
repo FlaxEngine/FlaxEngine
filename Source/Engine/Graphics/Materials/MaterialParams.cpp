@@ -419,6 +419,10 @@ void MaterialParameter::Bind(BindMeta& meta) const
             default: ;
             }
         }
+        else if (type == MaterialSceneTextures::SceneDepth)
+        {
+            view = GPUDevice::Instance->GetDefaultWhiteTexture()->View();
+        }
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
