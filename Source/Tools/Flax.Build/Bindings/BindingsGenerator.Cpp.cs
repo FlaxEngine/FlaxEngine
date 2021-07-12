@@ -1013,7 +1013,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
             contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
-            contents.Append($"            return (object->**({functionInfo.UniqueName}_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
+            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
             separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
@@ -1466,6 +1466,7 @@ namespace Flax.Build.Bindings
                             }
                             var t = functionInfo.IsConst ? " const" : string.Empty;
                             contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
+                            contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
                         }
                         contents.AppendLine("");
 
