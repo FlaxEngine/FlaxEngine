@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.GUI;
 
 namespace FlaxEditor.Surface.Elements
@@ -32,13 +33,13 @@ namespace FlaxEditor.Surface.Elements
             Width = archetype.Size.X;
             ParentNode = parentNode;
             Archetype = archetype;
-            Value = (int)ParentNode.Values[Archetype.ValueIndex];
+            Value = Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]);
         }
 
         /// <inheritdoc />
         protected override void OnValueChanged()
         {
-            if ((int)ParentNode.Values[Archetype.ValueIndex] != (int)Value)
+            if (Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]) != (int)Value)
             {
                 // Edit value
                 ParentNode.SetValue(Archetype.ValueIndex, Value);
