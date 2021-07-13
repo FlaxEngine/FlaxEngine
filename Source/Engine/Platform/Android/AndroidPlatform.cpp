@@ -535,6 +535,7 @@ void JNICALL Java_com_flaxengine_GameActivity_nativeSetPlatformInfo(JNIEnv* env,
     DeviceBuildNumber = ToString(env, deviceBuildNumber);
     SystemVersion = ToString(env, systemVersion);
     SystemLanguage = ToString(env, systemLanguage);
+    SystemLanguage.Replace('_', '-');
     ScreenWidth = screenWidth;
     ScreenHeight = screenHeight;
     CacheDir = ToString(env, cacheDir);

@@ -164,6 +164,9 @@ void LocalizationService::OnLocalizationChanged()
         Instance.LocalizedStringTables.Add(table->Get(), table->Count());
     }
 
+#if PLATFORM_ANDROID
+    // Android doesn't support locales in the native C library (https://issuetracker.google.com/issues/36974962)
+#else
     // Change C++ locale (eg. used by fmt lib for values formatting)
     {
         char localeName[100];
@@ -188,6 +191,7 @@ void LocalizationService::OnLocalizationChanged()
         }
         std::locale::global(std::locale(localeName));
     }
+#endif
 
     // Send event
     Localization::LocalizationChanged();
