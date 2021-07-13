@@ -631,7 +631,7 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
             LOG(Error, "Failed to convert texture {0} from format {1} to {2}", asset->ToString(), (int32)format, (int32)targetFormat);
             return true;
         }
-        textureData = &textureDataSrc;
+        textureData = &textureDataTmp1;
     }
 
     if (assetHeader->MipLevels > mipLevelsMax)
@@ -656,7 +656,9 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
     }
 
     // Adjust texture header
+    data.InitData.CustomData.Allocate(sizeof(TextureHeader));
     auto& header = *(TextureHeader*)data.InitData.CustomData.Get();
+    header = *assetHeader;
     header.Width = textureData->Width;
     header.Height = textureData->Height;
     header.Depth = textureData->Depth;
@@ -664,7 +666,7 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
     header.MipLevels = textureData->GetMipLevels();
 
     // Serialize texture data into the asset chunks
-    for (int32 mipIndex = 0; mipIndex < textureData->GetMipLevels(); mipIndex++)
+    for (int32 mipIndex = 0; mipIndex < header.MipLevels; mipIndex++)
     {
         auto chunk = New<FlaxChunk>();
         data.InitData.Header.Chunks[mipIndex] = chunk;
