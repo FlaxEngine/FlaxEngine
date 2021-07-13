@@ -108,6 +108,9 @@ namespace Flax.Build
 
                         foreach (var targetPlatform in platforms)
                         {
+                            if (!Platform.BuildPlatform.CanBuildPlatform(targetPlatform))
+                                continue;
+
                             // Pick architectures to build
                             TargetArchitecture[] architectures = Configuration.BuildArchitectures;
                             if (architectures != null)
