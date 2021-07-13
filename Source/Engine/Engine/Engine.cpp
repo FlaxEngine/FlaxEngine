@@ -440,7 +440,7 @@ void Engine::OnExit()
 
     // Unload Engine services
     EngineService::OnDispose();
-    Delete(UpdateGraph);
+    SAFE_DELETE(UpdateGraph);
 
     LOG_FLUSH();
 
