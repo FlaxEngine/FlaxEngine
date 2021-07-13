@@ -59,7 +59,7 @@ namespace FlaxEditor.GUI
                     if (_selectedItem == item)
                         return;
                     if (!IsValid(item))
-                        throw new ArgumentException("Invalid asset type.");
+                        return;
 
                     // Change value to scene reference (cannot load asset because scene can be already loaded - duplicated ID issue)
                     _selectedItem?.RemoveReference(this);
@@ -110,7 +110,7 @@ namespace FlaxEditor.GUI
                 // Find item from content database and check it
                 var item = value ? Editor.Instance.ContentDatabase.FindAsset(value.ID) : null;
                 if (item != null && !IsValid(item))
-                    throw new ArgumentException("Invalid asset type.");
+                    return;
 
                 // Change value
                 _selectedItem?.RemoveReference(this);
