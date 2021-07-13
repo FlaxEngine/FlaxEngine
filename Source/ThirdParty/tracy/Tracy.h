@@ -1,8 +1,6 @@
 #ifndef __TRACY_HPP__
 #define __TRACY_HPP__
 
-#include "common/TracySystem.hpp"
-
 #ifndef TRACY_ENABLE
 
 #define ZoneNamed(x,y)
@@ -84,6 +82,7 @@
 
 #include <string.h>
 
+#include "common/TracySystem.hpp"
 #include "client/TracyCallstack.h"
 
 namespace tracy

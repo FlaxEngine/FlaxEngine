@@ -168,7 +168,9 @@ void SceneRendering::DrawEntries::CullAndDraw(RenderContext& renderContext)
         {
 #if SCENE_RENDERING_USE_PROFILER
             PROFILE_CPU();
+#if TRACY_ENABLE
             ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
 #endif
             e.Actor->Draw(renderContext);
         }
@@ -181,7 +183,9 @@ void SceneRendering::DrawEntries::CullAndDraw(RenderContext& renderContext)
         {
 #if SCENE_RENDERING_USE_PROFILER
             PROFILE_CPU();
+#if TRACY_ENABLE
             ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
 #endif
             e.Actor->Draw(renderContext);
         }
@@ -289,7 +293,9 @@ void SceneRendering::DrawEntries::CullAndDrawOffline(RenderContext& renderContex
         {
 #if SCENE_RENDERING_USE_PROFILER
             PROFILE_CPU();
+#if TRACY_ENABLE
             ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
 #endif
             e.Actor->Draw(renderContext);
         }
@@ -302,7 +308,9 @@ void SceneRendering::DrawEntries::CullAndDrawOffline(RenderContext& renderContex
         {
 #if SCENE_RENDERING_USE_PROFILER
             PROFILE_CPU();
+#if TRACY_ENABLE
             ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
+#endif
 #endif
             e.Actor->Draw(renderContext);
         }
@@ -350,7 +358,9 @@ void SceneRendering::Draw(RenderContext& renderContext)
                 {
 #if SCENE_RENDERING_USE_PROFILER
                     PROFILE_CPU();
+#if TRACY_ENABLE
                     ___tracy_scoped_zone.Name(*actor->GetName(), actor->GetName().Length());
+#endif
 #endif
                     actor->Draw(renderContext);
                 }
