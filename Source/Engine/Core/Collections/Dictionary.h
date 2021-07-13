@@ -512,10 +512,13 @@ public:
             capacity |= capacity >> 16;
             capacity = capacity + 1;
         }
-        _allocation.Allocate(capacity);
-        Bucket* data = _allocation.Get();
-        for (int32 i = 0; i < capacity; i++)
-            data[i]._state = Bucket::Empty;
+        if (capacity)
+        {
+            _allocation.Allocate(capacity);
+            Bucket* data = _allocation.Get();
+            for (int32 i = 0; i < capacity; i++)
+                data[i]._state = Bucket::Empty;
+        }
         _size = capacity;
         Bucket* oldData = oldAllocation.Get();
         if (oldElementsCount != 0 && preserveContents)
