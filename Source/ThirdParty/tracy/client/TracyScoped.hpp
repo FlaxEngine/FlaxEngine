@@ -12,7 +12,7 @@
 
 namespace tracy
 {
-inline void ScopedZone::Begin(uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz)
+void ScopedZone::Begin(uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz)
 {
     TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
@@ -21,14 +21,14 @@ inline void ScopedZone::Begin(uint32_t line, const char* source, size_t sourceSz
     TracyLfqCommit;
 }
 
-inline void ScopedZone::End()
+void ScopedZone::End()
 {
     TracyLfqPrepare( QueueType::ZoneEnd );
     MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
     TracyLfqCommit;
 }
 
-inline ScopedZone::ScopedZone( const SourceLocationData* srcloc, bool is_active )
+ScopedZone::ScopedZone( const SourceLocationData* srcloc, bool is_active )
 #ifdef TRACY_ON_DEMAND
     : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -45,7 +45,7 @@ inline ScopedZone::ScopedZone( const SourceLocationData* srcloc, bool is_active 
     TracyLfqCommit;
 }
 
-inline ScopedZone::ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active )
+ScopedZone::ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active )
 #ifdef TRACY_ON_DEMAND
     : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -64,7 +64,7 @@ inline ScopedZone::ScopedZone( const SourceLocationData* srcloc, int depth, bool
     TracyLfqCommit;
 }
 
-inline ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active )
+ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active )
 #ifdef TRACY_ON_DEMAND
     : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -82,7 +82,7 @@ inline ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceS
     TracyLfqCommit;
 }
 
-inline ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active )
+ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active )
 #ifdef TRACY_ON_DEMAND
     : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -102,7 +102,7 @@ inline ScopedZone::ScopedZone( uint32_t line, const char* source, size_t sourceS
     TracyLfqCommit;
 }
 
-inline ScopedZone::~ScopedZone()
+ScopedZone::~ScopedZone()
 {
     if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
@@ -113,7 +113,7 @@ inline ScopedZone::~ScopedZone()
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Text( const char* txt, size_t size )
+void ScopedZone::Text( const char* txt, size_t size )
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !m_active ) return;
@@ -128,7 +128,7 @@ inline void ScopedZone::Text( const char* txt, size_t size )
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Text(const Char* txt, size_t size)
+void ScopedZone::Text(const Char* txt, size_t size)
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !m_active ) return;
@@ -144,7 +144,7 @@ inline void ScopedZone::Text(const Char* txt, size_t size)
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Name( const char* txt, size_t size )
+void ScopedZone::Name( const char* txt, size_t size )
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !m_active ) return;
@@ -159,7 +159,7 @@ inline void ScopedZone::Name( const char* txt, size_t size )
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Name( const Char* txt, size_t size )
+void ScopedZone::Name( const Char* txt, size_t size )
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !m_active ) return;
@@ -175,7 +175,7 @@ inline void ScopedZone::Name( const Char* txt, size_t size )
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Color( uint32_t color )
+void ScopedZone::Color( uint32_t color )
 {
     if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
@@ -188,7 +188,7 @@ inline void ScopedZone::Color( uint32_t color )
     TracyLfqCommit;
 }
 
-inline void ScopedZone::Value( uint64_t value )
+void ScopedZone::Value( uint64_t value )
 {
     if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
@@ -199,7 +199,7 @@ inline void ScopedZone::Value( uint64_t value )
     TracyLfqCommit;
 }
 
-inline bool ScopedZone::IsActive() const { return m_active; }
+bool ScopedZone::IsActive() const { return m_active; }
 
 }
 
