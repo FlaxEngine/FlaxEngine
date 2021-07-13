@@ -31,7 +31,7 @@ TextureMipData::TextureMipData(TextureMipData&& other) noexcept
     : RowPitch(other.RowPitch)
     , DepthPitch(other.DepthPitch)
     , Lines(other.Lines)
-    , Data(std::move(other.Data))
+    , Data(MoveTemp(other.Data))
 {
 }
 
