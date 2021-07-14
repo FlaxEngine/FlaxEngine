@@ -72,6 +72,12 @@ namespace FlaxEngine.GUI
         public event Action<Button> ButtonClicked;
 
         /// <summary>
+        /// Gets or sets the brush used for background drawing.
+        /// </summary>
+        [EditorOrder(2000), Tooltip("The brush used for background drawing.")]
+        public IBrush BackgroundBrush { get; set; }
+
+        /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000)]
@@ -206,7 +212,10 @@ namespace FlaxEngine.GUI
             }
 
             // Draw background
-            Render2D.FillRectangle(clientRect, backgroundColor);
+            if (BackgroundBrush != null)
+                BackgroundBrush.Draw(clientRect, backgroundColor);
+            else
+                Render2D.FillRectangle(clientRect, backgroundColor);
             Render2D.DrawRectangle(clientRect, borderColor);
 
             // Draw text
