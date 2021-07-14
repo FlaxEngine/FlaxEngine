@@ -29,7 +29,7 @@ struct RenderView;
 #define USE_PRECISE_TERRAIN_INTERSECTS (USE_EDITOR)
 
 // Enable/disable terrain physics collision drawing
-#define TERRAIN_USE_PHYSICS_DEBUG (USE_EDITOR && 0)
+#define TERRAIN_USE_PHYSICS_DEBUG (USE_EDITOR && 1)
 
 // Terrain splatmaps amount limit. Each splatmap can hold up to 4 layer weights.
 #define TERRAIN_MAX_SPLATMAPS_COUNT 2

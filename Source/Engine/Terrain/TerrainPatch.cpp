@@ -83,7 +83,7 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     }
 #endif
 #if TERRAIN_USE_PHYSICS_DEBUG
-	_debugLines.Resize(0);
+    _debugLines.Resize(0);
 #endif
 #if USE_EDITOR
     _collisionTriangles.Resize(0);
@@ -1817,7 +1817,7 @@ bool TerrainPatch::UpdateHeightData(const TerrainDataUpdateInfo& info, const Int
 
     // Invalidate cache
 #if TERRAIN_USE_PHYSICS_DEBUG
-	_debugLines.Resize(0);
+    _debugLines.Resize(0);
 #endif
 #if USE_EDITOR
     _collisionTriangles.Resize(0);
@@ -1948,7 +1948,7 @@ bool TerrainPatch::UpdateCollision()
     {
         // Invalidate cache
 #if TERRAIN_USE_PHYSICS_DEBUG
-		_debugLines.Resize(0);
+        _debugLines.Resize(0);
 #endif
 #if USE_EDITOR
         _collisionTriangles.Resize(0);
@@ -2120,7 +2120,7 @@ void TerrainPatch::UpdatePostManualDeserialization()
     {
         // Invalidate cache
 #if TERRAIN_USE_PHYSICS_DEBUG
-		_debugLines.Resize(0);
+        _debugLines.Resize(0);
 #endif
 #if USE_EDITOR
         _collisionTriangles.Resize(0);
@@ -2250,7 +2250,7 @@ void TerrainPatch::DestroyCollision()
     _physicsShape = nullptr;
     _physicsHeightField = nullptr;
 #if TERRAIN_USE_PHYSICS_DEBUG
-	_debugLines.Resize(0);
+    _debugLines.Resize(0);
 #endif
 #if USE_EDITOR
     _collisionTriangles.Resize(0);
@@ -2262,74 +2262,83 @@ void TerrainPatch::DestroyCollision()
 
 void TerrainPatch::CacheDebugLines()
 {
-	ASSERT(_debugLines.IsEmpty() && _physicsHeightField);
+    ASSERT(_debugLines.IsEmpty() && _physicsHeightField);
 
-	const uint32 rows = _physicsHeightField->getNbRows();
-	const uint32 cols = _physicsHeightField->getNbColumns();
+    const uint32 rows = _physicsHeightField->getNbRows();
+    const uint32 cols = _physicsHeightField->getNbColumns();
 
-	_debugLines.Resize((rows - 1) * (cols - 1) * 6 + (cols + rows - 2) * 2);
-	Vector3* data = _debugLines.Get();
+    _debugLines.Resize((rows - 1) * (cols - 1) * 6 + (cols + rows - 2) * 2);
+    Vector3* data = _debugLines.Get();
 
-#define GET_VERTEX(x, y) const Vector3 v##x##y(row + (x), _physicsHeightField->getHeight((PxReal)(row + (x)), (PxReal)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, col + (y))
+#define GET_VERTEX(x, y) const Vector3 v##x##y((float)(row + (x)), _physicsHeightField->getHeight((PxReal)(row + (x)), (PxReal)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y)))
 
-	for (uint32 row = 0; row < rows - 1; row++)
-	{
-		for (uint32 col = 0; col < cols - 1; col++)
-		{
-			GET_VERTEX(0, 0);
-			GET_VERTEX(0, 1);
-			GET_VERTEX(1, 0);
-			GET_VERTEX(1, 1);
+    for (uint32 row = 0; row < rows - 1; row++)
+    {
+        for (uint32 col = 0; col < cols - 1; col++)
+        {
+            GET_VERTEX(0, 0);
+            GET_VERTEX(0, 1);
+            GET_VERTEX(1, 0);
+            GET_VERTEX(1, 1);
 
-			*data++ = v00;
-			*data++ = v01;
+            *data++ = v00;
+            *data++ = v01;
 
-			*data++ = v00;
-			*data++ = v10;
+            *data++ = v00;
+            *data++ = v10;
 
-			*data++ = v00;
-			*data++ = v11;
-		}
-	}
+            *data++ = v00;
+            *data++ = v11;
+        }
+    }
 
-	for (uint32 row = 0; row < rows - 1; row++)
-	{
-		const uint32 col = cols - 1;
+    for (uint32 row = 0; row < rows - 1; row++)
+    {
+        const uint32 col = cols - 1;
+        GET_VERTEX(0, 0);
+        GET_VERTEX(1, 0);
 
-		GET_VERTEX(0, 0);
-		GET_VERTEX(1, 0);
+        *data++ = v00;
+        *data++ = v10;
+    }
 
-		*data++ = v00;
-		*data++ = v10;
-	}
+    for (uint32 col = 0; col < cols - 1; col++)
+    {
+        const uint32 row = rows - 1;
+        GET_VERTEX(0, 0);
+        GET_VERTEX(0, 1);
 
-	for (uint32 col = 0; col < cols - 1; col++)
-	{
-		const uint32 row = rows - 1;
-
-		GET_VERTEX(0, 0);
-		GET_VERTEX(0, 1);
-
-		*data++ = v00;
-		*data++ = v01;
-	}
+        *data++ = v00;
+        *data++ = v01;
+    }
 
 #undef GET_VERTEX
 }
 
 void TerrainPatch::DrawPhysicsDebug(RenderView& view)
 {
-	if (!_physicsShape)
-		return;
+    if (!_physicsShape || !view.CullingFrustum.Intersects(_bounds))
+        return;
 
-	if (_debugLines.IsEmpty())
-		CacheDebugLines();
+    const Transform terrainTransform = _terrain->_transform;
+    const Transform localTransform(Vector3(0, _yOffset, 0), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
+    const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
 
-	const Transform terrainTransform = _terrain->_transform;
-	Transform localTransform(Vector3(0, _yOffset, 0), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
-	const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
-
-	DebugDraw::DrawLines(_debugLines.Get(), _debugLines.Count() / 2, world, Color::GreenYellow * 0.8f, 0, false);
+    if (view.Mode == ViewMode::PhysicsColliders)
+    {
+        DebugDraw::DrawTriangles(GetCollisionTriangles(), Color::DarkOliveGreen, 0, true);
+    }
+    else
+    {
+        BoundingSphere sphere;
+        BoundingSphere::FromBox(_bounds, sphere);
+        if (Vector3::Distance(sphere.Center, view.Position) - sphere.Radius < 4000.0f)
+        {
+            if (_debugLines.IsEmpty())
+                CacheDebugLines();
+            DebugDraw::DrawLines(_debugLines, world, Color::GreenYellow * 0.8f, 0, true);
+        }
+    }
 }
 
 #endif

@@ -349,14 +349,14 @@ public:
     /// <summary>
     /// Gets the collision mesh triangles array (3 vertices per triangle in linear list). Cached internally to reuse data.
     /// </summary>
-    /// <returns>The collision triangles vertices list.</returns>
+    /// <returns>The collision triangles vertices list (in world-space).</returns>
     const Array<Vector3>& GetCollisionTriangles();
 
     /// <summary>
     /// Gets the collision mesh triangles array (3 vertices per triangle in linear list) that intersect with the given bounds.
     /// </summary>
     /// <param name="bounds">The world-space bounds to find terrain triangles that intersect with it.</param>
-    /// <param name="result">The result triangles that intersect with the given bounds.</param>
+    /// <param name="result">The result triangles that intersect with the given bounds (in world-space).</param>
     void GetCollisionTriangles(const BoundingSphere& bounds, Array<Vector3>& result);
 
 #endif

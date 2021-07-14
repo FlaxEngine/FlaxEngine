@@ -261,10 +261,10 @@ void Terrain::OnPhysicalMaterialChanged()
 
 void Terrain::DrawPhysicsDebug(RenderView& view)
 {
-	for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
-	{
-		_patches[pathIndex]->DrawPhysicsDebug(view);
-	}
+    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
+    {
+        _patches[pathIndex]->DrawPhysicsDebug(view);
+    }
 }
 
 #endif
@@ -756,7 +756,7 @@ void Terrain::OnEnable()
 {
     _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 #if TERRAIN_USE_PHYSICS_DEBUG
-	GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
 
     // Base
@@ -767,7 +767,7 @@ void Terrain::OnDisable()
 {
     GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
-	GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
 
     // Base
