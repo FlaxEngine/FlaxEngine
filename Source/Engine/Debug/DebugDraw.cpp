@@ -1184,9 +1184,38 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
     }
 }
 
+void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Matrix& transform, const Color& color, float duration, bool depthTest)
+{
+    CHECK(vertices.Length() % 3 == 0);
+
+    DebugTriangle t;
+    t.Color = Color32(color);
+    t.TimeLeft = duration;
+
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
+
+    for (int32 i = 0; i < vertices.Length();)
+    {
+        Vector3::Transform(vertices[i++], transform, t.V0);
+        Vector3::Transform(vertices[i++], transform, t.V1);
+        Vector3::Transform(vertices[i++], transform, t.V2);
+        list->Add(t);
+    }
+}
+
 void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Color& color, float duration, bool depthTest)
 {
     DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), color, duration, depthTest);
+}
+
+void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Matrix& transform, const Color& color, float duration, bool depthTest)
+{
+    DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), transform, color, duration, depthTest);
 }
 
 void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Color& color, float duration, bool depthTest)
