@@ -1269,12 +1269,30 @@ void DebugDraw::DrawWireTriangles(const Array<Vector3>& vertices, const Array<in
     DrawWireTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), Span<int32>(indices.Get(), indices.Count()), color, duration, depthTest);
 }
 
+void DebugDraw::DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
+{
+    // Check if has no length (just sphere)
+    if (length < ZeroTolerance)
+    {
+        DrawSphere(BoundingSphere(position, radius), color, duration, depthTest);
+    }
+    else
+    {
+        const Vector3 dir = orientation * Vector3::Forward;
+        radius = Math::Max(radius, 0.05f);
+        length = Math::Max(length, 0.05f);
+        const float halfLength = length / 2.0f;
+        DrawSphere(BoundingSphere(position + dir * halfLength, radius), color, duration, depthTest);
+        DrawSphere(BoundingSphere(position - dir * halfLength, radius), color, duration, depthTest);
+        DrawCylinder(position, orientation * Quaternion::Euler(90.0f, 0, 0), radius, length, color, duration, depthTest);
+    }
+}
+
 void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
 {
     // Check if has no length (just sphere)
     if (length < ZeroTolerance)
     {
-        // Draw sphere
         DrawWireSphere(BoundingSphere(position, radius), color, duration, depthTest);
     }
     else
