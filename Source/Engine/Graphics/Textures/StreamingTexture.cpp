@@ -361,7 +361,7 @@ protected:
         if (!_streamingTexture->GetOwner()->GetMipDataCustomPitch(absoluteMipIndex, rowPitch, slicePitch))
             texture->ComputePitch(_mipIndex, rowPitch, slicePitch);
         _data.Link(data);
-        ASSERT(data.Length() >= slicePitch * arraySize);
+        ASSERT(data.Length() >= (int32)slicePitch * arraySize);
 
         // Update all array slices
         const byte* dataSource = data.Get();

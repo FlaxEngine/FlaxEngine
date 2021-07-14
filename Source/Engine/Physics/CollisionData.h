@@ -251,8 +251,11 @@ public:
 private:
     bool _hasMissingDebugLines = true;
     Array<Vector3> _debugLines;
+    Array<Vector3> _debugVertexBuffer;
+    Array<int32> _debugIndexBuffer;
 public:
     const Array<Vector3>& GetDebugLines();
+    void GetDebugTriangles(Array<Vector3>*& vertexBuffer, Array<int32>*& indexBuffer);
 #endif
 
 private:

@@ -175,6 +175,11 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
             }
         }
     }
+    if (renderContext.View.Mode == ViewMode::PhysicsColliders)
+    {
+        context->ResetRenderTarget();
+        return;
+    }
 #endif
 
     // Draw objects that can get decals

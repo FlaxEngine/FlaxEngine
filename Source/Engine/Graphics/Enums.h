@@ -797,6 +797,11 @@ API_ENUM() enum class ViewMode
     /// Draw meshes vertex colors
     /// </summary>
     VertexColors = 19,
+
+    /// <summary>
+    /// Draw physics colliders debug view
+    /// </summary>
+    PhysicsColliders = 20,
 };
 
 /// <summary>

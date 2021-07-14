@@ -25,11 +25,14 @@ void BoxCollider::SetSize(const Vector3& value)
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
 
 void BoxCollider::DrawPhysicsDebug(RenderView& view)
 {
-    const Color color = Color::GreenYellow;
-    DEBUG_DRAW_WIRE_BOX(_bounds, color * 0.8f, 0, true);
+    if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
+        DebugDraw::DrawBox(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+    else
+        DebugDraw::DrawWireBox(_bounds, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void BoxCollider::OnDebugDraw()

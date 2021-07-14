@@ -371,7 +371,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
     if (view.Pass & DrawPass::GBuffer)
     {
         // Draw physics shapes
-        if (view.Flags & ViewFlags::PhysicsDebug)
+        if (view.Flags & ViewFlags::PhysicsDebug || view.Mode == ViewMode::PhysicsColliders)
         {
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
             {

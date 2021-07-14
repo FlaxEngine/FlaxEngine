@@ -227,18 +227,17 @@ const Array<Vector3>& CollisionData::GetDebugLines()
         ScopeLock lock(Locker);
         _hasMissingDebugLines = false;
 
-        Array<Vector3> vertexBuffer;
-        Array<int32> indexBuffer;
-        ExtractGeometry(vertexBuffer, indexBuffer);
+        // Get triangles
+        ExtractGeometry(_debugVertexBuffer, _debugIndexBuffer);
 
         // Get lines
-        _debugLines.Resize(indexBuffer.Count() * 2);
+        _debugLines.Resize(_debugIndexBuffer.Count() * 2);
         int32 lineIndex = 0;
-        for (int32 i = 0; i < indexBuffer.Count(); i += 3)
+        for (int32 i = 0; i < _debugIndexBuffer.Count(); i += 3)
         {
-            const auto a = vertexBuffer[indexBuffer[i + 0]];
-            const auto b = vertexBuffer[indexBuffer[i + 1]];
-            const auto c = vertexBuffer[indexBuffer[i + 2]];
+            const auto a = _debugVertexBuffer[_debugIndexBuffer[i + 0]];
+            const auto b = _debugVertexBuffer[_debugIndexBuffer[i + 1]];
+            const auto c = _debugVertexBuffer[_debugIndexBuffer[i + 2]];
 
             _debugLines[lineIndex++] = a;
             _debugLines[lineIndex++] = b;
@@ -252,6 +251,13 @@ const Array<Vector3>& CollisionData::GetDebugLines()
     }
 
     return _debugLines;
+}
+
+void CollisionData::GetDebugTriangles(Array<Vector3>*& vertexBuffer, Array<int32>*& indexBuffer)
+{
+    GetDebugLines();
+    vertexBuffer = &_debugVertexBuffer;
+    indexBuffer = &_debugIndexBuffer;
 }
 
 #endif
@@ -327,6 +333,8 @@ void CollisionData::unload(bool isReloading)
 #if USE_EDITOR
     _hasMissingDebugLines = true;
     _debugLines.Resize(0);
+    _debugVertexBuffer.Resize(0);
+    _debugIndexBuffer.Resize(0);
 #endif
 }
 
