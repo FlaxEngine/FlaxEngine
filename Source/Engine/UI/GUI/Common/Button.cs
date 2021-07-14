@@ -74,7 +74,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the brush used for background drawing.
         /// </summary>
-        [EditorOrder(2000), Tooltip("The brush used for background drawing.")]
+        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for background drawing.")]
         public IBrush BackgroundBrush { get; set; }
 
         /// <summary>

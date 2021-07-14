@@ -109,6 +109,12 @@ namespace FlaxEngine.GUI
         public Color BarColor { get; set; }
 
         /// <summary>
+        /// Gets or sets the brush used for progress bar drawing.
+        /// </summary>
+        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for progress bar drawing.")]
+        public IBrush BarBrush { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ProgressBar"/> class.
         /// </summary>
         public ProgressBar()
@@ -164,7 +170,10 @@ namespace FlaxEngine.GUI
             {
                 var barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
                 BarMargin.ShrinkRectangle(ref barRect);
-                Render2D.FillRectangle(barRect, BarColor);
+                if (BarBrush != null)
+                    BarBrush.Draw(barRect, BarColor);
+                else
+                    Render2D.FillRectangle(barRect, BarColor);
             }
         }
     }
