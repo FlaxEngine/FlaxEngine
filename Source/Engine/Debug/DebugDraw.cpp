@@ -872,6 +872,8 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
 
 void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
 {
+    if (lines.Length() == 0)
+        return;
     if (lines.Length() % 2 != 0)
     {
         DebugLog::ThrowException("Cannot draw debug lines with uneven amount of items in array");
@@ -904,6 +906,11 @@ void DebugDraw::DrawLines(const Span<Vector3>& lines, const Matrix& transform, c
             debugDrawData.OneFrameLines.Add(l);
         }
     }
+}
+
+void DebugDraw::DrawLines(const Array<Vector3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
+{
+    DrawLines(Span<Vector3>(lines.Get(), lines.Count()), transform, color, duration, depthTest);
 }
 
 void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& p3, const Vector3& p4, const Color& color, float duration, bool depthTest)
@@ -1155,7 +1162,7 @@ void DebugDraw::DrawTriangle(const Vector3& v0, const Vector3& v1, const Vector3
 
 void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color, float duration, bool depthTest)
 {
-    ASSERT(vertices.Length() % 3 == 0);
+    CHECK(vertices.Length() % 3 == 0);
 
     DebugTriangle t;
     t.Color = Color32(color);
@@ -1184,7 +1191,7 @@ void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Color& color
 
 void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Color& color, float duration, bool depthTest)
 {
-    ASSERT(indices.Length() % 3 == 0);
+    CHECK(indices.Length() % 3 == 0);
 
     DebugTriangle t;
     t.Color = Color32(color);
@@ -1206,14 +1213,43 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
     }
 }
 
+void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Matrix& transform, const Color& color, float duration, bool depthTest)
+{
+    CHECK(indices.Length() % 3 == 0);
+
+    DebugTriangle t;
+    t.Color = Color32(color);
+    t.TimeLeft = duration;
+
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    list->EnsureCapacity(list->Count() + indices.Length() / 3);
+
+    for (int32 i = 0; i < indices.Length();)
+    {
+        Vector3::Transform(vertices[indices[i++]], transform, t.V0);
+        Vector3::Transform(vertices[indices[i++]], transform, t.V1);
+        Vector3::Transform(vertices[indices[i++]], transform, t.V2);
+        list->Add(t);
+    }
+}
+
 void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Array<int32, HeapAllocation>& indices, const Color& color, float duration, bool depthTest)
 {
     DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), Span<int32>(indices.Get(), indices.Count()), color, duration, depthTest);
 }
 
+void DebugDraw::DrawTriangles(const Array<Vector3>& vertices, const Array<int32, HeapAllocation>& indices, const Matrix& transform, const Color& color, float duration, bool depthTest)
+{
+    DrawTriangles(Span<Vector3>(vertices.Get(), vertices.Count()), Span<int32>(indices.Get(), indices.Count()), transform, color, duration, depthTest);
+}
+
 void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Color& color, float duration, bool depthTest)
 {
-    ASSERT(vertices.Length() % 3 == 0);
+    CHECK(vertices.Length() % 3 == 0);
 
     DebugTriangle t;
     t.Color = Color32(color);
@@ -1242,7 +1278,7 @@ void DebugDraw::DrawWireTriangles(const Array<Vector3>& vertices, const Color& c
 
 void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Color& color, float duration, bool depthTest)
 {
-    ASSERT(indices.Length() % 3 == 0);
+    CHECK(indices.Length() % 3 == 0);
 
     DebugTriangle t;
     t.Color = Color32(color);

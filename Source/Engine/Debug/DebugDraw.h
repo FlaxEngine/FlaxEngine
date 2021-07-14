@@ -91,6 +91,16 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     API_FUNCTION() static void DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
+    /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
+    /// </summary>
+    /// <param name="lines">The list of vertices for lines (must have multiple of 2 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawLines(const Array<Vector3, HeapAllocation>& lines, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
     /// Draws a Bezier curve.
     /// </summary>
     /// <param name="p1">The start point.</param>
@@ -168,10 +178,32 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the given index buffer.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list.</param>
+    /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Array<int32, HeapAllocation>& indices, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the given index buffer.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list.</param>
+    /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Array<int32, HeapAllocation>& indices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe triangles.
