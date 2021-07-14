@@ -324,19 +324,32 @@ void Script::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_BIT_MEMBER(Enabled, _enabled);
     DESERIALIZE_MEMBER(PrefabID, _prefabID);
 
-    Guid parentId = Guid::Empty;
-    DESERIALIZE_MEMBER(ParentID, parentId);
-    const auto parent = Scripting::FindObject<Actor>(parentId);
-    if (_parent != parent)
     {
-        if (_parent)
-            _parent->Scripts.RemoveKeepOrder(this);
-        _parent = parent;
-        if (_parent)
-            _parent->Scripts.Add(this);
-    }
-    else if (!parent && parentId.IsValid())
-    {
-        LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+        const auto member = SERIALIZE_FIND_MEMBER(stream, "ParentID");
+        if (member != stream.MemberEnd())
+        {
+            Guid parentId;
+            Serialization::Deserialize(member->value, parentId, modifier);
+            const auto parent = Scripting::FindObject<Actor>(parentId);
+            if (_parent != parent)
+            {
+                if (IsDuringPlay())
+                {
+                    SetParent(parent, false);
+                }
+                else
+                {
+                    if (_parent)
+                        _parent->Scripts.RemoveKeepOrder(this);
+                    _parent = parent;
+                    if (_parent)
+                        _parent->Scripts.Add(this);
+                }
+            }
+            else if (!parent && parentId.IsValid())
+            {
+                LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+            }
+        }
     }
 }
