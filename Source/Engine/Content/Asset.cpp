@@ -241,6 +241,10 @@ bool Asset::ShouldDeleteFileOnUnload() const
 
 void Asset::Reload()
 {
+    // Virtual assets are memory-only so reloading them makes no sense
+    if (IsVirtual())
+        return;
+
     // It's better to call it from the main thread
     if (IsInMainThread())
     {
