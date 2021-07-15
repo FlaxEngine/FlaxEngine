@@ -100,6 +100,12 @@ public:
     bool UpdateWhenOffscreen = false;
 
     /// <summary>
+    /// The animation update delta time scale. Can be used to speed up animation playback or create slow motion effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Skinned Model\")")
+    float UpdateSpeed = 1.0f;
+
+    /// <summary>
     /// The animation update mode. Can be used to optimize the performance.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(50), DefaultValue(AnimationUpdateMode.Auto), EditorDisplay(\"Skinned Model\")")

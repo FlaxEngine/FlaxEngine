@@ -665,6 +665,7 @@ void AnimatedModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(PerBoneMotionBlur);
     SERIALIZE(UseTimeScale);
     SERIALIZE(UpdateWhenOffscreen);
+    SERIALIZE(UpdateSpeed);
     SERIALIZE(UpdateMode);
     SERIALIZE(BoundsScale);
     SERIALIZE(CustomBounds);
@@ -688,6 +689,7 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(PerBoneMotionBlur);
     DESERIALIZE(UseTimeScale);
     DESERIALIZE(UpdateWhenOffscreen);
+    DESERIALIZE(UpdateSpeed);
     DESERIALIZE(UpdateMode);
     DESERIALIZE(BoundsScale);
     DESERIALIZE(CustomBounds);

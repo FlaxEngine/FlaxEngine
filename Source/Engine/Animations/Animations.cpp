@@ -73,6 +73,7 @@ void AnimationsSystem::Job(int32 index)
         {
             dt = t - lastUpdateTime;
         }
+        dt *= animatedModel->UpdateSpeed;
         animatedModel->GraphInstance.LastUpdateTime = t;
 
         // Evaluate animated nodes pose
