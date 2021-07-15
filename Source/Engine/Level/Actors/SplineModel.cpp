@@ -10,6 +10,7 @@
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
@@ -208,6 +209,8 @@ void SplineModel::OnSplineUpdated()
     for (int32 i = 1; i < _instances.Count(); i++)
         BoundingSphere::Merge(_sphere, _instances[i].Sphere, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void SplineModel::UpdateDeformationBuffer()
