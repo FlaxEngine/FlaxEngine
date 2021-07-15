@@ -283,6 +283,7 @@ namespace FlaxEditor.Surface
             // Show secondary context menu
             _cmStartPos = location;
             menu.Tag = selection;
+            menu.MaximumItemsInViewCount = 24;
             menu.Show(this, location);
         }
 
