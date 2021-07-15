@@ -196,6 +196,12 @@ namespace FlaxEditor.Viewport.Previews
             {
                 _previewModel.UpdateAnimation();
             }
+            else
+            {
+                // Invalidate playback timer (preserves playback state, clears ticking info in LastUpdateTime)
+                _previewModel.IsActive = !_previewModel.IsActive;
+                _previewModel.IsActive = !_previewModel.IsActive;
+            }
         }
 
         /// <inheritdoc />

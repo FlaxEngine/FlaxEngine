@@ -15,7 +15,6 @@ namespace FlaxEditor.Viewport.Widgets
     public class ViewportWidgetButton : Control
     {
         private string _text;
-        private SpriteHandle _icon;
         private ContextMenu _cm;
         private bool _checked;
         private bool _autoCheck;
@@ -30,6 +29,11 @@ namespace FlaxEditor.Viewport.Widgets
         /// Event fired when user click the button.
         /// </summary>
         public event Action<ViewportWidgetButton> Clicked;
+
+        /// <summary>
+        /// The icon.
+        /// </summary>
+        public SpriteHandle Icon;
 
         /// <summary>
         /// Gets or sets the text.
@@ -64,7 +68,7 @@ namespace FlaxEditor.Viewport.Widgets
         : base(0, 0, CalculateButtonWidth(0, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
         {
             _text = text;
-            _icon = icon;
+            Icon = icon;
             _cm = contextMenu;
             _autoCheck = autoCheck;
 
@@ -105,10 +109,10 @@ namespace FlaxEditor.Viewport.Widgets
                 Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
 
             // Check if has icon
-            if (_icon.IsValid)
+            if (Icon.IsValid)
             {
                 // Draw icon
-                Render2D.DrawSprite(_icon, iconRect, style.Foreground);
+                Render2D.DrawSprite(Icon, iconRect, style.Foreground);
 
                 // Update text rectangle
                 textRect.Location.X += iconSize;
@@ -156,7 +160,7 @@ namespace FlaxEditor.Viewport.Widgets
             var style = Style.Current;
 
             if (style != null && style.FontMedium)
-                Width = CalculateButtonWidth(style.FontMedium.MeasureText(_text).X, _icon.IsValid);
+                Width = CalculateButtonWidth(style.FontMedium.MeasureText(_text).X, Icon.IsValid);
         }
     }
 }

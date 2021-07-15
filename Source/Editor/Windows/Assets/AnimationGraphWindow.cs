@@ -8,10 +8,12 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
+using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
@@ -51,6 +53,7 @@ namespace FlaxEditor.Windows.Assets
         {
             private readonly AnimationGraphWindow _window;
             private ContextMenuButton _showFloorButton;
+            private ViewportWidgetButton _playPauseButton;
             private StaticModel _floorModel;
 
             public AnimationGraphPreview(AnimationGraphWindow window)
@@ -62,6 +65,33 @@ namespace FlaxEditor.Windows.Assets
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", OnShowFloorModelClicked);
                 _showFloorButton.Icon = Style.Current.CheckBoxTick;
                 _showFloorButton.IndexInParent = 1;
+
+                // Playback Speed
+                {
+                    var playbackSpeed = ViewWidgetButtonMenu.AddButton("Playback Speed");
+                    var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, 0.0f, 10000.0f, 0.001f)
+                    {
+                        Parent = playbackSpeed
+                    };
+                    playbackSpeedValue.ValueChanged += () => PreviewActor.UpdateSpeed = playbackSpeedValue.Value;
+                    ViewWidgetButtonMenu.VisibleChanged += control => playbackSpeedValue.Value = PreviewActor.UpdateSpeed;
+                }
+
+                // Play/Pause widget
+                {
+                    var playPauseWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                    _playPauseButton = new ViewportWidgetButton(null, Editor.Instance.Icons.Pause64)
+                    {
+                        TooltipText = "Animation playback play (F5) or pause (F6)",
+                        Parent = playPauseWidget,
+                    };
+                    _playPauseButton.Clicked += button =>
+                    {
+                        PlayAnimation = !PlayAnimation;
+                        button.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
+                    };
+                    playPauseWidget.Parent = this;
+                }
 
                 // Floor model
                 _floorModel = new StaticModel
@@ -102,9 +132,28 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                var inputOptions = Editor.Instance.Options.Options.Input;
+                if (inputOptions.Play.Process(this, key))
+                {
+                    PlayAnimation = true;
+                    _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
+                    return true;
+                }
+                if (inputOptions.Pause.Process(this, key))
+                {
+                    PlayAnimation = false;
+                    _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
+                    return true;
+                }
+                return base.OnKeyDown(key);
+            }
+
+            /// <inheritdoc />
             public override void OnDestroy()
             {
-                FlaxEngine.Object.Destroy(ref _floorModel);
+                Object.Destroy(ref _floorModel);
                 _showFloorButton = null;
 
                 base.OnDestroy();
