@@ -154,6 +154,7 @@ namespace FlaxEditor.Windows.Assets
             public override void OnDestroy()
             {
                 Object.Destroy(ref _floorModel);
+                _playPauseButton = null;
                 _showFloorButton = null;
 
                 base.OnDestroy();
