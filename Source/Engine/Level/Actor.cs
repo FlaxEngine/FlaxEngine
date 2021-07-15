@@ -317,6 +317,23 @@ namespace FlaxEngine
             }
         }
 
+        /// <summary>
+        /// Rotates the actor around axis passing through point in world-space by angle (in degrees).
+        /// </summary>
+        /// <remarks>Modifies both the position and the rotation of the actor (scale remains the same).</remarks>
+        /// <param name="point">The point (world-space).</param>
+        /// <param name="axis">The axis (normalized).</param>
+        /// <param name="angle">The angle (in degrees).</param>
+        public void RotateAround(Vector3 point, Vector3 axis, float angle)
+        {
+            var transform = Transform;
+            var q = Quaternion.RotationAxis(axis, angle * Mathf.DegreesToRadians);
+            var dif = (transform.Translation - point) * q;
+            transform.Translation = point + dif;
+            transform.Orientation = q;
+            Transform = transform;
+        }
+
         /// <inheritdoc />
         public override string ToString()
         {
