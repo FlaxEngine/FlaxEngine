@@ -11,7 +11,6 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API AnimationGraph : public BinaryAsset
 {
 DECLARE_BINARY_ASSET_HEADER(AnimationGraph, 1);
-
 public:
 
     /// <summary>
@@ -29,7 +28,6 @@ public:
     /// <summary>
     /// Gets the base model asset used for the animation preview and the skeleton layout source.
     /// </summary>
-    /// <returns>The base model.</returns>
     API_PROPERTY() SkinnedModel* GetBaseModel() const
     {
         return Graph.BaseModel.Get();

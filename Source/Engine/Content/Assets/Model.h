@@ -58,7 +58,6 @@ public:
     /// <summary>
     /// Gets the amount of loaded model LODs.
     /// </summary>
-    /// <returns>Loaded LODs count</returns>
     API_PROPERTY() FORCE_INLINE int32 GetLoadedLODs() const
     {
         return _loadedLODs;
@@ -87,7 +86,6 @@ public:
     /// <summary>
     /// Gets index of the highest resident LOD (may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
     /// </summary>
-    /// <returns>LOD index</returns>
     FORCE_INLINE int32 HighestResidentLODIndex() const
     {
         return GetLODsCount() - _loadedLODs;
@@ -96,7 +94,6 @@ public:
     /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
-    /// <returns>True if any LOD has been initialized, otherwise false.</returns>
     FORCE_INLINE bool HasAnyLODInitialized() const
     {
         return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
@@ -105,7 +102,6 @@ public:
     /// <summary>
     /// Determines whether this model can be rendered.
     /// </summary>
-    /// <returns>True if can render that model, otherwise false.</returns>
     FORCE_INLINE bool CanBeRendered() const
     {
         return _loadedLODs > 0;
