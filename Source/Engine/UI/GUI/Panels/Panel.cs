@@ -401,7 +401,7 @@ namespace FlaxEngine.GUI
             if (VScrollBar != null)
             {
                 float height = Height;
-                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height > ScrollBar.DefaultMinimumSize;
+                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height > ScrollBar.DefaultSize;
 
                 if (VScrollBar.Enabled != vScrollEnabled)
                 {
@@ -428,7 +428,7 @@ namespace FlaxEngine.GUI
             if (HScrollBar != null)
             {
                 float width = Width;
-                bool hScrollEnabled = (controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f) && width > ScrollBar.DefaultMinimumSize;
+                bool hScrollEnabled = (controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f) && width > ScrollBar.DefaultSize;
 
                 if (HScrollBar.Enabled != hScrollEnabled)
                 {

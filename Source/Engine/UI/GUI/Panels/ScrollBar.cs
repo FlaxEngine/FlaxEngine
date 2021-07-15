@@ -14,17 +14,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The default size.
         /// </summary>
-        public const int DefaultSize = 12;
+        public const int DefaultSize = 14;
 
         /// <summary>
         /// The default minimum opacity.
         /// </summary>
         public const float DefaultMinimumOpacity = 0.7f;
-
-        /// <summary>
-        /// The default minimum size.
-        /// </summary>
-        public const int DefaultMinimumSize = 12;
 
         // Scrolling
 
