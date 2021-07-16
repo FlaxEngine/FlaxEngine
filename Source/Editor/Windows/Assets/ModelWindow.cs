@@ -503,6 +503,10 @@ namespace FlaxEditor.Windows.Assets
             [Tooltip("Level Of Detail index to preview UVs layout.")]
             public int LOD = 0;
 
+            [EditorOrder(2), EditorDisplay(null, "Mesh"), Limit(-1, 1000000), VisibleIf("ShowUVs")]
+            [Tooltip("Mesh index to preview UVs layout. Use -1 for all meshes")]
+            public int Mesh = -1;
+
             private bool ShowUVs => _uvChannel != UVChannel.None;
 
             /// <inheritdoc />
@@ -541,6 +545,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         _uvsPreview.Channel = _uvsPreview.Proxy._uvChannel;
                         _uvsPreview.LOD = _uvsPreview.Proxy.LOD;
+                        _uvsPreview.Mesh = _uvsPreview.Proxy.Mesh;
                         _uvsPreview.HighlightIndex = _uvsPreview.Proxy.Window._highlightIndex;
                         _uvsPreview.IsolateIndex = _uvsPreview.Proxy.Window._isolateIndex;
                     }
@@ -557,7 +562,7 @@ namespace FlaxEditor.Windows.Assets
             private sealed class UVsLayoutPreviewControl : RenderToTextureControl
             {
                 private UVChannel _channel;
-                private int _lod;
+                private int _lod, _mesh = -1;
                 private int _highlightIndex = -1;
                 private int _isolateIndex = -1;
                 public UVsPropertiesProxy Proxy;
@@ -593,6 +598,18 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
+                public int Mesh
+                {
+                    set
+                    {
+                        if (_mesh != value)
+                        {
+                            _mesh = value;
+                            Invalidate();
+                        }
+                    }
+                }
+
                 public int HighlightIndex
                 {
                     set
@@ -617,38 +634,14 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
-                /// <inheritdoc />
-                public override void DrawSelf()
+                private void DrawMeshUVs(int meshIndex, MeshData meshData)
                 {
-                    base.DrawSelf();
-
-                    var size = Size;
-                    if (_channel == UVChannel.None || size.MaxValue < 5.0f)
+                    var uvScale = Size;
+                    if (meshData.IndexBuffer == null || meshData.VertexBuffer == null)
                         return;
-                    if (!Proxy.Window.RequestMeshData())
+                    var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
+                    switch (_channel)
                     {
-                        Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Vector2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
-                        return;
-                    }
-
-                    Render2D.PushClip(new Rectangle(Vector2.Zero, size));
-
-                    var meshDatas = Proxy.Window._meshDatas;
-                    var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
-                    var lod = meshDatas[lodIndex];
-                    var uvScale = size;
-                    for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
-                    {
-                        if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                            continue;
-                        var meshData = lod[meshIndex];
-                        if (meshData.IndexBuffer == null || meshData.VertexBuffer == null)
-                            continue;
-                        var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
-
-                        switch (_channel)
-                        {
                         case UVChannel.TexCoord:
                             for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
                             {
@@ -697,7 +690,42 @@ namespace FlaxEditor.Windows.Assets
                                 }
                             }
                             break;
+                    }
+                }
+
+                /// <inheritdoc />
+                public override void DrawSelf()
+                {
+                    base.DrawSelf();
+
+                    var size = Size;
+                    if (_channel == UVChannel.None || size.MaxValue < 5.0f)
+                        return;
+                    if (!Proxy.Window.RequestMeshData())
+                    {
+                        Invalidate();
+                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Vector2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
+                        return;
+                    }
+
+                    Render2D.PushClip(new Rectangle(Vector2.Zero, size));
+
+                    var meshDatas = Proxy.Window._meshDatas;
+                    var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
+                    var lod = meshDatas[lodIndex];
+                    var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
+                    if (mesh == -1)
+                    {
+                        for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                        {
+                            if (_isolateIndex != -1 && _isolateIndex != meshIndex)
+                                continue;
+                            DrawMeshUVs(meshIndex, lod[meshIndex]);
                         }
+                    }
+                    else
+                    {
+                        DrawMeshUVs(mesh, lod[mesh]);
                     }
 
                     Render2D.PopClip();

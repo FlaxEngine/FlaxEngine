@@ -614,6 +614,10 @@ namespace FlaxEditor.Windows.Assets
             [Tooltip("Level Of Detail index to preview UVs layout.")]
             public int LOD = 0;
 
+            [EditorOrder(2), EditorDisplay(null, "Mesh"), Limit(-1, 1000000), VisibleIf("ShowUVs")]
+            [Tooltip("Mesh index to preview UVs layout. Use -1 for all meshes")]
+            public int Mesh = -1;
+
             private bool ShowUVs => _uvChannel != UVChannel.None;
 
             /// <inheritdoc />
@@ -652,6 +656,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         _uvsPreview.Channel = _uvsPreview.Proxy._uvChannel;
                         _uvsPreview.LOD = _uvsPreview.Proxy.LOD;
+                        _uvsPreview.Mesh = _uvsPreview.Proxy.Mesh;
                         _uvsPreview.HighlightIndex = _uvsPreview.Proxy.Window._highlightIndex;
                         _uvsPreview.IsolateIndex = _uvsPreview.Proxy.Window._isolateIndex;
                     }
@@ -668,7 +673,7 @@ namespace FlaxEditor.Windows.Assets
             private sealed class UVsLayoutPreviewControl : RenderToTextureControl
             {
                 private UVChannel _channel;
-                private int _lod;
+                private int _lod, _mesh = -1;
                 private int _highlightIndex = -1;
                 private int _isolateIndex = -1;
                 public UVsPropertiesProxy Proxy;
@@ -704,6 +709,18 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
+                public int Mesh
+                {
+                    set
+                    {
+                        if (_mesh != value)
+                        {
+                            _mesh = value;
+                            Invalidate();
+                        }
+                    }
+                }
+
                 public int HighlightIndex
                 {
                     set
@@ -728,6 +745,39 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
+                private void DrawMeshUVs(int meshIndex, MeshData meshData)
+                {
+                    var uvScale = Size;
+                    var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
+                    switch (_channel)
+                    {
+                    case UVChannel.TexCoord:
+                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                        {
+                            // Cache triangle indices
+                            int i0 = meshData.IndexBuffer[i + 0];
+                            int i1 = meshData.IndexBuffer[i + 1];
+                            int i2 = meshData.IndexBuffer[i + 2];
+
+                            // Cache triangle uvs positions and transform positions to output target
+                            Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
+                            Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
+                            Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
+
+                            // Don't draw too small triangles
+                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            if (area > 3.0f)
+                            {
+                                // Draw triangle
+                                Render2D.DrawLine(uv0, uv1, linesColor);
+                                Render2D.DrawLine(uv1, uv2, linesColor);
+                                Render2D.DrawLine(uv2, uv0, linesColor);
+                            }
+                        }
+                        break;
+                    }
+                }
+
                 /// <inheritdoc />
                 protected override void DrawChildren()
                 {
@@ -748,41 +798,19 @@ namespace FlaxEditor.Windows.Assets
                     var meshDatas = Proxy.Window._meshDatas;
                     var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
                     var lod = meshDatas[lodIndex];
-                    var uvScale = size;
-                    for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                    var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
+                    if (mesh == -1)
                     {
-                        if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                            continue;
-                        var meshData = lod[meshIndex];
-                        var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
-
-                        switch (_channel)
+                        for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                         {
-                        case UVChannel.TexCoord:
-                            for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
-                            {
-                                // Cache triangle indices
-                                int i0 = meshData.IndexBuffer[i + 0];
-                                int i1 = meshData.IndexBuffer[i + 1];
-                                int i2 = meshData.IndexBuffer[i + 2];
-
-                                // Cache triangle uvs positions and transform positions to output target
-                                Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                                Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                                Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
-
-                                // Don't draw too small triangles
-                                float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                                if (area > 3.0f)
-                                {
-                                    // Draw triangle
-                                    Render2D.DrawLine(uv0, uv1, linesColor);
-                                    Render2D.DrawLine(uv1, uv2, linesColor);
-                                    Render2D.DrawLine(uv2, uv0, linesColor);
-                                }
-                            }
-                            break;
+                            if (_isolateIndex != -1 && _isolateIndex != meshIndex)
+                                continue;
+                            DrawMeshUVs(meshIndex, lod[meshIndex]);
                         }
+                    }
+                    else
+                    {
+                        DrawMeshUVs(mesh, lod[mesh]);
                     }
 
                     Render2D.PopClip();
