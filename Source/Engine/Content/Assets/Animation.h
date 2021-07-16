@@ -15,8 +15,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Animation : public BinaryAsset
 {
 DECLARE_BINARY_ASSET_HEADER(Animation, 1);
 
-public:
-
     /// <summary>
     /// Contains basic information about the animation asset contents.
     /// </summary>
@@ -43,6 +41,11 @@ public:
         /// The total amount of keyframes in the animation tracks.
         /// </summary>
         API_FIELD() int32 KeyframesCount;
+
+        /// <summary>
+        /// The estimated memory usage (in bytes) of the animation (all tracks and keyframes size in memory).
+        /// </summary>
+        API_FIELD() int32 MemoryUsage;
     };
 
 public:
@@ -68,7 +71,6 @@ public:
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>
-    /// <returns>The length in seconds.</returns>
     API_PROPERTY() float GetLength() const
     {
         return IsLoaded() ? Data.GetLength() : 0.0f;
@@ -77,7 +79,6 @@ public:
     /// <summary>
     /// Gets the duration of the animation (in frames).
     /// </summary>
-    /// <returns>The duration in frames.</returns>
     API_PROPERTY() float GetDuration() const
     {
         return (float)Data.Duration;
@@ -86,7 +87,6 @@ public:
     /// <summary>
     /// Gets the amount of the animation frames per second.
     /// </summary>
-    /// <returns>The frames per second.</returns>
     API_PROPERTY() float GetFramesPerSecond() const
     {
         return (float)Data.FramesPerSecond;
@@ -95,7 +95,6 @@ public:
     /// <summary>
     /// Gets the animation clip info.
     /// </summary>
-    /// <returns>The animation info.</returns>
     API_PROPERTY() InfoData GetInfo() const;
 
     /// <summary>

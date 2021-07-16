@@ -75,6 +75,7 @@ namespace FlaxEditor.Windows.Assets
                         group.Label("Frames: " + info.FramesCount);
                         group.Label("Channels: " + info.ChannelsCount);
                         group.Label("Keyframes: " + info.KeyframesCount);
+                        group.Label("Memory Usage: " + Utilities.Utils.FormatBytesCount(info.MemoryUsage));
                     }
 
                     // Import Settings
