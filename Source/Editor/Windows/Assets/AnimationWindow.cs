@@ -10,8 +10,11 @@ using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Timeline;
 using FlaxEditor.Scripting;
+using FlaxEditor.Viewport.Cameras;
+using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -22,12 +25,115 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class AnimationWindow : AssetEditorWindowBase<Animation>
     {
+        private sealed class Preview : AnimationPreview
+        {
+            private readonly AnimationWindow _window;
+            private AnimationGraph _animGraph;
+
+            public Preview(AnimationWindow window)
+            : base(true)
+            {
+                _window = window;
+                ShowFloor = true;
+            }
+
+            public void SetModel(SkinnedModel model)
+            {
+                PreviewActor.SkinnedModel = model;
+                PreviewActor.AnimationGraph = null;
+                Object.Destroy(ref _animGraph);
+                if (!model)
+                    return;
+
+                // Use virtual animation graph to playback the animation
+                _animGraph = FlaxEngine.Content.CreateVirtualAsset<AnimationGraph>();
+                _animGraph.InitAsAnimation(model, _window.Asset);
+                PreviewActor.AnimationGraph = _animGraph;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+                var animation = _window.Asset;
+                if (animation == null || !animation.IsLoaded)
+                {
+                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                }
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                Object.Destroy(ref _animGraph);
+
+                base.OnDestroy();
+            }
+        }
+
         [CustomEditor(typeof(ProxyEditor))]
         private sealed class PropertiesProxy
         {
             private AnimationWindow Window;
             private Animation Asset;
             private ModelImportSettings ImportSettings = new ModelImportSettings();
+
+            [EditorDisplay("Preview"), NoSerialize, AssetReference(true), Tooltip("The skinned model to preview the animation playback.")]
+            public SkinnedModel PreviewModel
+            {
+                get => Window?._preview?.SkinnedModel;
+                set
+                {
+                    if (Window == null || PreviewModel == value)
+                        return;
+                    if (Window._preview == null)
+                    {
+                        // Animation preview
+                        Window._preview = new Preview(Window)
+                        {
+                            ViewportCamera = new FPSCamera(),
+                            ScaleToFit = false,
+                            AnchorPreset = AnchorPresets.StretchAll,
+                            Offsets = Margin.Zero,
+                        };
+                    }
+
+                    Window._preview.SetModel(value);
+
+                    if (Window._panel2 == null)
+                    {
+                        // Properties panel
+                        Window._panel2 = new SplitPanel(Orientation.Vertical, ScrollBars.None, ScrollBars.Vertical)
+                        {
+                            AnchorPreset = AnchorPresets.StretchAll,
+                            Offsets = Margin.Zero,
+                            SplitterValue = 0.6f,
+                        };
+                        Window._preview.Parent = Window._panel2.Panel1;
+                    }
+
+                    // Show panel2 with preview and properties or just properties inside panel2 2nd part
+                    if (value)
+                    {
+                        Window._panel2.Parent = Window._panel1.Panel2;
+                        Window._propertiesPresenter.Panel.Parent = Window._panel2.Panel2;
+                    }
+                    else
+                    {
+                        Window._panel2.Parent = null;
+                        Window._propertiesPresenter.Panel.Parent = Window._panel1.Panel2;
+                    }
+
+                    if (value)
+                    {
+                        // Focus model
+                        value.WaitForLoaded(500);
+                        Window._preview.ViewportCamera.SetArcBallView(Window._preview.PreviewActor.Sphere);
+                    }
+                }
+            }
 
             public void OnLoad(AnimationWindow window)
             {
@@ -42,6 +148,7 @@ namespace FlaxEditor.Windows.Assets
             public void OnClean()
             {
                 // Unlink
+                PreviewModel = null;
                 Window = null;
                 Asset = null;
             }
@@ -64,8 +171,6 @@ namespace FlaxEditor.Windows.Assets
                         return;
                     }
 
-                    base.Initialize(layout);
-
                     // General properties
                     {
                         var group = layout.Group("General");
@@ -77,6 +182,8 @@ namespace FlaxEditor.Windows.Assets
                         group.Label("Keyframes: " + info.KeyframesCount);
                         group.Label("Memory Usage: " + Utilities.Utils.FormatBytesCount(info.MemoryUsage));
                     }
+
+                    base.Initialize(layout);
 
                     // Import Settings
                     {
@@ -96,13 +203,17 @@ namespace FlaxEditor.Windows.Assets
 
         private CustomEditorPresenter _propertiesPresenter;
         private PropertiesProxy _properties;
-        private SplitPanel _panel;
+        private SplitPanel _panel1;
+        private SplitPanel _panel2;
+        private Preview _preview;
         private AnimationTimeline _timeline;
         private Undo _undo;
         private ToolStripButton _saveButton;
         private ToolStripButton _undoButton;
         private ToolStripButton _redoButton;
         private bool _isWaitingForTimelineLoad;
+        private SkinnedModel _initialPreviewModel;
+        private float _initialPanel2Splitter = 0.6f;
 
         /// <summary>
         /// Gets the animation timeline editor.
@@ -125,7 +236,7 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoRedo;
 
             // Main panel
-            _panel = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
+            _panel1 = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 SplitterValue = 0.8f,
@@ -138,17 +249,16 @@ namespace FlaxEditor.Windows.Assets
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                Parent = _panel.Panel1,
+                Parent = _panel1.Panel1,
                 Enabled = false
             };
             _timeline.Modified += MarkAsEdited;
 
             // Asset properties
             _propertiesPresenter = new CustomEditorPresenter(null);
-            _propertiesPresenter.Panel.Parent = _panel.Panel2;
+            _propertiesPresenter.Panel.Parent = _panel1.Panel2;
             _properties = new PropertiesProxy();
             _propertiesPresenter.Select(_properties);
-            _propertiesPresenter.Modified += MarkAsEdited;
 
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
@@ -175,6 +285,12 @@ namespace FlaxEditor.Windows.Assets
             _properties.OnLoad(this);
             _propertiesPresenter.BuildLayout();
             ClearEditedFlag();
+            if (_initialPreviewModel)
+            {
+                _properties.PreviewModel = _initialPreviewModel;
+                _panel2.SplitterValue = _initialPanel2Splitter;
+                _initialPreviewModel = null;
+            }
 
             base.OnAssetLoaded();
         }
@@ -256,17 +372,26 @@ namespace FlaxEditor.Windows.Assets
             writer.WriteAttributeString("TimelineSplitter", _timeline.Splitter.SplitterValue.ToString());
             writer.WriteAttributeString("TimeShowMode", _timeline.TimeShowMode.ToString());
             writer.WriteAttributeString("ShowPreviewValues", _timeline.ShowPreviewValues.ToString());
+            writer.WriteAttributeString("Panel1Splitter", _panel1.SplitterValue.ToString());
+            if (_panel2 != null)
+                writer.WriteAttributeString("Panel2Splitter", _panel2.SplitterValue.ToString());
+            if (_properties.PreviewModel)
+                writer.WriteAttributeString("PreviewModel", _properties.PreviewModel.ID.ToString());
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
+            if (Guid.TryParse(node.GetAttribute("PreviewModel"), out Guid value4))
+                _initialPreviewModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(value4);
             if (float.TryParse(node.GetAttribute("TimelineSplitter"), out float value1))
                 _timeline.Splitter.SplitterValue = value1;
-
+            if (float.TryParse(node.GetAttribute("Panel1Splitter"), out value1))
+                _panel1.SplitterValue = value1;
+            if (float.TryParse(node.GetAttribute("Panel2Splitter"), out value1))
+                _initialPanel2Splitter = value1;
             if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out Timeline.TimeShowModes value2))
                 _timeline.TimeShowMode = value2;
-
             if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out bool value3))
                 _timeline.ShowPreviewValues = value3;
         }
@@ -287,10 +412,12 @@ namespace FlaxEditor.Windows.Assets
                 _undo = null;
             }
 
+            _preview = null;
             _timeline = null;
             _propertiesPresenter = null;
             _properties = null;
-            _panel = null;
+            _panel1 = null;
+            _panel2 = null;
             _saveButton = null;
             _undoButton = null;
             _redoButton = null;
