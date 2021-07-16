@@ -268,7 +268,10 @@ void StaticModel::Draw(RenderContext& renderContext)
 
 void StaticModel::DrawGeneric(RenderContext& renderContext)
 {
-    Draw(renderContext);
+    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
+    {
+        Draw(renderContext);
+    }
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

@@ -251,9 +251,10 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     }
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        for (int32 i = 0; i < CustomActors.Count(); i++)
+        for (auto a : CustomActors)
         {
-            if (auto* postFxVolume = dynamic_cast<PostFxVolume*>(CustomActors[i]))
+            auto* postFxVolume = dynamic_cast<PostFxVolume*>(a);
+            if (postFxVolume && a->GetIsActive())
             {
                 postFxVolume->Collect(renderContext);
             }
@@ -266,10 +267,12 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        for (int32 i = 0; i < CustomActors.Count(); i++)
+        for (auto a : CustomActors)
         {
-            if (CustomActors[i] && CustomActors[i]->GetIsActive())
-                CustomActors[i]->DrawHierarchy(renderContext);
+            if (a && a->GetIsActive())
+            {
+                a->DrawHierarchy(renderContext);
+            }
         }
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)

@@ -623,7 +623,10 @@ void AnimatedModel::Draw(RenderContext& renderContext)
 
 void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 {
-    Draw(renderContext);
+    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
+    {
+        Draw(renderContext);
+    }
 }
 
 #if USE_EDITOR
