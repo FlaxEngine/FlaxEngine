@@ -412,7 +412,6 @@ void AnimatedModel::OnActiveInTreeChanged()
 
 void AnimatedModel::UpdateLocalBounds()
 {
-    // Get bounding box in a local space
     BoundingBox box;
     if (CustomBounds.GetSize().LengthSquared() > 0.01f)
     {
@@ -421,17 +420,26 @@ void AnimatedModel::UpdateLocalBounds()
     else if (SkinnedModel && SkinnedModel->IsLoaded())
     {
         //box = SkinnedModel->GetBox(GraphInstance.RootTransform.GetWorld());
-        box = SkinnedModel->GetBox();
+        //box = SkinnedModel->GetBox();
+
+        // Per-bone bounds estimated from positions
+        auto& skeleton = SkinnedModel->Skeleton;
+        const int32 bonesCount = skeleton.Bones.Count();
+        box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
+        for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
+            box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+
+        // Apply margin based on model dimensions
+        const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
+        const Vector3 center = box.GetCenter();
+        const Vector3 sizeHalf = Vector3::Max(box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
+        box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else
     {
         box = BoundingBox(Vector3::Zero);
     }
-
-    // Scale bounds
-    box = box.MakeScaled(box, BoundsScale);
-
-    _boxLocal = box;
+    _boxLocal = BoundingBox::MakeScaled(box, BoundsScale);
 }
 
 void AnimatedModel::UpdateBounds()
