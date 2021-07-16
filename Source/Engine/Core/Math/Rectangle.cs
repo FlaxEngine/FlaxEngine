@@ -288,12 +288,12 @@ namespace FlaxEngine
         /// <summary>
         /// Computed nearest distance between 2 rectangles.
         /// </summary>
-        /// <param name="w">Firat rectangle</param>
+        /// <param name="a">Firat rectangle</param>
         /// <param name="b">Second rectangle</param>
         /// <returns>Resulting distance, 0 if overlapping</returns>
         public static float Distance(Rectangle a, Rectangle b)
         {
-             return Vector2.Max(Vector2.Zero, Vector2.Abs(a.Center - b.Center) - (a.Size * 0.5f - b.Size * 0.5f)).Length;
+             return Vector2.Max(Vector2.Zero, Vector2.Abs(a.Center - b.Center) - ((a.Size + b.Size) * 0.5f)).Length;
         }
 
         /// <summary>
