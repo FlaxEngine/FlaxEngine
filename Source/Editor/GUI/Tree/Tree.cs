@@ -231,7 +231,7 @@ namespace FlaxEditor.GUI.Tree
         {
             for (int i = 0; i < node.ChildrenCount; i++)
             {
-                if (node.GetChild(i) is TreeNode child)
+                if (node.GetChild(i) is TreeNode child && child.Visible)
                 {
                     Vector2 pos = child.PointToParent(this, Vector2.One);
                     if (range.Contains(pos))
