@@ -2024,6 +2024,7 @@ namespace Flax.Build.Bindings
                         fields = classInfo.Fields;
                     else
                         throw new Exception("Not supported Non-POD type " + apiType);
+                    CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
 
                     // Get the full typename with nested parent prefix
                     var fullName = apiType.FullNameNative;
@@ -2079,8 +2080,13 @@ namespace Flax.Build.Bindings
                         header.Append("    }").AppendLine();
                         header.AppendFormat("    void ToManagedArray(MonoArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
+                        header.AppendFormat("        MonoClass* klass = {0}::TypeInitializer.GetType().ManagedClass->GetNative();", fullName).AppendLine();
+                        header.Append("        ASSERT(klass);").AppendLine();
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
-                        header.AppendFormat("        	mono_array_set(result, {0}Managed, i, ToManaged(data[i]));", apiType.Name).AppendLine();
+                        header.Append("        {").AppendLine();
+                        header.Append("        	auto managed = ToManaged(data[i]);").AppendLine();
+                        header.AppendFormat("        	mono_value_copy(mono_array_addr(result, {0}Managed, i), &managed, klass);", apiType.Name).AppendLine();
+                        header.Append("        }").AppendLine();
                         header.Append("    }").AppendLine();
                         header.Append("    template<typename AllocationType = HeapAllocation>").AppendLine();
                         header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
