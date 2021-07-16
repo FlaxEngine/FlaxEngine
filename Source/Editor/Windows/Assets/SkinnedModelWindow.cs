@@ -11,7 +11,6 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
-using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
@@ -31,92 +30,17 @@ namespace FlaxEditor.Windows.Assets
         private sealed class Preview : AnimatedModelPreview
         {
             private readonly SkinnedModelWindow _window;
-            private ContextMenuButton _showFloorButton;
-            private ContextMenuButton _showCurrentLODButton;
-            private StaticModel _floorModel;
-            private bool _showCurrentLOD;
 
             public Preview(SkinnedModelWindow window)
             : base(true)
             {
                 _window = window;
-                PlayAnimation = true;
-
-                // Show floor widget
-                _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button =>
-                {
-                    _floorModel.IsActive = !_floorModel.IsActive;
-                    _showFloorButton.Icon = _floorModel.IsActive ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                });
-                _showFloorButton.IndexInParent = 1;
-
-                // Show current LOD widget
-                _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
-                {
-                    _showCurrentLOD = !_showCurrentLOD;
-                    _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                });
-                _showCurrentLODButton.IndexInParent = 2;
-
-                // Floor model
-                _floorModel = new StaticModel
-                {
-                    Position = new Vector3(0, -25, 0),
-                    Scale = new Vector3(5, 0.5f, 5),
-                    Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax")),
-                    IsActive = false
-                };
-                Task.AddCustomActor(_floorModel);
-
-                // Enable shadows
-                PreviewLight.ShadowsMode = ShadowsCastingMode.All;
-                PreviewLight.CascadeCount = 3;
-                PreviewLight.ShadowsDistance = 2000.0f;
-                Task.ViewFlags |= ViewFlags.Shadows;
-            }
-
-            private int ComputeLODIndex(SkinnedModel model)
-            {
-                if (PreviewActor.ForcedLOD != -1)
-                    return PreviewActor.ForcedLOD;
-
-                // Based on RenderTools::ComputeModelLOD
-                CreateProjectionMatrix(out var projectionMatrix);
-                float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
-                var sphere = PreviewActor.Sphere;
-                var viewOrigin = ViewPosition;
-                float distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
-                var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-
-                // Check if model is being culled
-                if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
-                    return -1;
-
-                // Skip if no need to calculate LOD
-                if (model.LoadedLODs == 0)
-                    return -1;
-                var lods = model.LODs;
-                if (lods.Length == 0)
-                    return -1;
-                if (lods.Length == 1)
-                    return 0;
-
-                // Iterate backwards and return the first matching LOD
-                for (int lodIndex = lods.Length - 1; lodIndex >= 0; lodIndex--)
-                {
-                    if (Mathf.Square(lods[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
-                    {
-                        return lodIndex + PreviewActor.LODBias;
-                    }
-                }
-
-                return 0;
             }
 
             /// <inheritdoc />
-            public override void DrawSelf()
+            public override void Draw()
             {
-                base.DrawSelf();
+                base.Draw();
 
                 var style = Style.Current;
                 var asset = _window.Asset;
@@ -124,40 +48,6 @@ namespace FlaxEditor.Windows.Assets
                 {
                     Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
-
-                if (_showCurrentLOD)
-                {
-                    var lodIndex = ComputeLODIndex(asset);
-                    string text = string.Format("Current LOD: {0}", lodIndex);
-                    if (lodIndex != -1)
-                    {
-                        var lods = asset.LODs;
-                        lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
-                        var lod = lods[lodIndex];
-                        int triangleCount = 0, vertexCount = 0;
-                        for (int meshIndex = 0; meshIndex < lod.Meshes.Length; meshIndex++)
-                        {
-                            var mesh = lod.Meshes[meshIndex];
-                            triangleCount += mesh.TriangleCount;
-                            vertexCount += mesh.VertexCount;
-                        }
-                        text += string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}", triangleCount, vertexCount);
-                    }
-                    var font = Style.Current.FontMedium;
-                    var pos = new Vector2(10, 50);
-                    Render2D.DrawText(font, text, new Rectangle(pos + Vector2.One, Size), Color.Black);
-                    Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
-                }
-            }
-
-            /// <inheritdoc />
-            public override void OnDestroy()
-            {
-                Object.Destroy(ref _floorModel);
-                _showFloorButton = null;
-                _showCurrentLODButton = null;
-
-                base.OnDestroy();
             }
         }
 
@@ -934,8 +824,9 @@ namespace FlaxEditor.Windows.Assets
             public SkinnedMesh.Vertex[] VertexBuffer;
         }
 
-        private readonly AnimatedModelPreview _preview;
+        private Preview _preview;
         private AnimatedModel _highlightActor;
+        private ToolStripButton _showNodesButton;
 
         private MeshData[][] _meshDatas;
         private bool _meshDatasInProgress;
@@ -947,7 +838,7 @@ namespace FlaxEditor.Windows.Assets
         {
             // Toolstrip
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Bone64, () => _preview.ShowNodes = !_preview.ShowNodes).SetAutoCheck(true).LinkTooltip("Show animated model nodes debug view");
+            _showNodesButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Bone64, () => _preview.ShowNodes = !_preview.ShowNodes).LinkTooltip("Show animated model nodes debug view");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skinned-model/index.html")).LinkTooltip("See documentation to learn more");
 
@@ -1095,6 +986,8 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            _showNodesButton.Checked = _preview.ShowNodes;
+
             base.Update(deltaTime);
         }
 
@@ -1167,6 +1060,8 @@ namespace FlaxEditor.Windows.Assets
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);
+            _preview = null;
+            _showNodesButton = null;
         }
     }
 }
