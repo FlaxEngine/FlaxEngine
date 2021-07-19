@@ -163,10 +163,21 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 #if PLATFORM_WINDOWS
     Array<RiderInstallation*> installations;
 
-    // For versions 2021 or later
+    // Versions installed via JetBrains Toolbox
+    String localAppDataPath;
+    Array<String> subDirectories;
+    FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, localAppDataPath);
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-0\\"));
+    for (auto directory : subDirectories)
+        SearchDirectory(&installations, directory);
+
+    // Rider for Unreal Engine
+    SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
+
+    // Versions 2021 or later
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\JetBrains\\Rider"), TEXT("InstallDir"));
 
-    // For versions 2020 or earlier
+    // Versions 2020 or earlier
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
 
