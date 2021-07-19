@@ -759,7 +759,7 @@ public:
     /// <summary>
     /// Gets the sampler descriptor.
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="sampler">The sampler.</param>
     virtual void DescriptorAsSampler(GPUContextVulkan* context, VkSampler& sampler)
     {
@@ -769,7 +769,7 @@ public:
     /// <summary>
     /// Gets the image descriptor.
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="imageView">The image view.</param>
     /// <param name="layout">The image layout.</param>
     virtual void DescriptorAsImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout)
@@ -780,7 +780,7 @@ public:
     /// <summary>
     /// Gets the storage image descriptor (VK_DESCRIPTOR_TYPE_STORAGE_IMAGE).
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="imageView">The image view.</param>
     /// <param name="layout">The image layout.</param>
     virtual void DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout)
@@ -791,7 +791,7 @@ public:
     /// <summary>
     /// Gets the uniform texel buffer descriptor (VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER).
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="bufferView">The buffer view.</param>
     virtual void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
     {
@@ -801,7 +801,7 @@ public:
     /// <summary>
     /// Gets the storage buffer descriptor (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER).
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="buffer">The buffer.</param>
     /// <param name="offset">The range offset (in bytes).</param>
     /// <param name="range">The range size (in bytes).</param>
@@ -813,7 +813,7 @@ public:
     /// <summary>
     /// Gets the storage texel buffer descriptor (VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER).
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="bufferView">The buffer view.</param>
     virtual void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
     {
@@ -823,7 +823,7 @@ public:
     /// <summary>
     /// Gets the dynamic uniform buffer descriptor (VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC).
     /// </summary>
-    /// <param name="context">The GPU context. Can be sued to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
+    /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="buffer">The buffer.</param>
     /// <param name="offset">The range offset (in bytes).</param>
     /// <param name="range">The range size (in bytes).</param>

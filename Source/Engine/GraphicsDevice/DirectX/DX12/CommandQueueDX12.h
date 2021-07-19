@@ -190,7 +190,7 @@ public:
     /// Executes a command list.
     /// </summary>
     /// <param name="list">The command list to execute.</param>
-    /// <returns>The fence value after execution (can be sued to wait for it to sync parallel execution).</returns>
+    /// <returns>The fence value after execution (can be used to wait for it to sync parallel execution).</returns>
     uint64 ExecuteCommandList(ID3D12CommandList* list);
 
     /// <summary>

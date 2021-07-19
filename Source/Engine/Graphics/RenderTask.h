@@ -239,7 +239,7 @@ public:
     API_FUNCTION() void CameraCut();
 
     /// <summary>
-    /// The output texture (can be null if using rendering to window swap chain). Can be sued to redirect the default scene rendering output to a texture.
+    /// The output texture (can be null if using rendering to window swap chain). Can be used to redirect the default scene rendering output to a texture.
     /// </summary>
     API_FIELD() GPUTexture* Output = nullptr;
 
