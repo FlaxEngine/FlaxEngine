@@ -37,7 +37,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psTAA = nullptr;
+        _psTAA->ReleaseGPU();
         invalidateResources();
     }
 #endif
@@ -49,7 +49,6 @@ public:
     {
         return TEXT("TAA");
     }
-
     bool Init() override;
     void Dispose() override;
 

@@ -202,7 +202,6 @@ public:
     /// <summary>
     /// Determines whether view is perspective projection or orthographic.
     /// </summary>
-    /// <returns>True if view is perspective, otherwise false if view is orthographic.</returns>
     FORCE_INLINE bool IsPerspectiveProjection() const
     {
         return Projection.M44 < 1.0f;
@@ -211,7 +210,6 @@ public:
     /// <summary>
     /// Determines whether view is orthographic projection or perspective.
     /// </summary>
-    /// <returns>True if view is orthographic, otherwise false if view is perspective.</returns>
     FORCE_INLINE bool IsOrthographicProjection() const
     {
         return Projection.M44 >= 1.0f;

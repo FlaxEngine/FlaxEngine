@@ -294,13 +294,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     task->CollectPostFxVolumes(renderContext);
     renderContext.List->BlendSettings();
     auto aaMode = (renderContext.View.Flags & ViewFlags::AntiAliasing) != 0 ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
-    if (view.IsOrthographicProjection() && aaMode == AntialiasingMode::TemporalAntialiasing)
-        aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection
-#if USE_EDITOR
-    // Disable temporal AA effect in editor without play mode enabled to hide minor artifacts on objects moving and lack of valid motion vectors
-    if (!Editor::IsPlayMode && aaMode == AntialiasingMode::TemporalAntialiasing)
-        aaMode = AntialiasingMode::FastApproximateAntialiasing;
-#endif
+    if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
+        aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
 
     // Prepare
