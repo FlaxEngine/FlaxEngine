@@ -235,6 +235,21 @@ namespace Flax.Build
                 var customBuildTargets = Configuration.BuildTargets;
                 var projectTargets = GetProjectTargets(project);
                 var targets = customBuildTargets == null ? projectTargets : projectTargets.Where(target => customBuildTargets.Contains(target.Name)).ToArray();
+                if (customBuildTargets != null)
+                {
+                    var targetsList = new List<Target>(customBuildTargets.Length);
+                    foreach (var customBuildTarget in customBuildTargets)
+                    {
+                        var target = projectTargets.FirstOrDefault(x => string.Equals(x.Name, customBuildTarget, StringComparison.InvariantCultureIgnoreCase));
+                        if (target != null)
+                            targetsList.Add(target);
+                        else
+                            Log.Error("Missing target " + customBuildTarget);
+                    }
+                    targets = targetsList.ToArray();
+                }
+                if (targets.Length == 0)
+                    Log.Warning("No targets to build");
 
                 // Create task graph for building all targets
                 var graph = new TaskGraph(project.ProjectFolderPath);
