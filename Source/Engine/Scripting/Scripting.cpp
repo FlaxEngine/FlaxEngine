@@ -105,6 +105,9 @@ namespace
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
     Array<BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
+#if USE_EDITOR
+    bool LastBinariesLoadTriggeredCompilation = false;
+#endif
 }
 
 Delegate<BinaryModule*> Scripting::BinaryModuleLoaded;
@@ -453,7 +456,10 @@ bool Scripting::Load()
     // Call compilation if game target build info is missing
     if (!FileSystem::FileExists(targetBuildInfo))
     {
-        LOG(Info, "Missing target build info ({0}). Calling compilation.", targetBuildInfo);
+        LOG(Info, "Missing target build info ({0})", targetBuildInfo);
+        if (LastBinariesLoadTriggeredCompilation)
+            return false;
+        LastBinariesLoadTriggeredCompilation = true;
         ScriptsBuilder::Compile();
         return false;
     }
