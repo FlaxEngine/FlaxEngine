@@ -372,6 +372,17 @@ namespace FlaxEngine.Json
         /// Parses the given object identifier represented in the internal serialization format.
         /// </summary>
         /// <param name="str">The ID string.</param>
+        /// <returns>The identifier.</returns>
+        public static Guid ParseID(string str)
+        {
+            ParseID(str, out var id);
+            return id;
+        }
+
+        /// <summary>
+        /// Parses the given object identifier represented in the internal serialization format.
+        /// </summary>
+        /// <param name="str">The ID string.</param>
         /// <param name="id">The identifier.</param>
         public static unsafe void ParseID(string str, out Guid id)
         {
