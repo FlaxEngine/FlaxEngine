@@ -469,15 +469,22 @@ int32 Editor::LoadProduct()
         }
     }
 
+    HashSet<ProjectInfo*> projects;
+    Project->GetAllProjects(projects);
+
     // Validate project min supported version (older engine may try to load newer project)
     // Special check if project specifies only build number, then major/minor fields are set to 0
     const auto engineVersion = FLAXENGINE_VERSION;
-    if (Project->MinEngineVersion > engineVersion ||
-        (Project->MinEngineVersion.Major() == 0 && Project->MinEngineVersion.Minor() == 0 && Project->MinEngineVersion.Build() > engineVersion.Build())
-    )
+    for (auto e : projects)
     {
-        Platform::Fatal(String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor."), Project->Name, Project->MinEngineVersion.ToString(), engineVersion.ToString()));
-        return -2;
+        const auto project = e.Item;
+        if (project->MinEngineVersion > engineVersion ||
+            (project->MinEngineVersion.Major() == 0 && project->MinEngineVersion.Minor() == 0 && project->MinEngineVersion.Build() > engineVersion.Build())
+        )
+        {
+            Platform::Fatal(String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor."), project->Name, project->MinEngineVersion.ToString(), engineVersion.ToString()));
+            return -2;
+        }
     }
 
     return 0;
@@ -519,7 +526,7 @@ bool Editor::Init()
         exit(failed ? 1 : 0);
         return true;
     }
-    
+
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
 
@@ -540,7 +547,7 @@ bool Editor::Init()
     {
         Managed->RequestStartPlayOnEditMode();
     }
-    
+
     return false;
 }
 
