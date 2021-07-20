@@ -90,7 +90,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     }
 
     // Generate depth
-    MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer->View(), HalfResDepth->View());
+    MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer, HalfResDepth->View());
 
     return HalfResDepth;
 }

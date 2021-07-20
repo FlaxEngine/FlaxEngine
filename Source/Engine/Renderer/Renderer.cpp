@@ -332,7 +332,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         // Render reflections debug view
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(lightBuffer->View());
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -349,7 +349,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         GBufferPass::Instance()->RenderDebug(renderContext);
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -367,7 +367,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         RenderTargetPool::Release(lightBuffer);
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(tempBuffer);
         return;
     }
@@ -381,7 +381,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(lightBuffer);
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -421,7 +421,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     if (renderContext.View.Mode == ViewMode::NoPostFx || renderContext.View.Mode == ViewMode::Wireframe)
     {
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(forwardPassResult);
         return;
     }
@@ -475,13 +475,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         return;
     }
 
     // Anti Aliasing
-    if (!renderContext.List->HasAnyPostAA(renderContext))
+    if (!renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) && Math::IsOne(task->RenderingPercentage))
     {
         // AA -> Back Buffer
         RenderAntiAliasingPass(renderContext, frameBuffer, task->GetOutputView());
@@ -495,12 +495,17 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
         renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
 
-        // PostFx -> Back Buffer
+        // PostFx -> (up-scaling) -> Back Buffer
+        if (Math::IsOne(task->RenderingPercentage))
         {
             PROFILE_GPU("Copy frame");
             context->SetRenderTarget(task->GetOutputView());
-            context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+            context->SetViewportAndScissors(task->GetViewport());
             context->Draw(frameBuffer);
+        }
+        else
+        {
+            MultiScaler::Instance()->Upscale(context, task->GetOutputViewport(), frameBuffer, task->GetOutputView());
         }
     }
 }

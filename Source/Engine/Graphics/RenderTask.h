@@ -264,6 +264,11 @@ public:
     API_FIELD() ActorsSources ActorsSource = ActorsSources::Scenes;
 
     /// <summary>
+    /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
+    /// </summary>
+    API_FIELD() float RenderingPercentage = 1.0f;
+
+    /// <summary>
     /// The custom set of actors to render.
     /// </summary>
     Array<Actor*> CustomActors;
@@ -336,9 +341,14 @@ public:
 public:
 
     /// <summary>
-    /// Gets the rendering render task viewport.
+    /// Gets the rendering render task viewport (before upsampling).
     /// </summary>
     API_PROPERTY() Viewport GetViewport() const;
+
+    /// <summary>
+    /// Gets the rendering output viewport (after upsampling).
+    /// </summary>
+    API_PROPERTY() Viewport GetOutputViewport() const;
 
     /// <summary>
     /// Gets the rendering output view.

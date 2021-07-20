@@ -296,13 +296,27 @@ void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderCon
 
 Viewport SceneRenderTask::GetViewport() const
 {
+    Viewport viewport;
     if (Output)
+        viewport = Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
+    else if (SwapChain)
+        viewport = Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+    else if (Buffers != nullptr)
+        viewport = Buffers->GetViewport();
+    else
+        viewport = Viewport(0, 0, 1280, 720);
+    viewport.Width *= RenderingPercentage;
+    viewport.Height *= RenderingPercentage;
+    return viewport;
+}
+
+Viewport SceneRenderTask::GetOutputViewport() const
+{
+    if (Output && Output->IsAllocated())
         return Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
     if (SwapChain)
         return Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
-    if (Buffers != nullptr)
-        return Buffers->GetViewport();
-    return Viewport(0, 0, 1280, 720);
+    return GetViewport();
 }
 
 GPUTextureView* SceneRenderTask::GetOutputView() const
@@ -352,11 +366,11 @@ void SceneRenderTask::OnBegin(GPUContext* context)
     // Setup render buffers for the output rendering resolution
     if (Output)
     {
-        Buffers->Init(Output->Width(), Output->Height());
+        Buffers->Init((int32)((float)Output->Width() * RenderingPercentage), (int32)((float)Output->Height() * RenderingPercentage));
     }
     else if (SwapChain)
     {
-        Buffers->Init(SwapChain->GetWidth(), SwapChain->GetHeight());
+        Buffers->Init((int32)((float)SwapChain->GetWidth() * RenderingPercentage), (int32)((float)SwapChain->GetHeight() * RenderingPercentage));
     }
 }
 
@@ -385,7 +399,7 @@ bool SceneRenderTask::Resize(int32 width, int32 height)
 {
     if (Output && Output->Resize(width, height))
         return true;
-    if (Buffers && Buffers->Init(width, height))
+    if (Buffers && Buffers->Init((int32)((float)width * RenderingPercentage), (int32)((float)height * RenderingPercentage)))
         return true;
     return false;
 }
@@ -423,7 +437,7 @@ void MainRenderTask::OnBegin(GPUContext* context)
 #if !USE_EDITOR
     // Sync render buffers size with the backbuffer
     const auto size = Screen::GetSize();
-    Buffers->Init((int32)size.X, (int32)size.Y);
+    Buffers->Init((int32)(size.X * RenderingPercentage), (int32)(size.Y * RenderingPercentage));
 #endif
 
     SceneRenderTask::OnBegin(context);

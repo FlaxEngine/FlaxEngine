@@ -12,23 +12,12 @@ class MultiScaler : public RendererPass<MultiScaler>
 {
 private:
 
-    PACK_STRUCT(struct Data {
-        Vector2 TexelSize;
-        Vector2 Padding;
-    });
-
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psHalfDepth;
+    GPUPipelineState* _psHalfDepth = nullptr;
     GPUPipelineStatePermutationsPs<2> _psBlur5;
     GPUPipelineStatePermutationsPs<2> _psBlur9;
     GPUPipelineStatePermutationsPs<2> _psBlur13;
-
-public:
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    MultiScaler();
+    GPUPipelineState* _psUpscale = nullptr;
 
 public:
 
@@ -84,7 +73,16 @@ public:
     /// <param name="dstHeight">The height of the destination texture (in pixels).</param>
     /// <param name="src">The source texture.</param>
     /// <param name="dst">The destination texture.</param>
-    void DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTextureView* src, GPUTextureView* dst);
+    void DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTexture* src, GPUTextureView* dst);
+
+    /// <summary>
+    /// Upscales the texture.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="viewport">The viewport of the destination texture.</param>
+    /// <param name="src">The source texture.</param>
+    /// <param name="dst">The destination texture.</param>
+    void Upscale(GPUContext* context, const Viewport& viewport, GPUTexture* src, GPUTextureView* dst);
 
 public:
 
@@ -96,6 +94,7 @@ public:
     void OnShaderReloading(Asset* obj)
     {
         _psHalfDepth->ReleaseGPU();
+        _psUpscale->ReleaseGPU();
         _psBlur5.Release();
         _psBlur9.Release();
         _psBlur13.Release();

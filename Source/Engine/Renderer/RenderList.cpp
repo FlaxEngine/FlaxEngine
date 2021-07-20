@@ -326,12 +326,12 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
     }
 }
 
-bool RenderList::HasAnyPostAA(RenderContext& renderContext) const
+bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const
 {
     for (int32 i = 0; i < Settings.PostFxMaterials.Materials.Count(); i++)
     {
         auto material = Settings.PostFxMaterials.Materials[i].Get();
-        if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == MaterialPostFxLocation::AfterAntiAliasingPass)
+        if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == materialPostFx)
         {
             return true;
         }
@@ -341,7 +341,7 @@ bool RenderList::HasAnyPostAA(RenderContext& renderContext) const
         for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
         {
             auto fx = renderContext.List->PostFx[i];
-            if (fx->IsReady() && fx->GetLocation() == PostProcessEffectLocation::AfterAntiAliasingPass)
+            if (fx->IsReady() && fx->GetLocation() == postProcess)
             {
                 return true;
             }

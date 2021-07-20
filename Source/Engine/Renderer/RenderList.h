@@ -489,11 +489,13 @@ public:
     void RunCustomPostFxPass(GPUContext* context, RenderContext& renderContext, PostProcessEffectLocation location, GPUTexture*& input, GPUTexture*& output);
 
     /// <summary>
-    /// Determines whether any Custom PostFx or Material PostFx has to be rendered after AA pass. Used to pick a faster rendering path by the frame rendering module.
+    /// Determines whether any Custom PostFx or Material PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <returns>True if render any postFx after AA, otherwise false.</returns>
-    bool HasAnyPostAA(RenderContext& renderContext) const;
+    /// <param name="postProcess">The PostFx location to check (for scripts).</param>
+    /// <param name="materialPostFx">The PostFx location to check (for materials).</param>
+    /// <returns>True if render any postFx of the given type, otherwise false.</returns>
+    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const;
 
 public:
 
