@@ -61,13 +61,11 @@ public:
     /// <summary>
     /// Determines whether game building is running.
     /// </summary>
-    /// <returns><c>true</c> if game building is running; otherwise, <c>false</c>.</returns>
     API_PROPERTY() static bool IsRunning();
 
     /// <summary>
     /// Determines whether building cancel has been requested.
     /// </summary>
-    /// <returns><c>true</c> if building cancel has been requested; otherwise, <c>false</c>.</returns>
     API_PROPERTY() static bool IsCancelRequested();
 
     /// <summary>
@@ -123,4 +121,9 @@ public:
     /// Occurs when building game progress fires.
     /// </summary>
     static Delegate<const String&, float> OnProgress;
+
+    /// <summary>
+    /// Occurs when building collects assets to cook.
+    /// </summary>
+    static Delegate<HashSet<Guid>&> OnCollectAssets;
 };

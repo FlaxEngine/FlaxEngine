@@ -26,6 +26,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Scripting/MException.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
@@ -55,7 +56,7 @@ namespace GameCookerImpl
 {
     MMethod* Internal_OnEvent = nullptr;
     MMethod* Internal_OnProgress = nullptr;
-    MMethod* Internal_CanDeployPlugin = nullptr;
+    MMethod* Internal_OnCollectAssets = nullptr;
 
     bool IsRunning = false;
     bool IsThreadRunning = false;
@@ -77,6 +78,7 @@ namespace GameCookerImpl
 
     void CallEvent(GameCooker::EventType type);
     void ReportProgress(const String& info, float totalProgress);
+    void OnCollectAssets(HashSet<Guid>& assets);
     bool Build();
     int32 ThreadFunction();
 
@@ -84,6 +86,7 @@ namespace GameCookerImpl
     {
         Internal_OnEvent = nullptr;
         Internal_OnProgress = nullptr;
+        Internal_OnCollectAssets = nullptr;
     }
 }
 
@@ -91,6 +94,7 @@ using namespace GameCookerImpl;
 
 Delegate<GameCooker::EventType> GameCooker::OnEvent;
 Delegate<const String&, float> GameCooker::OnProgress;
+Delegate<HashSet<Guid>&> GameCooker::OnCollectAssets;
 
 const Char* ToString(const BuildPlatform platform)
 {
@@ -415,6 +419,33 @@ void GameCookerImpl::ReportProgress(const String& info, float totalProgress)
     ProgressValue = totalProgress;
 }
 
+void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
+{
+    if (Internal_OnCollectAssets == nullptr)
+    {
+        auto c = GameCooker::GetStaticClass();
+        if (c)
+            Internal_OnCollectAssets = c->GetMethod("Internal_OnCollectAssets", 0);
+        ASSERT(GameCookerImpl::Internal_OnCollectAssets);
+    }
+
+    MCore::AttachThread();
+    MonoObject* exception = nullptr;
+    auto list = (MonoArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
+    if (exception)
+    {
+        MException ex(exception);
+        ex.Log(LogType::Error, TEXT("OnCollectAssets"));
+    }
+
+    if (list)
+    {
+        auto ids = MUtils::ToSpan<Guid>(list);
+        for (int32 i = 0; i < ids.Length(); i++)
+            assets.Add(ids[i]);
+    }
+}
+
 bool GameCookerImpl::Build()
 {
     CookingData& data = Data;
@@ -511,6 +542,7 @@ bool GameCookerService::Init()
 {
     auto editorAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editorAssembly->Unloading.Bind(OnEditorAssemblyUnloading);
+    GameCooker::OnCollectAssets.Bind(OnCollectAssets);
 
     return false;
 }

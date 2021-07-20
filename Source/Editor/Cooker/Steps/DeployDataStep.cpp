@@ -101,6 +101,10 @@ bool DeployDataStep::Perform(CookingData& data)
     if (data.Configuration != BuildConfiguration::Release)
         data.AddRootEngineAsset(TEXT("Editor/Fonts/Roboto-Regular"));
 
+    // Register custom assets (eg. plugins)
+    data.StepProgress(TEXT("Deploying custom data"), 30);
+    GameCooker::OnCollectAssets(data.RootAssets);
+
     // Register game assets
     data.StepProgress(TEXT("Deploying game data"), 50);
     auto& buildSettings = *BuildSettings::Get();
