@@ -326,16 +326,8 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
     }
 }
 
-bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const
+bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess) const
 {
-    for (int32 i = 0; i < Settings.PostFxMaterials.Materials.Count(); i++)
-    {
-        auto material = Settings.PostFxMaterials.Materials[i].Get();
-        if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == materialPostFx)
-        {
-            return true;
-        }
-    }
     if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
     {
         for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
@@ -347,7 +339,19 @@ bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLoc
             }
         }
     }
+    return false;
+}
 
+bool RenderList::HasAnyPostFx(RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const
+{
+    for (int32 i = 0; i < Settings.PostFxMaterials.Materials.Count(); i++)
+    {
+        auto material = Settings.PostFxMaterials.Materials[i].Get();
+        if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == materialPostFx)
+        {
+            return true;
+        }
+    }
     return false;
 }
 

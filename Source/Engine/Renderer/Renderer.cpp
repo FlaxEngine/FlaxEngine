@@ -112,9 +112,7 @@ void RendererService::Dispose()
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    const auto width = (float)renderContext.Buffers->GetWidth();
-    const auto height = (float)renderContext.Buffers->GetHeight();
-    context->SetViewportAndScissors(width, height);
+    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
 
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
     if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
@@ -128,7 +126,6 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
     else
     {
         PROFILE_GPU("Copy frame");
-
         context->SetRenderTarget(output);
         context->Draw(input);
     }
@@ -470,6 +467,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::Default, frameBuffer, tempBuffer);
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterCustomPostEffects, frameBuffer, tempBuffer);
 
+    // Cleanup
+    context->ResetRenderTarget();
+    context->ResetSR();
+    context->FlushState();
+
     // Debug motion vectors
     if (renderContext.View.Mode == ViewMode::MotionVectors)
     {
@@ -500,8 +502,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         {
             PROFILE_GPU("Copy frame");
             context->SetRenderTarget(task->GetOutputView());
-            context->SetViewportAndScissors(task->GetViewport());
+            context->SetViewportAndScissors(task->GetOutputViewport());
             context->Draw(frameBuffer);
+        }
+        else if (renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::CustomUpscale, MaterialPostFxLocation::MAX))
+        {
+            renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, frameBuffer);
         }
         else
         {

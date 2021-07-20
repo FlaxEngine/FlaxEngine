@@ -489,13 +489,32 @@ public:
     void RunCustomPostFxPass(GPUContext* context, RenderContext& renderContext, PostProcessEffectLocation location, GPUTexture*& input, GPUTexture*& output);
 
     /// <summary>
+    /// Determines whether any Custom PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="postProcess">The PostFx location to check (for scripts).</param>
+    /// <returns>True if render any postFx of the given type, otherwise false.</returns>
+    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess) const;
+
+    /// <summary>
+    /// Determines whether any Material PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="materialPostFx">The PostFx location to check (for materials).</param>
+    /// <returns>True if render any postFx of the given type, otherwise false.</returns>
+    bool HasAnyPostFx(RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const;
+
+    /// <summary>
     /// Determines whether any Custom PostFx or Material PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="postProcess">The PostFx location to check (for scripts).</param>
     /// <param name="materialPostFx">The PostFx location to check (for materials).</param>
     /// <returns>True if render any postFx of the given type, otherwise false.</returns>
-    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const;
+    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const
+    {
+        return HasAnyPostFx(renderContext, postProcess) || HasAnyPostFx(renderContext, materialPostFx);
+    }
 
 public:
 
