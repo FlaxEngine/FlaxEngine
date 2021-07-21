@@ -139,7 +139,6 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Windows:
                 binariesSubDir = string.Format("win.{0}_{1}.vc140.md", arch, bits);
                 break;
-            case TargetPlatform.XboxOne:
             case TargetPlatform.UWP:
                 binariesSubDir = string.Format("uwp.{0}_{1}.vc141", arch, bits);
                 break;
@@ -153,7 +152,8 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
-            case TargetPlatform.XboxScarlett:
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
                 binariesSubDir = "win.x86_64.vc142.md";
                 break;
             case TargetPlatform.Android:
@@ -212,6 +212,7 @@ namespace Flax.Deps.Dependencies
                 // Hack: PS4 uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
                 Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\ps4"), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
                 break;
+            case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett:
                 // Hack: force to use proper Win10 SDK
                 Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\vc16win64"), "*.vcxproj", SearchOption.AllDirectories, "10.0.18362.0", "10.0.19041.0");
@@ -335,11 +336,6 @@ namespace Flax.Deps.Dependencies
                     Build(options, "vc15uwp64", platform, TargetArchitecture.x64);
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    Build(options, "vc15uwp64", platform, TargetArchitecture.x64);
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     Build(options, "linux", platform, TargetArchitecture.x64);
@@ -352,6 +348,11 @@ namespace Flax.Deps.Dependencies
                     break;
                 }
                 case TargetPlatform.XboxScarlett:
+                {
+                    Build(options, "vc16win64", platform, TargetArchitecture.x64);
+                    break;
+                }
+                case TargetPlatform.XboxOne:
                 {
                     Build(options, "vc16win64", platform, TargetArchitecture.x64);
                     break;

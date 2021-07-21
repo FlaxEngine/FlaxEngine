@@ -56,10 +56,10 @@ namespace Flax.Build.Platforms
             switch (platform)
             {
             case TargetPlatform.Windows: return GetSDKs().Count != 0;
-            case TargetPlatform.XboxOne:
             case TargetPlatform.UWP: return GetSDKs().FirstOrDefault(x => x.Key != WindowsPlatformSDK.v8_1).Value != null;
             case TargetPlatform.PS4: return Sdk.HasValid("PS4Sdk");
-            case TargetPlatform.XboxScarlett: return GetSDKs().ContainsKey(WindowsPlatformSDK.v10_0_19041_0) && Sdk.HasValid("GDK");
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett: return GetSDKs().ContainsKey(WindowsPlatformSDK.v10_0_19041_0) && Sdk.HasValid("GDK");
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
             case TargetPlatform.Switch: return Sdk.HasValid("SwitchSdk");
             default: return false;

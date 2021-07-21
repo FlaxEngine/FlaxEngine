@@ -10,6 +10,8 @@
 #include "Linux/LinuxWindow.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Window.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOneWindow.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettWindow.h"
 #elif PLATFORM_ANDROID

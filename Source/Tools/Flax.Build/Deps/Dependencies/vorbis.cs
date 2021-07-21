@@ -148,13 +148,6 @@ namespace Flax.Deps.Dependencies
                 }
 
                 break;
-            case TargetPlatform.XboxOne:
-                buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                binariesToCopy = binariesToCopyWindows;
-                vcxprojPaths = vcxprojPathsWindows;
-                buildPlatform = "x64";
-                PatchWindowsTargetPlatformVersion("10.0.17763.0", "v141");
-                break;
             case TargetPlatform.UWP:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
                 binariesToCopy = binariesToCopyWindows;
@@ -192,6 +185,13 @@ namespace Flax.Deps.Dependencies
                 Utilities.FileCopy(
                                    Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
                                    Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
+                break;
+            case TargetPlatform.XboxOne:
+                buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
+                binariesToCopy = binariesToCopyWindows;
+                vcxprojPaths = vcxprojPathsWindows;
+                buildPlatform = "x64";
+                PatchWindowsTargetPlatformVersion("10.0.19041.0", "v142");
                 break;
             case TargetPlatform.XboxScarlett:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");

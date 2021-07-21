@@ -155,6 +155,14 @@ bool GraphicsService::Init()
             device = CreateGPUDevicePS4();
 #endif
 
+#elif PLATFORM_XBOX_ONE
+
+        // Xbox One
+#if GRAPHICS_API_DIRECTX12
+        if (!device)
+            device = CreateGPUDeviceDX12();
+#endif
+
 #elif PLATFORM_XBOX_SCARLETT
 
         // Xbox Scarlett
