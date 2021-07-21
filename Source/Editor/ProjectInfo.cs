@@ -189,7 +189,6 @@ namespace FlaxEditor
                         // Absolute
                         referencePath = reference.Name;
                     }
-                    referencePath = StringUtils.RemovePathRelativeParts(referencePath);
 
                     // Load referenced project
                     reference.Project = Load(referencePath);

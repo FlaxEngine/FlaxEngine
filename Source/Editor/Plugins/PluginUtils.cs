@@ -28,12 +28,24 @@ namespace FlaxEditor
             var assemblyName = assembly.GetName().Name;
             var dotEditorPos = assemblyName.LastIndexOf(".Editor", StringComparison.OrdinalIgnoreCase);
             if (dotEditorPos != -1)
-                assemblyName = assemblyName.Substring(dotEditorPos);
+                assemblyName = assemblyName.Substring(0, dotEditorPos);
+            var dotCSharpPos = assemblyName.LastIndexOf(".CSharp", StringComparison.OrdinalIgnoreCase);
+            if (dotCSharpPos != -1)
+                assemblyName = assemblyName.Substring(0, dotCSharpPos);
+            var assemblyDir = Path.GetDirectoryName(assemblyPath);
 
-            var iconPath = Path.Combine(Path.GetDirectoryName(assemblyPath), assemblyName + ".Icon.flax");
-
+            // Try path relative to the plugin binary
+            var iconPath = Path.Combine(assemblyDir, assemblyName + ".Icon.flax");
             if (!File.Exists(iconPath))
-                return null;
+            {
+                // Try path relative to the plugin project Content
+                iconPath = Path.Combine(assemblyDir, "../../../../../Content", assemblyName + ".Icon.flax");
+                MessageBox.Show(StringUtils.NormalizePath(StringUtils.RemovePathRelativeParts(iconPath)));
+                if (!File.Exists(iconPath))
+                {
+                    return null;
+                }
+            }
 
             return FlaxEngine.Content.LoadAsync<Texture>(iconPath);
         }
