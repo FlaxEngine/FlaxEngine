@@ -2,7 +2,6 @@
 
 #include "Script.h"
 #include "Engine/Core/Log.h"
-#include "ManagedSerialization.h"
 #if USE_EDITOR
 #include "StdTypesContainer.h"
 #include "ManagedCLR/MClass.h"

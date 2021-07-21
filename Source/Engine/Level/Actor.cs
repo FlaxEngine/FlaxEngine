@@ -60,7 +60,7 @@ namespace FlaxEngine
         /// <param name="flag">The flag(s) to check.</param>
         /// <returns>True if has flag(s) set, otherwise false.</returns>
         [Unmanaged]
-        [Tooltip("Returns true if object has given flag(s) set..")]
+        [Tooltip("Returns true if object has given flag(s) set.")]
         public bool HasStaticFlag(StaticFlags flag)
         {
             return (StaticFlags & flag) == flag;

@@ -40,7 +40,6 @@ namespace FlaxEditor
             {
                 // Try path relative to the plugin project Content
                 iconPath = Path.Combine(assemblyDir, "../../../../../Content", assemblyName + ".Icon.flax");
-                MessageBox.Show(StringUtils.NormalizePath(StringUtils.RemovePathRelativeParts(iconPath)));
                 if (!File.Exists(iconPath))
                 {
                     return null;

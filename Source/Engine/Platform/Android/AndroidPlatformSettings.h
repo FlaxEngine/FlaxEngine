@@ -29,7 +29,7 @@ public:
     /// <summary>
     /// Custom icon texture (asset id) to use for the application (overrides the default one).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1030), AssetReference(typeof(Texture)), EditorDisplay(\"Other\")")
+    API_FIELD(Attributes="EditorOrder(1030), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Other\")")
     Guid OverrideIcon;
 
 public:
