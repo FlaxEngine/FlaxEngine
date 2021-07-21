@@ -7,49 +7,21 @@
 
 /// <summary>
 /// Bitonic Sort implementation using GPU compute shaders. 
-/// It has a complexity of O(n*(log n)^2), which is inferior to most 
-/// traditional sorting algorithms, but because GPUs have so many threads, 
-/// and because each thread can be utilized, the algorithm can fully load 
-/// the GPU, taking advantage of its high ALU and bandwidth capabilities.
+/// It has a complexity of O(n*(log n)^2), which is inferior to most traditional sorting algorithms, but because GPUs have so many threads, 
+/// and because each thread can be utilized, the algorithm can fully load the GPU, taking advantage of its high ALU and bandwidth capabilities.
 /// </summary>
 class BitonicSort : public RendererPass<BitonicSort>
 {
-public:
-
-    // The sorting keys buffer item structure template. Matches the shader type.
-    struct Item
-    {
-        float Key;
-        uint32 Value;
-    };
-
 private:
 
-    PACK_STRUCT(struct Data {
-        Item NullItem;
-        uint32 CounterOffset;
-        uint32 MaxIterations;
-        uint32 LoopK;
-        float KeySign;
-        uint32 LoopJ;
-        float Dummy0;
-    });
-
     AssetReference<Shader> _shader;
-    GPUBuffer* _dispatchArgsBuffer;
+    GPUBuffer* _dispatchArgsBuffer = nullptr;
     GPUConstantBuffer* _cb;
     GPUShaderProgramCS* _indirectArgsCS;
     GPUShaderProgramCS* _preSortCS;
     GPUShaderProgramCS* _innerSortCS;
     GPUShaderProgramCS* _outerSortCS;
     GPUShaderProgramCS* _copyIndicesCS;
-
-public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BitonicSort"/> class.
-    /// </summary>
-    BitonicSort();
 
 public:
 

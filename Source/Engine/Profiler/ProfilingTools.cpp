@@ -9,7 +9,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 
 ProfilingTools::MainStats ProfilingTools::Stats;
-Array<ProfilingTools::ThreadStats> ProfilingTools::EventsCPU(128);
+Array<ProfilingTools::ThreadStats, InlinedAllocation<64>> ProfilingTools::EventsCPU;
 Array<ProfilerGPU::Event> ProfilingTools::EventsGPU;
 
 class ProfilingToolsService : public EngineService
@@ -23,7 +23,7 @@ public:
     }
 
     void Update() override;
-    void BeforeExit() override;
+    void Dispose() override;
 };
 
 ProfilingToolsService ProfilingToolsServiceInstance;
@@ -57,7 +57,8 @@ void ProfilingToolsService::Update()
     for (int32 i = 0; i < threads.Count(); i++)
     {
         auto t = threads[i];
-
+        if (t == nullptr)
+            continue;
         ProfilingTools::ThreadStats* pt = nullptr;
         for (auto& e : ProfilingTools::EventsCPU)
         {
@@ -166,7 +167,7 @@ void ProfilingToolsService::Update()
 #endif
 }
 
-void ProfilingToolsService::BeforeExit()
+void ProfilingToolsService::Dispose()
 {
     ProfilingTools::EventsCPU.Clear();
     ProfilingTools::EventsCPU.SetCapacity(0);

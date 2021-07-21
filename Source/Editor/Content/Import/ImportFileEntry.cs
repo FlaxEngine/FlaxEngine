@@ -116,8 +116,7 @@ namespace FlaxEditor.Content.Import
             if (FileTypes.TryGetValue(extension, out ImportFileEntryHandler createDelegate))
                 return createDelegate(ref request);
 
-            // Use default type
-            return request.IsBinaryAsset ? new AssetImportEntry(ref request) : new ImportFileEntry(ref request);
+            return request.IsInBuilt ? new AssetImportEntry(ref request) : new ImportFileEntry(ref request);
         }
 
         internal static void RegisterDefaultTypes()

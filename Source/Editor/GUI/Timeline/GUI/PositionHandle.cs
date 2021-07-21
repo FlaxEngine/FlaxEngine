@@ -26,7 +26,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         public override void Draw()
         {
             var style = Style.Current;
-            var icon = Editor.Instance.Icons.VisjectArrowClose;
+            var icon = Editor.Instance.Icons.VisjectArrowClosed32;
             var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y;
 
             Matrix3x3.RotationZ(Mathf.PiOverTwo, out var m1);

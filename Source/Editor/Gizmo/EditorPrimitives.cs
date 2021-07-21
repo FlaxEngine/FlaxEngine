@@ -8,9 +8,8 @@ namespace FlaxEditor.Gizmo
     /// <summary>
     /// Interface for editor viewports that can contain and use <see cref="EditorPrimitives"/>.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Gizmo.IGizmoOwner" />
     [HideInEditor]
-    public interface IEditorPrimitivesOwner : IGizmoOwner
+    public interface IEditorPrimitivesOwner
     {
         /// <summary>
         /// Draws the custom editor primitives.
@@ -68,11 +67,14 @@ namespace FlaxEditor.Gizmo
             var renderList = RenderList.GetFromPool();
             var prevList = renderContext.List;
             renderContext.List = renderList;
-            for (int i = 0; i < Viewport.Gizmos.Count; i++)
+            try
             {
-                Viewport.Gizmos[i].Draw(ref renderContext);
+                Viewport.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
             }
-            Viewport.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+            }
 
             // Sort draw calls
             renderList.SortDrawCalls(ref renderContext, false, DrawCallsListType.GBuffer);

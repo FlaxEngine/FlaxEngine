@@ -18,6 +18,9 @@
 #if AUDIO_API_PS4
 #include "Platforms/PS4/Engine/Audio/AudioBackendPS4.h"
 #endif
+#if AUDIO_API_SWITCH
+#include "Platforms/Switch/Engine/Audio/AudioBackendSwitch.h"
+#endif
 #if AUDIO_API_OPENAL
 #include "OpenAL/AudioBackendOAL.h"
 #endif
@@ -171,6 +174,7 @@ void Audio::OnRemoveSource(AudioSource* source)
 
 bool AudioService::Init()
 {
+    PROFILE_CPU_NAMED("Audio.Init");
     const auto settings = AudioSettings::Get();
     const bool mute = CommandLine::Options.Mute.IsTrue() || settings->DisableAudio;
 
@@ -186,6 +190,12 @@ bool AudioService::Init()
     if (!backend)
     {
         backend = New<AudioBackendPS4>();
+    }
+#endif
+#if AUDIO_API_SWITCH
+    if (!backend)
+    {
+        backend = New<AudioBackendSwitch>();
     }
 #endif
 #if AUDIO_API_OPENAL
@@ -233,7 +243,7 @@ bool AudioService::Init()
 
 void AudioService::Update()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Audio.Update");
 
     // Update the master volume
     float masterVolume = MasterVolume;
@@ -242,10 +252,9 @@ void AudioService::Update()
         // Mute audio if app has no user focus
         masterVolume = 0.0f;
     }
-    if (Volume != masterVolume)
+    if (Math::NotNearEqual(Volume, masterVolume))
     {
         Volume = masterVolume;
-
         AudioBackend::SetVolume(masterVolume);
     }
 

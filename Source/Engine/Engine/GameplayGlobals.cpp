@@ -7,6 +7,9 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/BinaryAssetUpgrader.h"
+#include "Engine/Threading/Threading.h"
+
+#if USE_EDITOR
 
 class GameplayGlobalsUpgrader : public BinaryAssetUpgrader
 {
@@ -50,7 +53,9 @@ private:
     }
 };
 
-REGISTER_BINARY_ASSET(GameplayGlobals, "FlaxEngine.GameplayGlobals", ::New<GameplayGlobalsUpgrader>(), true);
+#endif
+
+REGISTER_BINARY_ASSET_WITH_UPGRADER(GameplayGlobals, "FlaxEngine.GameplayGlobals", GameplayGlobalsUpgrader, true);
 
 GameplayGlobals::GameplayGlobals(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -59,6 +64,7 @@ GameplayGlobals::GameplayGlobals(const SpawnParams& params, const AssetInfo* inf
 
 Dictionary<String, Variant> GameplayGlobals::GetValues() const
 {
+    ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
     for (auto& e : Variables)
         result.Add(e.Key, e.Value.Value);
@@ -67,6 +73,7 @@ Dictionary<String, Variant> GameplayGlobals::GetValues() const
 
 void GameplayGlobals::SetValues(const Dictionary<String, Variant>& values)
 {
+    ScopeLock lock(Locker);
     for (auto& e : values)
     {
         bool hasKey = false;
@@ -97,6 +104,7 @@ void GameplayGlobals::SetValues(const Dictionary<String, Variant>& values)
 
 Dictionary<String, Variant> GameplayGlobals::GetDefaultValues() const
 {
+    ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
     for (auto& e : Variables)
         result.Add(e.Key, e.Value.DefaultValue);
@@ -105,6 +113,7 @@ Dictionary<String, Variant> GameplayGlobals::GetDefaultValues() const
 
 void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values)
 {
+    ScopeLock lock(Locker);
     for (auto& e : values)
     {
         bool hasKey = false;
@@ -135,12 +144,14 @@ void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values
 
 Variant GameplayGlobals::GetValue(const StringView& name) const
 {
+    ScopeLock lock(Locker);
     auto e = Variables.TryGet(name);
     return e ? e->Value : Variant::Zero;
 }
 
 void GameplayGlobals::SetValue(const StringView& name, const Variant& value)
 {
+    ScopeLock lock(Locker);
     auto e = Variables.TryGet(name);
     if (e)
     {
@@ -150,6 +161,7 @@ void GameplayGlobals::SetValue(const StringView& name, const Variant& value)
 
 void GameplayGlobals::ResetValues()
 {
+    ScopeLock lock(Locker);
     for (auto& e : Variables)
     {
         e.Value.Value = e.Value.DefaultValue;

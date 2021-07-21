@@ -51,73 +51,13 @@ public:
     {
     }
 
+    static void DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw);
+    static void DrawIcons(RenderContext& renderContext, Actor* actor, Mesh::DrawInfo& draw);
     bool Init() override;
     void Dispose() override;
 };
 
 ViewportIconsRendererService ViewportIconsRendererServiceInstance;
-
-namespace
-{
-    void DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw)
-    {
-        auto& view = renderContext.View;
-        const BoundingFrustum frustum = view.Frustum;
-        auto& icons = scene->GetSceneRendering()->ViewportIcons;
-        Matrix m1, m2, world;
-        for (Actor* icon : icons)
-        {
-            BoundingSphere sphere(icon->GetPosition(), ICON_RADIUS);
-            IconTypes iconType;
-            if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
-            {
-                // Create world matrix
-                Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
-                Matrix::RotationY(PI, world);
-                Matrix::Multiply(m2, world, m1);
-                Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
-                Matrix::Multiply(m1, m2, world);
-
-                // Draw icon
-                GeometryDrawStateData drawState;
-                draw.DrawState = &drawState;
-                draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
-                draw.World = &world;
-                draw.Bounds = sphere;
-                QuadModel->Draw(renderContext, draw);
-            }
-        }
-    }
-
-    void DrawIcons(RenderContext& renderContext, Actor* actor, Mesh::DrawInfo& draw)
-    {
-        auto& view = renderContext.View;
-        const BoundingFrustum frustum = view.Frustum;
-        Matrix m1, m2, world;
-        BoundingSphere sphere(actor->GetPosition(), ICON_RADIUS);
-        IconTypes iconType;
-        if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
-        {
-            // Create world matrix
-            Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
-            Matrix::RotationY(PI, world);
-            Matrix::Multiply(m2, world, m1);
-            Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
-            Matrix::Multiply(m1, m2, world);
-
-            // Draw icon
-            GeometryDrawStateData drawState;
-            draw.DrawState = &drawState;
-            draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
-            draw.World = &world;
-            draw.Bounds = sphere;
-            QuadModel->Draw(renderContext, draw);
-        }
-
-        for (auto child : actor->Children)
-            DrawIcons(renderContext, child, draw);
-    }
-}
 
 void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor)
 {
@@ -137,12 +77,71 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
 
     if (const auto scene = SceneObject::Cast<Scene>(actor))
     {
-        ::DrawIcons(renderContext, scene, draw);
+        ViewportIconsRendererService::DrawIcons(renderContext, scene, draw);
     }
     else
     {
-        ::DrawIcons(renderContext, actor, draw);
+        ViewportIconsRendererService::DrawIcons(renderContext, actor, draw);
     }
+}
+
+void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw)
+{
+    auto& view = renderContext.View;
+    const BoundingFrustum frustum = view.Frustum;
+    auto& icons = scene->GetSceneRendering()->ViewportIcons;
+    Matrix m1, m2, world;
+    for (Actor* icon : icons)
+    {
+        BoundingSphere sphere(icon->GetPosition(), ICON_RADIUS);
+        IconTypes iconType;
+        if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
+        {
+            // Create world matrix
+            Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
+            Matrix::RotationY(PI, world);
+            Matrix::Multiply(m2, world, m1);
+            Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
+            Matrix::Multiply(m1, m2, world);
+
+            // Draw icon
+            GeometryDrawStateData drawState;
+            draw.DrawState = &drawState;
+            draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+            draw.World = &world;
+            draw.Bounds = sphere;
+            QuadModel->Draw(renderContext, draw);
+        }
+    }
+}
+
+void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor* actor, Mesh::DrawInfo& draw)
+{
+    auto& view = renderContext.View;
+    const BoundingFrustum frustum = view.Frustum;
+    Matrix m1, m2, world;
+    BoundingSphere sphere(actor->GetPosition(), ICON_RADIUS);
+    IconTypes iconType;
+    if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
+    {
+        // Create world matrix
+        Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
+        Matrix::RotationY(PI, world);
+        Matrix::Multiply(m2, world, m1);
+        Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
+        Matrix::Multiply(m1, m2, world);
+
+        // Draw icon
+        GeometryDrawStateData drawState;
+        draw.DrawState = &drawState;
+        draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+        draw.World = &world;
+        draw.Bounds = sphere;
+        QuadModel->Draw(renderContext, draw);
+    }
+
+    for (auto child : actor->Children)
+        DrawIcons(renderContext, child, draw);
 }
 
 bool ViewportIconsRendererService::Init()

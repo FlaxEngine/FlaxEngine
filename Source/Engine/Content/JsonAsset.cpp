@@ -1,17 +1,22 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
-#include "Storage/ContentStorageManager.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#include "Engine/Core/Types/DataContainer.h"
+#else
+#include "Storage/ContentStorageManager.h"
 #endif
+#include "Content.h"
 #include "FlaxEngine.Gen.h"
+#include "Cache/AssetsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Utilities/StringConverter.h"
 
@@ -27,6 +32,7 @@ String JsonAssetBase::GetData() const
 {
     if (Data == nullptr)
         return String::Empty;
+    PROFILE_CPU_NAMED("JsonAsset.GetData");
 
     // Get serialized data
     rapidjson_flax::StringBuffer buffer;
@@ -38,7 +44,12 @@ String JsonAssetBase::GetData() const
 
 const String& JsonAssetBase::GetPath() const
 {
+#if USE_EDITOR
     return _path;
+#else
+    // In build all assets are packed into packages so use ID for original path lookup
+    return Content::GetRegistry()->GetEditorAssetPath(_id);
+#endif
 }
 
 #if USE_EDITOR
@@ -66,7 +77,7 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
-            if (!Guid::Parse(node.GetText(), id))
+            if (!Guid::Parse(node.GetStringAnsiView(), id))
                 output.Add(id);
         }
     }
@@ -93,9 +104,8 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 {
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
-
     BytesContainer data;
-    if (File::ReadAllBytes(GetPath(), data))
+    if (File::ReadAllBytes(_path, data))
     {
         LOG(Warning, "Filed to load json asset data. {0}", ToString());
         return LoadResult::CannotLoadData;
@@ -104,11 +114,9 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     {
         return LoadResult::MissingDataChunk;
     }
-
 #else
-
     // Get the asset storage container but don't load it now
-    const auto storage = ContentStorageManager::GetStorage(GetPath(), true);
+    const auto storage = ContentStorageManager::GetStorage(_path, true);
     if (!storage)
         return LoadResult::CannotLoadStorage;
 
@@ -124,11 +132,13 @@ Asset::LoadResult JsonAssetBase::loadAsset()
     if (storage->LoadAssetChunk(chunk))
         return LoadResult::CannotLoadData;
     auto& data = chunk->Data;
-
 #endif
 
     // Parse json document
-    Document.Parse(data.Get<char>(), data.Length());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        Document.Parse(data.Get<char>(), data.Length());
+    }
     if (Document.HasParseError())
     {
         Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
@@ -176,7 +186,7 @@ void JsonAssetBase::onRename(const StringView& newPath)
 
 #endif
 
-REGISTER_JSON_ASSET(JsonAsset, "FlaxEngine.JsonAsset");
+REGISTER_JSON_ASSET(JsonAsset, "FlaxEngine.JsonAsset", true);
 
 JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)

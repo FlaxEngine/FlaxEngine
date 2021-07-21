@@ -6,6 +6,7 @@
 
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "GPUDeviceDX12.h"
+#include "Types.h"
 #include "../IncludeDirectXHeaders.h"
 
 class GPUTextureViewDX12;
@@ -50,18 +51,12 @@ private:
 
 public:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="device">Graphics Device</param>
     GPUPipelineStateDX12(GPUDeviceDX12* device);
 
 public:
 
-    /// <summary>
-    /// Direct3D primitive topology
-    /// </summary>
     D3D_PRIMITIVE_TOPOLOGY PrimitiveTopologyType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    DxShaderHeader Header;
 
     /// <summary>
     /// Gets DirectX 12 graphics pipeline state object for the given rendering state. Uses depth buffer and render targets formats and multi-sample levels to setup a proper PSO. Uses caching.

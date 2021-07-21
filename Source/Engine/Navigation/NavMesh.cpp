@@ -5,6 +5,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
+#include "Engine/Core/Log.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
@@ -155,14 +156,14 @@ void NavMesh::OnEnable()
     // Base
     Actor::OnEnable();
 
-    GetScene()->NavigationMeshes.Add(this);
+    GetScene()->Navigation.Meshes.Add(this);
     AddTiles();
 }
 
 void NavMesh::OnDisable()
 {
     RemoveTiles();
-    GetScene()->NavigationMeshes.Remove(this);
+    GetScene()->Navigation.Meshes.Remove(this);
 
     // Base
     Actor::OnDisable();

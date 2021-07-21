@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
@@ -19,55 +20,12 @@ namespace MUtils
     extern FLAXENGINE_API void ToString(MonoString* str, Variant& result);
     extern FLAXENGINE_API void ToString(MonoString* str, MString& result);
 
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const char* str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringAnsi& str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const String& str);
-
-    /// <summary>
-    /// Converts unmanaged string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <param name="domain">The context domain.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const String& str, MonoDomain* domain);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringAnsiView& str);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringView& str);
-
-    /// <summary>
-    /// Converts unmanaged static string text into managed string object.
-    /// </summary>
-    /// <param name="str">Text to convert.</param>
-    /// <param name="domain">The context domain.</param>
-    /// <returns>C# string.</returns>
     extern FLAXENGINE_API MonoString* ToString(const StringView& str, MonoDomain* domain);
 
     extern FLAXENGINE_API VariantType UnboxVariantType(MonoReflectionType* value);
@@ -81,8 +39,6 @@ namespace MUtils
 template<typename T, typename Enable = void>
 struct MConverter
 {
-    static_assert(fmt::internal::no_formatter_error<T>::value, "Unsupported type for Scripting API.");
-
     MonoObject* Box(const T& data, MonoClass* klass);
     void Unbox(T& result, MonoObject* data);
     void ToManagedArray(MonoArray* result, const Span<T>& data);
@@ -294,6 +250,41 @@ struct MConverter<AssetReference<T>>
         result.Resize(length);
         for (int32 i = 0; i < length; i++)
             result[i] = (T*)ScriptingObject::ToNative(mono_array_get(data, MonoObject*, i));
+    }
+};
+
+// Converter for Array.
+template<typename T>
+struct MConverter<Array<T>>
+{
+    MonoObject* Box(const Array<T>& data, MonoClass* klass)
+    {
+        if (!klass)
+            return nullptr;
+        // TODO: use shared empty arrays cache
+        auto result = mono_array_new(mono_domain_get(), klass, data.Count());
+        MConverter<T> converter;
+        converter.ToManagedArray(result, Span<T>(data.Get(), data.Count()));
+        return (MonoObject*)result;
+    }
+
+    void Unbox(Array<T>& result, MonoObject* data)
+    {
+        auto length = data ? (int32)mono_array_length((MonoArray*)data) : 0;
+        result.EnsureCapacity(length);
+        MConverter<T> converter;
+        converter.ToNativeArray(result, (MonoArray*)data, length);
+    }
+
+    void ToManagedArray(MonoArray* result, const Span<Array<T>>& data)
+    {
+        CRASH; // Not implemented
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    void ToNativeArray(Array<Array<T>, AllocationType>& result, MonoArray* data, int32 length)
+    {
+        CRASH; // Not implemented
     }
 };
 

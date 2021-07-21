@@ -6,10 +6,13 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Threading/ThreadSpawner.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 namespace ShadowsOfMordor
 {
@@ -429,7 +432,7 @@ bool ShadowsOfMordor::Builder::initResources()
     // TODO: remove this release and just create missing resources
     releaseResources();
 
-    _output = GPUTexture::New();
+    _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
     if (_output->Init(GPUTextureDescription::New2D(HEMISPHERES_RESOLUTION, HEMISPHERES_RESOLUTION, PixelFormat::R11G11B10_Float)))
         return true;
     _task = New<BuilderRenderTask>();
@@ -518,7 +521,7 @@ void ShadowsOfMordor::Builder::releaseResources()
 bool ShadowsOfMordor::Builder::waitForJobDataSync()
 {
     bool wasCancelled = false;
-    const int32 framesToSyncCount = 3;
+    const int32 framesToSyncCount = 4;
 
     while (!wasCancelled)
     {

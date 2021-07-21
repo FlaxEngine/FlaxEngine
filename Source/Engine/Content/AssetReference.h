@@ -15,7 +15,7 @@ public:
 
 protected:
 
-    Asset* _asset;
+    Asset* _asset = nullptr;
 
 public:
 
@@ -35,35 +35,23 @@ public:
     EventType Changed;
 
 public:
+    NON_COPYABLE(AssetReferenceBase);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetReferenceBase"/> class.
     /// </summary>
-    AssetReferenceBase()
-        : _asset(nullptr)
-    {
-    }
+    AssetReferenceBase() = default;
 
     /// <summary>
     /// Finalizes an instance of the <see cref="AssetReferenceBase"/> class.
     /// </summary>
-    ~AssetReferenceBase()
-    {
-        if (_asset)
-        {
-            _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnAssetLoaded>(this);
-            _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnAssetUnloaded>(this);
-            _asset->RemoveReference();
-            _asset = nullptr;
-        }
-    }
+    ~AssetReferenceBase();
 
 public:
 
     /// <summary>
     /// Gets the asset ID or Guid::Empty if not set.
     /// </summary>
-    /// <returns>The asset ID or Guid::Empty if not set.</returns>
     FORCE_INLINE Guid GetID() const
     {
         return _asset ? _asset->GetID() : Guid::Empty;
@@ -72,7 +60,6 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no asset set).
     /// </summary>
-    /// <returns>Mono managed object</returns>
     FORCE_INLINE MonoObject* GetManagedInstance() const
     {
         return _asset ? _asset->GetOrCreateManagedInstance() : nullptr;
@@ -81,55 +68,13 @@ public:
     /// <summary>
     /// Gets the asset property value as string.
     /// </summary>
-    /// <returns>The string.</returns>
-    String ToString() const
-    {
-        static String NullStr = TEXT("<null>");
-        return _asset ? _asset->ToString() : NullStr;
-    }
+    String ToString() const;
 
 protected:
 
-    void OnSet(Asset* asset)
-    {
-        auto e = _asset;
-        if (e != asset)
-        {
-            if (e)
-            {
-                e->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnAssetLoaded>(this);
-                e->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnAssetUnloaded>(this);
-                e->RemoveReference();
-            }
-            _asset = e = asset;
-            if (e)
-            {
-                e->AddReference();
-                e->OnLoaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnAssetLoaded>(this);
-                e->OnUnloaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnAssetUnloaded>(this);
-            }
-            Changed();
-            if (e && e->IsLoaded())
-                Loaded();
-        }
-    }
-
-    void OnAssetLoaded(Asset* asset)
-    {
-        if (_asset == asset)
-        {
-            Loaded();
-        }
-    }
-
-    void OnAssetUnloaded(Asset* asset)
-    {
-        if (_asset == asset)
-        {
-            Unload();
-            OnSet(nullptr);
-        }
-    }
+    void OnSet(Asset* asset);
+    void OnLoaded(Asset* asset);
+    void OnUnloaded(Asset* asset);
 };
 
 /// <summary>
@@ -168,6 +113,22 @@ public:
     AssetReference(const AssetReference& other)
     {
         OnSet(other.Get());
+    }
+
+    AssetReference(AssetReference&& other)
+    {
+        OnSet(other.Get());
+        other.OnSet(nullptr);
+    }
+
+    AssetReference& operator=(AssetReference&& other)
+    {
+        if (&other != this)
+        {
+            OnSet(other.Get());
+            other.OnSet(nullptr);
+        }
+        return *this;
     }
 
     /// <summary>
@@ -220,7 +181,6 @@ public:
     /// <summary>
     /// Implicit conversion to the bool.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE operator T*() const
     {
         return (T*)_asset;
@@ -229,7 +189,6 @@ public:
     /// <summary>
     /// Implicit conversion to the asset.
     /// </summary>
-    /// <returns>True if asset has been set, otherwise false.</returns>
     FORCE_INLINE operator bool() const
     {
         return _asset != nullptr;
@@ -238,7 +197,6 @@ public:
     /// <summary>
     /// Implicit conversion to the asset.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE T* operator->() const
     {
         return (T*)_asset;
@@ -247,7 +205,6 @@ public:
     /// <summary>
     /// Gets the asset.
     /// </summary>
-    /// <returns>The asset.</returns>
     FORCE_INLINE T* Get() const
     {
         return (T*)_asset;
@@ -256,7 +213,6 @@ public:
     /// <summary>
     /// Gets the asset as a given type (static cast).
     /// </summary>
-    /// <returns>The asset.</returns>
     template<typename U>
     FORCE_INLINE U* As() const
     {
@@ -274,3 +230,9 @@ public:
         OnSet(asset);
     }
 };
+
+template<typename T>
+uint32 GetHash(const AssetReference<T>& key)
+{
+    return GetHash(key.GetID());
+}

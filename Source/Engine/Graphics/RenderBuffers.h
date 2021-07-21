@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Viewport.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 

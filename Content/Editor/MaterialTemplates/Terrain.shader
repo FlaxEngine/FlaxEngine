@@ -112,7 +112,7 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 #if USE_LIGHTMAP
 	output.LightmapUV = geometry.LightmapUV;
 #endif
-	output.TBN = CalcTangentBasisFromWorldNormal(geometry.WorldNormal);
+	output.TBN = CalcTangentBasis(geometry.WorldNormal, geometry.WorldPosition, geometry.TexCoord);
 	output.HolesMask = geometry.HolesMask;
 #if USE_TERRAIN_LAYERS
 	output.Layers = geometry.Layers;
@@ -415,7 +415,7 @@ VertexOutput VS(TerrainVertexInput input)
 #if USE_LIGHTMAP
 	materialInput.LightmapUV = output.Geometry.LightmapUV;
 #endif
-	materialInput.TBN = CalcTangentBasisFromWorldNormal(output.Geometry.WorldNormal);
+	materialInput.TBN = tangentToWorld;
 	materialInput.TwoSidedSign = WorldDeterminantSign;
 	materialInput.SvPosition = output.Position;
 	materialInput.PreSkinnedPosition = position;

@@ -354,6 +354,10 @@ namespace FlaxEditor.Scripting
 
                 if (Type.Type == typeof(float))
                     sb.Append("Float");
+                else if (Type.Type == typeof(short))
+                    sb.Append("Int16");
+                else if (Type.Type == typeof(ushort))
+                    sb.Append("Uint16");
                 else if (Type.Type == typeof(int))
                     sb.Append("Int");
                 else if (Type.Type == typeof(uint))
@@ -388,6 +392,24 @@ namespace FlaxEditor.Scripting
                             sb.Append("Uint.MinValue");
                         else
                             sb.Append(asUint);
+                    }
+                    else if (DefaultValue is short asInt16)
+                    {
+                        if (asInt16 == short.MaxValue)
+                            sb.Append("Int16.MaxValue");
+                        else if (asInt16 == short.MinValue)
+                            sb.Append("Int16.MinValue");
+                        else
+                            sb.Append(asInt16);
+                    }
+                    else if (DefaultValue is ushort asUint16)
+                    {
+                        if (asUint16 == ushort.MaxValue)
+                            sb.Append("Uint16.MaxValue");
+                        else if (asUint16 == ushort.MinValue)
+                            sb.Append("Uint16.MinValue");
+                        else
+                            sb.Append(asUint16);
                     }
                     else if (DefaultValue is float asFloat)
                     {
@@ -703,6 +725,10 @@ namespace FlaxEditor.Scripting
                     return "Int";
                 if (_managed == typeof(uint))
                     return "Uint";
+                if (_managed == typeof(short))
+                    return "Int16";
+                if (_managed == typeof(ushort))
+                    return "Uint16";
                 if (_managed == typeof(bool))
                     return "Bool";
                 return _managed.Name;
@@ -722,7 +748,7 @@ namespace FlaxEditor.Scripting
         /// <summary>
         /// Gets a value indicating whether the type is declared public.
         /// </summary>
-        public bool IsPublic => _managed != null ? _managed.IsPublic : _custom != null && _custom.IsPublic;
+        public bool IsPublic => _managed != null ? _managed.IsPublic || _managed.IsNestedPublic : _custom != null && _custom.IsPublic;
 
         /// <summary>
         /// Gets a value indicating whether the type is abstract and must be overridden.

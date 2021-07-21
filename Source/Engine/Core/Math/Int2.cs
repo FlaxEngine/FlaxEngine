@@ -12,9 +12,8 @@ namespace FlaxEngine
     /// Represents a two dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     [TypeConverter(typeof(TypeConverters.Int2Converter))]
-    public struct Int2 : IEquatable<Int2>, IFormattable
+    partial struct Int2 : IEquatable<Int2>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1}";
 
@@ -52,16 +51,6 @@ namespace FlaxEngine
         /// A <see cref="Int2" /> with all components equal to <see cref="int.MaxValue"/>.
         /// </summary>
         public static readonly Int2 Maximum = new Int2(int.MaxValue);
-
-        /// <summary>
-        /// The X component of the vector.
-        /// </summary>
-        public int X;
-
-        /// <summary>
-        /// The Y component of the vector.
-        /// </summary>
-        public int Y;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Int2" /> struct.

@@ -13,27 +13,14 @@ class SamplesBuffer
 {
 protected:
 
-    int32 _count;
+    int32 _count = 0;
     T _data[Size];
-
-    // Note: first element is _data[0]
-
-public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SamplesBuffer"/> class.
-    /// </summary>
-    SamplesBuffer()
-        : _count(0)
-    {
-    }
 
 public:
 
     /// <summary>
     /// Gets amount of elements in the collection.
     /// </summary>
-    /// <returns>The collection size.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _count;
@@ -42,7 +29,6 @@ public:
     /// <summary>
     /// Gets amount of elements that can be added to the collection.
     /// </summary>
-    /// <returns>The collection capacity.</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return Size;
@@ -51,7 +37,6 @@ public:
     /// <summary>
     /// Returns true if collection has any elements added.
     /// </summary>
-    /// <returns>True if collection has any elements added, otherwise false.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _count > 0;
@@ -60,7 +45,6 @@ public:
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if collection is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _count < 1;
@@ -69,7 +53,6 @@ public:
     /// <summary>
     /// Gets pointer to the first element in the collection.
     /// </summary>
-    /// <returns>Pointer to the first element in the collection.</returns>
     FORCE_INLINE T* Get() const
     {
         return _data;
@@ -111,7 +94,6 @@ public:
     /// <summary>
     /// Gets the first element value.
     /// </summary>
-    /// <returns>The first element.</returns>
     FORCE_INLINE T First() const
     {
         ASSERT(HasItems());
@@ -121,7 +103,6 @@ public:
     /// <summary>
     /// Gets last element value.
     /// </summary>
-    /// <returns>The last element.</returns>
     FORCE_INLINE T Last() const
     {
         ASSERT(HasItems());
@@ -136,15 +117,13 @@ public:
     /// <param name="value">The value to add.</param>
     void Add(const T& value)
     {
-        // Move previous elements
-        for (int32 i = _count - 1; i > 0; i--)
-            _data[i] = _data[i - 1];
-
-        // Update elements count
         if (_count != Size)
             _count++;
-
-        // Insert element
+        if (_count > 1)
+        {
+            for (int32 i = _count - 1; i > 0; i--)
+                _data[i] = _data[i - 1];
+        }
         _data[0] = value;
     }
 
@@ -171,7 +150,6 @@ public:
     /// <summary>
     /// Gets the minimum value in the buffer.
     /// </summary>
-    /// <returns>The minimum value.</returns>
     T Minimum() const
     {
         ASSERT(HasItems());
@@ -187,7 +165,6 @@ public:
     /// <summary>
     /// Gets the maximum value in the buffer.
     /// </summary>
-    /// <returns>The maximum value.</returns>
     T Maximum() const
     {
         ASSERT(HasItems());
@@ -203,7 +180,6 @@ public:
     /// <summary>
     /// Gets the average value in the buffer.
     /// </summary>
-    /// <returns>The average value.</returns>
     T Average() const
     {
         ASSERT(HasItems());

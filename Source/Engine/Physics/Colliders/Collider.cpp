@@ -31,6 +31,11 @@ Collider::Collider(const SpawnParams& params)
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
 
+PxShape* Collider::GetPxShape() const
+{
+    return _shape;
+}
+
 void Collider::SetIsTrigger(bool value)
 {
     if (value == _isTrigger || !CanBeTrigger())
@@ -228,19 +233,11 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     rigidBody->GetPhysXRigidActor()->attachShape(*_shape);
-    _shape->setLocalPose(PxTransform(C2P((_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale()), C2P(_localTransform.Orientation)));
+    _cachedLocalPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
+    _cachedLocalPoseRot = _localTransform.Orientation;
+    _shape->setLocalPose(PxTransform(C2P(_cachedLocalPosePos), C2P(_cachedLocalPoseRot)));
     if (rigidBody->IsDuringPlay())
         rigidBody->UpdateBounds();
-}
-
-void Collider::UpdateScale()
-{
-    const Vector3 scale = GetScale();
-    if (Vector3::NearEqual(_cachedScale, scale))
-        return;
-
-    // Recreate shape geometry
-    UpdateGeometry();
 }
 
 void Collider::UpdateLayerBits()
@@ -514,10 +511,18 @@ void Collider::OnTransformChanged()
     }
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
     {
-        _shape->setLocalPose(PxTransform(C2P((_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale()), C2P(_localTransform.Orientation)));
+        const Vector3 localPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
+        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != _localTransform.Orientation)
+        {
+            _cachedLocalPosePos = localPosePos;
+            _cachedLocalPoseRot = _localTransform.Orientation;
+            _shape->setLocalPose(PxTransform(C2P(localPosePos), C2P(_cachedLocalPoseRot)));
+        }
     }
 
-    UpdateScale();
+    const Vector3 scale = GetScale();
+    if (!Vector3::NearEqual(_cachedScale, scale))
+        UpdateGeometry();
     UpdateBounds();
 }
 

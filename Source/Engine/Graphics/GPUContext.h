@@ -16,6 +16,7 @@ class GPUShaderProgramCS;
 class GPUBuffer;
 class GPUPipelineState;
 class GPUTexture;
+class GPUSampler;
 class GPUDevice;
 class GPUResource;
 class GPUResourceView;
@@ -121,18 +122,14 @@ private:
 
 protected:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUContext"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
+    double _lastRenderTime = -1;
     GPUContext(GPUDevice* device);
 
 public:
 
     /// <summary>
-    /// Gets the graphics device handle
+    /// Gets the graphics device.
     /// </summary>
-    /// <returns>Graphics device</returns>
     FORCE_INLINE GPUDevice* GetDevice() const
     {
         return _device;
@@ -399,6 +396,13 @@ public:
     /// </summary>
     /// <param name="indexBuffer">The index buffer.</param>
     API_FUNCTION() virtual void BindIB(GPUBuffer* indexBuffer) = 0;
+
+    /// <summary>
+    /// Binds the texture sampler to the pipeline.
+    /// </summary>
+    /// <param name="slot">The slot index.</param>
+    /// <param name="sampler">The sampler.</param>
+    API_FUNCTION() virtual void BindSampler(int32 slot, GPUSampler* sampler) = 0;
 
 public:
 

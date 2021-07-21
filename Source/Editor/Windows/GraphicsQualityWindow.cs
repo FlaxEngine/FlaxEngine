@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using FlaxEditor.CustomEditors;
 using FlaxEngine;
@@ -9,7 +10,7 @@ using FlaxEngine.Json;
 namespace FlaxEditor.Windows
 {
     /// <summary>
-    /// Window used to show and edit current graphics rendering settings via <see cref="Graphics"/>.
+    /// Window used to show and edit current graphics rendering settings via <see cref="Graphics"/> and <see cref="Streaming"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     public class GraphicsQualityWindow : EditorWindow
@@ -85,6 +86,35 @@ namespace FlaxEditor.Windows
             {
                 get => Graphics.AllowCSMBlending;
                 set => Graphics.AllowCSMBlending = value;
+            }
+
+            [NoSerialize, DefaultValue(1.0f), Limit(0.05f, 5, 0)]
+            [EditorOrder(1400), EditorDisplay("Quality")]
+            [Tooltip("The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.")]
+            public float RenderingPercentage
+            {
+                get => MainRenderTask.Instance.RenderingPercentage;
+                set => MainRenderTask.Instance.RenderingPercentage = value;
+            }
+
+            [NoSerialize, DefaultValue(1.0f), Limit(0, 1)]
+            [EditorOrder(1500), EditorDisplay("Quality"), Tooltip("The global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.")]
+            public float FoliageDensityScale
+            {
+                get => Foliage.GlobalDensityScale;
+                set => Foliage.GlobalDensityScale = value;
+            }
+
+            [NoSerialize]
+            [EditorOrder(2000), EditorDisplay("Textures", EditorDisplayAttribute.InlineStyle), Tooltip("Textures streaming configuration.")]
+            public TextureGroup[] TextureGroups
+            {
+                get => Streaming.TextureGroups;
+                set
+                {
+                    Streaming.TextureGroups = value;
+                    Streaming.RequestStreamingUpdate();
+                }
             }
         }
 

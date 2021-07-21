@@ -54,6 +54,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="Game.Build.json" />
     <None Include="WSACertificate.pfx" />
   </ItemGroup>
   <ItemGroup>{3}
@@ -70,7 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\**" />
-    <MonoDataFiles Include="Mono\**" />
+    <MonoDataFiles Include="$(ProjectDir)Mono\**" />
     <DataSecondary Include="DataSecondary\**" />
   </ItemGroup>
   <ItemGroup>

@@ -3,7 +3,9 @@
 #pragma once
 
 #include "IAssetFactory.h"
+#if USE_EDITOR
 #include "Engine/Content/Upgraders/BinaryAssetUpgrader.h"
+#endif
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
@@ -14,7 +16,7 @@ class FlaxStorage;
 /// The binary assets factory base class.
 /// </summary>
 /// <seealso cref="IAssetFactory" />
-class BinaryAssetFactoryBase : public IAssetFactory
+class FLAXENGINE_API BinaryAssetFactoryBase : public IAssetFactory
 {
 public:
 
@@ -29,7 +31,7 @@ protected:
 
     virtual BinaryAsset* Create(const AssetInfo& info) = 0;
     virtual bool IsVersionSupported(uint32 serializedVersion) const = 0;
-#if COMPILE_WITH_ASSET_UPGRADERS
+#if USE_EDITOR
     bool UpgradeAsset(const AssetInfo& info, FlaxStorage* storage, AssetMigrationContext& context);
 #endif
 
@@ -65,16 +67,31 @@ protected:
     }
 };
 
-#define REGISTER_BINARY_ASSET(type, typeName, upgrader, supportsVirtualAssets) \
+#define REGISTER_BINARY_ASSET(type, typeName, supportsVirtualAssets) \
+	const String type::TypeName = TEXT(typeName); \
+	class CONCAT_MACROS(Factory, type) : public BinaryAssetFactory<type> \
+	{ \
+		public: \
+		CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Add(type::TypeName, this); } \
+		~CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Remove(type::TypeName); } \
+		bool SupportsVirtualAssets() const override { return supportsVirtualAssets; } \
+	}; \
+	static CONCAT_MACROS(Factory, type) CONCAT_MACROS(CFactory, type)
+
+#if USE_EDITOR
+#define REGISTER_BINARY_ASSET_WITH_UPGRADER(type, typeName, upgrader, supportsVirtualAssets) \
 	const String type::TypeName = TEXT(typeName); \
 	class CONCAT_MACROS(Factory, type) : public BinaryAssetFactory<type> \
 	{ \
 		private: \
-		IAssetUpgrader* _upgrader = upgrader; \
+		IAssetUpgrader* _upgrader = ::New<upgrader>(); \
 		public: \
 		CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Add(type::TypeName, this); } \
-		~CONCAT_MACROS(Factory, type)() { if (_upgrader) Delete(_upgrader); IAssetFactory::Get().Remove(type::TypeName); } \
+		~CONCAT_MACROS(Factory, type)() { Delete(_upgrader); IAssetFactory::Get().Remove(type::TypeName); } \
 		bool SupportsVirtualAssets() const override { return supportsVirtualAssets; } \
 		IAssetUpgrader* GetUpgrader() const override { return _upgrader; } \
 	}; \
 	static CONCAT_MACROS(Factory, type) CONCAT_MACROS(CFactory, type)
+#else
+#define REGISTER_BINARY_ASSET_WITH_UPGRADER(type, typeName, upgrader, supportsVirtualAssets) REGISTER_BINARY_ASSET(type, typeName, supportsVirtualAssets)
+#endif

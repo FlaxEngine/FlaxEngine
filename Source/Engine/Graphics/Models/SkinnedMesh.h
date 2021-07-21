@@ -3,13 +3,13 @@
 #pragma once
 
 #include "MeshBase.h"
-#include "Engine/Renderer/RenderList.h"
-#include "Engine/Graphics/RenderTask.h"
-#include "ModelInstanceEntry.h"
 #include "Types.h"
 #include "BlendShape.h"
 
+struct GeometryDrawStateData;
+struct RenderContext;
 class GPUBuffer;
+class SkinnedMeshDrawData;
 
 /// <summary>
 /// Represents part of the skinned model that is made of vertices and can be rendered using custom material, transformation and skeleton bones hierarchy.

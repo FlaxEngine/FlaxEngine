@@ -27,5 +27,15 @@ public class Profiler : EngineModule
         options.PrivateDependencies.Clear();
 
         options.PublicDefinitions.Add("COMPILE_WITH_PROFILER");
+
+        // Tracy profiling tools
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Android: // dlopen failed: cannot locate symbol `tracy::ScopedZone::~ScopedZone()` referenced by "libFlaxGame.so"
+        case TargetPlatform.Linux:
+        case TargetPlatform.Windows:
+            options.PublicDependencies.Add("tracy");
+            break;
+        }
     }
 }

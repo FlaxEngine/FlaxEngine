@@ -2,6 +2,7 @@
 
 #include "MaterialShaderFeatures.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ShadowsPass.h"
 #if USE_EDITOR
@@ -10,13 +11,14 @@
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 
-void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv)
+void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
     auto context = params.GPUContext;
     auto cache = params.RenderContext.List;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    auto& data = *(Data*)cb;
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 dirLightShaderRegisterIndex = srv + 2;
@@ -96,39 +98,36 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, byte*& 
 
     // Set local lights
     data.LocalLightsCount = 0;
-    for (int32 i = 0; i < cache->PointLights.Count(); i++)
+    for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->PointLights[i];
         if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], view, false);
             data.LocalLightsCount++;
-            if (data.LocalLightsCount == MaxLocalLights)
-                break;
         }
     }
-    for (int32 i = 0; i < cache->SpotLights.Count(); i++)
+    for (int32 i = 0; i < cache->SpotLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->SpotLights[i];
         if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], view, false);
             data.LocalLightsCount++;
-            if (data.LocalLightsCount == MaxLocalLights)
-                break;
         }
     }
 
-    cb += sizeof(Data);
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
 }
 
-bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv)
+bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    auto& data = *(Data*)cb;
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
 
     const bool useLightmap = view.Flags & ViewFlags::GI
 #if USE_EDITOR
@@ -148,8 +147,8 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, byte*& cb, in
         data.LightmapArea = drawCall.Features.LightmapUVsArea;
     }
 
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
-    cb += sizeof(Data);
     return useLightmap;
 }
 

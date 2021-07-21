@@ -10,12 +10,15 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Scripting/MException.h"
-#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#ifdef USE_MONO_AOT_MODULE
+#include "Engine/Core/Types/TimeSpan.h"
+#endif
 #include <ThirdParty/mono-2.0/mono/jit/jit.h>
 #include <ThirdParty/mono-2.0/mono/utils/mono-counters.h>
 #include <ThirdParty/mono-2.0/mono/utils/mono-logger.h>
@@ -166,22 +169,33 @@ void OnGCAllocation(MonoProfiler* profiler, MonoObject* obj)
     //LOG(Info, "GC new: {0}.{1} ({2} bytes)", name_space, name, size);
 
 #if 0
-	if (ProfilerCPU::IsProfilingCurrentThread())
-	{
-		static int details = 0;
-		if (details)
-		{
-			StackWalkDataResult stackTrace;
-			stackTrace.Buffer.SetCapacity(1024);
-			mono_stack_walk(&OnStackWalk, &stackTrace);
+    if (ProfilerCPU::IsProfilingCurrentThread())
+    {
+        static int details = 0;
+        if (details)
+        {
+            StackWalkDataResult stackTrace;
+            stackTrace.Buffer.SetCapacity(1024);
+            mono_stack_walk(&OnStackWalk, &stackTrace);
 
-			LOG(Info, "GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}", String(name_space), String(name), size, stackTrace.Buffer.ToStringView());
-		}
-	}
+            const auto msg = String::Format(TEXT("GC new: {0}.{1} ({2} bytes). Stack Trace:\n{3}"), String(name_space), String(name), size, stackTrace.Buffer.ToStringView());
+            Platform::Log(*msg);
+            //LOG_STR(Info, msg);
+        }
+    }
 #endif
 
 #if COMPILE_WITH_PROFILER
-    ProfilerMemory::OnAllocation(size, true);
+    // Register allocation during the current CPU event
+    auto thread = ProfilerCPU::GetCurrentThread();
+    if (thread != nullptr && thread->Buffer.GetCount() != 0)
+    {
+        auto& activeEvent = thread->Buffer.Last().Event();
+        if (activeEvent.End < ZeroTolerance)
+        {
+            activeEvent.ManagedMemoryAllocation += size;
+        }
+    }
 #endif
 }
 
@@ -328,6 +342,7 @@ static void* OnMonoLinuxDlSym(void* handle, const char* name, char** err, void* 
 
 bool MCore::LoadEngine()
 {
+    PROFILE_CPU();
     ASSERT(Globals::MonoPath.IsANSI());
 
 #if 0
@@ -395,7 +410,7 @@ bool MCore::LoadEngine()
             mono_trace_set_level_string("warning");
         }
 
-#if MONO_DEBUG_ENABLE
+#if MONO_DEBUG_ENABLE && !PLATFORM_SWITCH
         StringAnsi debuggerIp = "127.0.0.1";
         uint16 debuggerPort = 41000 + Platform::GetCurrentProcessId() % 1000;
         if (CommandLine::Options.DebuggerAddress.HasValue())
@@ -414,7 +429,7 @@ bool MCore::LoadEngine()
         }
 
         char buffer[150];
-        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=n,loglevel=%d", debuggerIp.Get(), debuggerPort, debuggerLogLevel);
+        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, CommandLine::Options.WaitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
 
         const char* options[] = {
             "--soft-breakpoints",
@@ -470,7 +485,15 @@ bool MCore::LoadEngine()
 	mono_dl_fallback_register(OnMonoLinuxDlOpen, OnMonoLinuxDlSym, nullptr, nullptr);
 #endif
 #endif
-    mono_config_parse(nullptr);
+    const char* configPath = nullptr;
+#if PLATFORM_SWITCH
+    MString configPathBuf = (Globals::MonoPath / TEXT("/etc/mono/config")).ToStringAnsi();
+    configPath = *configPathBuf;
+    const MString assembliesPath = (Globals::MonoPath / TEXT("/lib/mono/4.5")).ToStringAnsi();
+    //mono_set_assemblies_path(*assembliesPath);
+    //setenv("MONO_PATH", *assembliesPath, 1);
+#endif
+    mono_config_parse(configPath);
 
 #if USE_MONO_PROFILER
     // Init profiler
@@ -587,16 +610,19 @@ void MCore::ExitThread()
 
 void MCore::GC::Collect()
 {
+    PROFILE_CPU();
     mono_gc_collect(mono_gc_max_generation());
 }
 
 void MCore::GC::Collect(int32 generation)
 {
+    PROFILE_CPU();
     mono_gc_collect(generation);
 }
 
 void MCore::GC::WaitForPendingFinalizers()
 {
+    PROFILE_CPU();
     if (mono_gc_pending_finalizers())
     {
         mono_gc_finalize_notify();

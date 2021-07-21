@@ -213,7 +213,7 @@ bool WindowsFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringVie
     of.lpstrFilter = filter.HasChars() ? filter.Get() : nullptr;
     of.lpstrFile = fileNamesBuffer.Get();
     of.nMaxFile = maxFilenamesSize;
-    of.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_ENABLESIZING;
+    of.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_ENABLESIZING | OFN_NOCHANGEDIR;
     of.lpstrTitle = title.HasChars() ? title.Get() : nullptr;
     of.lpstrInitialDir = initialDirectory.HasChars() ? initialDirectory.Get() : nullptr;
     if (parentWindow)
@@ -260,7 +260,7 @@ bool WindowsFileSystem::ShowSaveFileDialog(Window* parentWindow, const StringVie
     of.lpstrFilter = filter.HasChars() ? filter.Get() : nullptr;
     of.lpstrFile = fileNamesBuffer.Get();
     of.nMaxFile = maxFilenamesSize;
-    of.Flags = OFN_EXPLORER | OFN_ENABLESIZING;
+    of.Flags = OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
     of.lpstrTitle = title.HasChars() ? title.Get() : nullptr;
     of.lpstrInitialDir = initialDirectory.HasChars() ? initialDirectory.Get() : nullptr;
     if (parentWindow)

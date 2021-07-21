@@ -25,10 +25,19 @@ namespace FlaxEngine.GUI
         protected FontReference _font;
 
         /// <summary>
+        /// The text.
+        /// </summary>
+        protected LocalizedString _text = new LocalizedString();
+
+        /// <summary>
         /// Button text property.
         /// </summary>
         [EditorOrder(10), Tooltip("The button label text.")]
-        public string Text { get; set; }
+        public LocalizedString Text
+        {
+            get => _text;
+            set => _text = value;
+        }
 
         /// <summary>
         /// Gets or sets the font used to draw button text.
@@ -61,6 +70,12 @@ namespace FlaxEngine.GUI
         /// Event fired when user clicks on the button.
         /// </summary>
         public event Action<Button> ButtonClicked;
+
+        /// <summary>
+        /// Gets or sets the brush used for background drawing.
+        /// </summary>
+        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for background drawing.")]
+        public IBrush BackgroundBrush { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the border.
@@ -197,11 +212,14 @@ namespace FlaxEngine.GUI
             }
 
             // Draw background
-            Render2D.FillRectangle(clientRect, backgroundColor);
+            if (BackgroundBrush != null)
+                BackgroundBrush.Draw(clientRect, backgroundColor);
+            else
+                Render2D.FillRectangle(clientRect, backgroundColor);
             Render2D.DrawRectangle(clientRect, borderColor);
 
             // Draw text
-            Render2D.DrawText(_font.GetFont(), TextMaterial, Text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

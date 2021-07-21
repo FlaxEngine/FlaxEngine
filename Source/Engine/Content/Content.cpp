@@ -14,6 +14,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
@@ -359,6 +360,25 @@ String Content::CreateTemporaryAssetPath()
     return Globals::TemporaryFolder / (Guid::New().ToString(Guid::FormatType::N) + ASSET_FILES_EXTENSION_WITH_DOT);
 }
 
+ContentStats Content::GetStats()
+{
+    ContentStats stats;
+    AssetsLocker.Lock();
+    stats.AssetsCount = Assets.Count();
+    for (auto& e : Assets)
+    {
+        if (e.Value->IsLoaded())
+            stats.LoadedAssetsCount++;
+        else if (e.Value->LastLoadFailed())
+            stats.LoadingAssetsCount++;
+        if (e.Value->IsVirtual())
+            stats.VirtualAssetsCount++;
+    }
+    stats.LoadingAssetsCount = stats.AssetsCount - stats.LoadingAssetsCount - stats.LoadedAssetsCount;
+    AssetsLocker.Unlock();
+    return stats;
+}
+
 Asset* Content::LoadAsyncInternal(const StringView& internalPath, MClass* type)
 {
     CHECK_RETURN(type, nullptr);
@@ -427,11 +447,6 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
     }
 
     return nullptr;
-}
-
-int32 Content::GetAssetCount()
-{
-    return Assets.Count();
 }
 
 Array<Asset*> Content::GetAssets()
@@ -985,25 +1000,17 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
 #endif
 
     // Register asset
-    {
-        AssetsLocker.Lock();
-
+    ASSERT(result->GetID() == id);
+    AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-        // Asset id has to be unique
-        if (Assets.ContainsKey(id))
-        {
-            CRASH;
-        }
-
-#endif
-
-        // Add to the list
-        ASSERT(result->GetID() == id);
-        Assets.Add(id, result);
-
-        AssetsLocker.Unlock();
+    // Asset id has to be unique
+    if (Assets.ContainsKey(id))
+    {
+        CRASH;
     }
+#endif
+    Assets.Add(id, result);
+    AssetsLocker.Unlock();
 
     // Start asset loading
     result->startLoading();

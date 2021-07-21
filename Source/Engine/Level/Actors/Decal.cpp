@@ -60,6 +60,12 @@ void Decal::OnDebugDrawSelected()
 
 #endif
 
+void Decal::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+}
+
 void Decal::Draw(RenderContext& renderContext)
 {
     if ((renderContext.View.Flags & ViewFlags::Decals) != 0 &&
@@ -109,7 +115,7 @@ bool Decal::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
 
 void Decal::OnEnable()
 {
-    GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -123,7 +129,7 @@ void Decal::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this);
+    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
@@ -142,4 +148,7 @@ void Decal::OnTransformChanged()
     _bounds.Transformation = _world;
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
+
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
 }

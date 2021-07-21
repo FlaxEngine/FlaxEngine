@@ -44,6 +44,7 @@ VisualStudioEditor::VisualStudioEditor(VisualStudioVersion version, const String
         break;
     }
     _solutionPath = Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln");
+    _solutionPath.Replace('/', '\\'); // Use Windows-style path separators
 }
 
 void VisualStudioEditor::FindEditors(Array<CodeEditor*>* output)
@@ -145,7 +146,9 @@ void VisualStudioEditor::OpenFile(const String& path, int32 line)
 
     // Open file
     const VisualStudio::Connection connection(*_CLSID, *_solutionPath);
-    const auto result = connection.OpenFile(*path, line);
+    String tmp = path;
+    tmp.Replace('/', '\\'); // Use Windows-style path separators
+    const auto result = connection.OpenFile(*tmp, line);
     if (result.Failed())
     {
         LOG(Warning, "Cannot open file \'{0}\':{1}. {2}.", path, line, String(result.Message.c_str()));

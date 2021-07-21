@@ -66,6 +66,17 @@ public:
         return format;
     }
 
+    /// <summary>
+    /// Checks if the given file is a native code.
+    /// </summary>
+    /// <param name="data">The cooking data.</param>
+    /// <param name="file">The file path.</param>
+    /// <returns>True if it's a native file, otherwise false.<returns>
+    virtual bool IsNativeCodeFile(CookingData& data, const String& file)
+    {
+        return false;
+    }
+
 public:
 
     /// <summary>
@@ -136,6 +147,8 @@ public:
         String AssemblerArgs;
         String ArchiverPath;
         String ArchiverArgs;
+        String AuxToolPath;
+        String AuxToolArgs;
         String AotCachePath;
         Dictionary<String, String> EnvVars;
         Array<String> AssembliesSearchDirs;

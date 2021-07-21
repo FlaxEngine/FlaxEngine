@@ -6,9 +6,7 @@ using System.Linq;
 using System.Xml;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
-using FlaxEditor.States;
 using FlaxEditor.Viewport;
-using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -236,20 +234,6 @@ namespace FlaxEditor.Windows
             {
                 EndPilot();
             }
-        }
-
-        /// <summary>
-        /// Moves the viewport to visualize selected actors.
-        /// </summary>
-        public void ShowSelectedActors()
-        {
-            if (Viewport.UseOrthographicProjection)
-            {
-                var orient = Viewport.ViewOrientation;
-                ((FPSCamera)Viewport.ViewportCamera).ShowActors(Viewport.TransformGizmo.SelectedParents, ref orient);
-            }
-            else
-                ((FPSCamera)Viewport.ViewportCamera).ShowActors(Viewport.TransformGizmo.SelectedParents);
         }
 
         /// <summary>

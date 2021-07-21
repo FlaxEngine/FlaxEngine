@@ -284,6 +284,30 @@ namespace FlaxEngine
             Vector2 toExpand = Size * (scale - 1.0f) * 0.5f;
             return new Rectangle(Location - toExpand * 0.5f, Size + toExpand);
         }
+        
+        /// <summary>
+        /// Computed nearest distance between 2 rectangles.
+        /// </summary>
+        /// <param name="a">Firat rectangle</param>
+        /// <param name="b">Second rectangle</param>
+        /// <returns>Resulting distance, 0 if overlapping</returns>
+        public static float Distance(Rectangle a, Rectangle b)
+        {
+             return Vector2.Max(Vector2.Zero, Vector2.Abs(a.Center - b.Center) - ((a.Size + b.Size) * 0.5f)).Length;
+        }
+
+        /// <summary>
+        /// Calculates a rectangle that includes the margins (inside).
+        /// </summary>
+        /// <param name="value">The rectangle.</param>
+        /// <param name="margin">The margin to apply to the rectangle.</param>
+        /// <returns>Rectangle inside the given rectangle after applying margins inside it.</returns>
+        public static Rectangle Margin(Rectangle value, GUI.Margin margin)
+        {
+            value.Location += margin.Location;
+            value.Size -= margin.Size;
+            return value;
+        }
 
         /// <summary>
         /// Calculates a rectangle that contains the union of a and b rectangles

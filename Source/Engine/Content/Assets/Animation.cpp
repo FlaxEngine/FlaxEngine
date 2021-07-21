@@ -6,12 +6,13 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/CurveSerialization.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
 #endif
 
-REGISTER_BINARY_ASSET(Animation, "FlaxEngine.Animation", nullptr, false);
+REGISTER_BINARY_ASSET(Animation, "FlaxEngine.Animation", false);
 
 Animation::Animation(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -20,13 +21,23 @@ Animation::Animation(const SpawnParams& params, const AssetInfo* info)
 
 Animation::InfoData Animation::GetInfo() const
 {
+    ScopeLock lock(Locker);
     InfoData info;
+    info.MemoryUsage = sizeof(Animation);
     if (IsLoaded())
     {
         info.Length = Data.GetLength();
         info.FramesCount = (int32)Data.Duration;
         info.ChannelsCount = Data.Channels.Count();
         info.KeyframesCount = Data.GetKeyframesCount();
+        info.MemoryUsage += Data.Channels.Capacity() * sizeof(NodeAnimationData);
+        for (auto& e : Data.Channels)
+        {
+            info.MemoryUsage += (e.NodeName.Length() + 1) * sizeof(Char);
+            info.MemoryUsage += e.Position.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+            info.MemoryUsage += e.Rotation.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Quaternion>);
+            info.MemoryUsage += e.Scale.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+        }
     }
     else
     {
@@ -35,6 +46,9 @@ Animation::InfoData Animation::GetInfo() const
         info.ChannelsCount = 0;
         info.KeyframesCount = 0;
     }
+    info.MemoryUsage += MappingCache.Capacity() * (sizeof(void*) + sizeof(NodeToChannel) + 1);
+    for (auto& e : MappingCache)
+        info.MemoryUsage += e.Value.Capacity() * sizeof(int32);
     return info;
 }
 

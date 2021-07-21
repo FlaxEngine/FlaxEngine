@@ -152,34 +152,10 @@ public:
 
 namespace VisualStudio
 {
-	bool SameFile(HANDLE h1, HANDLE h2)
-	{
-		BY_HANDLE_FILE_INFORMATION bhfi1 = { 0 };
-		BY_HANDLE_FILE_INFORMATION bhfi2 = { 0 };
-
-		if (::GetFileInformationByHandle(h1, &bhfi1) && ::GetFileInformationByHandle(h2, &bhfi2))
-		{
-			return ((bhfi1.nFileIndexHigh == bhfi2.nFileIndexHigh) && (bhfi1.nFileIndexLow == bhfi2.nFileIndexLow) && (bhfi1.dwVolumeSerialNumber == bhfi2.dwVolumeSerialNumber));
-		}
-
-		return false;
-	}
-
 	bool AreFilePathsEqual(const wchar_t* path1, const wchar_t* path2)
-	{
-		if (wcscmp(path1, path2) == 0)
-			return true;
-
-		HANDLE file1 = CreateFileW(path1, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-		HANDLE file2 = CreateFileW(path2, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-		bool result = SameFile(file1, file2);
-
-		CloseHandle(file1);
-		CloseHandle(file2);
-
-		return result;
-	}
+    {
+		return _wcsicmp(path1, path2) == 0;
+    }
 
 	class ConnectionInternal
 	{

@@ -1,9 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using FlaxEngine;
 
 namespace FlaxEditor
@@ -81,6 +79,11 @@ namespace FlaxEditor
         public static event BuildProgressDelegate Progress;
 
         /// <summary>
+        /// Occurs when building collects assets to cook.
+        /// </summary>
+        public static event Action<List<Guid>> CollectAssets;
+
+        /// <summary>
         /// Gets the type of the platform from the game build platform type.
         /// </summary>
         /// <param name="buildPlatform">The build platform.</param>
@@ -96,6 +99,9 @@ namespace FlaxEditor
             case BuildPlatform.XboxOne: return PlatformType.XboxOne;
             case BuildPlatform.LinuxX64: return PlatformType.Linux;
             case BuildPlatform.PS4: return PlatformType.PS4;
+            case BuildPlatform.AndroidARM64: return PlatformType.Android;
+            case BuildPlatform.XboxScarlett: return PlatformType.XboxScarlett;
+            case BuildPlatform.Switch: return PlatformType.Switch;
             default: throw new ArgumentOutOfRangeException(nameof(buildPlatform), buildPlatform, null);
             }
         }
@@ -108,6 +114,24 @@ namespace FlaxEditor
         internal static void Internal_OnProgress(string info, float totalProgress)
         {
             Progress?.Invoke(info, totalProgress);
+        }
+
+        internal static Guid[] Internal_OnCollectAssets()
+        {
+            var list = new List<Guid>();
+
+            // Custom assets
+            CollectAssets?.Invoke(list);
+
+            // Plugin assets
+            foreach (var plugin in PluginManager.GamePlugins)
+            {
+                plugin.OnCollectAssets(list);
+            }
+
+            if (list.Count == 0)
+                return null;
+            return list.ToArray();
         }
     }
 }

@@ -60,9 +60,10 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    byte* cb = _cbData.Get();
-    auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(cb);
-    cb += sizeof(DeferredMaterialShaderData);
+    Span<byte> cb(_cbData.Get(), _cbData.Count());
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(DeferredMaterialShaderData));
+    auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(cb.Get());
+    cb = Span<byte>(cb.Get() + sizeof(DeferredMaterialShaderData), cb.Length() - sizeof(DeferredMaterialShaderData));
     int32 srv = 2;
 
     // Setup features

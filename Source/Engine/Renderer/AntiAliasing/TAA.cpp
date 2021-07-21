@@ -7,33 +7,51 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Engine/Engine.h"
+
+PACK_STRUCT(struct Data
+    {
+    Vector2 ScreenSizeInv;
+    Vector2 JitterInv;
+    float Sharpness;
+    float StationaryBlending;
+    float MotionBlending;
+    float Dummy0;
+    });
 
 bool TAA::Init()
 {
-    // Create pipeline state
-    //_psTAA.CreatePipelineStates();
-
-    // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/TAA"));
     if (_shader == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<TAA, &TAA::OnShaderReloading>(this);
 #endif
-
     return false;
 }
 
 bool TAA::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
+        return true;
+    const auto shader = _shader->GetShader();
+    if (shader->GetCB(0)->GetSize() != sizeof(Data))
     {
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
         return true;
     }
-    const auto shader = _shader->GetShader();
-
+    if (!_psTAA)
+        _psTAA = GPUDevice::Instance->CreatePipelineState();
+    GPUPipelineState::Description psDesc;
+    if (!_psTAA->IsValid())
+    {
+        psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = shader->GetPS("PS");
+        if (_psTAA->Init(psDesc))
+            return true;
+    }
     return false;
 }
 
@@ -42,8 +60,7 @@ void TAA::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Cleanup
-    _psTAA = nullptr;
+    SAFE_DELETE_GPU_RESOURCE(_psTAA);
     _shader = nullptr;
 }
 
@@ -57,7 +74,7 @@ void TAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView
     auto context = GPUDevice::Instance->GetMainContext();
 
     // Ensure to have valid data
-    //if (checkIfSkipPass())
+    if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy source frame.
         context->SetRenderTarget(output);
@@ -71,7 +88,7 @@ void TAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView
     // Get history buffers
     bool resetHistory = renderContext.Task->IsCameraCut;
     renderContext.Buffers->LastFrameTemporalAA = Engine::FrameCount;
-    const auto tempDesc = GPUTextureDescription::New2D((int32)renderContext.View.ScreenSize.X, (int32)renderContext.View.ScreenSize.Y, input->Format());
+    const auto tempDesc = GPUTextureDescription::New2D(input->Width(), input->Height(), input->Format());
     if (renderContext.Buffers->TemporalAA == nullptr)
     {
         // Missing temporal buffer
@@ -92,14 +109,44 @@ void TAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView
     float blendStrength = 1.0f;
     if (resetHistory)
     {
-        PROFILE_GPU_CPU("Reset History");
-
+#if 0
+        context->CopyTexture(inputHistory, 0, 0, 0, 0, input, 0);
+#else
         context->SetRenderTarget(inputHistory->View());
         context->Draw(input);
         context->ResetRenderTarget();
-
+#endif
         blendStrength = 0.0f;
     }
 
-    // ...
+    // Bind input
+    Data data;
+    data.ScreenSizeInv.X = renderContext.View.ScreenSize.Z;
+    data.ScreenSizeInv.Y = renderContext.View.ScreenSize.W;
+    data.JitterInv.X = renderContext.View.TemporalAAJitter.X / (float)tempDesc.Width;
+    data.JitterInv.Y = renderContext.View.TemporalAAJitter.Y / (float)tempDesc.Height;
+    data.Sharpness = settings.TAA_Sharpness;
+    data.StationaryBlending = settings.TAA_StationaryBlending * blendStrength;
+    data.MotionBlending = settings.TAA_MotionBlending * blendStrength;
+    const auto cb = _shader->GetShader()->GetCB(0);
+    context->UpdateCB(cb, &data);
+    context->BindCB(0, cb);
+    context->BindSR(0, input);
+    context->BindSR(1, inputHistory);
+    context->BindSR(2, renderContext.Buffers->MotionVectors);
+    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+
+    // Render
+    context->SetRenderTarget(output);
+    context->SetState(_psTAA);
+    context->DrawFullscreenTriangle();
+
+    // Update the history
+    {
+        RenderTargetPool::Release(inputHistory);
+        context->ResetRenderTarget();
+        context->SetRenderTarget(outputHistory->View());
+        context->Draw(output);
+        renderContext.Buffers->TemporalAA = outputHistory;
+    }
 }

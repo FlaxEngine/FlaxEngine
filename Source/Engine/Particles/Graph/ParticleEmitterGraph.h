@@ -52,36 +52,18 @@ public:
 /// <summary>
 /// The Particle Emitter Graph used to simulate particles.
 /// </summary>
-template<class Base, class NodeType, class ValueType>
-class ParticleEmitterGraph : public Base
+template<class BaseType, class NodeType, class ValueType>
+class ParticleEmitterGraph : public BaseType
 {
 public:
 
     typedef ValueType Value;
 
-    /// <summary>
-    /// The particle emitter module types.
-    /// </summary>
     enum class ModuleType
     {
-        /// <summary>
-        /// The spawn module.
-        /// </summary>
         Spawn,
-
-        /// <summary>
-        /// The init module.
-        /// </summary>
         Initialize,
-
-        /// <summary>
-        /// The update module.
-        /// </summary>
         Update,
-
-        /// <summary>
-        /// The render module.
-        /// </summary>
         Render,
     };
 
@@ -171,8 +153,6 @@ public:
     Array<NodeType*, FixedAllocation<PARTICLE_EMITTER_MAX_MODULES>> RibbonRenderingModules;
 
     bool UsesVolumetricFogRendering = false;
-
-protected:
 
     virtual void InitializeNode(NodeType* node)
     {
@@ -314,10 +294,8 @@ protected:
         }
             // Particle Emitter Function
         case GRAPH_NODE_MAKE_TYPE(14, 300):
-        {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[0]);
             break;
-        }
             // Particle Index
         case GRAPH_NODE_MAKE_TYPE(14, 301):
             node->UsesParticleData = true;
@@ -566,7 +544,7 @@ public:
         UsesVolumetricFogRendering = false;
 
         // Base
-        Base::Clear();
+        BaseType::Clear();
     }
 
     bool Load(ReadStream* stream, bool loadMeta) override
@@ -575,7 +553,7 @@ public:
         Version++;
 
         // Base
-        if (Base::Load(stream, loadMeta))
+        if (BaseType::Load(stream, loadMeta))
             return true;
 
         // Compute particle data layout and initialize used nodes (for only used nodes, start depth searching rom the modules)
@@ -678,6 +656,6 @@ public:
             }
         }
 
-        return Base::onNodeLoaded(n);
+        return BaseType::onNodeLoaded(n);
     }
 };

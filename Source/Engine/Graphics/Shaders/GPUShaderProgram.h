@@ -6,6 +6,8 @@
 #include "Engine/Core/Types/String.h"
 #include "Config.h"
 
+class GPUShader;
+
 /// <summary>
 /// The shader program metadata container. Contains description about resources used by the shader.
 /// </summary>
@@ -37,6 +39,9 @@ struct GPUShaderProgramInitializer
     StringAnsi Name;
     ShaderBindings Bindings;
     ShaderFlags Flags;
+#if !BUILD_RELEASE
+    GPUShader* Owner;
+#endif
 };
 
 /// <summary>
@@ -49,12 +54,18 @@ protected:
     StringAnsi _name;
     ShaderBindings _bindings;
     ShaderFlags _flags;
+#if !BUILD_RELEASE
+    GPUShader* _owner;
+#endif
 
     void Init(const GPUShaderProgramInitializer& initializer)
     {
         _name = initializer.Name;
         _bindings = initializer.Bindings;
         _flags = initializer.Flags;
+#if !BUILD_RELEASE
+        _owner = initializer.Owner;
+#endif
     }
 
 public:
@@ -69,9 +80,8 @@ public:
 public:
 
     /// <summary>
-    /// Gets name of the shader program
+    /// Gets name of the shader program.
     /// </summary>
-    /// <returns>Name</returns>
     FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
@@ -80,7 +90,6 @@ public:
     /// <summary>
     /// Gets the shader resource bindings.
     /// </summary>
-    /// <returns>The bindings.</returns>
     FORCE_INLINE const ShaderBindings& GetBindings() const
     {
         return _bindings;
@@ -89,7 +98,6 @@ public:
     /// <summary>
     /// Gets the shader flags.
     /// </summary>
-    /// <returns>The flags.</returns>
     FORCE_INLINE ShaderFlags GetFlags() const
     {
         return _flags;
@@ -98,21 +106,18 @@ public:
 public:
 
     /// <summary>
-    /// Gets shader program stage type
+    /// Gets shader program stage type.
     /// </summary>
-    /// <returns>Shader Stage type</returns>
     virtual ShaderStage GetStage() const = 0;
 
     /// <summary>
-    /// Gets buffer handle (platform dependent)
+    /// Gets buffer handle (platform dependent).
     /// </summary>
-    /// <returns>Handle</returns>
     virtual void* GetBufferHandle() const = 0;
 
     /// <summary>
-    /// Gets buffer size (in bytes)
+    /// Gets buffer size (in bytes).
     /// </summary>
-    /// <returns>Size of the buffer in bytes</returns>
     virtual uint32 GetBufferSize() const = 0;
 };
 
@@ -124,15 +129,13 @@ class GPUShaderProgramVS : public GPUShaderProgram
 public:
 
     /// <summary>
-    /// Gets input layout description handle (platform dependent)
+    /// Gets input layout description handle (platform dependent).
     /// </summary>
-    /// <returns>Input layout</returns>
     virtual void* GetInputLayout() const = 0;
 
     /// <summary>
-    /// Gets input layout description size (in bytes)
+    /// Gets input layout description size (in bytes).
     /// </summary>
-    /// <returns>Input layout description size in bytes</returns>
     virtual byte GetInputLayoutSize() const = 0;
 
 public:

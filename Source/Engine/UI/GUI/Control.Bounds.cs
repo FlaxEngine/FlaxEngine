@@ -49,8 +49,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize]
-        [HideInEditor, ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(990), Tooltip("The normalized position in the parent control that the upper left corner is anchored to (range 0-1).")]
+        [Serialize, HideInEditor]
         public Vector2 AnchorMin
         {
             get => _anchorMin;
@@ -69,8 +68,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the bottom right corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize]
-        [HideInEditor, ExpandGroups, Limit(0.0f, 1.0f, 0.01f), EditorDisplay("Transform"), EditorOrder(991), Tooltip("The normalized position in the parent control that the bottom right corner is anchored to (range 0-1).")]
+        [Serialize, HideInEditor]
         public Vector2 AnchorMax
         {
             get => _anchorMax;
@@ -89,8 +87,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the offsets of the corners of the control relative to its anchors.
         /// </summary>
-        [Serialize]
-        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(992), Tooltip("The offsets of the corners of the control relative to its anchors.")]
+        [Serialize, HideInEditor]
         public Margin Offsets
         {
             get => _offsets;
@@ -111,8 +108,8 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         internal float Proxy_Offset_Left
         {
-            get => Offsets.Left;
-            set => Offsets = new Margin(value, Offsets.Right, Offsets.Top, Offsets.Bottom);
+            get => _offsets.Left;
+            set => Offsets = new Margin(value, _offsets.Right, _offsets.Top, _offsets.Bottom);
         }
 
         /// <summary>
@@ -121,8 +118,8 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         internal float Proxy_Offset_Right
         {
-            get => Offsets.Right;
-            set => Offsets = new Margin(Offsets.Left, value, Offsets.Top, Offsets.Bottom);
+            get => _offsets.Right;
+            set => Offsets = new Margin(_offsets.Left, value, _offsets.Top, _offsets.Bottom);
         }
 
         /// <summary>
@@ -131,8 +128,8 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         internal float Proxy_Offset_Top
         {
-            get => Offsets.Top;
-            set => Offsets = new Margin(Offsets.Left, Offsets.Right, value, Offsets.Bottom);
+            get => _offsets.Top;
+            set => Offsets = new Margin(_offsets.Left, _offsets.Right, value, _offsets.Bottom);
         }
 
         /// <summary>
@@ -141,16 +138,15 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         internal float Proxy_Offset_Bottom
         {
-            get => Offsets.Bottom;
-            set => Offsets = new Margin(Offsets.Left, Offsets.Right, Offsets.Top, value);
+            get => _offsets.Bottom;
+            set => Offsets = new Margin(_offsets.Left, _offsets.Right, _offsets.Top, value);
         }
 #endif
 
         /// <summary>
         /// Gets or sets coordinates of the upper-left corner of the control relative to the upper-left corner of its container.
         /// </summary>
-        [NoSerialize]
-        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(1000), Tooltip("The location of the upper-left corner of the control relative to he upper-left corner of its container.")]
+        [NoSerialize, HideInEditor]
         public Vector2 Location
         {
             get => _bounds.Location;
@@ -158,14 +154,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// The local position of the pivot of the control relative to the anchor in parent of its container.
+        /// Gets or sets the local position of the pivot of the control relative to the anchor in parent of its container.
         /// </summary>
-        [NoSerialize]
-        [HideInEditor, ExpandGroups, EditorDisplay("Transform"), EditorOrder(1000), Tooltip("The local position of the pivot of the control relative to the anchor in parent of its container.")]
+        [NoSerialize, HideInEditor]
         public Vector2 LocalLocation
         {
-            get => _bounds.Location - (Parent.Size * (AnchorMax + AnchorMin) / 2) + Size * Pivot;
-            set => Bounds = new Rectangle(value + (Parent.Size * (AnchorMax + AnchorMin) / 2) - Size * Pivot, _bounds.Size);
+            get => _bounds.Location - (_parent != null ? _parent._bounds.Size * (_anchorMax + _anchorMin) * 0.5f : Vector2.Zero) + _bounds.Size * _pivot;
+            set => Bounds = new Rectangle(value + (_parent != null ? _parent.Bounds.Size * (_anchorMax + _anchorMin) * 0.5f : Vector2.Zero) - _bounds.Size * _pivot, _bounds.Size);
         }
 
         /// <summary>
@@ -191,8 +186,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets control's size.
         /// </summary>
-        [NoSerialize]
-        [HideInEditor, EditorDisplay("Transform"), EditorOrder(1010), Tooltip("The size of the control bounds.")]
+        [NoSerialize, HideInEditor]
         public Vector2 Size
         {
             get => _bounds.Size;
@@ -497,7 +491,8 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="anchorPreset">The anchor preset to set.</param>
         /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>
-        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds)
+        /// <param name="setPivotToo">Whether or not we should set the pivot too, eg left-top 0,0, bottom-right 1,1</param>
+        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds, bool setPivotToo = false)
         {
             for (int i = 0; i < AnchorPresetsData.Length; i++)
             {
@@ -588,6 +583,10 @@ namespace FlaxEngine.GUI
                             bounds.Location += parentBounds.Location;
                         }
                         SetBounds(ref bounds);
+                    }
+                    if (setPivotToo)
+                    {
+                        Pivot = (anchorMin + anchorMax) / 2;
                     }
                     _parent?.PerformLayout();
                     return;

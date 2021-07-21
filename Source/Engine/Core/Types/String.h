@@ -225,9 +225,7 @@ public:
         const T* start = _data;
         if (startPosition != -1)
             start += startPosition < Length() ? startPosition : Length();
-        const T* tmp = searchCase == StringSearchCase::IgnoreCase
-                           ? StringUtils::FindIgnoreCase(start, subStr)
-                           : StringUtils::Find(start, subStr);
+        const T* tmp = searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(start, subStr) : StringUtils::Find(start, subStr);
         return tmp ? static_cast<int32>(tmp - **this) : -1;
     }
 
@@ -498,18 +496,19 @@ public:
     }
 
     /// <summary>
-    /// Resizes string contents, works like: *this = Left(length) but is faster.
+    /// Resizes string contents.
     /// </summary>
-    /// <param name="length">New length of the string (amount of characters from left side to preserve).</param>
+    /// <param name="length">New length of the string.</param>
     void Resize(int32 length)
     {
-        ASSERT(length >= 0 && length <= _length);
+        ASSERT(length >= 0);
         if (_length != length)
         {
             const auto oldData = _data;
+            const auto minLength = _length < length ? _length : length;
             _length = length;
             _data = (T*)Platform::Allocate((length + 1) * sizeof(T), 16);
-            Platform::MemoryCopy(_data, oldData, length * sizeof(T));
+            Platform::MemoryCopy(_data, oldData, minLength * sizeof(T));
             _data[length] = 0;
             Platform::Free(oldData);
         }
@@ -540,6 +539,7 @@ public:
     /// </summary>
     /// <param name="str">The reference to the string.</param>
     String(const String& str)
+        : String()
     {
         Set(str.Get(), str.Length());
     }
@@ -577,6 +577,7 @@ public:
     /// <param name="str">The ANSI string.</param>
     /// <param name="length">The ANSI string length.</param>
     explicit String(const char* str, int32 length)
+        : String()
     {
         Set(str, length);
     }
@@ -586,8 +587,9 @@ public:
     /// </summary>
     /// <param name="str">The UTF-16 string.</param>
     String(const Char* str)
-        : String(str, StringUtils::Length(str))
+        : String()
     {
+        Set(str, StringUtils::Length(str));
     }
 
     /// <summary>
@@ -596,6 +598,7 @@ public:
     /// <param name="str">The UTF-16 string.</param>
     /// <param name="length">The UTF-16 string length.</param>
     String(const Char* str, int32 length)
+        : String()
     {
         Set(str, length);
     }
@@ -604,7 +607,7 @@ public:
     /// Initializes a new instance of the <see cref="String"/> class.
     /// </summary>
     /// <param name="str">The other string.</param>
-    explicit String(const StringView& str);
+    String(const StringView& str);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="String"/> class.
@@ -1111,7 +1114,17 @@ public:
     /// <returns>The combined path.</returns>
     FORCE_INLINE String operator/(const String& str) const
     {
-        return operator/(*str);
+        return String(*this) /= str;
+    }
+
+    /// <summary>
+    /// Concatenates this path with given path ensuring the '/' character is used between them.
+    /// </summary>
+    /// <param name="str">The string to be concatenated onto the end of this.</param>
+    /// <returns>The combined path.</returns>
+    FORCE_INLINE String operator/(const StringView& str) const
+    {
+        return String(*this) /= str;
     }
 
 public:

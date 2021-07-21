@@ -3,26 +3,21 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
-#include "Engine/Core/Collections/Array.h"
-#include "Threading.h"
-
-// Maximum amount of threads with an access to the thread local variable (we use static limit due to engine threading design)
-#define THREAD_LOCAL_MAX_CAPACITY 16
+#include "Engine/Platform/Platform.h"
 
 /// <summary>
-/// Per thread local variable
+/// Per-thread local variable storage.
+/// Implemented using atomic with per-thread storage indexed via thread id hashing.
+/// ForConsider using 'THREADLOCAL' define before the variable instead.
 /// </summary>
-template<typename T, int32 MaxThreads = THREAD_LOCAL_MAX_CAPACITY, bool ClearMemory = true>
+template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT, bool ClearMemory = true>
 class ThreadLocal
 {
-    // Note: this is kind of weak-implementation. We don't want to use locks/semaphores.
-    // For better performance use 'THREADLOCAL' define before the variable
-
 protected:
 
     struct Bucket
     {
-        uint64 ThreadID;
+        volatile int64 ThreadID;
         T Value;
     };
 
@@ -56,20 +51,19 @@ public:
         _buckets[GetIndex()].Value = value;
     }
 
-public:
-
     int32 Count() const
     {
         int32 result = 0;
         for (int32 i = 0; i < MaxThreads; i++)
         {
-            if (_buckets[i].ThreadID != 0)
+            if (Platform::AtomicRead((int64 volatile*)&_buckets[i].ThreadID) != 0)
                 result++;
         }
         return result;
     }
 
-    void GetValues(Array<T>& result) const
+    template<typename AllocationType = HeapAllocation>
+    void GetValues(Array<T, AllocationType>& result) const
     {
         result.EnsureCapacity(MaxThreads);
         for (int32 i = 0; i < MaxThreads; i++)
@@ -80,23 +74,25 @@ public:
 
 protected:
 
-    FORCE_INLINE static int32 Hash(const uint64 value)
+    FORCE_INLINE static int32 Hash(const int64 value)
     {
         return value & (MaxThreads - 1);
     }
 
     FORCE_INLINE int32 GetIndex()
     {
-        // TODO: fix it because now we can use only (MaxThreads-1) buckets
         ASSERT(Count() < MaxThreads);
-
-        auto key = Platform::GetCurrentThreadID();
+        int64 key = (int64)Platform::GetCurrentThreadID();
         auto index = Hash(key);
-
-        while (_buckets[index].ThreadID != key && _buckets[index].ThreadID != 0)
+        while (true)
+        {
+            const int64 value = Platform::AtomicRead(&_buckets[index].ThreadID);
+            if (value == key)
+                break;
+            if (value == 0 && Platform::InterlockedCompareExchange(&_buckets[index].ThreadID, key, 0) == 0)
+                break;
             index = Hash(index + 1);
-        _buckets[index].ThreadID = key;
-
+        }
         return index;
     }
 };
@@ -104,7 +100,7 @@ protected:
 /// <summary>
 /// Per thread local object
 /// </summary>
-template<typename T, int32 MaxThreads = THREAD_LOCAL_MAX_CAPACITY>
+template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT>
 class ThreadLocalObject : public ThreadLocal<T*, MaxThreads>
 {
 public:
@@ -134,7 +130,8 @@ public:
         }
     }
 
-    void GetNotNullValues(Array<T*>& result) const
+    template<typename AllocationType = HeapAllocation>
+    void GetNotNullValues(Array<T*, AllocationType>& result) const
     {
         result.EnsureCapacity(MaxThreads);
         for (int32 i = 0; i < MaxThreads; i++)

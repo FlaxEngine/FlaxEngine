@@ -77,7 +77,11 @@ namespace FlaxEngine
             GPUTexture depthBuffer = Canvas.IgnoreDepth ? null : renderContext.Buffers.DepthBuffer;
 
             // Render GUI in 3D
+            var features = Render2D.Features;
+            if (Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera)
+                Render2D.Features &= ~Render2D.RenderingFeatures.VertexSnapping;
             Render2D.CallDrawing(Canvas.GUI, context, input, depthBuffer, ref viewProjectionMatrix);
+            Render2D.Features = features;
 
             Profiler.EndEventGPU();
         }
@@ -428,7 +432,10 @@ namespace FlaxEngine
                 }
 #if FLAX_EDITOR
                 if (_editorRoot != null && IsActiveInHierarchy)
+                {
                     _guiRoot.Parent = _editorRoot;
+                    _guiRoot.IndexInParent = 0;
+                }
 #endif
                 if (_isRegisteredForTick)
                 {
@@ -636,7 +643,8 @@ namespace FlaxEngine
 #if FLAX_EDITOR
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
-                _guiRoot.Parent = HasParent && IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.IndexInParent = 0;
             }
 #endif
         }
@@ -644,7 +652,15 @@ namespace FlaxEngine
         internal void OnEnable()
         {
 #if FLAX_EDITOR
-            _guiRoot.Parent = _editorRoot ?? RootControl.CanvasRoot;
+            if (_editorRoot != null)
+            {
+                _guiRoot.Parent = _editorRoot;
+                _guiRoot.IndexInParent = 0;
+            }
+            else
+            {
+                _guiRoot.Parent = RootControl.CanvasRoot;
+            }
 #else
             _guiRoot.Parent = RootControl.CanvasRoot;
 #endif
@@ -671,6 +687,17 @@ namespace FlaxEngine
                 SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
             }
         }
+
+#if FLAX_EDITOR
+        internal void OnActiveInTreeChanged()
+        {
+            if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
+            {
+                _guiRoot.Parent = IsActiveInHierarchy ? _editorRoot : null;
+                _guiRoot.IndexInParent = 0;
+            }
+        }
+#endif
 
         internal void EndPlay()
         {
@@ -707,7 +734,10 @@ namespace FlaxEngine
             Setup();
 
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null && IsActiveInHierarchy)
+            {
                 _guiRoot.Parent = _editorRoot;
+                _guiRoot.IndexInParent = 0;
+            }
         }
 #endif
     }

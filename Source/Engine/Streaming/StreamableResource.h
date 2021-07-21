@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/SamplesBuffer.h"
-#include "Config.h"
 
 class StreamingGroup;
 class Task;
@@ -18,7 +16,7 @@ protected:
 
     StreamingGroup* _group;
     bool _isDynamic, _isStreaming;
-    StreamingQuality _streamingQuality;
+    float _streamingQuality;
 
     StreamableResource(StreamingGroup* group);
     ~StreamableResource();
@@ -26,59 +24,33 @@ protected:
 public:
 
     /// <summary>
-    /// Gets resource group
+    /// Gets resource group.
     /// </summary>
-    /// <returns>Streaming Group</returns>
     FORCE_INLINE StreamingGroup* GetGroup() const
     {
         return _group;
     }
 
     /// <summary>
-    /// Gets value indicating whenever resource can be used in dynamic streaming (otherwise use always the best quality)
+    /// Gets value indicating whenever resource can be used in dynamic streaming (otherwise use always the best quality).
     /// </summary>
-    /// <returns>Is dynamic streamable</returns>
     FORCE_INLINE bool IsDynamic() const
     {
-#if ENABLE_RESOURCES_DYNAMIC_STREAMING
         return _isDynamic;
-#else
-		return false;
-#endif
     }
 
     /// <summary>
     /// Gets resource streaming quality level
     /// </summary>
-    /// <returns>Streaming Quality level</returns>
-    FORCE_INLINE StreamingQuality GetStreamingQuality() const
+    FORCE_INLINE float GetStreamingQuality() const
     {
         return _streamingQuality;
     }
 
     /// <summary>
-    /// Gets resource maximum residency level.
-    /// </summary>
-    /// <returns>Residency</returns>
-    virtual int32 GetMaxResidency() const = 0;
-
-    /// <summary>
-    /// Gets resource current residency level.
-    /// </summary>
-    /// <returns>Residency</returns>
-    virtual int32 GetCurrentResidency() const = 0;
-
-    /// <summary>
-    /// Gets resource allocated residency level.
-    /// </summary>
-    /// <returns>Residency</returns>
-    virtual int32 GetAllocatedResidency() const = 0;
-
-    /// <summary>
     /// Gets resource target residency level.
     /// </summary>
-    /// <returns>Residency</returns>
-    int32 GetTargetResidency() const
+    FORCE_INLINE int32 GetTargetResidency() const
     {
         return Streaming.TargetResidency;
     }
@@ -90,6 +62,21 @@ public:
     {
         return GetAllocatedResidency() != 0;
     }
+
+    /// <summary>
+    /// Gets resource maximum residency level.
+    /// </summary>
+    virtual int32 GetMaxResidency() const = 0;
+
+    /// <summary>
+    /// Gets resource current residency level.
+    /// </summary>
+    virtual int32 GetCurrentResidency() const = 0;
+
+    /// <summary>
+    /// Gets resource allocated residency level.
+    /// </summary>
+    virtual int32 GetAllocatedResidency() const = 0;
 
 public:
 
@@ -115,27 +102,12 @@ public:
 
 public:
 
-    // Streaming Manager cached variables
     struct StreamingCache
     {
-        /// <summary>
-        /// The minimum usage distance since last update (eg. mesh draw distance from camera).
-        /// Used to calculate resource quality.
-        /// </summary>
-        //float MinDstSinceLastUpdate;
-
-        DateTime LastUpdate;
-        int32 TargetResidency;
-        DateTime TargetResidencyChange;
-        SamplesBuffer<StreamingQuality, 5> QualitySamples;
-
-        StreamingCache()
-        //: MinDstSinceLastUpdate(MAX_float)
-            : LastUpdate(0)
-            , TargetResidency(0)
-            , TargetResidencyChange(0)
-        {
-        }
+        int64 LastUpdate = 0;
+        int32 TargetResidency = 0;
+        int64 TargetResidencyChange = 0;
+        SamplesBuffer<float, 5> QualitySamples;
     };
 
     StreamingCache Streaming;
@@ -145,11 +117,11 @@ public:
     /// </summary>
     void RequestStreamingUpdate()
     {
-        Streaming.LastUpdate.Ticks = 0;
+        Streaming.LastUpdate = 0;
     }
 
 protected:
 
-    void startStreaming(bool isDynamic);
-    void stopStreaming();
+    void StartStreaming(bool isDynamic);
+    void StopStreaming();
 };

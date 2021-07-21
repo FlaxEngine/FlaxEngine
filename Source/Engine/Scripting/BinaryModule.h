@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Serialization/ISerializable.h"
 #include "ManagedCLR/MAssemblyOptions.h"
 
@@ -131,10 +132,7 @@ public:
     /// <param name="typeHandle">The type to find method inside it.</param>
     /// <param name="signature">The method signature.</param>
     /// <returns>The method or null if failed to get it.</returns>
-    virtual void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature)
-    {
-        return FindMethod(typeHandle, signature.Name, signature.Params.Count());
-    }
+    virtual void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature);
 
     /// <summary>
     /// Invokes a given scripting method.
@@ -295,7 +293,7 @@ public:
     /// <summary>
     /// The scripting types cache that maps the managed class to the scripting type index. Build after assembly is loaded and scripting types get the managed classes information.
     /// </summary>
-    Dictionary<MonoClass*, int32> ClassToTypeIndex;
+    Dictionary<MonoClass*, int32, HeapAllocation> ClassToTypeIndex;
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
@@ -398,7 +396,7 @@ private:
 
 public:
 
-    static Array<GetBinaryModuleFunc>& GetStaticallyLinkedBinaryModules();
+    static Array<GetBinaryModuleFunc, InlinedAllocation<64>>& GetStaticallyLinkedBinaryModules();
     explicit StaticallyLinkedBinaryModuleInitializer(GetBinaryModuleFunc getter);
     ~StaticallyLinkedBinaryModuleInitializer();
 };

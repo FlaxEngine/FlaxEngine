@@ -18,19 +18,19 @@ public:
     /// <summary>
     /// The maximum amount of assets to include into a single assets package. Asset packages will split into several packages if need to.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), DefaultValue(4096), Limit(1, 32, ushort.MaxValue), EditorDisplay(\"General\", \"Max assets per package\")")
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(4096), Limit(1, ushort.MaxValue), EditorDisplay(\"General\", \"Max assets per package\")")
     int32 MaxAssetsPerPackage = 4096;
 
     /// <summary>
     /// The maximum size of the single assets package (in megabytes). Asset packages will split into several packages if need to.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(1024), Limit(1, 16, ushort.MaxValue), EditorDisplay(\"General\", \"Max package size (in MB)\")")
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(1024), Limit(1, ushort.MaxValue), EditorDisplay(\"General\", \"Max package size (in MB)\")")
     int32 MaxPackageSizeMB = 1024;
 
     /// <summary>
     /// The game content cooking keycode. Use the same value for a game and DLC packages to support loading them by the build game. Use 0 to randomize it during building.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), DefaultValue(0), Limit(1, 16, ushort.MaxValue), EditorDisplay(\"General\")")
+    API_FIELD(Attributes="EditorOrder(30), DefaultValue(0), EditorDisplay(\"General\")")
     int32 ContentKey = 0;
 
     /// <summary>

@@ -25,10 +25,14 @@ void SphereCollider::SetRadius(const float value)
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
-    DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
+    if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
+        DebugDraw::DrawSphere(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+    else
+        DebugDraw::DrawWireSphere(_sphere, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void SphereCollider::OnDebugDrawSelected()

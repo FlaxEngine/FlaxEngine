@@ -4,27 +4,22 @@
 
 #include "../Actor.h"
 #include "../SceneInfo.h"
-#include "Engine/Content/JsonAsset.h"
 #include "SceneLightmapsData.h"
 #include "SceneCSGData.h"
 #include "SceneRendering.h"
 #include "SceneTicking.h"
+#include "SceneNavigation.h"
 
 class MeshCollider;
-class Level;
-class ReloadScriptsAction;
-class NavMeshBoundsVolume;
-class NavMesh;
 
 /// <summary>
 /// The scene root object that contains a hierarchy of actors.
 /// </summary>
 API_CLASS() class FLAXENGINE_API Scene : public Actor
 {
+    friend class Level;
+    friend class ReloadScriptsAction;
 DECLARE_SCENE_OBJECT(Scene);
-    friend Level;
-    friend ReloadScriptsAction;
-public:
 
     /// <summary>
     /// Finalizes an instance of the <see cref="Scene"/> class.
@@ -48,8 +43,6 @@ public:
     /// </summary>
     DateTime SaveTime;
 
-public:
-
     /// <summary>
     /// The scene rendering manager.
     /// </summary>
@@ -59,6 +52,11 @@ public:
     /// The scene ticking manager.
     /// </summary>
     SceneTicking Ticking;
+
+    /// <summary>
+    /// The navigation data.
+    /// </summary>
+    SceneNavigation Navigation;
 
     /// <summary>
     /// The static light manager for this scene.
@@ -84,31 +82,6 @@ public:
 public:
 
     /// <summary>
-    /// The list of registered navigation bounds volumes (in the scene).
-    /// </summary>
-    Array<NavMeshBoundsVolume*> NavigationVolumes;
-
-    /// <summary>
-    /// The list of registered navigation meshes (in the scene).
-    /// </summary>
-    Array<NavMesh*> NavigationMeshes;
-
-    /// <summary>
-    /// Gets the total navigation volumes bounds.
-    /// </summary>
-    /// <returns>The navmesh bounds.</returns>
-    BoundingBox GetNavigationBounds();
-
-    /// <summary>
-    /// Finds the navigation volume bounds that have intersection with the given world-space bounding box.
-    /// </summary>
-    /// <param name="bounds">The bounds.</param>
-    /// <returns>The intersecting volume or null if none found.</returns>
-    NavMeshBoundsVolume* FindNavigationBoundsOverlap(const BoundingBox& bounds);
-
-public:
-
-    /// <summary>
     /// Removes all baked lightmap textures from the scene.
     /// </summary>
     API_FUNCTION() void ClearLightmaps();
@@ -119,8 +92,6 @@ public:
     /// <remarks>Requests are enqueued till the next game scripts update.</remarks>
     /// <param name="timeoutMs">The timeout to wait before building CSG (in milliseconds).</param>
     API_FUNCTION() void BuildCSG(float timeoutMs = 50);
-
-public:
 
 #if USE_EDITOR
 
@@ -150,13 +121,7 @@ private:
     void OnCsgCollisionDataChanged();
     void OnCsgModelChanged();
 #if COMPILE_WITH_CSG_BUILDER
-    void OnCSGBuildEnd()
-    {
-        if (CSGData.CollisionData && TryGetCsgCollider() == nullptr)
-            CreateCsgCollider();
-        if (CSGData.Model && TryGetCsgModel() == nullptr)
-            CreateCsgModel();
-    }
+    void OnCSGBuildEnd();
 #endif
 
 public:
@@ -174,17 +139,4 @@ protected:
     void PostSpawn() override;
     void BeginPlay(SceneBeginData* data) override;
     void OnTransformChanged() override;
-};
-
-/// <summary>
-/// The scene asset.
-/// </summary>
-API_CLASS(NoSpawn) class SceneAsset : public JsonAsset
-{
-DECLARE_ASSET_HEADER(SceneAsset);
-protected:
-    bool IsInternalType() const override
-    {
-        return true;
-    }
 };

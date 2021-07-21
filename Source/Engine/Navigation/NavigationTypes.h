@@ -83,6 +83,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
     API_FIELD(Attributes="EditorOrder(30)")
     NavAgentProperties Agent;
 
+    /// <summary>
+    /// The default extents for the nav queries that defines the search distance along each axis (x, y, z). Smaller values prevent queries from snapping to too far locations.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(40)")
+    Vector3 DefaultQueryExtent = Vector3(50.0f, 250.0f, 50.0f);
+
     bool operator==(const NavMeshProperties& other) const;
 
     bool operator!=(const NavMeshProperties& other) const

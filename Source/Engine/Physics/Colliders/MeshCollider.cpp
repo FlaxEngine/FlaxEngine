@@ -2,9 +2,13 @@
 
 #include "MeshCollider.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#if USE_EDITOR
+#include "Engine/Debug/DebugLog.h"
+#endif
 
 MeshCollider::MeshCollider(const SpawnParams& params)
     : Collider(params)
@@ -39,6 +43,12 @@ bool MeshCollider::CanAttach(RigidBody* rigidBody) const
     CollisionDataType type = CollisionDataType::None;
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
+#if USE_EDITOR
+    if (type == CollisionDataType::TriangleMesh)
+    {
+        LOG(Warning, "Cannot attach {0} using Triangle Mesh collider {1} to RigidBody (not supported)", GetNamePath(), CollisionData->ToString());
+    }
+#endif
     return type != CollisionDataType::TriangleMesh;
 }
 
@@ -53,13 +63,23 @@ bool MeshCollider::CanBeTrigger() const
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
 
 void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
-        const auto& debugLines = CollisionData->GetDebugLines();
-        DEBUG_DRAW_LINES(Span<Vector3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
+        if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
+        {
+            Array<Vector3>* vertexBuffer;
+            Array<int32>* indexBuffer;
+            CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+            DebugDraw::DrawTriangles(*vertexBuffer, *indexBuffer, _transform.GetWorld(), _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        }
+        else
+        {
+            DebugDraw::DrawLines(CollisionData->GetDebugLines(), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
+        }
     }
 }
 

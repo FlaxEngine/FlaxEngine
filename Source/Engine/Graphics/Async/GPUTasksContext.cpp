@@ -3,7 +3,7 @@
 #include "GPUTasksContext.h"
 #include "GPUTask.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Threading/ThreadLocal.h"
+#include "Engine/Threading/Threading.h"
 
 #define GPU_TASKS_USE_DEDICATED_CONTEXT 0
 

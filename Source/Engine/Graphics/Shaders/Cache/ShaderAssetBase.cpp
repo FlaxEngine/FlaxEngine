@@ -4,6 +4,8 @@
 #include "ShaderStorage.h"
 #include "ShaderCacheManager.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
 
@@ -30,6 +32,16 @@ ShaderStorage::CachingMode ShaderStorage::GetCachingMode()
 #include "Engine/ShadersCompilation/ShadersCompilation.h"
 
 #endif
+
+bool ShaderAssetBase::IsNullRenderer()
+{
+    return GPUDevice::Instance->GetRendererType() == RendererType::Null;
+}
+
+int32 ShaderAssetBase::GetCacheChunkIndex()
+{
+    return GetCacheChunkIndex(GPUDevice::Instance->GetShaderProfile());
+}
 
 int32 ShaderAssetBase::GetCacheChunkIndex(ShaderProfile profile)
 {
@@ -59,6 +71,28 @@ int32 ShaderAssetBase::GetCacheChunkIndex(ShaderProfile profile)
         break;
     }
     return result;
+}
+
+bool ShaderAssetBase::initBase(AssetInitData& initData)
+{
+    // Validate version
+    if (initData.SerializedVersion != ShaderStorage::Header::Version)
+    {
+        LOG(Warning, "Invalid shader serialized version.");
+        return true;
+    }
+
+    // Validate data
+    if (initData.CustomData.Length() != sizeof(_shaderHeader))
+    {
+        LOG(Warning, "Invalid shader header.");
+        return true;
+    }
+
+    // Load header 'as-is'
+    Platform::MemoryCopy(&_shaderHeader, initData.CustomData.Get(), sizeof(_shaderHeader));
+
+    return false;
 }
 
 #if USE_EDITOR

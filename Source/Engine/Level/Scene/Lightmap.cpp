@@ -2,10 +2,12 @@
 
 #include "Lightmap.h"
 #include "Scene.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/SceneLightmapsData.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #if USE_EDITOR
 #include "Engine/ContentImporters/ImportTexture.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -134,6 +136,14 @@ void Lightmap::EnsureSize(int32 size)
 #endif
         }
     }
+}
+
+bool Lightmap::IsReady() const
+{
+    // TODO: link for events and cache this to be a boolean value
+    return _textures[0] && _textures[0]->GetTexture()->ResidentMipLevels() > 0
+            && _textures[1] && _textures[1]->GetTexture()->ResidentMipLevels() > 0
+            && _textures[2] && _textures[2]->GetTexture()->ResidentMipLevels() > 0;
 }
 
 #if USE_EDITOR

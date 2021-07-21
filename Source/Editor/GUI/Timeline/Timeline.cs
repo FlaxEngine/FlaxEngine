@@ -738,7 +738,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[0] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Rewind to timeline start (Home)",
-                        Brush = new SpriteBrush(icons.Step32),
+                        Brush = new SpriteBrush(icons.Skip64),
                         Enabled = false,
                         Visible = false,
                         Rotation = 180.0f,
@@ -750,7 +750,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[1] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Seek back to the previous keyframe (Page Down)",
-                        Brush = new SpriteBrush(icons.Next32),
+                        Brush = new SpriteBrush(icons.Shift64),
                         Enabled = false,
                         Visible = false,
                         Rotation = 180.0f,
@@ -766,7 +766,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[2] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Move one frame back (Left Arrow)",
-                        Brush = new SpriteBrush(icons.ArrowLeft32),
+                        Brush = new SpriteBrush(icons.Left32),
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -779,7 +779,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackStop = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Stop playback",
-                        Brush = new SpriteBrush(icons.Stop32),
+                        Brush = new SpriteBrush(icons.Stop64),
                         Visible = false,
                         Enabled = false,
                         Parent = playbackButtonsPanel
@@ -792,7 +792,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackPlay = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Play/pause playback (Space)",
-                        Brush = new SpriteBrush(icons.Play32),
+                        Brush = new SpriteBrush(icons.Play64),
                         Visible = false,
                         Tag = false, // Set to true if image is set to Pause, false if Play
                         Parent = playbackButtonsPanel
@@ -805,7 +805,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[3] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Move one frame forward (Right Arrow)",
-                        Brush = new SpriteBrush(icons.ArrowRight32),
+                        Brush = new SpriteBrush(icons.Right32),
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -816,7 +816,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[4] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Seek to the next keyframe (Page Up)",
-                        Brush = new SpriteBrush(icons.Next32),
+                        Brush = new SpriteBrush(icons.Shift64),
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -831,7 +831,7 @@ namespace FlaxEditor.GUI.Timeline
                     _playbackNavigation[5] = new ClickableImage(playbackButtonsPanel.Width, 0, playbackButtonsSize, playbackButtonsSize)
                     {
                         TooltipText = "Rewind to timeline end (End)",
-                        Brush = new SpriteBrush(icons.Step32),
+                        Brush = new SpriteBrush(icons.Skip64),
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -1189,7 +1189,7 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     _playbackPlay.Visible = true;
                     _playbackPlay.Enabled = _canPlayPauseStop;
-                    _playbackPlay.Brush = new SpriteBrush(icons.Play32);
+                    _playbackPlay.Brush = new SpriteBrush(icons.Play64);
                     _playbackPlay.Tag = false;
                 }
                 if (_positionHandle != null)
@@ -1215,7 +1215,7 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     _playbackPlay.Visible = true;
                     _playbackPlay.Enabled = _canPlayPauseStop;
-                    _playbackPlay.Brush = new SpriteBrush(icons.Pause32);
+                    _playbackPlay.Brush = new SpriteBrush(icons.Pause64);
                     _playbackPlay.Tag = true;
                 }
                 if (_positionHandle != null)
@@ -1241,7 +1241,7 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     _playbackPlay.Visible = true;
                     _playbackPlay.Enabled = _canPlayPauseStop;
-                    _playbackPlay.Brush = new SpriteBrush(icons.Play32);
+                    _playbackPlay.Brush = new SpriteBrush(icons.Play64);
                     _playbackPlay.Tag = false;
                 }
                 if (_positionHandle != null)

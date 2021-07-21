@@ -42,12 +42,22 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
+---
+
+**Note**
+
+If building on Windows to support Vulkan rendering, first install the Vulkan SDK then  set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat:
+
+    set VULKAN_SDK=C:\VulkanSDK\version\
+
+---
+
 ## Linux
 
 * Install Visual Studio Code
 * Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
 * Install Git with LFS
-* Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python curl libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libcurl4-gnutls-dev`
+* Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
 * Install compiler `sudo apt-get install clang lldb lld` (Clang 6 or newer)
 * Clone repo (with LFS)
 * Run `./GenerateProjectFiles.sh`

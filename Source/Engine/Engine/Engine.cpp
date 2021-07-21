@@ -10,18 +10,11 @@
 #include "FlaxEngine.Gen.h"
 #include "Engine/Core/Core.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Utilities.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Platform/Platform.h"
-#include "Engine/Platform/CPUInfo.h"
-#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/FileSystem.h"
-#include "Engine/Serialization/FileWriteStream.h"
-#include "Engine/Serialization/FileReadStream.h"
-#include "Engine/Level/Level.h"
-#include "Engine/Renderer/Renderer.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/MainThreadTask.h"
@@ -34,6 +27,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Threading/TaskGraph.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
@@ -69,6 +63,7 @@ bool Engine::HasFocus = false;
 uint64 Engine::FrameCount = 0;
 Action Engine::FixedUpdate;
 Action Engine::Update;
+TaskGraph* Engine::UpdateGraph = nullptr;
 Action Engine::LateUpdate;
 Action Engine::Draw;
 Action Engine::Pause;
@@ -129,6 +124,7 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
 
     // Initialize engine
+    UpdateGraph = New<TaskGraph>();
     EngineService::OnInit();
     if (Application::Init())
         return -10;
@@ -146,26 +142,23 @@ int32 Engine::Main(const Char* cmdLine)
     EngineImpl::IsReady = true;
 
     // Main engine loop
-    bool canDraw = true; // Prevent drawing 2 or more frames in a row without update or fixed update (nothing will change)
+    const bool useSleep = true; // TODO: this should probably be a platform setting
     while (!ShouldExit())
     {
-#if 0
-        // TODO: test it more and maybe use in future to reduce CPU usage
-		// Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-		{
-			float tickFps;
-			auto tick = Time->GetHighestFrequency(tickFps);
-			double tickTargetStepTime = 1.0 / tickFps;
-			double nextTick = tick->LastEnd + tickTargetStepTime;
-			double timeToTick = nextTick - Platform::GetTimeSeconds();
-			int32 sleepTimeMs = Math::Min(4, Math::FloorToInt(timeToTick * (1000.0 * 0.8))); // Convert seconds to milliseconds and apply adjustment with limit
-			if (!Device->WasVSyncUsed() && sleepTimeMs > 0)
-			{
-				PROFILE_CPU_NAMED("Idle");
-				Platform::Sleep(sleepTimeMs);
-			}
-		}
-#endif
+        // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
+        if ((useSleep && Time::UpdateFPS > 0) || !Platform::GetHasFocus())
+        {
+            double nextTick = Time::GetNextTick();
+            double timeToTick = nextTick - Platform::GetTimeSeconds();
+
+            // Sleep less than needed, some platforms may sleep slightly more than requested
+            if (timeToTick > 0.002)
+            {
+                PROFILE_CPU_NAMED("Idle");
+                Platform::Sleep(1);
+            }
+        }
+
         // App paused logic
         if (Platform::GetIsPaused())
         {
@@ -186,7 +179,6 @@ int32 Engine::Main(const Char* cmdLine)
             OnUpdate();
             OnLateUpdate();
             Time::OnEndUpdate();
-            canDraw = true;
         }
 
         // Start physics simulation
@@ -194,15 +186,14 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnFixedUpdate();
             Time::OnEndPhysics();
-            canDraw = true;
         }
 
         // Draw frame
-        if (canDraw && Time::OnBeginDraw())
+        if (Time::OnBeginDraw())
         {
             OnDraw();
             Time::OnEndDraw();
-            canDraw = false;
+            FrameMark;
         }
 
         // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
@@ -297,10 +288,11 @@ void Engine::OnUpdate()
     // Simulate lags
     //Platform::Sleep(100);
 
-    MainThreadTask::RunAll();
+    MainThreadTask::RunAll(Time::Update.UnscaledDeltaTime.GetTotalSeconds());
 
     // Call event
     Update();
+    UpdateGraph->Execute();
 
     // Update services
     EngineService::OnUpdate();
@@ -448,6 +440,7 @@ void Engine::OnExit()
 
     // Unload Engine services
     EngineService::OnDispose();
+    SAFE_DELETE(UpdateGraph);
 
     LOG_FLUSH();
 
@@ -556,6 +549,7 @@ void EngineImpl::InitPaths()
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
 
+#if !PLATFORM_SWITCH
     // Setup directories
     if (FileSystem::DirectoryExists(Globals::TemporaryFolder))
         FileSystem::DeleteDirectory(Globals::TemporaryFolder);
@@ -566,6 +560,7 @@ void EngineImpl::InitPaths()
         if (FileSystem::CreateDirectory(Globals::TemporaryFolder))
             Platform::Fatal(TEXT("Cannot create temporary directory."));
     }
+#endif
 #if USE_EDITOR
     if (!FileSystem::DirectoryExists(Globals::ProjectContentFolder))
         FileSystem::CreateDirectory(Globals::ProjectContentFolder);
@@ -593,6 +588,7 @@ void EngineImpl::InitMainWindow()
         return;
     }
 #endif
+    PROFILE_CPU_NAMED("Engine::InitMainWindow");
 
     // Create window
     Engine::MainWindow = Application::CreateMainWindow();
@@ -622,7 +618,7 @@ void EngineImpl::InitMainWindow()
     if (exception)
     {
         MException ex(exception);
-        ex.Log(LogType::Fatal, TEXT("FlaxEngine.ClassLibraryInitializer.SetWindow"));
+        ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.SetWindow"));
     }
 #endif
 }

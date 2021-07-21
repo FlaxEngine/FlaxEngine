@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Scripting;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Create
@@ -11,91 +12,30 @@ namespace FlaxEditor.Content.Create
     /// Engine settings asset creating handler. Allows to specify type of the settings to create (e.g. <see cref="GameSettings"/>, <see cref="TimeSettings"/>, etc.).
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
-    public class SettingsCreateEntry : CreateFileEntry
+    internal class SettingsCreateEntry : CreateFileEntry
     {
         /// <summary>
         /// Types of the settings assets that can be created.
         /// </summary>
-        public enum SettingsTypes
+        internal enum SettingsTypes
         {
-            /// <summary>
-            /// The game settings.
-            /// </summary>
             GameSettings,
-
-            /// <summary>
-            /// The audio settings.
-            /// </summary>
             AudioSettings,
-
-            /// <summary>
-            /// The time settings.
-            /// </summary>
             TimeSettings,
-
-            /// <summary>
-            /// The layers and tags settings.
-            /// </summary>
             LayersAndTagsSettings,
-
-            /// <summary>
-            /// The physics settings.
-            /// </summary>
             PhysicsSettings,
-
-            /// <summary>
-            /// The graphics settings.
-            /// </summary>
             GraphicsSettings,
-
-            /// <summary>
-            /// The navigation settings.
-            /// </summary>
             NavigationSettings,
-
-            /// <summary>
-            /// The build settings.
-            /// </summary>
+            LocalizationSettings,
             BuildSettings,
-
-            /// <summary>
-            /// The input settings.
-            /// </summary>
             InputSettings,
-
-            /// <summary>
-            /// The Windows settings.
-            /// </summary>
+            StreamingSettings,
             WindowsPlatformSettings,
-
-            /// <summary>
-            /// The UWP settings.
-            /// </summary>
             UWPPlatformSettings,
-
-            /// <summary>
-            /// The Linux settings.
-            /// </summary>
             LinuxPlatformSettings,
-
-            /// <summary>
-            /// The PS4 settings
-            /// </summary>
             PS4PlatformSettings,
-
-            /// <summary>
-            /// The Xbox Scarlett settings
-            /// </summary>
             XboxScarlettPlatformSettings,
-
-            /// <summary>
-            /// The Android settings
-            /// </summary>
             AndroidPlatformSettings,
-
-            /// <summary>
-            /// The Switch settings
-            /// </summary>
             SwitchPlatformSettings,
         }
 
@@ -108,8 +48,10 @@ namespace FlaxEditor.Content.Create
             typeof(PhysicsSettings),
             typeof(GraphicsSettings),
             typeof(NavigationSettings),
+            typeof(LocalizationSettings),
             typeof(BuildSettings),
             typeof(InputSettings),
+            typeof(StreamingSettings),
             typeof(WindowsPlatformSettings),
             typeof(UWPPlatformSettings),
             typeof(LinuxPlatformSettings),
@@ -119,10 +61,7 @@ namespace FlaxEditor.Content.Create
             TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
         };
 
-        /// <summary>
-        /// The create options.
-        /// </summary>
-        public class Options
+        internal class Options
         {
             /// <summary>
             /// The type.
@@ -156,7 +95,134 @@ namespace FlaxEditor.Content.Create
                 return true;
             }
             var data = Activator.CreateInstance(type);
-            return Editor.SaveJsonAsset(ResultUrl, data);
+            if (Editor.SaveJsonAsset(ResultUrl, data))
+                return true;
+
+            // Automatic settings linking to game settings for easier usage
+            var gameSettingsItem = Editor.Instance.ContentDatabase.Game.Content.Folder.FindChild(GameSettings.GameSettingsAssetPath) as JsonAssetItem;
+            if (gameSettingsItem != null)
+            {
+                var gameSettingsWindow = Editor.Instance.Windows.FindEditor(gameSettingsItem) as JsonAssetWindow;
+                if (gameSettingsWindow?.Instance is GameSettings)
+                {
+                    if (TrySet(gameSettingsWindow.Instance as GameSettings, ResultUrl, _options.Type))
+                        gameSettingsWindow.MarkAsEdited();
+                }
+                else
+                {
+                    var gameSettingsAsset = FlaxEngine.Content.LoadAsync<JsonAsset>(gameSettingsItem.ID);
+                    if (gameSettingsAsset && !gameSettingsAsset.WaitForLoaded())
+                    {
+                        if (gameSettingsAsset.CreateInstance() is GameSettings settings)
+                        {
+                            if (TrySet(settings, ResultUrl, _options.Type))
+                            {
+                                Editor.SaveJsonAsset(GameSettings.GameSettingsAssetPath, settings);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TrySet(GameSettings instance, string resultUrl, SettingsTypes type)
+        {
+            var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(resultUrl);
+            if (instance != null && asset != null)
+            {
+                switch (type)
+                {
+                case SettingsTypes.AudioSettings:
+                    if (instance.Audio != null)
+                        return false;
+                    instance.Audio = asset;
+                    break;
+                case SettingsTypes.TimeSettings:
+                    if (instance.Time != null)
+                        return false;
+                    instance.Time = asset;
+                    break;
+                case SettingsTypes.LayersAndTagsSettings:
+                    if (instance.LayersAndTags != null)
+                        return false;
+                    instance.LayersAndTags = asset;
+                    break;
+                case SettingsTypes.PhysicsSettings:
+                    if (instance.Physics != null)
+                        return false;
+                    instance.Physics = asset;
+                    break;
+                case SettingsTypes.GraphicsSettings:
+                    if (instance.Graphics != null)
+                        return false;
+                    instance.Graphics = asset;
+                    break;
+                case SettingsTypes.NavigationSettings:
+                    if (instance.Navigation != null)
+                        return false;
+                    instance.Navigation = asset;
+                    break;
+                case SettingsTypes.LocalizationSettings:
+                    if (instance.Localization != null)
+                        return false;
+                    instance.Localization = asset;
+                    break;
+                case SettingsTypes.BuildSettings:
+                    if (instance.GameCooking != null)
+                        return false;
+                    instance.GameCooking = asset;
+                    break;
+                case SettingsTypes.InputSettings:
+                    if (instance.Input != null)
+                        return false;
+                    instance.Input = asset;
+                    break;
+                case SettingsTypes.StreamingSettings:
+                    if (instance.Streaming != null)
+                        return false;
+                    instance.Streaming = asset;
+                    break;
+                case SettingsTypes.WindowsPlatformSettings:
+                    if (instance.WindowsPlatform != null)
+                        return false;
+                    instance.WindowsPlatform = asset;
+                    break;
+                case SettingsTypes.UWPPlatformSettings:
+                    if (instance.UWPPlatform != null)
+                        return false;
+                    instance.UWPPlatform = asset;
+                    break;
+                case SettingsTypes.LinuxPlatformSettings:
+                    if (instance.LinuxPlatform != null)
+                        return false;
+                    instance.LinuxPlatform = asset;
+                    break;
+                case SettingsTypes.PS4PlatformSettings:
+                    if (instance.PS4Platform != null)
+                        return false;
+                    instance.PS4Platform = asset;
+                    break;
+                case SettingsTypes.XboxScarlettPlatformSettings:
+                    if (instance.XboxScarlettPlatform != null)
+                        return false;
+                    instance.XboxScarlettPlatform = asset;
+                    break;
+                case SettingsTypes.AndroidPlatformSettings:
+                    if (instance.AndroidPlatform != null)
+                        return false;
+                    instance.AndroidPlatform = asset;
+                    break;
+                case SettingsTypes.SwitchPlatformSettings:
+                    if (instance.SwitchPlatform != null)
+                        return false;
+                    instance.SwitchPlatform = asset;
+                    break;
+                }
+                return true;
+            }
+            return false;
         }
     }
 }

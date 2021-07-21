@@ -91,6 +91,16 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     API_FUNCTION() static void DrawLines(const Span<Vector3>& lines, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
+    /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
+    /// </summary>
+    /// <param name="lines">The list of vertices for lines (must have multiple of 2 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawLines(const Array<Vector3, HeapAllocation>& lines, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
     /// Draws a Bezier curve.
     /// </summary>
     /// <param name="p1">The start point.</param>
@@ -148,10 +158,30 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// Draws the triangles.
     /// </summary>
     /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Vector3>& vertices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the triangles using the given index buffer.
@@ -168,10 +198,32 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& indices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the given index buffer.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list.</param>
+    /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Array<int32, HeapAllocation>& indices, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the given index buffer.
+    /// </summary>
+    /// <param name="vertices">The triangle vertices list.</param>
+    /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    static void DrawTriangles(const Array<Vector3, HeapAllocation>& vertices, const Array<int32, HeapAllocation>& indices, const Matrix& transform, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe triangles.
@@ -255,6 +307,18 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawSphere(const BoundingSphere& sphere, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the tube.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="orientation">The orientation.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="length">The length.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe tube.
@@ -360,6 +424,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_TRIANGLES(vertices, color, duration, depthTest) DebugDraw::DrawTriangles(vertices, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLES_EX(vertices, indices, color, duration, depthTest) DebugDraw::DrawTriangles(vertices, indices, color, duration, depthTest)
 #define DEBUG_DRAW_SPHERE(sphere, color, duration, depthTest) DebugDraw::DrawSphere(sphere, color, duration, depthTest)
+#define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest) DebugDraw::DrawTube(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_BOX(box, color, duration, depthTest) DebugDraw::DrawBox(box, color, duration, depthTest)
 #define DEBUG_DRAW_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawCylinder(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLE(v0, v1, v2, color, duration, depthTest) DebugDraw::DrawWireTriangle(v0, v1, v2, color, duration, depthTest)
@@ -383,6 +448,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_TRIANGLES(vertices, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLES_EX(vertices, indices, color, duration, depthTest)
 #define DEBUG_DRAW_SPHERE(sphere, color, duration, depthTest)
+#define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_BOX(box, color, duration, depthTest)
 #define DEBUG_DRAW_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLE(v0, v1, v2, color, duration, depthTest)

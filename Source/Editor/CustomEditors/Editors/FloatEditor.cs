@@ -15,6 +15,11 @@ namespace FlaxEditor.CustomEditors.Editors
     {
         private IFloatValueEditor _element;
 
+        /// <summary>
+        /// Gets the element.
+        /// </summary>
+        public IFloatValueEditor Element => _element;
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -84,7 +89,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 else if (value is double asDouble)
                     _element.Value = (float)asDouble;
                 else
-                    throw new Exception("Invalid value.");
+                    throw new Exception(string.Format("Invalid value type {0}.", value?.GetType().ToString() ?? "<null>"));
             }
         }
     }

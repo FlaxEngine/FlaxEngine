@@ -4,6 +4,7 @@
 #include "ScriptingObject.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MType.h"
@@ -13,7 +14,6 @@
 #include "FlaxEngine.Gen.h"
 #include "MException.h"
 #include "Scripting.h"
-#include "StdTypesContainer.h"
 #include "Events.h"
 
 Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> ScriptingEvents::EventsTable;
@@ -332,14 +332,13 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     // Script
     module->Types.AddUninitialized();
     new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, spawn, baseType, setupScriptVTable, setupScriptObjectVTable, interfaces);
-    const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(typeName))
+    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
     {
         LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
     }
 #endif
-    module->TypeNameToTypeIndex[typeName] = TypeIndex;
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
@@ -348,14 +347,13 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     // Class
     module->Types.AddUninitialized();
     new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, baseType, interfaces);
-    const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(typeName))
+    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
     {
         LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
     }
 #endif
-    module->TypeNameToTypeIndex[typeName] = TypeIndex;
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
@@ -364,14 +362,13 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     // Structure
     module->Types.AddUninitialized();
     new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType, interfaces);
-    const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(typeName))
+    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
     {
         LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
     }
 #endif
-    module->TypeNameToTypeIndex[typeName] = TypeIndex;
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, ScriptingType::InitRuntimeHandler initRuntime, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
@@ -380,14 +377,13 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     // Interface
     module->Types.AddUninitialized();
     new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, initRuntime, baseType, interfaces);
-    const MString typeName(fullname.Get(), fullname.Length());
 #if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(typeName))
+    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
     {
         LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
     }
 #endif
-    module->TypeNameToTypeIndex[typeName] = TypeIndex;
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
 BinaryModule::BinaryModulesList& BinaryModule::GetModules()
@@ -415,6 +411,11 @@ BinaryModule::BinaryModule()
 {
     // Register
     GetModules().Add(this);
+}
+
+void* BinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature)
+{
+    return FindMethod(typeHandle, signature.Name, signature.Params.Count());
 }
 
 void BinaryModule::Destroy(bool isReloading)
@@ -589,6 +590,7 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
 
 void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 {
+    PROFILE_CPU();
     for (ScriptingType& type : Types)
     {
         type.InitRuntime();
@@ -597,6 +599,7 @@ void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 
 void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 {
+    PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
 
     const auto& classes = assembly->GetClasses();
@@ -750,6 +753,8 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 
 void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
 {
+    PROFILE_CPU();
+
     // Clear managed-only types
     for (int32 i = _firstManagedTypeIndex; i < Types.Count(); i++)
     {
@@ -1070,9 +1075,9 @@ void NativeOnlyBinaryModule::Destroy(bool isReloading)
     }
 }
 
-Array<GetBinaryModuleFunc>& StaticallyLinkedBinaryModuleInitializer::GetStaticallyLinkedBinaryModules()
+Array<GetBinaryModuleFunc, InlinedAllocation<64>>& StaticallyLinkedBinaryModuleInitializer::GetStaticallyLinkedBinaryModules()
 {
-    static Array<GetBinaryModuleFunc> modules;
+    static Array<GetBinaryModuleFunc, InlinedAllocation<64>> modules;
     return modules;
 }
 

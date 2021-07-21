@@ -26,17 +26,15 @@ protected:
     PxRigidStatic* _staticActor;
     Vector3 _cachedScale;
     float _contactOffset;
+    Vector3 _cachedLocalPosePos;
+    Quaternion _cachedLocalPoseRot;
 
 public:
 
     /// <summary>
     /// Gets the collider shape PhysX object.
     /// </summary>
-    /// <returns>The PhysX Shape object or null.</returns>
-    FORCE_INLINE PxShape* GetPxShape() const
-    {
-        return _shape;
-    }
+    PxShape* GetPxShape() const;
 
     /// <summary>
     /// Gets the 'IsTrigger' flag.
@@ -169,11 +167,6 @@ public:
     void Attach(RigidBody* rigidBody);
 
 protected:
-
-    /// <summary>
-    /// Updates the shape scale (may be modified when actor transformation changes).
-    /// </summary>
-    void UpdateScale();
 
     /// <summary>
     /// Updates the shape actor collisions/queries layer mask bits.

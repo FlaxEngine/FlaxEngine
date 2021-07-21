@@ -13,7 +13,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Threading/ThreadLocal.h"
+#include "Engine/Threading/Threading.h"
 
 #if USE_EDITOR
 #define CHECK_EXECUTE_IN_EDITOR if (Editor::IsPlayMode || _executeInEditor)
@@ -178,13 +178,15 @@ void Script::SetupType()
 {
     // Enable tick functions based on the method overriden in C# or Visual Script
     ScriptingTypeHandle typeHandle = GetTypeHandle();
-    _tickUpdate = _tickLateUpdate = _tickFixedUpdate = 0;
     while (typeHandle != Script::TypeInitializer)
     {
         auto& type = typeHandle.GetType();
-        _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
-        _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
-        _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
+        if (type.Script.ScriptVTable)
+        {
+            _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
+            _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
+            _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
+        }
         typeHandle = type.GetBaseType();
     }
 }
@@ -322,19 +324,32 @@ void Script::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_BIT_MEMBER(Enabled, _enabled);
     DESERIALIZE_MEMBER(PrefabID, _prefabID);
 
-    Guid parentId = Guid::Empty;
-    DESERIALIZE_MEMBER(ParentID, parentId);
-    const auto parent = Scripting::FindObject<Actor>(parentId);
-    if (_parent != parent)
     {
-        if (_parent)
-            _parent->Scripts.RemoveKeepOrder(this);
-        _parent = parent;
-        if (_parent)
-            _parent->Scripts.Add(this);
-    }
-    else if (!parent && parentId.IsValid())
-    {
-        LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+        const auto member = SERIALIZE_FIND_MEMBER(stream, "ParentID");
+        if (member != stream.MemberEnd())
+        {
+            Guid parentId;
+            Serialization::Deserialize(member->value, parentId, modifier);
+            const auto parent = Scripting::FindObject<Actor>(parentId);
+            if (_parent != parent)
+            {
+                if (IsDuringPlay())
+                {
+                    SetParent(parent, false);
+                }
+                else
+                {
+                    if (_parent)
+                        _parent->Scripts.RemoveKeepOrder(this);
+                    _parent = parent;
+                    if (_parent)
+                        _parent->Scripts.Add(this);
+                }
+            }
+            else if (!parent && parentId.IsValid())
+            {
+                LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+            }
+        }
     }
 }

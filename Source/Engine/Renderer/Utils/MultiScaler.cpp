@@ -1,12 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MultiScaler.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Content/Content.h"
 
-MultiScaler::MultiScaler()
-    : _psHalfDepth(nullptr)
-{
-}
+PACK_STRUCT(struct Data {
+    Vector2 TexelSize;
+    Vector2 Padding;
+    });
 
 String MultiScaler::ToString() const
 {
@@ -20,6 +21,7 @@ bool MultiScaler::Init()
     _psBlur5.CreatePipelineStates();
     _psBlur9.CreatePipelineStates();
     _psBlur13.CreatePipelineStates();
+    _psUpscale = GPUDevice::Instance->CreatePipelineState();
 
     // Load asset
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/MultiScaler"));
@@ -63,6 +65,12 @@ bool MultiScaler::setupResources()
         if (_psBlur13.Create(psDesc, shader, "PS_Blur13"))
             return true;
     }
+    if (!_psUpscale->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_Upscale");
+        if (_psUpscale->Init(psDesc))
+            return true;
+    }
     if (!_psHalfDepth->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_HalfDepth");
@@ -83,6 +91,7 @@ void MultiScaler::Dispose()
 
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psHalfDepth);
+    SAFE_DELETE_GPU_RESOURCE(_psUpscale);
     _psBlur5.Delete();
     _psBlur9.Delete();
     _psBlur13.Delete();
@@ -119,14 +128,14 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
         ps = &_psBlur13;
         break;
     default:
-    CRASH;
+        CRASH;
         return;
     }
 
     // Prepare
     Data data;
-    data.TexelSize.X = 1.0f / width;
-    data.TexelSize.Y = 1.0f / height;
+    data.TexelSize.X = 1.0f / (float)width;
+    data.TexelSize.Y = 1.0f / (float)height;
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -175,14 +184,14 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
         ps = &_psBlur13;
         break;
     default:
-    CRASH;
+        CRASH;
         return;
     }
 
     // Prepare
     Data data;
-    data.TexelSize.X = 1.0f / width;
-    data.TexelSize.Y = 1.0f / height;
+    data.TexelSize.X = 1.0f / (float)width;
+    data.TexelSize.Y = 1.0f / (float)height;
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -204,7 +213,7 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
     context->ResetRenderTarget();
 }
 
-void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTextureView* src, GPUTextureView* dst)
+void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTexture* src, GPUTextureView* dst)
 {
     PROFILE_GPU_CPU("Downscale Depth");
 
@@ -218,8 +227,8 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
 
     // Prepare
     Data data;
-    data.TexelSize.X = 2.0f / dstWidth;
-    data.TexelSize.Y = 2.0f / dstHeight;
+    data.TexelSize.X = 1.0f / (float)src->Width();
+    data.TexelSize.Y = 1.0f / (float)src->Height();
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -234,4 +243,32 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
     // Cleanup
     context->ResetRenderTarget();
     context->UnBindCB(0);
+}
+
+void MultiScaler::Upscale(GPUContext* context, const Viewport& viewport, GPUTexture* src, GPUTextureView* dst)
+{
+    PROFILE_GPU_CPU("Upscale");
+
+    context->SetViewportAndScissors(viewport);
+    context->SetRenderTarget(dst);
+
+    if (checkIfSkipPass())
+    {
+        context->Draw(src);
+    }
+    else
+    {
+        Data data;
+        data.TexelSize.X = 1.0f / (float)src->Width();
+        data.TexelSize.Y = 1.0f / (float)src->Height();
+        auto cb = _shader->GetShader()->GetCB(0);
+        context->UpdateCB(cb, &data);
+        context->BindCB(0, cb);
+        context->BindSR(0, src);
+        context->SetState(_psUpscale);
+        context->DrawFullscreenTriangle();
+        context->UnBindCB(0);
+    }
+
+    context->ResetRenderTarget();
 }

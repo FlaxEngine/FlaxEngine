@@ -1,15 +1,19 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "DepthOfFieldPass.h"
+#include "RenderList.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/GPUBuffer.h"
-#include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/PostProcessBase.h"
-#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/PostProcessBase.h"
+#include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 
 // This must match hlsl defines
 #define DOF_MAX_SAMPLE_RADIUS 10
@@ -143,8 +147,8 @@ bool DepthOfFieldPass::setupResources()
             _bokehBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Buffer"));
         if (_bokehIndirectArgsBuffer == nullptr)
             _bokehIndirectArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("Bokeh Indirect Args Buffer"));
-        uint32 indirectArgsBufferInitData[4] = { 0, 1, 0, 0 };
-        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
+        GPUDrawIndirectArgs indirectArgsBufferInitData{0, 1, 0, 0};
+        if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(&indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
             return true;
     }
 

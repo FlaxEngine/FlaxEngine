@@ -64,7 +64,6 @@ public:
     /// <summary>
     /// Determines whether this foliage instance has valid lightmap data.
     /// </summary>
-    /// <returns><c>true</c> if this foliage instance has valid lightmap data; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasLightmap() const
     {
         return Lightmap.TextureIndex != INVALID_INDEX;

@@ -46,7 +46,7 @@ public:
             target.AddMember(itr->name, itr->value, allocator);
     }
 
-    static void ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping);
+    static void ChangeIds(Document& doc, const Dictionary<Guid, Guid, HeapAllocation>& mapping);
 
 public:
 
@@ -385,6 +385,8 @@ public:
     DECLARE_GETTER(Ray);
     DECLARE_GETTER(Plane);
     DECLARE_GETTER(DateTime);
+
+#undef DECLARE_GETTER
 
 #define DECLARE_GETTER(type) \
 	FORCE_INLINE static void Get##type(type& result, const Value& node, const char* name) \

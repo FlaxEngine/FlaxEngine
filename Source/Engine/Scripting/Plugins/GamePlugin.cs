@@ -11,5 +11,14 @@ namespace FlaxEngine
     /// <seealso cref="FlaxEngine.Plugin" />
     public abstract class GamePlugin : Plugin
     {
+#if FLAX_EDITOR
+        /// <summary>
+        /// Event called during game cooking in Editor to collect any assets that this plugin uses. Can be used to inject content for plugins.
+        /// </summary>
+        /// <param name="assets">The result assets list (always valid).</param>
+        public virtual void OnCollectAssets(System.Collections.Generic.List<System.Guid> assets)
+        {
+        }
+#endif
     }
 }

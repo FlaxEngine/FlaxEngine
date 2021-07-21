@@ -10,6 +10,7 @@
 #include "Engine/Serialization/ISerializeModifier.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/ThreadLocal.h"
 
 SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier)
 {
@@ -73,7 +74,7 @@ SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream
                 LOG(Warning, "Invalid object type (TypeName must be an object type full name string).");
                 return nullptr;
             }
-            const StringAnsiView typeName(typeNameMember->value.GetString(), typeNameMember->value.GetStringLength());
+            const StringAnsiView typeName(typeNameMember->value.GetStringAnsiView());
 
             const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
             if (type)

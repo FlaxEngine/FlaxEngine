@@ -18,6 +18,7 @@ class GPUShader;
 class GPUTimerQuery;
 class GPUTexture;
 class GPUBuffer;
+class GPUSampler;
 class GPUPipelineState;
 class GPUSwapChain;
 class Shader;
@@ -224,10 +225,7 @@ public:
     /// <summary>
     /// Gets the amount of memory usage by all the GPU resources (in bytes).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE uint64 GetMemoryUsage() const
-    {
-        return Resources.GetMemoryUsage();
-    }
+    API_PROPERTY() uint64 GetMemoryUsage() const;
 
     /// <summary>
     /// Gets the default material.
@@ -287,10 +285,7 @@ public:
     /// Checks if GPU can render frame now (all data is ready), otherwise will skip frame rendering.
     /// </summary>
     /// <returns>True if skip rendering, otherwise false.</returns>
-    virtual bool CanDraw()
-    {
-        return true;
-    }
+    virtual bool CanDraw();
 
     /// <summary>
     /// Call frame rendering and process data using GPU
@@ -367,6 +362,12 @@ public:
     API_FUNCTION() virtual GPUBuffer* CreateBuffer(const StringView& name = StringView::Empty) = 0;
 
     /// <summary>
+    /// Creates the texture sampler.
+    /// </summary>
+    /// <returns>The sampler.</returns>
+    API_FUNCTION() virtual GPUSampler* CreateSampler() = 0;
+
+    /// <summary>
     /// Creates the native window swap chain.
     /// </summary>
     /// <param name="window">The output window.</param>
@@ -389,7 +390,7 @@ public:
 /// <summary>
 /// Utility structure to safety graphics device locking.
 /// </summary>
-struct GPUDeviceLock : NonCopyable
+struct FLAXENGINE_API GPUDeviceLock : NonCopyable
 {
     const GPUDevice* Device;
 

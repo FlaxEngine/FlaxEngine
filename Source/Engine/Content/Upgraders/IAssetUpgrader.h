@@ -2,12 +2,14 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// The assets upgrading objects interface.
 /// </summary>
-class IAssetUpgrader
+class FLAXENGINE_API IAssetUpgrader
 {
 public:
 
@@ -27,3 +29,5 @@ public:
     /// <returns>True if perform conversion, otherwise false.</returns>
     virtual bool ShouldUpgrade(uint32 serializedVersion) const = 0;
 };
+
+#endif

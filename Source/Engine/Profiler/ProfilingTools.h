@@ -116,7 +116,7 @@ public:
     /// <summary>
     /// The CPU threads profiler events.
     /// </summary>
-    API_FIELD(ReadOnly) static Array<ThreadStats> EventsCPU;
+    API_FIELD(ReadOnly) static Array<ThreadStats, InlinedAllocation<64>> EventsCPU;
 
     /// <summary>
     /// The GPU rendering profiler events.

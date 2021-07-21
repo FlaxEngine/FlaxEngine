@@ -55,8 +55,9 @@ namespace FlaxEngine.GUI
         /// </summary>
         public bool AutomaticInvalidate { get; set; } = true;
 
+#if FLAX_EDITOR
         private bool CanEditTextureSize => !_autoSize;
-
+#endif
         /// <summary>
         /// Invalidates the cached image of children controls and invokes the redraw to the texture.
         /// </summary>
@@ -94,6 +95,8 @@ namespace FlaxEngine.GUI
                     return;
                 }
             }
+            if (!_texture || !_texture.IsAllocated)
+                return;
 
             Profiler.BeginEventGPU("RenderToTextureControl");
             var context = GPUDevice.Instance.MainContext;
@@ -105,7 +108,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void DrawSelf()
+        public override void Draw()
         {
             // Draw cached texture
             if (_texture && !_invalid && !_isDuringTextureDraw)
@@ -119,7 +122,7 @@ namespace FlaxEngine.GUI
             }
 
             // Draw default UI directly
-            base.DrawSelf();
+            base.Draw();
         }
 
         /// <inheritdoc />

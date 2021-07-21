@@ -53,6 +53,17 @@ MonoObject* ScriptingObject::GetManagedInstance() const
     return _gcHandle ? mono_gchandle_get_target(_gcHandle) : nullptr;
 }
 
+MonoObject* ScriptingObject::GetOrCreateManagedInstance() const
+{
+    MonoObject* managedInstance = GetManagedInstance();
+    if (!managedInstance)
+    {
+        const_cast<ScriptingObject*>(this)->CreateManaged();
+        managedInstance = GetManagedInstance();
+    }
+    return managedInstance;
+}
+
 MClass* ScriptingObject::GetClass() const
 {
     return _type ? _type.GetType().ManagedClass : nullptr;
@@ -248,7 +259,7 @@ void ScriptingObject::OnDeleteObject()
 
 String ScriptingObject::ToString() const
 {
-    return _type ? _type.GetType().ManagedClass->ToString() : String::Empty;
+    return _type ? String(_type.GetType().ManagedClass->GetFullName()) : String::Empty;
 }
 
 ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)

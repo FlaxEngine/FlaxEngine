@@ -6,7 +6,10 @@
 #include "Engine/Particles/ParticlesSimulation.h"
 #include "Engine/Particles/ParticlesData.h"
 #include "Engine/Visject/VisjectGraph.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Threading/ThreadLocal.h"
 
+struct RenderContext;
 class ParticleEffect;
 class ParticleEmitterGraphCPU;
 class ParticleEmitterGraphCPUBase;
@@ -29,16 +32,6 @@ class ParticleEmitterGraphCPUExecutor;
 
 class ParticleEmitterGraphCPUBox : public VisjectGraphBox
 {
-public:
-
-    ParticleEmitterGraphCPUBox()
-    {
-    }
-
-    ParticleEmitterGraphCPUBox(void* parent, byte id, VariantType type)
-        : VisjectGraphBox(parent, id, type)
-    {
-    }
 };
 
 class ParticleEmitterGraphCPUNode : public ParticleEmitterGraphNode<VisjectGraphNode<ParticleEmitterGraphCPUBox>>
@@ -52,23 +45,13 @@ public:
 
     union
     {
-        /// <summary>
-        /// The spiral position module progress value.
-        /// </summary>
-        float SpiralModuleProgress;
-
-        struct
-        {
-            int32 RibbonOrderOffset;
-        } Ribbon;
+        int32 CustomDataOffset;
+        int32 RibbonOrderOffset;
     };
-
-public:
 
     /// <summary>
     /// True if this node uses the per-particle data resolve instead of optimized whole-collection fetch.
     /// </summary>
-    /// <returns>True if use per particle data resolve, otherwise can optimize resolve pass.</returns>
     FORCE_INLINE bool UsePerParticleDataResolve() const
     {
         return UsesParticleData || !IsConstant;
@@ -81,32 +64,31 @@ public:
 class ParticleEmitterGraphCPU : public ParticleEmitterGraph<VisjectGraph<ParticleEmitterGraphCPUNode, ParticleEmitterGraphCPUBox, ParticleSystemParameter>, ParticleEmitterGraphCPUNode, Variant>
 {
     friend ParticleEmitterGraphCPUExecutor;
+    typedef ParticleEmitterGraph<VisjectGraph<ParticleEmitterGraphCPUNode, ParticleEmitterGraphCPUBox, ParticleSystemParameter>, ParticleEmitterGraphCPUNode, Variant> Base;
 private:
 
+    struct NodeState
+    {
+        union
+        {
+            int32 SpiralProgress;
+        };
+    };
     Array<byte> _defaultParticleData;
 
 public:
+
+    // Size of the custom pre-node data buffer used for state tracking (eg. position on spiral arc progression).
+    int32 CustomDataSize = 0;
 
     /// <summary>
     /// Creates the default surface graph (the main root node) for the particle emitter. Ensure to dispose the previous graph data before.
     /// </summary>
     void CreateDefault();
 
-public:
-
-    /// <summary>
-    /// Determines whenever this emitter uses lights rendering.
-    /// </summary>
-    /// <returns>True if emitter uses lights rendering, otherwise false.</returns>
-    FORCE_INLINE bool UsesLightRendering() const
-    {
-        return LightModules.HasItems();
-    }
-
     /// <summary>
     /// Gets the position attribute offset from the particle data layout start (in bytes).
     /// </summary>
-    /// <returns>The offset in bytes.</returns>
     FORCE_INLINE int32 GetPositionAttributeOffset() const
     {
         return _attrPosition != -1 ? Layout.Attributes[_attrPosition].Offset : -1;
@@ -115,7 +97,6 @@ public:
     /// <summary>
     /// Gets the age attribute offset from the particle data layout start (in bytes).
     /// </summary>
-    /// <returns>The offset in bytes.</returns>
     FORCE_INLINE int32 GetAgeAttributeOffset() const
     {
         return _attrAge != -1 ? Layout.Attributes[_attrAge].Offset : -1;
@@ -125,17 +106,23 @@ public:
 
     // [ParticleEmitterGraph]
     bool Load(ReadStream* stream, bool loadMeta) override;
-
-    bool onNodeLoaded(Node* n) override
-    {
-        ParticleEmitterGraph::onNodeLoaded(n);
-        return VisjectGraph::onNodeLoaded(n);
-    }
-
-protected:
-
-    // [ParticleEmitterGraph]
     void InitializeNode(Node* node) override;
+};
+
+/// <summary>
+/// The CPU particles emitter graph evaluation context.
+/// </summary>
+struct ParticleEmitterGraphCPUContext
+{
+    float DeltaTime;
+    uint32 ParticleIndex;
+    ParticleEmitterInstance* Data;
+    ParticleEmitter* Emitter;
+    ParticleEffect* Effect;
+    class SceneRenderTask* ViewTask;
+    Array<VisjectExecutor::Node*, FixedAllocation<PARTICLE_EMITTER_MAX_CALL_STACK>> CallStack;
+    Array<VisjectExecutor::Graph*, FixedAllocation<32>> GraphStack;
+    Dictionary<VisjectExecutor::Node*, VisjectExecutor::Graph*> Functions;
 };
 
 /// <summary>
@@ -144,18 +131,10 @@ protected:
 class ParticleEmitterGraphCPUExecutor : public VisjectExecutor
 {
 private:
-
-    // Runtime
     ParticleEmitterGraphCPU& _graph;
-    float _deltaTime;
-    uint32 _particleIndex;
-    ParticleEmitterInstance* _data;
-    ParticleEmitter* _emitter;
-    ParticleEffect* _effect;
-    class SceneRenderTask* _viewTask;
-    Array<Node*, FixedAllocation<PARTICLE_EMITTER_MAX_CALL_STACK>> _callStack;
-    Array<Graph*, FixedAllocation<32>> _graphStack;
-    Dictionary<Node*, ParticleEmitterGraphCPU*> _functions;
+
+    // Per-thread context to allow async execution
+    static ThreadLocal<ParticleEmitterGraphCPUContext> Context;
 
 public:
 
@@ -164,11 +143,6 @@ public:
     /// </summary>
     /// <param name="graph">The graph to execute.</param>
     explicit ParticleEmitterGraphCPUExecutor(ParticleEmitterGraphCPU& graph);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ParticleEmitterGraphCPUExecutor"/> class.
-    /// </summary>
-    ~ParticleEmitterGraphCPUExecutor();
 
     /// <summary>
     /// Computes the local bounds of the particle emitter instance.
@@ -212,6 +186,7 @@ public:
 
 private:
 
+    void Init(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, float dt = 0.0f);
     Value eatBox(Node* caller, Box* box) override;
     Graph* GetCurrentGraph() const override;
 
@@ -224,17 +199,7 @@ private:
     int32 ProcessSpawnModule(int32 index);
     void ProcessModule(ParticleEmitterGraphCPUNode* node, int32 particlesStart, int32 particlesEnd);
 
-    Value TryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
-    {
-        const auto parentNode = box->GetParent<Node>();
-        if (box->HasConnection())
-            return eatBox(parentNode, box->FirstConnection());
-        if (parentNode->Values.Count() > defaultValueBoxIndex)
-            return parentNode->Values[defaultValueBoxIndex];
-        return defaultValue;
-    }
-
-    Value GetValue(Box* box, int32 defaultValueBoxIndex)
+    FORCE_INLINE Value GetValue(Box* box, int32 defaultValueBoxIndex)
     {
         const auto parentNode = box->GetParent<Node>();
         if (box->HasConnection())

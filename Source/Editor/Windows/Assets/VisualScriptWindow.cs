@@ -85,7 +85,7 @@ namespace FlaxEditor.Windows.Assets
 
             private static bool IsValid(Type type)
             {
-                return type.IsPublic && !type.IsSealed && !type.IsGenericType;
+                return (type.IsPublic || type.IsNestedPublic) && !type.IsSealed && !type.IsGenericType;
             }
 
             public void OnLoad(VisualScriptWindow window)
@@ -116,7 +116,7 @@ namespace FlaxEditor.Windows.Assets
 
                 // Options button
                 const float buttonSize = 14;
-                var optionsButton = new ClickableImage
+                var optionsButton = new Image
                 {
                     TooltipText = "Script options",
                     AutoFocus = true,
@@ -167,6 +167,8 @@ namespace FlaxEditor.Windows.Assets
             /// <inheritdoc />
             public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
 
+            private Control _overrideButton;
+
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
             {
@@ -177,6 +179,21 @@ namespace FlaxEditor.Windows.Assets
 
                 var group = layout.Group("Functions");
                 var nodes = window.VisjectSurface.Nodes;
+
+                var grid = group.CustomContainer<UniformGridPanel>();
+                var gridControl = grid.CustomControl;
+                gridControl.ClipChildren = false;
+                gridControl.Height = Button.DefaultHeight;
+                gridControl.SlotsHorizontally = 2;
+                gridControl.SlotsVertically = 1;
+                
+                var addOverride = grid.Button("Add Override");
+                addOverride.Button.Clicked += OnOverrideMethodClicked;
+                // TODO: Add sender arg to button clicked action?
+                _overrideButton = addOverride.Control;
+
+                var addFuncction = grid.Button("Add Function");
+                addFuncction.Button.Clicked += OnAddNewFunctionClicked;
 
                 // List of functions in the graph
                 for (int i = 0; i < nodes.Count; i++)
@@ -192,60 +209,17 @@ namespace FlaxEditor.Windows.Assets
                     }
                     else if (node is Surface.Archetypes.Function.MethodOverrideNode overrideNode)
                     {
-                        var label = group.ClickableLabel(overrideNode.Title + " (override)").CustomControl;
+                        var label = group.ClickableLabel($"{overrideNode.Title} (override)").CustomControl;
                         label.TextColorHighlighted = Color.FromBgra(0xFFA0A0A0);
                         label.TooltipText = overrideNode.TooltipText;
                         label.DoubleClick += () => ((VisualScriptWindow)Values[0]).Surface.FocusNode(overrideNode);
                         label.RightClick += () => ShowContextMenu(overrideNode, label);
                     }
                 }
-
-                // New function button
-                const float groupPanelButtonSize = 14;
-                var addNewFunction = new ClickableImage
-                {
-                    TooltipText = "Add new function",
-                    AutoFocus = true,
-                    AnchorPreset = AnchorPresets.TopRight,
-                    Parent = group.Panel,
-                    Bounds = new Rectangle(group.Panel.Width - groupPanelButtonSize, 0, groupPanelButtonSize, groupPanelButtonSize),
-                    IsScrollable = false,
-                    Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                    Margin = new Margin(1),
-                    Brush = new SpriteBrush(Editor.Instance.Icons.Add48),
-                };
-                addNewFunction.Clicked += OnAddNewFunctionClicked;
-
-                // Override method button
-                var overrideMethod = new ClickableImage
-                {
-                    TooltipText = "Override method",
-                    AutoFocus = true,
-                    AnchorPreset = AnchorPresets.TopRight,
-                    Parent = group.Panel,
-                    Bounds = new Rectangle(group.Panel.Width - groupPanelButtonSize * 2, 0, groupPanelButtonSize, groupPanelButtonSize),
-                    IsScrollable = false,
-                    Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                    Margin = new Margin(1),
-                    Brush = new SpriteBrush(Editor.Instance.Icons.Import32),
-                };
-                overrideMethod.Clicked += OnOverrideMethodClicked;
-            }
-
-            private void OnAddNewFunctionClicked(Image image, MouseButton button)
-            {
-                if (button != MouseButton.Left)
-                    return;
-                var surface = ((VisualScriptWindow)Values[0]).Surface;
-                var surfaceBounds = surface.AllNodesBounds;
-                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50));
-                surface.Select(node);
             }
 
             private void ShowContextMenu(SurfaceNode node, ClickableLabel label)
             {
-                ((VisualScriptWindow)Values[0]).Surface.FocusNode(node);
                 var cm = new ContextMenu();
                 cm.AddButton("Show", () => ((VisualScriptWindow)Values[0]).Surface.FocusNode(node)).Icon = Editor.Instance.Icons.Search12;
                 cm.AddButton("Delete", () => ((VisualScriptWindow)Values[0]).Surface.Delete(node)).Icon = Editor.Instance.Icons.Cross12;
@@ -253,11 +227,17 @@ namespace FlaxEditor.Windows.Assets
                 cm.Show(label, new Vector2(0, label.Height));
             }
 
-            private void OnOverrideMethodClicked(Image image, MouseButton button)
+            private void OnAddNewFunctionClicked()
             {
-                if (button != MouseButton.Left)
-                    return;
+                var surface = ((VisualScriptWindow)Values[0]).Surface;
+                var surfaceBounds = surface.AllNodesBounds;
+                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
+                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50));
+                surface.Select(node);
+            }
 
+            private void OnOverrideMethodClicked()
+            {
                 var cm = new ContextMenu();
                 var window = (VisualScriptWindow)Values[0];
                 var scriptMeta = window.Asset.Meta;
@@ -310,7 +290,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     cm.AddButton("Nothing to override");
                 }
-                cm.Show(image, new Vector2(0, image.Height));
+                cm.Show(_overrideButton, new Vector2(0, _overrideButton.Height));
             }
         }
 
@@ -385,23 +365,23 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_properties);
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo32, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo32, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.PageScale32, ShowWholeGraph).LinkTooltip("Show whole graph");
+            _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs32, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
             _debugToolstripControls = new[]
             {
                 _toolstrip.AddSeparator(),
-                _toolstrip.AddButton(editor.Icons.Play32, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
-                _toolstrip.AddButton(editor.Icons.Find32, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
-                _toolstrip.AddButton(editor.Icons.ArrowRight32, OnDebuggerStepOver).LinkTooltip("Step Over (F10)"),
-                _toolstrip.AddButton(editor.Icons.ArrowDown32, OnDebuggerStepInto).LinkTooltip("Step Into (F11)"),
-                _toolstrip.AddButton(editor.Icons.ArrowUp32, OnDebuggerStepOut).LinkTooltip("Step Out (Shift+F11)"),
-                _toolstrip.AddButton(editor.Icons.Stop32, OnDebuggerStop).LinkTooltip("Stop debugging"),
+                _toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                _toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
+                _toolstrip.AddButton(editor.Icons.Right64, OnDebuggerStepOver).LinkTooltip("Step Over (F10)"),
+                _toolstrip.AddButton(editor.Icons.Down64, OnDebuggerStepInto).LinkTooltip("Step Into (F11)"),
+                _toolstrip.AddButton(editor.Icons.Up64, OnDebuggerStepOut).LinkTooltip("Step Out (Shift+F11)"),
+                _toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };
             foreach (var control in _debugToolstripControls)
                 control.Visible = false;

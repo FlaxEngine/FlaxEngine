@@ -918,8 +918,7 @@ void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const 
 
 void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Quaternion& keyframe)
 {
-    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, localFrame.Scaling));
-    //frameTrans.NormalizeScale();
+    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, {1.0, 1.0, 1.0 }));
     Quaternion::RotationMatrix(frameTrans, keyframe);
 }
 
@@ -1085,10 +1084,12 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, con
             aFilename.toString(filenameData);
             if (outputPath.IsEmpty())
             {
-                outputPath = StringUtils::GetDirectoryName(String(path)) / TEXT("textures");
+                String pathStr(path);
+                outputPath = String(StringUtils::GetDirectoryName(pathStr)) / TEXT("textures");
                 FileSystem::CreateDirectory(outputPath);
             }
-            String embeddedPath = outputPath / StringUtils::GetFileName(String(filenameData));
+            const String filenameStr(filenameData);
+            String embeddedPath = outputPath / StringUtils::GetFileName(filenameStr);
             if (FileSystem::FileExists(embeddedPath))
                 continue;
             LOG(Info, "Extracing embedded resource to {0}", embeddedPath);

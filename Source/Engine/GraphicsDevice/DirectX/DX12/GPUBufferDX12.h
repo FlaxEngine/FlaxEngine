@@ -27,6 +27,8 @@ public:
     /// </summary>
     GPUBufferViewDX12()
     {
+        SrvDimension = D3D12_SRV_DIMENSION_BUFFER;
+        UavDimension = D3D12_UAV_DIMENSION_BUFFER;
     }
 
     /// <summary>
@@ -65,34 +67,14 @@ public:
     /// Sets the shader resource view.
     /// </summary>
     /// <param name="srvDesc">The SRV desc.</param>
-    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc)
-    {
-        if (srvDesc)
-        {
-            _srv.CreateSRV(_device, _owner->GetResource(), srvDesc);
-        }
-        else
-        {
-            _srv.Release();
-        }
-    }
+    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
 
     /// <summary>
     /// Sets the unordered access view.
     /// </summary>
     /// <param name="uavDesc">The UAV desc.</param>
     /// <param name="counterResource">The counter buffer resource.</param>
-    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc, ID3D12Resource* counterResource = nullptr)
-    {
-        if (uavDesc)
-        {
-            _uav.CreateUAV(_device, _owner->GetResource(), uavDesc, counterResource);
-        }
-        else
-        {
-            _uav.Release();
-        }
-    }
+    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource = nullptr);
 
 public:
 
@@ -107,17 +89,14 @@ public:
     {
         return false;
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return _owner;
@@ -173,19 +152,16 @@ public:
     /// <summary>
     /// Gets buffer size in a GPU memory in bytes.
     /// </summary>
-    /// <returns>Size in bytes.</returns>
     uint64 GetSizeInBytes() const;
 
     /// <summary>
     /// Gets buffer location in a GPU memory.
     /// </summary>
-    /// <returns>GPU memory location.</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetLocation() const;
 
     /// <summary>
     /// Gets the counter resource.
     /// </summary>
-    /// <returns>The internal counter buffer.</returns>
     FORCE_INLINE GPUBufferDX12* GetCounter() const
     {
         return _counter;

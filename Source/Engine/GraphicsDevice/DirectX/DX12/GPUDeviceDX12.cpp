@@ -9,6 +9,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUTimerQueryDX12.h"
 #include "GPUBufferDX12.h"
+#include "GPUSamplerDX12.h"
 #include "GPUSwapChainDX12.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
@@ -63,6 +64,28 @@ GPUDevice* GPUDeviceDX12::Create()
         debugLayer->EnableDebugLayer();
         LOG(Info, "DirectX debugging layer enabled");
     }
+#if 0
+#ifdef __ID3D12Debug1_FWD_DEFINED__
+    ComPtr<ID3D12Debug1> debugLayer1;
+    D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
+    if (debugLayer1)
+    {
+        // GPU-based validation and synchronized validation for debugging only
+        debugLayer1->SetEnableGPUBasedValidation(true);
+        debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
+    }
+#endif
+#endif
+#ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
+    ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
+    VALIDATE_DIRECTX_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings)));
+    if (dredSettings)
+    {
+        // Turn on AutoBreadcrumbs and Page Fault reporting
+        dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+    }
+#endif
 #endif
 
     // Create DXGI factory (CreateDXGIFactory2 is supported on Windows 8.1 or newer)
@@ -169,7 +192,9 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
     , Heap_DSV(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64, false)
-    , RingHeap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 64 * 1024, true)
+    , Heap_Sampler(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, false)
+    , RingHeap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 512 * 1024, true)
+    , RingHeap_Sampler(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1 * 1024, true)
 {
 }
 
@@ -305,7 +330,6 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Resource Binding Tier: {0}", options.ResourceBindingTier);
     LOG(Info, "Conservative Rasterization Tier: {0}", options.ConservativeRasterizationTier);
     LOG(Info, "Resource Heap Tier: {0}", options.ResourceHeapTier);
-    LOG(Info, "ROVs Supported: {0}", options.ROVsSupported != 0);
 
     // Init device limits
     {
@@ -321,6 +345,7 @@ bool GPUDeviceDX12::Init()
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = true;
+        limits.HasTypedUAVLoad = options.TypedUAVLoadAdditionalFormats != 0;
         limits.MaximumMipLevelsCount = D3D12_REQ_MIP_LEVELS;
         limits.MaximumTexture1DSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
         limits.MaximumTexture1DArraySize = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
@@ -328,6 +353,7 @@ bool GPUDeviceDX12::Init()
         limits.MaximumTexture2DArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
         limits.MaximumTexture3DSize = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
         limits.MaximumTextureCubeSize = D3D12_REQ_TEXTURECUBE_DIMENSION;
+        limits.MaximumSamplerAnisotropy = D3D12_DEFAULT_MAX_ANISOTROPY;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -350,32 +376,80 @@ bool GPUDeviceDX12::Init()
 	_device->SetStablePowerState(TRUE);
 #endif
 
-    // Create commands queue
+    // Setup resources
     _commandQueue = New<CommandQueueDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (_commandQueue->Init())
         return true;
-
-    // Create rendering main context
     _mainContext = New<GPUContextDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-    // Create descriptors heaps
-    Heap_CBV_SRV_UAV.Init();
-    Heap_RTV.Init();
-    Heap_DSV.Init();
     if (RingHeap_CBV_SRV_UAV.Init())
+        return true;
+    if (RingHeap_Sampler.Init())
         return true;
 
     // Create empty views
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    for (int32 i = 0; i < ARRAY_COUNT(_nullSrv); i++)
     {
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        srvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Texture2D.MostDetailedMip = 0;
-        srvDesc.Texture2D.MipLevels = 1;
-        srvDesc.Texture2D.PlaneSlice = 0;
-        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-        _nullSrv.CreateSRV(this, nullptr, &srvDesc);
+        srvDesc.ViewDimension = (D3D12_SRV_DIMENSION)i;
+        switch (srvDesc.ViewDimension)
+        {
+        case D3D12_SRV_DIMENSION_BUFFER:
+            srvDesc.Buffer.FirstElement = 0;
+            srvDesc.Buffer.NumElements = 0;
+            srvDesc.Buffer.StructureByteStride = 0;
+            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE1D:
+            srvDesc.Texture1D.MostDetailedMip = 0;
+            srvDesc.Texture1D.MipLevels = 1;
+            srvDesc.Texture1D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
+            srvDesc.Texture1DArray.MostDetailedMip = 0;
+            srvDesc.Texture1DArray.MipLevels = 1;
+            srvDesc.Texture1DArray.FirstArraySlice = 0;
+            srvDesc.Texture1DArray.ArraySize = 1;
+            srvDesc.Texture1DArray.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_UNKNOWN: // Map Unknown into Texture2D
+        case D3D12_SRV_DIMENSION_TEXTURE2D:
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MostDetailedMip = 0;
+            srvDesc.Texture2D.MipLevels = 1;
+            srvDesc.Texture2D.PlaneSlice = 0;
+            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+            srvDesc.Texture2DArray.MostDetailedMip = 0;
+            srvDesc.Texture2DArray.MipLevels = 1;
+            srvDesc.Texture2DArray.FirstArraySlice = 0;
+            srvDesc.Texture2DArray.ArraySize = 0;
+            srvDesc.Texture2DArray.PlaneSlice = 0;
+            srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE3D:
+            srvDesc.Texture3D.MostDetailedMip = 0;
+            srvDesc.Texture3D.MipLevels = 1;
+            srvDesc.Texture3D.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBE:
+            srvDesc.TextureCube.MostDetailedMip = 0;
+            srvDesc.TextureCube.MipLevels = 1;
+            srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
+            srvDesc.TextureCubeArray.MostDetailedMip = 0;
+            srvDesc.TextureCubeArray.MipLevels = 1;
+            srvDesc.TextureCubeArray.First2DArrayFace = 0;
+            srvDesc.TextureCubeArray.NumCubes = 0;
+            srvDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
+            break;
+        default:
+            continue;
+        }
+        _nullSrv[i].CreateSRV(this, nullptr, &srvDesc);
     }
     {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
@@ -390,7 +464,7 @@ bool GPUDeviceDX12::Init()
     // TODO: maybe create set of different root signatures? for UAVs, for compute, for simple drawing, for post fx?
     {
         // Descriptor tables
-        D3D12_DESCRIPTOR_RANGE r[2];
+        D3D12_DESCRIPTOR_RANGE r[3];
         // TODO: separate ranges for pixel/vertex visibility and one shared for all?
         {
             D3D12_DESCRIPTOR_RANGE& range = r[0];
@@ -403,15 +477,22 @@ bool GPUDeviceDX12::Init()
         {
             D3D12_DESCRIPTOR_RANGE& range = r[1];
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-            range.NumDescriptors = GPU_MAX_UA_BINDED + 1; // the last (additional) UAV register is used as a UAV output (hidden internally)
+            range.NumDescriptors = GPU_MAX_UA_BINDED;
             range.BaseShaderRegister = 0;
             range.RegisterSpace = 0;
             range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
         }
-        static_assert(GPU_MAX_UA_BINDED == 2, "DX12 backend uses hardcoded single UAV register slot. Update code to support more.");
+        {
+            D3D12_DESCRIPTOR_RANGE& range = r[2];
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+            range.NumDescriptors = GPU_MAX_SAMPLER_BINDED - GPU_STATIC_SAMPLERS_COUNT;
+            range.BaseShaderRegister = GPU_STATIC_SAMPLERS_COUNT;
+            range.RegisterSpace = 0;
+            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+        }
 
         // Root parameters
-        D3D12_ROOT_PARAMETER rootParameters[4];
+        D3D12_ROOT_PARAMETER rootParameters[5];
         {
             D3D12_ROOT_PARAMETER& rootParam = rootParameters[0];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -440,11 +521,18 @@ bool GPUDeviceDX12::Init()
             rootParam.DescriptorTable.NumDescriptorRanges = 1;
             rootParam.DescriptorTable.pDescriptorRanges = &r[1];
         }
-
-        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
+        {
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[4];
+            rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+            rootParam.DescriptorTable.NumDescriptorRanges = 1;
+            rootParam.DescriptorTable.pDescriptorRanges = &r[2];
+        }
 
         // Static samplers
         D3D12_STATIC_SAMPLER_DESC staticSamplers[6];
+        static_assert(GPU_STATIC_SAMPLERS_COUNT == ARRAY_COUNT(staticSamplers), "Update static samplers setup.");
+        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
         // Linear Clamp
         staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -574,15 +662,11 @@ bool GPUDeviceDX12::Init()
 
 void GPUDeviceDX12::DrawBegin()
 {
-    // Wait for the GPU to have at least one backbuffer to render to
-    /*{
-        PROFILE_CPU_NAMED("Wait For Fence");
-        const uint64 nextFenceValue = _commandQueue->GetNextFenceValue();
-        if (nextFenceValue >= DX12_BACK_BUFFER_COUNT)
-        {
-            _commandQueue->WaitForFence(nextFenceValue - DX12_BACK_BUFFER_COUNT);
-        }
-    }*/
+    {
+        PROFILE_CPU_NAMED("Wait For GPU");
+        //_commandQueue->WaitForGPU();
+        _commandQueue->WaitForFence(_mainContext->FrameFenceValues[1]);
+    }
 
     // Base
     GPUDeviceDX::DrawBegin();
@@ -606,9 +690,9 @@ GPUDeviceDX12::~GPUDeviceDX12()
     Dispose();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullSRV() const
+D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullSRV(D3D12_SRV_DIMENSION dimension) const
 {
-    return _nullSrv.CPU();
+    return _nullSrv[dimension].CPU();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE GPUDeviceDX12::NullUAV() const
@@ -647,14 +731,17 @@ void GPUDeviceDX12::Dispose()
     updateRes2Dispose();
 
     // Clear pipeline objects
-    _nullSrv.Release();
+    for (auto& srv : _nullSrv)
+        srv.Release();
     _nullUav.Release();
     TimestampQueryHeap.Destroy();
     DX_SAFE_RELEASE_CHECK(_rootSignature, 0);
     Heap_CBV_SRV_UAV.ReleaseGPU();
     Heap_RTV.ReleaseGPU();
     Heap_DSV.ReleaseGPU();
+    Heap_Sampler.ReleaseGPU();
     RingHeap_CBV_SRV_UAV.ReleaseGPU();
+    RingHeap_Sampler.ReleaseGPU();
     SAFE_DELETE(UploadBuffer);
     SAFE_DELETE(DrawIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
@@ -702,6 +789,11 @@ GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
     return New<GPUBufferDX12>(this, name);
 }
 
+GPUSampler* GPUDeviceDX12::CreateSampler()
+{
+    return New<GPUSamplerDX12>(this);
+}
+
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 {
     return New<GPUSwapChainDX12>(this, window);
@@ -709,7 +801,6 @@ GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)
 {
-    ASSERT(safeFrameCount < 32);
     if (resource == nullptr)
         return;
 
@@ -735,7 +826,6 @@ void GPUDeviceDX12::updateRes2Dispose()
     for (int32 i = _res2Dispose.Count() - 1; i >= 0 && i < _res2Dispose.Count(); i--)
     {
         const DisposeResourceEntry& entry = _res2Dispose[i];
-
         if (entry.TargetFrame <= currentFrame)
         {
             auto refs = entry.Resource->Release();

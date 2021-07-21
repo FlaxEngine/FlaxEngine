@@ -2,39 +2,31 @@
 
 #pragma once
 
-#include "GPUTexture.h"
 #include "ITextureOwner.h"
 #include "Engine/Streaming/StreamableResource.h"
 #include "Types.h"
 
 /// <summary>
-/// GPU texture object which can change it's resolution (quality) at runtime
+/// GPU texture object which can change it's resolution (quality) at runtime.
 /// </summary>
 class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
 {
+    friend class TextureBase;
+    friend class TexturesStreamingHandler;
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
-
 protected:
 
     ITextureOwner* _owner;
     GPUTexture* _texture;
     TextureHeader _header;
     volatile mutable int64 _streamingTasksCount;
+    int32 _minMipCountBlockCompressed;
     bool _isBlockCompressed;
 
 public:
 
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="owner">Parent object</param>
-    /// <param name="name">Texture object name</param>
     StreamingTexture(ITextureOwner* owner, const String& name);
-
-    /// <summary>
-    /// Destructor
-    /// </summary>
     ~StreamingTexture();
 
 public:
@@ -42,31 +34,23 @@ public:
     /// <summary>
     /// Gets the owner.
     /// </summary>
-    /// <returns>The owner.</returns>
     FORCE_INLINE ITextureOwner* GetOwner() const
     {
         return _owner;
     }
 
     /// <summary>
-    /// Gets texture object handle
+    /// Gets texture object handle.
     /// </summary>
-    /// <returns>Texture object</returns>
     FORCE_INLINE GPUTexture* GetTexture() const
     {
         return _texture;
     }
 
     /// <summary>
-    /// Gets texture size of Vector2::Zero if not loaded
+    /// Gets texture size of Vector2::Zero if not loaded.
     /// </summary>
-    /// <returns>Texture size</returns>
-    FORCE_INLINE Vector2 Size() const
-    {
-        return _texture->Size();
-    }
-
-public:
+    Vector2 Size() const;
 
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 
@@ -79,7 +63,6 @@ public:
     /// <summary>
     /// Gets total texture width (in texels)
     /// </summary>
-    /// <returns>Texture width</returns>
     FORCE_INLINE int32 TotalWidth() const
     {
         return _header.Width;
@@ -88,7 +71,6 @@ public:
     /// <summary>
     /// Gets total texture height (in texels)
     /// </summary>
-    /// <returns>Texture width</returns>
     FORCE_INLINE int32 TotalHeight() const
     {
         return _header.Height;
@@ -97,7 +79,6 @@ public:
     /// <summary>
     /// Gets total texture array size
     /// </summary>
-    /// <returns>Texture array size</returns>
     FORCE_INLINE int32 TotalArraySize() const
     {
         return IsCubeMap() ? 6 : 1;
@@ -106,7 +87,6 @@ public:
     /// <summary>
     /// Gets total texture mip levels count
     /// </summary>
-    /// <returns>Texture mip levels</returns>
     FORCE_INLINE int32 TotalMipLevels() const
     {
         return _header.MipLevels;
@@ -115,7 +95,6 @@ public:
     /// <summary>
     /// Returns texture format type
     /// </summary>
-    /// <returns>Texture format type</returns>
     FORCE_INLINE TextureFormatType GetFormatType() const
     {
         return _header.Type;
@@ -124,7 +103,6 @@ public:
     /// <summary>
     /// Returns true if it's a cube map texture
     /// </summary>
-    /// <returns>True if i's a cubemap</returns>
     FORCE_INLINE bool IsCubeMap() const
     {
         return _header.IsCubeMap;
@@ -133,7 +111,6 @@ public:
     /// <summary>
     /// Returns true if texture cannot be used during GPU resources streaming system
     /// </summary>
-    /// <returns>True if texture cannot be used during GPU resources streaming system</returns>
     FORCE_INLINE bool NeverStream() const
     {
         return _header.NeverStream;
@@ -142,18 +119,9 @@ public:
     /// <summary>
     /// Gets the texture header.
     /// </summary>
-    /// <returns>Header</returns>
     FORCE_INLINE const TextureHeader* GetHeader() const
     {
         return &_header;
-    }
-
-    /// <summary>
-    /// Gets a boolean indicating whether this <see cref="StreamingTexture"/> is a using a block compress format (BC1, BC2, BC3, BC4, BC5, BC6H, BC7).
-    /// </summary>
-    FORCE_INLINE bool IsBlockCompressed() const
-    {
-        return _isBlockCompressed;
     }
 
 public:
@@ -163,22 +131,14 @@ public:
     /// </summary>
     /// <param name="textureMipIndex">Index of the texture mip.</param>
     /// <returns>The index of the mip map.</returns>
-    FORCE_INLINE int32 TextureMipIndexToTotalIndex(int32 textureMipIndex) const
-    {
-        const int32 missingMips = TotalMipLevels() - _texture->MipLevels();
-        return textureMipIndex + missingMips;
-    }
+    int32 TextureMipIndexToTotalIndex(int32 textureMipIndex) const;
 
     /// <summary>
     /// Converts absolute mip map index to the allocated texture mip index.
     /// </summary>
     /// <param name="mipIndex">Index of the texture mip.</param>
     /// <returns>The index of the mip map.</returns>
-    FORCE_INLINE int32 TotalIndexToTextureMipIndex(int32 mipIndex) const
-    {
-        const int32 missingMips = TotalMipLevels() - _texture->MipLevels();
-        return mipIndex - missingMips;
-    }
+    int32 TotalIndexToTextureMipIndex(int32 mipIndex) const;
 
 public:
 
@@ -211,27 +171,12 @@ public:
 public:
 
     // [Object]
-    String ToString() const override
-    {
-        return _texture->ToString();
-    }
+    String ToString() const override;
 
     // [StreamableResource]
-    int32 GetMaxResidency() const override
-    {
-        return _header.MipLevels;
-    }
-
-    int32 GetCurrentResidency() const override
-    {
-        return _texture->ResidentMipLevels();
-    }
-
-    int32 GetAllocatedResidency() const override
-    {
-        return _texture->MipLevels();
-    }
-
+    int32 GetMaxResidency() const override;
+    int32 GetCurrentResidency() const override;
+    int32 GetAllocatedResidency() const override;
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;

@@ -2,10 +2,13 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Threading/Threading.h"
 
 /// <summary>
 /// Skeleton Mask asset upgrader.
@@ -97,3 +100,5 @@ private:
         return false;
     }
 };
+
+#endif

@@ -348,7 +348,7 @@ namespace FlaxEditor.GUI.Docking
                 // Cache data
                 IsMouseRightButtonDown = true;
                 if (MouseDownWindow != null)
-                    _panel.SelectTab(MouseDownWindow);
+                    _panel.SelectTab(MouseDownWindow, false);
             }
             else if (button == MouseButton.Middle)
             {

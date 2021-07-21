@@ -8,6 +8,7 @@
 #include "ShaderGraphValue.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Utilities/TextWriter.h"
 #include "Engine/Graphics/Materials/MaterialParams.h"
 #include "Engine/Content/AssetsContainer.h"
@@ -284,6 +285,7 @@ protected:
     SerializedMaterialParam findOrAddNormalMap(const Guid& id);
     SerializedMaterialParam findOrAddCubeTexture(const Guid& id);
     SerializedMaterialParam findOrAddSceneTexture(MaterialSceneTextures type);
+    SerializedMaterialParam& findOrAddTextureGroupSampler(int32 index);
 
     static String getLocalName(int32 index);
     static String getParamName(int32 index);

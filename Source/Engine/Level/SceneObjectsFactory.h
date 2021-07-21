@@ -11,7 +11,7 @@ class SceneObjectsFactory
 {
 public:
 
-    typedef Dictionary<Actor*, const rapidjson_flax::Value*> ActorToRemovedObjectsDataLookup;
+    typedef Dictionary<Actor*, const rapidjson_flax::Value*, HeapAllocation> ActorToRemovedObjectsDataLookup;
 
 public:
 

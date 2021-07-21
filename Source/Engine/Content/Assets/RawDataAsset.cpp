@@ -3,8 +3,11 @@
 #include "RawDataAsset.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Platform/FileSystem.h"
+#if USE_EDITOR
+#include "Engine/Threading/Threading.h"
+#endif
 
-REGISTER_BINARY_ASSET(RawDataAsset, "FlaxEngine.RawDataAsset", nullptr, true);
+REGISTER_BINARY_ASSET(RawDataAsset, "FlaxEngine.RawDataAsset", true);
 
 RawDataAsset::RawDataAsset(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

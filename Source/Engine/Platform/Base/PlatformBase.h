@@ -299,7 +299,8 @@ public:
     static void Prefetch(void const* ptr) = delete;
 
 #if COMPILE_WITH_PROFILER
-    static void TrackAllocation(uint64 size);
+    static void OnMemoryAlloc(void* ptr, uint64 size);
+    static void OnMemoryFree(void* ptr);
 #endif
 
     /// <summary>
@@ -704,7 +705,7 @@ public:
     /// Gets the process environment variables (pairs of key and value).
     /// </summary>
     /// <param name="result">The result.</param>
-    static void GetEnvironmentVariables(Dictionary<String, String>& result);
+    static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
 
     /// <summary>
     /// Gets the environment variable value.
@@ -752,7 +753,7 @@ public:
     /// <param name="environment">The process environment variables. If null the current process environment is used.</param>
     /// <param name="hiddenWindow">True if start process with hidden window.</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow = true);
+    API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
 
     /// <summary>
     /// Creates the window.

@@ -158,11 +158,20 @@ namespace FlaxEngine
 
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            Localization.LocalizationChanged += OnLocalizationChanged;
 
+            OnLocalizationChanged();
             if (!Engine.IsEditor)
             {
                 CreateGuiStyle();
             }
+        }
+
+        private static void OnLocalizationChanged()
+        {
+            var currentThread = Thread.CurrentThread;
+            currentThread.CurrentUICulture = Localization.CurrentLanguage;
+            currentThread.CurrentCulture = Localization.CurrentCulture;
         }
 
         /// <summary>
@@ -212,6 +221,7 @@ namespace FlaxEngine
                 TextBoxBackground = Color.FromBgra(0xFF333337),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
+                CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 SharedTooltip = new Tooltip(),
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;

@@ -4,8 +4,9 @@
 
 #include "Types.h"
 #include "Collisions.h"
-#include "Engine/Core/Types/Pair.h"
 #include "Colliders/Collider.h"
+#include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/PhysX/PxSimulationEventCallback.h>
 
 /// <summary>
@@ -59,19 +60,7 @@ public:
     /// <summary>
     /// Clears the data.
     /// </summary>
-    void Clear()
-    {
-        PrevCollisions = Collisions;
-        Collisions.Clear();
-
-        NewCollisions.Clear();
-        RemovedCollisions.Clear();
-
-        NewTriggerPairs.Clear();
-        LostTriggerPairs.Clear();
-
-        BrokenJoints.Clear();
-    }
+    void Clear();
 
     /// <summary>
     /// Generates the new/old/removed collisions and a valid trigger pairs.

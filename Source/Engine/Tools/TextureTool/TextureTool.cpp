@@ -5,6 +5,7 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Int2.h"
@@ -15,6 +16,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if USE_EDITOR
+#include "Engine/Core/Collections/Dictionary.h"
 namespace
 {
     Dictionary<String, bool> TexturesHasAlphaCache;
@@ -34,6 +36,7 @@ TextureTool::Options::Options()
     Resize = false;
     PreserveAlphaCoverage = false;
     PreserveAlphaCoverageReference = 0.5f;
+    TextureGroup = -1;
     Scale = 1.0f;
     SizeX = 1024;
     SizeY = 1024;
@@ -96,6 +99,9 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("PreserveAlphaCoverageReference");
     stream.Float(PreserveAlphaCoverageReference);
 
+    stream.JKEY("TextureGroup");
+    stream.Int(TextureGroup);
+
     stream.JKEY("Scale");
     stream.Float(Scale);
 
@@ -144,6 +150,7 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
     PreserveAlphaCoverage = JsonTools::GetBool(stream, "PreserveAlphaCoverage", PreserveAlphaCoverage);
     PreserveAlphaCoverageReference = JsonTools::GetFloat(stream, "PreserveAlphaCoverageReference", PreserveAlphaCoverageReference);
+    TextureGroup = JsonTools::GetInt(stream, "TextureGroup", TextureGroup);
     Scale = JsonTools::GetFloat(stream, "Scale", Scale);
     SizeX = JsonTools::GetInt(stream, "SizeX", SizeX);
     SizeY = JsonTools::GetInt(stream, "SizeY", SizeY);

@@ -2,12 +2,15 @@
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
-#include "Engine/Animations/AnimationManager.h"
+#include "Engine/Core/Math/Matrix3x4.h"
+#include "Engine/Threading/Threading.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
@@ -41,14 +44,15 @@ void AnimatedModel::UpdateAnimation()
         || !IsActiveInHierarchy()
         || SkinnedModel == nullptr
         || !SkinnedModel->IsLoaded()
-        || _lastUpdateFrame == Engine::FrameCount)
+        || _lastUpdateFrame == Engine::FrameCount
+        || _masterPose)
         return;
     _lastUpdateFrame = Engine::FrameCount;
 
     if (AnimationGraph && AnimationGraph->IsLoaded() && AnimationGraph->Graph.IsReady())
     {
         // Request an animation update
-        AnimationManager::AddToUpdate(this);
+        Animations::AddToUpdate(this);
     }
     else
     {
@@ -110,16 +114,6 @@ void AnimatedModel::PreInitSkinningData()
     UpdateSockets();
 }
 
-void AnimatedModel::UpdateSockets()
-{
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
-        if (socket)
-            socket->UpdateTransformation();
-    }
-}
-
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
 {
     nodesTransformation = GraphInstance.NodesPose;
@@ -129,6 +123,22 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
         for (auto& m : nodesTransformation)
             m = m * world;
     }
+}
+
+void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
+{
+    if (GraphInstance.NodesPose.Count() == 0)
+        return;
+    CHECK(nodesTransformation.Count() == GraphInstance.NodesPose.Count());
+    GraphInstance.NodesPose = nodesTransformation;
+    if (worldSpace)
+    {
+        Matrix invWorld;
+        Matrix::Invert(_world, invWorld);
+        for (auto& m : GraphInstance.NodesPose)
+            m = invWorld * m;
+    }
+    OnAnimationUpdated();
 }
 
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
@@ -144,6 +154,35 @@ void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransform
 void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& nodeTransformation, bool worldSpace) const
 {
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
+}
+
+int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
+{
+    const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
+    int32 result = -1;
+    float closest = MAX_float;
+    for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
+    {
+        const Vector3 node = GraphInstance.NodesPose[nodeIndex].GetTranslation();
+        const float dst = Vector3::DistanceSquared(node, pos);
+        if (dst < closest)
+        {
+            closest = dst;
+            result = nodeIndex;
+        }
+    }
+    return result;
+}
+
+void AnimatedModel::SetMasterPoseModel(AnimatedModel* masterPose)
+{
+    if (masterPose == _masterPose)
+        return;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Unbind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
+    _masterPose = masterPose;
+    if (_masterPose)
+        _masterPose->AnimationUpdated.Bind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
 }
 
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
@@ -232,6 +271,8 @@ void AnimatedModel::SetParameterValue(const Guid& id, const Variant& value)
     }
     LOG(Warning, "Failed to set animated model '{0}' missing parameter '{1}'", ToString(), id.ToString());
 }
+
+#undef CHECK_ANIM_GRAPH_PARAM_ACCESS
 
 float AnimatedModel::GetBlendShapeWeight(const StringView& name)
 {
@@ -338,7 +379,8 @@ void AnimatedModel::BeginPlay(SceneBeginData* data)
 
 void AnimatedModel::EndPlay()
 {
-    AnimationManager::RemoveFromUpdate(this);
+    Animations::RemoveFromUpdate(this);
+    SetMasterPoseModel(nullptr);
 
     // Base
     ModelInstanceActor::EndPlay();
@@ -370,7 +412,6 @@ void AnimatedModel::OnActiveInTreeChanged()
 
 void AnimatedModel::UpdateLocalBounds()
 {
-    // Get bounding box in a local space
     BoundingBox box;
     if (CustomBounds.GetSize().LengthSquared() > 0.01f)
     {
@@ -379,18 +420,26 @@ void AnimatedModel::UpdateLocalBounds()
     else if (SkinnedModel && SkinnedModel->IsLoaded())
     {
         //box = SkinnedModel->GetBox(GraphInstance.RootTransform.GetWorld());
-        box = SkinnedModel->GetBox();
+        //box = SkinnedModel->GetBox();
+
+        // Per-bone bounds estimated from positions
+        auto& skeleton = SkinnedModel->Skeleton;
+        const int32 bonesCount = skeleton.Bones.Count();
+        box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
+        for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
+            box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+
+        // Apply margin based on model dimensions
+        const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
+        const Vector3 center = box.GetCenter();
+        const Vector3 sizeHalf = Vector3::Max(box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
+        box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else
     {
         box = BoundingBox(Vector3::Zero);
     }
-
-    // Scale bounds
-    box.Minimum *= BoundsScale;
-    box.Maximum *= BoundsScale;
-
-    _boxLocal = box;
+    _boxLocal = BoundingBox::MakeScaled(box, BoundsScale);
 }
 
 void AnimatedModel::UpdateBounds()
@@ -399,14 +448,67 @@ void AnimatedModel::UpdateBounds()
 
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
-void AnimatedModel::OnAnimUpdate()
+void AnimatedModel::UpdateSockets()
 {
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        auto socket = dynamic_cast<BoneSocket*>(Children[i]);
+        if (socket)
+            socket->UpdateTransformation();
+    }
+}
+
+void AnimatedModel::OnAnimationUpdated_Async()
+{
+    // Update asynchronous stuff
+    auto& skeleton = SkinnedModel->Skeleton;
+
+    // Copy pose from the master
+    if (_masterPose && _masterPose->SkinnedModel->Skeleton.Nodes.Count() == skeleton.Nodes.Count())
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Copy Master Pose");
+        const auto& masterInstance = _masterPose->GraphInstance;
+        GraphInstance.NodesPose = masterInstance.NodesPose;
+        GraphInstance.RootTransform = masterInstance.RootTransform;
+        GraphInstance.RootMotion = masterInstance.RootMotion;
+    }
+
+    // Calculate the final bones transformations and update skinning
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Final Pose");
+        const int32 bonesCount = skeleton.Bones.Count();
+        Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
+        ASSERT(_skinningData.Data.Count() == bonesCount * sizeof(Matrix3x4));
+        for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
+        {
+            auto& bone = skeleton.Bones[boneIndex];
+            Matrix matrix = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+            output[boneIndex].SetMatrixTranspose(matrix);
+        }
+        _skinningData.OnDataChanged(!PerBoneMotionBlur);
+    }
+
     UpdateBounds();
+    _blendShapes.Update(SkinnedModel.Get());
+}
+
+void AnimatedModel::OnAnimationUpdated_Sync()
+{
+    // Update synchronous stuff
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
-    _blendShapes.Update(SkinnedModel.Get());
+    AnimationUpdated();
+}
+
+void AnimatedModel::OnAnimationUpdated()
+{
+    ANIM_GRAPH_PROFILE_EVENT("OnAnimationUpdated");
+    OnAnimationUpdated_Async();
+    OnAnimationUpdated_Sync();
 }
 
 void AnimatedModel::OnSkinnedModelChanged()
@@ -424,7 +526,6 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
 
-    UpdateBounds();
     GraphInstance.Invalidate();
     if (_blendShapes.Weights.HasItems())
         _blendShapes.WeightsDirty = true;
@@ -530,7 +631,10 @@ void AnimatedModel::Draw(RenderContext& renderContext)
 
 void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 {
-    Draw(renderContext);
+    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
+    {
+        Draw(renderContext);
+    }
 }
 
 #if USE_EDITOR
@@ -539,7 +643,7 @@ void AnimatedModel::DrawGeneric(RenderContext& renderContext)
 
 void AnimatedModel::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.8f, 0, true);
+    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();
@@ -572,6 +676,7 @@ void AnimatedModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(PerBoneMotionBlur);
     SERIALIZE(UseTimeScale);
     SERIALIZE(UpdateWhenOffscreen);
+    SERIALIZE(UpdateSpeed);
     SERIALIZE(UpdateMode);
     SERIALIZE(BoundsScale);
     SERIALIZE(CustomBounds);
@@ -595,6 +700,7 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(PerBoneMotionBlur);
     DESERIALIZE(UseTimeScale);
     DESERIALIZE(UpdateWhenOffscreen);
+    DESERIALIZE(UpdateSpeed);
     DESERIALIZE(UpdateMode);
     DESERIALIZE(BoundsScale);
     DESERIALIZE(CustomBounds);
@@ -668,4 +774,6 @@ void AnimatedModel::OnTransformChanged()
     _transform.GetWorld(_world);
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }

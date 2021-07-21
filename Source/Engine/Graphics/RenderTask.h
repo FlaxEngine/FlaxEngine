@@ -84,7 +84,7 @@ public:
     /// <summary>
     /// The index of the frame when this task was last time rendered.
     /// </summary>
-    uint64 LastUsedFrame = 0;
+    API_FIELD(ReadOnly) uint64 LastUsedFrame = 0;
 
     /// <summary>
     /// Action fired on task rendering.
@@ -239,7 +239,7 @@ public:
     API_FUNCTION() void CameraCut();
 
     /// <summary>
-    /// The output texture (can be null if using rendering to window swap chain). Can be sued to redirect the default scene rendering output to a texture.
+    /// The output texture (can be null if using rendering to window swap chain). Can be used to redirect the default scene rendering output to a texture.
     /// </summary>
     API_FIELD() GPUTexture* Output = nullptr;
 
@@ -251,7 +251,7 @@ public:
     /// <summary>
     /// The scene rendering camera. Can be used to override the rendering view properties based on the current camera setup.
     /// </summary>
-    API_FIELD() Camera* Camera = nullptr;
+    API_FIELD() ScriptingObjectReference<Camera> Camera;
 
     /// <summary>
     /// The render view description.
@@ -262,6 +262,11 @@ public:
     /// The actors source to use (configures what objects to render).
     /// </summary>
     API_FIELD() ActorsSources ActorsSource = ActorsSources::Scenes;
+
+    /// <summary>
+    /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
+    /// </summary>
+    API_FIELD() float RenderingPercentage = 1.0f;
 
     /// <summary>
     /// The custom set of actors to render.
@@ -336,9 +341,14 @@ public:
 public:
 
     /// <summary>
-    /// Gets the rendering render task viewport.
+    /// Gets the rendering render task viewport (before upsampling).
     /// </summary>
     API_PROPERTY() Viewport GetViewport() const;
+
+    /// <summary>
+    /// Gets the rendering output viewport (after upsampling).
+    /// </summary>
+    API_PROPERTY() Viewport GetOutputViewport() const;
 
     /// <summary>
     /// Gets the rendering output view.

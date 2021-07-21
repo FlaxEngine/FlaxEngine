@@ -9,33 +9,33 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 
 namespace ProfilerInternal
 {
-    /// <summary>
-    /// The managed events IDs.
-    /// </summary>
-    Array<int32> ManagedEvents;
-
-    /// <summary>
-    /// The managed events IDs for GPU profiling.
-    /// </summary>
+#if COMPILE_WITH_PROFILER
     Array<int32> ManagedEventsGPU;
+#endif
 
     void BeginEvent(MonoString* nameObj)
     {
 #if COMPILE_WITH_PROFILER
-        const auto index = ProfilerCPU::BeginEvent((const Char*)mono_string_chars(nameObj));
-        ManagedEvents.Push(index);
+        const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
+        ProfilerCPU::BeginEvent(*name);
+#if TRACY_ENABLE
+        tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
+#endif
 #endif
     }
 
     void EndEvent()
     {
 #if COMPILE_WITH_PROFILER
-        const auto index = ManagedEvents.Pop();
-        ProfilerCPU::EndEvent(index);
+#if TRACY_ENABLE
+        tracy::ScopedZone::End();
+#endif
+        ProfilerCPU::EndEvent();
 #endif
     }
 

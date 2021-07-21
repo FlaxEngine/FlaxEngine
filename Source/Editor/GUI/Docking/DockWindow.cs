@@ -59,7 +59,10 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets the default window size.
         /// </summary>
-        public virtual Vector2 DefaultSize => new Vector2(900, 580);
+        /// <remarks>
+        /// Scaled by the DPI, because the window should be large enough for its content on every monitor
+        /// </remarks>
+        public virtual Vector2 DefaultSize => new Vector2(900, 580) * DpiScale;
 
         /// <summary>
         /// Gets the serialization typename.

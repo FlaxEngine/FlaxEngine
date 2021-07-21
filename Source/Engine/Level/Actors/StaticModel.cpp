@@ -2,7 +2,10 @@
 
 #include "StaticModel.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -179,10 +182,15 @@ void StaticModel::UpdateBounds()
 {
     if (Model && Model->IsLoaded())
     {
-        Transform t = _transform;
-        t.Scale *= _boundsScale;
         Matrix world;
-        t.GetWorld(world);
+        if (Math::IsOne(_boundsScale))
+            world = _world;
+        else
+        {
+            Transform t = _transform;
+            t.Scale *= _boundsScale;
+            t.GetWorld(world);
+        }
         _box = Model->GetBox(world);
     }
     else
@@ -190,6 +198,8 @@ void StaticModel::UpdateBounds()
         _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 bool StaticModel::HasContentLoaded() const
@@ -242,7 +252,7 @@ void StaticModel::Draw(RenderContext& renderContext)
         draw.DrawState = &_drawState;
         draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         draw.LightmapUVs = &Lightmap.UVsArea;
-        draw.Flags = GetStaticFlags();
+        draw.Flags = _staticFlags;
         draw.DrawModes = drawModes;
         draw.Bounds = _sphere;
         draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -258,7 +268,10 @@ void StaticModel::Draw(RenderContext& renderContext)
 
 void StaticModel::DrawGeneric(RenderContext& renderContext)
 {
-    Draw(renderContext);
+    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
+    {
+        Draw(renderContext);
+    }
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

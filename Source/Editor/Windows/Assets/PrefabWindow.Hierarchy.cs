@@ -36,6 +36,9 @@ namespace FlaxEditor.Windows.Assets
 
             /// <inheritdoc />
             public override Undo Undo => _window.Undo;
+
+            /// <inheritdoc />
+            public override List<SceneGraphNode> Selection => _window.Selection;
         }
 
         /// <summary>
@@ -100,7 +103,7 @@ namespace FlaxEditor.Windows.Assets
             b.Enabled = hasSthSelected && !isRootSelected;
 
             b = contextMenu.AddButton("Set Root", SetRoot);
-            b.Enabled = isSingleActorSelected && !isRootSelected && hasPrefabLink;
+            b.Enabled = isSingleActorSelected && !isRootSelected && hasPrefabLink && Editor.Internal_CanSetToRoot(FlaxEngine.Object.GetUnmanagedPtr(Asset), FlaxEngine.Object.GetUnmanagedPtr(((ActorNode)Selection[0]).Actor));
 
             // Prefab options
 
@@ -160,7 +163,13 @@ namespace FlaxEditor.Windows.Assets
 
         private void Rename()
         {
-            ((ActorNode)Selection[0]).TreeNode.StartRenaming();
+            var selection = Selection;
+            if (selection.Count != 0 && selection[0] is ActorNode actor)
+            {
+                if (selection.Count != 0)
+                    Select(actor);
+                actor.TreeNode.StartRenaming();
+            }
         }
 
         /// <summary>

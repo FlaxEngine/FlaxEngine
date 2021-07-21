@@ -6,6 +6,7 @@
 #include "RenderTask.h"
 #include "RenderTools.h"
 #include "Graphics.h"
+#include "Shaders/GPUShader.h"
 #include "Async/DefaultGPUTasksExecutor.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
@@ -28,6 +29,39 @@ GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 GPUPipelineState* GPUPipelineState::New()
 {
     return GPUDevice::Instance->CreatePipelineState();
+}
+
+bool GPUPipelineState::Init(const Description& desc)
+{
+    // Cache description in debug builds
+#if BUILD_DEBUG
+    DebugDesc = desc;
+#endif
+
+    // Cache shader stages usage flags for pipeline state
+    _meta.InstructionsCount = 0;
+    _meta.UsedCBsMask = 0;
+    _meta.UsedSRsMask = 0;
+    _meta.UsedUAsMask = 0;
+#define CHECK_STAGE(stage) \
+	if (desc.stage) { \
+		_meta.UsedCBsMask |= desc.stage->GetBindings().UsedCBsMask; \
+		_meta.UsedSRsMask |= desc.stage->GetBindings().UsedSRsMask; \
+		_meta.UsedUAsMask |= desc.stage->GetBindings().UsedUAsMask; \
+	}
+    CHECK_STAGE(VS);
+    CHECK_STAGE(HS);
+    CHECK_STAGE(DS);
+    CHECK_STAGE(GS);
+    CHECK_STAGE(PS);
+#undef CHECK_STAGE
+
+    return false;
+}
+
+GPUResource::ResourceType GPUPipelineState::GetResourceType() const
+{
+    return ResourceType::PipelineState;
 }
 
 GPUPipelineState::Description GPUPipelineState::Description::Default =
@@ -120,6 +154,80 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     // Colors blending mode
     BlendingMode::Opaque,
 };
+
+GPUResource::GPUResource()
+    : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+{
+}
+
+GPUResource::GPUResource(const SpawnParams& params)
+    : PersistentScriptingObject(params)
+{
+}
+
+GPUResource::~GPUResource()
+{
+#if !BUILD_RELEASE
+    ASSERT(_memoryUsage == 0);
+#endif
+}
+
+GPUResource::ObjectType GPUResource::GetObjectType() const
+{
+    return ObjectType::Other;
+}
+
+uint64 GPUResource::GetMemoryUsage() const
+{
+    return _memoryUsage;
+}
+
+#if GPU_ENABLE_RESOURCE_NAMING
+
+String GPUResource::GetName() const
+{
+    return String::Empty;
+}
+
+#endif
+
+void GPUResource::ReleaseGPU()
+{
+    if (_memoryUsage != 0)
+    {
+        Releasing();
+        OnReleaseGPU();
+        _memoryUsage = 0;
+    }
+}
+
+void GPUResource::OnDeviceDispose()
+{
+    // By default we want to release resource data but keep it alive
+    ReleaseGPU();
+}
+
+void GPUResource::OnReleaseGPU()
+{
+}
+
+String GPUResource::ToString() const
+{
+#if GPU_ENABLE_RESOURCE_NAMING
+    return GetName();
+#else
+    return TEXT("GPU Resource");
+#endif
+}
+
+void GPUResource::OnDeleteObject()
+{
+    ReleaseGPU();
+
+    PersistentScriptingObject::OnDeleteObject();
+}
+
+double GPUResourceView::DummyLastRenderTime = -1;
 
 struct GPUDevice::PrivateData
 {
@@ -226,6 +334,11 @@ bool GPUDevice::LoadContent()
         return true;
 
     return false;
+}
+
+bool GPUDevice::CanDraw()
+{
+    return true;
 }
 
 void GPUDevice::preDispose()
@@ -377,6 +490,11 @@ void GPUDevice::Dispose()
 {
     RenderList::CleanupCache();
     VideoOutputModes.Resize(0);
+}
+
+uint64 GPUDevice::GetMemoryUsage() const
+{
+    return Resources.GetMemoryUsage();
 }
 
 MaterialBase* GPUDevice::GetDefaultMaterial() const

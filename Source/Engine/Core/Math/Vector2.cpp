@@ -5,6 +5,8 @@
 #include "Vector4.h"
 #include "Color.h"
 #include "Int2.h"
+#include "Int3.h"
+#include "Int4.h"
 #include "../Types/String.h"
 
 static_assert(sizeof(Vector2) == 8, "Invalid Vector2 type size.");
@@ -16,21 +18,33 @@ const Vector2 Vector2::UnitY(0, 1);
 const Vector2 Vector2::Minimum(MIN_float);
 const Vector2 Vector2::Maximum(MAX_float);
 
-Vector2::Vector2(const Int2& v)
-    : X((float)v.X)
-    , Y((float)v.Y)
+Vector2::Vector2(const Int2& xy)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
 {
 }
 
-Vector2::Vector2(const Vector3& v)
-    : X(v.X)
-    , Y(v.Y)
+Vector2::Vector2(const Int3& xyz)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
 {
 }
 
-Vector2::Vector2(const Vector4& v)
-    : X(v.X)
-    , Y(v.Y)
+Vector2::Vector2(const Int4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+{
+}
+
+Vector2::Vector2(const Vector3& xyz)
+    : X(xyz.X)
+    , Y(xyz.Y)
+{
+}
+
+Vector2::Vector2(const Vector4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
 {
 }
 

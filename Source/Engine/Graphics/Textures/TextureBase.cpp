@@ -2,15 +2,60 @@
 
 #include "TextureBase.h"
 #include "TextureData.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
-#include "Engine/Debug/Exceptions/InvalidOperationException.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Core/Math/Color32.h"
+#include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+
+TextureMipData::TextureMipData()
+    : RowPitch(0)
+    , DepthPitch(0)
+    , Lines(0)
+{
+}
+
+TextureMipData::TextureMipData(const TextureMipData& other)
+    : RowPitch(other.RowPitch)
+    , DepthPitch(other.DepthPitch)
+    , Lines(other.Lines)
+    , Data(other.Data)
+{
+}
+
+TextureMipData::TextureMipData(TextureMipData&& other) noexcept
+    : RowPitch(other.RowPitch)
+    , DepthPitch(other.DepthPitch)
+    , Lines(other.Lines)
+    , Data(MoveTemp(other.Data))
+{
+}
+
+TextureMipData& TextureMipData::operator=(const TextureMipData& other)
+{
+    if (this == &other)
+        return *this;
+    RowPitch = other.RowPitch;
+    DepthPitch = other.DepthPitch;
+    Lines = other.Lines;
+    Data = other.Data;
+    return *this;
+}
+
+TextureMipData& TextureMipData::operator=(TextureMipData&& other) noexcept
+{
+    if (this == &other)
+        return *this;
+    RowPitch = other.RowPitch;
+    DepthPitch = other.DepthPitch;
+    Lines = other.Lines;
+    Data = MoveTemp(other.Data);
+    return *this;
+}
 
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
 
@@ -20,6 +65,50 @@ TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)
     , _customData(nullptr)
     , _parent(this)
 {
+}
+
+Vector2 TextureBase::Size() const
+{
+    return Vector2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
+}
+
+int32 TextureBase::GetArraySize() const
+{
+    return _texture.TotalArraySize();
+}
+
+int32 TextureBase::GetMipLevels() const
+{
+    return _texture.TotalMipLevels();
+}
+
+int32 TextureBase::GetResidentMipLevels() const
+{
+    return _texture.GetTexture()->ResidentMipLevels();
+}
+
+uint64 TextureBase::GetCurrentMemoryUsage() const
+{
+    return _texture.GetTexture()->GetMemoryUsage();
+}
+
+uint64 TextureBase::GetTotalMemoryUsage() const
+{
+    return _texture.GetTotalMemoryUsage();
+}
+
+int32 TextureBase::GetTextureGroup() const
+{
+    return _texture._header.TextureGroup;
+}
+
+void TextureBase::SetTextureGroup(int32 textureGroup)
+{
+    if (_texture._header.TextureGroup != textureGroup)
+    {
+        _texture._header.TextureGroup = textureGroup;
+        _texture.RequestStreamingUpdate();
+    }
 }
 
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
@@ -39,7 +128,6 @@ BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& s
     }
     else
     {
-        // Wait for the asset header to be loaded
         if (WaitForLoaded())
             return result;
 
@@ -52,7 +140,7 @@ BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& s
         slicePitch = slicePitch1;
 
         // Ensure to have chunk loaded
-        if (LoadChunk(calculateChunkIndex(mipIndex)))
+        if (LoadChunk(CalculateChunkIndex(mipIndex)))
             return result;
     }
 
@@ -136,16 +224,15 @@ bool TextureBase::Init(InitData* initData)
     _customData = initData;
 
     // Create texture
-    TextureHeader header;
-    header.Format = initData->Format;
-    header.Width = initData->Width;
-    header.Height = initData->Height;
-    header.IsCubeMap = initData->ArraySize == 6;
-    header.MipLevels = initData->Mips.Count();
-    header.IsSRGB = false;
-    header.Type = TextureFormatType::ColorRGBA;
-    header.NeverStream = true;
-    if (_texture.Create(header))
+    TextureHeader textureHeader;
+    textureHeader.Format = initData->Format;
+    textureHeader.Width = initData->Width;
+    textureHeader.Height = initData->Height;
+    textureHeader.IsCubeMap = initData->ArraySize == 6;
+    textureHeader.MipLevels = initData->Mips.Count();
+    textureHeader.Type = TextureFormatType::ColorRGBA;
+    textureHeader.NeverStream = true;
+    if (_texture.Create(textureHeader))
     {
         LOG(Warning, "Cannot initialize texture.");
         return true;
@@ -187,15 +274,15 @@ bool TextureBase::Init(void* ptr)
     return Init(initData);
 }
 
-int32 TextureBase::calculateChunkIndex(int32 mipIndex) const
+int32 TextureBase::CalculateChunkIndex(int32 mipIndex) const
 {
     // Mips are in 0-13 chunks
     return mipIndex;
 }
 
-CriticalSection* TextureBase::GetOwnerLocker() const
+CriticalSection& TextureBase::GetOwnerLocker() const
 {
-    return &_parent->Locker;
+    return _parent->Locker;
 }
 
 void TextureBase::unload(bool isReloading)
@@ -213,7 +300,7 @@ Task* TextureBase::RequestMipDataAsync(int32 mipIndex)
     if (_customData)
         return nullptr;
 
-    auto chunkIndex = calculateChunkIndex(mipIndex);
+    auto chunkIndex = CalculateChunkIndex(mipIndex);
     return (Task*)_parent->RequestChunkDataAsync(chunkIndex);
 }
 
@@ -230,7 +317,7 @@ void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data) const
         return;
     }
 
-    auto chunkIndex = calculateChunkIndex(mipIndex);
+    auto chunkIndex = CalculateChunkIndex(mipIndex);
     _parent->GetChunkData(chunkIndex, data);
 }
 
@@ -242,7 +329,7 @@ void TextureBase::GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) co
         return;
     }
 
-    const auto chunkIndex = calculateChunkIndex(mipIndex);
+    const auto chunkIndex = CalculateChunkIndex(mipIndex);
     _parent->LoadChunk(chunkIndex);
     _parent->GetChunkData(chunkIndex, data);
 }
@@ -257,6 +344,41 @@ bool TextureBase::GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32
     }
 
     return result;
+}
+
+bool TextureBase::init(AssetInitData& initData)
+{
+    if (IsVirtual())
+        return false;
+    if (initData.SerializedVersion != TexturesSerializedVersion)
+    {
+        LOG(Error, "Invalid serialized texture version.");
+        return true;
+    }
+
+    // Get texture header for asset custom data (fast access)
+    TextureHeader textureHeader;
+    if (initData.CustomData.Length() == sizeof(TextureHeader))
+    {
+        Platform::MemoryCopy(&textureHeader, initData.CustomData.Get(), sizeof(textureHeader));
+    }
+    else if (initData.CustomData.Length() == sizeof(TextureHeader_Deprecated))
+    {
+        textureHeader = TextureHeader(*(TextureHeader_Deprecated*)initData.CustomData.Get());
+    }
+    else
+    {
+        LOG(Error, "Missing texture header.");
+        return true;
+    }
+
+    return _texture.Create(textureHeader);
+}
+
+Asset::LoadResult TextureBase::load()
+{
+    // Loading textures is very fast xD
+    return LoadResult::Ok;
 }
 
 bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
@@ -290,8 +412,6 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
     // Allocate data
     const int32 dstMipWidth = Math::Max(1, Width >> mipIndex);
     const int32 dstMipHeight = Math::Max(1, Height >> mipIndex);
-    const int32 srcMipWidth = Math::Max(1, Width >> (mipIndex - 1));
-    const int32 srcMipHeight = Math::Max(1, Height >> (mipIndex - 1));
     const int32 pixelStride = PixelFormatExtensions::SizeInBytes(Format);
     dstMip.RowPitch = dstMipWidth * pixelStride;
     dstMip.SlicePitch = dstMip.RowPitch * dstMipHeight;

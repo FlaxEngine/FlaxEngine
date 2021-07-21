@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "WheeledVehicle.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Level/Scene/Scene.h"

@@ -14,6 +14,12 @@
 // Maximum amount of binded unordered access resources at the same time
 #define GPU_MAX_UA_BINDED 2
 
+// Maximum amount of binded texture sampler resources at the same time
+#define GPU_MAX_SAMPLER_BINDED 16
+
+// Amount of initial slots used for global samplers (static, 4 common samplers + 2 comparision samplers)
+#define GPU_STATIC_SAMPLERS_COUNT 6
+
 // Maximum amount of binded vertex buffers at the same time
 #define GPU_MAX_VB_BINDED 4
 

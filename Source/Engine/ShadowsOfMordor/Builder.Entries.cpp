@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/Actors/StaticModel.h"
@@ -10,6 +11,7 @@
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Foliage/Foliage.h"
+#include "Engine/Threading/Threading.h"
 
 bool canUseMaterialWithLightmap(MaterialBase* material, ShadowsOfMordor::Builder::SceneBuildCache* scene)
 {
@@ -63,7 +65,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
                                    model->GetPath(),
                                    meshIndex,
                                    lodIndex,
-                                   staticModel->GetName());
+                                   staticModel->GetNamePath());
                     }
                 }
             }

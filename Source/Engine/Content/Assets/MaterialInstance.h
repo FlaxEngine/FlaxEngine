@@ -19,7 +19,6 @@ public:
     /// <summary>
     /// Gets the base material. If value gets changed parameters collection is restored to the default values of the new material.
     /// </summary>
-    /// <returns>The base material.</returns>
     API_PROPERTY() FORCE_INLINE MaterialBase* GetBaseMaterial() const
     {
         return _baseMaterial;
@@ -49,7 +48,6 @@ private:
     void OnBaseUnset();
     void OnBaseUnloaded(Asset* p);
     void OnBaseParamsChanged();
-    void OnUnload();
 
 public:
 

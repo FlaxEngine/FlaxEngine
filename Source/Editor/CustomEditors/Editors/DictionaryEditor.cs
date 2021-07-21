@@ -61,7 +61,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var keyType = _editor.Values.Type.GetGenericArguments()[0];
                 if (keyType == typeof(string) || keyType.IsPrimitive)
                 {
-                    var popup = RenamePopup.Show(Parent, Bounds, Text, false);
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     popup.Validate += (renamePopup, value) =>
                     {
                         object newKey;
@@ -86,7 +86,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else if (keyType.IsEnum)
                 {
-                    var popup = RenamePopup.Show(Parent, Bounds, Text, false);
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     var picker = new EnumComboBox(keyType)
                     {
                         AnchorPreset = AnchorPresets.StretchAll,
@@ -135,10 +135,12 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private IntegerValueElement _size;
+        private Color _background;
         private int _elementsCount;
         private bool _readOnly;
         private bool _notNullItems;
         private bool _canEditKeys;
+        private bool _keyEdited;
 
         /// <summary>
         /// Determines whether this editor[can edit the specified dictionary type.
@@ -164,9 +166,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _readOnly = false;
-            _notNullItems = false;
-
             // No support for different collections for now
             if (HasDifferentValues || HasDifferentTypes)
                 return;
@@ -177,23 +176,23 @@ namespace FlaxEditor.CustomEditors.Editors
             var keyType = argTypes[0];
             var valueType = argTypes[1];
             _canEditKeys = keyType == typeof(string) || keyType.IsPrimitive || keyType.IsEnum;
+            _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
+            _readOnly = false;
+            _notNullItems = false;
 
             // Try get CollectionAttribute for collection editor meta
             var attributes = Values.GetAttributes();
             Type overrideEditorType = null;
             float spacing = 0.0f;
-            if (attributes != null)
+            var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
+            if (collection != null)
             {
-                var collection = (CollectionAttribute)attributes.FirstOrDefault(x => x is CollectionAttribute);
-                if (collection != null)
-                {
-                    // TODO: handle ReadOnly and NotNullItems by filtering child editors SetValue
-
-                    _readOnly = collection.ReadOnly;
-                    _notNullItems = collection.NotNullItems;
-                    overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
-                    spacing = collection.Spacing;
-                }
+                _readOnly = collection.ReadOnly;
+                _notNullItems = collection.NotNullItems;
+                if (collection.BackgroundColor.HasValue)
+                    _background = collection.BackgroundColor.Value;
+                overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
+                spacing = collection.Spacing;
             }
 
             // Size
@@ -205,7 +204,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 _size = layout.IntegerValue("Size");
                 _size.IntValue.MinValue = 0;
-                _size.IntValue.MaxValue = ushort.MaxValue;
+                _size.IntValue.MaxValue = _notNullItems ? size : ushort.MaxValue;
                 _size.IntValue.Value = size;
                 _size.IntValue.ValueChanged += OnSizeChanged;
             }
@@ -213,21 +212,34 @@ namespace FlaxEditor.CustomEditors.Editors
             // Elements
             if (size > 0)
             {
+                var panel = layout.VerticalPanel();
+                panel.Panel.BackgroundColor = _background;
                 var keysEnumerable = ((IDictionary)Values[0]).Keys.OfType<object>();
                 var keys = keysEnumerable as object[] ?? keysEnumerable.ToArray();
                 for (int i = 0; i < size; i++)
                 {
                     if (i != 0 && spacing > 0f)
                     {
-                        if (layout.Children.Count > 0 && layout.Children[layout.Children.Count - 1] is PropertiesListElement propertiesListElement)
+                        if (panel.Children.Count > 0 && panel.Children[panel.Children.Count - 1] is PropertiesListElement propertiesListElement)
+                        {
+                            if (propertiesListElement.Labels.Count > 0)
+                            {
+                                var label = propertiesListElement.Labels[propertiesListElement.Labels.Count - 1];
+                                var margin = label.Margin;
+                                margin.Bottom += spacing;
+                                label.Margin = margin;
+                            }
                             propertiesListElement.Space(spacing);
+                        }
                         else
-                            layout.Space(spacing);
+                        {
+                            panel.Space(spacing);
+                        }
                     }
 
                     var key = keys.ElementAt(i);
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                    layout.Object(new DictionaryItemLabel(this, key), new DictionaryValueContainer(new ScriptType(valueType), key, Values), overrideEditor);
+                    panel.Object(new DictionaryItemLabel(this, key), new DictionaryValueContainer(new ScriptType(valueType), key, Values), overrideEditor);
                 }
             }
             _elementsCount = size;
@@ -241,7 +253,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     Text = "+",
                     TooltipText = "Add new item",
                     AnchorPreset = AnchorPresets.TopRight,
-                    Parent = area.ContainerControl
+                    Parent = area.ContainerControl,
+                    Enabled = !_notNullItems,
                 };
                 addButton.Clicked += () =>
                 {
@@ -256,7 +269,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     TooltipText = "Remove last item",
                     AnchorPreset = AnchorPresets.TopRight,
                     Parent = area.ContainerControl,
-                    Enabled = size > 0
+                    Enabled = size > 0,
                 };
                 removeButton.Clicked += () =>
                 {
@@ -265,6 +278,24 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     Resize(Count - 1);
                 };
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the parent layout if its collection.
+        /// </summary>
+        public void RebuildParentCollection()
+        {
+            if (ParentEditor is DictionaryEditor dictionaryEditor)
+            {
+                dictionaryEditor.RebuildParentCollection();
+                dictionaryEditor.RebuildLayout();
+                return;
+            }
+            if (ParentEditor is CollectionEditor collectionEditor)
+            {
+                collectionEditor.RebuildParentCollection();
+                collectionEditor.RebuildLayout();
             }
         }
 
@@ -321,6 +352,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     newValues[e] = dictionary[e];
             }
             SetValue(newValues);
+            _keyEdited = true; // TODO: use custom UndoAction to rebuild UI after key modification
         }
 
         /// <summary>
@@ -433,6 +465,13 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Refresh()
         {
+            if (_keyEdited)
+            {
+                _keyEdited = false;
+                RebuildLayout();
+                RebuildParentCollection();
+            }
+
             base.Refresh();
 
             // No support for different collections for now
@@ -443,6 +482,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (Count != _elementsCount)
             {
                 RebuildLayout();
+                RebuildParentCollection();
             }
         }
     }

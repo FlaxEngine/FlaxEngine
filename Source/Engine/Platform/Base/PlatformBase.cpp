@@ -7,17 +7,19 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Utilities.h"
 #if COMPILE_WITH_PROFILER
-#include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #endif
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include <iostream>
@@ -128,14 +130,14 @@ bool PlatformBase::Init()
 
 void PlatformBase::LogInfo()
 {
-    LOG(Info, "Computer name: {0}", Platform::GetComputerName());
-    LOG(Info, "User name: {0}", Platform::GetUserName());
+    // LOG(Info, "Computer name: {0}", Platform::GetComputerName());
+    // LOG(Info, "User name: {0}", Platform::GetUserName());
 
     const CPUInfo cpuInfo = Platform::GetCPUInfo();
     LOG(Info, "CPU package count: {0}, Core count: {1}, Logical processors: {2}", cpuInfo.ProcessorPackageCount, cpuInfo.ProcessorCoreCount, cpuInfo.LogicalProcessorCount);
     LOG(Info, "CPU Page size: {0}, cache line size: {1} bytes", Utilities::BytesToText(cpuInfo.PageSize), cpuInfo.CacheLineSize);
     LOG(Info, "L1 cache: {0}, L2 cache: {1}, L3 cache: {2}", Utilities::BytesToText(cpuInfo.L1CacheSize), Utilities::BytesToText(cpuInfo.L2CacheSize), Utilities::BytesToText(cpuInfo.L3CacheSize));
-    LOG(Info, "Clock speed: {0} GHz", Utilities::RoundTo2DecimalPlaces(cpuInfo.ClockSpeed * 0.000001f));
+    LOG(Info, "Clock speed: {0} GHz", Utilities::RoundTo2DecimalPlaces(cpuInfo.ClockSpeed * 1e-9f));
 
     const MemoryStats memStats = Platform::GetMemoryStats();
     LOG(Info, "Physical Memory: {0} total, {1} used ({2}%)", Utilities::BytesToText(memStats.TotalPhysicalMemory), Utilities::BytesToText(memStats.UsedPhysicalMemory), Utilities::RoundTo2DecimalPlaces((float)memStats.UsedPhysicalMemory * 100.0f / (float)memStats.TotalPhysicalMemory));
@@ -162,6 +164,46 @@ void PlatformBase::BeforeExit()
 void PlatformBase::Exit()
 {
 }
+
+#if COMPILE_WITH_PROFILER
+
+#define TRACY_ENABLE_MEMORY (TRACY_ENABLE && !USE_EDITOR)
+
+void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE_MEMORY
+    // Track memory allocation in Tracy
+    //tracy::Profiler::MemAlloc(ptr, size, false);
+    tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
+#endif
+
+    // Register allocation during the current CPU event
+    auto thread = ProfilerCPU::GetCurrentThread();
+    if (thread != nullptr && thread->Buffer.GetCount() != 0)
+    {
+        auto& activeEvent = thread->Buffer.Last().Event();
+        if (activeEvent.End < ZeroTolerance)
+        {
+            activeEvent.NativeMemoryAllocation += (int32)size;
+        }
+    }
+}
+
+void PlatformBase::OnMemoryFree(void* ptr)
+{
+    if (!ptr)
+        return;
+
+#if TRACY_ENABLE_MEMORY
+    // Track memory allocation in Tracy
+    tracy::Profiler::MemFree(ptr, false);
+#endif
+}
+
+#endif
 
 void* PlatformBase::AllocatePages(uint64 numPages, uint64 pageSize)
 {
@@ -259,7 +301,7 @@ void PlatformBase::Fatal(const Char* msg, void* context)
         }
 
         // Create separate folder with crash info
-        const String crashDataFolder = StringUtils::GetDirectoryName(Log::Logger::LogFilePath) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
+        const String crashDataFolder = String(StringUtils::GetDirectoryName(Log::Logger::LogFilePath)) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
         FileSystem::CreateDirectory(crashDataFolder);
 
         // Capture the platform-dependant crash info (eg. memory dump)
@@ -457,15 +499,6 @@ Vector2 PlatformBase::GetVirtualDesktopSize()
 {
     return Platform::GetVirtualDesktopBounds().Size;
 }
-
-#if COMPILE_WITH_PROFILER
-
-void PlatformBase::TrackAllocation(uint64 size)
-{
-    ProfilerMemory::OnAllocation((uint32)size, false);
-}
-
-#endif
 
 void PlatformBase::GetEnvironmentVariables(Dictionary<String, String>& result)
 {

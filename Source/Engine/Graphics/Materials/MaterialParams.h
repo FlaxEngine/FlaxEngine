@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -12,6 +14,7 @@
 class MaterialInstance;
 class MaterialParams;
 class GPUContext;
+class GPUTextureView;
 class RenderBuffers;
 
 struct MaterialParamsLink
@@ -120,6 +123,11 @@ enum class MaterialParameterType : byte
     /// The gameplay global.
     /// </summary>
     GameplayGlobal = 18,
+
+    /// <summary>
+    /// The texture sampler derived from texture group settings.
+    /// </summary>
+    TextureGroupSampler = 19,
 };
 
 const Char* ToString(MaterialParameterType value);
@@ -143,10 +151,9 @@ struct SerializedMaterialParam
         float AsFloat;
         Vector2 AsVector2;
         Vector3 AsVector3;
-        Vector4 AsVector4;
         Color AsColor;
         Guid AsGuid;
-        Matrix AsMatrix;
+        byte AsData[16 * 4];
     };
 
     byte RegisterIndex;
@@ -181,9 +188,8 @@ private:
         float _asFloat;
         Vector2 _asVector2;
         Vector3 _asVector3;
-        Vector4 _asVector4;
         Color _asColor;
-        Matrix _asMatrix;
+        byte AsData[16 * 4];
     };
 
     AssetReference<Asset> _asAsset;
@@ -213,7 +219,6 @@ public:
     /// <summary>
     /// Gets the parameter ID (not the parameter instance Id but the original parameter ID).
     /// </summary>
-    /// <returns>The ID.</returns>
     API_PROPERTY() FORCE_INLINE Guid GetParameterID() const
     {
         return _paramId;
@@ -222,7 +227,6 @@ public:
     /// <summary>
     /// Gets the parameter type.
     /// </summary>
-    /// <returns>The type.</returns>
     API_PROPERTY() FORCE_INLINE MaterialParameterType GetParameterType() const
     {
         return _type;
@@ -231,7 +235,6 @@ public:
     /// <summary>
     /// Gets the parameter name.
     /// </summary>
-    /// <returns>The name.</returns>
     API_PROPERTY() FORCE_INLINE const String& GetName() const
     {
         return _name;
@@ -240,7 +243,6 @@ public:
     /// <summary>
     /// Returns true is parameter is public visible.
     /// </summary>
-    /// <returns>True if parameter has public access, otherwise false.</returns>
     API_PROPERTY() FORCE_INLINE bool IsPublic() const
     {
         return _isPublic;
@@ -249,7 +251,6 @@ public:
     /// <summary>
     /// Returns true is parameter is overriding the value.
     /// </summary>
-    /// <returns>True if parameter is overriding the value, otherwise false.</returns>
     API_PROPERTY() FORCE_INLINE bool IsOverride() const
     {
         return _override;
@@ -258,7 +259,6 @@ public:
     /// <summary>
     /// Sets the value override mode.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() void SetIsOverride(bool value)
     {
         _override = value;
@@ -267,7 +267,6 @@ public:
     /// <summary>
     /// Gets the parameter resource graphics pipeline binding register index.
     /// </summary>
-    /// <returns>The binding register.</returns>
     FORCE_INLINE byte GetRegister() const
     {
         return _registerIndex;
@@ -276,7 +275,6 @@ public:
     /// <summary>
     /// Gets the parameter binding offset since the start of the constant buffer.
     /// </summary>
-    /// <returns>The binding data offset (in bytes).</returns>
     FORCE_INLINE uint16 GetBindOffset() const
     {
         return _offset;
@@ -311,7 +309,7 @@ public:
         /// <summary>
         /// The pointer to the constants buffer in the memory.
         /// </summary>
-        byte* Constants;
+        Span<byte> Constants;
 
         /// <summary>
         /// The input scene color. It's optional and used in forward/postFx rendering.

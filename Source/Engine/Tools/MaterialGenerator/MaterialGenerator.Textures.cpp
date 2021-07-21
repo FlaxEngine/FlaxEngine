@@ -290,6 +290,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             PointClamp = 1,
             LinearWrap = 2,
             PointWrap = 3,
+            TextureGroup = 4,
         };
         const Char* SamplerNames[]
         {
@@ -345,8 +346,18 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const bool useLevel = levelBox->HasConnection() || (int32)node->Values[1] != -1;
         const bool useOffset = offsetBox->HasConnection();
         const auto offset = useOffset ? eatBox(offsetBox->GetParent<Node>(), offsetBox->FirstConnection()) : Value::Zero;
+        const Char* samplerName;
         const int32 samplerIndex = node->Values[0].AsInt;
-        if (samplerIndex < 0 || samplerIndex >= ARRAY_COUNT(SamplerNames))
+        if (samplerIndex == TextureGroup)
+        {
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
+            samplerName = *textureGroupSampler.ShaderName;
+        }
+        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
+        {
+            samplerName = SamplerNames[samplerIndex];
+        }
+        else
         {
             OnError(node, box, TEXT("Invalid texture sampler."));
             return;
@@ -372,7 +383,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         // Sample texture
         const String sampledValue = String::Format(format,
                                                    texture.Value, // {0}
-                                                   SamplerNames[samplerIndex], // {1}
+                                                   samplerName, // {1}
                                                    uvs.Value, // {2}
                                                    level.Value, // {3}
                                                    offset.Value // {4}

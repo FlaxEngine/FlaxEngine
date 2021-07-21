@@ -22,14 +22,25 @@ namespace FlaxEditor.Modules
         /// <seealso cref="FlaxEditor.SceneGraph.RootNode" />
         public class ScenesRootNode : RootNode
         {
+            private readonly Editor _editor;
+
+            /// <inheritdoc />
+            public ScenesRootNode()
+            {
+                _editor = Editor.Instance;
+            }
+
             /// <inheritdoc />
             public override void Spawn(Actor actor, Actor parent)
             {
-                Editor.Instance.SceneEditing.Spawn(actor, parent);
+                _editor.SceneEditing.Spawn(actor, parent);
             }
 
             /// <inheritdoc />
             public override Undo Undo => Editor.Instance.Undo;
+
+            /// <inheritdoc />
+            public override List<SceneGraphNode> Selection => _editor.SceneEditing.Selection;
         }
 
         /// <summary>
@@ -360,12 +371,14 @@ namespace FlaxEditor.Modules
         /// <param name="fullCleanup">True if cleanup all data (including serialized and cached data). Otherwise will just clear living references to the scene objects.</param>
         public void ClearRefsToSceneObjects(bool fullCleanup = false)
         {
+            Profiler.BeginEvent("SceneModule.ClearRefsToSceneObjects");
             Editor.SceneEditing.Deselect();
 
             if (fullCleanup)
             {
                 Undo.Clear();
             }
+            Profiler.EndEvent();
         }
 
         private void OnSceneLoaded(Scene scene, Guid sceneId)
@@ -403,6 +416,26 @@ namespace FlaxEditor.Modules
                 Editor.Log($"Cleanup graph for scene \'{scene.Name}\'");
 
                 // Cleanup
+                var selection = Editor.SceneEditing.Selection;
+                var hasSceneSelection = false;
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    if (selection[i].ParentScene == node)
+                    {
+                        hasSceneSelection = true;
+                        break;
+                    }
+                }
+                if (hasSceneSelection)
+                {
+                    var newSelection = new List<SceneGraphNode>();
+                    for (int i = 0; i < selection.Count; i++)
+                    {
+                        if (selection[i].ParentScene != node)
+                            newSelection.Add(selection[i]);
+                    }
+                    Editor.SceneEditing.Select(newSelection);
+                }
                 node.Dispose();
             }
         }

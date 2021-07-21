@@ -70,8 +70,6 @@ namespace FlaxEditor.Gizmo
             {
                 if (!_modelTranslateAxis || !_modelTranslateAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
                     break;
-
-                // Cache data
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
                 var axisMesh = _modelTranslateAxis.LODs[0].Meshes[0];
@@ -113,8 +111,6 @@ namespace FlaxEditor.Gizmo
             {
                 if (!_modelCircle || !_modelCircle.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
                     break;
-
-                // Cache data
                 var circleMesh = _modelCircle.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
                 Matrix.Scaling(8.0f, out m3);
@@ -147,8 +143,6 @@ namespace FlaxEditor.Gizmo
             {
                 if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
                     break;
-
-                // Cache data
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
                 var axisMesh = _modelScaleAxis.LODs[0].Meshes[0];

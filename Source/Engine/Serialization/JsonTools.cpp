@@ -5,6 +5,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Utilities/Encryption.h"
 
@@ -35,38 +36,12 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
             // Optimized version:
             char buffer[32] =
             {
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0'
+            // @formatter:off
+                '0','0','0','0','0','0','0','0','0','0',
+                '0','0','0','0','0','0','0','0','0','0',
+                '0','0','0','0','0','0','0','0','0','0',
+                '0','0'
+            // @formatter:on
             };
             static const char* digits = "0123456789abcdef";
             uint32 n = value.A;
@@ -102,6 +77,7 @@ void JsonTools::ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping)
 {
     if (mapping.IsEmpty())
         return;
+    PROFILE_CPU();
     ::ChangeIds(doc, doc, mapping);
 }
 

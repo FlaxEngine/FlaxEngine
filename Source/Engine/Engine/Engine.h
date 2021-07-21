@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Scripting/ScriptingType.h"
 
+class TaskGraph;
 class JsonAsset;
 
 /// <summary>
@@ -42,6 +43,11 @@ public:
     /// Event called on engine update.
     /// </summary>
     static Action Update;
+
+    /// <summary>
+    /// Task graph for engine update.
+    /// </summary>
+    API_FIELD(ReadOnly) static TaskGraph* UpdateGraph;
 
     /// <summary>
     /// Event called after engine update.

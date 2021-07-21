@@ -3,6 +3,7 @@
 #include "EnvironmentProbe.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ProbesRenderer.h"
@@ -19,7 +20,8 @@ EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     , _isUsingCustomProbe(false)
     , _probe(nullptr)
 {
-    UpdateBounds();
+    _sphere = BoundingSphere(Vector3::Zero, _radius);
+    BoundingBox::FromSphere(_sphere, _box);
 }
 
 float EnvironmentProbe::GetRadius() const
@@ -124,6 +126,8 @@ void EnvironmentProbe::UpdateBounds()
 {
     _sphere = BoundingSphere(GetPosition(), GetScaledRadius());
     BoundingBox::FromSphere(_sphere, _box);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
 }
 
 void EnvironmentProbe::Draw(RenderContext& renderContext)
@@ -148,6 +152,12 @@ void EnvironmentProbe::OnDebugDrawSelected()
 }
 
 #endif
+
+void EnvironmentProbe::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+}
 
 void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -189,7 +199,7 @@ bool EnvironmentProbe::IntersectsItself(const Ray& ray, float& distance, Vector3
 
 void EnvironmentProbe::OnEnable()
 {
-    GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -203,7 +213,7 @@ void EnvironmentProbe::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this);
+    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

@@ -3,13 +3,14 @@
 #pragma once
 
 #include "IMaterial.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Renderer/Config.h"
 
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 148
+#define MATERIAL_GRAPH_VERSION 149
 
 class Material;
 class GPUShader;
@@ -51,10 +52,7 @@ protected:
 
         void Release()
         {
-            for (int32 i = 0; i < ARRAY_COUNT(PS); i++)
-            {
-                SAFE_DELETE_GPU_RESOURCE(PS[i]);
-            }
+            SAFE_DELETE_GPU_RESOURCES(PS);
         }
     };
 
@@ -72,7 +70,7 @@ protected:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    MaterialShader(const String& name);
+    MaterialShader(const StringView& name);
 
 public:
 
@@ -90,7 +88,7 @@ public:
     /// <param name="shaderCacheStream">Stream with compiled shader data</param>
     /// <param name="info">Loaded material info structure</param>
     /// <returns>The created and loaded material or null if failed.</returns>
-    static MaterialShader* Create(const String& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
+    static MaterialShader* Create(const StringView& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
     /// <summary>
     /// Creates the dummy material used by the Null rendering backend to mock object but not perform any rendering.
@@ -99,6 +97,8 @@ public:
     /// <param name="info">The material information.</param>
     /// <returns>The created and loaded material or null if failed.</returns>
     static MaterialShader* CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
+
+    GPUShader* GetShader() const;
 
     /// <summary>
     /// Clears the loaded data.

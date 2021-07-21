@@ -576,7 +576,7 @@ namespace FlaxEditor.Surface.Archetypes
                             for (int i = 0; i < _parameters.Length; i++)
                             {
                                 writer.Write(_parameters[i].Name); // Parameter name
-                                Utilities.Utils.WriteVariantType(writer, TypeUtils.GetType(_parameters[i].Type)); // Box type
+                                Utilities.VariantUtils.WriteVariantType(writer, TypeUtils.GetType(_parameters[i].Type)); // Box type
                             }
                             SetValue(2, stream.ToArray());
                         }
@@ -594,7 +594,7 @@ namespace FlaxEditor.Surface.Archetypes
                         for (int i = 0; i < parametersCount; i++)
                         {
                             var parameterName = reader.ReadString(); // Parameter name
-                            var boxType = Utilities.Utils.ReadVariantType(reader); // Box type
+                            var boxType = Utilities.VariantUtils.ReadVariantType(reader); // Box type
                             MakeBox(i + 1, parameterName, boxType);
                         }
                     }
@@ -605,8 +605,7 @@ namespace FlaxEditor.Surface.Archetypes
                     MakeBox(0, string.Empty, typeof(void), true);
                 }
 
-                // Update size
-                Resize(Style.Current.FontLarge.MeasureText(Title).X + 30, 20 + (_parameters?.Length * 20 ?? 0));
+                ResizeAuto();
             }
 
             private void MakeBox(int id, string text, Type type, bool single = false)
@@ -778,14 +777,14 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         reader.ReadByte(); // Version
                         signature.IsStatic = reader.ReadBoolean(); // Is Static
-                        signature.ReturnType = Utilities.Utils.ReadVariantScriptType(reader); // Return type
+                        signature.ReturnType = Utilities.VariantUtils.ReadVariantScriptType(reader); // Return type
                         var parametersCount = reader.ReadInt32(); // Parameters count
                         signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Utils.GetEmptyArray<SignatureParamInfo>();
                         for (int i = 0; i < parametersCount; i++)
                         {
                             ref var param = ref signature.Params[i];
                             param.Name = Utilities.Utils.ReadStr(reader, 11); // Parameter name
-                            param.Type = Utilities.Utils.ReadVariantScriptType(reader); // Parameter type
+                            param.Type = Utilities.VariantUtils.ReadVariantScriptType(reader); // Parameter type
                             param.IsOut = reader.ReadByte() != 0; // Is parameter out
                         }
                     }
@@ -799,14 +798,14 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         reader.ReadByte(); // Version
                         signature.IsStatic = reader.ReadBoolean(); // Is Static
-                        signature.ReturnType = Utilities.Utils.ReadVariantScriptType(reader); // Return type
+                        signature.ReturnType = Utilities.VariantUtils.ReadVariantScriptType(reader); // Return type
                         var parametersCount = reader.ReadInt32(); // Parameters count
                         signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Utils.GetEmptyArray<SignatureParamInfo>();
                         for (int i = 0; i < parametersCount; i++)
                         {
                             ref var param = ref signature.Params[i];
                             param.Name = reader.ReadString(); // Parameter name
-                            param.Type = Utilities.Utils.ReadVariantScriptType(reader); // Parameter type
+                            param.Type = Utilities.VariantUtils.ReadVariantScriptType(reader); // Parameter type
                             param.IsOut = reader.ReadByte() != 0; // Is parameter out
                         }
                     }
@@ -823,13 +822,13 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     writer.Write((byte)4); // Version
                     writer.Write(methodInfo.IsStatic); // Is Static
-                    Utilities.Utils.WriteVariantType(writer, methodInfo.ValueType); // Return type
+                    Utilities.VariantUtils.WriteVariantType(writer, methodInfo.ValueType); // Return type
                     writer.Write(parameters.Length); // Parameters count
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         ref var param = ref parameters[i];
                         Utilities.Utils.WriteStr(writer, param.Name, 11); // Parameter name
-                        Utilities.Utils.WriteVariantType(writer, param.Type); // Parameter type
+                        Utilities.VariantUtils.WriteVariantType(writer, param.Type); // Parameter type
                         writer.Write((byte)(param.IsOut ? 1 : 0)); // Is parameter out
                     }
                     return stream.ToArray();
@@ -1434,14 +1433,14 @@ namespace FlaxEditor.Surface.Archetypes
                     if (_signature.IsVirtual)
                         flags |= Flags.Virtual;
                     writer.Write((byte)flags); // Flags
-                    Utilities.Utils.WriteVariantType(writer, _signature.ReturnType); // Return Type
+                    Utilities.VariantUtils.WriteVariantType(writer, _signature.ReturnType); // Return Type
                     var parametersCount = _signature.Parameters?.Length ?? 0;
                     writer.Write(parametersCount); // Parameters count
                     for (int i = 0; i < parametersCount; i++)
                     {
                         ref var param = ref _signature.Parameters[i];
                         Utilities.Utils.WriteStrAnsi(writer, param.Name, 13); // Parameter name
-                        Utilities.Utils.WriteVariantType(writer, param.Type); // Parameter type
+                        Utilities.VariantUtils.WriteVariantType(writer, param.Type); // Parameter type
                         writer.Write((byte)0); // Is parameter out
                         writer.Write((byte)0); // Has default value
                     }
@@ -1470,13 +1469,13 @@ namespace FlaxEditor.Surface.Archetypes
                             var flags = (Flags)reader.ReadByte(); // Flags
                             _signature.IsStatic = (flags & Flags.Static) == Flags.Static;
                             _signature.IsVirtual = (flags & Flags.Virtual) == Flags.Virtual;
-                            _signature.ReturnType = Utilities.Utils.ReadVariantScriptType(reader); // Return Type
+                            _signature.ReturnType = Utilities.VariantUtils.ReadVariantScriptType(reader); // Return Type
                             var parametersCount = reader.ReadInt32(); // Parameters count
                             _signature.Parameters = new Parameter[parametersCount];
                             for (int i = 0; i < parametersCount; i++)
                             {
                                 var paramName = Utilities.Utils.ReadStrAnsi(reader, 13); // Parameter name
-                                var paramType = Utilities.Utils.ReadVariantScriptType(reader); // Parameter type
+                                var paramType = Utilities.VariantUtils.ReadVariantScriptType(reader); // Parameter type
                                 var isOut = reader.ReadByte() != 0; // Is parameter out
                                 var hasDefaultValue = reader.ReadByte() != 0; // Has default value
                                 _signature.Parameters[i] = new Parameter
@@ -1993,7 +1992,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 else if (_isBind)
                 {
-                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Add48);
+                    _helperButton.Brush = new SpriteBrush(Editor.Instance.Icons.Add64);
                     _helperButton.Color = Color.Red;
                     _helperButton.TooltipText = "Add new handler function and bind it to this event";
                     _helperButton.Enabled = _signature != null;

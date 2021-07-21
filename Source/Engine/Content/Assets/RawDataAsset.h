@@ -10,7 +10,6 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API RawDataAsset : public BinaryAsset
 {
 DECLARE_BINARY_ASSET_HEADER(RawDataAsset, 1);
-
 public:
 
     /// <summary>

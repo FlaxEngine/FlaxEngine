@@ -111,12 +111,6 @@ public:
     /// <param name="writer">The json metadata writer.</param>
     void AddMeta(JsonWriter& writer) const;
 
-    /// <summary>
-    /// Save asset file data to the hard drive
-    /// </summary>
-    /// <returns>Saving result</returns>
-    CreateAssetResult Save();
-
 private:
 
     void ApplyChanges();
@@ -130,12 +124,17 @@ struct AssetImporter
 public:
 
     /// <summary>
-    /// Extension of the file to import with that importer
+    /// Extension of the file to import with that importer (without leading dot).
     /// </summary>
     String FileExtension;
 
     /// <summary>
-    /// Call asset importing process
+    /// Extension of the output file as output with that importer (without leading dot).
+    /// </summary>
+    String ResultExtension;
+
+    /// <summary>
+    /// Callback for the asset importing process.
     /// </summary>
     CreateAssetFunction Callback;
 };

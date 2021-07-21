@@ -4,9 +4,12 @@
 #include "FlaxFile.h"
 #include "FlaxPackage.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/TaskGraph.h"
+#include "Engine/Threading/Threading.h"
 
 namespace
 {
@@ -21,20 +24,31 @@ namespace
     Dictionary<String, FlaxStorage*> StorageMap(2048);
 }
 
-class ContentStorageManagerService : public EngineService
+class ContentStorageService : public EngineService
 {
 public:
-
-    ContentStorageManagerService()
-        : EngineService(TEXT("ContentStorageManager"), -800)
+    ContentStorageService()
+        : EngineService(TEXT("ContentStorage"), -800)
     {
     }
 
-    void Update() override;
+    bool Init() override;
     void Dispose() override;
 };
 
-ContentStorageManagerService ContentStorageManagerServiceInstance;
+class ContentStorageSystem : public TaskGraphSystem
+{
+public:
+    void Job(int32 index);
+    void Execute(TaskGraph* graph) override;
+};
+
+namespace
+{
+    TaskGraphSystem* System = nullptr;
+}
+
+ContentStorageService ContentStorageServiceInstance;
 
 TimeSpan ContentStorageManager::UnusedDataChunksLifetime = TimeSpan::FromSeconds(10);
 
@@ -201,12 +215,30 @@ void ContentStorageManager::GetStorage(Array<FlaxStorage*>& result)
         result.Add(Files[i]);
 }
 
-void ContentStorageManagerService::Update()
+bool ContentStorageService::Init()
 {
-    PROFILE_CPU();
+    System = New<ContentStorageSystem>();
+    Engine::UpdateGraph->AddSystem(System);
+    return false;
+}
+
+void ContentStorageService::Dispose()
+{
+    ScopeLock lock(Locker);
+    for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
+        i->Value->Dispose();
+    Files.ClearDelete();
+    Packages.ClearDelete();
+    StorageMap.Clear();
+    ASSERT(Files.IsEmpty() && Packages.IsEmpty());
+    SAFE_DELETE(System);
+}
+
+void ContentStorageSystem::Job(int32 index)
+{
+    PROFILE_CPU_NAMED("ContentStorage.Job");
 
     ScopeLock lock(Locker);
-
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
     {
         auto storage = i->Value;
@@ -230,17 +262,14 @@ void ContentStorageManagerService::Update()
     }
 }
 
-void ContentStorageManagerService::Dispose()
+void ContentStorageSystem::Execute(TaskGraph* graph)
 {
     ScopeLock lock(Locker);
+    if (StorageMap.Count() == 0)
+        return;
 
-    // Cleanup
-    for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
-        i->Value->Dispose();
-    Files.ClearDelete();
-    Packages.ClearDelete();
-    StorageMap.Clear();
-
-    // Ensure that data has been disposed
-    ASSERT(Files.IsEmpty() && Packages.IsEmpty());
+    // Schedule work to update all storage containers in async
+    Function<void(int32)> job;
+    job.Bind<ContentStorageSystem, &ContentStorageSystem::Job>(this);
+    graph->DispatchJob(job, 1);
 }

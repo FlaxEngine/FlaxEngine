@@ -4,11 +4,6 @@
 
 #include "Engine/Core/Memory/Allocation.h"
 
-template<typename>
-class Function;
-template<typename... Params>
-class Delegate;
-
 /// <summary>
 /// The function object.
 /// </summary>

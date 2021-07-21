@@ -108,6 +108,26 @@ namespace FlaxEditor.Content
             return false;
         }
 
+        /// <summary>
+        /// Called when user dags this item into editor viewport or scene tree node.
+        /// </summary>
+        /// <param name="context">The editor context (eg. editor viewport or scene tree node).</param>
+        /// <returns>True if item can be dropped in, otherwise false.</returns>
+        public virtual bool OnEditorDrag(object context)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Called when user drops the item into editor viewport or scene tree node.
+        /// </summary>
+        /// <param name="context">The editor context (eg. editor viewport or scene tree node).</param>
+        /// <returns>The spawned object.</returns>
+        public virtual Actor OnEditorDrop(object context)
+        {
+            throw new NotSupportedException($"Asset {GetType()} doesn't support dropping into viewport.");
+        }
+
         /// <inheritdoc />
         protected override bool DrawShadow => true;
 

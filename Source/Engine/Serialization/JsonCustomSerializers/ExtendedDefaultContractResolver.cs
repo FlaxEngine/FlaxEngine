@@ -47,6 +47,33 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             return contract;
         }
 
+        /// <inheritdoc />
+        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType)
+        {
+            var contract = base.CreateDictionaryContract(objectType);
+
+            // Override contract to save enums keys as integer
+            if (contract.DictionaryKeyType?.IsEnum ?? false)
+            {
+                var enumType = contract.DictionaryKeyType;
+                contract.DictionaryKeyResolver = name =>
+                {
+                    try
+                    {
+                        var e = Enum.Parse(enumType, name);
+                        name = Convert.ToInt32(e).ToString();
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                    return name;
+                };
+            }
+
+            return contract;
+        }
+
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);

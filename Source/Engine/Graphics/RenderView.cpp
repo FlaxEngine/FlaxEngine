@@ -31,8 +31,15 @@ void RenderView::Prepare(RenderContext& renderContext)
         taaJitter = Vector2(jitterX * 2.0f / width, jitterY * 2.0f / height);
 
         // Modify projection matrix
-        Projection.Values[2][0] += taaJitter.X;
-        Projection.Values[2][1] += taaJitter.Y;
+        if (IsOrthographicProjection())
+        {
+            // TODO: jitter otho matrix in a proper way
+        }
+        else
+        {
+            Projection.Values[2][0] += taaJitter.X;
+            Projection.Values[2][1] += taaJitter.Y;
+        }
 
         // Update matrices
         Matrix::Invert(Projection, IP);

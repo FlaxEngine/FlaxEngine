@@ -6,13 +6,15 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineState.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Platform/Window.h"
 #include "RendererPass.h"
 #include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Graphics/GPUPipelineState.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
 
@@ -346,11 +348,9 @@ void AtmospherePreComputeService::Update()
 
         // Init service
         if (!_shader)
-        {
             _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AtmospherePreCompute"));
-            if (_shader && !_shader->IsLoaded())
-                return;
-        }
+        if (_shader && !_shader->IsLoaded())
+            return;
         if (init())
         {
             LOG(Fatal, "Cannot setup Atmosphere Pre Compute!");

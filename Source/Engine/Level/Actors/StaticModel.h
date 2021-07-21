@@ -4,6 +4,7 @@
 
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/Lightmaps.h"
 
 /// <summary>

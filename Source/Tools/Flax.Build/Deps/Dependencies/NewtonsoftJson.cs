@@ -27,6 +27,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.PS4,
+                        TargetPlatform.Switch,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -81,11 +82,10 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.PS4:
                 case TargetPlatform.XboxScarlett:
+                case TargetPlatform.Switch:
                 {
-                    foreach (var file in outputFileNames)
-                    {
-                        Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, platform.ToString(), file));
-                    }
+                    var file = "Newtonsoft.Json.dll";
+                    Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", file));
                     break;
                 }
                 }

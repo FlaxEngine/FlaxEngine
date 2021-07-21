@@ -25,5 +25,20 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Actor is UIControl uiControl)
                 DebugDraw.DrawWireBox(uiControl.Bounds, Color.BlueViolet);
         }
+
+        /// <inheritdoc />
+        public override void PostPaste()
+        {
+            base.PostPaste();
+
+            var control = ((UIControl)Actor).Control;
+            if (control != null)
+            {
+                if (control.Parent != null)
+                    control.Parent.PerformLayout();
+                else
+                    control.PerformLayout();
+            }
+        }
     }
 }

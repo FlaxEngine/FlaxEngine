@@ -17,7 +17,7 @@ namespace
 bool Time::_gamePaused = false;
 float Time::_physicsMaxDeltaTime = 0.1f;
 DateTime Time::StartupTime;
-float Time::UpdateFPS = 30.0f;
+float Time::UpdateFPS = 60.0f;
 float Time::PhysicsFPS = 60.0f;
 float Time::DrawFPS = 60.0f;
 float Time::TimeScale = 1.0f;
@@ -70,6 +70,7 @@ void Time::TickData::OnBeforeRun(float targetFps, double currentTime)
     LastLength = static_cast<double>(DeltaTime.Ticks) / Constants::TicksPerSecond;
     LastBegin = currentTime - LastLength;
     LastEnd = currentTime;
+    NextBegin = targetFps > ZeroTolerance ? LastBegin + (1.0f / targetFps) : 0.0;
 }
 
 void Time::TickData::OnReset(float targetFps, double currentTime)
@@ -91,10 +92,18 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
     }
     else
     {
-        deltaTime = Math::Clamp(time - LastBegin, 0.0, (double)maxDeltaTime);
-        const double minDeltaTime = targetFps > ZeroTolerance ? 1.0 / (double)targetFps : 0.0;
-        if (deltaTime < minDeltaTime)
+        if (time < NextBegin)
             return false;
+
+        deltaTime = Math::Max((time - LastBegin), 0.0);
+        if (deltaTime > maxDeltaTime)
+        {
+            deltaTime = (double)maxDeltaTime;
+            NextBegin = time;
+        }
+
+        if (targetFps > ZeroTolerance)
+            NextBegin += (1.0 / targetFps);
     }
 
     // Update data
@@ -135,10 +144,19 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
     }
     else
     {
-        deltaTime = Math::Clamp(time - LastBegin, 0.0, (double)maxDeltaTime);
-        minDeltaTime = targetFps > ZeroTolerance ? 1.0 / (double)targetFps : 0.0;
-        if (deltaTime < minDeltaTime)
+        if (time < NextBegin)
             return false;
+
+        minDeltaTime = targetFps > ZeroTolerance ? 1.0 / targetFps : 0.0;
+        deltaTime = Math::Max((time - LastBegin), 0.0);
+        if (deltaTime > maxDeltaTime)
+        {
+            deltaTime = (double)maxDeltaTime;
+            NextBegin = time;
+        }
+
+        if (targetFps > ZeroTolerance)
+            NextBegin += (1.0 / targetFps);
     }
     Samples.Add(deltaTime);
 
@@ -158,26 +176,23 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
     return true;
 }
 
-Time::TickData* Time::GetHighestFrequency(float& fps)
+double Time::GetNextTick()
 {
-    const auto updateFps = UpdateFPS;
-    const auto drawFps = DrawFPS;
-    const auto physicsFps = PhysicsFPS;
+    const double nextUpdate = Time::Update.NextBegin;
+    const double nextPhysics = Time::Physics.NextBegin;
+    const double nextDraw = Time::Draw.NextBegin;
 
-    if (physicsFps >= drawFps && physicsFps >= updateFps)
-    {
-        fps = physicsFps;
-        return &Physics;
-    }
+    double nextTick = MAX_double;
+    if (UpdateFPS > 0 && nextUpdate < nextTick)
+        nextTick = nextUpdate;
+    if (PhysicsFPS > 0 && nextPhysics < nextTick)
+        nextTick = nextPhysics;
+    if (DrawFPS > 0 && nextDraw < nextTick)
+        nextTick = nextDraw;
 
-    if (drawFps >= physicsFps && drawFps >= updateFps)
-    {
-        fps = drawFps;
-        return &Draw;
-    }
-
-    fps = updateFps;
-    return &Update;
+    if (nextTick == MAX_double)
+        return 0.0;
+    return nextTick;
 }
 
 void Time::SetGamePaused(bool value)

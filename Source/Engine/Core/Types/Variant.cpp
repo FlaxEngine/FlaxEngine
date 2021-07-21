@@ -11,6 +11,9 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Matrix.h"
@@ -157,6 +160,10 @@ const char* VariantType::GetTypeName() const
         return "System.Void";
     case Bool:
         return "System.Boolean";
+    case Int16:
+        return "System.Int16";
+    case Uint16:
+        return "System.UInt16";
     case Int:
         return "System.Int32";
     case Uint:
@@ -221,6 +228,12 @@ const char* VariantType::GetTypeName() const
         break;
     case Bool:
         result = TEXT("Bool");
+        break;
+    case Int16:
+        result = TEXT("Int16");
+        break;
+    case Uint16:
+        result = TEXT("Uint16");
         break;
     case Int:
         result = TEXT("Int");
@@ -414,6 +427,18 @@ Variant::Variant(bool v)
     AsBool = v;
 }
 
+Variant::Variant(int16 v)
+    : Type(VariantType::Int16)
+{
+    AsInt16 = v;
+}
+
+Variant::Variant(uint16 v)
+    : Type(VariantType::Uint16)
+{
+    AsUint16 = v;
+}
+
 Variant::Variant(int32 v)
     : Type(VariantType::Int)
 {
@@ -549,6 +574,24 @@ Variant::Variant(const Vector4& v)
     : Type(VariantType::Vector4)
 {
     *(Vector4*)AsData = v;
+}
+
+Variant::Variant(const Int2& v)
+    : Type(VariantType::Int2)
+{
+    *(Int2*)AsData = v;
+}
+
+Variant::Variant(const Int3& v)
+    : Type(VariantType::Int3)
+{
+    *(Int3*)AsData = v;
+}
+
+Variant::Variant(const Int4& v)
+    : Type(VariantType::Int4)
+{
+    *(Int4*)AsData = v;
 }
 
 Variant::Variant(const Color& v)
@@ -691,7 +734,7 @@ Variant::Variant(const CommonValue& value)
         *this = Variant(value.AsRay);
         break;
     default:
-    CRASH;
+        CRASH;
     }
 }
 
@@ -875,6 +918,10 @@ bool Variant::operator==(const Variant& other) const
             return true;
         case VariantType::Bool:
             return AsBool == other.AsBool;
+        case VariantType::Int16:
+            return AsInt16 == other.AsInt16;
+        case VariantType::Uint16:
+            return AsUint16 == other.AsUint16;
         case VariantType::Int:
             return AsInt == other.AsInt;
         case VariantType::Uint:
@@ -983,6 +1030,10 @@ bool Variant::operator<(const Variant& other) const
             return true;
         case VariantType::Bool:
             return AsBool < other.AsBool;
+        case VariantType::Int16:
+            return AsInt16 < other.AsInt16;
+        case VariantType::Uint16:
+            return AsUint16 < other.AsUint16;
         case VariantType::Int:
             return AsInt < other.AsInt;
         case VariantType::Uint:
@@ -1019,6 +1070,10 @@ Variant::operator bool() const
     {
     case VariantType::Bool:
         return AsBool;
+    case VariantType::Int16:
+        return AsInt16 != 0;
+    case VariantType::Uint16:
+        return AsUint16 != 0;
     case VariantType::Int:
         return AsInt != 0;
     case VariantType::Uint:
@@ -1054,6 +1109,10 @@ Variant::operator Char() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (Char)AsInt16;
+    case VariantType::Uint16:
+        return (Char)AsUint16;
     case VariantType::Int:
         return (Char)AsInt;
     case VariantType::Uint:
@@ -1080,6 +1139,10 @@ Variant::operator int8() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int8)AsInt16;
+    case VariantType::Uint16:
+        return (int8)AsUint16;
     case VariantType::Int:
         return (int8)AsInt;
     case VariantType::Uint:
@@ -1106,6 +1169,10 @@ Variant::operator int16() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return AsInt16;
+    case VariantType::Uint16:
+        return (int16)AsUint16;
     case VariantType::Int:
         return (int16)AsInt;
     case VariantType::Uint:
@@ -1132,6 +1199,10 @@ Variant::operator int32() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int32)AsInt16;
+    case VariantType::Uint16:
+        return (int32)AsUint16;
     case VariantType::Int:
         return AsInt;
     case VariantType::Uint:
@@ -1158,6 +1229,10 @@ Variant::operator int64() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (int64)AsInt16;
+    case VariantType::Uint16:
+        return (int64)AsUint16;
     case VariantType::Int:
         return (int64)AsInt;
     case VariantType::Uint:
@@ -1184,6 +1259,10 @@ Variant::operator uint8() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint8)AsInt16;
+    case VariantType::Uint16:
+        return (uint8)AsUint16;
     case VariantType::Int:
         return (uint8)AsInt;
     case VariantType::Uint:
@@ -1210,6 +1289,10 @@ Variant::operator uint16() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint16)AsInt16;
+    case VariantType::Uint16:
+        return AsUint16;
     case VariantType::Int:
         return (uint16)AsInt;
     case VariantType::Uint:
@@ -1236,6 +1319,10 @@ Variant::operator uint32() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint32)AsInt16;
+    case VariantType::Uint16:
+        return (uint32)AsUint16;
     case VariantType::Int:
         return (uint32)AsInt;
     case VariantType::Uint:
@@ -1262,6 +1349,10 @@ Variant::operator uint64() const
     {
     case VariantType::Bool:
         return AsBool ? 1 : 0;
+    case VariantType::Int16:
+        return (uint64)AsInt16;
+    case VariantType::Uint16:
+        return (uint64)AsUint16;
     case VariantType::Int:
         return (uint64)AsInt;
     case VariantType::Uint:
@@ -1288,6 +1379,10 @@ Variant::operator float() const
     {
     case VariantType::Bool:
         return AsBool ? 1.0f : 0.0f;
+    case VariantType::Int16:
+        return (float)AsInt16;
+    case VariantType::Uint16:
+        return (float)AsUint16;
     case VariantType::Int:
         return (float)AsInt;
     case VariantType::Uint:
@@ -1312,6 +1407,10 @@ Variant::operator double() const
     {
     case VariantType::Bool:
         return AsBool ? 1.0 : 0.0;
+    case VariantType::Int16:
+        return (double)AsInt16;
+    case VariantType::Uint16:
+        return (double)AsUint16;
     case VariantType::Int:
         return (double)AsInt;
     case VariantType::Uint:
@@ -1402,6 +1501,10 @@ Variant::operator Vector2() const
     {
     case VariantType::Bool:
         return Vector2(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector2((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector2((float)AsUint16);
     case VariantType::Int:
         return Vector2((float)AsInt);
     case VariantType::Uint:
@@ -1438,6 +1541,10 @@ Variant::operator Vector3() const
     {
     case VariantType::Bool:
         return Vector3(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector3((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector3((float)AsUint16);
     case VariantType::Int:
         return Vector3((float)AsInt);
     case VariantType::Uint:
@@ -1474,6 +1581,10 @@ Variant::operator Vector4() const
     {
     case VariantType::Bool:
         return Vector4(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Vector4((float)AsInt16);
+    case VariantType::Uint16:
+        return Vector4((float)AsUint16);
     case VariantType::Int:
         return Vector4((float)AsInt);
     case VariantType::Uint:
@@ -1504,12 +1615,154 @@ Variant::operator Vector4() const
     }
 }
 
+Variant::operator Int2() const
+{
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+        return Int2((int32)(AsBool ? 1.0f : 0.0f));
+    case VariantType::Int16:
+        return Int2((int32)AsInt16);
+    case VariantType::Uint16:
+        return Int2((int32)AsUint16);
+    case VariantType::Int:
+        return Int2((int32)AsInt);
+    case VariantType::Uint:
+        return Int2((int32)AsUint);
+    case VariantType::Int64:
+        return Int2((int32)AsInt64);
+    case VariantType::Uint64:
+    case VariantType::Enum:
+        return Int2((int32)AsUint64);
+    case VariantType::Float:
+        return Int2((int32)AsFloat);
+    case VariantType::Double:
+        return Int2((int32)AsDouble);
+    case VariantType::Pointer:
+        return Int2((int32)(intptr)AsPointer);
+    case VariantType::Vector2:
+        return Int2(*(Vector2*)AsData);
+    case VariantType::Vector3:
+        return Int2(*(Vector3*)AsData);
+    case VariantType::Vector4:
+        return Int2(*(Vector4*)AsData);
+    case VariantType::Int2:
+        return Int2(*(Int2*)AsData);
+    case VariantType::Int3:
+        return Int2(*(Int3*)AsData);
+    case VariantType::Int4:
+    case VariantType::Color:
+        return Int2(*(Int4*)AsData);
+    case VariantType::Structure:
+        if (StringUtils::Compare(Type.TypeName, Int2::TypeInitializer.GetType().Fullname.Get()) == 0)
+            return *(Int2*)AsBlob.Data;
+    default:
+        return Int3::Zero;
+    }
+}
+
+Variant::operator Int3() const
+{
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+        return Int3((int32)(AsBool ? 1 : 0));
+    case VariantType::Int16:
+        return Int3((int32)AsInt16);
+    case VariantType::Uint16:
+        return Int3((int32)AsUint16);
+    case VariantType::Int:
+        return Int3((int32)AsInt);
+    case VariantType::Uint:
+        return Int3((int32)AsUint);
+    case VariantType::Int64:
+        return Int3((int32)AsInt64);
+    case VariantType::Uint64:
+    case VariantType::Enum:
+        return Int3((int32)AsUint64);
+    case VariantType::Float:
+        return Int3((int32)AsFloat);
+    case VariantType::Double:
+        return Int3((int32)AsDouble);
+    case VariantType::Pointer:
+        return Int3((int32)(intptr)AsPointer);
+    case VariantType::Vector2:
+        return Int3(*(Vector2*)AsData, 0);
+    case VariantType::Vector3:
+        return Int3(*(Vector3*)AsData);
+    case VariantType::Vector4:
+        return Int3(*(Vector4*)AsData);
+    case VariantType::Int2:
+        return Int3(*(Int2*)AsData, 0);
+    case VariantType::Int3:
+        return Int3(*(Int3*)AsData);
+    case VariantType::Int4:
+    case VariantType::Color:
+        return Int3(*(Int4*)AsData);
+    case VariantType::Structure:
+        if (StringUtils::Compare(Type.TypeName, Int3::TypeInitializer.GetType().Fullname.Get()) == 0)
+            return *(Int3*)AsBlob.Data;
+    default:
+        return Int3::Zero;
+    }
+}
+
+Variant::operator Int4() const
+{
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+        return Int4((int32)(AsBool ? 1 : 0));
+    case VariantType::Int16:
+        return Int4(AsInt16);
+    case VariantType::Uint16:
+        return Int4((int32)AsUint16);
+    case VariantType::Int:
+        return Int4(AsInt);
+    case VariantType::Uint:
+        return Int4((int32)AsUint);
+    case VariantType::Int64:
+        return Int4((int32)AsInt64);
+    case VariantType::Uint64:
+    case VariantType::Enum:
+        return Int4((int32)AsUint64);
+    case VariantType::Float:
+        return Int4((int32)AsFloat);
+    case VariantType::Double:
+        return Int4((int32)AsDouble);
+    case VariantType::Pointer:
+        return Int4((int32)(intptr)AsPointer);
+    case VariantType::Vector2:
+        return Int4(*(Vector2*)AsData, 0, 0);
+    case VariantType::Vector3:
+        return Int4(*(Vector3*)AsData, 0);
+    case VariantType::Vector4:
+        return Int4(*(Vector4*)AsData);
+    case VariantType::Int2:
+        return Int4(*(Int2*)AsData, 0, 0);
+    case VariantType::Int3:
+        return Int4(*(Int3*)AsData, 0);
+    case VariantType::Int4:
+    case VariantType::Color:
+        return *(Int4*)AsData;
+    case VariantType::Structure:
+        if (StringUtils::Compare(Type.TypeName, Int4::TypeInitializer.GetType().Fullname.Get()) == 0)
+            return *(Int4*)AsBlob.Data;
+    default:
+        return Int4::Zero;
+    }
+}
+
 Variant::operator Color() const
 {
     switch (Type.Type)
     {
     case VariantType::Bool:
         return Color(AsBool ? 1.0f : 0.0f);
+    case VariantType::Int16:
+        return Color((float)AsInt16);
+    case VariantType::Uint16:
+        return Color((float)AsUint16);
     case VariantType::Int:
         return Color((float)AsInt);
     case VariantType::Uint:
@@ -1668,6 +1921,21 @@ const Vector3& Variant::AsVector3() const
 const Vector4& Variant::AsVector4() const
 {
     return *(const Vector4*)AsData;
+}
+
+const Int2& Variant::AsInt2() const
+{
+    return *(const Int2*)AsData;
+}
+
+const Int3& Variant::AsInt3() const
+{
+    return *(const Int3*)AsData;
+}
+
+const Int4& Variant::AsInt4() const
+{
+    return *(const Int4*)AsData;
 }
 
 const Color& Variant::AsColor() const
@@ -1977,6 +2245,10 @@ String Variant::ToString() const
         return TEXT("null");
     case VariantType::Bool:
         return AsBool ? TEXT("true") : TEXT("false");
+    case VariantType::Int16:
+        return StringUtils::ToString(AsInt16);
+    case VariantType::Uint16:
+        return StringUtils::ToString(AsUint16);
     case VariantType::Int:
         return StringUtils::ToString(AsInt);
     case VariantType::Uint:
@@ -2045,9 +2317,30 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
     case VariantType::Bool:
         switch (to.Type)
         {
+        case VariantType::Int16:
+        case VariantType::Uint16:
         case VariantType::Int:
         case VariantType::Uint:
         case VariantType::Int64:
+        case VariantType::Uint64:
+        case VariantType::Float:
+        case VariantType::Double:
+        case VariantType::Vector2:
+        case VariantType::Vector3:
+        case VariantType::Vector4:
+        case VariantType::Color:
+            return true;
+        default:
+            return false;
+        }
+    case VariantType::Int16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+        case VariantType::Int:
+        case VariantType::Int64:
+        case VariantType::Uint16:
+        case VariantType::Uint:
         case VariantType::Uint64:
         case VariantType::Float:
         case VariantType::Double:
@@ -2063,6 +2356,27 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
+        case VariantType::Int64:
+        case VariantType::Uint16:
+        case VariantType::Uint:
+        case VariantType::Uint64:
+        case VariantType::Float:
+        case VariantType::Double:
+        case VariantType::Vector2:
+        case VariantType::Vector3:
+        case VariantType::Vector4:
+        case VariantType::Color:
+            return true;
+        default:
+            return false;
+        }
+    case VariantType::Uint16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+        case VariantType::Int16:
+        case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Uint:
         case VariantType::Uint64:
@@ -2080,7 +2394,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint64:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2097,7 +2413,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
+        case VariantType::Uint16:
         case VariantType::Uint:
         case VariantType::Uint64:
         case VariantType::Float:
@@ -2114,7 +2432,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2131,7 +2451,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
+        case VariantType::Uint16:
         case VariantType::Uint:
         case VariantType::Int64:
         case VariantType::Uint64:
@@ -2148,8 +2470,10 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Uint:
+        case VariantType::Uint16:
         case VariantType::Int64:
         case VariantType::Uint64:
         case VariantType::Float:
@@ -2165,7 +2489,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2181,7 +2507,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2197,7 +2525,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2213,7 +2543,9 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
+        case VariantType::Uint16:
         case VariantType::Uint:
+        case VariantType::Int16:
         case VariantType::Int:
         case VariantType::Int64:
         case VariantType::Float:
@@ -2239,6 +2571,10 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
     case VariantType::Bool:
         switch (to.Type)
         {
+        case VariantType::Int16: // No portable literal suffix for short ( Available in MSVC but Undocumented : i16 )
+            return Variant((int16)(v.AsBool ? 1 : 0));
+        case VariantType::Uint16: // No portable literal suffix for short ( Available in MSVC but Undocumented : ui16 )
+            return Variant((uint16)(v.AsBool ? 1 : 0));
         case VariantType::Int:
             return Variant(v.AsBool ? 1 : 0);
         case VariantType::Uint:
@@ -2262,17 +2598,51 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         default: ;
         }
         break;
+    case VariantType::Int16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(v.AsInt != 0);
+        case VariantType::Int:
+            return Variant((int32)v.AsInt16);
+        case VariantType::Int64:
+            return Variant((int64)v.AsInt16);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsInt16);
+        case VariantType::Uint:
+            return Variant((uint32)v.AsInt16);
+        case VariantType::Uint64:
+            return Variant((uint64)v.AsInt16);
+        case VariantType::Float:
+            return Variant((float)v.AsInt16);
+        case VariantType::Double:
+            return Variant((double)v.AsInt16);
+        case VariantType::Vector2:
+            return Variant(Vector2((float)v.AsInt16));
+        case VariantType::Vector3:
+            return Variant(Vector3((float)v.AsInt16));
+        case VariantType::Vector4:
+            return Variant(Vector4((float)v.AsInt16));
+        case VariantType::Color:
+            return Variant(Color((float)v.AsInt16));
+        default: ;
+        }
+        break;
     case VariantType::Int:
         switch (to.Type)
         {
         case VariantType::Bool:
             return Variant(v.AsInt != 0);
+        case VariantType::Int16:
+            return Variant((int16)v.AsInt);
         case VariantType::Int64:
-            return Variant((int64)v.AsUint);
+            return Variant((int64)v.AsInt);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsInt);
         case VariantType::Uint:
             return Variant((uint32)v.AsInt);
         case VariantType::Uint64:
-            return Variant((uint64)v.AsUint);
+            return Variant((uint64)v.AsInt);
         case VariantType::Float:
             return Variant((float)v.AsInt);
         case VariantType::Double:
@@ -2288,15 +2658,49 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         default: ;
         }
         break;
+    case VariantType::Uint16:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(v.AsUint16 != 0);
+        case VariantType::Int16:
+            return Variant((int16)v.AsUint16);
+        case VariantType::Int:
+            return Variant((int32)v.AsUint16);
+        case VariantType::Int64:
+            return Variant((int64)v.AsUint16);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsUint16);
+        case VariantType::Uint64:
+            return Variant((uint64)v.AsUint16);
+        case VariantType::Float:
+            return Variant((float)v.AsUint16);
+        case VariantType::Double:
+            return Variant((double)v.AsUint16);
+        case VariantType::Vector2:
+            return Variant(Vector2((float)v.AsUint16));
+        case VariantType::Vector3:
+            return Variant(Vector3((float)v.AsUint16));
+        case VariantType::Vector4:
+            return Variant(Vector4((float)v.AsUint16));
+        case VariantType::Color:
+            return Variant(Color((float)v.AsUint16));
+        default: ;
+        }
+        break;
     case VariantType::Uint:
         switch (to.Type)
         {
         case VariantType::Bool:
             return Variant(v.AsUint != 0);
+        case VariantType::Int16:
+            return Variant((int16)v.AsUint);
         case VariantType::Int:
             return Variant((int32)v.AsUint);
         case VariantType::Int64:
             return Variant((int64)v.AsUint);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsUint);
         case VariantType::Uint64:
             return Variant((uint64)v.AsUint);
         case VariantType::Float:
@@ -2319,8 +2723,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(v.AsInt64 != 0);
-        case VariantType::Int64:
-            return Variant((int64)v.AsUint);
+        case VariantType::Int16:
+            return Variant((int16)v.AsInt64);
+        case VariantType::Int:
+            return Variant((int32)v.AsInt64);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsInt64);
         case VariantType::Uint:
             return Variant((uint32)v.AsInt64);
         case VariantType::Uint64:
@@ -2345,10 +2753,14 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(v.AsUint64 != 0);
+        case VariantType::Int16:
+            return Variant((int16)v.AsUint64);
         case VariantType::Int:
             return Variant((int32)v.AsUint64);
         case VariantType::Int64:
             return Variant((int64)v.AsUint64);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsUint16);
         case VariantType::Uint:
             return Variant((uint32)v.AsUint);
         case VariantType::Float:
@@ -2371,8 +2783,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(v.AsFloat) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)v.AsFloat);
         case VariantType::Int:
             return Variant((int32)v.AsFloat);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsFloat);
         case VariantType::Uint:
             return Variant((uint32)v.AsFloat);
         case VariantType::Int64:
@@ -2397,8 +2813,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(v.AsDouble) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)v.AsDouble);
         case VariantType::Int:
             return Variant((int32)v.AsDouble);
+        case VariantType::Uint16:
+            return Variant((uint16)v.AsDouble);
         case VariantType::Uint:
             return Variant((uint32)v.AsDouble);
         case VariantType::Int64:
@@ -2423,8 +2843,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(((Vector2*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Vector2*)v.AsData)->X);
         case VariantType::Int:
             return Variant((int32)((Vector2*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Vector2*)v.AsData)->X);
         case VariantType::Uint:
             return Variant((uint32)((Vector2*)v.AsData)->X);
         case VariantType::Int64:
@@ -2449,8 +2873,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(((Vector3*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Vector3*)v.AsData)->X);
         case VariantType::Int:
             return Variant((int32)((Vector3*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Vector3*)v.AsData)->X);
         case VariantType::Uint:
             return Variant((uint32)((Vector3*)v.AsData)->X);
         case VariantType::Int64:
@@ -2475,8 +2903,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(((Vector4*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Vector4*)v.AsData)->X);
         case VariantType::Int:
             return Variant((int32)((Vector4*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Vector4*)v.AsData)->X);
         case VariantType::Uint:
             return Variant((uint32)((Vector4*)v.AsData)->X);
         case VariantType::Int64:
@@ -2501,8 +2933,12 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         {
         case VariantType::Bool:
             return Variant(Math::Abs(((Color*)v.AsData)->R) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Color*)v.AsData)->R);
         case VariantType::Int:
             return Variant((int32)((Color*)v.AsData)->R);
+        case VariantType::Uint16:
+            return Variant((uint16)((Color*)v.AsData)->R);
         case VariantType::Uint:
             return Variant((uint32)((Color*)v.AsData)->R);
         case VariantType::Int64:
@@ -2534,6 +2970,8 @@ bool Variant::NearEqual(const Variant& a, const Variant& b, float epsilon)
         return false;
     switch (a.Type.Type)
     {
+    case VariantType::Int16:
+        return Math::Abs(a.AsInt16 - b.AsInt16) <= (int32)epsilon;
     case VariantType::Int:
         return Math::Abs(a.AsInt - b.AsInt) <= (int32)epsilon;
     case VariantType::Int64:
@@ -2575,8 +3013,12 @@ Variant Variant::Lerp(const Variant& a, const Variant& b, float alpha)
     {
     case VariantType::Bool:
         return alpha < 0.5f ? a : b;
+    case VariantType::Int16:
+        return Math::Lerp(a.AsInt16, b.AsInt16, alpha);
     case VariantType::Int:
         return Math::Lerp(a.AsInt, b.AsInt, alpha);
+    case VariantType::Uint16:
+        return Math::Lerp(a.AsUint16, b.AsUint16, alpha);
     case VariantType::Uint:
         return Math::Lerp(a.AsUint, b.AsUint, alpha);
     case VariantType::Int64:
@@ -2682,8 +3124,12 @@ uint32 GetHash(const Variant& key)
     {
     case VariantType::Bool:
         return GetHash(key.AsBool);
+    case VariantType::Int16:
+        return GetHash(key.AsInt16);
     case VariantType::Int:
         return GetHash(key.AsInt);
+    case VariantType::Uint16:
+        return GetHash(key.AsUint16);
     case VariantType::Uint:
         return GetHash(key.AsUint);
     case VariantType::Int64:

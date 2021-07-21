@@ -16,6 +16,7 @@ namespace Flax.Deploy
         public static int VersionMajor;
         public static int VersionMinor;
         public static int VersionBuild;
+        public static TargetConfiguration[] Configurations;
 
         public static bool Run()
         {
@@ -64,6 +65,8 @@ namespace Flax.Deploy
 
         static void Initialize()
         {
+            Configurations = Configuration.BuildConfigurations != null ? Configuration.BuildConfigurations : new[] { TargetConfiguration.Debug, TargetConfiguration.Development, TargetConfiguration.Release };
+
             // Read the current engine version
             var engineVersion = EngineTarget.EngineVersion;
             VersionMajor = engineVersion.Major;
@@ -81,9 +84,12 @@ namespace Flax.Deploy
             Utilities.WriteFileIfChanged(Path.Combine(Globals.EngineRoot, "Source/Engine/Core/Config.Gen.h"), buildConfigHeader.ToString());
 
             // Prepare the package output
-            PackageOutputPath = Path.Combine(Globals.EngineRoot, string.Format("Package_{0}_{1:00}_{2:00000}", VersionMajor, VersionMinor, VersionBuild));
-            Utilities.DirectoryDelete(PackageOutputPath);
-            Directory.CreateDirectory(PackageOutputPath);
+            if (string.IsNullOrEmpty(Configuration.DeployOutput))
+                PackageOutputPath = Path.Combine(Globals.EngineRoot, string.Format("Package_{0}_{1:00}_{2:00000}", VersionMajor, VersionMinor, VersionBuild));
+            else
+                PackageOutputPath = Configuration.DeployOutput;
+            if (!Directory.Exists(PackageOutputPath))
+                Directory.CreateDirectory(PackageOutputPath);
 
             Log.Info(string.Empty);
             Log.Info(string.Empty);
@@ -104,9 +110,10 @@ namespace Flax.Deploy
         private static void BuildEditor()
         {
             var targetPlatform = Platform.BuildPlatform.Target;
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Debug);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Development);
-            FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, TargetConfiguration.Release);
+            foreach (var configuration in Configurations)
+            {
+                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, configuration);
+            }
         }
 
         private static bool CannotBuildPlatform(TargetPlatform platform)
@@ -129,9 +136,10 @@ namespace Flax.Deploy
             {
                 if (Platform.IsPlatformSupported(platform, architecture))
                 {
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Debug);
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Development);
-                    FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, TargetConfiguration.Release);
+                    foreach (var configuration in Configurations)
+                    {
+                        FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, configuration);
+                    }
                 }
             }
 

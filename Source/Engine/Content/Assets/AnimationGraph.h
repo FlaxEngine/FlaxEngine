@@ -11,7 +11,6 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API AnimationGraph : public BinaryAsset
 {
 DECLARE_BINARY_ASSET_HEADER(AnimationGraph, 1);
-
 public:
 
     /// <summary>
@@ -29,11 +28,19 @@ public:
     /// <summary>
     /// Gets the base model asset used for the animation preview and the skeleton layout source.
     /// </summary>
-    /// <returns>The base model.</returns>
     API_PROPERTY() SkinnedModel* GetBaseModel() const
     {
         return Graph.BaseModel.Get();
     }
+
+    /// <summary>
+    /// Initializes virtual Anim Graph to play a single animation.
+    /// </summary>
+    /// <param name="baseModel">The base model asset.</param>
+    /// <param name="anim">The animation to play.</param>
+    /// <param name="loop">True if play animation in a loop.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop = true);
 
     /// <summary>
     /// Tries to load surface graph from the asset.
@@ -60,13 +67,7 @@ public:
 
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Graph.GetReferences(output);
-    }
+    void GetReferences(Array<Guid>& output) const override;
 #endif
 
 protected:

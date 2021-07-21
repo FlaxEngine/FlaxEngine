@@ -348,9 +348,9 @@ bool GetNavMeshTileBounds(Scene* scene, NavMesh* navMesh, int32 x, int32 y, floa
     // Check if any navmesh volume intersects with the tile
     bool foundAnyVolume = false;
     Vector2 rangeY;
-    for (int32 i = 0; i < scene->NavigationVolumes.Count(); i++)
+    for (int32 i = 0; i < scene->Navigation.Volumes.Count(); i++)
     {
-        const auto volume = scene->NavigationVolumes[i];
+        const auto volume = scene->Navigation.Volumes[i];
         if (!volume->AgentsMask.IsNavMeshSupported(navMesh->Properties))
             continue;
         const auto& volumeBounds = volume->GetBox();
@@ -925,7 +925,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
     for (auto& navMeshProperties : settings->NavMeshes)
     {
         NavMesh* navMesh = nullptr;
-        for (auto e : scene->NavigationMeshes)
+        for (auto e : scene->Navigation.Meshes)
         {
             if (e->Properties.Name == navMeshProperties.Name)
             {
@@ -953,7 +953,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
     }
 
     // Build all navmeshes on the scene
-    for (NavMesh* navMesh : scene->NavigationMeshes)
+    for (NavMesh* navMesh : scene->Navigation.Meshes)
     {
         BuildDirtyBounds(scene, navMesh, dirtyBounds, rebuild);
     }
@@ -961,7 +961,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
     // Remove unused navmeshes
     if (settings->AutoRemoveMissingNavMeshes)
     {
-        for (NavMesh* navMesh : scene->NavigationMeshes)
+        for (NavMesh* navMesh : scene->Navigation.Meshes)
         {
             // Skip used navmeshes
             if (navMesh->Data.Tiles.HasItems())
@@ -987,7 +987,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
 void BuildWholeScene(Scene* scene)
 {
     // Compute total navigation area bounds
-    const BoundingBox worldBounds = scene->GetNavigationBounds();
+    const BoundingBox worldBounds = scene->Navigation.GetNavigationBounds();
 
     BuildDirtyBounds(scene, worldBounds, true);
 }
@@ -995,7 +995,7 @@ void BuildWholeScene(Scene* scene)
 void ClearNavigation(Scene* scene)
 {
     const bool autoRemoveMissingNavMeshes = NavigationSettings::Get()->AutoRemoveMissingNavMeshes;
-    for (NavMesh* navMesh : scene->NavigationMeshes)
+    for (NavMesh* navMesh : scene->Navigation.Meshes)
     {
         navMesh->ClearData();
         if (autoRemoveMissingNavMeshes)
@@ -1020,7 +1020,7 @@ void NavMeshBuilder::Update()
                 continue;
 
             // Early out if scene has no bounds volumes to define nav mesh area
-            if (scene->NavigationVolumes.IsEmpty())
+            if (scene->Navigation.Volumes.IsEmpty())
             {
                 ClearNavigation(scene);
                 continue;
@@ -1042,7 +1042,7 @@ void NavMeshBuilder::Update()
 void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 {
     // Early out if scene is not using navigation
-    if (scene->NavigationVolumes.IsEmpty())
+    if (scene->Navigation.Volumes.IsEmpty())
     {
         ClearNavigation(scene);
         return;
@@ -1073,7 +1073,7 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
 {
     // Early out if scene is not using navigation
-    if (scene->NavigationVolumes.IsEmpty())
+    if (scene->Navigation.Volumes.IsEmpty())
     {
         ClearNavigation(scene);
         return;

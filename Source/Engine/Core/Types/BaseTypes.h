@@ -95,8 +95,12 @@ template<typename T, typename AllocationType>
 class Array;
 template<typename T, typename U>
 class Pair;
-template<typename KeyType, typename ValueType>
+template<typename KeyType, typename ValueType, typename AllocationType>
 class Dictionary;
+template<typename>
+class Function;
+template<typename... Params>
+class Delegate;
 
 // Declares full set of operators for the enum type (using binary operation on integer values)
 #define DECLARE_ENUM_OPERATORS(T) \

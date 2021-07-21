@@ -9,6 +9,7 @@
 #include "GPUTextureDX11.h"
 #include "GPUTimerQueryDX11.h"
 #include "GPUBufferDX11.h"
+#include "GPUSamplerDX11.h"
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
@@ -296,26 +297,16 @@ bool GPUDeviceDX11::Init()
     ASSERT(createdFeatureLevel == targetFeatureLevel);
     _state = DeviceState::Created;
 
-    // Verify compute shader is supported on DirectX 11
-    if (createdFeatureLevel >= D3D_FEATURE_LEVEL_11_0)
-    {
-        D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS options = { 0 };
-        _device->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &options, sizeof(options));
-        if (!options.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
-        {
-            _device->Release();
-            _device = nullptr;
-            LOG(Fatal, "DirectCompute is not supported by this device (DirectX 11 level).");
-            return true;
-        }
-    }
-
     // Init device limits
     {
         auto& limits = Limits;
         if (createdFeatureLevel >= D3D_FEATURE_LEVEL_11_0)
         {
-            limits.HasCompute = true;
+            D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS d3D10XHardwareOptions = {};
+            _device->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &d3D10XHardwareOptions, sizeof(d3D10XHardwareOptions));
+            D3D11_FEATURE_DATA_D3D11_OPTIONS2 featureDataD3D11Options2 = {};
+            _device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS2, &featureDataD3D11Options2, sizeof(featureDataD3D11Options2));
+            limits.HasCompute = d3D10XHardwareOptions.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x != 0;
             limits.HasTessellation = true;
             limits.HasGeometryShaders = true;
             limits.HasInstancing = true;
@@ -326,6 +317,7 @@ bool GPUDeviceDX11::Init()
             limits.HasDepthAsSRV = true;
             limits.HasReadOnlyDepth = true;
             limits.HasMultisampleDepthAsSRV = true;
+            limits.HasTypedUAVLoad = featureDataD3D11Options2.TypedUAVLoadAdditionalFormats != 0;
             limits.MaximumMipLevelsCount = D3D11_REQ_MIP_LEVELS;
             limits.MaximumTexture1DSize = D3D11_REQ_TEXTURE1D_U_DIMENSION;
             limits.MaximumTexture1DArraySize = D3D11_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
@@ -333,6 +325,7 @@ bool GPUDeviceDX11::Init()
             limits.MaximumTexture2DArraySize = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture3DSize = D3D11_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
             limits.MaximumTextureCubeSize = D3D11_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumSamplerAnisotropy = D3D11_DEFAULT_MAX_ANISOTROPY;
         }
         else
         {
@@ -347,13 +340,15 @@ bool GPUDeviceDX11::Init()
             limits.HasDepthAsSRV = false;
             limits.HasReadOnlyDepth = createdFeatureLevel == D3D_FEATURE_LEVEL_10_1;
             limits.HasMultisampleDepthAsSRV = false;
+            limits.HasTypedUAVLoad = false;
             limits.MaximumMipLevelsCount = D3D10_REQ_MIP_LEVELS;
             limits.MaximumTexture1DSize = D3D10_REQ_TEXTURE1D_U_DIMENSION;
             limits.MaximumTexture1DArraySize = D3D10_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture2DSize = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
             limits.MaximumTexture2DArraySize = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             limits.MaximumTexture3DSize = D3D10_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-            limits.MaximumTextureCubeSize = D3D11_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumTextureCubeSize = D3D10_REQ_TEXTURECUBE_DIMENSION;
+            limits.MaximumSamplerAnisotropy = D3D10_DEFAULT_MAX_ANISOTROPY;
         }
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
@@ -537,11 +532,8 @@ bool GPUDeviceDX11::Init()
 #undef CREATE_DEPTH_STENCIL_STATE
     }
 
-    _state
-            =
-            DeviceState::Ready;
-    return
-            GPUDeviceDX::Init();
+    _state = DeviceState::Ready;
+    return GPUDeviceDX::Init();
 }
 
 GPUDeviceDX11::~GPUDeviceDX11()
@@ -694,6 +686,11 @@ GPUTimerQuery* GPUDeviceDX11::CreateTimerQuery()
 GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferDX11>(this, name);
+}
+
+GPUSampler* GPUDeviceDX11::CreateSampler()
+{
+    return New<GPUSamplerDX11>(this);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

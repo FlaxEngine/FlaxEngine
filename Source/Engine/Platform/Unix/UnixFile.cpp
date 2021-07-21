@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Core/Log.h"
 #if USE_LINUX

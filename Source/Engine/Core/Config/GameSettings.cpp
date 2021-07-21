@@ -13,11 +13,14 @@
 #include "Engine/Input/InputSettings.h"
 #include "Engine/Audio/AudioSettings.h"
 #include "Engine/Navigation/NavigationSettings.h"
+#include "Engine/Localization/LocalizationSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Streaming/StreamingSettings.h"
 
 class GameSettingsService : public EngineService
 {
@@ -41,6 +44,7 @@ IMPLEMENT_SETTINGS_GETTER(TimeSettings, Time);
 IMPLEMENT_SETTINGS_GETTER(AudioSettings, Audio);
 IMPLEMENT_SETTINGS_GETTER(PhysicsSettings, Physics);
 IMPLEMENT_SETTINGS_GETTER(InputSettings, Input);
+IMPLEMENT_SETTINGS_GETTER(StreamingSettings, Streaming);
 
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
@@ -71,6 +75,7 @@ GameSettings* GameSettings::Get()
     {
         // Load root game settings asset.
         // It may be missing in editor during dev but must be ready in the build game.
+        PROFILE_CPU();
         const auto assetPath = Globals::ProjectContentFolder / TEXT("GameSettings.json");
         GameSettingsAsset = Content::LoadAsync<JsonAsset>(assetPath);
         if (GameSettingsAsset == nullptr)
@@ -96,6 +101,8 @@ GameSettings* GameSettings::Get()
 
 bool GameSettings::Load()
 {
+    PROFILE_CPU();
+
     // Load main settings asset
     auto settings = Get();
     if (!settings)
@@ -127,7 +134,9 @@ bool GameSettings::Load()
     PRELOAD_SETTINGS(Input);
     PRELOAD_SETTINGS(Graphics);
     PRELOAD_SETTINGS(Navigation);
+    PRELOAD_SETTINGS(Localization);
     PRELOAD_SETTINGS(GameCooking);
+    PRELOAD_SETTINGS(Streaming);
 #undef PRELOAD_SETTINGS
 
     // Apply the game settings to the engine
@@ -138,7 +147,7 @@ bool GameSettings::Load()
 
 void GameSettings::Apply()
 {
-    // TODO: impl this
+    PROFILE_CPU();
 #define APPLY_SETTINGS(type) \
     { \
         type* obj = type::Get(); \
@@ -155,9 +164,11 @@ void GameSettings::Apply()
     APPLY_SETTINGS(AudioSettings);
     APPLY_SETTINGS(LayersAndTagsSettings);
     APPLY_SETTINGS(PhysicsSettings);
+    APPLY_SETTINGS(StreamingSettings);
     APPLY_SETTINGS(InputSettings);
     APPLY_SETTINGS(GraphicsSettings);
     APPLY_SETTINGS(NavigationSettings);
+    APPLY_SETTINGS(LocalizationSettings);
     APPLY_SETTINGS(BuildSettings);
     APPLY_SETTINGS(PlatformSettings);
 #undef APPLY_SETTINGS
@@ -197,7 +208,9 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Input);
     DESERIALIZE(Graphics);
     DESERIALIZE(Navigation);
+    DESERIALIZE(Localization);
     DESERIALIZE(GameCooking);
+    DESERIALIZE(Streaming);
 
     // Per-platform settings containers
     DESERIALIZE(WindowsPlatform);

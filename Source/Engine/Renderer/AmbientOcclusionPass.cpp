@@ -1,16 +1,18 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "AmbientOcclusionPass.h"
+#include "RenderList.h"
+#include "GBufferPass.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Utilities/StringConverter.h"
-#include "RenderList.h"
-#include "GBufferPass.h"
 
 AmbientOcclusionPass::ASSAO_Settings::ASSAO_Settings()
 {
@@ -186,10 +188,8 @@ void AmbientOcclusionPass::Dispose()
     // Delete pipeline states
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepths);
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthsHalf);
-    for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
-        SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthMip[i]);
-    for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-        SAFE_DELETE_GPU_RESOURCE(_psGenerate[i]);
+    SAFE_DELETE_GPU_RESOURCES(_psPrepareDepthMip);
+    SAFE_DELETE_GPU_RESOURCES(_psGenerate);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlur);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlurWide);
     SAFE_DELETE_GPU_RESOURCE(_psNonSmartBlur);

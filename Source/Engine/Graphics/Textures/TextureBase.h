@@ -4,7 +4,8 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "StreamingTexture.h"
-#include "Engine/Core/Log.h"
+
+class TextureData;
 
 /// <summary>
 /// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
@@ -13,11 +14,7 @@
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAsset, public ITextureOwner
 {
 DECLARE_ASSET_HEADER(TextureBase);
-public:
-
     static const uint32 TexturesSerializedVersion = 4;
-
-public:
 
     /// <summary>
     /// The texture init data (external source).
@@ -53,9 +50,6 @@ protected:
 
     StreamingTexture _texture;
     InitData* _customData;
-
-private:
-
     BinaryAsset* _parent;
 
 public:
@@ -103,50 +97,42 @@ public:
     /// <summary>
     /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Vector2::Zero if texture is not loaded.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE Vector2 Size() const
-    {
-        return Vector2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
-    }
+    API_PROPERTY() Vector2 Size() const;
 
     /// <summary>
     /// Gets the total array size of the texture.
     /// </summary>
-    API_PROPERTY() int32 GetArraySize() const
-    {
-        return StreamingTexture()->TotalArraySize();
-    }
+    API_PROPERTY() int32 GetArraySize() const;
 
     /// <summary>
     /// Gets the total mip levels count of the texture. Actual resident mipmaps count may be different due to dynamic content streaming.
     /// </summary>
-    API_PROPERTY() int32 GetMipLevels() const
-    {
-        return StreamingTexture()->TotalMipLevels();
-    }
+    API_PROPERTY() int32 GetMipLevels() const;
 
     /// <summary>
     /// Gets the current mip levels count of the texture that are on GPU ready to use.
     /// </summary>
-    API_PROPERTY() int32 GetResidentMipLevels() const
-    {
-        return GetTexture()->ResidentMipLevels();
-    }
+    API_PROPERTY() int32 GetResidentMipLevels() const;
 
     /// <summary>
     /// Gets the amount of the memory used by this resource. Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
-    API_PROPERTY() uint64 GetCurrentMemoryUsage() const
-    {
-        return GetTexture()->GetMemoryUsage();
-    }
+    API_PROPERTY() uint64 GetCurrentMemoryUsage() const;
 
     /// <summary>
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
-    API_PROPERTY() uint64 GetTotalMemoryUsage() const
-    {
-        return StreamingTexture()->GetTotalMemoryUsage();
-    }
+    API_PROPERTY() uint64 GetTotalMemoryUsage() const;
+    
+    /// <summary>
+    /// Gets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() int32 GetTextureGroup() const;
+
+    /// <summary>
+    /// Sets the index of the texture group used by this texture.
+    /// </summary>
+    API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
 public:
 
@@ -176,7 +162,7 @@ public:
 
 protected:
 
-    virtual int32 calculateChunkIndex(int32 mipIndex) const;
+    virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
 
@@ -186,7 +172,7 @@ private:
 public:
 
     // [ITextureOwner]
-    CriticalSection* GetOwnerLocker() const override;
+    CriticalSection& GetOwnerLocker() const override;
     Task* RequestMipDataAsync(int32 mipIndex) override;
     FlaxStorage::LockData LockData() override;
     void GetMipData(int32 mipIndex, BytesContainer& data) const override;
@@ -196,43 +182,7 @@ public:
 protected:
 
     // [BinaryAsset]
-    bool init(AssetInitData& initData) override
-    {
-        // Skip for virtual assets
-        if (IsVirtual())
-            return false;
-
-        // Validate
-        if (initData.SerializedVersion != 4)
-        {
-            LOG(Error, "Invalid serialized texture version.");
-            return true;
-        }
-        if (initData.CustomData.Length() != sizeof(TextureHeader))
-        {
-            LOG(Error, "Missing texture header.");
-            return true;
-        }
-
-        // Load header
-        TextureHeader header;
-        Platform::MemoryCopy(&header, initData.CustomData.Get(), sizeof(TextureHeader));
-
-        // Create texture
-        if (_texture.Create(header))
-        {
-            LOG(Error, "Cannot initialize texture.");
-            return true;
-        }
-
-        return false;
-    }
-
-    LoadResult load() override
-    {
-        // Loading textures is very fast xD
-        return LoadResult::Ok;
-    }
-
+    bool init(AssetInitData& initData) override;
+    LoadResult load() override;
     void unload(bool isReloading) override;
 };

@@ -22,9 +22,6 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTextureViewDX12"/> class.
-    /// </summary>
     GPUTextureViewDX12()
     {
     }
@@ -45,9 +42,6 @@ public:
         return *this;
     }
 
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUTextureViewDX12"/> class.
-    /// </summary>
     ~GPUTextureViewDX12()
     {
         Release();
@@ -64,7 +58,7 @@ public:
     /// <param name="format">Parent texture format</param>
     /// <param name="msaa">Parent texture multi-sample level</param>
     /// <param name="subresourceIndex">Used subresource index or -1 to cover whole resource.</param>
-    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = -1)
     {
         GPUTextureView::Init(parent, format, msaa);
         SubresourceIndex = subresourceIndex;
@@ -75,88 +69,22 @@ public:
     /// <summary>
     /// Releases the view.
     /// </summary>
-    void Release()
-    {
-        _rtv.Release();
-        _srv.Release();
-        _dsv.Release();
-        _uav.Release();
-    }
+    void Release();
 
 public:
 
-    /// <summary>
-    /// Sets the render target view.
-    /// </summary>
-    /// <param name="rtvDesc">The RTV desc.</param>
-    void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC* rtvDesc)
-    {
-        if (rtvDesc)
-        {
-            _rtv.CreateRTV(_device, _owner->GetResource(), rtvDesc);
-        }
-        else
-        {
-            _rtv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the shader resource view.
-    /// </summary>
-    /// <param name="srvDesc">The SRV desc.</param>
-    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc)
-    {
-        if (srvDesc)
-        {
-            _srv.CreateSRV(_device, _owner->GetResource(), srvDesc);
-        }
-        else
-        {
-            _srv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the depth stencil view.
-    /// </summary>
-    /// <param name="dsvDesc">The DSV desc.</param>
-    void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC* dsvDesc)
-    {
-        if (dsvDesc)
-        {
-            _dsv.CreateDSV(_device, _owner->GetResource(), dsvDesc);
-        }
-        else
-        {
-            _dsv.Release();
-        }
-    }
-
-    /// <summary>
-    /// Sets the unordered access view.
-    /// </summary>
-    /// <param name="uavDesc">The UAV desc.</param>
-    /// <param name="counterResource">The counter buffer resource.</param>
-    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc, ID3D12Resource* counterResource = nullptr)
-    {
-        if (uavDesc)
-        {
-            _uav.CreateUAV(_device, _owner->GetResource(), uavDesc, counterResource);
-        }
-        else
-        {
-            _uav.Release();
-        }
-    }
+    bool ReadOnlyDepthView = false;
+    void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC& rtvDesc);
+    void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
+    void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc);
+    void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource = nullptr);
 
 public:
 
     /// <summary>
     /// Gets the CPU handle to the render target view descriptor.
     /// </summary>
-    /// <returns>The CPU handle to the render target view descriptor.</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE RTV() const
+    FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE RTV() const
     {
         return _rtv.CPU();
     }
@@ -164,8 +92,7 @@ public:
     /// <summary>
     /// Gets the CPU handle to the depth stencil view descriptor.
     /// </summary>
-    /// <returns>The CPU handle to the depth stencil view descriptor.</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE DSV() const
+    FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE DSV() const
     {
         return _dsv.CPU();
     }
@@ -183,17 +110,14 @@ public:
     {
         return _dsv.IsValid();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return _owner;
@@ -223,11 +147,6 @@ private:
 
 public:
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTextureDX12"/> class.
-    /// </summary>
-    /// <param name="device">The device.</param>
-    /// <param name="name">The name.</param>
     GPUTextureDX12(GPUDeviceDX12* device, const StringView& name)
         : GPUResourceDX12<GPUTexture>(device, name)
     {
@@ -244,35 +163,29 @@ public:
     {
         return (GPUTextureView*)&_handlesPerSlice[arrayOrDepthIndex];
     }
-
     GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const override
     {
         return (GPUTextureView*)&_handlesPerMip[arrayOrDepthIndex][mipMapIndex];
     }
-
     GPUTextureView* ViewArray() const override
     {
         ASSERT(ArraySize() > 1);
         return (GPUTextureView*)&_handleArray;
     }
-
     GPUTextureView* ViewVolume() const override
     {
         ASSERT(IsVolume());
         return (GPUTextureView*)&_handleVolume;
     }
-
     GPUTextureView* ViewReadOnlyDepth() const override
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
-
     void* GetNativePtr() const override
     {
-        return (void*)nullptr;
+        return (void*)_resource;
     }
-
     bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [ResourceOwnerDX12]
@@ -286,17 +199,14 @@ public:
     {
         return (_desc.Flags & GPUTextureFlags::DepthStencil) != 0;
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
         return _srv.CPU();
     }
-
     D3D12_CPU_DESCRIPTOR_HANDLE UAV() const override
     {
         return _uav.CPU();
     }
-
     ResourceOwnerDX12* GetResourceOwner() const override
     {
         return (ResourceOwnerDX12*)this;

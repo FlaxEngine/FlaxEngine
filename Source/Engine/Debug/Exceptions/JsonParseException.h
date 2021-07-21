@@ -25,7 +25,7 @@ namespace Log
         /// <param name="error">Parsing error code.</param>
         /// <param name="offset">Parsing error location.</param>
         JsonParseException(ErrorCode error, size_t offset)
-            : JsonParseException(error, offset, String::Empty)
+            : JsonParseException(error, offset, StringView::Empty)
         {
         }
 
@@ -35,7 +35,7 @@ namespace Log
         /// <param name="error">Parsing error code.</param>
         /// <param name="offset">Parsing error location.</param>
         /// <param name="additionalInfo">Additional information that help describe error</param>
-        JsonParseException(ErrorCode error, size_t offset, const String& additionalInfo)
+        JsonParseException(ErrorCode error, size_t offset, const StringView& additionalInfo)
             : Exception(String::Format(TEXT("Parsing Json failed with error code {0} (offset {2}). {1}"), static_cast<int32>(error), GetParseError_En(error), offset), additionalInfo)
         {
         }

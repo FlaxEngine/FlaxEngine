@@ -19,6 +19,7 @@ namespace FlaxEditor.GUI
         private Button _closeButton;
         private Button _minimizeButton;
         private Button _maximizeButton;
+        private LocalizedString _charChromeRestore, _charChromeMaximize;
         private Window _window;
 #endif
         private MainMenuButton _selected;
@@ -151,14 +152,12 @@ namespace FlaxEditor.GUI
                 _maximizeButton.Clicked += () =>
                 {
                     if (_window.IsMaximized)
-                    {
                         _window.Restore();
-                    }
                     else
-                    {
                         _window.Maximize();
-                    }
                 };
+                _charChromeRestore = ((char)EditorAssets.SegMDL2Icons.ChromeRestore).ToString();
+                _charChromeMaximize = ((char)EditorAssets.SegMDL2Icons.ChromeMaximize).ToString();
             }
             else
 #endif
@@ -175,7 +174,7 @@ namespace FlaxEditor.GUI
 
             if (_maximizeButton != null)
             {
-                _maximizeButton.Text = ((char)(_window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize)).ToString();
+                _maximizeButton.Text = _window.IsMaximized ? _charChromeRestore : _charChromeMaximize;
             }
         }
 

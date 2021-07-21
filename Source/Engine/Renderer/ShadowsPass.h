@@ -7,6 +7,7 @@
 #include "RendererPass.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Graphics/RenderTask.h"
 
 /// <summary>
 /// Pixel format for fullscreen render target used for shadows calculations

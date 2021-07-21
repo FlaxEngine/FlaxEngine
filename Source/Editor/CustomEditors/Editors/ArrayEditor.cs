@@ -43,7 +43,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Copy old values
                     Array.Copy(array, 0, newValues, 0, sharedCount);
 
-                    if (elementType.IsValueType)
+                    if (elementType.IsValueType || NotNullItems)
                     {
                         // Fill new entries with the last value
                         for (int i = oldSize; i < newSize; i++)

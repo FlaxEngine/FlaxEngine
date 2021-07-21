@@ -564,7 +564,6 @@ public:
     /// <summary>
     /// Gets the keyframes collection (for read-only).
     /// </summary>
-    /// <returns>The keyframes.</returns>
     FORCE_INLINE const KeyFrameCollection& GetKeyframes() const
     {
         return _keyframes;
@@ -573,7 +572,6 @@ public:
     /// <summary>
     /// Gets the keyframes collection.
     /// </summary>
-    /// <returns>The keyframes.</returns>
     FORCE_INLINE KeyFrameCollection& GetKeyframes()
     {
         return _keyframes;
@@ -582,7 +580,6 @@ public:
     /// <summary>
     /// Determines whether this curve is empty (has no keyframes).
     /// </summary>
-    /// <returns><c>true</c> if this curve is empty; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _keyframes.IsEmpty();

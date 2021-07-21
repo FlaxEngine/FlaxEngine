@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Config.h"
-#include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
 /// Graphics rendering backend system types.
@@ -610,6 +609,9 @@ API_ENUM() enum class MaterialPostFxLocation : byte
     /// The 'after' AA filter pass. Rendering is done to the output backbuffer.
     /// </summary>
     AfterAntiAliasingPass = 5,
+
+    API_ENUM(Attributes="HideInEditor")
+    MAX,
 };
 
 /// <summary>
@@ -638,9 +640,17 @@ API_ENUM() enum class PostProcessEffectLocation
     BeforeReflectionsPass = 3,
 
     /// <summary>
-    /// The 'after' AA filter pass. Rendering is done to the output backbuffer.
+    /// The 'after' AA filter pass.
     /// </summary>
     AfterAntiAliasingPass = 4,
+
+    /// <summary>
+    /// The custom frame up-scaling that replaces default implementation. Rendering is done to the output backbuffer (use OutputView and OutputViewport as render destination).
+    /// </summary>
+    CustomUpscale = 5,
+
+    API_ENUM(Attributes="HideInEditor")
+    MAX,
 };
 
 /// <summary>
@@ -798,6 +808,11 @@ API_ENUM() enum class ViewMode
     /// Draw meshes vertex colors
     /// </summary>
     VertexColors = 19,
+
+    /// <summary>
+    /// Draw physics colliders debug view
+    /// </summary>
+    PhysicsColliders = 20,
 };
 
 /// <summary>

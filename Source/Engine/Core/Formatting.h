@@ -17,7 +17,7 @@ namespace fmt_flax
     template<typename T, typename... Args>
     FORCE_INLINE static void format(fmt::basic_memory_buffer<T, fmt::inline_buffer_size, std_flax::allocator<T>>& buffer, const T* format, const Args& ... args)
     {
-        typedef typename fmt::buffer_context<T>::type context;
+        typedef fmt::buffer_context<T> context;
         fmt::format_arg_store<context, Args...> as{ args... };
         fmt::internal::vformat_to(buffer, fmt::to_string_view(format), fmt::basic_format_args<context>(as));
     }

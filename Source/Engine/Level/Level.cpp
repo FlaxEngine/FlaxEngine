@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Config/LayersTagsSettings.h"
+#include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
@@ -202,7 +203,7 @@ void LayersAndTagsSettings::Apply()
 
 void LevelService::Update()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::Update");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -231,7 +232,7 @@ void LevelService::Update()
 
 void LevelService::LateUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::LateUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -263,7 +264,7 @@ void LevelService::LateUpdate()
 
 void LevelService::FixedUpdate()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::FixedUpdate");
 
     ScopeLock lock(Level::ScenesLock);
     auto& scenes = Level::Scenes;
@@ -471,7 +472,6 @@ public:
             LOG(Error, "Failed to save scene {0}", TargetScene ? TargetScene->GetName() : String::Empty);
             return true;
         }
-
         return false;
     }
 };
@@ -496,6 +496,7 @@ public:
         // - load scenes (from temporary files)
         // Note: we don't want to override original scene files
 
+        PROFILE_CPU_NAMED("Level.ReloadScripts");
         LOG(Info, "Scripts reloading start");
         const auto startTime = DateTime::NowUTC();
 
@@ -565,7 +566,10 @@ public:
             // Parse json
             const auto& sceneData = scenes[i].Data;
             ISerializable::SerializeDocument document;
-            document.Parse(sceneData.GetString(), sceneData.GetSize());
+            {
+                PROFILE_CPU_NAMED("Json.Parse");
+                document.Parse(sceneData.GetString(), sceneData.GetSize());
+            }
             if (document.HasParseError())
             {
                 LOG(Error, "Failed to deserialize scene {0}. Result: {1}", scenes[i].Name, GetParseError_En(document.GetParseError()));
@@ -587,9 +591,9 @@ public:
         {
             LOG(Info, "Prepare scene objects");
             SceneBeginData beginData;
-            for (int32 i = 0; i < Level::Scenes.Count(); i++)
+            for (auto scene : Level::Scenes)
             {
-                Level::Scenes[i]->BeginPlay(&beginData);
+                scene->BeginPlay(&beginData);
             }
             beginData.OnDone();
         }
@@ -642,7 +646,7 @@ public:
 
 void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("Level::CallSceneEvent");
 
     // Call event
     const auto scriptsDomain = Scripting::GetScriptsDomain();
@@ -851,7 +855,10 @@ bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scen
 
     // Parse scene JSON file
     rapidjson_flax::Document document;
-    document.Parse(sceneData.Get<char>(), sceneData.Length());
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse(sceneData.Get<char>(), sceneData.Length());
+    }
     if (document.HasParseError())
     {
         Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -869,9 +876,7 @@ bool Level::loadScene(rapidjson_flax::Document& document, bool autoInitialize, S
         LOG(Error, "Missing Data member.");
         return true;
     }
-
     const int32 saveEngineBuild = JsonTools::GetInt(document, "EngineBuild", 0);
-
     return loadScene(data->value, saveEngineBuild, autoInitialize, outScene);
 }
 
@@ -1078,10 +1083,8 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
     CallSceneEvent(SceneEventType::OnSceneLoaded, scene, sceneId);
 
     LOG(Info, "Scene loaded in {0} ms", (int32)(DateTime::NowUTC() - startTime).GetTotalMilliseconds());
-
     if (outScene)
         *outScene = scene;
-
     return false;
 }
 
@@ -1137,6 +1140,7 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 
 bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson)
 {
+    PROFILE_CPU_NAMED("Level.SaveScene");
     if (prettyJson)
     {
         PrettyJsonWriter writerObj(outBuffer);
@@ -1151,8 +1155,6 @@ bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer,
 
 bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer)
 {
-    PROFILE_CPU_NAMED("Level.SaveScene");
-
     ASSERT(scene);
     const auto sceneId = scene->GetID();
 

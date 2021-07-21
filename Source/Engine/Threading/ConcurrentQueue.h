@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Memory/Memory.h"
+#define MOODYCAMEL_EXCEPTIONS_ENABLED 0
 #include <ThirdParty/concurrentqueue.h>
 
 /// <summary>
@@ -42,7 +43,6 @@ public:
     /// <summary>
     /// Gets an estimate of the total number of elements currently in the queue.
     /// </summary>
-    /// <returns>The items count.</returns>
     FORCE_INLINE int32 Count() const
     {
         return static_cast<int32>(Base::size_approx());

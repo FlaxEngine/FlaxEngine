@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Scene.h"
+#include "SceneAsset.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Content/Content.h"
@@ -13,12 +14,45 @@
 #include "Engine/Navigation/NavMesh.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
+#if USE_EDITOR
+#include "Engine/Engine/Globals.h"
+#endif
 
-REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset");
+REGISTER_JSON_ASSET(SceneAsset, "FlaxEngine.SceneAsset", false);
 
 SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAsset(params, info)
 {
+}
+
+bool SceneAsset::IsInternalType() const
+{
+    return true;
+}
+
+BoundingBox SceneNavigation::GetNavigationBounds()
+{
+    if (Volumes.IsEmpty())
+        return BoundingBox::Empty;
+    PROFILE_CPU_NAMED("GetNavigationBounds");
+    auto box = Volumes[0]->GetBox();
+    for (int32 i = 1; i < Volumes.Count(); i++)
+        BoundingBox::Merge(box, Volumes[i]->GetBox(), box);
+    return box;
+}
+
+NavMeshBoundsVolume* SceneNavigation::FindNavigationBoundsOverlap(const BoundingBox& bounds)
+{
+    NavMeshBoundsVolume* result = nullptr;
+    for (int32 i = 0; i < Volumes.Count(); i++)
+    {
+        if (Volumes[i]->GetBox().Intersects(bounds))
+        {
+            result = Volumes[i];
+            break;
+        }
+    }
+    return result;
 }
 
 #define CSG_COLLIDER_NAME TEXT("CSG.Collider")
@@ -27,7 +61,6 @@ SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info)
 Scene::Scene(const SpawnParams& params)
     : Actor(params)
     , Rendering(this)
-    , Ticking(this)
     , LightmapsData(this)
     , CSGData(this)
 {
@@ -54,31 +87,6 @@ LightmapSettings Scene::GetLightmapSettings() const
 void Scene::SetLightmapSettings(const LightmapSettings& value)
 {
     Info.LightmapSettings = value;
-}
-
-BoundingBox Scene::GetNavigationBounds()
-{
-    if (NavigationVolumes.IsEmpty())
-        return BoundingBox::Empty;
-    PROFILE_CPU_NAMED("GetNavigationBounds");
-    auto box = NavigationVolumes[0]->GetBox();
-    for (int32 i = 1; i < NavigationVolumes.Count(); i++)
-        BoundingBox::Merge(box, NavigationVolumes[i]->GetBox(), box);
-    return box;
-}
-
-NavMeshBoundsVolume* Scene::FindNavigationBoundsOverlap(const BoundingBox& bounds)
-{
-    NavMeshBoundsVolume* result = nullptr;
-    for (int32 i = 0; i < NavigationVolumes.Count(); i++)
-    {
-        if (NavigationVolumes[i]->GetBox().Intersects(bounds))
-        {
-            result = NavigationVolumes[i];
-            break;
-        }
-    }
-    return result;
 }
 
 void Scene::ClearLightmaps()
@@ -232,6 +240,18 @@ void Scene::OnCsgModelChanged()
     }
 }
 
+#if COMPILE_WITH_CSG_BUILDER
+
+void Scene::OnCSGBuildEnd()
+{
+    if (CSGData.CollisionData && TryGetCsgCollider() == nullptr)
+        CreateCsgCollider();
+    if (CSGData.Model && TryGetCsgModel() == nullptr)
+        CreateCsgModel();
+}
+
+#endif
+
 void Scene::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -262,7 +282,7 @@ void Scene::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     CSGData.DeserializeIfExists(stream, "CSG", modifier);
 
     // [Deprecated on 13.01.2021, expires on 13.01.2023]
-    if (modifier->EngineBuild <= 6215 && NavigationMeshes.IsEmpty())
+    if (modifier->EngineBuild <= 6215 && Navigation.Meshes.IsEmpty())
     {
         const auto e = SERIALIZE_FIND_MEMBER(stream, "NavMesh");
         if (e != stream.MemberEnd())

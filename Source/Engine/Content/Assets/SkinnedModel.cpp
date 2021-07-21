@@ -6,13 +6,16 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/SkinnedModelAssetUpgrader.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Renderer/DrawCall.h"
 
 #define CHECK_INVALID_BUFFER(buffer) \
     if (buffer->IsValidFor(this) == false) \
@@ -106,7 +109,7 @@ protected:
     }
 };
 
-REGISTER_BINARY_ASSET(SkinnedModel, "FlaxEngine.SkinnedModel", ::New<SkinnedModelAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(SkinnedModel, "FlaxEngine.SkinnedModel", SkinnedModelAssetUpgrader, true);
 
 SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->SkinnedModels())
@@ -118,6 +121,11 @@ SkinnedModel::~SkinnedModel()
     // Ensure to be fully disposed
     ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
+}
+
+bool SkinnedModel::HasAnyLODInitialized() const
+{
+    return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
 }
 
 Array<String> SkinnedModel::GetBlendShapes()
@@ -663,7 +671,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     }
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
-    stopStreaming();
+    StopStreaming();
 
     // Setup
     MaterialSlots.Resize(1);
@@ -818,8 +826,6 @@ Task* SkinnedModel::CreateStreamingTask(int32 residency)
     }
     else
     {
-        ASSERT(IsInMainThread());
-
         // Do the quick data release
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
@@ -966,7 +972,7 @@ Asset::LoadResult SkinnedModel::load()
     }
 
     // Request resource streaming
-    startStreaming(true);
+    StartStreaming(true);
 
     return LoadResult::Ok;
 }

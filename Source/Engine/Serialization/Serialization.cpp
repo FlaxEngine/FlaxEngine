@@ -3,6 +3,21 @@
 #include "Serialization.h"
 #include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Utilities/Encryption.h"
@@ -58,8 +73,8 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         else
             v.Type = VariantType::Null;
         const auto mTypeName = SERIALIZE_FIND_MEMBER(stream, "TypeName");
-        if (mTypeName != stream.MemberEnd())
-            v.SetTypeName(StringAnsiView(mTypeName->value.GetString(), mTypeName->value.GetStringLength()));
+        if (mTypeName != stream.MemberEnd() && mTypeName->value.IsString())
+            v.SetTypeName(StringAnsiView(mTypeName->value.GetStringAnsiView()));
     }
     else
     {
@@ -137,6 +152,15 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
         break;
     case VariantType::Vector4:
         stream.Vector4(*(Vector4*)v.AsData);
+        break;
+    case VariantType::Int2:
+        stream.Int2(*(Int2*)v.AsData);
+        break;
+    case VariantType::Int3:
+        stream.Int3(*(Int3*)v.AsData);
+        break;
+    case VariantType::Int4:
+        stream.Int4(*(Int4*)v.AsData);
         break;
     case VariantType::Color:
         stream.Color(*(Color*)v.AsData);
@@ -232,7 +256,8 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         v.AsPointer = (void*)(uintptr)value.GetUint64();
         break;
     case VariantType::String:
-        v.SetString(StringAnsiView(value.GetString(), value.GetStringLength()));
+        CHECK(value.IsString());
+        v.SetString(value.GetStringAnsiView());
         break;
     case VariantType::Object:
         Deserialize(value, id, modifier);
@@ -245,6 +270,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         break;
     case VariantType::Structure:
     case VariantType::Blob:
+        CHECK(value.IsString());
         id.A = value.GetStringLength();
         v.SetBlob(id.A);
         Encryption::Base64Decode(value.GetString(), id.A, (byte*)v.AsBlob.Data);
@@ -257,6 +283,15 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         break;
     case VariantType::Vector4:
         Deserialize(value, *(Vector4*)v.AsData, modifier);
+        break;
+    case VariantType::Int2:
+        Deserialize(value, *(Int2*)v.AsData, modifier);
+        break;
+    case VariantType::Int3:
+        Deserialize(value, *(Int3*)v.AsData, modifier);
+        break;
+    case VariantType::Int4:
+        Deserialize(value, *(Int4*)v.AsData, modifier);
         break;
     case VariantType::Color:
         Deserialize(value, *(Color*)v.AsData, modifier);
@@ -292,7 +327,8 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, *v.AsDictionary, modifier);
         break;
     case VariantType::Typename:
-        v.SetTypename(StringAnsiView(value.GetString(), value.GetStringLength()));
+        CHECK(value.IsString());
+        v.SetTypename(value.GetStringAnsiView());
         break;
     default:
         Platform::CheckFailed("", __FILE__, __LINE__);
@@ -311,7 +347,7 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Guid
 
 void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Guid& v, ISerializeModifier* modifier)
 {
-    if (stream.GetStringLength() != 32)
+    if (!stream.IsString() || stream.GetStringLength() != 32)
     {
         v = Guid::Empty;
         return;
@@ -443,6 +479,51 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector
     v.Y = mY != stream.MemberEnd() ? mY->value.GetFloat() : 0.0f;
     v.Z = mZ != stream.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
     v.W = mW != stream.MemberEnd() ? mW->value.GetFloat() : 0.0f;
+}
+
+bool Serialization::ShouldSerialize(const Int2& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int2*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int2& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+}
+
+bool Serialization::ShouldSerialize(const Int3& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int3*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int3& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetInt() : 0;
+}
+
+bool Serialization::ShouldSerialize(const Int4& v, const void* otherObj)
+{
+    return !otherObj || !(v == *(Int4*)otherObj);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Int4& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    const auto mW = SERIALIZE_FIND_MEMBER(stream, "W");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetInt() : 0;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetInt() : 0;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetInt() : 0;
+    v.W = mW != stream.MemberEnd() ? mW->value.GetInt() : 0;
 }
 
 bool Serialization::ShouldSerialize(const Quaternion& v, const void* otherObj)

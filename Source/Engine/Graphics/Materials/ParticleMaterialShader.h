@@ -54,7 +54,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="name">Material resource name</param>
-    ParticleMaterialShader(const String& name)
+    ParticleMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }

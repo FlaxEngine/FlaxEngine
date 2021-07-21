@@ -168,6 +168,9 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_LINE_TERMINATOR
 #define PLATFORM_LINE_TERMINATOR "\n"
 #endif
+#ifndef PLATFORM_THREADS_LIMIT
+#define PLATFORM_THREADS_LIMIT 64
+#endif
 #define PLATFORM_32BITS (!PLATFORM_64BITS)
 
 // Platform family defines

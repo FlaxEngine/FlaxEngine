@@ -135,6 +135,8 @@ public:
     /// </summary>
     uint32 UsedStagesMask;
 
+    bool BlendEnable;
+
     /// <summary>
     /// The bitmask of stages that have descriptors.
     /// </summary>
@@ -149,6 +151,11 @@ public:
     /// The cached shader descriptor infos per stage.
     /// </summary>
     const SpirvShaderDescriptorInfo* DescriptorInfoPerStage[DescriptorSet::GraphicsStagesCount];
+
+    const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const
+    {
+        return _desc.pVertexInputState;
+    }
 
     DescriptorSetWriteContainerVulkan DSWriteContainer;
     DescriptorSetWriterVulkan DSWriter[DescriptorSet::GraphicsStagesCount];

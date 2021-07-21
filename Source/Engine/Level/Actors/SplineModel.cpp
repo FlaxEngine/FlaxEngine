@@ -5,9 +5,15 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RenderList.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
@@ -138,11 +144,10 @@ void SplineModel::OnSplineUpdated()
                 Vector3 tmp = corners[i] * _preTransform.Scale;
                 double rotation[4] = { (double)_preTransform.Orientation.X, (double)_preTransform.Orientation.Y, (double)_preTransform.Orientation.Z, (double)_preTransform.Orientation.W };
                 const double length = sqrt(rotation[0] * rotation[0] + rotation[1] * rotation[1] + rotation[2] * rotation[2] + rotation[3] * rotation[3]);
-                const double inv = 1.0 / length;
-                rotation[0] *= inv;
-                rotation[1] *= inv;
-                rotation[2] *= inv;
-                rotation[3] *= inv;
+                rotation[0] /= length;
+                rotation[1] /= length;
+                rotation[2] /= length;
+                rotation[3] /= length;
                 double pos[3] = { (double)tmp.X, (double)tmp.Y, (double)tmp.Z };
                 const double x = rotation[0] + rotation[0];
                 const double y = rotation[1] + rotation[1];
@@ -204,6 +209,8 @@ void SplineModel::OnSplineUpdated()
     for (int32 i = 1; i < _instances.Count(); i++)
         BoundingSphere::Merge(_sphere, _instances[i].Sphere, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void SplineModel::UpdateDeformationBuffer()
@@ -251,7 +258,7 @@ void SplineModel::UpdateDeformationBuffer()
         AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
         for (int32 chunk = 0; chunk < chunksPerSegment; chunk++)
         {
-            const float alpha = (float)chunk * chunksPerSegmentInv;
+            const float alpha = (chunk == chunksPerSegment - 1)? 1.0f : ((float)chunk * chunksPerSegmentInv);
 
             // Evaluate transformation at the curve
             AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, alpha, transform);
@@ -473,6 +480,14 @@ void SplineModel::OnTransformChanged()
 {
     // Base
     ModelInstanceActor::OnTransformChanged();
+
+    OnSplineUpdated();
+}
+
+void SplineModel::OnActiveInTreeChanged()
+{
+    // Base
+    ModelInstanceActor::OnActiveInTreeChanged();
 
     OnSplineUpdated();
 }

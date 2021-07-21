@@ -1,13 +1,15 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MaterialInstance.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Upgraders/MaterialInstanceUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 
-REGISTER_BINARY_ASSET(MaterialInstance, "FlaxEngine.MaterialInstance", ::New<MaterialInstanceUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(MaterialInstance, "FlaxEngine.MaterialInstance", MaterialInstanceUpgrader, true);
 
 MaterialInstance::MaterialInstance(const SpawnParams& params, const AssetInfo* info)
     : MaterialBase(params, info)
@@ -112,16 +114,6 @@ void MaterialInstance::OnBaseParamsChanged()
     }
 
     ParamsChanged();
-}
-
-void MaterialInstance::OnUnload()
-{
-    if (_baseMaterial)
-    {
-        OnBaseUnset();
-        _baseMaterial = nullptr;
-    }
-    Params.Dispose();
 }
 
 bool MaterialInstance::IsMaterialInstance() const
@@ -241,7 +233,12 @@ Asset::LoadResult MaterialInstance::load()
 
 void MaterialInstance::unload(bool isReloading)
 {
-    OnUnload();
+    if (_baseMaterial)
+    {
+        OnBaseUnset();
+        _baseMaterial = nullptr;
+    }
+    Params.Dispose();
 }
 
 AssetChunksFlag MaterialInstance::getChunksToPreload() const

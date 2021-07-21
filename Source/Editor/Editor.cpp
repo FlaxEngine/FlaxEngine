@@ -19,6 +19,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -468,15 +469,22 @@ int32 Editor::LoadProduct()
         }
     }
 
+    HashSet<ProjectInfo*> projects;
+    Project->GetAllProjects(projects);
+
     // Validate project min supported version (older engine may try to load newer project)
     // Special check if project specifies only build number, then major/minor fields are set to 0
     const auto engineVersion = FLAXENGINE_VERSION;
-    if (Project->MinEngineVersion > engineVersion ||
-        (Project->MinEngineVersion.Major() == 0 && Project->MinEngineVersion.Minor() == 0 && Project->MinEngineVersion.Build() > engineVersion.Build())
-    )
+    for (auto e : projects)
     {
-        Platform::Fatal(String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor."), Project->Name, Project->MinEngineVersion.ToString(), engineVersion.ToString()));
-        return -2;
+        const auto project = e.Item;
+        if (project->MinEngineVersion > engineVersion ||
+            (project->MinEngineVersion.Major() == 0 && project->MinEngineVersion.Minor() == 0 && project->MinEngineVersion.Build() > engineVersion.Build())
+        )
+        {
+            Platform::Fatal(String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor."), project->Name, project->MinEngineVersion.ToString(), engineVersion.ToString()));
+            return -2;
+        }
     }
 
     return 0;
@@ -534,6 +542,12 @@ bool Editor::Init()
     // Initialize managed editor
     Managed->Init();
 
+    // Start play if requested by cmd line
+    if (CommandLine::Options.Play.HasValue())
+    {
+        Managed->RequestStartPlayOnEditMode();
+    }
+
     return false;
 }
 
@@ -574,6 +588,7 @@ void EditorImpl::OnUpdate()
     if (!hasFocus)
     {
         // Sleep for a bit to not eat up all CPU time
+        PROFILE_CPU_NAMED("Sleep");
         Platform::Sleep(5);
     }
     HasFocus = hasFocus;

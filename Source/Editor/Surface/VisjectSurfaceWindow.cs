@@ -447,18 +447,13 @@ namespace FlaxEditor.Surface
             var cm = new ItemsListContextMenu(180);
             foreach (var newParameterType in newParameterTypes)
             {
-                var name = newParameterType.Type != null ? window.VisjectSurface.GetTypeName(newParameterType) : newParameterType.Name;
-                var item = new ItemsListContextMenu.Item(name, newParameterType)
+                var item = new TypeSearchPopup.TypeItemView(newParameterType)
                 {
+                    Tag = newParameterType,
                     TooltipText = newParameterType.TypeName,
                 };
-                var attributes = newParameterType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
+                if (newParameterType.Type != null)
+                    item.Name = window.VisjectSurface.GetTypeName(newParameterType);
                 cm.AddItem(item);
             }
             cm.ItemClicked += OnAddParameterItemClicked;
@@ -759,12 +754,12 @@ namespace FlaxEditor.Surface
             _propertiesEditor.Modified += OnPropertyEdited;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save32, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo32, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo32, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.PageScale32, ShowWholeGraph).LinkTooltip("Show whole graph");
+            _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);

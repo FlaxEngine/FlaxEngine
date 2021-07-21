@@ -5,15 +5,27 @@
 #include "FlaxPackage.h"
 #include "ContentStorageManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#include "Engine/Threading/Threading.h"
+#if USE_EDITOR
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonWriters.h"
+#else
+#include "Engine/Engine/Globals.h"
+#endif
 #include <ThirdParty/LZ4/lz4.h>
 
 String AssetHeader::ToString() const
 {
     return String::Format(TEXT("ID: {0}, TypeName: {1}, Chunks Count: {2}"), ID, TypeName, GetChunksCount());
+}
+
+void FlaxChunk::RegisterUsage()
+{
+    Platform::AtomicStore(&LastAccessTime, DateTime::NowUTC().Ticks);
 }
 
 const int32 FlaxStorage::MagicCode = 1180124739;
@@ -225,7 +237,7 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
 
 bool FlaxStorage::ShouldDispose() const
 {
-    return _refCount == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500) && Platform::AtomicRead((int64*)&_chunksLock) == 0;
+    return _refCount == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
@@ -313,9 +325,10 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            FlaxChunkFlags flags;
-            stream->ReadInt32(reinterpret_cast<int32*>(&flags));
-            AddChunk(New<FlaxChunk>(e, flags));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            stream->ReadInt32(reinterpret_cast<int32*>(&chunk->Flags));
+            AddChunk(chunk);
         }
 
         break;
@@ -363,9 +376,10 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            FlaxChunkFlags flags;
-            stream->ReadInt32(reinterpret_cast<int32*>(&flags));
-            AddChunk(New<FlaxChunk>(e, flags));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            stream->ReadInt32(reinterpret_cast<int32*>(&chunk->Flags));
+            AddChunk(chunk);
         }
 
         break;
@@ -397,7 +411,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -430,7 +446,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -467,7 +485,9 @@ bool FlaxStorage::Load()
                 LOG(Warning, "Empty chunk found.");
                 return true;
             }
-            AddChunk(New<FlaxChunk>(e));
+            auto chunk = New<FlaxChunk>();
+            chunk->LocationInFile = e;
+            AddChunk(chunk);
         }
 
         break;
@@ -523,7 +543,9 @@ bool FlaxStorage::Load()
             auto& oldChunk = chunks[i];
             if (oldChunk.Size > 0)
             {
-                AddChunk(New<FlaxChunk>(oldChunk.Adress, oldChunk.Size));
+                auto chunk = New<FlaxChunk>();
+                chunk->LocationInFile = FlaxChunk::Location(oldChunk.Adress, oldChunk.Size);
+                AddChunk(chunk);
             }
         }
 
@@ -623,6 +645,7 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
             stream->ReadBytes(tmpBuf.Get(), size);
 
             // Decompress data
+            PROFILE_CPU_NAMED("DecompressLZ4");
             chunk->Data.Allocate(originalSize);
             const int32 res = LZ4_decompress_safe((const char*)tmpBuf.Get(), chunk->Data.Get<char>(), size, originalSize);
             if (res <= 0)
@@ -823,6 +846,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         const FlaxChunk* chunk = chunks[i];
         if (chunk->Flags & FlaxChunkFlags::CompressedLZ4)
         {
+            PROFILE_CPU_NAMED("CompressLZ4");
             const int32 srcSize = chunk->Data.Length();
             const int32 maxSize = LZ4_compressBound(srcSize);
             auto& chunkCompressed = compressedChunks[i];
@@ -1297,7 +1321,7 @@ void FlaxStorage::Tick()
     for (int32 i = 0; i < _chunks.Count(); i++)
     {
         auto chunk = _chunks[i];
-        const bool wasUsed = (now - chunk->LastAccessTime) < ContentStorageManager::UnusedDataChunksLifetime;
+        const bool wasUsed = (now - DateTime(Platform::AtomicRead(&chunk->LastAccessTime))) < ContentStorageManager::UnusedDataChunksLifetime;
         if (!wasUsed && chunk->IsLoaded())
         {
             chunk->Unload();

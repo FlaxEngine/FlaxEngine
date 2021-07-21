@@ -45,8 +45,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class UWPWindow;
 typedef UWPWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class Win32Network;
+typedef Win32Network Network;
 
 #elif PLATFORM_LINUX
 
@@ -91,8 +91,8 @@ class PS4Thread;
 typedef PS4Thread Thread;
 class PS4Window;
 typedef PS4Window Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class PS4Network;
+typedef PS4Network Network;
 
 #elif PLATFORM_XBOX_SCARLETT
 
@@ -160,8 +160,8 @@ class SwitchThread;
 typedef SwitchThread Thread;
 class SwitchWindow;
 typedef SwitchWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class SwitchNetwork;
+typedef SwitchNetwork Network;
 
 #else
 

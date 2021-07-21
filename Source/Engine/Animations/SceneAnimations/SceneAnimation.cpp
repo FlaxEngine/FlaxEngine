@@ -1,14 +1,18 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "SceneAnimation.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Graphics/PostProcessSettings.h"
+#if USE_EDITOR
+#include "Engine/Threading/Threading.h"
+#endif
 
-REGISTER_BINARY_ASSET(SceneAnimation, "FlaxEngine.SceneAnimation", nullptr, false);
+REGISTER_BINARY_ASSET(SceneAnimation, "FlaxEngine.SceneAnimation", false);
 
 SceneAnimation::SceneAnimation(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

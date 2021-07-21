@@ -8,9 +8,12 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask
@@ -113,7 +116,7 @@ protected:
     }
 };
 
-REGISTER_BINARY_ASSET(Model, "FlaxEngine.Model", ::New<ModelAssetUpgrader>(), true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())
@@ -568,7 +571,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     }
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
-    stopStreaming();
+    StopStreaming();
 
     // Setup
     MaterialSlots.Resize(1);
@@ -711,8 +714,6 @@ Task* Model::CreateStreamingTask(int32 residency)
     }
     else
     {
-        ASSERT(IsInMainThread());
-
         // Do the quick data release
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
@@ -819,13 +820,13 @@ Asset::LoadResult Model::load()
         const auto thisSS = LODs[lodIndex].ScreenSize;
         if (prevSS <= thisSS)
         {
-            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, GetPath());
+            LOG(Warning, "Model LOD {0} has invalid screen size compared to LOD {1} (asset: {2})", lodIndex, lodIndex - 1, ToString());
         }
     }
 #endif
 
     // Request resource streaming
-    startStreaming(true);
+    StartStreaming(true);
 
     return LoadResult::Ok;
 }

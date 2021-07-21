@@ -122,15 +122,13 @@ void BoundingSphere::FromPoints(const Vector3* points, int32 pointsCount, Boundi
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
     ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
-
-    Vector3::Lerp(box.Minimum, box.Maximum, 0.5f, result.Center);
-
-    const float x = box.Minimum.X - box.Maximum.X;
-    const float y = box.Minimum.Y - box.Maximum.Y;
-    const float z = box.Minimum.Z - box.Maximum.Z;
-
-    const float distance = Math::Sqrt(x * x + y * y + z * z);
-    result.Radius = distance * 0.5f;
+    const float x = box.Maximum.X - box.Minimum.X;
+    const float y = box.Maximum.Y - box.Minimum.Y;
+    const float z = box.Maximum.Z - box.Minimum.Z;
+    result.Center.X = box.Minimum.X + x * 0.5f;
+    result.Center.Y = box.Minimum.Y + y * 0.5f;
+    result.Center.Z = box.Minimum.Z + z * 0.5f;
+    result.Radius = Math::Sqrt(x * x + y * y + z * z) * 0.5f;
 }
 
 void BoundingSphere::Merge(const BoundingSphere& value1, const BoundingSphere& value2, BoundingSphere& result)

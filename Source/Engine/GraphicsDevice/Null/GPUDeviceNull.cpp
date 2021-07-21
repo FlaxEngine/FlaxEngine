@@ -10,6 +10,7 @@
 #include "GPUPipelineStateNull.h"
 #include "GPUTimerQueryNull.h"
 #include "GPUBufferNull.h"
+#include "GPUSamplerNull.h"
 #include "GPUSwapChainNull.h"
 
 GPUDeviceNull::GPUDeviceNull()
@@ -58,6 +59,7 @@ bool GPUDeviceNull::Init()
         limits.HasDepthAsSRV = false;
         limits.HasReadOnlyDepth = false;
         limits.HasMultisampleDepthAsSRV = false;
+        limits.HasTypedUAVLoad = false;
         limits.MaximumMipLevelsCount = 14;
         limits.MaximumTexture1DSize = 8192;
         limits.MaximumTexture1DArraySize = 512;
@@ -65,6 +67,7 @@ bool GPUDeviceNull::Init()
         limits.MaximumTexture2DArraySize = 512;
         limits.MaximumTexture3DSize = 2048;
         limits.MaximumTextureCubeSize = 16384;
+        limits.MaximumSamplerAnisotropy = 1;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -174,6 +177,11 @@ GPUTimerQuery* GPUDeviceNull::CreateTimerQuery()
 GPUBuffer* GPUDeviceNull::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferNull>();
+}
+
+GPUSampler* GPUDeviceNull::CreateSampler()
+{
+    return New<GPUSamplerNull>();
 }
 
 GPUSwapChain* GPUDeviceNull::CreateSwapChain(Window* window)

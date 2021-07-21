@@ -55,25 +55,13 @@ private:
     GPUContextDX12* _mainContext;
 
     // Heaps
-    DescriptorHeapWithSlotsDX12::Slot _nullSrv;
+    DescriptorHeapWithSlotsDX12::Slot _nullSrv[D3D12_SRV_DIMENSION_TEXTURECUBEARRAY + 1];
     DescriptorHeapWithSlotsDX12::Slot _nullUav;
 
 public:
 
-    // Create new graphics device (returns null if failed)
-    // @returns Created device or null
     static GPUDevice* Create();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUDeviceDX12"/> class.
-    /// </summary>
-    /// <param name="dxgiFactory">The DXGI factory handle.</param>
-    /// <param name="adapter">The GPU device adapter.</param>
     GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUDeviceDX12"/> class.
-    /// </summary>
     ~GPUDeviceDX12();
 
 public:
@@ -93,25 +81,22 @@ public:
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE NullSRV() const;
-
+    D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
 
 public:
 
     /// <summary>
-    /// Gets DX12 device
+    /// Gets DX12 device.
     /// </summary>
-    /// <returns>DirectX 12 device</returns>
     FORCE_INLINE ID3D12Device* GetDevice() const
     {
         return _device;
     }
 
     /// <summary>
-    /// Gets DXGI factory
+    /// Gets DXGI factory.
     /// </summary>
-    /// <returns>DXGI factory object</returns>
     FORCE_INLINE IDXGIFactory4* GetDXGIFactory() const
     {
         return _factoryDXGI;
@@ -120,28 +105,24 @@ public:
     /// <summary>
     /// Gets DirectX 12 command list object
     /// </summary>
-    /// <returns>Command list object (DirectX 12)</returns>
     ID3D12GraphicsCommandList* GetCommandList() const;
 
     /// <summary>
-    /// Gets command queue
+    /// Gets command queue.
     /// </summary>
-    /// <returns>Command queue</returns>
     FORCE_INLINE CommandQueueDX12* GetCommandQueue() const
     {
         return _commandQueue;
     }
 
     /// <summary>
-    /// Gets DirectX 12 command queue object
+    /// Gets DirectX 12 command queue object.
     /// </summary>
-    /// <returns>Command queue object (DirectX 12)</returns>
     ID3D12CommandQueue* GetCommandQueueDX12() const;
 
     /// <summary>
-    /// Gets root signature of the graphics pipeline
+    /// Gets root signature of the graphics pipeline.
     /// </summary>
-    /// <returns>Root signature</returns>
     FORCE_INLINE ID3D12RootSignature* GetRootSignature() const
     {
         return _rootSignature;
@@ -150,7 +131,6 @@ public:
     /// <summary>
     /// Gets main commands context (for DirectX 12)
     /// </summary>
-    /// <returns>Main context</returns>
     FORCE_INLINE GPUContextDX12* GetMainContextDX12() const
     {
         return _mainContext;
@@ -161,7 +141,9 @@ public:
     DescriptorHeapPoolDX12 Heap_CBV_SRV_UAV;
     DescriptorHeapPoolDX12 Heap_RTV;
     DescriptorHeapPoolDX12 Heap_DSV;
+    DescriptorHeapPoolDX12 Heap_Sampler;
     DescriptorHeapRingBufferDX12 RingHeap_CBV_SRV_UAV;
+    DescriptorHeapRingBufferDX12 RingHeap_Sampler;
 
 public:
 
@@ -171,9 +153,7 @@ public:
     static FORCE_INLINE uint32 GetMaxMSAAQuality(uint32 sampleCount)
     {
         if (sampleCount <= 8)
-        {
             return 0;
-        }
         return 0xffffffff;
     }
 
@@ -196,12 +176,10 @@ public:
     {
         return reinterpret_cast<GPUContext*>(_mainContext);
     }
-
     void* GetNativePtr() const override
     {
         return _device;
     }
-
     bool Init() override;
     void DrawBegin() override;
     void RenderEnd() override;
@@ -212,6 +190,7 @@ public:
     GPUPipelineState* CreatePipelineState() override;
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
 };
 

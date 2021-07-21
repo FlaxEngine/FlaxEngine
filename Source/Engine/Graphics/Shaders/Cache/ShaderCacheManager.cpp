@@ -24,105 +24,59 @@ const Char* ShaderProfileCacheDirNames[8] =
     TEXT("DX_SM6"), // DirectX_SM6
     // @formatter:on
 };
+
 static_assert(ARRAY_COUNT(ShaderProfileCacheDirNames) == (int32)ShaderProfile::MAX, "Invalid shaders cache dirs");
 
 class ShaderProfileDatabase
 {
-private:
+public:
 
-    ShaderProfile _profile;
-    String _folder;
+    ShaderProfile Profile;
+    String Folder;
 
 public:
 
-    /// <summary>
-    /// Gets the folder path.
-    /// </summary>
-    const String& GetFolder() const
-    {
-        return _folder;
-    }
-
-public:
-
-    /// <summary>
-    /// Internalizes the database.
-    /// </summary>
-    /// <param name="profile">Shader profile for that cache database</param>
-    /// <param name="cacheRoot">Parent root folder for cache databases</param>
     void Init(ShaderProfile profile, const String& cacheRoot)
     {
-        // Init
-        _profile = profile;
-        _folder = cacheRoot / ShaderProfileCacheDirNames[static_cast<int32>(profile)];
-
-        // Ensure that directory exists
-        if (!FileSystem::DirectoryExists(_folder))
+        Profile = profile;
+        Folder = cacheRoot / ShaderProfileCacheDirNames[static_cast<int32>(profile)];
+        if (!FileSystem::DirectoryExists(Folder))
         {
-            if (FileSystem::CreateDirectory(_folder))
+            if (FileSystem::CreateDirectory(Folder))
             {
-                LOG(Warning, "Cannot create cache directory for ShaderProfileDatabase: {0} (path: \'{1}\')", ::ToString(_profile), _folder);
+                LOG(Warning, "Cannot create cache directory for ShaderProfileDatabase: {0} (path: \'{1}\')", ::ToString(Profile), Folder);
             }
         }
     }
 
-    /// <summary>
-    /// Tries to get cached shader entry for a given shader.
-    /// </summary>
-    /// <param name="id">Shader ID</param>
-    /// <param name="cachedEntry">Result entry if success</param>
-    /// <returns>False if cannot get it, otherwise true</returns>
     bool TryGetEntry(const Guid& id, ShaderCacheManager::CachedEntryHandle& cachedEntry) const
     {
         ASSERT(id.IsValid());
 
         cachedEntry.ID = id;
-        cachedEntry.Path = _folder / id.ToString(Guid::FormatType::D);
+        cachedEntry.Path = Folder / id.ToString(Guid::FormatType::D);
         return cachedEntry.Exists();
     }
 
-    /// <summary>
-    /// Gets shader cache.
-    /// </summary>
-    /// <param name="cachedEntry">Cached entry handle</param>
-    /// <param name="outputShaderCache">Output data</param>
-    /// <returns>True if cannot set cache data, otherwise false</returns>
     bool GetCache(const ShaderCacheManager::CachedEntryHandle& cachedEntry, BytesContainer& outputShaderCache) const
     {
         ASSERT(cachedEntry.IsValid());
-
-        // Read raw bytes
         return File::ReadAllBytes(cachedEntry.Path, outputShaderCache);
     }
 
-    /// <summary>
-    /// Sets shader cache.
-    /// </summary>
-    /// <param name="cachedEntry">Cached entry handle</param>
-    /// <param name="inputShaderCache">Input data</param>
-    /// <returns>True if cannot set cache data, otherwise false</returns>
     static bool SetCache(const ShaderCacheManager::CachedEntryHandle& cachedEntry, MemoryWriteStream& inputShaderCache)
     {
         ASSERT(cachedEntry.IsValid() && inputShaderCache.GetHandle() != nullptr);
-
-        // Write raw bytes
         return inputShaderCache.SaveToFile(cachedEntry.Path);
     }
 
-    /// <summary>
-    /// Removes shader cache.
-    /// </summary>
-    /// <param name="id">Shader ID</param>
     void RemoveCache(const Guid& id) const
     {
         ASSERT(id.IsValid());
-
         ShaderCacheManager::CachedEntryHandle cachedEntry;
         cachedEntry.ID = id;
-        cachedEntry.Path = _folder / id.ToString(Guid::FormatType::D);
-
-        // Delete file
-        cachedEntry.Delete();
+        cachedEntry.Path = Folder / id.ToString(Guid::FormatType::D);
+        FileSystem::DeleteFile(cachedEntry.Path);
     }
 };
 
@@ -150,6 +104,21 @@ static int32 shaderProfile2Index(const ShaderProfile profile)
 static ShaderProfile index2ShaderProfile(const int32 index)
 {
     return static_cast<ShaderProfile>(index + 1);
+}
+
+bool ShaderCacheManager::CachedEntryHandle::IsValid() const
+{
+    return ID.IsValid();
+}
+
+bool ShaderCacheManager::CachedEntryHandle::Exists() const
+{
+    return FileSystem::FileExists(Path);
+}
+
+DateTime ShaderCacheManager::CachedEntryHandle::GetModificationDate() const
+{
+    return FileSystem::GetFileLastEditTime(Path);
 }
 
 bool ShaderCacheManager::TryGetEntry(const ShaderProfile profile, const Guid& id, CachedEntryHandle& cachedEntry)
@@ -190,7 +159,7 @@ void ShaderCacheManager::CopyCache(const Guid& dstId, const Guid& srcId)
     String srcFilename = srcId.ToString(Guid::FormatType::D);
     for (int32 i = 0; i < ARRAY_COUNT(Databases); i++)
     {
-        const String& folder = Databases[i].GetFolder();
+        const String& folder = Databases[i].Folder;
         String dstPath = folder / dstFilename;
         String srcPath = folder / srcFilename;
 
@@ -233,7 +202,7 @@ bool ShaderCacheManagerService::Init()
     {
         LOG(Warning, "Shaders cache database is invalid. Performing reset.");
 
-        if (FileSystem::DeleteDirectory(rootDir))
+        if (FileSystem::DirectoryExists(rootDir) && FileSystem::DeleteDirectory(rootDir))
         {
             LOG(Warning, "Failed to reset the shaders cache database.");
         }

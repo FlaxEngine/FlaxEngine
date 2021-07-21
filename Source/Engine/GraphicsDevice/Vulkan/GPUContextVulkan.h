@@ -35,8 +35,6 @@ class DescriptorSetLayoutVulkan;
 /// </summary>
 #define VK_BARRIER_BUFFER_SIZE 16
 
-#if VK_ENABLE_BARRIERS_BATCHING
-
 /// <summary>
 /// The Vulkan pipeline resources layout barrier batching structure.
 /// </summary>
@@ -81,8 +79,6 @@ public:
     void Execute(CmdBufferVulkan* cmdBuffer);
 };
 
-#endif
-
 /// <summary>
 /// GPU Context for Vulkan backend.
 /// </summary>
@@ -93,17 +89,14 @@ private:
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
-#if VK_ENABLE_BARRIERS_BATCHING
     PipelineBarrierVulkan _barriers;
-#endif
 
     int32 _psDirtyFlag : 1;
     int32 _rtDirtyFlag : 1;
     int32 _cbDirtyFlag : 1;
-    int32 _srDirtyFlag : 1;
-    int32 _uaDirtyFlag : 1;
 
     int32 _rtCount;
+    int32 _vbCount;
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;
@@ -112,6 +105,7 @@ private:
     DescriptorOwnerResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
     DescriptorOwnerResourceVulkan* _srHandles[GPU_MAX_SR_BINDED];
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
+    VkSampler _samplerHandles[GPU_MAX_SAMPLER_BINDED];
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
@@ -193,6 +187,7 @@ public:
     void BindUA(int32 slot, GPUResourceView* view) override;
     void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
+    void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;
     void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
     void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;

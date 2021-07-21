@@ -6,6 +6,9 @@
 #include "Engine/Content/Content.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/ImportTexture.h"
+#include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUBufferDescription.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 ShadowsOfMordor::Builder::LightmapBuildCache::~LightmapBuildCache()

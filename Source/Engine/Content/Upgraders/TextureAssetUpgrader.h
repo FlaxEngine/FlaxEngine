@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if USE_EDITOR
+
 #include "BinaryAssetUpgrader.h"
 #include "Engine/Core/Core.h"
 #include "Engine/Platform/Platform.h"
@@ -478,7 +480,6 @@ private:
         newHeader.IsSRGB = textureHeader.IsSRGB;
         newHeader.NeverStream = textureHeader.NeverStream;
         newHeader.Type = textureHeader.Type;
-        newHeader.IsCubeMap = false;
         context.Output.CustomData.Copy(&newHeader);
 
         // Convert import options
@@ -533,7 +534,6 @@ private:
         newHeader.MipLevels = textureHeader.MipLevels;
         newHeader.Format = PixelFormatOldToNew(textureHeader.Format);
         newHeader.IsSRGB = textureHeader.IsSRGB;
-        newHeader.NeverStream = false;
         newHeader.Type = TextureFormatType::ColorRGB;
         newHeader.IsCubeMap = true;
         context.Output.CustomData.Copy(&newHeader);
@@ -615,7 +615,6 @@ private:
         newHeader.IsSRGB = textureHeader.IsSRGB;
         newHeader.NeverStream = textureHeader.NeverStream;
         newHeader.Type = textureHeader.Type;
-        newHeader.IsCubeMap = false;
         context.Output.CustomData.Copy(&newHeader);
 
         // Copy sprite atlas data from old header stream to chunk (chunk 15th)
@@ -694,7 +693,6 @@ private:
         newHeader.IsSRGB = textureHeader.IsSRGB;
         newHeader.NeverStream = textureHeader.NeverStream;
         newHeader.Type = textureHeader.Type;
-        newHeader.IsCubeMap = false;
         auto data = (IESProfile::CustomDataLayout*)newHeader.CustomData;
         data->Brightness = brightness;
         data->TextureMultiplier = multiplier;
@@ -763,7 +761,6 @@ private:
         newHeader.IsSRGB = textureHeader.IsSRGB;
         newHeader.NeverStream = textureHeader.NeverStream;
         newHeader.Type = textureHeader.Type;
-        newHeader.IsCubeMap = false;
         context.Output.CustomData.Copy(&newHeader);
 
         // Copy asset previews IDs mapping data from old chunk to new one
@@ -825,3 +822,5 @@ private:
         return true;
     }
 };
+
+#endif

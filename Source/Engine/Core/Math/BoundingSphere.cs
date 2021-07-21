@@ -286,14 +286,13 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, the newly constructed bounding sphere.</param>
         public static void FromBox(ref BoundingBox box, out BoundingSphere result)
         {
-            Vector3.Lerp(ref box.Minimum, ref box.Maximum, 0.5f, out result.Center);
-
-            float x = box.Minimum.X - box.Maximum.X;
-            float y = box.Minimum.Y - box.Maximum.Y;
-            float z = box.Minimum.Z - box.Maximum.Z;
-
-            var distance = (float)Math.Sqrt(x * x + y * y + z * z);
-            result.Radius = distance * 0.5f;
+            float x = box.Maximum.X - box.Minimum.X;
+            float y = box.Maximum.Y - box.Minimum.Y;
+            float z = box.Maximum.Z - box.Minimum.Z;
+            result.Center.X = box.Minimum.X + x * 0.5f;
+            result.Center.Y = box.Minimum.Y + y * 0.5f;
+            result.Center.Z = box.Minimum.Z + z * 0.5f;
+            result.Radius = (float)Math.Sqrt(x * x + y * y + z * z) * 0.5f;
         }
 
         /// <summary>

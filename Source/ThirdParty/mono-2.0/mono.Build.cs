@@ -87,7 +87,7 @@ public class mono : DepsModule
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             break;
         case TargetPlatform.Switch:
-            // TODO: mono for Switch
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

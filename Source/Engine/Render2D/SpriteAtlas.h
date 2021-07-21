@@ -111,32 +111,21 @@ public:
     /// <summary>
     /// Gets the sprites count.
     /// </summary>
-    /// <returns>The sprites count.</returns>
-    API_PROPERTY() int32 GetSpritesCount() const
-    {
-        return Sprites.Count();
-    }
+    API_PROPERTY() int32 GetSpritesCount() const;
 
     /// <summary>
     /// Gets the sprite data.
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns>The sprite data.</returns>
-    API_FUNCTION() Sprite GetSprite(const int32 index) const
-    {
-        return Sprites[index];
-    }
+    API_FUNCTION() Sprite GetSprite(int32 index) const;
 
     /// <summary>
     /// Sets the sprite data.
     /// </summary>
     /// <param name="index">The index.</param>
     /// <param name="value">The sprite data.</param>
-    /// <returns>The sprite handle.</returns>
-    API_FUNCTION() void SetSprite(const int32 index, API_PARAM(Ref) const Sprite& value)
-    {
-        Sprites[index] = value;
-    }
+    API_FUNCTION() void SetSprite(int32 index, API_PARAM(Ref) const Sprite& value);
 
     /// <summary>
     /// Finds the sprite by the name.

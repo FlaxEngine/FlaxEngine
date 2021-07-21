@@ -168,6 +168,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     textureHeader.MipLevels = textureData.GetMipLevels();
     textureHeader.IsSRGB = PixelFormatExtensions::IsSRGB(textureHeader.Format);
     textureHeader.IsCubeMap = isCubeMap;
+    textureHeader.TextureGroup = options.TextureGroup;
     ASSERT(textureHeader.MipLevels <= GPU_MAX_TEXTURE_MIP_LEVELS);
 
     // Save header
@@ -306,6 +307,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     textureHeader.MipLevels = textureData.Mips.Count();
     textureHeader.IsSRGB = PixelFormatExtensions::IsSRGB(textureHeader.Format);
     textureHeader.IsCubeMap = isCubeMap;
+    textureHeader.TextureGroup = options.TextureGroup;
     ASSERT(textureHeader.MipLevels <= GPU_MAX_TEXTURE_MIP_LEVELS);
 
     // Save header
@@ -542,12 +544,10 @@ CreateAssetResult ImportTexture::ImportIES(class CreateAssetContext& context)
     textureHeader.Width = loader.GetWidth();
     textureHeader.Height = loader.GetHeight();
     textureHeader.MipLevels = 1;
-    textureHeader.NeverStream = false;
     textureHeader.Type = TextureFormatType::Unknown;
     textureHeader.Format = PixelFormat::R16_Float;
-    textureHeader.IsSRGB = false;
-    textureHeader.IsCubeMap = false;
     auto data = (IESProfile::CustomDataLayout*)textureHeader.CustomData;
+    static_assert(sizeof(IESProfile::CustomDataLayout) <= sizeof(textureHeader.CustomData), "Invalid Custom Data size in Texture Header.");
     data->Brightness = loader.GetBrightness();
     data->TextureMultiplier = multiplier;
     ASSERT(textureHeader.MipLevels <= GPU_MAX_TEXTURE_MIP_LEVELS);

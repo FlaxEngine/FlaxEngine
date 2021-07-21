@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Templates.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 
 /// <summary>
@@ -45,40 +46,43 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="Pair"/> class.
     /// </summary>
-    /// <param name="key">The key.</param>
-    Pair(const T& key)
-        : First(key)
+    /// <param name="other">The other pair.</param>
+    Pair(const Pair& other)
+        : First(other.First)
+        , Second(other.Second)
     {
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Pair"/> class.
     /// </summary>
-    /// <param name="p">The other pair.</param>
-    Pair(const Pair& p)
-        : First(p.First)
-        , Second(p.Second)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Pair"/> class.
-    /// </summary>
-    /// <param name="p">The other pair.</param>
-    Pair(Pair* p)
-        : First(p->First)
-        , Second(p->Second)
-    {
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="Pair"/> class.
-    /// </summary>
-    ~Pair()
+    /// <param name="other">The other pair.</param>
+    Pair(Pair&& other) noexcept
+        : First(MoveTemp(other.First))
+        , Second(MoveTemp(other.Second))
     {
     }
 
 public:
+
+    Pair& operator=(const Pair& other)
+    {
+        if (this == &other)
+            return *this;
+        First = other.First;
+        Second = other.Second;
+        return *this;
+    }
+
+    Pair& operator=(Pair&& other) noexcept
+    {
+        if (this != &other)
+        {
+            First = MoveTemp(other.First);
+            Second = MoveTemp(other.Second);
+        }
+        return *this;
+    }
 
     friend bool operator==(const Pair& a, const Pair& b)
     {

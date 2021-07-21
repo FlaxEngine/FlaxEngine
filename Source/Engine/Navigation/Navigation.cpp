@@ -146,7 +146,7 @@ bool NavAreaProperties::operator==(const NavAreaProperties& other) const
 
 bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 {
-    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent;
+    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent && Vector3::NearEqual(DefaultQueryExtent, other.DefaultQueryExtent);
 }
 
 class NavigationService : public EngineService
@@ -371,7 +371,7 @@ void Navigation::DrawNavMesh()
         bool skip = false;
         for (auto scene : Level::Scenes)
         {
-            for (auto e : scene->NavigationMeshes)
+            for (auto e : scene->Navigation.Meshes)
             {
                 if (e->Properties == navMesh->Properties)
                 {

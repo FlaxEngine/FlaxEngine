@@ -4,6 +4,7 @@
 #include "Audio.h"
 #include "AudioSource.h"
 #include "AudioBackend.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Content/Upgraders/AudioClipUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -11,8 +12,9 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
+#include "Engine/Threading/Threading.h"
 
-REGISTER_BINARY_ASSET(AudioClip, "FlaxEngine.AudioClip", ::New<AudioClipUpgrader>(), false);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClipUpgrader, false);
 
 bool AudioClip::StreamingTask::Run()
 {
@@ -400,7 +402,7 @@ Asset::LoadResult AudioClip::load()
     if (AudioHeader.Streamable)
     {
         // Do nothing because data streaming starts when any AudioSource requests the data
-        startStreaming(false);
+        StartStreaming(false);
         return LoadResult::Ok;
     }
 
@@ -412,6 +414,8 @@ Asset::LoadResult AudioClip::load()
         return LoadResult::MissingDataChunk;
 
     // Create single buffer
+    if (!AudioBackend::Instance)
+        return LoadResult::Failed;
     uint32 bufferId;
     AudioBackend::Buffer::Create(bufferId);
     Buffers[0] = bufferId;
@@ -449,7 +453,7 @@ Asset::LoadResult AudioClip::load()
 
 void AudioClip::unload(bool isReloading)
 {
-    stopStreaming();
+    StopStreaming();
     StreamingQueue.Clear();
     if (Buffers.HasItems())
     {

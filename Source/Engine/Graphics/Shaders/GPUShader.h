@@ -12,7 +12,7 @@ class GPUShaderProgram;
 /// <summary>
 /// The runtime version of the shaders cache supported by the all graphics back-ends. The same for all the shader cache formats (easier to sync and validate).
 /// </summary>
-#define GPU_SHADER_CACHE_VERSION 7
+#define GPU_SHADER_CACHE_VERSION 8
 
 /// <summary>
 /// Represents collection of shader programs with permutations and custom names.
@@ -167,7 +167,7 @@ public:
     /// <returns>The Constant Buffer object.</returns>
     API_FUNCTION() FORCE_INLINE GPUConstantBuffer* GetCB(int32 slot) const
     {
-        ASSERT_LOW_LAYER(Math::IsInRange<int32>(slot, 0, ARRAY_COUNT(_constantBuffers) - 1));
+        ASSERT_LOW_LAYER(slot >= 0 && slot < ARRAY_COUNT(_constantBuffers));
         return _constantBuffers[slot];
     }
 

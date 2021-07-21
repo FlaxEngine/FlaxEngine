@@ -22,7 +22,7 @@
 #include "../rapidjson.h"
 
 #if defined(_MSC_VER) && defined(_M_AMD64)
-#include <intrin.h>
+#include <intrin0.h>
 #pragma intrinsic(_BitScanReverse64)
 #pragma intrinsic(_umul128)
 #endif

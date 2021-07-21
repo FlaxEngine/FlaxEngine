@@ -72,6 +72,8 @@ namespace FlaxEditor.Windows.Profiler
                 for (int j = 0; j < ee.Length; j++)
                 {
                     ref var e = ref ee[j];
+                    if (e.NameStartsWith("ProfilerWindow"))
+                        continue;
                     nativeMemoryAllocation += e.NativeMemoryAllocation;
                     managedMemoryAllocation += e.ManagedMemoryAllocation;
                 }

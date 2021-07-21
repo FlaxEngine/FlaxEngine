@@ -118,7 +118,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (useNavigationButtons)
             {
                 // Navigation buttons
-                const float buttonSize = 14;
+                const float keySize = 18;
+                const float addSize = 20;
                 var icons = Editor.Instance.Icons;
                 _rightKey = new ClickableImage
                 {
@@ -128,8 +129,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     IsScrollable = false,
                     Color = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
-                    Brush = new SpriteBrush(icons.ArrowRight32),
-                    Offsets = new Margin(-buttonSize - 2 + uiLeft, buttonSize, buttonSize * -0.5f, buttonSize),
+                    Brush = new SpriteBrush(icons.Right32),
+                    Offsets = new Margin(-keySize - 2 + uiLeft, keySize, keySize * -0.5f, keySize),
                     Parent = this,
                 };
                 _addKey = new ClickableImage
@@ -140,8 +141,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     IsScrollable = false,
                     Color = Style.Current.ForegroundGrey,
                     Margin = new Margin(3),
-                    Brush = new SpriteBrush(icons.Add48),
-                    Offsets = new Margin(-buttonSize - 2 + _rightKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
+                    Brush = new SpriteBrush(icons.Add32),
+                    Offsets = new Margin(-addSize - 2 + _rightKey.Offsets.Left, addSize, addSize * -0.5f, addSize),
                     Parent = this,
                 };
                 _leftKey = new ClickableImage
@@ -152,8 +153,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     IsScrollable = false,
                     Color = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
-                    Brush = new SpriteBrush(icons.ArrowLeft32),
-                    Offsets = new Margin(-buttonSize - 2 + _addKey.Offsets.Left, buttonSize, buttonSize * -0.5f, buttonSize),
+                    Brush = new SpriteBrush(icons.Left32),
+                    Offsets = new Margin(-keySize - 2 + _addKey.Offsets.Left, keySize, keySize * -0.5f, keySize),
                     Parent = this,
                 };
                 uiLeft = _leftKey.Offsets.Left;

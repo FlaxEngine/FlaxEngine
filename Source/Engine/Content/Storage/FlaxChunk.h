@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Types/DataContainer.h"
-#include "Engine/Core/Types/DateTime.h"
 #include "../Config.h"
 
 /// <summary>
@@ -78,12 +77,12 @@ public:
     /// <summary>
     /// The chunk flags.
     /// </summary>
-    FlaxChunkFlags Flags;
+    FlaxChunkFlags Flags = FlaxChunkFlags::None;
 
     /// <summary>
-    /// The last usage time (UTC).
+    /// The last usage time (atomic, ticks of DateTime in UTC).
     /// </summary>
-    DateTime LastAccessTime;
+    int64 LastAccessTime = 0;
 
     /// <summary>
     /// The chunk data.
@@ -96,47 +95,8 @@ public:
     /// Initializes a new instance of the <see cref="FlaxChunk"/> class.
     /// </summary>
     FlaxChunk()
-        : Flags(FlaxChunkFlags::None)
-        , LastAccessTime(0)
     {
     }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="FlaxChunk"/> class.
-    /// </summary>
-    /// <param name="location">The chunk location in the file.</param>
-    FlaxChunk(const Location& location)
-        : LocationInFile(location)
-        , Flags(FlaxChunkFlags::None)
-        , LastAccessTime(0)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="FlaxChunk" /> class.
-    /// </summary>
-    /// <param name="location">The chunk location in the file.</param>
-    /// <param name="flags">The flags.</param>
-    FlaxChunk(const Location& location, const FlaxChunkFlags flags)
-        : LocationInFile(location)
-        , Flags(flags)
-        , LastAccessTime(0)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="FlaxChunk"/> class.
-    /// </summary>
-    /// <param name="address">The address in the file.</param>
-    /// <param name="size">The size in bytes.</param>
-    FlaxChunk(uint32 address, uint32 size)
-        : LocationInFile(address, size)
-        , Flags(FlaxChunkFlags::None)
-        , LastAccessTime(0)
-    {
-    }
-
-public:
 
     /// <summary>
     /// Finalizes an instance of the <see cref="FlaxChunk"/> class.
@@ -150,7 +110,6 @@ public:
     /// <summary>
     /// Gets this chunk data pointer.
     /// </summary>
-    /// <returns>Data</returns>
     FORCE_INLINE byte* Get()
     {
         return Data.Get();
@@ -159,7 +118,6 @@ public:
     /// <summary>
     /// Gets this chunk data pointer.
     /// </summary>
-    /// <returns>Data</returns>
     FORCE_INLINE const byte* Get() const
     {
         return Data.Get();
@@ -168,7 +126,6 @@ public:
     /// <summary>
     /// Gets this chunk data pointer.
     /// </summary>
-    /// <returns>Data</returns>
     template<typename T>
     FORCE_INLINE T* Get() const
     {
@@ -178,18 +135,14 @@ public:
     /// <summary>
     /// Gets this chunk data size (in bytes).
     /// </summary>
-    /// <returns>Data size</returns>
     FORCE_INLINE int32 Size() const
     {
         return Data.Length();
     }
 
-public:
-
     /// <summary>
     /// Determines whether this chunk is loaded.
     /// </summary>
-    /// <returns>True if this instance is loaded, otherwise false.</returns>
     FORCE_INLINE bool IsLoaded() const
     {
         return Data.IsValid();
@@ -198,7 +151,6 @@ public:
     /// <summary>
     /// Determines whether this chunk is missing (no data loaded or assigned).
     /// </summary>
-    /// <returns>True if this instance is missing, otherwise false.</returns>
     FORCE_INLINE bool IsMissing() const
     {
         return Data.IsInvalid();
@@ -207,7 +159,6 @@ public:
     /// <summary>
     /// Determines whether this chunk exists in a file.
     /// </summary>
-    /// <returns>True if this instance is in a file, otherwise false.</returns>
     FORCE_INLINE bool ExistsInFile() const
     {
         return LocationInFile.Size > 0;
@@ -216,10 +167,7 @@ public:
     /// <summary>
     /// Registers the usage operation of chunk data.
     /// </summary>
-    void RegisterUsage()
-    {
-        LastAccessTime = DateTime::NowUTC();
-    }
+    void RegisterUsage();
 
     /// <summary>
     /// Unloads this chunk data.

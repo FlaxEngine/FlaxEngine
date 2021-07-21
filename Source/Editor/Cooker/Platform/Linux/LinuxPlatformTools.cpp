@@ -66,7 +66,7 @@ bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 #if !BUILD_DEBUG
 	const String outputExePath = outputPath / TEXT("FlaxGame");
 	const String gameExePath = outputPath / gameSettings->ProductName;
-	if (FileSystem::FileExists(outputExePath) && gameExePath.Compare(outputExePath, StringSearchCase::IgnoreCase) == 0)
+	if (FileSystem::FileExists(outputExePath) && gameExePath.Compare(outputExePath, StringSearchCase::IgnoreCase) != 0)
 	{
 		if (FileSystem::MoveFile(gameExePath, outputExePath, true))
 		{

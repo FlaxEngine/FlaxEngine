@@ -541,6 +541,12 @@ namespace FlaxEditor.Tools
         }
 
         /// <inheritdoc />
+        public override bool IsControllingMouse => IsPainting;
+
+        /// <inheritdoc />
+        public override BoundingSphere FocusBounds => _selectedModel?.Sphere ?? base.FocusBounds;
+
+        /// <inheritdoc />
         public override void Update(float dt)
         {
             _hasHit = false;

@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -12,29 +13,37 @@ namespace Flax.Build.Bindings
     {
         public AccessLevel Access;
         public AccessLevel BaseTypeInheritance;
-        public TypeInfo BaseType;
-        public List<InterfaceInfo> Interfaces; // Optional
-        public List<TypeInfo> InterfaceNames; // Optional
+        public ClassStructInfo BaseType;
+        public List<InterfaceInfo> Interfaces;
+        public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
 
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
 
-            if (Interfaces == null && InterfaceNames != null && InterfaceNames.Count != 0)
+            if (BaseType == null && Interfaces == null && Inheritance != null)
             {
-                Interfaces = new List<InterfaceInfo>();
-                for (var i = 0; i < InterfaceNames.Count; i++)
+                // Extract base class and interfaces from inheritance info
+                for (int i = 0; i < Inheritance.Count; i++)
                 {
-                    var interfaceName = InterfaceNames[i];
-                    var apiTypeInfo = BindingsGenerator.FindApiTypeInfo(buildData, interfaceName, this);
+                    var apiTypeInfo = BindingsGenerator.FindApiTypeInfo(buildData, Inheritance[i], Parent);
                     if (apiTypeInfo is InterfaceInfo interfaceInfo)
                     {
+                        if (Interfaces == null)
+                            Interfaces = new List<InterfaceInfo>();
                         Interfaces.Add(interfaceInfo);
                     }
+                    else if (apiTypeInfo is ClassStructInfo otherInfo)
+                    {
+                        if (otherInfo == this)
+                            throw new Exception($"Type '{Name}' inherits from itself.");
+                        if (BaseType != null)
+                            throw new Exception($"Invalid '{Name}' inheritance (only single base class is allowed for scripting types, excluding interfaces).");
+                        BaseType = otherInfo;
+                    }
                 }
-                if (Interfaces.Count == 0)
-                    Interfaces = null;
             }
+            BaseType?.EnsureInited(buildData);
         }
 
         public override void Write(BinaryWriter writer)
@@ -42,7 +51,7 @@ namespace Flax.Build.Bindings
             writer.Write((byte)Access);
             writer.Write((byte)BaseTypeInheritance);
             BindingsGenerator.Write(writer, BaseType);
-            BindingsGenerator.Write(writer, InterfaceNames);
+            BindingsGenerator.Write(writer, Inheritance);
 
             base.Write(writer);
         }
@@ -52,7 +61,7 @@ namespace Flax.Build.Bindings
             Access = (AccessLevel)reader.ReadByte();
             BaseTypeInheritance = (AccessLevel)reader.ReadByte();
             BaseType = BindingsGenerator.Read(reader, BaseType);
-            InterfaceNames = BindingsGenerator.Read(reader, InterfaceNames);
+            Inheritance = BindingsGenerator.Read(reader, Inheritance);
 
             base.Read(reader);
         }

@@ -8,9 +8,13 @@ namespace FlaxEngine.GUI
     /// The basic GUI label control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    public class Label : Colorable
+    public class Label : ContainerControl
     {
-        private string _text;
+        /// <summary>
+        /// The text.
+        /// </summary>
+        protected LocalizedString _text = new LocalizedString();
+
         private bool _autoWidth;
         private bool _autoHeight;
         private bool _autoFitText;
@@ -26,7 +30,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the text.
         /// </summary>
         [EditorOrder(10), MultilineText, Tooltip("The label text.")]
-        public string Text
+        public LocalizedString Text
         {
             get => _text;
             set
@@ -39,6 +43,18 @@ namespace FlaxEngine.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// Gets or sets the color of the text.
+        /// </summary>
+        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text.")]
+        public Color TextColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the color of the text when it is highlighted (mouse is over).
+        /// </summary>
+        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text when it is highlighted (mouse is over).")]
+        public Color TextColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the horizontal text alignment within the control bounds.
@@ -169,7 +185,8 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            Color = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
         }
 
         /// <inheritdoc />
@@ -179,7 +196,8 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
-            Color = Style.Current.Foreground;
+            TextColor = style.Foreground;
+            TextColorHighlighted = style.Foreground;
         }
 
         /// <inheritdoc />
@@ -192,7 +210,7 @@ namespace FlaxEngine.GUI
             if (ClipText)
                 Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
 
-            var color = GetColorToDraw();
+            var color = IsMouseOver ? TextColorHighlighted : TextColor;
 
             if (!EnabledInHierarchy)
                 color *= 0.6f;
@@ -211,18 +229,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(
-                _font.GetFont(),
-                Material,
-                Text,
-                rect,
-                color,
-                hAlignment,
-                wAlignment,
-                Wrapping,
-                1.0f,
-                scale
-            );
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, 1.0f, scale);
 
             if (ClipText)
                 Render2D.PopClip();

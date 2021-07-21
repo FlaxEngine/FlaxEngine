@@ -96,7 +96,7 @@ namespace FlaxEngine.GUI
         {
             _task = task ?? throw new ArgumentNullException();
 
-            _backBuffer = GPUDevice.Instance.CreateTexture();
+            _backBuffer = GPUDevice.Instance.CreateTexture("RenderOutputControl.BackBuffer");
             _resizeTime = ResizeCheckTime;
 
             _task.Output = _backBuffer;
@@ -245,7 +245,7 @@ namespace FlaxEngine.GUI
             if (_backBufferOld == null && _backBuffer.IsAllocated)
             {
                 _backBufferOld = _backBuffer;
-                _backBuffer = GPUDevice.Instance.CreateTexture();
+                _backBuffer = GPUDevice.Instance.CreateTexture("RenderOutputControl.BackBuffer");
             }
 
             // Set timeout to remove old buffer

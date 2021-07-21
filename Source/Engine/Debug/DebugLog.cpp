@@ -7,6 +7,7 @@
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
 #include <ThirdParty/mono-2.0/mono/metadata/exception.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>

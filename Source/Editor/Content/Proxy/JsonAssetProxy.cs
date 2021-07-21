@@ -2,7 +2,6 @@
 
 using System;
 using FlaxEditor.Content.Create;
-using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Windows;
@@ -45,17 +44,11 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool IsProxyFor(ContentItem item)
         {
-            return item is JsonAssetItem;
+            return item is JsonAssetItem json && json.TypeName == TypeName;
         }
 
         /// <inheritdoc />
         public override Color AccentColor => Color.FromRGB(0xd14f67);
-
-        /// <inheritdoc />
-        public override bool AcceptsAsset(string typeName, string path)
-        {
-            return typeName == TypeName && base.AcceptsAsset(typeName, path);
-        }
 
         /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
@@ -99,6 +92,7 @@ namespace FlaxEditor.Content
                         !type.IsAbstract &&
                         !type.IsGenericType &&
                         type.Type.GetConstructor(Type.EmptyTypes) != null &&
+                        !typeof(FlaxEngine.GUI.Control).IsAssignableFrom(type.Type) &&
                         !typeof(FlaxEngine.Object).IsAssignableFrom(type.Type);
                     }
                 }
@@ -141,6 +135,12 @@ namespace FlaxEditor.Content
         public override bool AcceptsAsset(string typeName, string path)
         {
             return path.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <inheritdoc />
+        public override bool IsProxyFor(ContentItem item)
+        {
+            return item is JsonAssetItem;
         }
 
         /// <inheritdoc />

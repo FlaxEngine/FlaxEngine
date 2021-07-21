@@ -145,7 +145,10 @@ namespace Flax.Build.NativeCpp
 
                 // Skip files from system libraries and SDKs
                 if (isLibraryInclude)
-                    continue;
+                {
+                    //Log.Error(sourceFile + " -> " + includedFile);
+                    //continue;
+                }
 
                 // Relative to the workspace root
                 var includedFilePath = Path.Combine(Globals.Root, "Source", includedFile);
@@ -171,7 +174,7 @@ namespace Flax.Build.NativeCpp
                         if (!isValid)
                         {
                             // Invalid include
-                            Log.Verbose(string.Format("File '{0}' includes file '{1}' but it does not exist!", sourceFile, includedFile));
+                            //Log.Error(string.Format("File '{0}' includes file '{1}' but it does not exist!", sourceFile, includedFile));
                             continue;
                         }
                     }

@@ -7,10 +7,16 @@
 #include "ConcurrentTaskQueue.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
+
+FLAXENGINE_API bool IsInMainThread()
+{
+    return Globals::MainThreadID == Platform::GetCurrentThreadID();
+}
 
 namespace ThreadPoolImpl
 {
@@ -45,7 +51,7 @@ ThreadPoolService ThreadPoolServiceInstance;
 bool ThreadPoolService::Init()
 {
     // Spawn threads
-    const int32 numThreads = Math::Max<int32>(2, Platform::GetCPUInfo().ProcessorCoreCount - 1);
+    const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT);
     LOG(Info, "Spawning {0} Thread Pool workers", numThreads);
     for (int32 i = ThreadPoolImpl::Threads.Count(); i < numThreads; i++)
     {

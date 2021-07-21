@@ -16,9 +16,6 @@
 #define USE_NAV_MESH_ALLOC 1
 // TODO: try not using USE_NAV_MESH_ALLOC
 
-#define DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL 50.0f
-#define DEFAULT_NAV_QUERY_EXTENT_VERTICAL 250.0f
-
 namespace
 {
     FORCE_INLINE void InitFilter(dtQueryFilter& filter)
@@ -58,7 +55,7 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 startPositionNavMesh;
     Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
@@ -96,7 +93,7 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
     Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
@@ -164,7 +161,7 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
     Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
@@ -211,7 +208,7 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 pointNavMesh;
     Vector3::Transform(point, Properties.Rotation, pointNavMesh);
@@ -269,7 +266,7 @@ bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float ra
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 centerNavMesh;
     Vector3::Transform(center, Properties.Rotation, centerNavMesh);
@@ -307,7 +304,7 @@ bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPos
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent(DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL, DEFAULT_NAV_QUERY_EXTENT_VERTICAL, DEFAULT_NAV_QUERY_EXTENT_HORIZONTAL);
+    Vector3 extent = Properties.DefaultQueryExtent;
 
     Vector3 startPositionNavMesh, endPositionNavMesh;
     Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);

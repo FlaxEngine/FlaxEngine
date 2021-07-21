@@ -7,7 +7,6 @@
 #include "FoliageCluster.h"
 #include "FoliageType.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Core/Collections/ChunkedArray.h"
 
 /// <summary>
 /// Represents a foliage actor that contains a set of instanced meshes.
@@ -19,23 +18,26 @@ DECLARE_SCENE_OBJECT(Foliage);
 private:
 
     bool _disableFoliageTypeEvents;
+    int32 _sceneRenderingKey = -1;
 
 public:
-
-    /// <summary>
-    /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
-    /// </summary>
-    FoliageCluster* Root;
 
     /// <summary>
     /// The allocated foliage instances. It's read-only.
     /// </summary>
     ChunkedArray<FoliageInstance, FOLIAGE_INSTANCE_CHUNKS_SIZE> Instances;
 
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    /// <summary>
+    /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
+    /// </summary>
+    FoliageCluster* Root = nullptr;
+
     /// <summary>
     /// The allocated foliage clusters. It's read-only.
     /// </summary>
     ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE> Clusters;
+#endif
 
     /// <summary>
     /// The foliage instances types used by the current foliage actor. It's read-only.
@@ -140,36 +142,44 @@ public:
     /// <summary>
     /// Gets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() static float GetGlobalDensityScale();
 
     /// <summary>
     /// Sets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() static void SetGlobalDensityScale(float value);
 
 private:
 
-    /// <summary>
-    /// Ensures that the root node of the foliage was added.
-    /// </summary>
-    void EnsureRoot();
+    void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
+    struct DrawKey
+    {
+        IMaterial* Mat;
+        const Mesh* Geo;
+        int32 Lightmap;
 
-    /// <summary>
-    /// Adds the given foliage instance to the cluster.
-    /// </summary>
-    /// <param name="cluster">The root cluster.</param>
-    /// <param name="instance">The instance.</param>
-    void AddToCluster(FoliageCluster* cluster, FoliageInstance& instance);
+        friend bool operator==(const DrawKey& lhs, const DrawKey& rhs)
+        {
+            return lhs.Mat == rhs.Mat && lhs.Geo == rhs.Geo && lhs.Lightmap == rhs.Lightmap;
+        }
 
-    /// <summary>
-    /// Draws the cluster.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <param name="cluster">The cluster.</param>
-    /// <param name="draw">The draw data.</param>
+        friend uint32 GetHash(const DrawKey& key)
+        {
+            uint32 hash = (uint32)((int64)(key.Mat) >> 3);
+            hash ^= (uint32)((int64)(key.Geo) >> 3) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            hash ^= (uint32)key.Lightmap;
+            return hash;
+        }
+    };
+
+    typedef Array<struct BatchedDrawCall, InlinedAllocation<8>> DrawCallsList;
+    typedef Dictionary<DrawKey, struct BatchedDrawCall, class RenderListAllocation> BatchedDrawCalls;
+    void DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+#else
     void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw);
+#endif
 
 public:
 
@@ -191,6 +201,7 @@ public:
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void OnLayerChanged() override;
 
 protected:
 

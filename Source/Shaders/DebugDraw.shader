@@ -39,15 +39,24 @@ void PerformDepthTest(float4 svPosition)
 	}
 }
 
+float4 PerformFakeLighting(float4 svPosition, float4 c)
+{
+	// Reconstruct view normal and calculate faked lighting
+	float depth = svPosition.z * 10000;
+	float3 n = normalize(float3(-ddx(depth), -ddy(depth), 1.0f));
+	c.rgb *= saturate(abs(dot(n, float3(0, 1, 0))) + 0.5f);
+	return c;
+}
+
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS(VS2PS input) : SV_Target
 {
-	return input.Color;
+	return PerformFakeLighting(input.Position, input.Color);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_DepthTest(VS2PS input) : SV_Target
 {
 	PerformDepthTest(input.Position);
-	return input.Color;
+	return PerformFakeLighting(input.Position, input.Color);
 }

@@ -239,6 +239,7 @@ namespace Flax.Build
                 UseSymbolsExports = false;
                 LinkType = TargetLinkType.Monolithic;
                 OutputType = TargetOutputType.Executable;
+                options.LinkEnv.Output = LinkerOutput.Executable;
                 Modules.Add("Main");
             }
 

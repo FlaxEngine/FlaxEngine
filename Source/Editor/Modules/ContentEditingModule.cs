@@ -118,6 +118,25 @@ namespace FlaxEditor.Modules
                     return false;
                 }
 
+                // Check proxy name restrictions
+                if (item is NewItem ni)
+                {
+                    if (!ni.Proxy.IsFileNameValid(shortName))
+                    { 
+                        hint = "Name does not follow " + ni.Proxy.Name + " name restrictions !";
+                        return false;
+                    }
+                }
+                else
+                {
+                    var proxy = Editor.ContentDatabase.GetProxy(item);
+                    if (proxy != null && !proxy.IsFileNameValid(shortName))
+                    { 
+                        hint = "Name does not follow " + proxy.Name + " name restrictions !";
+                        return false;
+                    }
+                }
+
                 // Cache data
                 string sourcePath = item.Path;
                 string sourceFolder = System.IO.Path.GetDirectoryName(sourcePath);

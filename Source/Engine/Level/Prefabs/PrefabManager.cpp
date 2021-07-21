@@ -281,7 +281,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         const auto prefabObjectId = JsonTools::GetGuid(stream, "ID");
 
         if (objectsCache)
-            objectsCache->Add(prefabObjectId, dynamic_cast<ScriptingObject*>(obj));
+            objectsCache->Add(prefabObjectId, obj);
         obj->LinkPrefab(prefabId, prefabObjectId);
     }
 
@@ -372,7 +372,10 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     {
         // Parse json to DOM document
         rapidjson_flax::Document doc;
-        doc.Parse(actorsDataBuffer.GetString(), actorsDataBuffer.GetSize());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            doc.Parse(actorsDataBuffer.GetString(), actorsDataBuffer.GetSize());
+        }
         if (doc.HasParseError())
         {
             LOG(Warning, "Failed to parse serialized actors data.");

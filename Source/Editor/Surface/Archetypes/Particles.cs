@@ -118,8 +118,10 @@ namespace FlaxEditor.Surface.Archetypes
                     var cm = new ItemsListContextMenu(180);
                     foreach (var module in modules)
                     {
-                        cm.AddItem(new ItemsListContextMenu.Item(module.Title, module.TypeID)
+                        cm.AddItem(new ItemsListContextMenu.Item
                         {
+                            Name = module.Title,
+                            Tag = module.TypeID,
                             TooltipText = module.Description,
                         });
                     }

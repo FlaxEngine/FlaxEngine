@@ -139,13 +139,6 @@ public:
 public:
 
     /// <summary>
-    /// Clears description.
-    /// </summary>
-    void Clear();
-
-public:
-
-    /// <summary>
     /// Creates the buffer description.
     /// </summary>
     /// <param name="size">The size (in bytes).</param>
@@ -342,64 +335,23 @@ public:
 
 public:
 
-    /// <summary>
-    /// Gets the staging upload description for this instance.
-    /// </summary>
-    /// <returns>A staging buffer description</returns>
-    GPUBufferDescription ToStagingUpload() const
-    {
-        auto desc = *this;
-        desc.Usage = GPUResourceUsage::StagingUpload;
-        desc.Flags = GPUBufferFlags::None;
-        desc.InitData = nullptr;
-        return desc;
-    }
-
-    /// <summary>
-    /// Gets the staging readback description for this instance.
-    /// </summary>
-    /// <returns>A staging buffer description</returns>
-    GPUBufferDescription ToStagingReadback() const
-    {
-        auto desc = *this;
-        desc.Usage = GPUResourceUsage::StagingReadback;
-        desc.Flags = GPUBufferFlags::None;
-        desc.InitData = nullptr;
-        return desc;
-    }
+    void Clear();
+    GPUBufferDescription ToStagingUpload() const;
+    GPUBufferDescription ToStagingReadback() const;
+    bool Equals(const GPUBufferDescription& other) const;
+    String ToString() const;
 
 public:
 
-    /// <summary>
-    /// Compares with other instance of GPUBufferDescription
-    /// </summary>
-    /// <param name="other">The other object to compare.</param>
-    /// <returns>True if objects are the same, otherwise false.</returns>
-    bool Equals(const GPUBufferDescription& other) const;
-
-    /// <summary>
-    /// Implements the operator ==.
-    /// </summary>
-    /// <param name="other">The other description.</param>
-    /// <returns>The result of the operator.</returns>
     FORCE_INLINE bool operator==(const GPUBufferDescription& other) const
     {
         return Equals(other);
     }
 
-    /// <summary>
-    /// Implements the operator !=.
-    /// </summary>
-    /// <param name="other">The other description.</param>
-    /// <returns>The result of the operator.</returns>
     FORCE_INLINE bool operator!=(const GPUBufferDescription& other) const
     {
         return !Equals(other);
     }
-
-public:
-
-    String ToString() const;
 };
 
 uint32 GetHash(const GPUBufferDescription& key);

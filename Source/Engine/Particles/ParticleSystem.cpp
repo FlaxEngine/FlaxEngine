@@ -6,8 +6,9 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Threading/Threading.h"
 
-REGISTER_BINARY_ASSET(ParticleSystem, "FlaxEngine.ParticleSystem", nullptr, true);
+REGISTER_BINARY_ASSET(ParticleSystem, "FlaxEngine.ParticleSystem", true);
 
 ParticleSystem::ParticleSystem(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

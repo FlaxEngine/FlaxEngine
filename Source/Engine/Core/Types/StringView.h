@@ -17,22 +17,13 @@ protected:
     const T* _data;
     int32 _length;
 
-public:
-
-    /// <summary>
-    /// Copies the data.
-    /// </summary>
-    /// <param name="other">The other object.</param>
-    /// <returns>The reference to this object.</returns>
-    FORCE_INLINE StringViewBase& operator=(const StringViewBase& other)
+    constexpr StringViewBase()
     {
-        if (this != &other)
-        {
-            _data = other._data;
-            _length = other._length;
-        }
-        return *this;
+        _data = nullptr;
+        _length = 0;
     }
+
+public:
 
     /// <summary>
     /// Gets the specific const character from this string.
@@ -66,7 +57,6 @@ public:
     /// <summary>
     /// Returns true if string is empty.
     /// </summary>
-    /// <returns>True if string is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _length == 0;
@@ -75,7 +65,6 @@ public:
     /// <summary>
     /// Returns true if string isn't empty.
     /// </summary>
-    /// <returns>True if string isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasChars() const
     {
         return _length != 0;
@@ -84,8 +73,7 @@ public:
     /// <summary>
     /// Gets the length of the string.
     /// </summary>
-    /// <returns>The string length.</returns>
-    FORCE_INLINE int32 Length() const
+    FORCE_INLINE constexpr int32 Length() const
     {
         return _length;
     }
@@ -93,8 +81,7 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    /// <returns>The string.</returns>
-    FORCE_INLINE const T* operator*() const
+    FORCE_INLINE constexpr const T* operator*() const
     {
         return _data;
     }
@@ -102,8 +89,7 @@ public:
     /// <summary>
     /// Gets the pointer to the string.
     /// </summary>
-    /// <returns>The string.</returns>
-    FORCE_INLINE const T* Get() const
+    FORCE_INLINE constexpr const T* Get() const
     {
         return _data;
     }
@@ -111,7 +97,6 @@ public:
     /// <summary>
     /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always valid (read-only).
     /// </summary>
-    /// <returns>The string handle.</returns>
     FORCE_INLINE const T* GetText() const
     {
         return _data ? _data : (const T*)TEXT("");
@@ -160,16 +145,16 @@ public:
     {
         const int32 length = Length();
         if (searchCase == StringSearchCase::IgnoreCase)
-            return length > 0 && _data[0] == c;
-        return length > 0 && StringUtils::ToLower(_data[0]) == StringUtils::ToLower(c);
+            return length > 0 && StringUtils::ToLower(_data[0]) == StringUtils::ToLower(c);
+        return length > 0 && _data[0] == c;
     }
 
     bool EndsWith(T c, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
     {
         const int32 length = Length();
         if (searchCase == StringSearchCase::IgnoreCase)
-            return length > 0 && _data[length - 1] == c;
-        return length > 0 && StringUtils::ToLower(_data[length - 1]) == StringUtils::ToLower(c);
+            return length > 0 && StringUtils::ToLower(_data[length - 1]) == StringUtils::ToLower(c);
+        return length > 0 && _data[length - 1] == c;
     }
 
     bool StartsWith(const StringViewBase& prefix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
@@ -208,10 +193,8 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    StringView()
+    constexpr StringView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>
@@ -224,7 +207,7 @@ public:
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
     /// <param name="str">The reference to the static string.</param>
-    StringView(const StringView& str)
+    constexpr StringView(const StringView& str)
     {
         _data = str._data;
         _length = str._length;
@@ -245,7 +228,7 @@ public:
     /// </summary>
     /// <param name="str">The characters sequence.</param>
     /// <param name="length">The characters sequence length (excluding null-terminator character).</param>
-    StringView(const Char* str, int32 length)
+    constexpr StringView(const Char* str, int32 length)
     {
         _data = str;
         _length = length;
@@ -262,6 +245,21 @@ public:
     {
         _data = str;
         _length = StringUtils::Length(str);
+        return *this;
+    }
+
+    /// <summary>
+    /// Assigns the static string.
+    /// </summary>
+    /// <param name="other">The other object.</param>
+    /// <returns>The reference to this object.</returns>
+    FORCE_INLINE constexpr StringView& operator=(const StringView& other)
+    {
+        if (this != &other)
+        {
+            _data = other._data;
+            _length = other._length;
+        }
         return *this;
     }
 
@@ -322,11 +320,25 @@ public:
 public:
 
     /// <summary>
+    /// Gets the left most given number of characters.
+    /// </summary>
+    /// <param name="count">The characters count.</param>
+    /// <returns>The substring.</returns>
+    StringView Left(int32 count) const;
+
+    /// <summary>
+    /// Gets the string of characters from the right (end of the string).
+    /// </summary>
+    /// <param name="count">The characters count.</param>
+    /// <returns>The substring.</returns>
+    StringView Right(int32 count) const;
+
+    /// <summary>
     /// Retrieves substring created from characters starting from startIndex to the String end.
     /// </summary>
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <returns>The substring created from String data.</returns>
-    String Substring(int32 startIndex) const;
+    StringView Substring(int32 startIndex) const;
 
     /// <summary>
     /// Retrieves substring created from characters starting from start index.
@@ -334,7 +346,7 @@ public:
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <param name="count">The amount of characters to retrieve.</param>
     /// <returns>The substring created from String data.</returns>
-    String Substring(int32 startIndex, int32 count) const;
+    StringView Substring(int32 startIndex, int32 count) const;
 
 public:
 
@@ -386,10 +398,8 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    StringAnsiView()
+    constexpr StringAnsiView()
     {
-        _data = nullptr;
-        _length = 0;
     }
 
     /// <summary>
@@ -402,7 +412,7 @@ public:
     /// Initializes a new instance of the <see cref="StringAnsiView"/> class.
     /// </summary>
     /// <param name="str">The reference to the static string.</param>
-    StringAnsiView(const StringAnsiView& str)
+    constexpr StringAnsiView(const StringAnsiView& str)
     {
         _data = str._data;
         _length = str._length;
@@ -423,7 +433,7 @@ public:
     /// </summary>
     /// <param name="str">The characters sequence.</param>
     /// <param name="length">The characters sequence length (excluding null-terminator character).</param>
-    StringAnsiView(const char* str, int32 length)
+    constexpr StringAnsiView(const char* str, int32 length)
     {
         _data = str;
         _length = length;
@@ -440,6 +450,21 @@ public:
     {
         _data = str;
         _length = StringUtils::Length(str);
+        return *this;
+    }
+
+    /// <summary>
+    /// Assigns the static string.
+    /// </summary>
+    /// <param name="other">The other object.</param>
+    /// <returns>The reference to this object.</returns>
+    FORCE_INLINE constexpr StringAnsiView& operator=(const StringAnsiView& other)
+    {
+        if (this != &other)
+        {
+            _data = other._data;
+            _length = other._length;
+        }
         return *this;
     }
 

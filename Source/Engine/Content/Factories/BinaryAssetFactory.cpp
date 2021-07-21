@@ -4,6 +4,7 @@
 #include "../BinaryAsset.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #if USE_EDITOR
@@ -14,28 +15,23 @@
 bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)
 {
     ASSERT(asset && asset->Storage);
-
-    // Prepare
     auto storage = asset->Storage;
-    AssetInfo info;
-    info.ID = asset->GetID();
-    info.TypeName = asset->GetTypeName();
-    info.Path = storage->GetPath();
 
     // Load serialized asset data
     AssetInitData initData;
-    if (storage->LoadAssetHeader(info.ID, initData))
+    if (storage->LoadAssetHeader(asset->GetID(), initData))
     {
-        LOG(Error, "Cannot load asset header.\nInfo: {0}", info.ToString());
+        LOG(Error, "Cannot load asset header.\nInfo: {0}", AssetInfo(asset->GetID(), asset->GetTypeName(), storage->GetPath()).ToString());
         return true;
     }
 
-#if COMPILE_WITH_ASSET_UPGRADERS
+#if USE_EDITOR
     // Check if need to perform data conversion to the newer version (only in Editor)
     const auto upgrader = GetUpgrader();
     if (storage->AllowDataModifications() && upgrader && upgrader->ShouldUpgrade(initData.SerializedVersion))
     {
         const auto startTime = DateTime::NowUTC();
+        const AssetInfo info(asset->GetID(), asset->GetTypeName(), storage->GetPath());
         LOG(Info, "Starting asset \'{0}\' conversion", info.Path);
 
         // Backup source file (in case of conversion failure)
@@ -99,21 +95,21 @@ bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)
     // Check if serialized asset version is supported
     if (!IsVersionSupported(initData.SerializedVersion))
     {
-        LOG(Warning, "Asset version {1} is not supported.\nInfo: {0}", info.ToString(), initData.SerializedVersion);
+        LOG(Warning, "Asset version {1} is not supported.\nInfo: {0}", AssetInfo(asset->GetID(), asset->GetTypeName(), storage->GetPath()).ToString(), initData.SerializedVersion);
         return true;
     }
 
     // Initialize asset
     if (asset->Init(initData))
     {
-        LOG(Error, "Cannot initialize asset.\nInfo: {0}", info.ToString());
+        LOG(Error, "Cannot initialize asset.\nInfo: {0}", AssetInfo(asset->GetID(), asset->GetTypeName(), storage->GetPath()).ToString());
         return true;
     }
 
     return false;
 }
 
-#if COMPILE_WITH_ASSET_UPGRADERS
+#if USE_EDITOR
 
 bool BinaryAssetFactoryBase::UpgradeAsset(const AssetInfo& info, FlaxStorage* storage, AssetMigrationContext& context)
 {

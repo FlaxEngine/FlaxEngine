@@ -3,6 +3,7 @@
 #include "GPUShader.h"
 #include "GPUConstantBuffer.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
 GPUShaderProgramsContainer::GPUShaderProgramsContainer()
@@ -82,6 +83,9 @@ bool GPUShader::Create(MemoryReadStream& stream)
     int32 shadersCount;
     stream.ReadInt32(&shadersCount);
     GPUShaderProgramInitializer initializer;
+#if !BUILD_RELEASE
+    initializer.Owner = this;
+#endif
     for (int32 i = 0; i < shadersCount; i++)
     {
         const ShaderStage type = static_cast<ShaderStage>(stream.ReadByte());

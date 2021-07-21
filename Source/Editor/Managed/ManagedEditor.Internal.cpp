@@ -26,21 +26,25 @@
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/ContentImporters/CreateJson.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Level/Actor.h"
+#include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Audio/AudioClip.h"
-#include "Engine/Level/Actor.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Utilities/Encryption.h"
 #include "Engine/Navigation/Navigation.h"
 #include "Engine/Particles/ParticleEmitter.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
+#include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
+#include "Engine/Serialization/JsonTools.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
@@ -66,6 +70,7 @@ struct InternalTextureOptions
     float PreserveAlphaCoverageReference;
     float Scale;
     int32 MaxSize;
+    int32 TextureGroup;
     int32 SizeX;
     int32 SizeY;
     MonoArray* SpriteAreas;
@@ -86,6 +91,7 @@ struct InternalTextureOptions
         to->PreserveAlphaCoverage = from->PreserveAlphaCoverage;
         to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
         to->MaxSize = from->MaxSize;
+        to->TextureGroup = from->TextureGroup;
         to->SizeX = from->SizeX;
         to->SizeY = from->SizeY;
         to->Sprites.Clear();
@@ -96,10 +102,9 @@ struct InternalTextureOptions
             to->Sprites.EnsureCapacity(count);
             for (int32 i = 0; i < count; i++)
             {
-                Sprite sprite;
+                Sprite& sprite = to->Sprites.AddOne();
                 sprite.Area = mono_array_get(from->SpriteAreas, Rectangle, i);
                 sprite.Name = MUtils::ToString(mono_array_get(from->SpriteNames, MonoString*, i));
-                to->Sprites.Add(sprite);
             }
         }
     }
@@ -119,13 +124,14 @@ struct InternalTextureOptions
         to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
         to->Scale = from->Scale;
         to->MaxSize = from->MaxSize;
+        to->TextureGroup = from->TextureGroup;
         to->SizeX = from->SizeX;
         to->SizeY = from->SizeY;
         if (from->Sprites.HasItems())
         {
             const auto domain = mono_domain_get();
             int32 count = from->Sprites.Count();
-            auto rectClass = Scripting::FindClass("FlaxEngine.Rectangle");
+            auto rectClass = Rectangle::TypeInitializer.GetType().ManagedClass;
             ASSERT(rectClass != nullptr);
             to->SpriteAreas = mono_array_new(domain, rectClass->GetNative(), count);
             to->SpriteNames = mono_array_new(domain, mono_get_string_class(), count);
@@ -521,13 +527,14 @@ public:
         return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
     }
 
-    static bool CanImport(MonoString* extensionObj)
+    static MonoString* CanImport(MonoString* extensionObj)
     {
         String extension;
         MUtils::ToString(extensionObj, extension);
         if (extension.Length() > 0 && extension[0] == '.')
             extension.Remove(0, 1);
-        return AssetsImportingManager::GetImporter(extension) != nullptr;
+        const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
+        return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
     }
 
     static bool Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)
@@ -1004,11 +1011,16 @@ public:
 
     static void DeserializeSceneObject(SceneObject* sceneObject, MonoString* jsonObj)
     {
+        PROFILE_CPU_NAMED("DeserializeSceneObject");
+
         StringAnsi json;
         MUtils::ToString(jsonObj, json);
 
         rapidjson_flax::Document document;
-        document.Parse(json.Get(), json.Length());
+        {
+            PROFILE_CPU_NAMED("Json.Parse");
+            document.Parse(json.Get(), json.Length());
+        }
         if (document.HasParseError())
         {
             Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
@@ -1019,7 +1031,37 @@ public:
         modifier->EngineBuild = FLAXENGINE_VERSION_BUILD;
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
 
-        sceneObject->Deserialize(document, modifier.Value);
+        {
+            PROFILE_CPU_NAMED("Deserialize");
+            sceneObject->Deserialize(document, modifier.Value);
+        }
+    }
+
+    static void LoadAsset(Guid* id)
+    {
+        Content::LoadAsync<Asset>(*id);
+    }
+
+    static bool CanSetToRoot(Prefab* prefab, Actor* targetActor)
+    {
+        // Reference: Prefab::ApplyAll(Actor* targetActor)
+        if (targetActor->GetPrefabID() != prefab->GetID())
+            return false;
+        if (targetActor->GetPrefabObjectID() != prefab->GetRootObjectId())
+        {
+            const ISerializable::DeserializeStream** newRootDataPtr = prefab->ObjectsDataCache.TryGet(targetActor->GetPrefabObjectID());
+            if (!newRootDataPtr || !*newRootDataPtr)
+                return false;
+            const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
+            Guid prefabId, prefabObjectID;
+            if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
+            {
+                const auto nestedPrefab = Content::Load<Prefab>(prefabId);
+                if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
+                    return false;
+            }
+        }
+        return true;
     }
 
     static void InitRuntime()
@@ -1067,6 +1109,8 @@ public:
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", &GetVisualScriptPreviousScopeFrame);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EvaluateVisualScriptLocal);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &DeserializeSceneObject);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &LoadAsset);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &CanSetToRoot);
     }
 };
 

@@ -313,7 +313,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the control DPI scale factor (1 is default). Includes custom DPI scale.
         /// </summary>
-        public float DpiScale => _root?.RootWindow?.Window.DpiScale ?? Platform.DpiScale;
+        public float DpiScale => RootWindow?.Window.DpiScale ?? Platform.DpiScale;
 
         /// <summary>
         /// Gets screen position of the control (upper left corner).
@@ -456,9 +456,9 @@ namespace FlaxEngine.GUI
         #region Focus
 
         /// <summary>
-        /// Gets a value indicating whether the control can receive automatic focus on user events (eg. mouse down.
+        /// Gets a value indicating whether the control can receive automatic focus on user events (eg. mouse down).
         /// </summary>
-        [HideInEditor]
+        [HideInEditor, NoSerialize]
         public bool AutoFocus
         {
             get => _autoFocus;

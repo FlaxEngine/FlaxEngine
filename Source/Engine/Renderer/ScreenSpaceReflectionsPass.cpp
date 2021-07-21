@@ -3,6 +3,7 @@
 #include "ScreenSpaceReflectionsPass.h"
 #include "ReflectionsPass.h"
 #include "GBufferPass.h"
+#include "RenderList.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -12,6 +13,7 @@
 #include "Engine/Platform/Window.h"
 #include "Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderTask.h"
 
 #define REFLECTIONS_FORMAT PixelFormat::R11G11B10_Float
 #define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float
@@ -185,8 +187,8 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     const bool useTemporal = settings.TemporalEffect && !renderContext.Task->IsCameraCut;
 
     // Prepare resolutions for passes
-    const int32 width = renderContext.Buffers->GetWidth();
-    const int32 height = renderContext.Buffers->GetHeight();
+    const int32 width = buffers->GetWidth();
+    const int32 height = buffers->GetHeight();
     const int32 traceWidth = width / static_cast<int32>(settings.RayTracePassResolution);
     const int32 traceHeight = height / static_cast<int32>(settings.RayTracePassResolution);
     const int32 resolveWidth = width / static_cast<int32>(settings.RayTracePassResolution);
@@ -260,7 +262,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
         const double integral = round(time / scale) * scale;
         data.TemporalTime = static_cast<float>(time - integral);
 
-        renderContext.Buffers->LastFrameTemporalSSR = Engine::FrameCount;
+        buffers->LastFrameTemporalSSR = Engine::FrameCount;
         if (buffers->TemporalSSR == nullptr)
         {
             // Missing temporal buffer

@@ -84,7 +84,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The default tabs header buttons size.
         /// </summary>
-        public const float DefaultButtonsSize = 12;
+        public const float DefaultButtonsSize = 15;
 
         /// <summary>
         /// The default tabs header buttons margin.

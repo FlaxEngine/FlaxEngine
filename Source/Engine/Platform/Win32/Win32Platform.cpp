@@ -17,6 +17,7 @@
 #include <oleauto.h>
 #include <WinBase.h>
 #include <xmmintrin.h>
+#include <intrin.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 namespace
@@ -149,16 +150,10 @@ bool Win32Platform::Init()
     CpuInfo.L1CacheSize = processorL1CacheSize;
     CpuInfo.L2CacheSize = processorL2CacheSize;
     CpuInfo.L3CacheSize = processorL3CacheSize;
-
-    // Get page size
     SYSTEM_INFO siSysInfo;
     GetSystemInfo(&siSysInfo);
     CpuInfo.PageSize = siSysInfo.dwPageSize;
-
-    // Get clock speed
-    CpuInfo.ClockSpeed = GetClockFrequency();
-
-    // Get cache line size
+    CpuInfo.ClockSpeed = ClockFrequency;
     {
         int args[4];
         __cpuid(args, 0x80000006);
@@ -304,28 +299,33 @@ void Win32Platform::Prefetch(void const* ptr)
 
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)
 {
+    void* ptr = _aligned_malloc((size_t)size, (size_t)alignment);
 #if COMPILE_WITH_PROFILER
-    TrackAllocation(size);
+    OnMemoryAlloc(ptr, size);
 #endif
-    return _aligned_malloc((size_t)size, (size_t)alignment);
+    return ptr;
 }
 
 void Win32Platform::Free(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     _aligned_free(ptr);
 }
 
 void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
-
-    // Use VirtualAlloc to allocate page-aligned memory
+#if PLATFORM_UWP
+    return VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
     return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#endif
 }
 
 void Win32Platform::FreePages(void* ptr)
 {
-    // Free page-aligned memory
     VirtualFree(ptr, 0, MEM_RELEASE);
 }
 
@@ -426,7 +426,21 @@ void Win32Platform::SetThreadAffinityMask(uint64 affinityMask)
 
 void Win32Platform::Sleep(int32 milliseconds)
 {
-    ::Sleep(static_cast<DWORD>(milliseconds));
+    static thread_local HANDLE timer = NULL;
+    if (timer == NULL)
+    {
+        // Attempt to create high-resolution timer for each thread (Windows 10 build 17134 or later)
+        timer = CreateWaitableTimerEx(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+        if (timer == NULL) // fallback for older versions of Windows
+            timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    }
+
+    // Negative value is relative to current time, minimum waitable time is 10 microseconds
+    LARGE_INTEGER dueTime;
+    dueTime.QuadPart = -int64_t(milliseconds) * 10000;
+
+    SetWaitableTimerEx(timer, &dueTime, 0, NULL, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
 }
 
 double Win32Platform::GetTimeSeconds()

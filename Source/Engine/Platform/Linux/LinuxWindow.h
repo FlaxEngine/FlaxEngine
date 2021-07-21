@@ -13,14 +13,13 @@
 class LinuxWindow : public WindowBase
 {
 	friend LinuxPlatform;
-
 public:
 
 	typedef unsigned long HandleType;
 
 private:
 
-	bool _resizeDisabled, _focusOnMapped = false;
+	bool _resizeDisabled, _focusOnMapped = false, _dragOver = false;
 	float _opacity = 1.0f;
 	HandleType _window;
 

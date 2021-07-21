@@ -139,7 +139,7 @@ namespace FlaxEditor.CustomEditors
             /// <inheritdoc />
             protected override void OnModified()
             {
-                Presenter.Modified?.Invoke();
+                Presenter.OnModified();
 
                 base.OnModified();
             }
@@ -352,6 +352,14 @@ namespace FlaxEditor.CustomEditors
         public void ClosesAllGroups()
         {
             ExpandGroups(this, false);
+        }
+
+        /// <summary>
+        /// Invokes <see cref="Modified"/> event.
+        /// </summary>
+        public void OnModified()
+        {
+            Modified?.Invoke();
         }
 
         /// <summary>

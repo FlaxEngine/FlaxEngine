@@ -18,7 +18,14 @@ SpotLight::SpotLight(const SpawnParams& params)
     ShadowsDistance = 2000.0f;
     ShadowsFadeDistance = 100.0f;
     ShadowsDepthBias = 0.5f;
-    UpdateBounds();
+
+    _direction = Vector3::Forward;
+    _cosOuterCone = Math::Cos(_outerConeAngle * DegreesToRadians);
+    _cosInnerCone = Math::Cos(_innerConeAngle * DegreesToRadians);
+    _invCosConeDifference = 1.0f / (_cosInnerCone - _cosOuterCone);
+    const float boundsRadius = Math::Sqrt(1.25f * _radius * _radius - _radius * _radius * _cosOuterCone);
+    _sphere = BoundingSphere(GetPosition() + 0.5f * GetDirection() * _radius, boundsRadius);
+    BoundingBox::FromSphere(_sphere, _box);
 }
 
 float SpotLight::ComputeBrightness() const
@@ -105,11 +112,14 @@ void SpotLight::UpdateBounds()
     const float boundsRadius = Math::Sqrt(1.25f * radius * radius - radius * radius * _cosOuterCone);
     _sphere = BoundingSphere(GetPosition() + 0.5f * GetDirection() * radius, boundsRadius);
     BoundingBox::FromSphere(_sphere, _box);
+
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
 }
 
 void SpotLight::OnEnable()
 {
-    GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -123,7 +133,7 @@ void SpotLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this);
+    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();
@@ -184,8 +194,11 @@ void SpotLight::Draw(RenderContext& renderContext)
 
 void SpotLight::OnDebugDraw()
 {
-    // Draw source tube
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), SourceRadius), Color::Orange, 0, true);
+    if (SourceRadius > ZeroTolerance)
+    {
+        // Draw source tube
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), SourceRadius), Color::Orange, 0, true);
+    }
 
     // Base
     LightWithShadow::OnDebugDraw();

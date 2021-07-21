@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 #include <ThirdParty/freetype/ftsynth.h>
 #include <ThirdParty/freetype/ftbitmap.h>
@@ -109,7 +110,7 @@ void FontManagerService::Dispose()
 
 FontTextureAtlas* FontManager::GetAtlas(int32 index)
 {
-    return index >= 0 && index < Atlases.Count() ? Atlases.Get()[index] : nullptr;
+    return index >= 0 && index < Atlases.Count() ? Atlases.Get()[index].Get() : nullptr;
 }
 
 bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
@@ -287,6 +288,8 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
 void FontManager::Invalidate(FontCharacterEntry& entry)
 {
+    if (entry.TextureIndex == MAX_uint8)
+        return;
     auto atlas = Atlases[entry.TextureIndex];
     const uint32 padding = atlas->GetPaddingAmount();
     const uint32 slotX = static_cast<uint32>(entry.UV.X - padding);

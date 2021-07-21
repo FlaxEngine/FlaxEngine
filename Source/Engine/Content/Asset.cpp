@@ -13,6 +13,93 @@
 #include "Engine/Threading/ConcurrentTaskQueue.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 
+AssetReferenceBase::~AssetReferenceBase()
+{
+    if (_asset)
+    {
+        _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+        _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        _asset->RemoveReference();
+    }
+}
+
+String AssetReferenceBase::ToString() const
+{
+    return _asset ? _asset->ToString() : TEXT("<null>");
+}
+
+void AssetReferenceBase::OnSet(Asset* asset)
+{
+    auto e = _asset;
+    if (e != asset)
+    {
+        if (e)
+        {
+            e->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+            e->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+            e->RemoveReference();
+        }
+        _asset = e = asset;
+        if (e)
+        {
+            e->AddReference();
+            e->OnLoaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+            e->OnUnloaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        }
+        Changed();
+        if (e && e->IsLoaded())
+            Loaded();
+    }
+}
+
+void AssetReferenceBase::OnLoaded(Asset* asset)
+{
+    if (_asset != asset)
+        return;
+    Loaded();
+}
+
+void AssetReferenceBase::OnUnloaded(Asset* asset)
+{
+    if (_asset != asset)
+        return;
+    Unload();
+    OnSet(nullptr);
+}
+
+WeakAssetReferenceBase::~WeakAssetReferenceBase()
+{
+    if (_asset)
+        _asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+}
+
+String WeakAssetReferenceBase::ToString() const
+{
+    return _asset ? _asset->ToString() : TEXT("<null>");
+}
+
+void WeakAssetReferenceBase::OnSet(Asset* asset)
+{
+    auto e = _asset;
+    if (e != asset)
+    {
+        if (e)
+            e->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+        _asset = e = asset;
+        if (e)
+            e->OnUnloaded.Bind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    }
+}
+
+void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
+{
+    if (_asset != asset)
+        return;
+    Unload();
+    asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    _asset = nullptr;
+}
+
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)
     : ManagedScriptingObject(params)
     , _refCount(0)
@@ -24,9 +111,14 @@ Asset::Asset(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+int32 Asset::GetReferencesCount() const
+{
+    return (int32)Platform::AtomicRead(const_cast<int64 volatile*>(&_refCount));
+}
+
 String Asset::ToString() const
 {
-    return String::Format(TEXT("{0}: {1}, \'{2}\', Refs: {3}"), GetTypeName(), GetID(), GetPath(), GetReferencesCount());
+    return String::Format(TEXT("{0}, {1}, {2}"), GetTypeName(), GetID(), GetPath());
 }
 
 void Asset::OnDeleteObject()
@@ -38,9 +130,10 @@ void Asset::OnDeleteObject()
     if (!IsInternalType())
         Content::AssetDisposing(this);
 
-    // Cache data
     const bool wasMarkedToDelete = _deleteFileOnUnload != 0;
+#if USE_EDITOR
     const String path = wasMarkedToDelete ? GetPath() : String::Empty;
+#endif
     const Guid id = GetID();
 
     // Fire unload event (every object referencing this asset or it's data should release reference so later actions are safe)
@@ -66,7 +159,7 @@ void Asset::OnDeleteObject()
     // Base (after it `this` is invalid)
     ManagedScriptingObject::OnDeleteObject();
 
-    // Check if asset was marked to delete
+#if USE_EDITOR
     if (wasMarkedToDelete)
     {
         LOG(Info, "Deleting asset '{0}':{1}.", path, id.ToString());
@@ -77,6 +170,7 @@ void Asset::OnDeleteObject()
         // Delete file
         Content::deleteFileSafety(path, id);
     }
+#endif
 }
 
 void Asset::CreateManaged()
@@ -131,8 +225,26 @@ void Asset::ChangeID(const Guid& newId)
     CRASH;
 }
 
+bool Asset::LastLoadFailed() const
+{
+    return _loadFailed != 0;
+}
+
+#if USE_EDITOR
+
+bool Asset::ShouldDeleteFileOnUnload() const
+{
+    return _deleteFileOnUnload != 0;
+}
+
+#endif
+
 void Asset::Reload()
 {
+    // Virtual assets are memory-only so reloading them makes no sense
+    if (IsVirtual())
+        return;
+
     // It's better to call it from the main thread
     if (IsInMainThread())
     {
@@ -222,28 +334,44 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         // So during loading first material it will wait for child materials loaded calling this function
 
         Task* task = loadingTask;
+        Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
         while (!Engine::ShouldExit())
         {
             // Try to execute content tasks
             while (task->IsQueued() && !Engine::ShouldExit())
             {
-                // Pick this task from the queue
+                // Dequeue task from the loading queue
                 ContentLoadTask* tmp;
                 if (ContentLoadingManagerImpl::Tasks.try_dequeue(tmp))
                 {
                     if (tmp == task)
                     {
+                        if (localQueue.Count() != 0)
+                        {
+                            // Put back queued tasks
+                            ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                            localQueue.Clear();
+                        }
+
                         thread->Run(tmp);
                     }
                     else
                     {
-                        ContentLoadingManagerImpl::Tasks.enqueue(tmp);
+                        localQueue.Add(tmp);
                     }
                 }
+                else
+                {
+                    // No task in queue but it's queued so other thread could have stolen it into own local queue
+                    break;
+                }
             }
-
-            // Wait some time
-            //Platform::Sleep(1);
+            if (localQueue.Count() != 0)
+            {
+                // Put back queued tasks
+                ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                localQueue.Clear();
+            }
 
             // Check if task is done
             if (task->IsEnded())
@@ -275,7 +403,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         Content::tryCallOnLoaded(this);
     }
 
-    return IsLoaded() == false;
+    return _isLoaded == 0;
 }
 
 void Asset::InitAsVirtual()
@@ -332,16 +460,33 @@ void Asset::startLoading()
     _loadingTask->Start();
 }
 
+void Asset::releaseStorage()
+{
+}
+
+bool Asset::IsInternalType() const
+{
+    return false;
+}
+
 bool Asset::onLoad(LoadAssetTask* task)
 {
     // It may fail when task is cancelled and new one is created later (don't crash but just end with an error)
-    if (task->GetAsset() != this || _loadingTask == nullptr)
+    if (task->Asset.Get() != this || _loadingTask == nullptr)
         return true;
 
     Locker.Lock();
 
     // Load asset
-    const LoadResult result = loadAsset();
+    LoadResult result;
+    {
+#if TRACY_ENABLE
+        ZoneScoped;
+        const StringView name(GetPath());
+        ZoneName(*name, name.Length());
+#endif
+        result = loadAsset();
+    }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
     _loadFailed = failed;

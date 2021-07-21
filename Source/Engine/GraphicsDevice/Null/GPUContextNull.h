@@ -108,6 +108,10 @@ public:
     {
     }
 
+    void BindSampler(int32 slot, GPUSampler* sampler) override
+    {
+    }
+
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override
     {
     }

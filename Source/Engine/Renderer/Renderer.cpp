@@ -4,6 +4,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/EngineService.h"
 #include "GBufferPass.h"
 #include "ForwardPass.h"
@@ -111,9 +112,7 @@ void RendererService::Dispose()
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    const auto width = (float)renderContext.Buffers->GetWidth();
-    const auto height = (float)renderContext.Buffers->GetHeight();
-    context->SetViewportAndScissors(width, height);
+    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
 
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
     if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
@@ -127,7 +126,6 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
     else
     {
         PROFILE_GPU("Copy frame");
-
         context->SetRenderTarget(output);
         context->Draw(input);
     }
@@ -293,13 +291,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     task->CollectPostFxVolumes(renderContext);
     renderContext.List->BlendSettings();
     auto aaMode = (renderContext.View.Flags & ViewFlags::AntiAliasing) != 0 ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
-    if (view.IsOrthographicProjection() && aaMode == AntialiasingMode::TemporalAntialiasing)
-        aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection
-#if USE_EDITOR
-    // Disable temporal AA effect in editor without play mode enabled to hide minor artifacts on objects moving and lack of valid motion vectors
-    if (!Editor::IsPlayMode && aaMode == AntialiasingMode::TemporalAntialiasing)
-        aaMode = AntialiasingMode::FastApproximateAntialiasing;
-#endif
+    if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
+        aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
 
     // Prepare
@@ -336,7 +329,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         // Render reflections debug view
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(lightBuffer->View());
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -353,7 +346,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         GBufferPass::Instance()->RenderDebug(renderContext);
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -371,7 +364,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         RenderTargetPool::Release(lightBuffer);
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(tempBuffer);
         return;
     }
@@ -385,7 +378,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(lightBuffer);
         RenderTargetPool::Release(lightBuffer);
         return;
@@ -425,7 +418,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     if (renderContext.View.Mode == ViewMode::NoPostFx || renderContext.View.Mode == ViewMode::Wireframe)
     {
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(forwardPassResult);
         return;
     }
@@ -474,18 +467,23 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::Default, frameBuffer, tempBuffer);
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterCustomPostEffects, frameBuffer, tempBuffer);
 
+    // Cleanup
+    context->ResetRenderTarget();
+    context->ResetSR();
+    context->FlushState();
+
     // Debug motion vectors
     if (renderContext.View.Mode == ViewMode::MotionVectors)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+        context->SetViewportAndScissors(task->GetOutputViewport());
         MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         return;
     }
 
     // Anti Aliasing
-    if (!renderContext.List->HasAnyPostAA(renderContext))
+    if (!renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) && Math::IsOne(task->RenderingPercentage))
     {
         // AA -> Back Buffer
         RenderAntiAliasingPass(renderContext, frameBuffer, task->GetOutputView());
@@ -499,12 +497,21 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
         renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
 
-        // PostFx -> Back Buffer
+        // PostFx -> (up-scaling) -> Back Buffer
+        if (Math::IsOne(task->RenderingPercentage))
         {
             PROFILE_GPU("Copy frame");
             context->SetRenderTarget(task->GetOutputView());
-            context->SetViewportAndScissors((float)renderContext.Buffers->GetWidth(), (float)renderContext.Buffers->GetHeight());
+            context->SetViewportAndScissors(task->GetOutputViewport());
             context->Draw(frameBuffer);
+        }
+        else if (renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::CustomUpscale, MaterialPostFxLocation::MAX))
+        {
+            renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, frameBuffer);
+        }
+        else
+        {
+            MultiScaler::Instance()->Upscale(context, task->GetOutputViewport(), frameBuffer, task->GetOutputView());
         }
     }
 }

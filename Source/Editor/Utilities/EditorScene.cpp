@@ -2,8 +2,6 @@
 
 #include "EditorScene.h"
 
-#include "Engine/Debug/DebugDraw.h"
-
 EditorScene::EditorScene(const SpawnParams& params)
     : Scene(params)
 {

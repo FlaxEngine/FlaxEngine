@@ -4,12 +4,16 @@
 #if USE_EDITOR
 #include "AnimationGraphFunction.h"
 #endif
+#include "SkinnedModel.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Threading/Threading.h"
+#include "Engine/Debug/Exceptions/ArgumentNullException.h"
 
-REGISTER_BINARY_ASSET(AnimationGraph, "FlaxEngine.AnimationGraph", nullptr, false);
+REGISTER_BINARY_ASSET(AnimationGraph, "FlaxEngine.AnimationGraph", true);
 
 AnimationGraph::AnimationGraph(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -63,9 +67,83 @@ void AnimationGraph::OnDependencyModified(BinaryAsset* asset)
 
 #endif
 
+bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop)
+{
+    if (!IsVirtual())
+    {
+        LOG(Warning, "Only virtual Anim Graph can be modified.");
+        return true;
+    }
+    if (!baseModel || !anim)
+    {
+        Log::ArgumentNullException();
+        return true;
+    }
+
+    // Create Graph data
+    MemoryWriteStream writeStream(512);
+    {
+        AnimGraph graph(nullptr);
+        graph.Nodes.Resize(2);
+        auto& rootNode = graph.Nodes[0];
+        rootNode.Type = GRAPH_NODE_MAKE_TYPE(9, 1);
+        rootNode.ID = 1;
+        rootNode.Values.Resize(1);
+        rootNode.Values[0] = (int32)RootMotionMode::NoExtraction;
+        rootNode.Boxes.Resize(1);
+        rootNode.Boxes[0] = AnimGraphBox(&rootNode, 0, VariantType::Void);
+        auto& animNode = graph.Nodes[1];
+        animNode.Type = GRAPH_NODE_MAKE_TYPE(9, 2);
+        animNode.ID = 2;
+        animNode.Values.Resize(4);
+        animNode.Values[0] = anim->GetID();
+        animNode.Values[1] = 1.0f;
+        animNode.Values[2] = loop;
+        animNode.Values[3] = 0.0f;
+        animNode.Boxes.Resize(8);
+        animNode.Boxes[0] = AnimGraphBox(&animNode, 0, VariantType::Void);
+        animNode.Boxes[0].Connections.Add(&rootNode.Boxes[0]);
+        rootNode.Boxes[0].Connections.Add(&animNode.Boxes[0]);
+        animNode.Boxes[1] = AnimGraphBox(&animNode, 1, VariantType::Void);
+        animNode.Boxes[2] = AnimGraphBox(&animNode, 2, VariantType::Void);
+        animNode.Boxes[3] = AnimGraphBox(&animNode, 3, VariantType::Void);
+        animNode.Boxes[4] = AnimGraphBox(&animNode, 4, VariantType::Void);
+        animNode.Boxes[5] = AnimGraphBox(&animNode, 5, VariantType::Void);
+        animNode.Boxes[6] = AnimGraphBox(&animNode, 6, VariantType::Void);
+        animNode.Boxes[7] = AnimGraphBox(&animNode, 7, VariantType::Void);
+        graph.Parameters.Resize(1);
+        AnimGraphParameter& baseModelParam = graph.Parameters[0];
+        baseModelParam.Identifier = ANIM_GRAPH_PARAM_BASE_MODEL_ID;
+        baseModelParam.Type = VariantType::Asset;
+        baseModelParam.IsPublic = false;
+        baseModelParam.Value = baseModel->GetID();
+        if (graph.Save(&writeStream, USE_EDITOR))
+            return true;
+    }
+
+    // Load Graph data (with initialization)
+    ScopeLock lock(Locker);
+    MemoryReadStream readStream(writeStream.GetHandle(), writeStream.GetPosition());
+    return Graph.Load(&readStream, USE_EDITOR);
+}
+
 BytesContainer AnimationGraph::LoadSurface()
 {
     ScopeLock lock(Locker);
+
+    if (IsVirtual())
+    {
+        // Serialize runtime graph
+        MemoryWriteStream stream(512);
+        if (!Graph.Save(&stream, USE_EDITOR))
+        {
+            BytesContainer result;
+            result.Copy(stream.GetHandle(), stream.GetPosition());
+            return result;
+        }
+    }
+
+    // Load data from asset
     if (!LoadChunks(GET_CHUNK_FLAG(0)))
     {
         const auto data = GetChunk(0);
@@ -74,7 +152,7 @@ BytesContainer AnimationGraph::LoadSurface()
         return result;
     }
 
-    LOG(Warning, "Animation Graph \'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "Animation Graph \'{0}\' surface data is missing.", ToString());
     return BytesContainer();
 }
 
@@ -94,6 +172,12 @@ bool AnimationGraph::SaveSurface(BytesContainer& data)
     }
 
     ScopeLock lock(Locker);
+
+    if (IsVirtual())
+    {
+        MemoryReadStream readStream(data.Get(), data.Length());
+        return Graph.Load(&readStream, USE_EDITOR);
+    }
 
     // Release all chunks
     for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
@@ -134,6 +218,14 @@ void AnimationGraph::FindDependencies(AnimGraphBase* graph)
     {
         FindDependencies(subGraph);
     }
+}
+
+void AnimationGraph::GetReferences(Array<Guid>& output) const
+{
+    // Base
+    BinaryAsset::GetReferences(output);
+
+    Graph.GetReferences(output);
 }
 
 #endif

@@ -60,15 +60,7 @@ namespace FlaxEngine
 
         private static List<PostProcessEffect> _postFx;
         private static IntPtr[] _postFxPtr;
-        private static readonly PostFxComparer _postFxComparer = new PostFxComparer();
-
-        internal sealed class PostFxComparer : IComparer<PostProcessEffect>
-        {
-            public int Compare(PostProcessEffect x, PostProcessEffect y)
-            {
-                return x.Order - y.Order;
-            }
-        }
+        private static Comparison<PostProcessEffect> _postFxComparison = (x, y) => x.Order - y.Order;
 
         internal IntPtr[] GetPostFx(out int count)
         {
@@ -103,7 +95,7 @@ namespace FlaxEngine
             }
 
             // Sort postFx
-            _postFx.Sort(_postFxComparer);
+            _postFx.Sort(_postFxComparison);
 
             // Convert into unmanaged objects
             count = _postFx.Count;

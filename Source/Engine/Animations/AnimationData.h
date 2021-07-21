@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "Curve.h"
+#include "Engine/Core/Types/String.h"
+#include "Engine/Animations/Curve.h"
 #include "Engine/Core/Math/Transform.h"
 
 /// <summary>

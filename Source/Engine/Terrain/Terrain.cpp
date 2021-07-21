@@ -2,7 +2,8 @@
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
-#include "Engine/Content/Assets/RawDataAsset.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"
@@ -10,6 +11,7 @@
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/PhysX/PxFiltering.h>
 
@@ -45,6 +47,8 @@ void Terrain::UpdateBounds()
         BoundingBox::Merge(_box, patch->_bounds, _box);
     }
     BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void Terrain::CacheNeighbors()
@@ -257,10 +261,10 @@ void Terrain::OnPhysicalMaterialChanged()
 
 void Terrain::DrawPhysicsDebug(RenderView& view)
 {
-	for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
-	{
-		_patches[pathIndex]->DrawPhysicsDebug(view);
-	}
+    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
+    {
+        _patches[pathIndex]->DrawPhysicsDebug(view);
+    }
 }
 
 #endif
@@ -750,9 +754,9 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    GetSceneRendering()->AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 #if TERRAIN_USE_PHYSICS_DEBUG
-	GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
 
     // Base
@@ -761,9 +765,9 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this);
+    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
-	GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
 
     // Base
@@ -801,6 +805,8 @@ void Terrain::OnLayerChanged()
     Actor::OnLayerChanged();
 
     UpdateLayerBits();
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void Terrain::OnActiveInTreeChanged()

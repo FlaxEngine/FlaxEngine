@@ -32,17 +32,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (_presets != value)
                     {
                         _presets = value;
-                        OnPresetsChanged();
+                        TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
                     }
                 }
             }
 
             public bool IsSelected;
-
-            private void OnPresetsChanged()
-            {
-                TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
-            }
+            public bool SupportsShiftModulation;
 
             /// <inheritdoc />
             public override void Draw()
@@ -77,6 +73,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     backgroundColor = BackgroundColorHighlighted;
                     borderColor = BorderColorHighlighted;
+                }
+
+                if (SupportsShiftModulation && Input.GetKey(KeyboardKeys.Shift))
+                {
+                    backgroundColor = BackgroundColorSelected;
                 }
 
                 // Calculate fill area
@@ -154,24 +155,83 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     Render2D.DrawRectangle(rect, style.BackgroundSelected.AlphaMultiplied(0.8f), 1.1f);
                 }
+
+                // Draw pivot point
+                if (SupportsShiftModulation && Input.GetKey(KeyboardKeys.Control))
+                {
+                    Vector2 pivotPoint;
+                    switch (_presets)
+                    {
+                    case AnchorPresets.Custom:
+                        pivotPoint = Vector2.Minimum;
+                        break;
+                    case AnchorPresets.TopLeft:
+                        pivotPoint = new Vector2(0, 0);
+                        break;
+                    case AnchorPresets.TopCenter:
+                    case AnchorPresets.HorizontalStretchTop:
+                        pivotPoint = new Vector2(rect.Width / 2, 0);
+                        break;
+                    case AnchorPresets.TopRight:
+                        pivotPoint = new Vector2(rect.Width, 0);
+                        break;
+                    case AnchorPresets.MiddleLeft:
+                    case AnchorPresets.VerticalStretchLeft:
+                        pivotPoint = new Vector2(0, rect.Height / 2);
+                        break;
+                    case AnchorPresets.MiddleCenter:
+                    case AnchorPresets.VerticalStretchCenter:
+                    case AnchorPresets.HorizontalStretchMiddle:
+                    case AnchorPresets.StretchAll:
+                        pivotPoint = new Vector2(rect.Width / 2, rect.Height / 2);
+                        break;
+                    case AnchorPresets.MiddleRight:
+                    case AnchorPresets.VerticalStretchRight:
+                        pivotPoint = new Vector2(rect.Width, rect.Height / 2);
+                        break;
+                    case AnchorPresets.BottomLeft:
+                        pivotPoint = new Vector2(0, rect.Height);
+                        break;
+                    case AnchorPresets.BottomCenter:
+                    case AnchorPresets.HorizontalStretchBottom:
+                        pivotPoint = new Vector2(rect.Width / 2, rect.Height);
+                        break;
+                    case AnchorPresets.BottomRight:
+                        pivotPoint = new Vector2(rect.Width, rect.Height);
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
+                    }
+                    var pivotPointSize = new Vector2(3.0f);
+                    Render2D.DrawRectangle(new Rectangle(pivotPoint - pivotPointSize * 0.5f, pivotPointSize), style.ProgressNormal, 1.1f);
+                }
             }
         }
 
-        class AnchorPresetsEditorPopup : ContextMenuBase
+        /// <summary>
+        /// Context menu for anchors presets editing.
+        /// </summary>
+        /// <seealso cref="FlaxEditor.GUI.ContextMenu.ContextMenuBase" />
+        public sealed class AnchorPresetsEditorPopup : ContextMenuBase
         {
             const float ButtonsMargin = 10.0f;
             const float ButtonsMarginStretch = 8.0f;
             const float ButtonsSize = 32.0f;
             const float TitleHeight = 23.0f;
+            const float InfoHeight = 23.0f;
             const float DialogWidth = ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
-            const float DialogHeight = TitleHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
+            const float DialogHeight = TitleHeight + InfoHeight + ButtonsSize * 4 + ButtonsMargin * 5 + ButtonsMarginStretch;
+
+            private readonly bool _supportsShiftModulation;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="AnchorPresetsEditorPopup"/> class.
             /// </summary>
             /// <param name="presets">The initial value.</param>
-            public AnchorPresetsEditorPopup(AnchorPresets presets)
+            /// <param name="supportsShiftModulation">If the popup should react to shift</param>
+            public AnchorPresetsEditorPopup(AnchorPresets presets, bool supportsShiftModulation = true)
             {
+                _supportsShiftModulation = supportsShiftModulation;
+
                 var style = FlaxEngine.GUI.Style.Current;
                 Tag = presets;
                 Size = new Vector2(DialogWidth, DialogHeight);
@@ -184,9 +244,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = this
                 };
 
+                // Info
+                var info = new Label(0, title.Bottom, DialogWidth, InfoHeight)
+                {
+                    Font = new FontReference(style.FontSmall),
+                    Text = "Shift: also set bounds\nControl: also set pivot",
+                    Parent = this
+                };
+
                 // Buttons
                 var buttonsX = ButtonsMargin;
-                var buttonsY = title.Bottom + ButtonsMargin;
+                var buttonsY = info.Bottom + ButtonsMargin;
                 var buttonsSpacingX = ButtonsSize + ButtonsMargin;
                 var buttonsSpacingY = ButtonsSize + ButtonsMargin;
                 //
@@ -219,6 +287,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = this,
                     Presets = presets,
                     IsSelected = presets == (AnchorPresets)Tag,
+                    SupportsShiftModulation = _supportsShiftModulation,
                     Tag = presets,
                 };
                 button.ButtonClicked += OnButtonClicked;
@@ -278,7 +347,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void OnButtonClicked()
         {
             var location = _button.Center + new Vector2(3.0f);
-            var editor = new AnchorPresetsEditorPopup(_button.Presets);
+            var editor = new AnchorPresetsEditorPopup(_button.Presets, true);
             editor.VisibleChanged += OnEditorVisibleChanged;
             editor.Show(_button.Parent, location);
         }
@@ -288,6 +357,30 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (control.Visible)
                 return;
             SetValue(control.Tag);
+        }
+
+        /// <inheritdoc/>
+        protected override void SynchronizeValue(object value)
+        {
+            // Custom anchors editing for Control to handle bounds preservation via key modifiers
+            if (ParentEditor != null)
+            {
+                var centerToPosition = Input.GetKey(KeyboardKeys.Shift);
+                var setPivot = Input.GetKey(KeyboardKeys.Control);
+                var editedAny = false;
+                foreach (var parentValue in ParentEditor.Values)
+                {
+                    if (parentValue is Control parentControl)
+                    {
+                        parentControl.SetAnchorPreset((AnchorPresets)value, !centerToPosition, setPivot);
+                        editedAny = true;
+                    }
+                }
+                if (editedAny)
+                    return;
+            }
+
+            base.SynchronizeValue(value);
         }
 
         /// <inheritdoc />
@@ -311,7 +404,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// Dedicated custom editor for <see cref="UIControl.Control"/> object.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
-    public sealed class UIControlControlEditor : GenericEditor
+    public class UIControlControlEditor : GenericEditor
     {
         private Type _cachedType;
 
@@ -319,6 +412,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             _cachedType = null;
+            if (HasDifferentTypes)
+            {
+                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
+                return;
+            }
 
             // Set control type button
             var space = layout.Space(20);
@@ -507,34 +605,26 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private bool _cachedXEq;
         private bool _cachedYEq;
 
-        /// <summary>
-        /// Refreshes if equality of anchors does not correspond to the cached equality
-        /// </summary>
-        public void RefreshBaseOnAnchorsEquality()
-        {
-            if (Values.HasNull)
-                return;
-
-            GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
-            if (xEq != _cachedXEq || yEq != _cachedYEq)
-            {
-                RebuildLayout();
-                return;
-            }
-        }
-
         /// <inheritdoc />
         public override void Refresh()
         {
-            // Automatic layout rebuild if control type gets changed
-            var type = Values.HasNull ? null : Values[0].GetType();
-            if (type != _cachedType)
+            if (_cachedType != null)
             {
-                RebuildLayout();
-                return;
+                // Automatic layout rebuild if control type gets changed
+                var type = Values.HasNull ? null : Values[0].GetType();
+                if (type != _cachedType)
+                {
+                    RebuildLayout();
+                    return;
+                }
+
+                // Refresh anchors
+                GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
+                if (xEq != _cachedXEq || yEq != _cachedYEq)
+                {
+                    RebuildLayout();
+                }
             }
-            RefreshBaseOnAnchorsEquality();
-            //RefreshValues();
 
             base.Refresh();
         }
@@ -549,59 +639,39 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var cm = new ItemsListContextMenu(180);
             for (int i = 0; i < controlTypes.Count; i++)
             {
-                var controlType = controlTypes[i];
-                var item = new ItemsListContextMenu.Item(controlType.Name, controlType)
-                {
-                    TooltipText = controlType.TypeName,
-                };
-                var attributes = controlType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
-                cm.AddItem(item);
+                cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
             }
-
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
             cm.SortChildren();
             cm.Show(button.Parent, button.BottomLeft);
         }
 
+        private void SetType(ref ScriptType controlType, UIControl uiControl)
+        {
+            string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
+            uiControl.Control = (Control)controlType.CreateInstance();
+            if (uiControl.Name.StartsWith(previousName))
+            {
+                string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
+                uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+            }
+        }
+
         private void SetType(ScriptType controlType)
         {
             var uiControls = ParentEditor.Values;
-            if (Presenter.Undo != null)
+            if (Presenter.Undo?.Enabled ?? false)
             {
                 using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
                 {
                     for (int i = 0; i < uiControls.Count; i++)
-                    {
-                        var uiControl = (UIControl)uiControls[i];
-                        string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
-                        uiControl.Control = (Control)controlType.CreateInstance();
-                        if (uiControl.Name.StartsWith(previousName))
-                        {
-                            string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                            uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                        }
-                    }
+                        SetType(ref controlType, (UIControl)uiControls[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < uiControls.Count; i++)
-                {
-                    var uiControl = (UIControl)uiControls[i];
-                    string previousName = uiControl.Control?.GetType()?.Name ?? typeof(UIControl).Name;
-                    uiControl.Control = (Control)controlType.CreateInstance();
-                    if (uiControl.Name.StartsWith(previousName))
-                    {
-                        string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
-                        uiControl.Name = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
-                    }
-                }
+                    SetType(ref controlType, (UIControl)uiControls[i]);
             }
 
             ParentEditor.RebuildLayout();

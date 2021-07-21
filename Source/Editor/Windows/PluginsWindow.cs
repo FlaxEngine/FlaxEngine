@@ -7,7 +7,6 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -53,7 +52,7 @@ namespace FlaxEditor.Windows
 
                 var iconImage = new Image
                 {
-                    Brush = new SpriteBrush(Editor.Instance.Icons.Plugin64),
+                    Brush = new SpriteBrush(Editor.Instance.Icons.Plugin128),
                     Parent = this,
                     Bounds = new Rectangle(margin, margin, iconSize, iconSize),
                 };
@@ -184,16 +183,34 @@ namespace FlaxEditor.Windows
                 Parent = this
             };
 
-            // Check already loaded plugins
-            PluginManager.GamePlugins.ForEach(OnPluginLoaded);
-            PluginManager.EditorPlugins.ForEach(OnPluginLoaded);
-
-            // Register for events
-            PluginManager.PluginLoaded += OnPluginLoaded;
-            PluginManager.PluginUnloading += OnPluginUnloading;
+            OnPluginsChanged();
+            PluginManager.PluginsChanged += OnPluginsChanged;
         }
 
-        private void OnPluginLoaded(Plugin plugin)
+        private void OnPluginsChanged()
+        {
+            List<PluginEntry> toRemove = null;
+            foreach (var e in _entries)
+            {
+                if (!PluginManager.EditorPlugins.Contains(e.Key) && !PluginManager.GamePlugins.Contains(e.Key))
+                {
+                    if (toRemove == null)
+                        toRemove = new List<PluginEntry>();
+                    toRemove.Add(e.Value);
+                }
+            }
+            if (toRemove != null)
+            {
+                foreach (var plugin in toRemove)
+                    OnPluginRemove(plugin);
+            }
+            foreach (var plugin in PluginManager.GamePlugins)
+                OnPluginAdd(plugin);
+            foreach (var plugin in PluginManager.EditorPlugins)
+                OnPluginAdd(plugin);
+        }
+
+        private void OnPluginAdd(Plugin plugin)
         {
             var entry = GetPluginEntry(plugin);
             if (entry != null)
@@ -228,14 +245,10 @@ namespace FlaxEditor.Windows
                 _tabs.SelectedTab = category;
         }
 
-        private void OnPluginUnloading(Plugin plugin)
+        private void OnPluginRemove(PluginEntry entry)
         {
-            var entry = GetPluginEntry(plugin);
-            if (entry == null)
-                return;
-
             var category = entry.Category;
-            _entries.Remove(plugin);
+            _entries.Remove(entry.Plugin);
             entry.Dispose();
 
             // If category is not used anymore
@@ -285,8 +298,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            PluginManager.PluginLoaded -= OnPluginLoaded;
-            PluginManager.PluginUnloading -= OnPluginUnloading;
+            PluginManager.PluginsChanged -= OnPluginsChanged;
 
             base.OnDestroy();
         }

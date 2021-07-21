@@ -14,10 +14,11 @@
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/Serialization/FileWriteStream.h"
-#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/Engine.h"
@@ -275,7 +276,7 @@ bool ProbesRenderer::Init()
     }
 
     // Init rendering pipeline
-    _output = GPUTexture::New();
+    _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
     if (_output->Init(GPUTextureDescription::New2D(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION, ENV_PROBES_FORMAT)))
         return true;
     _task = New<SceneRenderTask>();

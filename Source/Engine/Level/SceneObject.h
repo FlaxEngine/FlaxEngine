@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
-#include "Engine/Serialization/ISerializable.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/Collections/Array.h"
 
 class SceneTicking;
 class ScriptsFactory;
@@ -39,7 +39,7 @@ public:
 /// <summary>
 /// The actors collection lookup type (id -> actor).
 /// </summary>
-typedef Dictionary<Guid, Actor*> ActorsLookup;
+typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 
 #define DECLARE_SCENE_OBJECT(type) \
     DECLARE_SCRIPTING_TYPE(type)

@@ -10,6 +10,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/MException.h"
+#include "Engine/Content/Assets/SkinnedModel.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 struct InternalInitData
@@ -79,10 +80,6 @@ namespace AnimGraphInternal
     }
 }
 
-#if USE_EDITOR
-Delegate<Asset*, ScriptingObject*, uint32, uint32> AnimGraphExecutor::DebugFlow;
-#endif
-
 void AnimGraphExecutor::initRuntime()
 {
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal::HasConnection);
@@ -92,13 +89,10 @@ void AnimGraphExecutor::initRuntime()
 
 void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value)
 {
-    auto box = (AnimGraphBox*)boxBase;
-    if (box->IsCacheValid())
-    {
-        // Return cache
-        value = box->Cache;
+    auto& context = Context.Get();
+    if (context.ValueCache.TryGet(boxBase, value))
         return;
-    }
+    auto box = (AnimGraphBox*)boxBase;
     auto node = (AnimGraphNode*)nodeBase;
     auto& data = node->Data.Custom;
     value = Value::Null;
@@ -108,16 +102,16 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
         return;
 
     // Prepare node context
-    InternalContext context;
-    context.Graph = &_graph;
-    context.GraphExecutor = this;
-    context.Node = node;
-    context.NodeId = node->ID;
-    context.BoxId = box->ID;
-    context.DeltaTime = _deltaTime;
-    context.CurrentFrameIndex = _currentFrameIndex;;
-    context.BaseModel = _graph.BaseModel->GetOrCreateManagedInstance();
-    context.Instance = _data->Object ? _data->Object->GetOrCreateManagedInstance() : nullptr;
+    InternalContext internalContext;
+    internalContext.Graph = &_graph;
+    internalContext.GraphExecutor = this;
+    internalContext.Node = node;
+    internalContext.NodeId = node->ID;
+    internalContext.BoxId = box->ID;
+    internalContext.DeltaTime = context.DeltaTime;
+    internalContext.CurrentFrameIndex = context.CurrentFrameIndex;
+    internalContext.BaseModel = _graph.BaseModel->GetOrCreateManagedInstance();
+    internalContext.Instance = context.Data->Object ? context.Data->Object->GetOrCreateManagedInstance() : nullptr;
 
     // Peek managed object
     const auto obj = mono_gchandle_get_target(data.Handle);
@@ -129,7 +123,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
 
     // Evaluate node
     void* params[1];
-    params[0] = &context;
+    params[0] = &internalContext;
     MonoObject* exception = nullptr;
     MonoObject* result = data.Evaluate->Invoke(obj, params, &exception);
     if (exception)
@@ -141,7 +135,18 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
 
     // Extract result
     value = MUtils::UnboxVariant(result);
-    box->Cache = value;
+    context.ValueCache.Add(boxBase, value);
+}
+
+bool AnimGraph::IsReady() const
+{
+    return BaseModel && BaseModel->IsLoaded();
+}
+
+bool AnimGraph::CanUseWithSkeleton(SkinnedModel* other) const
+{
+    // All data loaded and nodes count the same
+    return IsReady() && other && other->IsLoaded() && other->Skeleton.Nodes.Count() == BaseModel->Skeleton.Nodes.Count();
 }
 
 void AnimGraph::ClearCustomNode(Node* node)

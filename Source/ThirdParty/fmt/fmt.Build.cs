@@ -14,8 +14,8 @@ public class fmt : ThirdPartyModule
     {
         base.Init();
 
-        LicenseType = LicenseTypes.BSD2Clause;
-        LicenseFilePath = "cppformat license.txt";
+        LicenseType = LicenseTypes.Custom;
+        LicenseFilePath = "LICENSE.rst";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";

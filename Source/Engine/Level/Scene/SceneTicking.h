@@ -8,16 +8,14 @@
 /// <summary>
 /// Scene gameplay updating helper subsystem that boosts the level ticking by providing efficient objects cache.
 /// </summary>
-class SceneTicking
+class FLAXENGINE_API SceneTicking
 {
-    friend Scene;
-
 public:
 
     /// <summary>
     /// Tick function type.
     /// </summary>
-    struct Tick
+    struct FLAXENGINE_API Tick
     {
         typedef void (*Signature)();
         typedef void (*SignatureObj)(void*);
@@ -28,12 +26,8 @@ public:
             (static_cast<T*>(callee)->*Method)();
         }
 
-    public:
-
         void* Callee;
         SignatureObj FunctionObj;
-
-    public:
 
         template<class T, void(T::*Method)()>
         void Bind(T* callee)
@@ -42,16 +36,16 @@ public:
             FunctionObj = &MethodCaller<T, Method>;
         }
 
-        /// <summary>
-        /// Calls the binded function.
-        /// </summary>
         FORCE_INLINE void Call() const
         {
             (*FunctionObj)(Callee);
         }
     };
 
-    class TickData
+    /// <summary>
+    /// Ticking data container.
+    /// </summary>
+    class FLAXENGINE_API TickData
     {
     public:
 
@@ -62,31 +56,9 @@ public:
         Array<Tick> TicksExecuteInEditor;
 #endif
 
-        TickData(int32 capacity)
-            : Scripts(capacity)
-            , Ticks(capacity)
-        {
-        }
+        TickData(int32 capacity);
 
         virtual void TickScripts(const Array<Script*>& scripts) = 0;
-
-        void Tick()
-        {
-            TickScripts(Scripts);
-
-            for (int32 i = 0; i < Ticks.Count(); i++)
-                Ticks[i].Call();
-        }
-
-#if USE_EDITOR
-        void TickExecuteInEditor()
-        {
-            TickScripts(ScriptsExecuteInEditor);
-
-            for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
-                TicksExecuteInEditor[i].Call();
-        }
-#endif
 
         void AddScript(Script* script);
         void RemoveScript(Script* script);
@@ -99,17 +71,8 @@ public:
             Ticks.Add(tick);
         }
 
-        void RemoveTick(void* callee)
-        {
-            for (int32 i = 0; i < Ticks.Count(); i++)
-            {
-                if (Ticks[i].Callee == callee)
-                {
-                    Ticks.RemoveAt(i);
-                    break;
-                }
-            }
-        }
+        void RemoveTick(void* callee);
+        void Tick();
 
 #if USE_EDITOR
         template<class T, void(T::*Method)()>
@@ -120,71 +83,36 @@ public:
             TicksExecuteInEditor.Add(tick);
         }
 
-        void RemoveTickExecuteInEditor(void* callee)
-        {
-            for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
-            {
-                if (TicksExecuteInEditor[i].Callee == callee)
-                {
-                    TicksExecuteInEditor.RemoveAt(i);
-                    break;
-                }
-            }
-        }
+        void RemoveTickExecuteInEditor(void* callee);
+        void TickExecuteInEditor();
 #endif
 
-        void Clear()
-        {
-            Scripts.Clear();
-            Ticks.Clear();
-#if USE_EDITOR
-            ScriptsExecuteInEditor.Clear();
-            TicksExecuteInEditor.Clear();
-#endif
-        }
+        void Clear();
     };
 
-    class FixedUpdateTickData : public TickData
+    class FLAXENGINE_API FixedUpdateTickData : public TickData
     {
     public:
 
-        FixedUpdateTickData()
-            : TickData(512)
-        {
-        }
-
+        FixedUpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class UpdateTickData : public TickData
+    class FLAXENGINE_API UpdateTickData : public TickData
     {
     public:
 
-        UpdateTickData()
-            : TickData(1024)
-        {
-        }
-
+        UpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class LateUpdateTickData : public TickData
+    class FLAXENGINE_API LateUpdateTickData : public TickData
     {
     public:
 
-        LateUpdateTickData()
-            : TickData(64)
-        {
-        }
-
+        LateUpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
-
-private:
-
-    Scene* Scene;
-
-    explicit SceneTicking(::Scene* scene);
 
 public:
 

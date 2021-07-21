@@ -13,6 +13,42 @@ namespace Flax.Build
     /// </summary>
     public static partial class Builder
     {
+        private static void CleanDirectory(DirectoryInfo dir)
+        {
+            var subdirs = dir.GetDirectories();
+            foreach (var subdir in subdirs)
+            {
+                CleanDirectory(subdir);
+            }
+
+            var files = dir.GetFiles();
+            foreach (var file in files)
+            {
+                try
+                {
+                    file.Delete();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    File.SetAttributes(file.FullName, FileAttributes.Normal);
+                    file.Delete();
+                }
+                catch
+                {
+                    // Skip errors
+                }
+            }
+
+            try
+            {
+                dir.Delete();
+            }
+            catch
+            {
+                // Skip errors
+            }
+        }
+
         /// <summary>
         /// Cleans the build system cache and intermediate results.
         /// </summary>
@@ -20,8 +56,97 @@ namespace Flax.Build
         {
             using (new ProfileEventScope("Clean"))
             {
-                var graph = new TaskGraph(Globals.Root);
+                // Clear task graph cache
+                var project = Globals.Project;
+                TaskGraph graph;
+                if (project == null)
+                {
+                    graph = new TaskGraph(Globals.Root);
+                    graph.CleanCache();
+                    return;
+                }
+                graph = new TaskGraph(project.ProjectFolderPath);
                 graph.CleanCache();
+
+                // Pick targets to clean
+                var customBuildTargets = Configuration.BuildTargets;
+                var projectTargets = GetProjectTargets(project);
+                var targets = customBuildTargets == null ? projectTargets : projectTargets.Where(target => customBuildTargets.Contains(target.Name)).ToArray();
+                foreach (var target in targets)
+                {
+                    // Pick configurations to clean
+                    TargetConfiguration[] configurations = Configuration.BuildConfigurations;
+                    if (configurations != null)
+                    {
+                        foreach (var configuration in configurations)
+                        {
+                            if (!target.Configurations.Contains(configuration))
+                                throw new Exception(string.Format("Target {0} does not support {1} configuration.", target.Name, configuration));
+                        }
+                    }
+                    else
+                    {
+                        configurations = target.Configurations;
+                    }
+
+                    foreach (var configuration in configurations)
+                    {
+                        // Pick platforms to clean
+                        TargetPlatform[] platforms = Configuration.BuildPlatforms;
+                        if (platforms != null)
+                        {
+                            foreach (var platform in platforms)
+                            {
+                                if (!target.Platforms.Contains(platform))
+                                    throw new Exception(string.Format("Target {0} does not support {1} platform.", target.Name, platform));
+                            }
+                        }
+                        else
+                        {
+                            platforms = target.Platforms;
+                        }
+
+                        foreach (var targetPlatform in platforms)
+                        {
+                            if (!Platform.BuildPlatform.CanBuildPlatform(targetPlatform))
+                                continue;
+
+                            // Pick architectures to build
+                            TargetArchitecture[] architectures = Configuration.BuildArchitectures;
+                            if (architectures != null)
+                            {
+                                foreach (var e in architectures)
+                                {
+                                    if (!target.Architectures.Contains(e))
+                                        throw new Exception(string.Format("Target {0} does not support {1} architecture.", target.Name, e));
+                                }
+                            }
+                            else
+                            {
+                                architectures = target.GetArchitectures(targetPlatform);
+                            }
+
+                            foreach (var architecture in architectures)
+                            {
+                                if (!Platform.IsPlatformSupported(targetPlatform, architecture))
+                                    continue;
+                                //throw new Exception(string.Format("Platform {0} {1} is not supported.", targetPlatform, architecture));
+
+                                var platform = Platform.GetPlatform(targetPlatform);
+                                var toolchain = platform.GetToolchain(architecture);
+                                var targetBuildOptions = GetBuildOptions(target, toolchain.Platform, toolchain, toolchain.Architecture, configuration, project.ProjectFolderPath, string.Empty);
+
+                                // Delete all intermediate files
+                                var intermediateFolder = new DirectoryInfo(targetBuildOptions.IntermediateFolder);
+                                if (intermediateFolder.Exists)
+                                {
+                                    Log.Info("Removing: " + targetBuildOptions.IntermediateFolder);
+                                    CleanDirectory(intermediateFolder);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -110,6 +235,21 @@ namespace Flax.Build
                 var customBuildTargets = Configuration.BuildTargets;
                 var projectTargets = GetProjectTargets(project);
                 var targets = customBuildTargets == null ? projectTargets : projectTargets.Where(target => customBuildTargets.Contains(target.Name)).ToArray();
+                if (customBuildTargets != null)
+                {
+                    var targetsList = new List<Target>(customBuildTargets.Length);
+                    foreach (var customBuildTarget in customBuildTargets)
+                    {
+                        var target = projectTargets.FirstOrDefault(x => string.Equals(x.Name, customBuildTarget, StringComparison.InvariantCultureIgnoreCase));
+                        if (target != null)
+                            targetsList.Add(target);
+                        else
+                            Log.Error("Missing target " + customBuildTarget);
+                    }
+                    targets = targetsList.ToArray();
+                }
+                if (targets.Length == 0)
+                    Log.Warning("No targets to build");
 
                 // Create task graph for building all targets
                 var graph = new TaskGraph(project.ProjectFolderPath);
@@ -173,6 +313,7 @@ namespace Flax.Build
                                 //throw new Exception(string.Format("Platform {0} {1} is not supported.", targetPlatform, architecture));
 
                                 var platform = Platform.GetPlatform(targetPlatform);
+                                var toolchain = platform.GetToolchain(architecture);
 
                                 // Special case: building C# bindings only (eg. when building Linux game on Windows without C++ scripting or for C#-only projects)
                                 if (Configuration.BuildBindingsOnly || (project.IsCSharpOnlyProject && platform.HasModularBuildSupport))
@@ -186,7 +327,7 @@ namespace Flax.Build
                                         switch (target.Type)
                                         {
                                         case TargetType.NativeCpp:
-                                            BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, platform, architecture, configuration);
+                                            BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, toolchain, platform, architecture, configuration);
                                             break;
                                         case TargetType.DotNet:
                                             BuildTargetDotNet(rules, graph, target, platform, configuration);
@@ -196,8 +337,6 @@ namespace Flax.Build
                                     }
                                     continue;
                                 }
-
-                                var toolchain = platform.GetToolchain(architecture);
 
                                 using (new ProfileEventScope(target.Name))
                                 {

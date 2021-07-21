@@ -4,6 +4,7 @@
 
 #include "MaterialShader.h"
 #include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Types/Span.h"
 
 // Material shader features are plugin-based functionalities that are reusable between different material domains.
 struct MaterialShaderFeature
@@ -35,7 +36,7 @@ struct ForwardShadingFeature : MaterialShaderFeature
         LightData LocalLights[MaxLocalLights];
         });
 
-    static void Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv);
+    static void Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR
     static void Generate(GeneratorData& data);
 #endif
@@ -67,7 +68,7 @@ struct LightmapFeature : MaterialShaderFeature
         Rectangle LightmapArea;
         });
 
-    static bool Bind(MaterialShader::BindParameters& params, byte*& cb, int32& srv);
+    static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR
     static void Generate(GeneratorData& data);
 #endif

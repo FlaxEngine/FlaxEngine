@@ -11,29 +11,25 @@ bool ValidateStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Performing validation"), 0);
 
     // Ensure output and cache directories exist
-    if (!FileSystem::DirectoryExists(data.CodeOutputPath))
+    if (!FileSystem::DirectoryExists(data.NativeCodeOutputPath) && FileSystem::CreateDirectory(data.NativeCodeOutputPath))
     {
-        if (FileSystem::CreateDirectory(data.CodeOutputPath))
-        {
-            data.Error(TEXT("Failed to create build output directory."));
-            return true;
-        }
+        data.Error(TEXT("Failed to create build output directory."));
+        return true;
     }
-    if (!FileSystem::DirectoryExists(data.DataOutputPath))
+    if (!FileSystem::DirectoryExists(data.ManagedCodeOutputPath) && FileSystem::CreateDirectory(data.ManagedCodeOutputPath))
     {
-        if (FileSystem::CreateDirectory(data.DataOutputPath))
-        {
-            data.Error(TEXT("Failed to create build output directory."));
-            return true;
-        }
+        data.Error(TEXT("Failed to create build output directory."));
+        return true;
     }
-    if (!FileSystem::DirectoryExists(data.CacheDirectory))
+    if (!FileSystem::DirectoryExists(data.DataOutputPath) && FileSystem::CreateDirectory(data.DataOutputPath))
     {
-        if (FileSystem::CreateDirectory(data.CacheDirectory))
-        {
-            data.Error(TEXT("Failed to create build cache directory."));
-            return true;
-        }
+        data.Error(TEXT("Failed to create build output directory."));
+        return true;
+    }
+    if (!FileSystem::DirectoryExists(data.CacheDirectory) && FileSystem::CreateDirectory(data.CacheDirectory))
+    {
+        data.Error(TEXT("Failed to create build cache directory."));
+        return true;
     }
 
 #if OFFICIAL_BUILD

@@ -102,6 +102,23 @@ bool CommandLine::Parse(const Char* cmdLine)
 			*(end - len) = 0; \
 			end -= len; \
 		}
+    
+#define PARSE_ARG_OPT_SWITCH(text, field) \
+		pos = (Char*)StringUtils::FindIgnoreCase(buffer.Get(), TEXT(text)); \
+		if (pos) \
+		{ \
+			len = ARRAY_COUNT(text) - 1; \
+			if (ParseArg(pos + len, argStart, argEnd)) \
+				Options.field = String::Empty; \
+			else \
+            { \
+			    Options.field = String(argStart, static_cast<int32>(argEnd - argStart)); \
+			    len = static_cast<int32>((argEnd - pos) + 1); \
+			    Platform::MemoryCopy(pos, pos + len, (end - pos - len) * 2); \
+			    *(end - len) = 0; \
+			    end -= len; \
+			} \
+		}
 
     PARSE_BOOL_SWITCH("-windowed ", Windowed);
     PARSE_BOOL_SWITCH("-fullscreen ", Fullscreen);
@@ -109,7 +126,10 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-novsync ", NoVSync);
     PARSE_BOOL_SWITCH("-nolog ", NoLog);
     PARSE_BOOL_SWITCH("-std ", Std);
+#if !BUILD_RELEASE
     PARSE_ARG_SWITCH("-debug ", DebuggerAddress);
+    PARSE_BOOL_SWITCH("-debugwait ", WaitForDebugger);
+#endif
 #if PLATFORM_HAS_HEADLESS_MODE
     PARSE_BOOL_SWITCH("-headless ", Headless);
 #endif
@@ -134,6 +154,7 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_ARG_SWITCH("-build ", Build);
     PARSE_BOOL_SWITCH("-skipcompile ", SkipCompile);
     PARSE_BOOL_SWITCH("-shaderdebug ", ShaderDebug);
+    PARSE_ARG_OPT_SWITCH("-play ", Play);
 
 #endif
 

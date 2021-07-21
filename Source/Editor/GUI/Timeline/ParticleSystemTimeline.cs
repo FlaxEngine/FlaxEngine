@@ -94,6 +94,7 @@ namespace FlaxEditor.GUI.Timeline
                         {
                             var track = (ParticleEmitterTrack)timeline.NewTrack(ParticleEmitterTrack.GetArchetype());
                             track.Asset = emitter;
+                            track.TrackMedia.DurationFrames = timeline.DurationFrames;
                             track.Rename(assetItem.ShortName);
                             timeline.AddTrack(track);
                         }

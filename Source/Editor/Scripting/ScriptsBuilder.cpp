@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Threading/ThreadPool.h"
@@ -21,6 +22,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
 
@@ -211,6 +213,7 @@ void ScriptsBuilder::Compile()
 
 bool ScriptsBuilder::RunBuildTool(const StringView& args)
 {
+    PROFILE_CPU();
     const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
     if (!FileSystem::FileExists(buildToolPath))
     {
@@ -268,6 +271,7 @@ void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& classNam
 
 MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 {
+    PROFILE_CPU();
     const MString scriptNameStd = scriptName.ToStringAnsi();
 
     const ScriptingTypeHandle scriptingType = Scripting::FindScriptingType(scriptNameStd);
@@ -303,7 +307,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
                 GetClassName(mclass->GetFullName(), mclassName);
                 if (className == mclassName)
                 {
-                    LOG(Info, "Found {0} type for type {1} (assembly {2})", mclass->ToString(), String(scriptName.Get(), scriptName.Length()), assembly->ToString());
+                    LOG(Info, "Found {0} type for type {1} (assembly {2})", String(mclass->GetFullName()), String(scriptName.Get(), scriptName.Length()), assembly->ToString());
                     return mclass;
                 }
             }

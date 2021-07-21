@@ -75,6 +75,7 @@ namespace FlaxEditor.Content
             }
         }
 
+        /// <inheritdoc />
         public int MetadataToken => 0;
 
         /// <inheritdoc />
@@ -538,7 +539,19 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CodeScript64;
+        public override bool OnEditorDrag(object context)
+        {
+            return new ScriptType(typeof(Actor)).IsAssignableFrom(ScriptType) && ScriptType.CanCreateInstance;
+        }
+
+        /// <inheritdoc />
+        public override Actor OnEditorDrop(object context)
+        {
+            return (Actor)ScriptType.CreateInstance();
+        }
+
+        /// <inheritdoc />
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.VisualScript128;
 
         /// <inheritdoc />
         protected override bool DrawShadow => false;

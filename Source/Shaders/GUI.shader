@@ -14,7 +14,7 @@ META_CB_END
 
 META_CB_BEGIN(1, BlurData)
 float2 InvBufferSize;
-int SampleCount;
+uint SampleCount;
 float Dummy0;
 float4 Bounds;
 float4 WeightAndOffsets[MAX_SAMPLES / 2];
@@ -148,9 +148,9 @@ float4 PS_Blur(Quad_VS2PS input) : SV_Target0
 		result += GetSample(weight, offset, uv);
 	}
 
-	for (int i = 2; i < SampleCount; i += 2)
+	for (uint i = 2; i < SampleCount; i += 2)
 	{
-		int index = i / 2;
+		uint index = i / 2;
 		{
 			float weight = WeightAndOffsets[index].x;
 			float offset = WeightAndOffsets[index].y;

@@ -46,20 +46,8 @@ private:
 
 public:
 
-    // Create new graphics device (returns null if failed)
-    // @returns Created device or null
     static GPUDevice* Create();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUDeviceDX11"/> class.
-    /// </summary>
-    /// <param name="dxgiFactory">The DXGI factory handle.</param>
-    /// <param name="adapter">The GPU device adapter.</param>
     GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUDeviceDX11"/> class.
-    /// </summary>
     ~GPUDeviceDX11();
 
 public:
@@ -111,6 +99,7 @@ public:
     GPUPipelineState* CreatePipelineState() override;
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
 };
 
@@ -122,9 +111,8 @@ class IGPUResourceDX11
 public:
 
     /// <summary>
-    /// Gets DirectX 11 resource object handle
+    /// Gets DirectX 11 resource object handle.
     /// </summary>
-    /// <returns>DirectX 11 resource object handle</returns>
     virtual ID3D11Resource* GetResource() = 0;
 };
 

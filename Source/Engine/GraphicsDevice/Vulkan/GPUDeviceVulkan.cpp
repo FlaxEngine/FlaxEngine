@@ -13,6 +13,7 @@
 #include "GPUTextureVulkan.h"
 #include "GPUTimerQueryVulkan.h"
 #include "GPUBufferVulkan.h"
+#include "GPUSamplerVulkan.h"
 #include "GPUSwapChainVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "QueueVulkan.h"
@@ -27,6 +28,7 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -60,7 +62,6 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
     {
         msgPrefix = TEXT("ERROR");
-
         if (!StringUtils::Compare(layerPrefix, "SC"))
         {
             if (msgCode == 3)
@@ -78,7 +79,6 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
     {
         msgPrefix = TEXT("WARN");
-
         if (!StringUtils::Compare(layerPrefix, "SC"))
         {
             if (msgCode == 2)
@@ -91,7 +91,6 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     else if (msgFlags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
     {
         msgPrefix = TEXT("PERF");
-
         if (!StringUtils::Compare(layerPrefix, "SC"))
         {
             if (msgCode == 2)
@@ -117,14 +116,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
     {
         msgPrefix = TEXT("DEBUG");
     }
-    else
-    {
-        CRASH;
-    }
 
-    // Send info
     LOG(Info, "[Vulkan] {0}:{1}:{2} {3}", msgPrefix, String(layerPrefix), msgCode, String(msg));
-
     return VK_FALSE;
 }
 
@@ -144,10 +137,11 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 2: // Fragment shader writes to output location 0 with no matching attachment
         case 3: // Attachment 2 not written by fragment shader
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
-#if PLATFORM_ANDROID
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
         case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
-#endif
+        case 7060244: //  Image Operand Offset can only be used with OpImage*Gather operations
+        case -1539028524: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
+        case -1810835948: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
             return VK_FALSE;
         }
         break;
@@ -155,11 +149,8 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         switch (callbackData->messageIdNumber)
         {
         case 0: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
-#if PLATFORM_ANDROID
-            // TODO: implement preTransform for Android to improve swapchain presentation performance
-        case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation.
+        case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation. TODO: implement preTransform for Android to improve swapchain presentation performance
         case 101294395: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
-#endif
             return VK_FALSE;
         }
         break;
@@ -218,18 +209,14 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         type = TEXT("Perf");
     }
 
-    // Send info
     if (callbackData->pMessageIdName)
-    {
         LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), String(callbackData->pMessage));
-    }
     else
-    {
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessage));
-    }
 
     return VK_FALSE;
 }
+
 #endif
 
 void SetupDebugLayerCallback()
@@ -352,7 +339,7 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
 
 void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 {
-    ScopeLock lock(&_locker);
+    ScopeLock lock(_locker);
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
     for (int32 i = 0; i < _entries.Count(); i++)
     {
@@ -383,7 +370,7 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 #undef SWITCH_CASE
                 default:
 #if !BUILD_RELEASE
-                CRASH;
+                    CRASH;
 #endif
                     break;
                 }
@@ -441,12 +428,14 @@ uint32 GetHash(const RenderTargetLayoutVulkan& key)
     uint32 hash = (int32)key.MSAA * 11;
     CombineHash(hash, (uint32)key.ReadDepth);
     CombineHash(hash, (uint32)key.WriteDepth);
+    CombineHash(hash, (uint32)key.BlendEnable);
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
     CombineHash(hash, key.RTsCount * 136);
+    CombineHash(hash, key.Extent.width);
+    CombineHash(hash, key.Extent.height);
+    CombineHash(hash, key.Layers);
     for (int32 i = 0; i < ARRAY_COUNT(key.RTVsFormats); i++)
-    {
         CombineHash(hash, (uint32)key.RTVsFormats[i]);
-    }
     return hash;
 }
 
@@ -455,13 +444,11 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     uint32 hash = (int32)(intptr)key.RenderPass;
     CombineHash(hash, (uint32)key.AttachmentCount * 136);
     for (int32 i = 0; i < ARRAY_COUNT(key.Attachments); i++)
-    {
         CombineHash(hash, (uint32)(intptr)key.Attachments[i]);
-    }
     return hash;
 }
 
-FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent3D& extent, uint32 layers)
+FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers)
     : _device(device)
     , _handle(VK_NULL_HANDLE)
     , Extent(extent)
@@ -520,8 +507,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.flags = 0;
         attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        //attachment.loadOp = currentBlendDesc->BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE; // TODO: Only if any destination blend?
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: only load when using blend mode
+        attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -745,11 +731,12 @@ void InitSampler(VkSamplerCreateInfo& createInfo, bool supportsMirrorClampToEdge
     createInfo.compareOp = RenderToolsVulkan::ToVulkanSamplerCompareFunction(compareFunction);
 }
 
-VkSampler HelperResourcesVulkan::GetStaticSampler(StaticSamplers type)
+VkSampler* HelperResourcesVulkan::GetStaticSamplers()
 {
+    static_assert(GPU_STATIC_SAMPLERS_COUNT == 6, "Update static samplers setup.");
     if (!_staticSamplers[0])
     {
-        const bool supportsMirrorClampToEdge = _device->OptionalDeviceExtensions.HasMirrorClampToEdge;
+        const bool supportsMirrorClampToEdge = GPUDeviceVulkan::OptionalDeviceExtensions.HasMirrorClampToEdge;
 
         VkSamplerCreateInfo createInfo;
         RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
@@ -784,8 +771,7 @@ VkSampler HelperResourcesVulkan::GetStaticSampler(StaticSamplers type)
         InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[5]));
     }
-
-    return _staticSamplers[static_cast<int32>(type)];
+    return _staticSamplers;
 }
 
 GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType type)
@@ -812,7 +798,7 @@ GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType
         index = 5;
         break;
     default:
-    CRASH;
+        CRASH;
         return nullptr;
     }
 
@@ -877,11 +863,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
 
 void HelperResourcesVulkan::Dispose()
 {
-    for (int32 i = 0; i < ARRAY_COUNT(_dummyTextures); i++)
-    {
-        SAFE_DELETE_GPU_RESOURCE(_dummyTextures[i]);
-    }
-
+    SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
     SAFE_DELETE_GPU_RESOURCE(_dummyBuffer);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
 
@@ -1040,7 +1022,7 @@ void StagingManagerVulkan::Dispose()
     ScopeLock lock(_locker);
 
 #if !BUILD_RELEASE
-    LOG(Info, "Vulakn staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
+    LOG(Info, "Vulkan staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
 #endif
 
     // Release buffers and clear memory
@@ -1187,7 +1169,7 @@ GPUDevice* GPUDeviceVulkan::Create()
     volkLoadInstance(Instance);
 #endif
 
-// Setup debug layer
+    // Setup debug layer
 #if VULKAN_USE_DEBUG_LAYER
     SetupDebugLayerCallback();
 #endif
@@ -1274,33 +1256,23 @@ GPUDeviceVulkan::~GPUDeviceVulkan()
 
 RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout)
 {
-    // Try reuse cached version
     RenderPassVulkan* renderPass;
     if (_renderPasses.TryGet(layout, renderPass))
-    {
         return renderPass;
-    }
 
     PROFILE_CPU_NAMED("Create Render Pass");
-
-    // Create object and cache it
     renderPass = New<RenderPassVulkan>(this, layout);
     _renderPasses.Add(layout, renderPass);
     return renderPass;
 }
 
-FramebufferVulkan* GPUDeviceVulkan::GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent3D& extent, uint32 layers)
+FramebufferVulkan* GPUDeviceVulkan::GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent2D& extent, uint32 layers)
 {
-    // Try reuse cached version
     FramebufferVulkan* framebuffer;
     if (_framebuffers.TryGet(key, framebuffer))
-    {
         return framebuffer;
-    }
 
     PROFILE_CPU_NAMED("Create Framebuffer");
-
-    // Create object and cache it
     framebuffer = New<FramebufferVulkan>(this, key, extent, layers);
     _framebuffers.Add(key, framebuffer);
     return framebuffer;
@@ -1308,16 +1280,11 @@ FramebufferVulkan* GPUDeviceVulkan::GetOrCreateFramebuffer(FramebufferVulkan::Ke
 
 PipelineLayoutVulkan* GPUDeviceVulkan::GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key)
 {
-    // Try reuse cached version
     PipelineLayoutVulkan* layout;
     if (_layouts.TryGet(key, layout))
-    {
         return layout;
-    }
 
     PROFILE_CPU_NAMED("Create Pipeline Layout");
-
-    // Create object and cache it
     layout = New<PipelineLayoutVulkan>(this, key);
     _layouts.Add(key, layout);
     return layout;
@@ -1701,15 +1668,20 @@ bool GPUDeviceVulkan::Init()
         auto& limits = Limits;
         limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && PhysicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && PhysicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
         limits.HasTessellation = !!PhysicalDeviceFeatures.tessellationShader && PhysicalDeviceLimits.maxBoundDescriptorSets > (uint32_t)DescriptorSet::Domain;
-        limits.HasGeometryShaders = false; // TODO: add geometry shaders support for Vulkan
+#if PLATFORM_ANDROID
+        limits.HasGeometryShaders = false; // Don't even try GS on mobile
+#else
+        limits.HasGeometryShaders = !!PhysicalDeviceFeatures.geometryShader;
+#endif
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
-        limits.HasDrawIndirect = false; // TODO: add Draw Indirect support for Vulkan
+        limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
+        limits.HasTypedUAVLoad = true;
         limits.MaximumMipLevelsCount = Math::Min(static_cast<int32>(log2(PhysicalDeviceLimits.maxImageDimension2D)), GPU_MAX_TEXTURE_MIP_LEVELS);
         limits.MaximumTexture1DSize = PhysicalDeviceLimits.maxImageDimension1D;
         limits.MaximumTexture1DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;
@@ -1717,6 +1689,7 @@ bool GPUDeviceVulkan::Init()
         limits.MaximumTexture2DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;
         limits.MaximumTexture3DSize = PhysicalDeviceLimits.maxImageDimension3D;
         limits.MaximumTextureCubeSize = PhysicalDeviceLimits.maxImageDimensionCube;
+        limits.MaximumSamplerAnisotropy = PhysicalDeviceLimits.maxSamplerAnisotropy;
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -1980,6 +1953,11 @@ GPUTimerQuery* GPUDeviceVulkan::CreateTimerQuery()
 GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferVulkan>(this, name);
+}
+
+GPUSampler* GPUDeviceVulkan::CreateSampler()
+{
+    return New<GPUSamplerVulkan>(this);
 }
 
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)

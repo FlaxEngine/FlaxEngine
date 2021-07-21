@@ -723,12 +723,6 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            // Check if mouse hits bar
-            if (button == MouseButton.Right && TestHeaderHit(ref location))
-            {
-                ParentTree.OnRightClickInternal(this, ref location);
-            }
-
             // Clear flag for left button
             if (button == MouseButton.Left)
             {
@@ -773,9 +767,21 @@ namespace FlaxEditor.GUI.Tree
                         Expand();
                 }
 
+                // Check if mouse hits bar
+                if (button == MouseButton.Right && TestHeaderHit(ref location))
+                {
+                    ParentTree.OnRightClickInternal(this, ref location);
+                }
+
                 // Handled
                 Focus();
                 return true;
+            }
+
+            // Check if mouse hits bar
+            if (button == MouseButton.Right && TestHeaderHit(ref location))
+            {
+                ParentTree.OnRightClickInternal(this, ref location);
             }
 
             // Base

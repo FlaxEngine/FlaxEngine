@@ -4,6 +4,7 @@
 #include "FontAsset.h"
 #include "FontManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 
 Font::Font(FontAsset* parentAsset, int32 size)
@@ -166,7 +167,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             xAdvance = (kerning + entry.AdvanceX) * scale;
 
             // Check if character fits the line or skip wrapping
-            if (cursorX + xAdvance < boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
+            if (cursorX + xAdvance <= boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
             {
                 // Move character
                 cursorX += xAdvance;
@@ -440,5 +441,5 @@ void Font::FlushFaceSize() const
 
 String Font::ToString() const
 {
-    return String::Format(TEXT("Font {0} {1}"), _asset->GetFamilyName(), _size);
+    return String::Format(TEXT("Font {0} {1}"), _asset ? _asset->GetFamilyName() : String::Empty, _size);
 }

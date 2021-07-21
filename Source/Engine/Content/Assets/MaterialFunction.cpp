@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MaterialFunction.h"
+#include "Engine/Threading/Threading.h"
 #if COMPILE_WITH_MATERIAL_GRAPH
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
@@ -8,7 +9,7 @@
 #endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
-REGISTER_BINARY_ASSET(MaterialFunction, "FlaxEngine.MaterialFunction", nullptr, false);
+REGISTER_BINARY_ASSET(MaterialFunction, "FlaxEngine.MaterialFunction", false);
 
 MaterialFunction::MaterialFunction(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)

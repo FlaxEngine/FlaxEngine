@@ -90,7 +90,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     }
 
     // Generate depth
-    MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer->View(), HalfResDepth->View());
+    MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer, HalfResDepth->View());
 
     return HalfResDepth;
 }
@@ -98,10 +98,8 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
 uint64 RenderBuffers::GetMemoryUsage() const
 {
     uint64 result = 0;
-
     for (int32 i = 0; i < _resources.Count(); i++)
         result += _resources[i]->GetMemoryUsage();
-
     return result;
 }
 

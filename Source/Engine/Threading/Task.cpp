@@ -108,45 +108,6 @@ Task* Task::ContinueWith(Function<bool()> action, Object* target)
     return ContinueWith(New<ThreadPoolActionTask>(action, target));
 }
 
-Task* Task::Delay(int32 milliseconds)
-{
-    class DelayTask : public ThreadPoolTask
-    {
-    private:
-
-        int32 _milliseconds;
-        DateTime _startTimeUTC;
-
-    public:
-
-        DelayTask(int32 milliseconds)
-            : _milliseconds(milliseconds)
-        {
-        }
-
-    protected:
-
-        // [ThreadPoolTask]
-        bool Run() override
-        {
-            // Take into account the different between task enqueue (OnStart event) and the actual task execution
-            auto diff = DateTime::NowUTC() - _startTimeUTC;
-            auto ms = Math::Max(0, _milliseconds - (int32)diff.GetTotalMilliseconds());
-
-            Platform::Sleep(ms);
-
-            return false;
-        }
-
-        void OnStart() override
-        {
-            _startTimeUTC = DateTime::NowUTC();
-        }
-    };
-
-    return New<DelayTask>(milliseconds);
-}
-
 Task* Task::StartNew(Task* task)
 {
     ASSERT(task);

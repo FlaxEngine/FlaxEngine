@@ -270,7 +270,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDynamic.pDynamicStates = _dynamicStates;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
-    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    //_dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
     static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
@@ -308,6 +308,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pRasterizationState = &_descRasterization;
 
     // Color Blend State
+    BlendEnable = desc.BlendMode.BlendEnable;
     RenderToolsVulkan::ZeroStruct(_descColorBlend, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
     {
         auto& blend = _descColorBlendAttachments[0];
@@ -321,9 +322,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         blend.colorWriteMask = (VkColorComponentFlags)desc.BlendMode.RenderTargetWriteMask;
     }
     for (int32 i = 1; i < GPU_MAX_RT_BINDED; i++)
-    {
         _descColorBlendAttachments[i] = _descColorBlendAttachments[i - 1];
-    }
     _descColorBlend.pAttachments = _descColorBlendAttachments;
     _descColorBlend.blendConstants[0] = 0.0f;
     _descColorBlend.blendConstants[1] = 0.0f;

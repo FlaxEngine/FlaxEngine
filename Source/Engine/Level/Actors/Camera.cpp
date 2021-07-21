@@ -5,24 +5,27 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Platform/Window.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Level/Scene/SceneRendering.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #else
 #include "Engine/Engine/Engine.h"
+#include "Engine/Platform/Window.h"
 #endif
 
 Array<Camera*> Camera::Cameras;
 Camera* Camera::CutSceneCamera = nullptr;
-Camera* Camera::OverrideMainCamera = nullptr;
+ScriptingObjectReference<Camera> Camera::OverrideMainCamera;
 
 Camera* Camera::GetMainCamera()
 {
-    if (OverrideMainCamera)
-        return OverrideMainCamera;
+    Camera* overrideMainCamera = OverrideMainCamera.Get();
+    if (overrideMainCamera)
+        return overrideMainCamera;
     if (CutSceneCamera)
         return CutSceneCamera;
     return Cameras.HasItems() ? Cameras.First() : nullptr;

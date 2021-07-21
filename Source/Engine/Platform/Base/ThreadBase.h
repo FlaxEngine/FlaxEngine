@@ -45,7 +45,6 @@ public:
     /// <summary>
     /// Gets priority level of the thread.
     /// </summary>
-    /// <returns>The thread priority level.</returns>
     FORCE_INLINE ThreadPriority GetPriority() const
     {
         return _priority;
@@ -60,7 +59,6 @@ public:
     /// <summary>
     /// Gets thread ID
     /// </summary>
-    /// <returns>Thread ID</returns>
     FORCE_INLINE uint64 GetID() const
     {
         return _id;
@@ -69,7 +67,6 @@ public:
     /// <summary>
     /// Gets thread running state.
     /// </summary>
-    /// <returns>True if thread is running, otherwise false</returns>
     FORCE_INLINE bool IsRunning() const
     {
         return _isRunning;
@@ -78,7 +75,6 @@ public:
     /// <summary>
     /// Gets name of the thread.
     /// </summary>
-    /// <returns>The thread name.</returns>
     FORCE_INLINE const String& GetName() const
     {
         return _name;

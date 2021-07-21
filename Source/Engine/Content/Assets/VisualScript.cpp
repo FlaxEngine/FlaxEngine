@@ -17,7 +17,9 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/JsonWriter.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "FlaxEngine.Gen.h"
 
 namespace
@@ -28,7 +30,7 @@ namespace
         VisualScripting::StackFrame* Stack;
     };
 
-    ThreadLocal<VisualScriptThread, 32> ThreadStacks;
+    ThreadLocal<VisualScriptThread> ThreadStacks;
     VisualScriptingBinaryModule VisualScriptingModule;
     VisualScriptExecutor VisualScriptingExecutor;
 
@@ -80,6 +82,41 @@ VisualScriptExecutor::VisualScriptExecutor()
     _perGroupProcessCall[7] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupTools;
     _perGroupProcessCall[16] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupFunction;
     _perGroupProcessCall[17] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupFlow;
+}
+
+void VisualScriptExecutor::Invoke(const Guid& scriptId, int32 nodeId, int32 boxId, const Guid& instanceId, Variant& result) const
+{
+    auto script = Content::Load<VisualScript>(scriptId);
+    if (!script)
+        return;
+    const auto node = script->Graph.GetNode(nodeId);
+    if (!node)
+        return;
+    const auto box = node->GetBox(boxId);
+    if (!box)
+        return;
+    auto instance = Scripting::FindObject<ScriptingObject>(instanceId);
+
+    // Add to the calling stack
+    VisualScripting::ScopeContext scope;
+    auto& stack = ThreadStacks.Get();
+    VisualScripting::StackFrame frame;
+    frame.Script = script;
+    frame.Node = node;
+    frame.Box = box;
+    frame.Instance = instance;
+    frame.PreviousFrame = stack.Stack;
+    frame.Scope = &scope;
+    stack.Stack = &frame;
+    stack.StackFramesCount++;
+
+    // Call per group custom processing event
+    const auto func = VisualScriptingExecutor._perGroupProcessCall[node->GroupID];
+    (VisualScriptingExecutor.*func)(box, node, result);
+
+    // Remove from the calling stack
+    stack.StackFramesCount--;
+    stack.Stack = frame.PreviousFrame;
 }
 
 VisjectExecutor::Value VisualScriptExecutor::eatBox(Node* caller, Box* box)
@@ -1273,10 +1310,50 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Delay
+    case 6:
+    {
+        boxBase = node->GetBox(2);
+        if (!boxBase->HasConnection())
+            break;
+        const float duration = (float)tryGetValue(node->GetBox(1), node->Values[0]);
+        if (duration > ZeroTolerance)
+        {
+            class DelayTask : public MainThreadTask
+            {
+            public:
+                Guid Script;
+                Guid Instance;
+                int32 Node;
+                int32 Box;
+
+            protected:
+                bool Run() override
+                {
+                    Variant result;
+                    VisualScriptingExecutor.Invoke(Script, Node, Box, Instance, result);
+                    return false;
+                }
+            };
+            const auto& stack = ThreadStacks.Get().Stack;
+            auto task = New<DelayTask>();
+            task->Script = stack->Script->GetID();;
+            task->Instance = stack->Instance->GetID();;
+            task->Node = ((Node*)boxBase->FirstConnection()->Parent)->ID;
+            task->Box = boxBase->FirstConnection()->ID;
+            task->InitialDelay = duration;
+            task->Start();
+        }
+        else
+        {
+            eatBox(node, boxBase->FirstConnection());
+        }
+        break;
+    }
     }
 }
 
-REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", nullptr, false);
+REGISTER_BINARY_ASSET(VisualScript, "FlaxEngine.VisualScript", false);
 
 VisualScript::VisualScript(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
@@ -1329,6 +1406,7 @@ Asset::LoadResult VisualScript::load()
         {
         case GRAPH_NODE_MAKE_TYPE(16, 3):
         {
+            // Override method
             auto& method = _methods.AddOne();
             method.Script = this;
             method.Node = &node;
@@ -1342,6 +1420,7 @@ Asset::LoadResult VisualScript::load()
         }
         case GRAPH_NODE_MAKE_TYPE(16, 6):
         {
+            // Function
             auto& method = _methods.AddOne();
             method.Script = this;
             method.Node = &node;
@@ -1380,6 +1459,17 @@ Asset::LoadResult VisualScript::load()
         }
         }
     }
+#if COMPILE_WITH_PROFILER
+    for (auto& method : _methods)
+    {
+        const StringView assetName(StringUtils::GetFileNameWithoutExtension(GetPath()));
+        method.ProfilerName.Resize(assetName.Length() + 2 + method.Name.Length());
+        StringUtils::ConvertUTF162ANSI(assetName.Get(), method.ProfilerName.Get(), assetName.Length());
+        method.ProfilerName.Get()[assetName.Length()] = ':';
+        method.ProfilerName.Get()[assetName.Length() + 1] = ':';
+        Platform::MemoryCopy(method.ProfilerName.Get() + assetName.Length() + 2, method.Name.Get(), method.Name.Length());
+    }
+#endif
 
     // Setup fields list
     _fields.Resize(Graph.Parameters.Count());
@@ -1976,7 +2066,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
             auto& params = instanceParams->Value.Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
-                StringAnsiView idNameAnsi(i->name.GetString(), i->name.GetStringLength());
+                StringAnsiView idNameAnsi(i->name.GetStringAnsiView());
                 Guid paramId;
                 if (!Guid::Parse(idNameAnsi, paramId))
                 {
@@ -2132,7 +2222,7 @@ BytesContainer VisualScript::LoadSurface()
         return result;
     }
 
-    LOG(Warning, "\'{0}\' surface data is missing.", GetPath());
+    LOG(Warning, "\'{0}\' surface data is missing.", ToString());
     return BytesContainer();
 }
 
@@ -2284,6 +2374,7 @@ VisualScriptingBinaryModule* VisualScripting::GetBinaryModule()
 Variant VisualScripting::Invoke(VisualScript::Method* method, ScriptingObject* instance, Span<Variant> parameters)
 {
     CHECK_RETURN(method && method->Script->IsLoaded(), Variant::Zero);
+    PROFILE_CPU_NAMED(*method->ProfilerName);
 
     // Add to the calling stack
     ScopeContext scope;

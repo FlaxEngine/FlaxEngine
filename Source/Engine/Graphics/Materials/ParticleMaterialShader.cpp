@@ -57,9 +57,10 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
     const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
-    byte* cb = _cbData.Get();
-    auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb);
-    cb += sizeof(ParticleMaterialShaderData);
+    Span<byte> cb(_cbData.Get(), _cbData.Count());
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(ParticleMaterialShaderData));
+    auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb.Get());
+    cb = Span<byte>(cb.Get() + sizeof(ParticleMaterialShaderData), cb.Length() - sizeof(ParticleMaterialShaderData));
     int32 srv = 2;
 
     // Setup features
@@ -89,7 +90,8 @@ void ParticleMaterialShader::Bind(BindParameters& params)
             {
                 const StringView name(param.GetName().Get() + 9, param.GetName().Length() - 9);
                 const int32 offset = drawCall.Particle.Particles->Layout->FindAttributeOffset(name);
-                *((int32*)(bindMeta.Constants + param.GetBindOffset())) = offset;
+                ASSERT_LOW_LAYER(bindMeta.Constants.Get() && bindMeta.Constants.Length() >= (int32)param.GetBindOffset() + sizeof(int32));
+                *((int32*)(bindMeta.Constants.Get() + param.GetBindOffset())) = offset;
             }
         }
     }

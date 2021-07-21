@@ -29,10 +29,9 @@ public:
     ObjectsRemovalServiceService()
         : EngineService(TEXT("Objects Removal Service"), -1000)
     {
-        LastUpdate = DateTime::NowUTC();
-        LastUpdateGameTime = 0;
     }
 
+    bool Init() override;
     void LateUpdate() override;
     void Dispose() override;
 };
@@ -172,6 +171,13 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
             }
         }
     }
+}
+
+bool ObjectsRemovalServiceService::Init()
+{
+    LastUpdate = DateTime::NowUTC();
+    LastUpdateGameTime = 0;
+    return false;
 }
 
 void ObjectsRemovalServiceService::LateUpdate()

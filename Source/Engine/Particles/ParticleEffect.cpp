@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ParticleEffect.h"
-#include "ParticleManager.h"
+#include "Particles.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -270,7 +270,7 @@ void ParticleEffect::UpdateSimulation()
     // Request update
     _lastUpdateFrame = Engine::FrameCount;
     _lastMinDstSqr = MAX_float;
-    ParticleManager::UpdateEffect(this);
+    Particles::UpdateEffect(this);
 }
 
 void ParticleEffect::UpdateBounds()
@@ -311,6 +311,8 @@ void ParticleEffect::UpdateBounds()
 
     _box = bounds;
     BoundingSphere::FromBox(bounds, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
 }
 
 void ParticleEffect::Sync()
@@ -493,7 +495,7 @@ bool ParticleEffect::HasContentLoaded() const
 void ParticleEffect::Draw(RenderContext& renderContext)
 {
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
-    ParticleManager::DrawParticles(renderContext, this);
+    Particles::DrawParticles(renderContext, this);
 }
 
 void ParticleEffect::DrawGeneric(RenderContext& renderContext)
@@ -514,6 +516,12 @@ void ParticleEffect::OnDebugDrawSelected()
 }
 
 #endif
+
+void ParticleEffect::OnLayerChanged()
+{
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+}
 
 void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -679,7 +687,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
 void ParticleEffect::EndPlay()
 {
     CacheModifiedParameters();
-    ParticleManager::OnEffectDestroy(this);
+    Particles::OnEffectDestroy(this);
     Instance.ClearState();
     _parameters.Clear();
     _parametersVersion = 0;
@@ -691,7 +699,7 @@ void ParticleEffect::EndPlay()
 void ParticleEffect::OnEnable()
 {
     GetScene()->Ticking.Update.AddTick<ParticleEffect, &ParticleEffect::Update>(this);
-    GetSceneRendering()->AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
@@ -707,7 +715,7 @@ void ParticleEffect::OnDisable()
     GetScene()->Ticking.Update.RemoveTickExecuteInEditor(this);
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveGeometry(this);
+    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
     GetScene()->Ticking.Update.RemoveTick(this);
 
     // Base

@@ -5,9 +5,12 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 namespace
@@ -129,6 +132,11 @@ namespace
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
+}
+
+bool Mesh::HasVertexColors() const
+{
+    return _vertexBuffers[2] != nullptr && _vertexBuffers[2]->IsAllocated();
 }
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices)
@@ -356,7 +364,8 @@ void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
 
 void Mesh::Render(GPUContext* context) const
 {
-    ASSERT(IsInitialized());
+    if (!IsInitialized())
+        return;
 
     context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
     context->BindIB(_indexBuffer);
@@ -365,7 +374,7 @@ void Mesh::Render(GPUContext* context) const
 
 void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom) const
 {
-    if (!material || !material->IsSurface())
+    if (!material || !material->IsSurface() || !IsInitialized())
         return;
 
     // Submit draw call

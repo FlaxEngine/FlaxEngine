@@ -3,6 +3,7 @@
 #if GRAPHICS_API_VULKAN
 
 #include "GPUShaderVulkan.h"
+#include "GPUContextVulkan.h"
 #include "GPUShaderProgramVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "CmdBufferVulkan.h"
@@ -12,7 +13,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if PLATFORM_DESKTOP
-#define VULKAN_UNIFORM_RING_BUFFER_SIZE 16 * 1024 * 1024
+#define VULKAN_UNIFORM_RING_BUFFER_SIZE 24 * 1024 * 1024
 #else
 #define VULKAN_UNIFORM_RING_BUFFER_SIZE 8 * 1024 * 1024
 #endif
@@ -45,7 +46,7 @@ UniformBufferUploaderVulkan::UniformBufferUploaderVulkan(GPUDeviceVulkan* device
     LOG_VULKAN_RESULT(result);
 }
 
-UniformBufferUploaderVulkan::Allocation UniformBufferUploaderVulkan::Allocate(uint64 size, uint32 alignment, CmdBufferVulkan* cmdBuffer)
+UniformBufferUploaderVulkan::Allocation UniformBufferUploaderVulkan::Allocate(uint64 size, uint32 alignment, GPUContextVulkan* context)
 {
     alignment = Math::Max(_minAlignment, alignment);
     uint64 offset = Math::AlignUp<uint64>(_offset, alignment);
@@ -53,16 +54,12 @@ UniformBufferUploaderVulkan::Allocation UniformBufferUploaderVulkan::Allocate(ui
     // Check if wrap around ring buffer
     if (offset + size >= _size)
     {
-        if (_fenceCmdBuffer)
+        auto cmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
+        if (_fenceCmdBuffer && _fenceCounter == cmdBuffer->GetFenceSignaledCounter())
         {
-            if (_fenceCmdBuffer == cmdBuffer && _fenceCounter == cmdBuffer->GetFenceSignaledCounter())
-            {
-                LOG(Error, "Wrapped around the ring buffer. Requested more bytes than possible in the same cmd buffer!");
-            }
-            else if (_fenceCounter == _fenceCmdBuffer->GetFenceSignaledCounter())
-            {
-                LOG(Error, "Wrapped around the ring buffer! Need to wait on the GPU!!!");
-            }
+            LOG(Error, "Wrapped around the ring buffer! Need to wait on the GPU!");
+            context->Flush();
+            cmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
         }
 
         offset = 0;

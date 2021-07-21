@@ -6,6 +6,7 @@
 #include "Engine/Threading/Task.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Models/MeshBase.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #include "Physics.h"
 #include <ThirdParty/PhysX/cooking/PxCooking.h>

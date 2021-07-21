@@ -2,12 +2,13 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Array.h"
 #include "GPUBuffer.h"
 
 /// <summary>
 /// Dynamic GPU buffer that allows to update and use GPU data (index/vertex/other) during single frame (supports dynamic resizing)
 /// </summary>
-class FLAXENGINE_API DynamicBuffer : public NonCopyable
+class FLAXENGINE_API DynamicBuffer
 {
 protected:
 
@@ -16,6 +17,7 @@ protected:
     uint32 _stride;
 
 public:
+    NON_COPYABLE(DynamicBuffer);
 
     /// <summary>
     /// Init
@@ -40,13 +42,10 @@ public:
     /// <summary>
     /// Gets buffer (may be null since it's using 'late init' feature)
     /// </summary>
-    /// <returns>Buffer</returns>
     FORCE_INLINE GPUBuffer* GetBuffer() const
     {
         return _buffer;
     }
-
-public:
 
     /// <summary>
     /// Clear data (begin for writing)
@@ -71,7 +70,7 @@ public:
     /// </summary>
     /// <param name="bytes">Pointer to data to write</param>
     /// <param name="size">Amount of data to write (in bytes)</param>
-    FORCE_INLINE void Write(void* bytes, int32 size)
+    FORCE_INLINE void Write(const void* bytes, int32 size)
     {
         Data.Add((byte*)bytes, size);
     }

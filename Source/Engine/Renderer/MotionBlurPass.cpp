@@ -3,6 +3,7 @@
 #include "MotionBlurPass.h"
 #include "GBufferPass.h"
 #include "Renderer.h"
+#include "RenderList.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
@@ -10,6 +11,10 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/PostProcessSettings.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Engine/Time.h"
 
 PACK_STRUCT(struct Data {

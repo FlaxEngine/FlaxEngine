@@ -455,7 +455,7 @@ namespace FlaxEditor.Content
                 const float thumbnailInShadowSize = 50.0f;
                 var shadowRect = rectangle.MakeExpanded((DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
                 if (!_shadowIcon.IsValid)
-                    _shadowIcon = Editor.Instance.Icons.AssetShadow;
+                    _shadowIcon = Editor.Instance.Icons.AssetShadow128;
                 Render2D.DrawSprite(_shadowIcon, shadowRect);
             }
 

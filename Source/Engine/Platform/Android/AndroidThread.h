@@ -46,7 +46,7 @@ protected:
     int32 Start(pthread_attr_t& attr) override
     {
         const int result = pthread_create(&_thread, &attr, ThreadProc, this);
-        if (result != 0)
+        if (result == 0)
             pthread_setname_np(_thread, _name.ToStringAnsi().Get());
         return result;
     }
