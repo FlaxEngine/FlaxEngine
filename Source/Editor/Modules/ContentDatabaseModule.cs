@@ -867,14 +867,14 @@ namespace FlaxEditor.Modules
                 workspace = new ProjectTreeNode(project);
                 Projects.Add(workspace);
 
-                var contentFolder = Path.Combine(project.ProjectFolderPath, "Content");
+                var contentFolder = StringUtils.CombinePaths(project.ProjectFolderPath, "Content");
                 if (Directory.Exists(contentFolder))
                 {
                     workspace.Content = new MainContentTreeNode(workspace, ContentFolderType.Content, contentFolder);
                     workspace.Content.Folder.ParentFolder = workspace.Folder;
                 }
 
-                var sourceFolder = Path.Combine(project.ProjectFolderPath, "Source");
+                var sourceFolder = StringUtils.CombinePaths(project.ProjectFolderPath, "Source");
                 if (Directory.Exists(sourceFolder))
                 {
                     workspace.Source = new MainContentTreeNode(workspace, ContentFolderType.Source, sourceFolder);
