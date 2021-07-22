@@ -490,8 +490,7 @@ bool MCore::LoadEngine()
     MString configPathBuf = (Globals::MonoPath / TEXT("/etc/mono/config")).ToStringAnsi();
     configPath = *configPathBuf;
     const MString assembliesPath = (Globals::MonoPath / TEXT("/lib/mono/4.5")).ToStringAnsi();
-    //mono_set_assemblies_path(*assembliesPath);
-    //setenv("MONO_PATH", *assembliesPath, 1);
+    mono_set_assemblies_path(*assembliesPath);
 #endif
     mono_config_parse(configPath);
 
@@ -523,6 +522,9 @@ bool MCore::LoadEngine()
 #if PLATFORM_UWP
 	// Change the app root to Mono sub directory to prevent loading .Net Core assemblies from the AppX root folder
 	configDir += "\\Mono";
+#elif PLATFORM_SWITCH
+    // Make config file path absolute
+    configFilename = exePath.ToStringAnsi() + ".config";
 #endif
     mono_domain_set_config(monoRootDomain, configDir.Get(), configFilename.Get());
     mono_thread_set_main(mono_thread_current());
