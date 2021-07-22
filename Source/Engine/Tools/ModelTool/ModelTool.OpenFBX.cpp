@@ -861,7 +861,7 @@ bool ImportMeshes(OpenFbxImporterData& data, String& errorMsg)
         if (IsMeshInvalid(aMesh))
             continue;
 
-        if (aMesh->getMaterialCount() < 2)
+        if (aMesh->getMaterialCount() < 2 || !aGeometry->getMaterials())
         {
             // Fast path if mesh is using single material for all triangles
             if (ImportMesh(data, aMesh, errorMsg, 0, trianglesCount - 1))
@@ -871,7 +871,6 @@ bool ImportMeshes(OpenFbxImporterData& data, String& errorMsg)
         {
             // Create mesh for each sequence of triangles that share the same material
             const auto materials = aGeometry->getMaterials();
-            ASSERT_LOW_LAYER(materials);
             int32 rangeStart = 0;
             int32 rangeStartVal = materials[rangeStart];
             for (int32 triangleIndex = 1; triangleIndex < trianglesCount; triangleIndex++)
