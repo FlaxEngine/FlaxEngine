@@ -117,8 +117,8 @@ namespace FlaxEditor.Content.Import
         /// <summary>
         /// True if calculate model tangents, otherwise will import them.
         /// </summary>
-        [EditorOrder(40), DefaultValue(true), EditorDisplay("Geometry"), Tooltip("Enable model tangent vectors recalculating")]
-        public bool CalculateTangents { get; set; } = true;
+        [EditorOrder(40), DefaultValue(false), EditorDisplay("Geometry"), Tooltip("Enable model tangent vectors recalculating")]
+        public bool CalculateTangents { get; set; } = false;
 
         /// <summary>
         /// Calculated normals smoothing angle.

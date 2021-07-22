@@ -170,7 +170,7 @@ public:
         float SmoothingNormalsAngle = 175.0f;
         bool FlipNormals = false;
         float SmoothingTangentsAngle = 45.0f;
-        bool CalculateTangents = true;
+        bool CalculateTangents = false;
         bool OptimizeMeshes = true;
         bool MergeMeshes = true;
         bool ImportLODs = true;

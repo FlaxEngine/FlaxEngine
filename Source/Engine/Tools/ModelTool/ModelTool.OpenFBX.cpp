@@ -514,7 +514,7 @@ bool ProcessMesh(OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& m
     }
 
     // Normals
-    if (data.Options.CalculateNormals)
+    if (data.Options.CalculateNormals || !normals)
     {
         if (mesh.GenerateNormals(data.Options.SmoothingNormalsAngle))
         {
@@ -540,7 +540,7 @@ bool ProcessMesh(OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& m
     }
 
     // Tangents
-    if (data.Options.CalculateTangents && mesh.UVs.HasItems())
+    if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
     {
         if (mesh.GenerateTangents(data.Options.SmoothingTangentsAngle))
         {
