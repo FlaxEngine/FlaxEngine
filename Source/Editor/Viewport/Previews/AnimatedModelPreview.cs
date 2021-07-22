@@ -48,6 +48,8 @@ namespace FlaxEditor.Viewport.Previews
             get => _showNodes;
             set
             {
+                if (_showNodes == value)
+                    return;
                 _showNodes = value;
                 if (value)
                     ShowDebugDraw = true;
@@ -64,6 +66,8 @@ namespace FlaxEditor.Viewport.Previews
             get => _showBounds;
             set
             {
+                if (_showBounds == value)
+                    return;
                 _showBounds = value;
                 if (value)
                     ShowDebugDraw = true;
@@ -80,6 +84,8 @@ namespace FlaxEditor.Viewport.Previews
             get => _showFloor;
             set
             {
+                if (_showFloor == value)
+                    return;
                 _showFloor = value;
                 if (value && !_floorModel)
                 {

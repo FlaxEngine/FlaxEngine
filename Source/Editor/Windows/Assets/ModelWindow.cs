@@ -1,23 +1,17 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
-using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
-using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
@@ -32,41 +26,11 @@ namespace FlaxEditor.Windows.Assets
         private sealed class Preview : ModelPreview
         {
             private readonly ModelWindow _window;
-            private ContextMenuButton _showFloorButton;
-            private ContextMenuButton _showCurrentLODButton;
-            private StaticModel _floorModel;
-            private bool _showCurrentLOD;
 
             public Preview(ModelWindow window)
             : base(true)
             {
                 _window = window;
-
-                // Show floor widget
-                _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button =>
-                {
-                    _floorModel.IsActive = !_floorModel.IsActive;
-                    _showFloorButton.Icon = _floorModel.IsActive ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                });
-                _showFloorButton.IndexInParent = 1;
-
-                // Show current LOD widget
-                _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
-                {
-                    _showCurrentLOD = !_showCurrentLOD;
-                    _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                });
-                _showCurrentLODButton.IndexInParent = 2;
-
-                // Floor model
-                _floorModel = new StaticModel
-                {
-                    Position = new Vector3(0, -25, 0),
-                    Scale = new Vector3(5, 0.5f, 5),
-                    Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax")),
-                    IsActive = false
-                };
-                Task.AddCustomActor(_floorModel);
 
                 // Enable shadows
                 PreviewLight.ShadowsMode = ShadowsCastingMode.All;
@@ -74,45 +38,7 @@ namespace FlaxEditor.Windows.Assets
                 PreviewLight.ShadowsDistance = 2000.0f;
                 Task.ViewFlags |= ViewFlags.Shadows;
             }
-
-            private int ComputeLODIndex(Model model)
-            {
-                if (PreviewActor.ForcedLOD != -1)
-                    return PreviewActor.ForcedLOD;
-
-                // Based on RenderTools::ComputeModelLOD
-                CreateProjectionMatrix(out var projectionMatrix);
-                float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
-                var sphere = PreviewActor.Sphere;
-                var viewOrigin = ViewPosition;
-                float distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
-                var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-
-                // Check if model is being culled
-                if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
-                    return -1;
-
-                // Skip if no need to calculate LOD
-                if (model.LoadedLODs == 0)
-                    return -1;
-                var lods = model.LODs;
-                if (lods.Length == 0)
-                    return -1;
-                if (lods.Length == 1)
-                    return 0;
-
-                // Iterate backwards and return the first matching LOD
-                for (int lodIndex = lods.Length - 1; lodIndex >= 0; lodIndex--)
-                {
-                    if (Mathf.Square(lods[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
-                    {
-                        return lodIndex + PreviewActor.LODBias;
-                    }
-                }
-
-                return 0;
-            }
-
+            
             public override void Draw()
             {
                 base.Draw();
@@ -122,41 +48,7 @@ namespace FlaxEditor.Windows.Assets
                 if (asset == null || !asset.IsLoaded)
                 {
                     Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
-                    return;
                 }
-
-                if (_showCurrentLOD)
-                {
-                    var lodIndex = ComputeLODIndex(asset);
-                    string text = string.Format("Current LOD: {0}", lodIndex);
-                    if (lodIndex != -1)
-                    {
-                        var lods = asset.LODs;
-                        lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
-                        var lod = lods[lodIndex];
-                        int triangleCount = 0, vertexCount = 0;
-                        for (int meshIndex = 0; meshIndex < lod.Meshes.Length; meshIndex++)
-                        {
-                            var mesh = lod.Meshes[meshIndex];
-                            triangleCount += mesh.TriangleCount;
-                            vertexCount += mesh.VertexCount;
-                        }
-                        text += string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}", triangleCount, vertexCount);
-                    }
-                    var font = Style.Current.FontMedium;
-                    var pos = new Vector2(10, 50);
-                    Render2D.DrawText(font, text, new Rectangle(pos + Vector2.One, Size), Color.Black);
-                    Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
-                }
-            }
-
-            public override void OnDestroy()
-            {
-                Object.Destroy(ref _floorModel);
-                _showFloorButton = null;
-                _showCurrentLODButton = null;
-
-                base.OnDestroy();
             }
         }
 
@@ -495,7 +387,7 @@ namespace FlaxEditor.Windows.Assets
                     if (_uvChannel == value)
                         return;
                     _uvChannel = value;
-                    Window.RequestMeshData();
+                    Window._meshData?.RequestMeshData(Window._asset);
                 }
             }
 
@@ -634,7 +526,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
-                private void DrawMeshUVs(int meshIndex, MeshData meshData)
+                private void DrawMeshUVs(int meshIndex, MeshDataCache.MeshData meshData)
                 {
                     var uvScale = Size;
                     if (meshData.IndexBuffer == null || meshData.VertexBuffer == null)
@@ -642,54 +534,54 @@ namespace FlaxEditor.Windows.Assets
                     var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
                     switch (_channel)
                     {
-                        case UVChannel.TexCoord:
-                            for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                    case UVChannel.TexCoord:
+                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                        {
+                            // Cache triangle indices
+                            int i0 = meshData.IndexBuffer[i + 0];
+                            int i1 = meshData.IndexBuffer[i + 1];
+                            int i2 = meshData.IndexBuffer[i + 2];
+
+                            // Cache triangle uvs positions and transform positions to output target
+                            Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
+                            Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
+                            Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
+
+                            // Don't draw too small triangles
+                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            if (area > 10.0f)
                             {
-                                // Cache triangle indices
-                                int i0 = meshData.IndexBuffer[i + 0];
-                                int i1 = meshData.IndexBuffer[i + 1];
-                                int i2 = meshData.IndexBuffer[i + 2];
-
-                                // Cache triangle uvs positions and transform positions to output target
-                                Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                                Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                                Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
-
-                                // Don't draw too small triangles
-                                float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                                if (area > 10.0f)
-                                {
-                                    // Draw triangle
-                                    Render2D.DrawLine(uv0, uv1, linesColor);
-                                    Render2D.DrawLine(uv1, uv2, linesColor);
-                                    Render2D.DrawLine(uv2, uv0, linesColor);
-                                }
+                                // Draw triangle
+                                Render2D.DrawLine(uv0, uv1, linesColor);
+                                Render2D.DrawLine(uv1, uv2, linesColor);
+                                Render2D.DrawLine(uv2, uv0, linesColor);
                             }
-                            break;
-                        case UVChannel.LightmapUVs:
-                            for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                        }
+                        break;
+                    case UVChannel.LightmapUVs:
+                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                        {
+                            // Cache triangle indices
+                            int i0 = meshData.IndexBuffer[i + 0];
+                            int i1 = meshData.IndexBuffer[i + 1];
+                            int i2 = meshData.IndexBuffer[i + 2];
+
+                            // Cache triangle uvs positions and transform positions to output target
+                            Vector2 uv0 = meshData.VertexBuffer[i0].LightmapUVs * uvScale;
+                            Vector2 uv1 = meshData.VertexBuffer[i1].LightmapUVs * uvScale;
+                            Vector2 uv2 = meshData.VertexBuffer[i2].LightmapUVs * uvScale;
+
+                            // Don't draw too small triangles
+                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            if (area > 3.0f)
                             {
-                                // Cache triangle indices
-                                int i0 = meshData.IndexBuffer[i + 0];
-                                int i1 = meshData.IndexBuffer[i + 1];
-                                int i2 = meshData.IndexBuffer[i + 2];
-
-                                // Cache triangle uvs positions and transform positions to output target
-                                Vector2 uv0 = meshData.VertexBuffer[i0].LightmapUVs * uvScale;
-                                Vector2 uv1 = meshData.VertexBuffer[i1].LightmapUVs * uvScale;
-                                Vector2 uv2 = meshData.VertexBuffer[i2].LightmapUVs * uvScale;
-
-                                // Don't draw too small triangles
-                                float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                                if (area > 3.0f)
-                                {
-                                    // Draw triangle
-                                    Render2D.DrawLine(uv0, uv1, linesColor);
-                                    Render2D.DrawLine(uv1, uv2, linesColor);
-                                    Render2D.DrawLine(uv2, uv0, linesColor);
-                                }
+                                // Draw triangle
+                                Render2D.DrawLine(uv0, uv1, linesColor);
+                                Render2D.DrawLine(uv1, uv2, linesColor);
+                                Render2D.DrawLine(uv2, uv0, linesColor);
                             }
-                            break;
+                        }
+                        break;
                     }
                 }
 
@@ -701,7 +593,9 @@ namespace FlaxEditor.Windows.Assets
                     var size = Size;
                     if (_channel == UVChannel.None || size.MaxValue < 5.0f)
                         return;
-                    if (!Proxy.Window.RequestMeshData())
+                    if (Proxy.Window._meshData == null)
+                        Proxy.Window._meshData = new MeshDataCache();
+                    if (!Proxy.Window._meshData.RequestMeshData(Proxy.Window._asset))
                     {
                         Invalidate();
                         Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Vector2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
@@ -710,7 +604,7 @@ namespace FlaxEditor.Windows.Assets
 
                     Render2D.PushClip(new Rectangle(Vector2.Zero, size));
 
-                    var meshDatas = Proxy.Window._meshDatas;
+                    var meshDatas = Proxy.Window._meshData.MeshDatas;
                     var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
                     var lod = meshDatas[lodIndex];
                     var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
@@ -833,18 +727,9 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private struct MeshData
-        {
-            public int[] IndexBuffer;
-            public Mesh.Vertex[] VertexBuffer;
-        }
-
         private readonly ModelPreview _preview;
         private StaticModel _highlightActor;
-
-        private MeshData[][] _meshDatas;
-        private bool _meshDatasInProgress;
-        private bool _meshDatasCancel;
+        private MeshDataCache _meshData;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)
@@ -913,68 +798,6 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private bool RequestMeshData()
-        {
-            if (_meshDatasInProgress)
-                return false;
-            if (_meshDatas != null)
-                return true;
-            _meshDatasInProgress = true;
-            _meshDatasCancel = false;
-            Task.Run(new Action(DownloadMeshData));
-            return false;
-        }
-
-        private void WaitForMeshDataRequestEnd()
-        {
-            if (_meshDatasInProgress)
-            {
-                _meshDatasCancel = true;
-                for (int i = 0; i < 500 && _meshDatasInProgress; i++)
-                    Thread.Sleep(10);
-            }
-        }
-
-        private void DownloadMeshData()
-        {
-            try
-            {
-                if (!_asset)
-                {
-                    _meshDatasInProgress = false;
-                    return;
-                }
-                var lods = _asset.LODs;
-                _meshDatas = new MeshData[lods.Length][];
-
-                for (int lodIndex = 0; lodIndex < lods.Length && !_meshDatasCancel; lodIndex++)
-                {
-                    var lod = lods[lodIndex];
-                    var meshes = lod.Meshes;
-                    _meshDatas[lodIndex] = new MeshData[meshes.Length];
-
-                    for (int meshIndex = 0; meshIndex < meshes.Length && !_meshDatasCancel; meshIndex++)
-                    {
-                        var mesh = meshes[meshIndex];
-                        _meshDatas[lodIndex][meshIndex] = new MeshData
-                        {
-                            IndexBuffer = mesh.DownloadIndexBuffer(),
-                            VertexBuffer = mesh.DownloadVertexBuffer()
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Editor.LogWarning("Failed to get mesh data. " + ex.Message);
-                Editor.LogWarning(ex);
-            }
-            finally
-            {
-                _meshDatasInProgress = false;
-            }
-        }
-
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
@@ -1024,7 +847,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            WaitForMeshDataRequestEnd();
+            _meshData?.WaitForMeshDataRequestEnd();
             _preview.Model = null;
             _highlightActor.Model = null;
 
@@ -1056,9 +879,7 @@ namespace FlaxEditor.Windows.Assets
         public override void OnItemReimported(ContentItem item)
         {
             // Discard any old mesh data cache
-            WaitForMeshDataRequestEnd();
-            _meshDatas = null;
-            _meshDatasInProgress = false;
+            _meshData?.Dispose();
 
             base.OnItemReimported(item);
         }
@@ -1066,7 +887,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            WaitForMeshDataRequestEnd();
+            _meshData?.Dispose();
+            _meshData = null;
 
             base.OnDestroy();
 

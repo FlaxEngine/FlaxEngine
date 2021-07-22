@@ -3,6 +3,8 @@
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
+using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -13,9 +15,10 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class ModelPreview : AssetPreview
     {
-        private ContextMenuButton _showBoundsButton;
-        private StaticModel _previewModel;
-        private bool _showBounds;
+        private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showFloorButton;
+        private StaticModel _previewModel, _floorModel;
+        private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showFloor;
+        private MeshDataCache _meshDatas;
 
         /// <summary>
         /// Gets or sets the model asset to preview.
@@ -23,7 +26,19 @@ namespace FlaxEditor.Viewport.Previews
         public Model Model
         {
             get => _previewModel.Model;
-            set => _previewModel.Model = value;
+            set
+            {
+                if (_previewModel.Model == value)
+                    return;
+                _previewModel.Model = value;
+                _meshDatas?.Dispose();
+                if (_meshDatas != null)
+                {
+                    _meshDatas.Dispose();
+                    ShowNormals = false;
+                    ShowTangents = false;
+                }
+            }
         }
 
         /// <summary>
@@ -32,18 +47,95 @@ namespace FlaxEditor.Viewport.Previews
         public StaticModel PreviewActor => _previewModel;
 
         /// <summary>
-        /// Gets or sets a value indicating whether show animated model bounding box debug view.
+        /// Gets or sets a value indicating whether show model bounding box debug view.
         /// </summary>
         public bool ShowBounds
         {
             get => _showBounds;
             set
             {
+                if (_showBounds == value)
+                    return;
                 _showBounds = value;
                 if (value)
                     ShowDebugDraw = true;
                 if (_showBoundsButton != null)
                     _showBoundsButton.Checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show model geometry normal vectors debug view.
+        /// </summary>
+        public bool ShowNormals
+        {
+            get => _showNormals;
+            set
+            {
+                if (_showNormals == value)
+                    return;
+                _showNormals = value;
+                if (value)
+                {
+                    ShowDebugDraw = true;
+                    if (_meshDatas == null)
+                        _meshDatas = new MeshDataCache();
+                    _meshDatas.RequestMeshData(_previewModel.Model);
+                }
+                if (_showNormalsButton != null)
+                    _showNormalsButton.Checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show model geometry tangent vectors debug view.
+        /// </summary>
+        public bool ShowTangents
+        {
+            get => _showTangents;
+            set
+            {
+                if (_showTangents == value)
+                    return;
+                _showTangents = value;
+                if (value)
+                {
+                    ShowDebugDraw = true;
+                    if (_meshDatas == null)
+                        _meshDatas = new MeshDataCache();
+                    _meshDatas.RequestMeshData(_previewModel.Model);
+                }
+                if (_showTangentsButton != null)
+                    _showTangentsButton.Checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show floor model.
+        /// </summary>
+        public bool ShowFloor
+        {
+            get => _showFloor;
+            set
+            {
+                if (_showFloor == value)
+                    return;
+                _showFloor = value;
+                if (value && !_floorModel)
+                {
+                    _floorModel = new StaticModel
+                    {
+                        Position = new Vector3(0, -25, 0),
+                        Scale = new Vector3(5, 0.5f, 5),
+                        Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax")),
+                    };
+                }
+                if (value)
+                    Task.AddCustomActor(_floorModel);
+                else
+                    Task.RemoveCustomActor(_floorModel);
+                if (_showFloorButton != null)
+                    _showFloorButton.Checked = value;
             }
         }
 
@@ -61,16 +153,31 @@ namespace FlaxEditor.Viewport.Previews
         {
             Task.Begin += OnBegin;
 
-            // Setup preview scene
             _previewModel = new StaticModel();
-
-            // Link actors for rendering
             Task.AddCustomActor(_previewModel);
 
             if (useWidgets)
             {
                 // Show Bounds
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+
+                // Show Normals
+                _showNormalsButton = ViewWidgetShowMenu.AddButton("Normals", () => ShowNormals = !ShowNormals);
+
+                // Show Tangents
+                _showTangentsButton = ViewWidgetShowMenu.AddButton("Tangents", () => ShowTangents = !ShowTangents);
+
+                // Show Floor
+                _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
+                _showFloorButton.IndexInParent = 1;
+
+                // Show current LOD widget
+                _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
+                {
+                    _showCurrentLOD = !_showCurrentLOD;
+                    _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                });
+                _showCurrentLODButton.IndexInParent = 2;
 
                 // Preview LOD
                 {
@@ -117,6 +224,110 @@ namespace FlaxEditor.Viewport.Previews
             {
                 DebugDraw.DrawWireBox(_previewModel.Box, Color.Violet.RGBMultiplied(0.8f), 0, false);
             }
+
+            // Draw normals
+            if (_showNormals && _meshDatas.RequestMeshData(Model))
+            {
+                var meshDatas = _meshDatas.MeshDatas;
+                var lodIndex = ComputeLODIndex(Model);
+                var lod = meshDatas[lodIndex];
+                for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                {
+                    var meshData = lod[meshIndex];
+                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    {
+                        ref var v = ref meshData.VertexBuffer[i];
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal, Color.Green);
+                    }
+                }
+            }
+
+            // Draw tangents
+            if (_showTangents && _meshDatas.RequestMeshData(Model))
+            {
+                var meshDatas = _meshDatas.MeshDatas;
+                var lodIndex = ComputeLODIndex(Model);
+                var lod = meshDatas[lodIndex];
+                for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                {
+                    var meshData = lod[meshIndex];
+                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    {
+                        ref var v = ref meshData.VertexBuffer[i];
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent, Color.Blue);
+                    }
+                }
+            }
+        }
+
+
+        private int ComputeLODIndex(Model model)
+        {
+            if (PreviewActor.ForcedLOD != -1)
+                return PreviewActor.ForcedLOD;
+
+            // Based on RenderTools::ComputeModelLOD
+            CreateProjectionMatrix(out var projectionMatrix);
+            float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
+            var sphere = PreviewActor.Sphere;
+            var viewOrigin = ViewPosition;
+            float distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
+            var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
+
+            // Check if model is being culled
+            if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
+                return -1;
+
+            // Skip if no need to calculate LOD
+            if (model.LoadedLODs == 0)
+                return -1;
+            var lods = model.LODs;
+            if (lods.Length == 0)
+                return -1;
+            if (lods.Length == 1)
+                return 0;
+
+            // Iterate backwards and return the first matching LOD
+            for (int lodIndex = lods.Length - 1; lodIndex >= 0; lodIndex--)
+            {
+                if (Mathf.Square(lods[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
+                {
+                    return lodIndex + PreviewActor.LODBias;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            if (_showCurrentLOD)
+            {
+                var asset = Model;
+                var lodIndex = ComputeLODIndex(asset);
+                string text = string.Format("Current LOD: {0}", lodIndex);
+                if (lodIndex != -1)
+                {
+                    var lods = asset.LODs;
+                    lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
+                    var lod = lods[lodIndex];
+                    int triangleCount = 0, vertexCount = 0;
+                    for (int meshIndex = 0; meshIndex < lod.Meshes.Length; meshIndex++)
+                    {
+                        var mesh = lod.Meshes[meshIndex];
+                        triangleCount += mesh.TriangleCount;
+                        vertexCount += mesh.VertexCount;
+                    }
+                    text += string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}", triangleCount, vertexCount);
+                }
+                var font = Style.Current.FontMedium;
+                var pos = new Vector2(10, 50);
+                Render2D.DrawText(font, text, new Rectangle(pos + Vector2.One, Size), Color.Black);
+                Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
+            }
         }
 
         /// <inheritdoc />
@@ -135,8 +346,15 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            // Ensure to cleanup created actor objects
+            Object.Destroy(ref _floorModel);
             Object.Destroy(ref _previewModel);
+            _showBoundsButton = null;
+            _showCurrentLODButton = null;
+            _showNormalsButton = null;
+            _showTangentsButton = null;
+            _showFloorButton = null;
+            _meshDatas?.Dispose();
+            _meshDatas = null;
 
             base.OnDestroy();
         }
