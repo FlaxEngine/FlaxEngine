@@ -435,17 +435,23 @@ public:
     /// <summary>
     /// Minimizes the window.
     /// </summary>
-    API_FUNCTION() virtual void Minimize() = 0;
+    API_FUNCTION() virtual void Minimize()
+    {
+    }
 
     /// <summary>
     /// Maximizes the window.
     /// </summary>
-    API_FUNCTION() virtual void Maximize() = 0;
+    API_FUNCTION() virtual void Maximize()
+    {
+    }
 
     /// <summary>
     /// Restores the window state before minimizing or maximizing.
     /// </summary>
-    API_FUNCTION() virtual void Restore() = 0;
+    API_FUNCTION() virtual void Restore()
+    {
+    }
 
     /// <summary>
     /// Closes the window.
@@ -456,8 +462,10 @@ public:
     /// <summary>
     /// Checks if window is closed.
     /// </summary>
-    /// <returns>True if window is closed, otherwise false.</returns>
-    API_PROPERTY() virtual bool IsClosed() const = 0;
+    API_PROPERTY() virtual bool IsClosed() const
+    {
+        return _isClosing;
+    }
 
     /// <summary>
     /// Checks if window is foreground (the window with which the user is currently working).
@@ -470,7 +478,6 @@ public:
     /// <summary>
     /// Gets the client bounds of the window (client area not including border).
     /// </summary>
-    /// <returns>Client bounds.</returns>
     API_PROPERTY() FORCE_INLINE Rectangle GetClientBounds() const
     {
         return Rectangle(GetClientPosition(), GetClientSize());
@@ -480,24 +487,29 @@ public:
     /// Sets the client bounds of the window (client area not including border).
     /// </summary>
     /// <param name="clientArea">The client area.</param>
-    API_PROPERTY() virtual void SetClientBounds(const Rectangle& clientArea) = 0;
+    API_PROPERTY() virtual void SetClientBounds(const Rectangle& clientArea)
+    {
+    }
 
     /// <summary>
     /// Gets the window position (in screen coordinates).
     /// </summary>
-    /// <returns>Window position.</returns>
-    API_PROPERTY() virtual Vector2 GetPosition() const = 0;
+    API_PROPERTY() virtual Vector2 GetPosition() const
+    {
+        return Vector2::Zero;
+    }
 
     /// <summary>
     /// Sets the window position (in screen coordinates).
     /// </summary>
     /// <param name="position">The position.</param>
-    API_PROPERTY() virtual void SetPosition(const Vector2& position) = 0;
+    API_PROPERTY() virtual void SetPosition(const Vector2& position)
+    {
+    }
 
     /// <summary>
     /// Gets the client position of the window (client area not including border).
     /// </summary>
-    /// <returns>The client area position.</returns>
     API_PROPERTY() FORCE_INLINE Vector2 GetClientPosition() const
     {
         return ClientToScreen(Vector2::Zero);
@@ -507,19 +519,25 @@ public:
     /// Sets the client position of the window (client area not including border)
     /// </summary>
     /// <param name="position">The client area position.</param>
-    API_PROPERTY() virtual void SetClientPosition(const Vector2& position) = 0;
+    API_PROPERTY() virtual void SetClientPosition(const Vector2& position)
+    {
+    }
 
     /// <summary>
     /// Gets the window size (including border).
     /// </summary>
-    /// <returns>The window size</returns>
-    API_PROPERTY() virtual Vector2 GetSize() const = 0;
+    API_PROPERTY() virtual Vector2 GetSize() const
+    {
+        return _clientSize;
+    }
 
     /// <summary>
     /// Gets the size of the client area of the window (not including border).
     /// </summary>
-    /// <returns>The window client area size.</returns>
-    API_PROPERTY() virtual Vector2 GetClientSize() const = 0;
+    API_PROPERTY() virtual Vector2 GetClientSize() const
+    {
+        return _clientSize;
+    }
 
     /// <summary>
     /// Sets the size of the client area of the window (not including border).
@@ -535,14 +553,20 @@ public:
     /// </summary>
     /// <param name="screenPos">The screen position.</param>
     /// <returns>The client space position.</returns>
-    API_FUNCTION() virtual Vector2 ScreenToClient(const Vector2& screenPos) const = 0;
+    API_FUNCTION() virtual Vector2 ScreenToClient(const Vector2& screenPos) const
+    {
+        return screenPos;
+    }
 
     /// <summary>
     /// Converts window space location into screen space coordinates.
     /// </summary>
     /// <param name="clientPos">The client position.</param>
     /// <returns>The screen space position.</returns>
-    API_FUNCTION() virtual Vector2 ClientToScreen(const Vector2& clientPos) const = 0;
+    API_FUNCTION() virtual Vector2 ClientToScreen(const Vector2& clientPos) const
+    {
+        return clientPos;
+    }
 
     /// <summary>
     /// Gets the window DPI setting.
@@ -582,7 +606,6 @@ public:
     /// <summary>
     /// Gets window opacity value (valid only for windows created with SupportsTransparency flag). Opacity values are normalized to range [0;1].
     /// </summary>
-    /// <returns>Window opacity.</returns>
     API_PROPERTY() virtual float GetOpacity() const
     {
         return 1.0f;
@@ -599,7 +622,6 @@ public:
     /// <summary>
     /// Determines whether this window is focused.
     /// </summary>
-    /// <returns><c>true</c> if this window is focused; otherwise, <c>false</c>.</returns>
     API_PROPERTY() FORCE_INLINE bool IsFocused() const
     {
         return _focused;

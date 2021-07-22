@@ -81,19 +81,20 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     , _minimized(false)
     , _maximized(false)
     , _isClosing(false)
+    , _showAfterFirstPaint(settings.ShowAfterFirstPaint)
     , _focused(false)
     , _swapChain(nullptr)
     , _settings(settings)
     , _title(settings.Title)
     , _cursor(CursorType::Default)
+    , _clientSize(settings.Size)
+    , _dpi(96)
+    , _dpiScale(1.0f)
     , _trackingMouseOffset(Vector2::Zero)
     , _isUsingMouseOffset(false)
     , _isTrackingMouse(false)
     , RenderTask(nullptr)
 {
-    _showAfterFirstPaint = settings.ShowAfterFirstPaint;
-    _clientSize = Vector2(settings.Size.X, settings.Size.Y);
-
     // Update window location based on start location
     if (settings.StartPosition == WindowStartPosition::CenterParent
         || settings.StartPosition == WindowStartPosition::CenterScreen)
@@ -522,6 +523,8 @@ void WindowBase::Show()
 
 void WindowBase::Hide()
 {
+    if (!_visible)
+        return;
     _visible = false;
     _showAfterFirstPaint = _settings.ShowAfterFirstPaint;
     Hidden();
