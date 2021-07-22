@@ -174,23 +174,23 @@ namespace FlaxEngine.GUI
                 Control newSel = null;
                 if(navDir == NavDir.Next)
                 {
-                    newSel = AutoNaviagate(FocusedControl, NavDir.Right, out float dist);
-                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Down, out float dist2);
+                    newSel = AutoNaviagate(FocusedControl, NavDir.Right, out float dist, out float cohersion);
+                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Down, out float dist2, out float cohersion2);
 
-                    Debug.Log("Right: " + newSel + " D: "+dist);
-                    Debug.Log("Right: " + newSel2 + " D: " + dist2);
+                    Debug.Log("Right: " + newSel + " D: "+dist + " C: " + cohersion);
+                    Debug.Log("Down: " + newSel2 + " D: " + dist2 + " C: " + cohersion2);
 
-                    if (dist2 * 2 < dist)
+                    if (dist2 * 2 < dist || (dist2 < dist && Mathf.Abs(cohersion2) < Mathf.Abs(cohersion)))
                         newSel = newSel2;
-                    Debug.Log(newSel);
+                    Debug.Log("Selected: "+newSel);
 
                     if (newSel == null)
                         return;
                 }
                 else if (navDir == NavDir.Previous)
                 {
-                    newSel = AutoNaviagate(FocusedControl, NavDir.Left, out float dist);
-                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Up, out float dist2);
+                    newSel = AutoNaviagate(FocusedControl, NavDir.Left, out float dist, out float cohersion);
+                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Up, out float dist2, out float cohersion2);
                     if (dist2 * 2 < dist)
                         newSel = newSel2;
 
@@ -198,8 +198,7 @@ namespace FlaxEngine.GUI
                         return;
                 }
                 if (newSel == null)
-                    newSel = AutoNaviagate(FocusedControl, navDir, out float dist);
-                Debug.Log(newSel);
+                    newSel = AutoNaviagate(FocusedControl, navDir, out float dist, out float cohersion);
                 //Debug.LogWarning("We tried to auto navigate from " + currentlySelected + " in direction of " + navDir + " and found " + newSel);
                 if (newSel != null)
                 {
@@ -236,13 +235,15 @@ namespace FlaxEngine.GUI
         /// <param name="from">The selectable from which to search</param>
         /// <param name="navDir">The direction</param>
         /// <param name="closetsDistance">returns the Distance</param>
+        /// <param name="likelinessOfDirectionCohersion">How much is the selected control in the navDir</param>
         /// <returns>The new selectable which was found</returns>
-        private Control AutoNaviagate(Control from, NavDir navDir, out float closetsDistance)
+        private Control AutoNaviagate(Control from, NavDir navDir, out float closetsDistance, out float likelinessOfDirectionCohersion)
         {
             Vector2 directionOfInput = GetUIVectorDirFromNavDir(navDir);
 
             Rectangle fromRect = new Rectangle(from.ScreenPos, from.Size);
 
+            likelinessOfDirectionCohersion = -1;
             closetsDistance = float.PositiveInfinity;
             Control closestSelectable = null;
             foreach (Control potentialSelectable in GetAutoNavControls())
@@ -251,14 +252,13 @@ namespace FlaxEngine.GUI
                 {
                     Vector2 directionOfDifferences = (potentialSelectable.ScreenPos - from.ScreenPos);
                     directionOfDifferences.Normalize();
-                    float likelinessOfDirectionCohersion = Vector2.Dot(directionOfInput, directionOfDifferences);
+                    likelinessOfDirectionCohersion = Vector2.Dot(directionOfInput, directionOfDifferences);
                     if (likelinessOfDirectionCohersion > 0f)
                     {
                         float distance = Rectangle.Distance(new Rectangle(potentialSelectable.ScreenPos, potentialSelectable.Size), fromRect);
                         //float distance = Vector2.Distance(potentialSelectable.ScreenPos, from.ScreenPos);
                         if (distance < closetsDistance)
                         {
-                            Debug.Log(likelinessOfDirectionCohersion);
                             closetsDistance = distance;
                             closestSelectable = potentialSelectable;
                         }

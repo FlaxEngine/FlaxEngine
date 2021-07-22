@@ -4,7 +4,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using FlaxEditor.Scripting;
 using FlaxEngine.GUI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -691,8 +690,8 @@ namespace FlaxEngine
                 theObj.Remove("InputModule");
                 json = theObj.ToString();
 
-                ScriptType typ = new ScriptType(TypeUtils.GetManagedType((string)im["Type"]));
-                InputModule = (UIInputModule)typ.CreateInstance();
+                Type t = Type.GetType((string)im["Type"]);
+                InputModule = (UIInputModule)Activator.CreateInstance(t);
                 Json.JsonSerializer.Deserialize(InputModule, im["Data"].ToString());
             }
             

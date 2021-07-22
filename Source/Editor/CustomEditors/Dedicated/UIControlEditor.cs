@@ -701,7 +701,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             float setTypeButtonWidth = 60.0f;
             var setTypeButton = new Button
             {
-                TooltipText = "Sets the InputModule to the given type",
+                TooltipText = "Sets the Input module to the given type",
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Text = "Set Type",
                 Parent = space.Spacer,
@@ -712,7 +712,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Don't show editor if any control is invalid
             if (Values.HasNull)
             {
-                var label = layout.Label("Select control type to create", TextAlignment.Center);
+                var label = layout.Label("Select Input module type to create", TextAlignment.Center);
                 label.Label.Enabled = false;
                 return;
             }
@@ -721,7 +721,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 var type = Values[0].GetType();
                 _cachedType = type;
-                var label = layout.AddPropertyItem("Type", "The type of the created control.");
+                var label = layout.AddPropertyItem("Type", "The type of the created Input module.");
                 label.Label(type.FullName);
             }
 
@@ -775,7 +775,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var uiControls = ParentEditor.Values;
             if (Presenter.Undo?.Enabled ?? false)
             {
-                using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
+                using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Input module Type"))
                 {
                     for (int i = 0; i < uiControls.Count; i++)
                         SetType(ref controlType, (UICanvas)uiControls[i]);
