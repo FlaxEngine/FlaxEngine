@@ -67,6 +67,7 @@ namespace FlaxEngine.GUI
         public UniformGridPanel()
         : this(2)
         {
+            AutoFocus = false;
         }
 
         /// <summary>
@@ -75,6 +76,7 @@ namespace FlaxEngine.GUI
         /// <param name="slotPadding">The slot padding.</param>
         public UniformGridPanel(float slotPadding = 2)
         {
+            AutoFocus = false;
             SlotPadding = new Margin(slotPadding);
             _slotsH = _slotsV = 5;
         }

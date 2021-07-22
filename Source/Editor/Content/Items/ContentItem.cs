@@ -638,7 +638,7 @@ namespace FlaxEditor.Content
             // Draw background
             if (isSelected)
                 Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsFocused)
                 Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
 
             // Draw preview

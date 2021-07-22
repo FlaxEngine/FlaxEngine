@@ -4,8 +4,11 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using FlaxEditor.Scripting;
 using FlaxEngine.GUI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine
 {
@@ -91,6 +94,7 @@ namespace FlaxEngine
     {
         private CanvasRenderMode _renderMode;
         private readonly CanvasRootControl _guiRoot;
+        private UIInputModule _inputModule;
         private CanvasRenderer _renderer;
         private bool _isLoading, _isRegisteredForTick;
 
@@ -199,6 +203,15 @@ namespace FlaxEngine
         public CanvasRootControl GUI => _guiRoot;
 
         /// <summary>
+        /// Gets or sets the InputModule used by this UI.
+        /// </summary>
+        [EditorDisplay("InputModule", EditorDisplayAttribute.InlineStyle), CustomEditorAlias("FlaxEditor.CustomEditors.Dedicated.UICanvasInputModuleEditor"), EditorOrder(70)]
+        public UIInputModule InputModule {
+            get => _inputModule;
+            set => _inputModule = value;
+        }
+
+        /// <summary>
         /// Delegate schema for the callback used to perform custom canvas intersection test. Can be used to implement a canvas that has a holes or non-rectangular shape.
         /// </summary>
         /// <param name="location">The location of the point to test in coordinates of the canvas root control (see <see cref="GUI"/>).</param>
@@ -262,6 +275,8 @@ namespace FlaxEngine
                 _isRegisteredForTick = false;
                 Scripting.Update -= OnUpdate;
             }
+
+            Scripting.Update -= InputUpdate;
         }
 
         /// <summary>
@@ -484,6 +499,13 @@ namespace FlaxEngine
                 break;
             }
             }
+#if FLAX_EDITOR
+            if (FlaxEditor.Editor.IsPlayMode)
+#endif
+            {
+                Scripting.Update += InputUpdate;
+            }
+            
         }
 
         private void OnUpdate()
@@ -499,6 +521,14 @@ namespace FlaxEngine
                 {
                     Profiler.EndEvent();
                 }
+            }                
+        }
+
+        private void InputUpdate()
+        {
+            if (InputModule != null)
+            {
+                InputModule.OnUpdate(GUI);
             }
         }
 
@@ -545,6 +575,17 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
                 }
+
+                jsonWriter.WritePropertyName("InputModule");
+                jsonWriter.WriteStartObject();
+
+                jsonWriter.WritePropertyName("Type");
+                jsonWriter.WriteValue(InputModule.GetType().FullName);
+
+                jsonWriter.WritePropertyName("Data");
+                jsonWriter.WriteRawValue(Json.JsonSerializer.Serialize(InputModule));
+
+                jsonWriter.WriteEndObject();
 
                 jsonWriter.WriteEndObject();
             }
@@ -619,6 +660,19 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
                 }
+                if(InputModule != other.InputModule)
+                {
+                    jsonWriter.WritePropertyName("InputModule");
+                    jsonWriter.WriteStartObject();
+                    
+                    jsonWriter.WritePropertyName("Type");
+                    jsonWriter.WriteValue(InputModule.GetType().FullName);
+
+                    jsonWriter.WritePropertyName("Data");
+                    jsonWriter.WriteRawValue(Json.JsonSerializer.SerializeDiff(InputModule, other.InputModule));
+
+                    jsonWriter.WriteEndObject();
+                }
 
                 jsonWriter.WriteEndObject();
             }
@@ -629,6 +683,20 @@ namespace FlaxEngine
         internal void Deserialize(string json)
         {
             _isLoading = true;
+
+            JObject theObj = JObject.Parse(json);
+            if (theObj.ContainsKey("InputModule"))
+            {
+                JObject im = (JObject)theObj["InputModule"];
+                theObj.Remove("InputModule");
+                json = theObj.ToString();
+
+                ScriptType typ = new ScriptType(TypeUtils.GetManagedType((string)im["Type"]));
+                InputModule = (UIInputModule)typ.CreateInstance();
+                Json.JsonSerializer.Deserialize(InputModule, im["Data"].ToString());
+            }
+            
+
             Json.JsonSerializer.Deserialize(this, json);
             _isLoading = false;
         }

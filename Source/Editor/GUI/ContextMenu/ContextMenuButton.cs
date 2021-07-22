@@ -115,7 +115,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var textColor = Enabled ? style.Foreground : style.ForegroundDisabled;
 
             // Draw background
-            if (IsMouseOver && Enabled)
+            if ((IsMouseOver || IsFocused) && Enabled)
                 Render2D.FillRectangle(backgroundRect, style.LightBackground);
             else if (IsFocused)
                 Render2D.FillRectangle(backgroundRect, style.LightBackground);

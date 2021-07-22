@@ -426,7 +426,7 @@ namespace FlaxEditor.GUI
                 borderColor = BorderColorSelected;
                 arrowColor = ArrowColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;

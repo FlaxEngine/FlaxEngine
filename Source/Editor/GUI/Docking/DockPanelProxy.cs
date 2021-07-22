@@ -193,7 +193,7 @@ namespace FlaxEditor.GUI.Docking
 
                 // Draw header
                 bool isMouseOver = IsMouseOver && headerRect.Contains(MousePosition);
-                Render2D.FillRectangle(headerRect, containsFocus ? style.BackgroundSelected : isMouseOver ? style.BackgroundHighlighted : style.LightBackground);
+                Render2D.FillRectangle(headerRect, containsFocus ? style.BackgroundSelected : isMouseOver || IsFocused ? style.BackgroundHighlighted : style.LightBackground);
 
                 float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
 
@@ -248,7 +248,7 @@ namespace FlaxEditor.GUI.Docking
                         Render2D.FillRectangle(tabRect, tabColor);
                     }
                     // Check if mouse is over
-                    else if (isMouseOver)
+                    else if (isMouseOver || IsFocused)
                     {
                         tabColor = style.BackgroundHighlighted;
                         Render2D.FillRectangle(tabRect, tabColor);

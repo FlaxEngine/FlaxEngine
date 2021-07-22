@@ -342,7 +342,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Paint Background
                 BackgroundColor = _isSelected ? Color.OrangeRed : style.BackgroundNormal;
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     BackgroundColor *= 1.2f;
                 Render2D.FillRectangle(_textRect, BackgroundColor);
 
@@ -1134,7 +1134,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Paint Background
                 BackgroundColor = _isSelected ? Color.OrangeRed : style.BackgroundNormal;
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     BackgroundColor *= 1.2f;
                 Render2D.FillRectangle(_textRect, BackgroundColor);
 

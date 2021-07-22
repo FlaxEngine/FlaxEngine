@@ -70,7 +70,7 @@ namespace FlaxEditor.Surface.Archetypes
                             Render2D.FillRectangle(new Rectangle(prevTime * width, 0, (1.0f - prevTime) * width, height), prevColor);
                         }
                     }
-                    Render2D.DrawRectangle(bounds, IsMouseOver ? style.BackgroundHighlighted : style.Background);
+                    Render2D.DrawRectangle(bounds, IsMouseOver || IsFocused ? style.BackgroundHighlighted : style.Background);
                 }
 
                 /// <inheritdoc />
@@ -100,7 +100,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
                     var arrowTransform = Matrix3x3.Translation2D(new Vector2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(-Mathf.PiOverTwo) * Matrix3x3.Translation2D(new Vector2(8.0f, 0));
                     var color = Color;
-                    if (IsMouseOver)
+                    if (IsMouseOver || IsFocused)
                         color *= 1.3f;
                     color.A = 1.0f;
                     var icons = Editor.Instance.Icons;

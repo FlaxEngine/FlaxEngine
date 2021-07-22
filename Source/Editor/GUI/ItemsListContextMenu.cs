@@ -112,7 +112,7 @@ namespace FlaxEditor.GUI
                 base.Draw();
 
                 // Overlay
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundHighlighted);
 
                 // Draw all highlights

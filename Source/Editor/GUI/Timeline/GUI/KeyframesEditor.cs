@@ -444,7 +444,7 @@ namespace FlaxEditor.GUI
                 var color = Color.Gray;
                 if (IsSelected)
                     color = Editor.ContainsFocus ? Color.YellowGreen : Color.Lerp(Color.Gray, Color.YellowGreen, 0.4f);
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     color *= 1.1f;
                 Render2D.FillRectangle(rect, color);
             }

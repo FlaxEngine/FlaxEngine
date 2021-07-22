@@ -88,7 +88,7 @@ namespace FlaxEditor.GUI.Tabs
                         Render2D.FillRectangle(leftEdgeRect, style.BackgroundSelected);
                     }
                 }
-                else if (isMouseOverTab)
+                else if (isMouseOverTab || IsFocused)
                 {
                     Render2D.FillRectangle(tabRect, style.BackgroundHighlighted);
                 }

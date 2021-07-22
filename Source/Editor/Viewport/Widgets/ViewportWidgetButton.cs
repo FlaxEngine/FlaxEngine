@@ -104,8 +104,8 @@ namespace FlaxEditor.Viewport.Widgets
 
             // Check if is checked or mouse is over and auto check feature is enabled
             if (_checked)
-                Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
-            else if (_autoCheck && IsMouseOver)
+                Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver || IsFocused ? 0.9f : 0.6f));
+            else if (_autoCheck && (IsMouseOver || IsFocused))
                 Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
 
             // Check if has icon
@@ -120,7 +120,7 @@ namespace FlaxEditor.Viewport.Widgets
             }
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, _text, textRect, style.Foreground * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, _text, textRect, style.Foreground * (IsMouseOver || IsFocused ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

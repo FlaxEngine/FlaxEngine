@@ -140,6 +140,10 @@ namespace FlaxEditor.GUI.Docking
                     _dockedTo.SelectedTabIndex = index;
                 }
             });
+            InputActions.Add(options => options.NextItem, () =>
+            {
+                Root.Navigate(NavDir.Next);
+            });
 
             // Link to the master panel
             _masterPanel?.LinkWindow(this);

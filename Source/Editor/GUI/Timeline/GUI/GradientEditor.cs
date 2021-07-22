@@ -65,7 +65,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 var icons = Editor.Instance.Icons;
                 var icon = icons.VisjectBoxClosed32;
 
-                Render2D.DrawSprite(icon, new Rectangle(0.0f, 0.0f, 10.0f, 10.0f), isMouseOver ? Color.Gray : Color.Black);
+                Render2D.DrawSprite(icon, new Rectangle(0.0f, 0.0f, 10.0f, 10.0f), isMouseOver || IsFocused ? Color.Gray : Color.Black);
                 Render2D.DrawSprite(icon, new Rectangle(1.0f, 1.0f, 8.0f, 8.0f), color);
             }
 
@@ -426,7 +426,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     Render2D.FillRectangle(new Rectangle(prevStop.Frame * scale, 0, width - prevStop.Frame * scale, height), prevStop.Value);
                 }
             }
-            Render2D.DrawRectangle(bounds, IsMouseOver ? style.BackgroundHighlighted : style.Background);
+            Render2D.DrawRectangle(bounds, IsMouseOver || IsFocused ? style.BackgroundHighlighted : style.Background);
 
             DrawChildren();
 

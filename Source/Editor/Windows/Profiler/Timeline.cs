@@ -78,7 +78,7 @@ namespace FlaxEditor.Windows.Profiler
                 var style = Style.Current;
                 var bounds = new Rectangle(Vector2.Zero, Size);
                 Color color = _color;
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     color *= 1.1f;
 
                 Render2D.FillRectangle(bounds, color);

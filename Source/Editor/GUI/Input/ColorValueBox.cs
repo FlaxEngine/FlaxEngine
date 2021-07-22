@@ -128,7 +128,7 @@ namespace FlaxEditor.GUI.Input
             var r = new Rectangle(2, 2, Width - 4, Height - 4);
 
             Render2D.FillRectangle(r, _value);
-            Render2D.DrawRectangle(r, IsMouseOver ? style.BackgroundSelected : Color.Black);
+            Render2D.DrawRectangle(r, IsMouseOver || IsFocused ? style.BackgroundSelected : Color.Black);
         }
 
         /// <inheritdoc />

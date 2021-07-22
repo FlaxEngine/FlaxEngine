@@ -1312,5 +1312,58 @@ namespace FlaxEngine.GUI
         {
             return (int)(Y - other.Y);
         }
+
+        public bool OnAutoNavigate(NavDir direction)
+        {
+            switch (direction)
+            {
+                case NavDir.Up:
+                    if(OnNavigateUp != null)
+                    {
+                        Focus(OnNavigateUp);
+                        return true;
+                    }
+                    return false;
+                case NavDir.Down:
+                    if (OnNavigateDown != null)
+                    {
+                        Focus(OnNavigateDown);
+                        return true;
+                    }
+                    return false;
+                case NavDir.Left:
+                    if (OnNavigateLeft != null)
+                    {
+                        Focus(OnNavigateLeft);
+                        return true;
+                    }
+                    return false;
+                case NavDir.Right:
+                    if (OnNavigateRight != null)
+                    {
+                        Focus(OnNavigateRight);
+                        return true;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets all children and self if they support being selected and are visible
+        /// </summary>
+        /// <returns>All controls suitable for auto selecting</returns>
+        public virtual List<Control> GetAutoNavControls()
+        {
+            return new List<Control> { Visible && AutoFocus && EnabledInHierarchy ? this : null };
+        }
+
+        public Control OnNavigateLeft;
+        public Control OnNavigateRight;
+        public Control OnNavigateUp;
+        public Control OnNavigateDown;
+        public Control OnNavigateNext;
+        public Control OnNavigatePrevious;
     }
 }

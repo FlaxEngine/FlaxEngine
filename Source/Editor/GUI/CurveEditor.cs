@@ -1080,7 +1080,7 @@ namespace FlaxEditor.GUI
                 var color = Editor.ShowCollapsed ? Color.Gray : Editor.Colors[Component];
                 if (IsSelected)
                     color = Editor.ContainsFocus ? Color.YellowGreen : Color.Lerp(Color.Gray, Color.YellowGreen, 0.4f);
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     color *= 1.1f;
                 Render2D.FillRectangle(rect, color);
             }
@@ -1178,7 +1178,7 @@ namespace FlaxEditor.GUI
 
                 var rect = new Rectangle(Vector2.Zero, Size);
                 var color = Color.MediumVioletRed;
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     color *= 1.1f;
                 Render2D.FillRectangle(rect, color);
             }

@@ -20,6 +20,12 @@ namespace FlaxEngine.GUI
         public bool IgnoreStack;
 
         /// <inheritdoc/>
+        public AlphaPanel()
+        {
+            AutoFocus = false;
+        }
+
+        /// <inheritdoc/>
         public override void Draw()
         {
             Render2D.PeekTint(out Color oldColor);

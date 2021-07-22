@@ -110,7 +110,7 @@ namespace FlaxEditor.GUI
             bool enabled = EnabledInHierarchy;
 
             // Draw background
-            if (enabled && (IsMouseOver || Checked))
+            if (enabled && (IsMouseOver || Checked || IsFocused))
                 Render2D.FillRectangle(clientRect, Checked ? style.BackgroundSelected : _mouseDown ? style.BackgroundHighlighted : (style.LightBackground * 1.3f));
 
             // Draw icon

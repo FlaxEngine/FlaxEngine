@@ -180,16 +180,20 @@ namespace FlaxEditor.Options
 
         #region Interface
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+W")]
+        [DefaultValue(typeof(InputBinding), "Tab")]
         [EditorDisplay("Interface"), EditorOrder(2000)]
+        public InputBinding NextItem = new InputBinding(KeyboardKeys.Tab);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+W")]
+        [EditorDisplay("Interface"), EditorOrder(2010)]
         public InputBinding CloseTab = new InputBinding(KeyboardKeys.W, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "Ctrl+Tab")]
-        [EditorDisplay("Interface"), EditorOrder(2010)]
+        [EditorDisplay("Interface"), EditorOrder(2020)]
         public InputBinding NextTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Tab")]
-        [EditorDisplay("Interface"), EditorOrder(2020)]
+        [EditorDisplay("Interface"), EditorOrder(2030)]
         public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
 
         #endregion

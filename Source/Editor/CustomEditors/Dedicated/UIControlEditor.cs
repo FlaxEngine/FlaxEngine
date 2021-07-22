@@ -69,7 +69,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     backgroundColor = BackgroundColorSelected;
                     borderColor = BorderColorSelected;
                 }
-                else if (IsMouseOver)
+                else if (IsMouseOver || IsFocused)
                 {
                     backgroundColor = BackgroundColorHighlighted;
                     borderColor = BorderColorHighlighted;
@@ -147,7 +147,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Render2D.FillRectangle(fillArea.MakeOffsetted(rect.Location), backgroundColor);
 
                 // Draw frame
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                 {
                     Render2D.DrawRectangle(rect, style.ProgressNormal.AlphaMultiplied(0.8f), 1.1f);
                 }
@@ -672,6 +672,119 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 for (int i = 0; i < uiControls.Count; i++)
                     SetType(ref controlType, (UIControl)uiControls[i]);
+            }
+
+            ParentEditor.RebuildLayout();
+        }
+    }
+
+    /// <summary>
+    /// Dedicated custom editor for <see cref="UIControl.Control"/> object.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
+    public class UICanvasInputModuleEditor : GenericEditor
+    {
+        private Type _cachedType;
+
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            _cachedType = null;
+            if (HasDifferentTypes)
+            {
+                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
+                return;
+            }
+
+            // Set control type button
+            var space = layout.Space(20);
+            float setTypeButtonWidth = 60.0f;
+            var setTypeButton = new Button
+            {
+                TooltipText = "Sets the InputModule to the given type",
+                AnchorPreset = AnchorPresets.MiddleCenter,
+                Text = "Set Type",
+                Parent = space.Spacer,
+                Bounds = new Rectangle((space.Spacer.Width - setTypeButtonWidth) / 2, 1, setTypeButtonWidth, 18),
+            };
+            setTypeButton.ButtonClicked += OnSetTypeButtonClicked;
+
+            // Don't show editor if any control is invalid
+            if (Values.HasNull)
+            {
+                var label = layout.Label("Select control type to create", TextAlignment.Center);
+                label.Label.Enabled = false;
+                return;
+            }
+
+            // Add control type helper label
+            {
+                var type = Values[0].GetType();
+                _cachedType = type;
+                var label = layout.AddPropertyItem("Type", "The type of the created control.");
+                label.Label(type.FullName);
+            }
+
+            // Show control properties
+            base.Initialize(layout);
+
+        }
+
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            if (_cachedType != null)
+            {
+                // Automatic layout rebuild if control type gets changed
+                var type = Values.HasNull ? null : Values[0].GetType();
+                if (type != _cachedType)
+                {
+                    RebuildLayout();
+                    return;
+                }
+            }
+
+            base.Refresh();
+        }
+
+        private void OnSetTypeButtonClicked(Button button)
+        {
+            var controlTypes = Editor.Instance.CodeEditing.InputModules.Get();
+            if (controlTypes.Count == 0)
+                return;
+
+            // Show context menu with list of controls to add
+            var cm = new ItemsListContextMenu(180);
+            for (int i = 0; i < controlTypes.Count; i++)
+            {
+                cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
+            }
+            cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
+            cm.SortChildren();
+            cm.Show(button.Parent, button.BottomLeft);
+        }
+
+        private void SetType(ref ScriptType controlType, UICanvas uiControl)
+        {
+            uiControl.InputModule = (UIInputModule)controlType.CreateInstance();
+        }
+
+        private void SetType(ScriptType controlType)
+        {
+            var uiControls = ParentEditor.Values;
+            if (Presenter.Undo?.Enabled ?? false)
+            {
+                using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
+                {
+                    for (int i = 0; i < uiControls.Count; i++)
+                        SetType(ref controlType, (UICanvas)uiControls[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < uiControls.Count; i++)
+                    SetType(ref controlType, (UICanvas)uiControls[i]);
             }
 
             ParentEditor.RebuildLayout();

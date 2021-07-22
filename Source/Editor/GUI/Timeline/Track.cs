@@ -908,13 +908,13 @@ namespace FlaxEditor.GUI.Timeline
             // Draw background
             if (isSelected || isMouseOver)
             {
-                Render2D.FillRectangle(bounds, (isSelected && isFocused) ? backgroundColorSelected : (isMouseOver ? backgroundColorHighlighted : backgroundColorSelectedUnfocused));
+                Render2D.FillRectangle(bounds, (isSelected && isFocused) ? backgroundColorSelected : (isMouseOver || IsFocused ? backgroundColorHighlighted : backgroundColorSelectedUnfocused));
             }
 
             // Draw arrow
             if (CanExpand)
             {
-                Render2D.DrawSprite(_opened ? style.ArrowDown : style.ArrowRight, ArrowRect, isMouseOver ? style.Foreground : style.ForegroundGrey);
+                Render2D.DrawSprite(_opened ? style.ArrowDown : style.ArrowRight, ArrowRect, isMouseOver || IsFocused ? style.Foreground : style.ForegroundGrey);
             }
 
             // Draw icon

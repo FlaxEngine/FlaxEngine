@@ -41,7 +41,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
 
             var moveColor = style.ProgressNormal;
             var thickness = 2.0f;
-            var borderColor = _isMoving ? moveColor : (IsMouseOver && _canEdit ? Color.Yellow : style.BorderNormal);
+            var borderColor = _isMoving ? moveColor : ((IsMouseOver || IsFocused) && _canEdit ? Color.Yellow : style.BorderNormal);
             Render2D.FillRectangle(new Rectangle((Width - thickness) * 0.5f, timeAxisHeaderOffset, thickness, Height - timeAxisHeaderOffset), borderColor);
         }
 

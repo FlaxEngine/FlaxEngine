@@ -161,7 +161,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var button2Rect = new Rectangle(button1Rect.Right + 2, 1, 14, 14);
 
             // Draw frame
-            Render2D.DrawRectangle(frameRect, IsMouseOver ? style.BorderHighlighted : style.BorderNormal);
+            Render2D.DrawRectangle(frameRect, IsMouseOver || IsFocused ? style.BorderHighlighted : style.BorderNormal);
 
             // Check if has item selected
             if (isSelected)

@@ -196,7 +196,7 @@ namespace FlaxEditor.Surface.ContextMenu
             var showScoreHit = SortScore > 0.1f;
 
             // Overlay
-            if (IsMouseOver)
+            if (IsMouseOver || IsFocused)
                 Render2D.FillRectangle(rect, style.BackgroundHighlighted);
 
             if (Group.ContextMenu.SelectedItem == this)

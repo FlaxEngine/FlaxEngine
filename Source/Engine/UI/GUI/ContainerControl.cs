@@ -1176,5 +1176,18 @@ namespace FlaxEngine.GUI
         }
 
         #endregion
+
+
+        /// <inheritdoc />
+        public override List<Control> GetAutoNavControls()
+        {
+            List<Control> list = new List<Control>();
+            foreach (Control c in Children)
+            {
+                list.AddRange(c.GetAutoNavControls());
+            }
+            list.AddRange(base.GetAutoNavControls());
+            return list;
+        }
     }
 }

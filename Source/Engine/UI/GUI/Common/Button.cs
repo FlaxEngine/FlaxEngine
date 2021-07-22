@@ -205,7 +205,7 @@ namespace FlaxEngine.GUI
                 backgroundColor = BackgroundColorSelected;
                 borderColor = BorderColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;

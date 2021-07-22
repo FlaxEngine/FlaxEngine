@@ -51,7 +51,7 @@ namespace FlaxEditor.GUI
             {
                 Render2D.FillRectangle(clientRect, style.BackgroundSelected);
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsFocused)
             {
                 Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
             }

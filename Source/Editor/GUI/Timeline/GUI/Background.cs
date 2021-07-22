@@ -217,7 +217,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 return true;
 
             // Zoom in/out
-            if (IsMouseOver && Root.GetKey(KeyboardKeys.Control))
+            if ((IsMouseOver || IsFocused )&& Root.GetKey(KeyboardKeys.Control))
             {
                 // TODO: preserve the view center point for easier zooming
                 _timeline.Zoom += delta * 0.1f;

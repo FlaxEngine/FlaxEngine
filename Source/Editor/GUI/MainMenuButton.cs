@@ -66,7 +66,7 @@ namespace FlaxEditor.GUI
             bool enabled = EnabledInHierarchy;
 
             // Draw background
-            if (enabled && hasChildItems && (isOpened || IsMouseOver))
+            if (enabled && hasChildItems && (isOpened || IsMouseOver || IsFocused))
             {
                 Render2D.FillRectangle(clientRect, isOpened ? BackgroundColorMouseOverOpened : BackgroundColorMouseOver);
             }

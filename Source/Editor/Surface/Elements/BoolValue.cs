@@ -56,7 +56,7 @@ namespace FlaxEditor.Surface.Elements
             bool value = Value;
 
             // Background
-            var backgroundColor = IsMouseOver ? style.TextBoxBackgroundSelected : style.TextBoxBackground;
+            var backgroundColor = IsMouseOver || IsFocused ? style.TextBoxBackgroundSelected : style.TextBoxBackground;
             Render2D.FillRectangle(box, backgroundColor);
 
             // Border

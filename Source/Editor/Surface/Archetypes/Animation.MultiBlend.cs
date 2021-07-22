@@ -303,7 +303,7 @@ namespace FlaxEditor.Surface.Archetypes
             GetPointsArea(out var pointsArea);
 
             // Background
-            Render2D.DrawRectangle(rect, IsMouseOver ? style.TextBoxBackgroundSelected : style.TextBoxBackground);
+            Render2D.DrawRectangle(rect, IsMouseOver || IsFocused ? style.TextBoxBackgroundSelected : style.TextBoxBackground);
             //Render2D.DrawRectangle(pointsArea, Color.Red);
 
             // Grid

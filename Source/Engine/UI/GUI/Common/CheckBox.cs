@@ -197,7 +197,7 @@ namespace FlaxEngine.GUI
             Color borderColor = BorderColor;
             if (!enabled)
                 borderColor *= 0.5f;
-            else if (_mouseDown || _mouseOverBox)
+            else if (_mouseDown || _mouseOverBox || IsFocused)
                 borderColor = BorderColorHighlighted;
             Render2D.DrawRectangle(_box.MakeExpanded(-2.0f), borderColor);
 

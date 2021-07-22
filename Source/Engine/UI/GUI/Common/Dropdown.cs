@@ -233,7 +233,7 @@ namespace FlaxEngine.GUI
         public Dropdown()
         : base(0, 0, 120, 18.0f)
         {
-            AutoFocus = false;
+            //AutoFocus = false;
 
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
@@ -496,7 +496,7 @@ namespace FlaxEngine.GUI
                 borderColor = BorderColorSelected;
                 arrowColor = ArrowColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;

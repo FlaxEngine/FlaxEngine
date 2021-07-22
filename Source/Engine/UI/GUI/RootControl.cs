@@ -159,5 +159,114 @@ namespace FlaxEngine.GUI
 
         /// <inheritdoc />
         public override RootControl Root => this;
+
+
+        /// <summary>
+        /// Navigates in that direction, used by InputModules etc.
+        /// </summary>
+        /// <param name="navDir">The direction</param>
+        public void Navigate(NavDir navDir)
+        {
+            if (FocusedControl == null)
+                return;
+            if (!FocusedControl.OnAutoNavigate(navDir))
+            {
+                Control newSel = null;
+                if(navDir == NavDir.Next)
+                {
+                    newSel = AutoNaviagate(FocusedControl, NavDir.Right, out float dist);
+                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Down, out float dist2);
+
+                    Debug.Log("Right: " + newSel + " D: "+dist);
+                    Debug.Log("Right: " + newSel2 + " D: " + dist2);
+
+                    if (dist2 * 2 < dist)
+                        newSel = newSel2;
+                    Debug.Log(newSel);
+
+                    if (newSel == null)
+                        return;
+                }
+                else if (navDir == NavDir.Previous)
+                {
+                    newSel = AutoNaviagate(FocusedControl, NavDir.Left, out float dist);
+                    Control newSel2 = AutoNaviagate(FocusedControl, NavDir.Up, out float dist2);
+                    if (dist2 * 2 < dist)
+                        newSel = newSel2;
+
+                    if (newSel == null)
+                        return;
+                }
+                if (newSel == null)
+                    newSel = AutoNaviagate(FocusedControl, navDir, out float dist);
+                Debug.Log(newSel);
+                //Debug.LogWarning("We tried to auto navigate from " + currentlySelected + " in direction of " + navDir + " and found " + newSel);
+                if (newSel != null)
+                {
+                    Focus(newSel);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates UI ScreenSpace like direction(Y inverted) from the navdir, used internally for calculating how likely we are autonavigating towards new Control
+        /// </summary>
+        /// <param name="navDir">The direction to use</param>
+        /// <returns>Screen Space like direction </returns>
+        public Vector2 GetUIVectorDirFromNavDir(NavDir navDir)
+        {
+            switch (navDir)
+            {
+                case NavDir.Down:
+                    return new Vector2(0, 1);//Swapped dirs because UI is upside down
+                case NavDir.Up:
+                    return new Vector2(0, -1);
+                case NavDir.Right:
+                    return new Vector2(1, 0);
+                case NavDir.Left:
+                    return new Vector2(-1, 0);
+                default:
+                    return Vector2.Zero;
+            }
+        }
+
+        /// <summary>
+        /// Performs auto navigation
+        /// </summary>
+        /// <param name="from">The selectable from which to search</param>
+        /// <param name="navDir">The direction</param>
+        /// <param name="closetsDistance">returns the Distance</param>
+        /// <returns>The new selectable which was found</returns>
+        private Control AutoNaviagate(Control from, NavDir navDir, out float closetsDistance)
+        {
+            Vector2 directionOfInput = GetUIVectorDirFromNavDir(navDir);
+
+            Rectangle fromRect = new Rectangle(from.ScreenPos, from.Size);
+
+            closetsDistance = float.PositiveInfinity;
+            Control closestSelectable = null;
+            foreach (Control potentialSelectable in GetAutoNavControls())
+            {
+                if (potentialSelectable != this && potentialSelectable != null)
+                {
+                    Vector2 directionOfDifferences = (potentialSelectable.ScreenPos - from.ScreenPos);
+                    directionOfDifferences.Normalize();
+                    float likelinessOfDirectionCohersion = Vector2.Dot(directionOfInput, directionOfDifferences);
+                    if (likelinessOfDirectionCohersion > 0f)
+                    {
+                        float distance = Rectangle.Distance(new Rectangle(potentialSelectable.ScreenPos, potentialSelectable.Size), fromRect);
+                        //float distance = Vector2.Distance(potentialSelectable.ScreenPos, from.ScreenPos);
+                        if (distance < closetsDistance)
+                        {
+                            Debug.Log(likelinessOfDirectionCohersion);
+                            closetsDistance = distance;
+                            closestSelectable = potentialSelectable;
+                        }
+                    }
+                }
+            }
+            return closestSelectable;
+        }
+   
     }
 }

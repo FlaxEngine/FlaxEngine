@@ -268,13 +268,13 @@ namespace FlaxEditor.GUI.Timeline
             var borderHighlightColor = style.BorderHighlighted;
             var moveColor = style.ProgressNormal;
             var moveThickness = 2.0f;
-            var borderColor = isMovingWholeMedia ? moveColor : (IsMouseOver ? borderHighlightColor : style.BorderNormal);
+            var borderColor = isMovingWholeMedia ? moveColor : (IsMouseOver || IsFocused ? borderHighlightColor : style.BorderNormal);
             Render2D.DrawRectangle(bounds, borderColor, isMovingWholeMedia ? moveThickness : 1.0f);
             if (_startMoveLeftEdge)
             {
                 Render2D.DrawLine(bounds.UpperLeft, bounds.BottomLeft, moveColor, moveThickness);
             }
-            else if (IsMouseOver && MoveLeftEdgeRect.Contains(ref _mouseLocation))
+            else if ((IsMouseOver || IsFocused) && MoveLeftEdgeRect.Contains(ref _mouseLocation))
             {
                 Render2D.DrawLine(bounds.UpperLeft, bounds.BottomLeft, Color.Yellow);
             }
@@ -282,7 +282,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 Render2D.DrawLine(bounds.UpperRight, bounds.BottomRight, moveColor, moveThickness);
             }
-            else if (IsMouseOver && MoveRightEdgeRect.Contains(ref _mouseLocation))
+            else if ((IsMouseOver || IsFocused) && MoveRightEdgeRect.Contains(ref _mouseLocation))
             {
                 Render2D.DrawLine(bounds.UpperRight, bounds.BottomRight, Color.Yellow);
             }

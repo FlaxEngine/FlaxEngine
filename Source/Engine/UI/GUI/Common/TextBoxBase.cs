@@ -431,7 +431,7 @@ namespace FlaxEngine.GUI
             _isMultiline = isMultiline;
             _maxLength = 2147483646;
             _selectionStart = _selectionEnd = -1;
-            AutoFocus = false;
+            AutoFocus = true;
 
             var style = Style.Current;
             CaretColor = style.Foreground;

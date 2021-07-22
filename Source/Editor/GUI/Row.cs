@@ -45,7 +45,7 @@ namespace FlaxEditor.GUI
 
             var style = Style.Current;
 
-            if (IsMouseOver)
+            if (IsMouseOver || IsFocused)
             {
                 Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundHighlighted * 0.7f);
             }
