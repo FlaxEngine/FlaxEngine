@@ -237,7 +237,7 @@ namespace FlaxEditor.Viewport.Previews
                     for (int i = 0; i < meshData.VertexBuffer.Length; i++)
                     {
                         ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal, Color.Green);
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal * 4.0f, Color.Green);
                     }
                 }
             }
@@ -254,7 +254,7 @@ namespace FlaxEditor.Viewport.Previews
                     for (int i = 0; i < meshData.VertexBuffer.Length; i++)
                     {
                         ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent, Color.Blue);
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent * 4.0f, Color.Blue);
                     }
                 }
             }
