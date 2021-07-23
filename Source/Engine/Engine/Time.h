@@ -54,7 +54,8 @@ public:
         double NextBegin;
 
         /// <summary>
-        /// The delta time.
+        /// The delta time. 
+        /// Always returns the delta time for the current event, meaning it can be used in Update, FixedUpdate, Draw, etc.
         /// </summary>
         TimeSpan DeltaTime;
 
