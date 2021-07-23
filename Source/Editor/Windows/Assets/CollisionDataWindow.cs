@@ -50,7 +50,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(20), Limit(0, 5), EditorDisplay("General", "Model LOD Index"), Tooltip("Source model LOD index to use for collision data generation (will be clamped to the actual model LODs collection size)")]
             public int ModelLodIndex;
 
-            [EditorOrder(30), EditorDisplay("General"), Tooltip("The source model material slots mask. One bit per-slot. Can be sued to exclude particular material slots from collision cooking.")]
+            [EditorOrder(30), EditorDisplay("General"), Tooltip("The source model material slots mask. One bit per-slot. Can be used to exclude particular material slots from collision cooking.")]
             public MaterialSlotsMask MaterialSlotsMask = MaterialSlotsMask.All;
 
             [EditorOrder(100), EditorDisplay("Convex Mesh", "Convex Flags"), Tooltip("Convex mesh generation flags")]

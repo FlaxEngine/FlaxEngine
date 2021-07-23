@@ -102,7 +102,7 @@ namespace FlaxEditor.GUI
         public abstract Type ValueType { get; }
 
         /// <summary>
-        /// The amount of frames per second of the curve animation (optional). Can be sued to restrict the keyframes time values to the given time quantization rate.
+        /// The amount of frames per second of the curve animation (optional). Can be used to restrict the keyframes time values to the given time quantization rate.
         /// </summary>
         public abstract float? FPS { get; set; }
 

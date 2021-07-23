@@ -797,7 +797,7 @@ namespace FlaxEditor.CustomEditors
         }
 
         /// <summary>
-        /// Called when custom editor sets the value to the object and resets the dirty state. Can be sued to perform custom work after editing the target object.
+        /// Called when custom editor sets the value to the object and resets the dirty state. Can be used to perform custom work after editing the target object.
         /// </summary>
         protected virtual void OnUnDirty()
         {

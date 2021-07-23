@@ -67,7 +67,7 @@ namespace FlaxEngine.GUI
         public float Brightness { get; set; } = 1.0f;
 
         /// <summary>
-        /// Gets or sets the rendering resolution scale. Can be sued to upscale image or to downscale the rendering to save the performance.
+        /// Gets or sets the rendering resolution scale. Can be used to upscale image or to downscale the rendering to save the performance.
         /// </summary>
         public float ResolutionScale { get; set; } = 1.0f;
 

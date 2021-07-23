@@ -592,7 +592,7 @@ namespace FlaxEditor.GUI
         public object DefaultValue;
 
         /// <summary>
-        /// The amount of frames per second of the keyframes animation (optional). Can be sued to restrict the keyframes time values to the given time quantization rate.
+        /// The amount of frames per second of the keyframes animation (optional). Can be used to restrict the keyframes time values to the given time quantization rate.
         /// </summary>
         public float? FPS
         {

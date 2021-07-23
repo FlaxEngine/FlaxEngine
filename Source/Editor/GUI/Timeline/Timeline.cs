@@ -584,7 +584,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether user can sue Play/Pause/Stop buttons, otherwise those should be disabled.
+        /// Gets or sets a value indicating whether user can use Play/Pause/Stop buttons, otherwise those should be disabled.
         /// </summary>
         public bool CanPlayPauseStop
         {
@@ -1024,12 +1024,12 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Occurs when timeline shows the View context menu. Can be sued to add custom options.
+        /// Occurs when timeline shows the View context menu. Can be used to add custom options.
         /// </summary>
         public event Action<ContextMenu.ContextMenu> ShowViewContextMenu;
 
         /// <summary>
-        /// Called when timeline shows the View context menu. Can be sued to add custom options.
+        /// Called when timeline shows the View context menu. Can be used to add custom options.
         /// </summary>
         /// <param name="menu">The menu.</param>
         protected virtual void OnShowViewContextMenu(ContextMenu.ContextMenu menu)
