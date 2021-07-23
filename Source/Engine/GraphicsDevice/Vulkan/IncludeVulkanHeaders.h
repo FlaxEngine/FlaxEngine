@@ -13,7 +13,6 @@
 #define VK_USE_PLATFORM_VI_NN 1
 #include <vulkan/vulkan.h>
 #undef VK_EXT_debug_utils
-#undef VK_EXT_debug_report
 #undef VK_EXT_validation_cache
 #define VMA_DEDICATED_ALLOCATION 0
 #pragma clang diagnostic ignored "-Wpointer-bool-conversion"

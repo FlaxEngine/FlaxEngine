@@ -7,9 +7,8 @@
 #include "../RenderToolsVulkan.h"
 #include "Engine/Graphics/GPUDevice.h"
 
-void Win32VulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions)
+void Win32VulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
 {
-    // Include Windows surface extension
     extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
     extensions.Add(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 }

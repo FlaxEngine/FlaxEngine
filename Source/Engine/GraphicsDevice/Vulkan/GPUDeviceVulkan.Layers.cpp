@@ -243,8 +243,6 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
-    VulkanPlatform::NotifyFoundInstanceLayersAndExtensions(foundUniqueLayers, foundUniqueExtensions);
-
     // TODO: expose as a command line parameter or sth
     const bool useVkTrace = false;
     bool vkTrace = false;
@@ -336,7 +334,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
 #endif
 
     Array<const char*> platformExtensions;
-    VulkanPlatform::GetInstanceExtensions(platformExtensions);
+    VulkanPlatform::GetInstanceExtensions(platformExtensions, outInstanceLayers);
 
     for (const char* extension : platformExtensions)
     {
@@ -453,8 +451,6 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         }
     }
 
-    VulkanPlatform::NotifyFoundDeviceLayersAndExtensions(gpu, foundUniqueLayers, foundUniqueExtensions);
-
     // Add device layers for debugging
 #if VULKAN_USE_DEBUG_LAYER
     bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
@@ -530,7 +526,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     };
 
     Array<const char*> platformExtensions;
-    VulkanPlatform::GetDeviceExtensions(platformExtensions);
+    VulkanPlatform::GetDeviceExtensions(platformExtensions, outDeviceLayers);
     for (const char* extension : platformExtensions)
     {
         if (ListContains(availableExtensions, extension))

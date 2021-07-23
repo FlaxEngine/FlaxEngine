@@ -5,13 +5,13 @@
 #include "AndroidVulkanPlatform.h"
 #include "../RenderToolsVulkan.h"
 
-void AndroidVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions)
+void AndroidVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
 {
 	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
 	extensions.Add(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 }
 
-void AndroidVulkanPlatform::GetDeviceExtensions(Array<const char*>& extensions)
+void AndroidVulkanPlatform::GetDeviceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
 {
 	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
 	extensions.Add(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);

@@ -25,19 +25,11 @@ class VulkanPlatformBase
 {
 public:
 
-    static void NotifyFoundInstanceLayersAndExtensions(const Array<StringAnsi>& layers, const Array<StringAnsi>& extensions)
+    static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
     {
     }
 
-    static void NotifyFoundDeviceLayersAndExtensions(VkPhysicalDevice physicalDevice, const Array<StringAnsi>& layers, const Array<StringAnsi>& extensions)
-    {
-    }
-
-    static void GetInstanceExtensions(Array<const char*>& outExtensions)
-    {
-    }
-
-    static void GetDeviceExtensions(Array<const char*>& outExtensions)
+    static void GetDeviceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
     {
     }
 

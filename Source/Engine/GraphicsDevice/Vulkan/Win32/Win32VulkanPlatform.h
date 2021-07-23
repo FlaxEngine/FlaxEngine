@@ -17,8 +17,7 @@
 class Win32VulkanPlatform : public VulkanPlatformBase
 {
 public:
-
-    static void GetInstanceExtensions(Array<const char*>& extensions);
+    static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers);
     static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface);
 };
 
