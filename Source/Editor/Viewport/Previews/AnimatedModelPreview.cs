@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEditor.GUI.Input;
@@ -15,11 +16,11 @@ namespace FlaxEditor.Viewport.Previews
     public class AnimatedModelPreview : AssetPreview
     {
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton;
-        private bool _showNodes, _showBounds, _showFloor;
+        private bool _showNodes, _showBounds, _showFloor, _showCurrentLOD;
         private AnimatedModel _previewModel;
         private StaticModel _floorModel;
         private ContextMenuButton _showCurrentLODButton;
-        private bool _showCurrentLOD;
+        private bool _playAnimation;
 
         /// <summary>
         /// Gets or sets the skinned model asset to preview.
@@ -38,7 +39,22 @@ namespace FlaxEditor.Viewport.Previews
         /// <summary>
         /// Gets or sets a value indicating whether play the animation in editor.
         /// </summary>
-        public bool PlayAnimation { get; set; } = false;
+        public bool PlayAnimation
+        {
+            get => _playAnimation;
+            set
+            {
+                if (_playAnimation == value)
+                    return;
+                _playAnimation = value;
+                PlayAnimationChanged?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Occurs when animation playback state gets changed.
+        /// </summary>
+        public event Action PlayAnimationChanged;
 
         /// <summary>
         /// Gets or sets a value indicating whether show animated model skeleton nodes debug view.
@@ -171,6 +187,32 @@ namespace FlaxEditor.Viewport.Previews
             PreviewLight.CascadeCount = 3;
             PreviewLight.ShadowsDistance = 2000.0f;
             Task.ViewFlags |= ViewFlags.Shadows;
+        }
+
+        /// <summary>
+        /// Starts the animation playback.
+        /// </summary>
+        public void Play()
+        {
+            PlayAnimation = true;
+        }
+
+        /// <summary>
+        /// Pauses the animation playback.
+        /// </summary>
+        public void Pause()
+        {
+            PlayAnimation = false;
+        }
+
+        /// <summary>
+        /// Stops the animation playback.
+        /// </summary>
+        public void Stop()
+        {
+            PlayAnimation = false;
+            _previewModel.ResetAnimation();
+            _previewModel.UpdateAnimation();
         }
 
         private void OnBegin(RenderTask task, GPUContext context)

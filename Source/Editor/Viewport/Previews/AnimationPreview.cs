@@ -23,6 +23,7 @@ namespace FlaxEditor.Viewport.Previews
         : base(useWidgets)
         {
             PlayAnimation = true;
+            PlayAnimationChanged += OnPlayAnimationChanged;
 
             // Playback Speed
             {
@@ -43,11 +44,7 @@ namespace FlaxEditor.Viewport.Previews
                     TooltipText = "Animation playback play (F5) or pause (F6)",
                     Parent = playPauseWidget,
                 };
-                _playPauseButton.Clicked += button =>
-                {
-                    PlayAnimation = !PlayAnimation;
-                    button.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
-                };
+                _playPauseButton.Clicked += button => PlayAnimation = !PlayAnimation;
                 playPauseWidget.Parent = this;
             }
 
@@ -56,6 +53,11 @@ namespace FlaxEditor.Viewport.Previews
             PreviewLight.CascadeCount = 2;
             PreviewLight.ShadowsDistance = 1000.0f;
             Task.ViewFlags |= ViewFlags.Shadows;
+        }
+
+        private void OnPlayAnimationChanged()
+        {
+            _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
         }
 
         /// <inheritdoc />
@@ -82,13 +84,11 @@ namespace FlaxEditor.Viewport.Previews
             if (inputOptions.Play.Process(this, key))
             {
                 PlayAnimation = true;
-                _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
                 return true;
             }
             if (inputOptions.Pause.Process(this, key))
             {
                 PlayAnimation = false;
-                _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
                 return true;
             }
             return base.OnKeyDown(key);

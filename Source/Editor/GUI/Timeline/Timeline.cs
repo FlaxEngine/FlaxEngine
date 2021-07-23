@@ -289,6 +289,7 @@ namespace FlaxEditor.GUI.Timeline
         private Image _playbackStop;
         private Image _playbackPlay;
         private Label _noTracksLabel;
+        private ContainerControl _playbackButtonsArea;
         private PositionHandle _positionHandle;
         private bool _isRightMouseButtonDown;
         private Vector2 _rightMouseButtonDownPos;
@@ -598,6 +599,19 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether show playback buttons area.
+        /// </summary>
+        public bool ShowPlaybackButtonsArea
+        {
+            get => _playbackButtonsArea?.Visible ?? false;
+            set
+            {
+                if (_playbackButtonsArea != null)
+                    _playbackButtonsArea.Visible = value;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether user is moving position handle (seeking).
         /// </summary>
         public bool IsMovingPositionHandle => _isMovingPositionHandle;
@@ -723,6 +737,7 @@ namespace FlaxEditor.GUI.Timeline
                     Offsets = new Margin(0, 0, -playbackButtonsSize, playbackButtonsSize),
                     Parent = _splitter.Panel1
                 };
+                _playbackButtonsArea = playbackButtonsArea;
                 var playbackButtonsPanel = new ContainerControl
                 {
                     AutoFocus = false,
@@ -2305,6 +2320,7 @@ namespace FlaxEditor.GUI.Timeline
             _playbackStop = null;
             _playbackPlay = null;
             _noTracksLabel = null;
+            _playbackButtonsArea = null;
             _positionHandle = null;
             DragHandlers.Clear();
 

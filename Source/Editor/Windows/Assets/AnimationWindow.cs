@@ -101,6 +101,7 @@ namespace FlaxEditor.Windows.Assets
                     }
 
                     Window._preview.SetModel(value);
+                    Window._timeline.Preview = value ? Window._preview : null;
 
                     if (Window._panel2 == null)
                     {
@@ -321,6 +322,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _isWaitingForTimelineLoad = false;
             _properties.OnClean();
+            _timeline.Preview = null;
 
             base.UnlinkItem();
         }

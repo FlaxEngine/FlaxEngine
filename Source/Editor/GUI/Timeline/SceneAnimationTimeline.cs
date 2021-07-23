@@ -37,9 +37,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 if (_player == value)
                     return;
-
                 _player = value;
-
                 UpdatePlaybackState();
                 PlayerChanged?.Invoke();
             }

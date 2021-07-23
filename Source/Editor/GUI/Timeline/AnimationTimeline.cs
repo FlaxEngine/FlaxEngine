@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.GUI.Timeline.Tracks;
+using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline
@@ -20,12 +22,35 @@ namespace FlaxEditor.GUI.Timeline
             }
         }
 
+        private AnimationPreview _preview;
+
+        /// <summary>
+        /// Gets or sets the animated preview used for the animation playback.
+        /// </summary>
+        public AnimationPreview Preview
+        {
+            get => _preview;
+            set
+            {
+                if (_preview == value)
+                    return;
+                _preview = value;
+                UpdatePlaybackState();
+                PreviewChanged?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the selected animated model preview gets changed.
+        /// </summary>
+        public event Action PreviewChanged;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimationTimeline"/> class.
         /// </summary>
         /// <param name="undo">The undo/redo to use for the history actions recording. Optional, can be null to disable undo support.</param>
         public AnimationTimeline(FlaxEditor.Undo undo)
-        : base(PlaybackButtons.None, undo, false, false)
+        : base(PlaybackButtons.Play | PlaybackButtons.Stop, undo, false, false)
         {
             PlaybackState = PlaybackStates.Seeking;
             ShowPreviewValues = false;
@@ -60,6 +85,60 @@ namespace FlaxEditor.GUI.Timeline
             var data = Save();
             asset.SaveTimeline(data);
             asset.Reload();
+        }
+
+        private void UpdatePlaybackState()
+        {
+            PlaybackStates state;
+            ShowPlaybackButtonsArea = _preview != null;
+            if (_preview != null)
+            {
+                if (_preview.PlayAnimation)
+                {
+                    state = PlaybackStates.Playing;
+                }
+                else
+                {
+                    state = PlaybackStates.Paused;
+                }
+            }
+            else
+            {
+                state = PlaybackStates.Seeking;
+            }
+            PlaybackState = state;
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            UpdatePlaybackState();
+        }
+
+        /// <inheritdoc />
+        public override void OnPlay()
+        {
+            _preview.Play();
+
+            base.OnPlay();
+        }
+
+        /// <inheritdoc />
+        public override void OnPause()
+        {
+            _preview.Pause();
+
+            base.OnPause();
+        }
+
+        /// <inheritdoc />
+        public override void OnStop()
+        {
+            _preview.Stop();
+
+            base.OnStop();
         }
 
         /// <inheritdoc />
