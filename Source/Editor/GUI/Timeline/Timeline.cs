@@ -724,6 +724,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             var playbackButtonsSize = 0.0f;
+            var playbackButtonsMouseOverColor = Color.FromBgra(0xFFBBBBBB);
             if (playbackButtons != PlaybackButtons.None)
             {
                 playbackButtonsSize = 24.0f;
@@ -754,6 +755,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Rewind to timeline start (Home)",
                         Brush = new SpriteBrush(icons.Skip64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Rotation = 180.0f,
@@ -766,6 +768,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Seek back to the previous keyframe (Page Down)",
                         Brush = new SpriteBrush(icons.Shift64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Rotation = 180.0f,
@@ -782,6 +785,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Move one frame back (Left Arrow)",
                         Brush = new SpriteBrush(icons.Left32),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -795,6 +799,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Stop playback",
                         Brush = new SpriteBrush(icons.Stop64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Visible = false,
                         Enabled = false,
                         Parent = playbackButtonsPanel
@@ -808,6 +813,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Play/pause playback (Space)",
                         Brush = new SpriteBrush(icons.Play64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Visible = false,
                         Tag = false, // Set to true if image is set to Pause, false if Play
                         Parent = playbackButtonsPanel
@@ -821,6 +827,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Move one frame forward (Right Arrow)",
                         Brush = new SpriteBrush(icons.Right32),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -832,6 +839,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Seek to the next keyframe (Page Up)",
                         Brush = new SpriteBrush(icons.Shift64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
@@ -847,6 +855,7 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         TooltipText = "Rewind to timeline end (End)",
                         Brush = new SpriteBrush(icons.Skip64),
+                        MouseOverColor = playbackButtonsMouseOverColor,
                         Enabled = false,
                         Visible = false,
                         Parent = playbackButtonsPanel
