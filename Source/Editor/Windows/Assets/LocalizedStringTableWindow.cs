@@ -126,6 +126,7 @@ namespace FlaxEditor.Windows.Assets
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
             _undo.RedoDone += OnUndoRedo;
+            _undo.ActionDone += OnUndoRedo;
 
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");

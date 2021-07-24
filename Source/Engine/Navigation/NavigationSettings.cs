@@ -57,7 +57,7 @@ namespace FlaxEditor.Content.Settings
         }
 
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
-        [Serialize, Obsolete]
+        [Serialize, Obsolete, NoUndo]
         private float WalkableRadius
         {
             get => throw new Exception();
@@ -69,7 +69,7 @@ namespace FlaxEditor.Content.Settings
         }
 
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
-        [Serialize, Obsolete]
+        [Serialize, Obsolete, NoUndo]
         private float WalkableHeight
         {
             get => throw new Exception();
@@ -81,7 +81,7 @@ namespace FlaxEditor.Content.Settings
         }
 
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
-        [Serialize, Obsolete]
+        [Serialize, Obsolete, NoUndo]
         private float WalkableMaxClimb
         {
             get => throw new Exception();
@@ -93,7 +93,7 @@ namespace FlaxEditor.Content.Settings
         }
 
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
-        [Serialize, Obsolete]
+        [Serialize, Obsolete, NoUndo]
         private float WalkableMaxSlopeAngle
         {
             get => throw new Exception();

@@ -143,7 +143,6 @@ ParticleManagerService ParticleManagerServiceInstance;
 
 void Particles::UpdateEffect(ParticleEffect* effect)
 {
-    ASSERT_LOW_LAYER(!UpdateList.Contains(effect));
     UpdateList.Add(effect);
 }
 
