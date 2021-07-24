@@ -460,6 +460,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
 
     bool setLowerHemisphereToBlack = false;
     auto shader = _shader->GetShader();
+    PROFILE_GPU("Render Probe");
 
     // Init
     float customCullingNear = -1;
@@ -518,23 +519,27 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         context->ClearState();
 
         // Copy frame to cube face
-        context->SetRenderTarget(_probe->View(faceIndex));
-        auto probeFrame = _output->View();
-        if (setLowerHemisphereToBlack && faceIndex != 2)
         {
-            MISSING_CODE("set lower hemisphere of the probe to black");
-            /*
-            ProbesFilter_Tmp.Set(_core.Rendering.Pool.RT2_FloatRGB.Handle);
-            ProbesFilter_CoefficientMask2.Set(f != 3 ? 1.0f : 0.0f);
-            ProbesFilter_Shader.Apply(5);
-            _device.DrawFullscreenTriangle();
-            */
+            PROFILE_GPU("Copy Face");
+            context->SetRenderTarget(_probe->View(faceIndex));
+            context->SetViewportAndScissors(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION);
+            auto probeFrame = _output->View();
+            if (setLowerHemisphereToBlack && faceIndex != 2)
+            {
+                MISSING_CODE("set lower hemisphere of the probe to black");
+                /*
+                ProbesFilter_Tmp.Set(_core.Rendering.Pool.RT2_FloatRGB.Handle);
+                ProbesFilter_CoefficientMask2.Set(f != 3 ? 1.0f : 0.0f);
+                ProbesFilter_Shader.Apply(5);
+                _device.DrawFullscreenTriangle();
+                */
+            }
+            else
+            {
+                context->Draw(probeFrame);
+            }
+            context->ResetRenderTarget();
         }
-        else
-        {
-            context->Draw(probeFrame);
-        }
-        context->ResetRenderTarget();
     }
 
     // Enable actor back
@@ -542,6 +547,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
 
     // Filter all lower mip levels
     {
+        PROFILE_GPU("Filtering");
         Data data;
         int32 mipLevels = _probe->MipLevels();
         auto cb = shader->GetCB(0);
