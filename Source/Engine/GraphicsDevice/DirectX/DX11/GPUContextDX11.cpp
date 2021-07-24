@@ -647,6 +647,7 @@ void GPUContextDX11::ClearState()
 
     FlushState();
 
+#if 0
     _context->ClearState();
     ID3D11SamplerState* samplers[] =
     {
@@ -661,6 +662,7 @@ void GPUContextDX11::ClearState()
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+#endif
 }
 
 void GPUContextDX11::FlushState()
