@@ -28,6 +28,7 @@ namespace FlaxEditor.Surface
             typeof(RangeAttribute),
             typeof(SpaceAttribute),
             typeof(NoAnimateAttribute),
+            typeof(NoUndoAttribute),
         };
 
         /// <summary>
