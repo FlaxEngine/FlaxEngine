@@ -4,11 +4,11 @@
 
 #include "GPUSwapChainVulkan.h"
 #include "RenderToolsVulkan.h"
-#include "Engine/Graphics/GPULimits.h"
 #include "QueueVulkan.h"
 #include "GPUAdapterVulkan.h"
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
+#include "Engine/Graphics/GPULimits.h"
 
 void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent)
 {
@@ -77,12 +77,17 @@ void GPUSwapChainVulkan::OnReleaseGPU()
 
 bool GPUSwapChainVulkan::IsFullscreen()
 {
+#if PLATFORM_ANDROID || PLATFORM_SWITCH
+    // Not supported
+    return true;
+#else
     return false;
+#endif
 }
 
 void GPUSwapChainVulkan::SetFullscreen(bool isFullscreen)
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_SWITCH
     // Not supported
 #else
     if (!_surface)
@@ -353,15 +358,12 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     // Check the surface properties and formats
     VkSurfaceCapabilitiesKHR surfProperties;
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, _surface, &surfProperties));
-    VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-    if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
-        compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     width = Math::Clamp<int32>(width, surfProperties.minImageExtent.width, surfProperties.maxImageExtent.width);
     height = Math::Clamp<int32>(height, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.height);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
-    swapChainInfo.minImageCount = VULKAN_BACK_BUFFERS_COUNT;
+    swapChainInfo.minImageCount = Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, surfProperties.maxImageCount);
     swapChainInfo.imageFormat = result.format;
     swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
@@ -370,13 +372,16 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 #if GPU_USE_WINDOW_SRV
     swapChainInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 #endif
-    swapChainInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    swapChainInfo.preTransform = surfProperties.currentTransform;
+    if (surfProperties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+        swapChainInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     swapChainInfo.imageArrayLayers = 1;
     swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     swapChainInfo.presentMode = presentMode;
-    swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
     swapChainInfo.clipped = VK_TRUE;
-    swapChainInfo.compositeAlpha = compositeAlpha;
+    swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+    if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+        swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
     // Create swap chain
     VkBool32 supportsPresent;
