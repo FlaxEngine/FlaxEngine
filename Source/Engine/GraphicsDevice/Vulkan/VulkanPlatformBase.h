@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
-#include "Engine/Graphics/PixelFormat.h"
+#include "Engine/Core/Collections/Array.h"
 #include "IncludeVulkanHeaders.h"
 
 #if GRAPHICS_API_VULKAN

@@ -68,28 +68,8 @@ public:
     // [GPUTimerQuery]
     void Begin() override;
     void End() override;
-
-    bool HasResult() override
-    {
-        if (!_endCalled)
-            return false;
-        if (_hasResult)
-            return true;
-
-        return TryGetResult();
-    }
-
-    float GetResult() override
-    {
-        if (_hasResult)
-        {
-            return _timeDelta;
-        }
-
-        TryGetResult();
-
-        return _timeDelta;
-    }
+    bool HasResult() override;
+    float GetResult() override;
 
 protected:
 

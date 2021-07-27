@@ -71,6 +71,7 @@ void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& quer
 
 bool GPUTimerQueryVulkan::TryGetResult()
 {
+#if VULKAN_USE_QUERIES
     // Try get queries value (if not already)
     for (int32 i = 0; i < _queries.Count(); i++)
     {
@@ -115,13 +116,20 @@ bool GPUTimerQueryVulkan::TryGetResult()
         }
     }
     _queries.Clear();
-
+#else
+    _timeDelta = 0.0f;
+    _hasResult = true;
+#endif
     return true;
 }
 
 bool GPUTimerQueryVulkan::UseQueries()
 {
+#if VULKAN_USE_QUERIES
     return _device->PhysicalDeviceLimits.timestampComputeAndGraphics == VK_TRUE;
+#else
+    return false;
+#endif
 }
 
 void GPUTimerQueryVulkan::OnReleaseGPU()
@@ -149,6 +157,7 @@ void GPUTimerQueryVulkan::OnReleaseGPU()
 
 void GPUTimerQueryVulkan::Begin()
 {
+#if VULKAN_USE_QUERIES
     if (UseQueries())
     {
         const auto context = (GPUContextVulkan*)_device->GetMainContext();
@@ -165,6 +174,7 @@ void GPUTimerQueryVulkan::Begin()
         ASSERT(_queries.IsEmpty());
         _queries.Add(e);
     }
+#endif
 
     _hasResult = false;
     _endCalled = false;
@@ -175,6 +185,7 @@ void GPUTimerQueryVulkan::End()
     if (_endCalled)
         return;
 
+#if VULKAN_USE_QUERIES
     if (UseQueries())
     {
         const auto context = (GPUContextVulkan*)_device->GetMainContext();
@@ -186,8 +197,28 @@ void GPUTimerQueryVulkan::End()
         }
         context->GetCmdBufferManager()->OnQueryEnd(this);
     }
+#endif
 
     _endCalled = true;
+}
+
+bool GPUTimerQueryVulkan::HasResult()
+{
+    if (!_endCalled)
+        return false;
+    if (_hasResult)
+        return true;
+
+    return TryGetResult();
+}
+
+float GPUTimerQueryVulkan::GetResult()
+{
+    if (_hasResult)
+        return _timeDelta;
+
+    TryGetResult();
+    return _timeDelta;
 }
 
 #endif

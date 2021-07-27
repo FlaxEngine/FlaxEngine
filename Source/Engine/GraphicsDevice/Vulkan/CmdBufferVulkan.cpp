@@ -254,11 +254,13 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
             _activeCmdBuffer->EndRenderPass();
         }
 
+#if VULKAN_USE_QUERIES
         // Pause all active queries
         for (int32 i = 0; i < _queriesInProgress.Count(); i++)
         {
             _queriesInProgress[i]->Interrupt(_activeCmdBuffer);
         }
+#endif
 
         _activeCmdBuffer->End();
 
@@ -305,21 +307,27 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
     _activeCmdBuffer = _pool.Create();
     _activeCmdBuffer->Begin();
 
+#if VULKAN_USE_QUERIES
     // Resume any paused queries with the new command buffer
     for (int32 i = 0; i < _queriesInProgress.Count(); i++)
     {
         _queriesInProgress[i]->Resume(_activeCmdBuffer);
     }
+#endif
 }
 
 void CmdBufferManagerVulkan::OnQueryBegin(GPUTimerQueryVulkan* query)
 {
+#if VULKAN_USE_QUERIES
     _queriesInProgress.Add(query);
+#endif
 }
 
 void CmdBufferManagerVulkan::OnQueryEnd(GPUTimerQueryVulkan* query)
 {
+#if VULKAN_USE_QUERIES
     _queriesInProgress.Remove(query);
+#endif
 }
 
 #endif
