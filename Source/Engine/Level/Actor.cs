@@ -225,6 +225,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Tries to find the script of the given type in this actor hierarchy (checks this actor and all children hierarchy).
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Script instance if found, null otherwise.</returns>
+        public T FindScript<T>() where T : Script
+        {
+            return FindScript(typeof(T)) as T;
+        }
+
+        /// <summary>
+        /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Actor instance if found, null otherwise.</returns>
+        public T FindActor<T>() where T : Actor
+        {
+            return FindActor(typeof(T)) as T;
+        }
+
+        /// <summary>
         /// Searches for all actors of a specific type in this actor children list.
         /// </summary>
         /// <typeparam name="T">Type of the actor to search for. Includes any actors derived from the type.</typeparam>
