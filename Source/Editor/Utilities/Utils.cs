@@ -226,7 +226,11 @@ namespace FlaxEditor.Utilities
         /// <returns>The structure.</returns>
         public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
         {
-            return (T)ByteArrayToStructure(bytes, typeof(T));
+            // #stupid c#
+            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            T stuff = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            handle.Free();
+            return stuff;
         }
 
         /// <summary>
@@ -252,7 +256,10 @@ namespace FlaxEditor.Utilities
         /// <param name="result">The result.</param>
         public static void ByteArrayToStructure<T>(byte[] bytes, out T result) where T : struct
         {
-            result = (T)ByteArrayToStructure(bytes, typeof(T));
+            // #stupid c#
+            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            result = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            handle.Free();
         }
 
         /// <summary>
@@ -263,7 +270,14 @@ namespace FlaxEditor.Utilities
         /// <returns>The bytes array that contains a structure data.</returns>
         public static byte[] StructureToByteArray<T>(ref T value) where T : struct
         {
-            return StructureToByteArray(value, typeof(void));
+            // #stupid c#
+            int size = Marshal.SizeOf(typeof(T));
+            byte[] arr = new byte[size];
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.StructureToPtr(value, ptr, true);
+            Marshal.Copy(ptr, arr, 0, size);
+            Marshal.FreeHGlobal(ptr);
+            return arr;
         }
 
         /// <summary>
