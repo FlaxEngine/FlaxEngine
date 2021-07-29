@@ -29,8 +29,8 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 if (scriptType.IsStatic || scriptType.IsGenericType || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
                     return false;
-                var objectType = new ScriptType(typeof(FlaxEngine.Object));
-                return scriptType.IsEnum || objectType.IsAssignableFrom(scriptType);
+                var managedType = TypeUtils.GetType(scriptType);
+                return !TypeUtils.IsDelegate(managedType);
             }
 
             /// <inheritdoc />

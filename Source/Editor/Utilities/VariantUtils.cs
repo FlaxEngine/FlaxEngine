@@ -414,15 +414,6 @@ namespace FlaxEditor.Utilities
                 var id = stream.ReadGuid();
                 return FlaxEngine.Object.Find(ref id, type ?? typeof(FlaxEngine.Object));
             }
-            case VariantType.Structure:
-            {
-                if (type == null)
-                    throw new Exception("Missing structure type of the Variant.");
-                if (!type.IsStructure())
-                    throw new Exception($"Invalid type {type.FullName} used as a structure.");
-                var data = stream.ReadBytes(stream.ReadInt32());
-                return Utils.ByteArrayToStructure(data, type);
-            }
             case VariantType.Asset:
             {
                 var id = stream.ReadGuid();
@@ -479,6 +470,7 @@ namespace FlaxEditor.Utilities
                 return TypeUtils.GetType(typeName);
             }
             case VariantType.ManagedObject:
+            case VariantType.Structure:
             {
                 if (type == null)
                     throw new Exception("Missing type of the Variant typename " + typeName);
@@ -580,13 +572,6 @@ namespace FlaxEditor.Utilities
                 id = ((FlaxEngine.Object)value).ID;
                 stream.WriteGuid(ref id);
                 break;
-            case VariantType.Structure:
-            {
-                var data = Utils.StructureToByteArray(value, type);
-                stream.Write(data.Length);
-                stream.Write(data);
-                break;
-            }
             case VariantType.Asset:
                 id = ((Asset)value).ID;
                 stream.WriteGuid(ref id);
@@ -664,6 +649,7 @@ namespace FlaxEditor.Utilities
                     stream.WriteStrAnsi(((ScriptType)value).TypeName, -14);
                 break;
             case VariantType.ManagedObject:
+            case VariantType.Structure:
             {
                 stream.Write((byte)1);
                 var json = FlaxEngine.Json.JsonSerializer.Serialize(value, type);
@@ -690,6 +676,7 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Enum:
             case VariantType.Structure:
+            case VariantType.ManagedObject:
                 withoutTypeName = false;
                 break;
             }
@@ -1115,6 +1102,7 @@ namespace FlaxEditor.Utilities
                     stream.WriteValue(((ScriptType)value).TypeName);
                 break;
             case VariantType.ManagedObject:
+            case VariantType.Structure:
             {
                 var json = FlaxEngine.Json.JsonSerializer.Serialize(value, type);
                 stream.WriteRaw(json);

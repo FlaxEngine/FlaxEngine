@@ -1501,7 +1501,7 @@ Variant::operator ScriptingObject*() const
 
 Variant::operator _MonoObject*() const
 {
-    return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+    return Type.Type == VariantType::ManagedObject && AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
 }
 
 Variant::operator Asset*() const

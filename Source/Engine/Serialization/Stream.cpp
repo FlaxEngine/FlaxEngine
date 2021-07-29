@@ -340,6 +340,7 @@ void ReadStream::ReadVariant(Variant* data)
         break;
     }
     case VariantType::ManagedObject:
+    case VariantType::Structure:
     {
         const byte format = ReadByte();
         if (format == 0)
@@ -367,28 +368,14 @@ void ReadStream::ReadVariant(Variant* data)
             if (!mono_class_is_valuetype(klass))
                 mono_runtime_object_init(obj);
             ManagedSerialization::Deserialize(json, obj);
-            data->SetManagedObject(obj);
+            if (data->Type.Type == VariantType::ManagedObject)
+                data->SetManagedObject(obj);
+            else
+                *data = MUtils::UnboxVariant(obj);
         }
         else
         {
             LOG(Error, "Invalid Variant {0) format {1}", data->Type.ToString(), format);
-        }
-        break;
-    }
-    case VariantType::Structure:
-    {
-        int32 length;
-        ReadInt32(&length);
-        if (data->AsBlob.Length == length)
-        {
-            ReadBytes(data->AsBlob.Data, length);
-        }
-        else
-        {
-            LOG(Error, "Invalid Variant {2} data length {0}. Expected {1} bytes from stream.", data->AsBlob.Length, length, data->Type.ToString());
-
-            // Skip those bytes
-            SetPosition(GetPosition() + length);
         }
         break;
     }
@@ -651,7 +638,6 @@ void WriteStream::WriteVariant(const Variant& data)
         id = data.AsObject ? data.AsObject->GetID() : Guid::Empty;
         Write(&id);
         break;
-    case VariantType::Structure:
     case VariantType::Blob:
         WriteInt32(data.AsBlob.Length);
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
@@ -714,8 +700,13 @@ void WriteStream::WriteVariant(const Variant& data)
         WriteStringAnsi((StringAnsiView)data, -14);
         break;
     case VariantType::ManagedObject:
+    case VariantType::Structure:
     {
-        MonoObject* obj = (MonoObject*)data;
+        MonoObject* obj;
+        if (data.Type.Type == VariantType::Structure)
+            obj = MUtils::BoxVariant(data);
+        else
+            obj = (MonoObject*)data;
         if (obj)
         {
             WriteByte(1);
@@ -731,7 +722,6 @@ void WriteStream::WriteVariant(const Variant& data)
         }
         break;
     }
-        break;
     default:
     CRASH;
     }

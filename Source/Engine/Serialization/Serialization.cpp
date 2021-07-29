@@ -139,7 +139,6 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
         else
             stream.String("", 0);
         break;
-    case VariantType::Structure:
     case VariantType::Blob:
         stream.Blob(v.AsBlob.Data, v.AsBlob.Length);
         break;
@@ -207,8 +206,16 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
             stream.String("", 0);
         break;
     case VariantType::ManagedObject:
-        ManagedSerialization::Serialize(stream, (MonoObject*)v);
+    case VariantType::Structure:
+    {
+        MonoObject* obj;
+        if (v.Type.Type == VariantType::Structure)
+            obj = MUtils::BoxVariant(v);
+        else
+            obj = (MonoObject*)v;
+        ManagedSerialization::Serialize(stream, obj);
         break;
+    }
     default:
         Platform::CheckFailed("", __FILE__, __LINE__);
         stream.StartObject();
@@ -275,7 +282,6 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, id, modifier);
         v.SetAsset(LoadAsset(id, Asset::TypeInitializer));
         break;
-    case VariantType::Structure:
     case VariantType::Blob:
         CHECK(value.IsString());
         id.A = value.GetStringLength();
@@ -338,6 +344,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         v.SetTypename(value.GetStringAnsiView());
         break;
     case VariantType::ManagedObject:
+    case VariantType::Structure:
     {
         auto obj = (MonoObject*)v;
         if (!obj && v.Type.TypeName)
@@ -356,9 +363,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
             }
             if (!mono_class_is_valuetype(klass))
                 mono_runtime_object_init(obj);
-            v.SetManagedObject(obj);
+            if (v.Type.Type == VariantType::ManagedObject)
+                v.SetManagedObject(obj);
         }
         ManagedSerialization::Deserialize(value, obj);
+        if (v.Type.Type == VariantType::Structure)
+            v = MUtils::UnboxVariant(obj);
         break;
     }
     default:
