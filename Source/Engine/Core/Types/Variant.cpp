@@ -3063,15 +3063,9 @@ void Variant::AllocStructure()
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         type.Struct.Ctor(AsBlob.Data);
     }
-    else if (typeName == "System.Byte")
-    {
-        // Hack for byte
-        AsBlob.Length = 1;
-        AsBlob.Data = Allocator::Allocate(AsBlob.Length);
-        *((byte*)AsBlob.Data) = 0;
-    }
     else if (typeName == "System.Int16" || typeName == "System.UInt16")
     {
+        // [Deprecated on 10.05.2021, expires on 10.05.2023]
         // Hack for 16bit int
         AsBlob.Length = 2;
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);

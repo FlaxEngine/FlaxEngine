@@ -38,7 +38,6 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 // Add in-build types
                 _list.Add(new ScriptType(typeof(bool)));
-                _list.Add(new ScriptType(typeof(byte)));
                 _list.Add(new ScriptType(typeof(short)));
                 _list.Add(new ScriptType(typeof(ushort)));
                 _list.Add(new ScriptType(typeof(int)));
