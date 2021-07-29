@@ -9,7 +9,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
     /// The timeline current position tracking control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    public class PositionHandle : ContainerControl
+    class PositionHandle : ContainerControl
     {
         private Timeline _timeline;
 

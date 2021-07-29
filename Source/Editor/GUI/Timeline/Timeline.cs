@@ -532,7 +532,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// Gets the media controls parent panel.
         /// </summary>
-        public Background MediaPanel => _background;
+        public ContainerControl MediaPanel => _background;
 
         /// <summary>
         /// Gets the track controls parent panel.

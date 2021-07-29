@@ -250,10 +250,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Keyframes == null)
                 return;
-
+            Keyframes.Visible = Visible;
+            if (!Visible)
+                return;
             Keyframes.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Keyframes.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
-            Keyframes.Visible = Visible;
             Keyframes.UpdateKeyframes();
         }
 
@@ -318,7 +319,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnVisibleChanged();
 
-            Keyframes.Visible = Visible;
+            UpdateKeyframes();
         }
 
         /// <inheritdoc />

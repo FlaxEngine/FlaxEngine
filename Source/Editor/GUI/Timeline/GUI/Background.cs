@@ -11,7 +11,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
     /// The timeline background control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    public class Background : ContainerControl
+    class Background : ContainerControl
     {
         private readonly Timeline _timeline;
         private float[] _tickSteps;

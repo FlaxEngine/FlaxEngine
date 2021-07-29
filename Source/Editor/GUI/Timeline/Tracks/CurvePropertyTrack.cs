@@ -142,7 +142,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve == null || Timeline == null)
                 return;
-
+            Curve.Visible = Visible;
+            if (!Visible)
+                return;
             var expanded = IsExpanded;
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
@@ -152,7 +154,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.EnableZoom = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.EnablePanning = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.ScrollBars = expanded ? ScrollBars.Vertical : ScrollBars.None;
-            Curve.Visible = Visible;
             Curve.UpdateKeyframes();
         }
 
@@ -250,10 +251,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnVisibleChanged();
 
-            if (Curve != null)
-            {
-                Curve.Visible = Visible;
-            }
+            UpdateCurve();
         }
 
         /// <inheritdoc />
