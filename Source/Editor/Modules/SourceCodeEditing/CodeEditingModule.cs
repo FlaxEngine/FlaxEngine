@@ -25,12 +25,12 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
             }
 
-            private static bool CheckFunc(ScriptType type)
+            private static bool CheckFunc(ScriptType scriptType)
             {
-                if (!type.IsPublic)
+                if (scriptType.IsStatic || scriptType.IsGenericType || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
                     return false;
                 var objectType = new ScriptType(typeof(FlaxEngine.Object));
-                return type.IsEnum || type == objectType || objectType.IsAssignableFrom(type);
+                return scriptType.IsEnum || objectType.IsAssignableFrom(scriptType);
             }
 
             /// <inheritdoc />

@@ -418,6 +418,8 @@ namespace FlaxEditor.Utilities
             {
                 if (type == null)
                     throw new Exception("Missing structure type of the Variant.");
+                if (!type.IsStructure())
+                    throw new Exception($"Invalid type {type.FullName} used as a structure.");
                 var data = stream.ReadBytes(stream.ReadInt32());
                 return Utils.ByteArrayToStructure(data, type);
             }

@@ -338,9 +338,12 @@ namespace FlaxEditor.Windows
                     FlaxEngine.Scripting.RunOnUpdate(() =>
                     {
                         vsWindow.Surface.NodeBreakpointEdited += OnSurfaceNodeBreakpointEdited;
-                        foreach (var node in vsWindow.Surface.Nodes)
-                            if (node.Breakpoint.Set)
-                                OnSurfaceNodeBreakpointEdited(node);
+                        if (vsWindow.Surface.Nodes != null)
+                        {
+                            foreach (var node in vsWindow.Surface.Nodes)
+                                if (node.Breakpoint.Set)
+                                    OnSurfaceNodeBreakpointEdited(node);
+                        }
                     });
                 }
             }

@@ -188,12 +188,13 @@ namespace FlaxEditor.Utilities
         public static void DirectoryCopy(string srcDirectoryPath, string dstDirectoryPath, bool copySubDirs = true, bool overrideFiles = false)
         {
             var dir = new DirectoryInfo(srcDirectoryPath);
-
             if (!dir.Exists)
-            {
                 throw new DirectoryNotFoundException("Missing source directory to copy. " + srcDirectoryPath);
-            }
+            DirectoryCopy(dir, dstDirectoryPath, copySubDirs, overrideFiles);
+        }
 
+        private static void DirectoryCopy(DirectoryInfo dir, string dstDirectoryPath, bool copySubDirs = true, bool overrideFiles = false)
+        {
             if (!Directory.Exists(dstDirectoryPath))
             {
                 Directory.CreateDirectory(dstDirectoryPath);
@@ -212,7 +213,7 @@ namespace FlaxEditor.Utilities
                 for (int i = 0; i < dirs.Length; i++)
                 {
                     string tmp = Path.Combine(dstDirectoryPath, dirs[i].Name);
-                    DirectoryCopy(dirs[i].FullName, tmp, true, overrideFiles);
+                    DirectoryCopy(dirs[i], tmp, true, overrideFiles);
                 }
             }
         }
@@ -225,11 +226,7 @@ namespace FlaxEditor.Utilities
         /// <returns>The structure.</returns>
         public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
         {
-            // #stupid c#
-            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            T stuff = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
-            handle.Free();
-            return stuff;
+            return (T)ByteArrayToStructure(bytes, typeof(T));
         }
 
         /// <summary>
@@ -255,10 +252,7 @@ namespace FlaxEditor.Utilities
         /// <param name="result">The result.</param>
         public static void ByteArrayToStructure<T>(byte[] bytes, out T result) where T : struct
         {
-            // #stupid c#
-            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            result = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
-            handle.Free();
+            result = (T)ByteArrayToStructure(bytes, typeof(T));
         }
 
         /// <summary>
@@ -269,14 +263,7 @@ namespace FlaxEditor.Utilities
         /// <returns>The bytes array that contains a structure data.</returns>
         public static byte[] StructureToByteArray<T>(ref T value) where T : struct
         {
-            // #stupid c#
-            int size = Marshal.SizeOf(typeof(T));
-            byte[] arr = new byte[size];
-            IntPtr ptr = Marshal.AllocHGlobal(size);
-            Marshal.StructureToPtr(value, ptr, true);
-            Marshal.Copy(ptr, arr, 0, size);
-            Marshal.FreeHGlobal(ptr);
-            return arr;
+            return StructureToByteArray(value, typeof(void));
         }
 
         /// <summary>

@@ -288,12 +288,12 @@ namespace FlaxEditor.Surface
         /// <remarks>
         /// Don't call it too often. It does memory allocation and iterates over the surface controls to find comments in the graph.
         /// </remarks>
-        public List<SurfaceComment> Comments => _context.Comments;
+        public List<SurfaceComment> Comments => _context?.Comments;
 
         /// <summary>
         /// The current surface context nodes collection. Read-only.
         /// </summary>
-        public List<SurfaceNode> Nodes => _context.Nodes;
+        public List<SurfaceNode> Nodes => _context?.Nodes;
 
         /// <summary>
         /// The surface node descriptors collection.

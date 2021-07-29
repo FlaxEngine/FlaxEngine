@@ -348,9 +348,7 @@ void ReadStream::ReadVariant(Variant* data)
             LOG(Error, "Invalid Variant {2} data length {0}. Expected {1} bytes from stream.", data->AsBlob.Length, length, data->Type.ToString());
 
             // Skip those bytes
-            void* ptr = Allocator::Allocate(length);
-            ReadBytes(ptr, length);
-            Allocator::Free(ptr);
+            SetPosition(GetPosition() + length);
         }
         break;
     }
