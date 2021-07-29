@@ -4,6 +4,7 @@ using System;
 using FlaxEditor.GUI.Timeline.Tracks;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.GUI.Timeline
 {
@@ -101,6 +102,8 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     state = PlaybackStates.Paused;
                 }
+                var time = Editor.Internal_GetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor));
+                CurrentFrame = (int)(time * FramesPerSecond);
             }
             else
             {
@@ -120,7 +123,12 @@ namespace FlaxEditor.GUI.Timeline
         /// <inheritdoc />
         public override void OnPlay()
         {
+            var time = CurrentTime;
             _preview.Play();
+            if (_preview != null)
+            {
+                Editor.Internal_SetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor), time);
+            }
 
             base.OnPlay();
         }
@@ -144,7 +152,17 @@ namespace FlaxEditor.GUI.Timeline
         /// <inheritdoc />
         public override void OnSeek(int frame)
         {
-            CurrentFrame = frame;
+            if (_preview != null)
+            {
+                var time = frame / FramesPerSecond;
+                Editor.Internal_SetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor), time);
+                if (!_preview.PlayAnimation)
+                    _preview.PreviewActor.UpdateAnimation();
+            }
+            else
+            {
+                CurrentFrame = frame;
+            }
 
             base.OnSeek(frame);
         }

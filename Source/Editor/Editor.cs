@@ -1448,6 +1448,12 @@ namespace FlaxEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern float Internal_GetAnimationTime(IntPtr animatedModel);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void Internal_SetAnimationTime(IntPtr animatedModel, float time);
+
         #endregion
     }
 }

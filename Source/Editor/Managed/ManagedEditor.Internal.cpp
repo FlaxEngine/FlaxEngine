@@ -44,6 +44,7 @@
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
+#include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Serialization/JsonTools.h"
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
@@ -1064,6 +1065,17 @@ public:
         return true;
     }
 
+    static float GetAnimationTime(AnimatedModel* animatedModel)
+    {
+        return animatedModel && animatedModel->GraphInstance.State.Count() == 1 ? animatedModel->GraphInstance.State[0].Animation.TimePosition : 0.0f;
+    }
+
+    static void SetAnimationTime(AnimatedModel* animatedModel, float time)
+    {
+        if (animatedModel && animatedModel->GraphInstance.State.Count() == 1)
+            animatedModel->GraphInstance.State[0].Animation.TimePosition = time;
+    }
+
     static void InitRuntime()
     {
         ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &IsDevInstance);
@@ -1111,6 +1123,8 @@ public:
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &DeserializeSceneObject);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &LoadAsset);
         ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &CanSetToRoot);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAnimationTime", &GetAnimationTime);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetAnimationTime", &SetAnimationTime);
     }
 };
 
