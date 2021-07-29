@@ -10,6 +10,7 @@ namespace FlaxEditor.GUI.Tabs
     /// Single tab control used by <see cref="Tabs"/>.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class Tab : ContainerControl
     {
         /// <summary>

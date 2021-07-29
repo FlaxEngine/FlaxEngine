@@ -7,6 +7,7 @@ namespace FlaxEditor.Tools.Foliage
     /// <summary>
     /// Foliage painting brush.
     /// </summary>
+    [HideInEditor]
     public class Brush
     {
         /// <summary>

@@ -13,6 +13,7 @@ namespace FlaxEditor.Surface
     /// <summary>
     /// The surface breakpoint data for debugger.
     /// </summary>
+    [HideInEditor]
     public struct SurfaceBreakpoint
     {
         /// <summary>

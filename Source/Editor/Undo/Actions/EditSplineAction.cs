@@ -12,7 +12,7 @@ namespace FlaxEditor.Actions
     /// </summary>
     /// <seealso cref="FlaxEditor.IUndoAction" />
     /// <seealso cref="FlaxEditor.ISceneEditAction" />
-    [Serializable]
+    [Serializable, HideInEditor]
     public class EditSplineAction : IUndoAction, ISceneEditAction
     {
         [Serialize]

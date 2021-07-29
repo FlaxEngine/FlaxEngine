@@ -10,6 +10,7 @@ namespace FlaxEditor.GUI.Drag
     /// <summary>
     /// The drag events helper object.
     /// </summary>
+    [HideInEditor]
     public abstract class DragHelper
     {
         /// <summary>

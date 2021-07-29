@@ -11,6 +11,7 @@ namespace FlaxEditor.Viewport.Previews
     /// Audio clip PCM data editor preview.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [HideInEditor]
     public class AudioClipPreview : ContainerControl
     {
         /// <summary>

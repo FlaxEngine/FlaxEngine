@@ -34,7 +34,7 @@ namespace FlaxEditor.Windows
             public readonly GameCookerWindow GameCookerWin;
             public readonly PlatformSelector Selector;
 
-            public readonly Dictionary<PlatformType, Platform> PerPlatformOptions = new Dictionary<PlatformType, Platform>
+            private readonly Dictionary<PlatformType, Platform> PerPlatformOptions = new Dictionary<PlatformType, Platform>
             {
                 { PlatformType.Windows, new Windows() },
                 { PlatformType.XboxOne, new XboxOne() },
@@ -61,7 +61,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
             }
 
-            public abstract class Platform
+            abstract class Platform
             {
                 [HideInEditor]
                 public bool IsSupported;
@@ -155,47 +155,47 @@ namespace FlaxEditor.Windows
                 }
             }
 
-            public class Windows : Platform
+            class Windows : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Windows64;
             }
 
-            public class UWP : Platform
+            class UWP : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.UWPx64;
             }
 
-            public class XboxOne : Platform
+            class XboxOne : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.XboxOne;
             }
 
-            public class Linux : Platform
+            class Linux : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.LinuxX64;
             }
 
-            public class PS4 : Platform
+            class PS4 : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.PS4;
             }
 
-            public class XboxScarlett : Platform
+            class XboxScarlett : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.XboxScarlett;
             }
 
-            public class Android : Platform
+            class Android : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.AndroidARM64;
             }
 
-            public class Switch : Platform
+            class Switch : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
             }
 
-            public class Editor : CustomEditor
+            class Editor : CustomEditor
             {
                 private PlatformType _platform;
                 private Button _buildButton;

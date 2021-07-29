@@ -9,7 +9,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
     /// The foliage editing action that records before and after states to swap between unmodified and modified foliage data.
     /// </summary>
     /// <seealso cref="FlaxEditor.IUndoAction" />
-    [Serializable]
+    [Serializable, HideInEditor]
     public sealed class EditFoliageAction : IUndoAction
     {
         [Serialize]

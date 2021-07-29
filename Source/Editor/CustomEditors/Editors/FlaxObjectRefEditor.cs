@@ -18,6 +18,7 @@ namespace FlaxEditor.CustomEditors.Editors
     /// A custom control type used to pick reference to <see cref="FlaxEngine.Object"/>.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
+    [HideInEditor]
     public class FlaxObjectRefPickerControl : Control
     {
         private ScriptType _type;
