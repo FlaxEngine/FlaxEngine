@@ -36,6 +36,7 @@ namespace FlaxEditor.GUI.Timeline
                 if (_preview == value)
                     return;
                 _preview = value;
+                value?.PreviewActor.UpdateAnimation();
                 UpdatePlaybackState();
                 PreviewChanged?.Invoke();
             }
@@ -154,6 +155,7 @@ namespace FlaxEditor.GUI.Timeline
         {
             if (_preview != null)
             {
+                frame = Mathf.Clamp(frame, 0, DurationFrames - 1);
                 var time = frame / FramesPerSecond;
                 Editor.Internal_SetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor), time);
                 if (!_preview.PlayAnimation)

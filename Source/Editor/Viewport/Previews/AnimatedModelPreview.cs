@@ -21,6 +21,7 @@ namespace FlaxEditor.Viewport.Previews
         private StaticModel _floorModel;
         private ContextMenuButton _showCurrentLODButton;
         private bool _playAnimation;
+        private float _playSpeed = 1.0f;
 
         /// <summary>
         /// Gets or sets the skinned model asset to preview.
@@ -46,7 +47,10 @@ namespace FlaxEditor.Viewport.Previews
             {
                 if (_playAnimation == value)
                     return;
+                if (!value)
+                    _playSpeed = _previewModel.UpdateSpeed;
                 _playAnimation = value;
+                _previewModel.UpdateSpeed = value ? _playSpeed : 0.0f;
                 PlayAnimationChanged?.Invoke();
             }
         }
@@ -55,6 +59,21 @@ namespace FlaxEditor.Viewport.Previews
         /// Occurs when animation playback state gets changed.
         /// </summary>
         public event Action PlayAnimationChanged;
+
+        /// <summary>
+        /// Gets or sets the animation playback speed.
+        /// </summary>
+        public float PlaySpeed
+        {
+            get => _playAnimation ? _previewModel.UpdateSpeed : _playSpeed;
+            set
+            {
+                if (_playAnimation)
+                    _previewModel.UpdateSpeed = value;
+                else
+                    _playSpeed = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether show animated model skeleton nodes debug view.

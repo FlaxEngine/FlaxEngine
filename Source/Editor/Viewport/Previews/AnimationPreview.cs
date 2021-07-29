@@ -32,8 +32,8 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     Parent = playbackSpeed
                 };
-                playbackSpeedValue.ValueChanged += () => PreviewActor.UpdateSpeed = playbackSpeedValue.Value;
-                ViewWidgetButtonMenu.VisibleChanged += control => playbackSpeedValue.Value = PreviewActor.UpdateSpeed;
+                playbackSpeedValue.ValueChanged += () => PlaySpeed = playbackSpeedValue.Value;
+                ViewWidgetButtonMenu.VisibleChanged += control => playbackSpeedValue.Value = PlaySpeed;
             }
 
             // Play/Pause widget
