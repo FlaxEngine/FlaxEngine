@@ -275,7 +275,7 @@ namespace FlaxEditor.Surface
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
 
-            if (!handled)
+            if (!handled && CanEdit)
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
