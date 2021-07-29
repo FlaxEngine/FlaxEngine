@@ -447,11 +447,7 @@ namespace FlaxEditor.Surface
             var cm = new ItemsListContextMenu(180);
             foreach (var newParameterType in newParameterTypes)
             {
-                var item = new TypeSearchPopup.TypeItemView(newParameterType)
-                {
-                    Tag = newParameterType,
-                    TooltipText = newParameterType.TypeName,
-                };
+                var item = new TypeSearchPopup.TypeItemView(newParameterType);
                 if (newParameterType.Type != null)
                     item.Name = window.VisjectSurface.GetTypeName(newParameterType);
                 cm.AddItem(item);
@@ -975,7 +971,6 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-
             if (float.TryParse(node.GetAttribute("Split1"), out float value1))
                 _split1.SplitterValue = value1;
 
