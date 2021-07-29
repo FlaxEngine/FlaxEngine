@@ -288,7 +288,12 @@ namespace FlaxEditor.Scripting
             return typeof(MulticastDelegate).IsAssignableFrom(type.BaseType);
         }
 
-        internal static Type GetType(ScriptType type)
+        /// <summary>
+        /// Gets the managed type fo the script type (the first found from this or base types).
+        /// </summary>
+        /// <param name="type">The input type of the object to check.</param>
+        /// <returns>The managed type.</returns>
+        public static Type GetType(ScriptType type)
         {
             while (type.Type == null)
                 type = type.BaseType;
