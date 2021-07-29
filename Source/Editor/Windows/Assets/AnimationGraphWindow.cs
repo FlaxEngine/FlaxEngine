@@ -31,21 +31,6 @@ namespace FlaxEditor.Windows.Assets
     {
         internal static Guid BaseModelId = new Guid(1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-        private readonly ScriptType[] _newParameterTypes =
-        {
-            new ScriptType(typeof(float)),
-            new ScriptType(typeof(bool)),
-            new ScriptType(typeof(int)),
-            new ScriptType(typeof(string)),
-            new ScriptType(typeof(Vector2)),
-            new ScriptType(typeof(Vector3)),
-            new ScriptType(typeof(Vector4)),
-            new ScriptType(typeof(Color)),
-            new ScriptType(typeof(Quaternion)),
-            new ScriptType(typeof(Transform)),
-            new ScriptType(typeof(Matrix)),
-        };
-
         private sealed class AnimationGraphPreview : AnimationPreview
         {
             private readonly AnimationGraphWindow _window;
@@ -290,7 +275,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        public override IEnumerable<ScriptType> NewParameterTypes => _newParameterTypes;
+        public override IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get();
 
         /// <inheritdoc />
         public override void SetParameter(int index, object value)
