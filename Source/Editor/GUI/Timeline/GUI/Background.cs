@@ -184,7 +184,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     switch (timeShowMode)
                     {
                     case Timeline.TimeShowModes.Frames:
-                        labelText = tick.ToString("0000");
+                        labelText = tick.ToString("###0", CultureInfo.InvariantCulture);
                         break;
                     case Timeline.TimeShowModes.Seconds:
                         labelText = time.ToString("###0.##'s'", CultureInfo.InvariantCulture);
