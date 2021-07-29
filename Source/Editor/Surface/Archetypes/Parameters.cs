@@ -181,7 +181,7 @@ namespace FlaxEditor.Surface.Archetypes
             private NodeElementArchetype[] GetElementArchetypes()
             {
                 var selected = GetSelected();
-                if (selected != null)
+                if (selected != null && selected.Type.Type != null)
                 {
                     if (Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
                     {
