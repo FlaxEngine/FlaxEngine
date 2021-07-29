@@ -413,18 +413,11 @@ class StagingManagerVulkan
 {
 private:
 
-    struct PendingItems
+    struct PendingEntry
     {
-        uint64 FenceCounter;
-        Array<GPUBuffer*> Resources;
-    };
-
-    struct PendingItemsPerCmdBuffer
-    {
+        GPUBuffer* Buffer;
         CmdBufferVulkan* CmdBuffer;
-        Array<PendingItems> Items;
-
-        inline PendingItems* FindOrAdd(uint64 fence);
+        uint64 FenceCounter;
     };
 
     struct FreeEntry
@@ -437,7 +430,7 @@ private:
     CriticalSection _locker;
     Array<GPUBuffer*> _allBuffers;
     Array<FreeEntry> _freeBuffers;
-    Array<PendingItemsPerCmdBuffer> _pendingBuffers;
+    Array<PendingEntry> _pendingBuffers;
 #if !BUILD_RELEASE
     uint64 _allBuffersTotalSize = 0;
     uint64 _allBuffersPeekSize = 0;
@@ -452,10 +445,6 @@ public:
     void ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*& buffer);
     void ProcessPendingFree();
     void Dispose();
-
-private:
-
-    PendingItemsPerCmdBuffer* FindOrAdd(CmdBufferVulkan* cmdBuffer);
 };
 
 /// <summary>

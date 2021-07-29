@@ -35,7 +35,7 @@ void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 numSignalSemaphores,
     submitInfo.signalSemaphoreCount = numSignalSemaphores;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    Array<VkSemaphore> waitSemaphores;
+    Array<VkSemaphore, InlinedAllocation<8>> waitSemaphores;
     if (cmdBuffer->_waitSemaphores.HasItems())
     {
         waitSemaphores.EnsureCapacity((uint32)cmdBuffer->_waitSemaphores.Count());

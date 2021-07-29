@@ -882,22 +882,6 @@ void HelperResourcesVulkan::Dispose()
     }
 }
 
-StagingManagerVulkan::PendingItems* StagingManagerVulkan::PendingItemsPerCmdBuffer::FindOrAdd(uint64 fence)
-{
-    for (int32 i = 0; i < Items.Count(); i++)
-    {
-        if (Items[i].FenceCounter == fence)
-        {
-            return &Items[i];
-        }
-    }
-
-    const auto item = &Items.AddOne();
-    item->FenceCounter = fence;
-    item->Resources.Clear();
-    return item;
-}
-
 StagingManagerVulkan::StagingManagerVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
@@ -951,9 +935,10 @@ void StagingManagerVulkan::ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*&
     if (cmdBuffer)
     {
         // Return to pending pool (need to wait until command buffer will be executed and buffer will be reusable)
-        auto items = FindOrAdd(cmdBuffer);
-        auto item = items->FindOrAdd(cmdBuffer->GetFenceSignaledCounter());
-        item->Resources.Add(buffer);
+        auto& item = _pendingBuffers.AddOne();
+        item.Buffer = buffer;
+        item.CmdBuffer = cmdBuffer;
+        item.FenceCounter = cmdBuffer->GetFenceSignaledCounter();
     }
     else
     {
@@ -973,24 +958,10 @@ void StagingManagerVulkan::ProcessPendingFree()
     for (int32 i = _pendingBuffers.Count() - 1; i >= 0; i--)
     {
         auto& e = _pendingBuffers[i];
-
-        for (int32 fenceIndex = e.Items.Count() - 1; fenceIndex >= 0; fenceIndex--)
+        if (e.FenceCounter < e.CmdBuffer->GetFenceSignaledCounter())
         {
-            auto& items = e.Items[fenceIndex];
-            if (items.FenceCounter < e.CmdBuffer->GetFenceSignaledCounter())
-            {
-                for (auto buffer : items.Resources)
-                {
-                    // Return to pool
-                    _freeBuffers.Add({ buffer, Engine::FrameCount });
-                }
-
-                e.Items.RemoveAt(fenceIndex);
-            }
-        }
-
-        if (e.Items.IsEmpty())
-        {
+            // Return to pool
+            _freeBuffers.Add({ e.Buffer, Engine::FrameCount });
             _pendingBuffers.RemoveAt(i);
         }
     }
@@ -1037,22 +1008,6 @@ void StagingManagerVulkan::Dispose()
     }
     _allBuffers.Resize(0);
     _pendingBuffers.Resize(0);
-}
-
-StagingManagerVulkan::PendingItemsPerCmdBuffer* StagingManagerVulkan::FindOrAdd(CmdBufferVulkan* cmdBuffer)
-{
-    for (int32 i = 0; i < _pendingBuffers.Count(); i++)
-    {
-        if (_pendingBuffers[i].CmdBuffer == cmdBuffer)
-        {
-            return &_pendingBuffers[i];
-        }
-    }
-
-    const auto item = &_pendingBuffers.AddOne();
-    item->CmdBuffer = cmdBuffer;
-    item->Items.Clear();
-    return item;
 }
 
 GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* adapter)
