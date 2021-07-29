@@ -491,22 +491,30 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("[Unmanaged]");
             }
 
-            if (canUseTooltip && comment != null && writeTooltip && buildData.Configuration != TargetConfiguration.Release)
+            if (canUseTooltip &&
+                writeTooltip &&
+                buildData.Configuration != TargetConfiguration.Release &&
+                comment != null &&
+                comment.Length >= 3 &&
+                comment[0] == "/// <summary>")
             {
                 // Write documentation comment as tooltip
-                if (comment.Length >= 3 &&
-                    comment[0] == "/// <summary>" &&
-                    comment[1].StartsWith("/// ") &&
-                    comment[comment.Length - 1] == "/// </summary>")
+                string tooltip = null;
+                for (int i = 1; i < comment.Length && comment[i] != "/// </summary>"; i++)
                 {
-                    var tooltip = comment[1].Substring(4);
+                    if (comment[i].StartsWith("/// "))
+                    {
+                        if (tooltip == null)
+                            tooltip = string.Empty;
+                        else
+                            tooltip += " ";
+                        tooltip += comment[i].Substring(4);
+                    }
+                }
+                if (tooltip != null)
+                {
                     if (tooltip.StartsWith("Gets the "))
                         tooltip = "The " + tooltip.Substring(9);
-                    for (int i = 3; i < comment.Length; i++)
-                    {
-                        if (comment[i - 1].StartsWith("/// "))
-                            tooltip += " " + comment[i - 1].Substring(4);
-                    }
                     tooltip = tooltip.Replace("\"", "\"\"");
                     contents.Append(indent).Append("[Tooltip(@\"").Append(tooltip).Append("\")]").AppendLine();
                 }
