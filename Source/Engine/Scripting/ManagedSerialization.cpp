@@ -86,6 +86,8 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
 
 void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream, MonoObject* object)
 {
+    if (!object)
+        return;
     ASSERT(stream.IsObject());
 
     // Get serialized data
@@ -93,15 +95,15 @@ void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream,
     rapidjson_flax::Writer<rapidjson_flax::StringBuffer> writer(buffer);
     stream.Accept(writer);
 
-    Deserialize(buffer, object);
+    Deserialize(StringAnsiView(buffer.GetString(), (int32)buffer.GetSize()), object);
 }
 
-void ManagedSerialization::Deserialize(const rapidjson_flax::StringBuffer& data, MonoObject* object)
+void ManagedSerialization::Deserialize(const StringAnsiView& data, MonoObject* object)
 {
     if (!object)
         return;
-    const char* str = data.GetString();
-    const int32 len = (int32)data.GetSize();
+    const char* str = data.Get();
+    const int32 len = data.Length();
 
     // Skip case {} to improve performance
     if (StringUtils::Compare(str, "{}") == 0)

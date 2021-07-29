@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Serialization.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Types/DateTime.h"
@@ -20,7 +21,12 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Utilities/Encryption.h"
+#if USE_MONO
+#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#endif
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)
 {
@@ -99,7 +105,6 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     {
     case VariantType::Null:
     case VariantType::Void:
-    case VariantType::ManagedObject:
         stream.StartObject();
         stream.EndObject();
         break;
@@ -201,6 +206,9 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
         else
             stream.String("", 0);
         break;
+    case VariantType::ManagedObject:
+        ManagedSerialization::Serialize(stream, (MonoObject*)v);
+        break;
     default:
         Platform::CheckFailed("", __FILE__, __LINE__);
         stream.StartObject();
@@ -217,7 +225,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         return;
     VariantType type;
     Deserialize(mType->value, type, modifier);
-    v.SetType(type);
+    v.SetType(MoveTemp(type));
 
     const auto mValue = SERIALIZE_FIND_MEMBER(stream, "Value");
     if (mValue == stream.MemberEnd())
@@ -228,7 +236,6 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
     {
     case VariantType::Null:
     case VariantType::Void:
-    case VariantType::ManagedObject:
         break;
     case VariantType::Bool:
         v.AsBool = value.GetBool();
@@ -330,6 +337,30 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         CHECK(value.IsString());
         v.SetTypename(value.GetStringAnsiView());
         break;
+    case VariantType::ManagedObject:
+    {
+        auto obj = (MonoObject*)v;
+        if (!obj && v.Type.TypeName)
+        {
+            MonoClass* klass = MUtils::GetClass(v.Type);
+            if (!klass)
+            {
+                LOG(Error, "Invalid variant type {0}", v.Type);
+                return;
+            }
+            obj = mono_object_new(mono_domain_get(), klass);
+            if (!obj)
+            {
+                LOG(Error, "Failed to managed instance of the variant type {0}", v.Type);
+                return;
+            }
+            if (!mono_class_is_valuetype(klass))
+                mono_runtime_object_init(obj);
+            v.SetManagedObject(obj);
+        }
+        ManagedSerialization::Deserialize(value, obj);
+        break;
+    }
     default:
         Platform::CheckFailed("", __FILE__, __LINE__);
     }

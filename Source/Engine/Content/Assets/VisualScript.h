@@ -210,7 +210,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="instance">The object instance.</param>
     /// <returns>The property value.</returns>
-    API_FUNCTION() Variant GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const;
+    API_FUNCTION() const Variant& GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const;
 
     /// <summary>
     /// Sets the value of the Visual Script parameter of the given instance.

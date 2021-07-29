@@ -289,7 +289,7 @@ void VisualScriptExecutor::ProcessGroupPacking(Box* box, Node* node, Value& valu
             if (mclass)
             {
                 // Fallback to C#-only types
-                auto instance = mono_gchandle_get_target(structureValue.AsUint);
+                auto instance = (MonoObject*)structureValue.AsUint;
                 CHECK(instance);
                 if (structureValue.Type.Type != VariantType::ManagedObject || mono_object_get_class(instance) != mclass->GetNative())
                 {
@@ -1768,7 +1768,18 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     auto& instanceParams = visualScript->_instances[object->GetID()].Params;
     instanceParams.Resize(visualScript->Graph.Parameters.Count());
     for (int32 i = 0; i < instanceParams.Count(); i++)
-        instanceParams[i] = visualScript->Graph.Parameters[i].Value;
+    {
+        auto& param = instanceParams[i];
+        param = visualScript->Graph.Parameters[i].Value;
+        if (param.Type.Type == VariantType::ManagedObject)
+        {
+            // Special case for C# object property in Visual Script so duplicate the object instead of cloning the reference to it
+            MemoryWriteStream writeStream;
+            writeStream.WriteVariant(param);
+            MemoryReadStream readStream(writeStream.GetHandle(), writeStream.GetPosition());
+            readStream.ReadVariant(&param);
+        }
+    }
 
     return object;
 }
@@ -2135,9 +2146,9 @@ VisualScript::Instance* VisualScript::GetScriptInstance(ScriptingObject* instanc
     return instance ? _instances.TryGet(instance->GetID()) : nullptr;
 }
 
-Variant VisualScript::GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const
+const Variant& VisualScript::GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const
 {
-    CHECK_RETURN(instance, Variant());
+    CHECK_RETURN(instance, Variant::Null);
     for (int32 paramIndex = 0; paramIndex < Graph.Parameters.Count(); paramIndex++)
     {
         if (Graph.Parameters[paramIndex].Name == name)
@@ -2150,7 +2161,7 @@ Variant VisualScript::GetScriptInstanceParameterValue(const StringView& name, Sc
         }
     }
     LOG(Warning, "Failed to get {0} parameter '{1}'", ToString(), name);
-    return Variant();
+    return Variant::Null;
 }
 
 void VisualScript::SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value) const

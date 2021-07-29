@@ -92,6 +92,7 @@ public:
 
     explicit VariantType(Types type, const StringView& typeName);
     explicit VariantType(Types type, const StringAnsiView& typeName);
+    explicit VariantType(Types type, struct _MonoClass* klass);
     VariantType(const VariantType& other);
     VariantType(VariantType&& other) noexcept;
 
@@ -272,6 +273,7 @@ public:
     explicit operator StringView() const;
     explicit operator StringAnsiView() const;
     explicit operator ScriptingObject*() const;
+    explicit operator struct _MonoObject*() const;
     explicit operator Asset*() const;
     explicit operator Vector2() const;
     explicit operator Vector3() const;
@@ -309,6 +311,7 @@ public:
     void SetBlob(int32 length);
     void SetBlob(const void* data, int32 length);
     void SetObject(ScriptingObject* object);
+    void SetManagedObject(struct _MonoObject* object);
     void SetAsset(Asset* asset);
     String ToString() const;
 

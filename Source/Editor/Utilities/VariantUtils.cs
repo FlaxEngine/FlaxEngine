@@ -359,6 +359,7 @@ namespace FlaxEditor.Utilities
             Type type = null;
             var variantType = (VariantType)stream.ReadByte();
             var typeNameLength = stream.ReadInt32();
+            string typeName = string.Empty;
             if (typeNameLength == int.MaxValue)
             {
                 typeNameLength = stream.ReadInt32();
@@ -368,7 +369,7 @@ namespace FlaxEditor.Utilities
                     var c = stream.ReadByte();
                     data[i] = (byte)(c ^ 77);
                 }
-                var typeName = System.Text.Encoding.ASCII.GetString(data);
+                typeName = System.Text.Encoding.ASCII.GetString(data);
                 type = TypeUtils.GetManagedType(typeName);
             }
             else if (typeNameLength > 0)
@@ -380,13 +381,12 @@ namespace FlaxEditor.Utilities
                     var c = stream.ReadUInt16();
                     data[i] = (char)(c ^ 77);
                 }
-                var typeName = new string(data);
+                typeName = new string(data);
                 type = TypeUtils.GetManagedType(typeName);
             }
             switch (variantType)
             {
             case VariantType.Null:
-            case VariantType.ManagedObject:
             case VariantType.Void: return null;
             case VariantType.Bool: return stream.ReadByte() != 0;
             case VariantType.Int16: return stream.ReadInt16();
@@ -475,8 +475,25 @@ namespace FlaxEditor.Utilities
                     var c = stream.ReadByte();
                     data[i] = (byte)(c ^ -14);
                 }
-                var typeName = System.Text.Encoding.ASCII.GetString(data);
+                typeName = System.Text.Encoding.ASCII.GetString(data);
                 return TypeUtils.GetType(typeName);
+            }
+            case VariantType.ManagedObject:
+            {
+                if (type == null)
+                    throw new Exception("Missing type of the Variant typename " + typeName);
+                var format = stream.ReadByte();
+                if (format == 0)
+                {
+                    // No Data
+                }
+                else if (format == 1)
+                {
+                    // Json
+                    var json = stream.ReadStrAnsi(-71);
+                    return FlaxEngine.Json.JsonSerializer.Deserialize(json, type);
+                }
+                return null;
             }
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType}." + (type != null ? $" Type: {type.FullName}" : string.Empty));
             }
@@ -515,6 +532,7 @@ namespace FlaxEditor.Utilities
                 break;
             case VariantType.Enum:
             case VariantType.Structure:
+            case VariantType.ManagedObject:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
                 break;
@@ -645,6 +663,14 @@ namespace FlaxEditor.Utilities
                 else if (value is ScriptType)
                     stream.WriteStrAnsi(((ScriptType)value).TypeName, -14);
                 break;
+            case VariantType.ManagedObject:
+            {
+                stream.Write((byte)1);
+                var json = FlaxEngine.Json.JsonSerializer.Serialize(value, type);
+                stream.WriteStrAnsi(json, -71);
+                break;
+            }
+            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} for type {type.FullName}.");
             }
         }
 
@@ -700,7 +726,6 @@ namespace FlaxEditor.Utilities
             switch (variantType)
             {
             case VariantType.Null:
-            case VariantType.ManagedObject:
             case VariantType.Void:
                 stream.WriteStartObject();
                 stream.WriteEndObject();
@@ -1089,7 +1114,13 @@ namespace FlaxEditor.Utilities
                 else if (value is ScriptType)
                     stream.WriteValue(((ScriptType)value).TypeName);
                 break;
-            default: throw new NotImplementedException($"TODO: serialize {variantType} to Json");
+            case VariantType.ManagedObject:
+            {
+                var json = FlaxEngine.Json.JsonSerializer.Serialize(value, type);
+                stream.WriteRaw(json);
+                break;
+            }
+            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} for type {type.FullName}.");
             }
             // ReSharper restore PossibleNullReferenceException
 

@@ -459,7 +459,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return nullptr;
     }
     case VariantType::ManagedObject:
-        return mono_gchandle_get_target(value.AsUint);
+        return (MonoObject*)value;
     case VariantType::Typename:
     {
         const auto klass = Scripting::FindClassNative((StringAnsiView)value);
@@ -666,7 +666,7 @@ MonoClass* MUtils::GetClass(const Variant& value)
     case VariantType::Enum:
         return Scripting::FindClassNative(StringAnsiView(value.Type.TypeName));
     case VariantType::ManagedObject:
-        return GetClass(mono_gchandle_get_target(value.AsUint));
+        return GetClass((MonoObject*)value);
     default: ;
     }
     return nullptr;
@@ -755,7 +755,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         {
             if (value.Type.Type != VariantType::Enum)
             {
-                value.SetType(VariantType(VariantType::Enum, GetClassFullname(klass)));
+                value.SetType(VariantType(VariantType::Enum, klass));
                 value.AsUint64 = 0;
             }
             return &value.AsUint64;

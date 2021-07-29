@@ -39,5 +39,5 @@ public:
     /// </summary>
     /// <param name="data">The input data.</param>
     /// <param name="object">The object to deserialize.</param>
-    static void Deserialize(const rapidjson_flax::StringBuffer& data, MonoObject* object);
+    static void Deserialize(const StringAnsiView& data, MonoObject* object);
 };

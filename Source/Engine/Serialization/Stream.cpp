@@ -2,13 +2,18 @@
 
 #include "ReadStream.h"
 #include "WriteStream.h"
+#include "JsonWriters.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Debug/DebugLog.h"
+#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 
 void ReadStream::ReadStringAnsi(StringAnsi* data)
 {
@@ -269,7 +274,6 @@ void ReadStream::ReadVariant(Variant* data)
     {
     case VariantType::Null:
     case VariantType::Void:
-    case VariantType::ManagedObject:
         break;
     case VariantType::Bool:
         data->AsBool = ReadBool();
@@ -333,6 +337,42 @@ void ReadStream::ReadVariant(Variant* data)
         Guid id;
         Read(&id);
         data->SetObject(FindObject(id, ScriptingObject::GetStaticClass()));
+        break;
+    }
+    case VariantType::ManagedObject:
+    {
+        const byte format = ReadByte();
+        if (format == 0)
+        {
+            // No data
+        }
+        else if (format == 1)
+        {
+            // Json
+            StringAnsi json;
+            ReadStringAnsi(&json, -71);
+            MCore::AttachThread();
+            MonoClass* klass = MUtils::GetClass(data->Type);
+            if (!klass)
+            {
+                LOG(Error, "Invalid variant type {0}", data->Type);
+                return;
+            }
+            MonoObject* obj = mono_object_new(mono_domain_get(), klass);
+            if (!obj)
+            {
+                LOG(Error, "Failed to managed instance of the variant type {0}", data->Type);
+                return;
+            }
+            if (!mono_class_is_valuetype(klass))
+                mono_runtime_object_init(obj);
+            ManagedSerialization::Deserialize(json, obj);
+            data->SetManagedObject(obj);
+        }
+        else
+        {
+            LOG(Error, "Invalid Variant {0) format {1}", data->Type.ToString(), format);
+        }
         break;
     }
     case VariantType::Structure:
@@ -572,7 +612,6 @@ void WriteStream::WriteVariant(const Variant& data)
     {
     case VariantType::Null:
     case VariantType::Void:
-    case VariantType::ManagedObject:
         break;
     case VariantType::Bool:
         WriteBool(data.AsBool);
@@ -673,6 +712,25 @@ void WriteStream::WriteVariant(const Variant& data)
         break;
     case VariantType::Typename:
         WriteStringAnsi((StringAnsiView)data, -14);
+        break;
+    case VariantType::ManagedObject:
+    {
+        MonoObject* obj = (MonoObject*)data;
+        if (obj)
+        {
+            WriteByte(1);
+            rapidjson_flax::StringBuffer json;
+            CompactJsonWriter writerObj(json);
+            MCore::AttachThread();
+            ManagedSerialization::Serialize(writerObj, obj);
+            WriteStringAnsi(StringAnsiView(json.GetString(), (int32)json.GetSize()), -71);
+        }
+        else
+        {
+            WriteByte(0);
+        }
+        break;
+    }
         break;
     default:
     CRASH;

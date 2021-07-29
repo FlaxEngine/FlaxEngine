@@ -57,6 +57,20 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName)
     }
 }
 
+VariantType::VariantType(Types type, _MonoClass* klass)
+{
+    Type = type;
+    TypeName = nullptr;
+    if (klass)
+    {
+        MString typeName;
+        MUtils::GetClassFullname(klass, typeName);
+        int32 length = typeName.Length() + 1;
+        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        Platform::MemoryCopy(TypeName, typeName.Get(), length);
+    }
+}
+
 VariantType::VariantType(const VariantType& other)
 {
     Type = other.Type;
@@ -501,7 +515,7 @@ Variant::Variant(Asset* v)
 }
 
 Variant::Variant(_MonoObject* v)
-    : Type(VariantType::ManagedObject)
+    : Type(VariantType::ManagedObject, v ? mono_object_get_class(v) : nullptr)
 {
     AsUint = v ? mono_gchandle_new(v, true) : 0;
 }
@@ -999,6 +1013,7 @@ bool Variant::operator==(const Variant& other) const
             }
             return true;
         case VariantType::ManagedObject:
+            // TODO: invoke C# Equality logic?
             return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
         case VariantType::Typename:
             if (AsBlob.Data == nullptr && other.AsBlob.Data == nullptr)
@@ -1443,7 +1458,7 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
-        return mono_gchandle_get_target(AsUint);
+        return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
     default:
         return nullptr;
     }
@@ -1482,6 +1497,11 @@ Variant::operator ScriptingObject*() const
     default:
         return nullptr;
     }
+}
+
+Variant::operator _MonoObject*() const
+{
+    return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
 }
 
 Variant::operator Asset*() const
@@ -2218,6 +2238,22 @@ void Variant::SetObject(ScriptingObject* object)
     AsObject = object;
     if (object)
         object->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
+}
+
+void Variant::SetManagedObject(_MonoObject* object)
+{
+    if (object)
+    {
+        if (Type.Type != VariantType::ManagedObject)
+            SetType(VariantType(VariantType::ManagedObject, mono_object_get_class(object)));
+        AsUint = mono_gchandle_new(object, true);
+    }
+    else
+    {
+        if (Type.Type != VariantType::ManagedObject || Type.TypeName)
+            SetType(VariantType(VariantType::ManagedObject));
+        AsUint = 0;
+    }
 }
 
 void Variant::SetAsset(Asset* asset)
