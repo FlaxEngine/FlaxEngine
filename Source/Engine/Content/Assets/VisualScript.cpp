@@ -598,11 +598,11 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     }
         // Is Null
     case 27:
-        value = tryGetValue(node->GetBox(1), Value::Null) == Value::Null;
+        value = (void*)tryGetValue(node->GetBox(1), Value::Null) == nullptr;
         break;
         // Is Valid
     case 28:
-        value = tryGetValue(node->GetBox(1), Value::Null) != Value::Null;
+        value = (void*)tryGetValue(node->GetBox(1), Value::Null) != nullptr;
         break;
     default:
         VisjectExecutor::ProcessGroupTools(box, node, value);
