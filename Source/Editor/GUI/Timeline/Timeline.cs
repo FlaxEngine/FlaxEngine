@@ -1930,6 +1930,18 @@ namespace FlaxEditor.GUI.Timeline
             }
         }
 
+        /// <summary>
+        /// Sets the text for the No Tracks UI.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        public void SetNoTracksText(string text)
+        {
+            if (_noTracksLabel != null)
+            {
+                _noTracksLabel.Text = text ?? "No tracks";
+            }
+        }
+
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {

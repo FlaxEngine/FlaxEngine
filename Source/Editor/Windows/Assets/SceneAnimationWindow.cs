@@ -632,6 +632,7 @@ namespace FlaxEditor.Windows.Assets
             };
             _timeline.Modified += OnTimelineModified;
             _timeline.PlayerChanged += OnTimelinePlayerChanged;
+            _timeline.SetNoTracksText("Loading...");
 
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
@@ -857,6 +858,7 @@ namespace FlaxEditor.Windows.Assets
 
                 // Setup
                 _undo.Clear();
+                _timeline.SetNoTracksText(null);
                 _timeline.Enabled = true;
                 ClearEditedFlag();
             }
