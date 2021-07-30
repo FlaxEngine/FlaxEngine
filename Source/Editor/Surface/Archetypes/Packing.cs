@@ -7,7 +7,6 @@ using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
-using FlaxEngine.GUI;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -355,7 +354,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Pack Structure",
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
                 Description = "Makes the structure data to from the components.",
-                Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Vector2(180, 20),
                 DefaultValues = new object[]
                 {
@@ -465,7 +464,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Unpack Structure",
                 Create = (id, context, arch, groupArch) => new UnpackStructureNode(id, context, arch, groupArch),
                 Description = "Breaks the structure data to allow extracting components from it.",
-                Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Vector2(180, 20),
                 DefaultValues = new object[]
                 {

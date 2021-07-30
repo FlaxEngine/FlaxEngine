@@ -246,7 +246,7 @@ public:
 
 public:
 
-    void OnError(Node* node, Box* box, const StringView& message);
+    virtual void OnError(Node* node, Box* box, const StringView& message);
 
     void ProcessGroupConstants(Box* box, Node* node, Value& value);
     void ProcessGroupMath(Box* box, Node* node, Value& value);

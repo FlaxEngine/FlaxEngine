@@ -39,6 +39,7 @@ public:
     void Invoke(const Guid& scriptId, int32 nodeId, int32 boxId, const Guid& instanceId, Variant& result) const;
 
 private:
+    void OnError(Node* node, Box* box, const StringView& message) override;
     Value eatBox(Node* caller, Box* box) override;
     Graph* GetCurrentGraph() const override;
 

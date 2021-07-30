@@ -354,7 +354,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Enum",
                 Create = (id, context, arch, groupArch) => new EnumNode(id, context, arch, groupArch),
                 Description = "Enum constant value.",
-                Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Vector2(180, 20),
                 DefaultValues = new object[]
                 {

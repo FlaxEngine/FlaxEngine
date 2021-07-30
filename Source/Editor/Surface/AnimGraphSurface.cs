@@ -2,10 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using FlaxEditor.Content;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.ContextMenu;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
+using FlaxEngine.GUI;
 using Animation = FlaxEditor.Surface.Archetypes.Animation;
 
 namespace FlaxEditor.Surface
@@ -71,6 +75,198 @@ namespace FlaxEditor.Surface
                 },
             }
         };
+
+        internal static class NodesCache
+        {
+            private static readonly object _locker = new object();
+            private static int _version;
+            private static Task _task;
+            private static VisjectCM _taskContextMenu;
+            private static Dictionary<KeyValuePair<string, ushort>, GroupArchetype> _cache;
+
+            public static void Wait()
+            {
+                _task?.Wait();
+            }
+
+            public static void Clear()
+            {
+                Wait();
+
+                if (_cache != null && _cache.Count != 0)
+                {
+                    OnCodeEditingTypesCleared();
+                }
+            }
+
+            public static void Get(VisjectCM contextMenu)
+            {
+                Wait();
+
+                lock (_locker)
+                {
+                    if (_cache == null)
+                        _cache = new Dictionary<KeyValuePair<string, ushort>, GroupArchetype>();
+                    contextMenu.LockChildrenRecursive();
+
+                    // Check if has cached groups
+                    if (_cache.Count != 0)
+                    {
+                        // Check if context menu doesn't have the recent cached groups
+                        if (!contextMenu.Groups.Any(g => g.Archetype.Tag is int asInt && asInt == _version))
+                        {
+                            var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                            foreach (var g in groups)
+                                contextMenu.RemoveGroup(g);
+                            foreach (var g in _cache.Values)
+                                contextMenu.AddGroup(g);
+                        }
+                    }
+                    else
+                    {
+                        // Remove any old groups from context menu
+                        var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                        foreach (var g in groups)
+                            contextMenu.RemoveGroup(g);
+
+                        // Register for scripting types reload
+                        Editor.Instance.CodeEditing.TypesCleared += OnCodeEditingTypesCleared;
+
+                        // Run caching on an async
+                        _task = Task.Run(OnActiveContextMenuShowAsync);
+                        _taskContextMenu = contextMenu;
+                    }
+
+                    contextMenu.UnlockChildrenRecursive();
+                }
+            }
+
+            private static void OnActiveContextMenuShowAsync()
+            {
+                Profiler.BeginEvent("Setup Anim Graph Context Menu (async)");
+
+                foreach (var scriptType in Editor.Instance.CodeEditing.All.Get())
+                {
+                    if (!SurfaceUtils.IsValidVisualScriptType(scriptType))
+                        continue;
+
+                    // Skip Newtonsoft.Json stuff
+                    var scriptTypeTypeName = scriptType.TypeName;
+                    if (scriptTypeTypeName.StartsWith("Newtonsoft.Json."))
+                        continue;
+                    var scriptTypeName = scriptType.Name;
+
+                    // Enum
+                    if (scriptType.IsEnum)
+                    {
+                        // Create node archetype
+                        var node = (NodeArchetype)Archetypes.Constants.Nodes[10].Clone();
+                        node.DefaultValues[0] = Activator.CreateInstance(scriptType.Type);
+                        node.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                        node.Title = scriptTypeName;
+                        node.Description = scriptTypeTypeName;
+                        var attributes = scriptType.GetAttributes(false);
+                        var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+                        if (tooltipAttribute != null)
+                            node.Description += "\n" + tooltipAttribute.Text;
+
+                        // Create group archetype
+                        var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 2);
+                        if (!_cache.TryGetValue(groupKey, out var group))
+                        {
+                            group = new GroupArchetype
+                            {
+                                GroupID = groupKey.Value,
+                                Name = groupKey.Key,
+                                Color = new Color(243, 156, 18),
+                                Tag = _version,
+                                Archetypes = new List<NodeArchetype>(),
+                            };
+                            _cache.Add(groupKey, group);
+                        }
+
+                        // Add node to the group
+                        ((IList<NodeArchetype>)group.Archetypes).Add(node);
+                        continue;
+                    }
+
+                    // Structure
+                    if (scriptType.IsValueType)
+                    {
+                        if (scriptType.IsVoid)
+                            continue;
+
+                        // Create group archetype
+                        var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 4);
+                        if (!_cache.TryGetValue(groupKey, out var group))
+                        {
+                            group = new GroupArchetype
+                            {
+                                GroupID = groupKey.Value,
+                                Name = groupKey.Key,
+                                Color = new Color(155, 89, 182),
+                                Tag = _version,
+                                Archetypes = new List<NodeArchetype>(),
+                            };
+                            _cache.Add(groupKey, group);
+                        }
+
+                        var attributes = scriptType.GetAttributes(false);
+                        var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+
+                        // Create Pack node archetype
+                        var node = (NodeArchetype)Archetypes.Packing.Nodes[6].Clone();
+                        node.DefaultValues[0] = scriptTypeTypeName;
+                        node.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                        node.Title = "Pack " + scriptTypeName;
+                        node.Description = scriptTypeTypeName;
+                        if (tooltipAttribute != null)
+                            node.Description += "\n" + tooltipAttribute.Text;
+                        ((IList<NodeArchetype>)group.Archetypes).Add(node);
+
+                        // Create Unpack node archetype
+                        node = (NodeArchetype)Archetypes.Packing.Nodes[13].Clone();
+                        node.DefaultValues[0] = scriptTypeTypeName;
+                        node.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                        node.Title = "Unpack " + scriptTypeName;
+                        node.Description = scriptTypeTypeName;
+                        if (tooltipAttribute != null)
+                            node.Description += "\n" + tooltipAttribute.Text;
+                        ((IList<NodeArchetype>)group.Archetypes).Add(node);
+                    }
+                }
+
+                // Add group to context menu (on a main thread)
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+                    lock (_locker)
+                    {
+                        _taskContextMenu.AddGroups(_cache.Values);
+                        _taskContextMenu = null;
+                    }
+                });
+
+                Profiler.EndEvent();
+
+                lock (_locker)
+                {
+                    _task = null;
+                }
+            }
+
+            private static void OnCodeEditingTypesCleared()
+            {
+                Wait();
+
+                lock (_locker)
+                {
+                    _cache.Clear();
+                    _version++;
+                }
+
+                Editor.Instance.CodeEditing.TypesCleared -= OnCodeEditingTypesCleared;
+            }
+        }
 
         /// <summary>
         /// The state machine editing context menu.
@@ -153,6 +349,23 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        {
+            Profiler.BeginEvent("Setup Anim Graph Context Menu");
+            NodesCache.Get(activeCM);
+            Profiler.EndEvent();
+
+            base.OnShowPrimaryMenu(activeCM, location, startBox);
+
+            activeCM.VisibleChanged += OnActiveContextMenuVisibleChanged;
+        }
+
+        private void OnActiveContextMenuVisibleChanged(Control activeCM)
+        {
+            NodesCache.Wait();
+        }
+
+        /// <inheritdoc />
         public override string GetTypeName(ScriptType type)
         {
             if (type.Type == typeof(void))
@@ -230,6 +443,8 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             if (_cmStateMachineMenu != null)
             {
                 _cmStateMachineMenu.Dispose();
@@ -245,6 +460,7 @@ namespace FlaxEditor.Surface
                 _isRegisteredForScriptsReload = false;
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
+            NodesCache.Wait();
 
             base.OnDestroy();
         }

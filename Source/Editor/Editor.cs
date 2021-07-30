@@ -518,6 +518,7 @@ namespace FlaxEditor
             // Cleanup
             Undo.Dispose();
             Surface.VisualScriptSurface.NodesCache.Clear();
+            Surface.AnimGraphSurface.NodesCache.Clear();
             Instance = null;
 
             // Invoke new instance if need to open a project

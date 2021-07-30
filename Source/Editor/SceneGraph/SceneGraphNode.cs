@@ -165,12 +165,13 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// The scene graph raycasting data container.
         /// </summary>
+        [HideInEditor]
         public struct RayCastData
         {
             /// <summary>
             /// The raycasting optional flags.
             /// </summary>
-            [Flags]
+            [Flags, HideInEditor]
             public enum FlagTypes
             {
                 /// <summary>
@@ -334,6 +335,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// The scene graph node state container. Used for Editor undo actions (eg. restoring deleted node).
         /// </summary>
+        [HideInEditor]
         public struct StateData
         {
             /// <summary>

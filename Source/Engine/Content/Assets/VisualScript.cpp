@@ -119,6 +119,12 @@ void VisualScriptExecutor::Invoke(const Guid& scriptId, int32 nodeId, int32 boxI
     stack.Stack = frame.PreviousFrame;
 }
 
+void VisualScriptExecutor::OnError(Node* node, Box* box, const StringView& message)
+{
+    VisjectExecutor::OnError(node, box, message);
+    PrintStack(LogType::Error);
+}
+
 VisjectExecutor::Value VisualScriptExecutor::eatBox(Node* caller, Box* box)
 {
     // Check if graph is looped or is too deep
@@ -172,12 +178,6 @@ void VisualScriptExecutor::ProcessGroupConstants(Box* box, Node* node, Value& va
 {
     switch (node->TypeID)
     {
-        // Enum
-    case 11:
-    {
-        value = node->Values[0];
-        break;
-    }
     default:
         VisjectExecutor::ProcessGroupConstants(box, node, value);
         break;
@@ -188,179 +188,6 @@ void VisualScriptExecutor::ProcessGroupPacking(Box* box, Node* node, Value& valu
 {
     switch (node->TypeID)
     {
-        // Pack Structure
-    case 26:
-    {
-        // Find type
-        const StringView typeName(node->Values[0]);
-        const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
-        const StringAnsiView typeNameAnsiView(typeNameAnsi.Get(), typeName.Length());
-        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
-        if (!typeHandle)
-        {
-            const auto mclass = Scripting::FindClass(typeNameAnsiView);
-            if (mclass)
-            {
-                // Fallback to C#-only types
-                bool failed = false;
-                auto instance = mclass->CreateInstance();
-                value = instance;
-                auto& layoutCache = node->Values[1];
-                CHECK(layoutCache.Type.Type == VariantType::Blob);
-                MemoryReadStream stream((byte*)layoutCache.AsBlob.Data, layoutCache.AsBlob.Length);
-                const byte version = stream.ReadByte();
-                if (version == 1)
-                {
-                    int32 fieldsCount;
-                    stream.ReadInt32(&fieldsCount);
-                    for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
-                    {
-                        box = &node->Boxes[boxId];
-                        String fieldName;
-                        stream.ReadString(&fieldName, 11);
-                        VariantType fieldType;
-                        stream.ReadVariantType(&fieldType);
-                        if (box && box->HasConnection())
-                        {
-                            StringAsANSI<40> fieldNameAnsi(*fieldName, fieldName.Length());
-                            auto field = mclass->GetField(fieldNameAnsi.Get());
-                            if (field)
-                            {
-                                Variant fieldValue = eatBox(node, box->FirstConnection());
-                                field->SetValue(instance, MUtils::VariantToManagedArgPtr(fieldValue, field->GetType(), failed));
-                            }
-                        }
-                    }
-                }
-            }
-            else if (typeName.HasChars())
-            {
-                LOG(Error, "Missing type '{0}'", typeName);
-                PrintStack(LogType::Error);
-            }
-            return;
-        }
-        const ScriptingType& type = typeHandle.GetType();
-
-        // Allocate structure data and initialize it with native constructor
-        value.SetType(VariantType(VariantType::Structure, typeNameAnsiView));
-
-        // Setup structure fields
-        auto& layoutCache = node->Values[1];
-        CHECK(layoutCache.Type.Type == VariantType::Blob);
-        MemoryReadStream stream((byte*)layoutCache.AsBlob.Data, layoutCache.AsBlob.Length);
-        const byte version = stream.ReadByte();
-        if (version == 1)
-        {
-            int32 fieldsCount;
-            stream.ReadInt32(&fieldsCount);
-            for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
-            {
-                box = &node->Boxes[boxId];
-                String fieldName;
-                stream.ReadString(&fieldName, 11);
-                VariantType fieldType;
-                stream.ReadVariantType(&fieldType);
-                if (box && box->HasConnection())
-                {
-                    const Variant fieldValue = eatBox(node, box->FirstConnection());
-                    type.Struct.SetField(value.AsBlob.Data, fieldName, fieldValue);
-                }
-            }
-        }
-        break;
-    }
-        // Unpack Structure
-    case 36:
-    {
-        // Get value with structure data
-        const Variant structureValue = eatBox(node, node->GetBox(0)->FirstConnection());
-        if (!node->GetBox(0)->HasConnection())
-            return;
-
-        // Find type
-        const StringView typeName(node->Values[0]);
-        const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
-        const StringAnsiView typeNameAnsiView(typeNameAnsi.Get(), typeName.Length());
-        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
-        if (!typeHandle)
-        {
-            const auto mclass = Scripting::FindClass(typeNameAnsiView);
-            if (mclass)
-            {
-                // Fallback to C#-only types
-                auto instance = (MonoObject*)structureValue;
-                CHECK(instance);
-                if (structureValue.Type.Type != VariantType::ManagedObject || mono_object_get_class(instance) != mclass->GetNative())
-                {
-                    LOG(Error, "Cannot unpack value of type {0} to structure of type {1}", String(MUtils::GetClassFullname(instance)), typeName);
-                    PrintStack(LogType::Error);
-                    return;
-                }
-                auto& layoutCache = node->Values[1];
-                CHECK(layoutCache.Type.Type == VariantType::Blob);
-                MemoryReadStream stream((byte*)layoutCache.AsBlob.Data, layoutCache.AsBlob.Length);
-                const byte version = stream.ReadByte();
-                if (version == 1)
-                {
-                    int32 fieldsCount;
-                    stream.ReadInt32(&fieldsCount);
-                    for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
-                    {
-                        String fieldName;
-                        stream.ReadString(&fieldName, 11);
-                        VariantType fieldType;
-                        stream.ReadVariantType(&fieldType);
-                        if (box->ID == boxId)
-                        {
-                            StringAsANSI<40> fieldNameAnsi(*fieldName, fieldName.Length());
-                            auto field = mclass->GetField(fieldNameAnsi.Get());
-                            if (field)
-                                value = MUtils::UnboxVariant(field->GetValueBoxed(instance));
-                            break;
-                        }
-                    }
-                }
-            }
-            else if (typeName.HasChars())
-            {
-                LOG(Error, "Missing type '{0}'", typeName);
-                PrintStack(LogType::Error);
-            }
-            return;
-        }
-        const ScriptingType& type = typeHandle.GetType();
-        if (structureValue.Type.Type != VariantType::Structure || StringUtils::Compare(typeNameAnsi.Get(), structureValue.Type.TypeName) != 0)
-        {
-            LOG(Error, "Cannot unpack value of type {0} to structure of type {1}", structureValue.Type, typeName);
-            PrintStack(LogType::Error);
-            return;
-        }
-
-        // Read structure field
-        auto& layoutCache = node->Values[1];
-        CHECK(layoutCache.Type.Type == VariantType::Blob);
-        MemoryReadStream stream((byte*)layoutCache.AsBlob.Data, layoutCache.AsBlob.Length);
-        const byte version = stream.ReadByte();
-        if (version == 1)
-        {
-            int32 fieldsCount;
-            stream.ReadInt32(&fieldsCount);
-            for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
-            {
-                String fieldName;
-                stream.ReadString(&fieldName, 11);
-                VariantType fieldType;
-                stream.ReadVariantType(&fieldType);
-                if (box->ID == boxId)
-                {
-                    type.Struct.GetField(structureValue.AsBlob.Data, fieldName, value);
-                    break;
-                }
-            }
-        }
-        break;
-    }
     default:
         VisjectExecutor::ProcessGroupPacking(box, node, value);
         break;
