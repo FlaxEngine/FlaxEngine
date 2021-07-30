@@ -15,6 +15,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
     public abstract class MemberTrack : Track
     {
+        private float _previewValueLeft;
+
         /// <summary>
         /// The member value data size (in bytes).
         /// </summary>
@@ -163,7 +165,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (useValuePreview)
             {
                 // Value preview
-                var previewWidth = 100.0f;
+                var previewWidth = 160.0f;
+                _previewValueLeft = uiLeft;
                 _previewValue = new Label
                 {
                     AutoFocus = true,
@@ -174,6 +177,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     AutoFitText = true,
                     TextColor = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
+                    HorizontalAlignment = TextAlignment.Far,
                     Parent = this
                 };
             }
@@ -322,6 +326,27 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var p = Member;
             TitleTintColor = p != null ? Color.White : Color.Red;
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            if (_previewValue != null)
+            {
+                // Based on Track.Draw for track text placement
+                var left = _xOffset + 16 + Style.Current.FontSmall.MeasureText(Title ?? Name).X;
+                if (Icon.IsValid)
+                    left += 18;
+                if (IsExpanded)
+                    left = 2;
+
+                // Limit preview value size to fit before the track text
+                var previewWidth = Mathf.Min(200.0f, Width - left + _previewValueLeft - 12);
+                _previewValue.Offsets = new Margin(-previewWidth - 2 + _previewValueLeft, previewWidth, TextBox.DefaultHeight * -0.5f, TextBox.DefaultHeight);
+                _previewValue.Visible = Timeline.ShowPreviewValues && previewWidth > 10;
+            }
+
+            base.PerformLayoutBeforeChildren();
         }
 
         /// <inheritdoc />
