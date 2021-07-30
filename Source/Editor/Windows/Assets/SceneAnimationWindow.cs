@@ -852,6 +852,7 @@ namespace FlaxEditor.Windows.Assets
                 _isWaitingForTimelineLoad = false;
 
                 // Load timeline data from the asset
+                _timeline._id = OriginalAsset.ID;
                 _timeline.Load(_asset);
 
                 // Setup

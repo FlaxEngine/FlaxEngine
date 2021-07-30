@@ -202,7 +202,8 @@ private:
 
     void Restore(SceneAnimation* anim, int32 stateIndexOffset);
     bool TickPropertyTrack(int32 trackIndex, int32 stateIndexOffset, SceneAnimation* anim, float time, const SceneAnimation::Track& track, TrackInstance& state, void* target);
-    void Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset);
+    typedef Array<SceneAnimation*, FixedAllocation<8>> CallStack;
+    void Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset, CallStack& callStack);
     void Tick();
     void OnAnimationModified();
     void ResetState();

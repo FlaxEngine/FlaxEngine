@@ -26,6 +26,7 @@ namespace FlaxEditor.GUI.Timeline
 
         private SceneAnimationPlayer _player;
         private bool _showSelected3dTrack = true;
+        internal Guid _id;
 
         /// <summary>
         /// Gets or sets the animation player actor used for the timeline preview.

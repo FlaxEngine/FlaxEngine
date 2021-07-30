@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -121,6 +122,23 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public NestedSceneAnimationTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+        }
+
+        /// <inheritdoc />
+        protected override void OnAssetChanged()
+        {
+            if (Asset)
+            {
+                var refs = Asset.GetReferences();
+                var id = ((SceneAnimationTimeline)Timeline)._id;
+                if (Asset.ID == id || refs.Contains(id))
+                {
+                    Asset = null;
+                    throw new Exception("Cannot use nested scene animation (recursion).");
+                }
+            }
+
+            base.OnAssetChanged();
         }
     }
 }

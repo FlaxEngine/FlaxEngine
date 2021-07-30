@@ -192,7 +192,8 @@ void SceneAnimationPlayer::Tick(float dt)
     _cameraCutCam = nullptr;
 
     // Tick the animation
-    Tick(anim, time, dt, 0);
+    CallStack callStack;
+    Tick(anim, time, dt, 0, callStack);
 #if !BUILD_RELEASE
     if (_tracksDataStack.Count() != 0)
     {
@@ -486,9 +487,12 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     return true;
 }
 
-void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset)
+void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset, CallStack& callStack)
 {
     const float fps = anim->FramesPerSecond;
+#if !BUILD_RELEASE || USE_EDITOR
+    callStack.Add(anim);
+#endif
 
     // Update all tracks
     for (int32 j = 0; j < anim->Tracks.Count(); j++)
@@ -546,7 +550,20 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     return;
                 }
 
-                Tick(nestedAnim, mediaTime, dt, stateIndexOffset);
+#if !BUILD_RELEASE || USE_EDITOR
+                // Validate recursive call
+                if (callStack.Contains(nestedAnim))
+                {
+                    LOG(Warning,
+                        "Recursive nested scene animation. Animation {0} for nested track {1} on actor {2}.",
+                        callStack.Last()->ToString(),
+                        nestedAnim->ToString(),
+                        ToString());
+                    return;
+                }
+#endif
+
+                Tick(nestedAnim, mediaTime, dt, stateIndexOffset, callStack);
             }
             break;
         }
