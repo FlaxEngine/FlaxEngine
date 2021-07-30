@@ -8,6 +8,8 @@
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Level/Actor.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Utilities/StringConverter.h"
 
 #define RAND Random::Rand()
 
@@ -374,13 +376,13 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         // Remap
     case 48:
     {
-        const float inVal  = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat;
+        const float inVal = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat;
         const Vector2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsVector2();
         const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
         const bool clamp = tryGetValue(node->GetBox(3), node->Values[3]).AsBool;
 
         auto mapFunc = Math::Remap(inVal, rangeA.X, rangeA.Y, rangeB.X, rangeB.Y);
-        
+
         value = clamp ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
         break;
     }
@@ -673,9 +675,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 #undef SETUP_CURVE
         // Get Gameplay Global
     case 16:
-    {
-        const auto asset = node->Assets[0].As<GameplayGlobals>();
-        if (asset)
+        if (const auto asset = node->Assets[0].As<GameplayGlobals>())
         {
             const StringView& name = (StringView)node->Values[1];
             const auto e = asset->Variables.Find(name);
@@ -686,7 +686,6 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             value = Value::Zero;
         }
         break;
-    }
         // Platform Switch
     case 17:
     {
@@ -724,28 +723,69 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     }
         // Asset Reference
     case 18:
-    {
         value = ::LoadAsset((Guid)node->Values[0], Asset::TypeInitializer);
         break;
-    }
         // To String
     case 20:
-    {
         value.SetString(tryGetValue(node->GetBox(1), Value(StringView::Empty)).ToString());
         break;
-    }
         // Actor Reference
     case 21:
-    {
         value = Scripting::FindObject<Actor>((Guid)node->Values[0]);
         break;
-    }
-
-    case 29:
+        // As
+    case 22:
     {
-        value = tryGetValue(node->GetBox(0), Value::Zero);
+        value = Value::Null;
+        const auto obj = (ScriptingObject*)tryGetValue(node->GetBox(1), Value::Null);
+        if (obj)
+        {
+            const StringView typeName(node->Values[0]);
+            const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
+            const auto objClass = obj->GetClass();
+            if (typeHandle && objClass && objClass->IsSubClassOf(typeHandle.GetType().ManagedClass))
+                value = obj;
+        }
         break;
     }
+        // Type Reference node
+    case 23:
+    {
+        const StringView typeName(node->Values[0]);
+        if (box->ID == 0)
+            value.SetTypename(typeName);
+        else
+            value = typeName;
+        break;
+    }
+        // Is
+    case 24:
+    {
+        value = Value::False;
+        const auto obj = (ScriptingObject*)tryGetValue(node->GetBox(1), Value::Null);
+        if (obj)
+        {
+            const StringView typeName(node->Values[0]);
+            const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
+            const auto objClass = obj->GetClass();
+            value.AsBool = typeHandle && objClass && objClass->IsSubClassOf(typeHandle.GetType().ManagedClass);
+        }
+        break;
+    }
+        // Is Null
+    case 27:
+        value = (void*)tryGetValue(node->GetBox(1), Value::Null) == nullptr;
+        break;
+        // Is Valid
+    case 28:
+        value = (void*)tryGetValue(node->GetBox(1), Value::Null) != nullptr;
+        break;
+        // Reroute
+    case 29:
+        value = tryGetValue(node->GetBox(0), Value::Zero);
+        break;
     default:
         break;
     }

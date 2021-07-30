@@ -771,11 +771,10 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
 #undef PLATFORM_CASE
         break;
     }
+        // Reroute
     case 29:
-    {
         value = tryGetValue(node->GetBox(0), Value::Zero);
         break;
-    }
     default:
         break;
     }

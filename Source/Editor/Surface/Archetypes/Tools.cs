@@ -1441,7 +1441,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "As",
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
-                Flags = NodeFlags.VisualScriptGraph,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(200, 20),
                 DefaultValues = new object[]
                 {
@@ -1459,7 +1459,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Type Reference",
                 Create = (id, context, arch, groupArch) => new TypeReferenceNode(id, context, arch, groupArch),
                 Description = "Scripting type picker.",
-                Flags = NodeFlags.VisualScriptGraph,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(200, 40),
                 DefaultValues = new object[]
                 {
@@ -1477,7 +1477,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Is",
                 Create = (id, context, arch, groupArch) => new IsNode(id, context, arch, groupArch),
                 Description = "Checks if the object is of the given type. Return true if so, false otherwise.",
-                Flags = NodeFlags.VisualScriptGraph,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(200, 20),
                 DefaultValues = new object[]
                 {
@@ -1536,7 +1536,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 27,
                 Title = "Is Null",
                 Description = "Checks if the object is null. Return false if it's valid.",
-                Flags = NodeFlags.VisualScriptGraph,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(150, 20),
                 Elements = new[]
                 {
@@ -1549,7 +1549,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 28,
                 Title = "Is Valid",
                 Description = "Checks if the object is valid. Return false if it's null.",
-                Flags = NodeFlags.VisualScriptGraph,
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(150, 20),
                 Elements = new[]
                 {

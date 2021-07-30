@@ -432,51 +432,8 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     {
         // This Instance
     case 19:
-    {
         value = ThreadStacks.Get().Stack->Instance;
         break;
-    }
-        // As
-    case 22:
-    {
-        value = Value::Null;
-        const auto obj = (ScriptingObject*)tryGetValue(node->GetBox(1), Value::Null);
-        if (obj)
-        {
-            const StringView typeName(node->Values[0]);
-            const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
-            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
-            const auto objClass = obj->GetClass();
-            if (typeHandle && objClass && objClass->IsSubClassOf(typeHandle.GetType().ManagedClass))
-                value = obj;
-        }
-        break;
-    }
-        // Type Reference node
-    case 23:
-    {
-        const StringView typeName(node->Values[0]);
-        if (box->ID == 0)
-            value.SetTypename(typeName);
-        else
-            value = typeName;
-        break;
-    }
-        // Is
-    case 24:
-    {
-        value = Value::False;
-        const auto obj = (ScriptingObject*)tryGetValue(node->GetBox(1), Value::Null);
-        if (obj)
-        {
-            const StringView typeName(node->Values[0]);
-            const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
-            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
-            const auto objClass = obj->GetClass();
-            value.AsBool = typeHandle && objClass && objClass->IsSubClassOf(typeHandle.GetType().ManagedClass);
-        }
-        break;
-    }
         // Cast
     case 25:
     {
@@ -596,14 +553,6 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Is Null
-    case 27:
-        value = (void*)tryGetValue(node->GetBox(1), Value::Null) == nullptr;
-        break;
-        // Is Valid
-    case 28:
-        value = (void*)tryGetValue(node->GetBox(1), Value::Null) != nullptr;
-        break;
     default:
         VisjectExecutor::ProcessGroupTools(box, node, value);
         break;
