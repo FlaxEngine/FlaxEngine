@@ -88,7 +88,6 @@ void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream,
 {
     if (!object)
         return;
-    ASSERT(stream.IsObject());
 
     // Get serialized data
     rapidjson_flax::StringBuffer buffer;
@@ -100,10 +99,10 @@ void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream,
 
 void ManagedSerialization::Deserialize(const StringAnsiView& data, MonoObject* object)
 {
-    if (!object)
-        return;
     const char* str = data.Get();
     const int32 len = data.Length();
+    if (!object || len == 0)
+        return;
 
     // Skip case {} to improve performance
     if (StringUtils::Compare(str, "{}") == 0)
