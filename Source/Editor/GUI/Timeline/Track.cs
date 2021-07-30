@@ -896,13 +896,12 @@ namespace FlaxEditor.GUI.Timeline
             var left = _xOffset + 16; // offset + arrow
             var height = HeaderHeight;
             var bounds = new Rectangle(Vector2.Zero, Size);
-            var textRect = new Rectangle(left, 0, Width - left, height);
+            var textRect = new Rectangle(left, 0, bounds.Width - left, height);
             _margin.ShrinkRectangle(ref textRect);
             var textColor = style.Foreground * TitleTintColor;
             var backgroundColorSelected = style.BackgroundSelected;
             var backgroundColorHighlighted = style.BackgroundHighlighted;
             var backgroundColorSelectedUnfocused = style.LightBackground;
-            var textFont = new FontReference(style.FontSmall);
             var isMouseOver = IsMouseOver;
 
             // Draw background
@@ -926,7 +925,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             // Draw text
-            Render2D.DrawText(textFont.GetFont(), Title ?? Name, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Title ?? Name, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Disabled overlay
             DrawDisabled = Mute || (ParentTrack != null && ParentTrack.DrawDisabled);

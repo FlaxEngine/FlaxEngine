@@ -266,18 +266,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnTimelineChanged(Timeline timeline)
         {
-            if (Timeline != null)
-            {
-                Timeline.ShowPreviewValuesChanged -= OnTimelineShowPreviewValuesChanged;
-            }
-
             base.OnTimelineChanged(timeline);
-
-            if (Timeline != null)
-            {
-                _previewValue.Visible = Timeline.ShowPreviewValues;
-                Timeline.ShowPreviewValuesChanged += OnTimelineShowPreviewValuesChanged;
-            }
 
             if (Curve != null)
             {
@@ -294,11 +283,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             base.OnUndo();
 
             UpdatePreviewValue();
-        }
-
-        private void OnTimelineShowPreviewValuesChanged()
-        {
-            _previewValue.Visible = Timeline.ShowPreviewValues;
         }
 
         /// <inheritdoc />

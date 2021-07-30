@@ -361,30 +361,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnTimelineChanged(Timeline timeline)
         {
-            if (Timeline != null)
-            {
-                Timeline.ShowPreviewValuesChanged -= OnTimelineShowPreviewValuesChanged;
-            }
-
             base.OnTimelineChanged(timeline);
-
-            if (Timeline != null)
-            {
-                if (_previewValue != null)
-                    _previewValue.Visible = Timeline.ShowPreviewValues;
-                Timeline.ShowPreviewValuesChanged += OnTimelineShowPreviewValuesChanged;
-            }
 
             Events.Parent = timeline?.MediaPanel;
             Events.FPS = timeline?.FramesPerSecond;
 
             UpdateEvents();
-        }
-
-        private void OnTimelineShowPreviewValuesChanged()
-        {
-            if (_previewValue != null)
-                _previewValue.Visible = Timeline.ShowPreviewValues;
         }
 
         /// <inheritdoc />

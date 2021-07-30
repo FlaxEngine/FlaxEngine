@@ -294,6 +294,28 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
+        public override void OnTimelineChanged(Timeline timeline)
+        {
+            if (Timeline != null && _previewValue != null)
+            {
+                Timeline.ShowPreviewValuesChanged -= OnTimelineShowPreviewValuesChanged;
+            }
+
+            base.OnTimelineChanged(timeline);
+
+            if (Timeline != null && _previewValue != null)
+            {
+                _previewValue.Visible = Timeline.ShowPreviewValues;
+                Timeline.ShowPreviewValuesChanged += OnTimelineShowPreviewValuesChanged;
+            }
+        }
+
+        private void OnTimelineShowPreviewValuesChanged()
+        {
+            _previewValue.Visible = Timeline.ShowPreviewValues;
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
