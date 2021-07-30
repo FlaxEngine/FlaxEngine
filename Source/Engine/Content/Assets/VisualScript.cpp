@@ -289,7 +289,7 @@ void VisualScriptExecutor::ProcessGroupPacking(Box* box, Node* node, Value& valu
             if (mclass)
             {
                 // Fallback to C#-only types
-                auto instance = (MonoObject*)structureValue.AsUint;
+                auto instance = (MonoObject*)structureValue;
                 CHECK(instance);
                 if (structureValue.Type.Type != VariantType::ManagedObject || mono_object_get_class(instance) != mclass->GetNative())
                 {

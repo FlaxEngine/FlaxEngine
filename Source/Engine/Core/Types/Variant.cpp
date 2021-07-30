@@ -22,6 +22,8 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -3106,6 +3108,30 @@ void Variant::AllocStructure()
         AsBlob.Length = 2;
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         *((int16*)AsBlob.Data) = 0;
+    }
+    else if (const auto mclass = Scripting::FindClass(typeName))
+    {
+        // Fallback to C#-only types
+        MCore::AttachThread();
+        auto instance = mclass->CreateInstance();
+        if (instance)
+        {
+#if 0
+            void* data = mono_object_unbox(instance);
+            int32 instanceSize = mono_class_instance_size(mclass->GetNative());
+            AsBlob.Length = instanceSize - (int32)((uintptr)data - (uintptr)instance);
+            AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+            Platform::MemoryCopy(AsBlob.Data, data, AsBlob.Length);
+#else
+            Type.Type = VariantType::ManagedObject;
+            AsUint = mono_gchandle_new(instance, true);
+#endif
+        }
+        else
+        {
+            AsBlob.Data = nullptr;
+            AsBlob.Length = 0;
+        }
     }
     else
     {

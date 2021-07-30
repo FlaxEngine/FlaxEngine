@@ -237,7 +237,7 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     // TODO: support any structure unboxing
 
     // TODO: unbox other types as generic ManagedObject type
-    LOG(Error, "Invalid managed type to unbox {0}.{1}", String(mono_class_get_namespace(klass)), String(mono_class_get_name(klass)));
+    LOG(Error, "Invalid managed type to unbox {0}", String(GetClassFullname(klass)));
     return VariantType();
 }
 
@@ -342,6 +342,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             type.Struct.Unbox(v.AsBlob.Data, value);
             return v;
         }
+        return Variant(value);
     }
     if (klass == mono_array_class_get(mono_get_byte_class(), 1))
     {
