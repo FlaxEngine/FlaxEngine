@@ -220,8 +220,6 @@ namespace FlaxEngine.GUI
             var wAlignment = VerticalAlignment;
             if (_autoFitText)
             {
-                hAlignment = TextAlignment.Center;
-                wAlignment = TextAlignment.Center;
                 if (!_textSize.IsZero)
                 {
                     scale = (rect.Size / _textSize).MinValue;
