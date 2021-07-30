@@ -43,8 +43,6 @@ private:
     Value eatBox(Node* caller, Box* box) override;
     Graph* GetCurrentGraph() const override;
 
-    void ProcessGroupConstants(Box* box, Node* node, Value& value);
-    void ProcessGroupPacking(Box* box, Node* node, Value& value);
     void ProcessGroupParameters(Box* box, Node* node, Value& value);
     void ProcessGroupTools(Box* box, Node* node, Value& value);
     void ProcessGroupFunction(Box* boxBase, Node* node, Value& value);

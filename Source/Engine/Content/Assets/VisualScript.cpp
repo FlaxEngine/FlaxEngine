@@ -76,8 +76,6 @@ bool VisualScriptGraph::onNodeLoaded(Node* n)
 
 VisualScriptExecutor::VisualScriptExecutor()
 {
-    _perGroupProcessCall[2] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupConstants;
-    _perGroupProcessCall[4] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupPacking;
     _perGroupProcessCall[6] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupParameters;
     _perGroupProcessCall[7] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupTools;
     _perGroupProcessCall[16] = (ProcessBoxHandler)&VisualScriptExecutor::ProcessGroupFunction;
@@ -172,26 +170,6 @@ VisjectExecutor::Graph* VisualScriptExecutor::GetCurrentGraph() const
 {
     auto& stack = ThreadStacks.Get();
     return stack.Stack && stack.Stack->Script ? &stack.Stack->Script->Graph : nullptr;
-}
-
-void VisualScriptExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
-{
-    switch (node->TypeID)
-    {
-    default:
-        VisjectExecutor::ProcessGroupConstants(box, node, value);
-        break;
-    }
-}
-
-void VisualScriptExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
-{
-    switch (node->TypeID)
-    {
-    default:
-        VisjectExecutor::ProcessGroupPacking(box, node, value);
-        break;
-    }
 }
 
 void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
