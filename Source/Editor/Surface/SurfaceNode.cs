@@ -326,7 +326,7 @@ namespace FlaxEditor.Surface
                 box.Dispose();
                 box = null;
             }
-            
+
             // Create new if missing
             if (box == null)
             {
@@ -346,7 +346,7 @@ namespace FlaxEditor.Surface
 
             // Update box
             box.OnConnectionsChanged();
-            
+
             return box;
         }
 
@@ -762,7 +762,6 @@ namespace FlaxEditor.Surface
                     ob.DrawConnections(ref mousePosition);
                 }
             }
-
         }
 
         /// <summary>
@@ -892,7 +891,9 @@ namespace FlaxEditor.Surface
         /// <param name="graphEdited">True if graph has been edited (nodes structure or parameter value).</param>
         public virtual void SetValue(int index, object value, bool graphEdited = true)
         {
-            if (_isDuringValuesEditing || !Surface.CanEdit || value == Values[index])
+            if (_isDuringValuesEditing || !Surface.CanEdit)
+                return;
+            if (Equals(value, Values[index]))
                 return;
             if (value is byte[] && Values[index] is byte[] && Utils.ArraysEqual((byte[])value, (byte[])Values[index]))
                 return;
