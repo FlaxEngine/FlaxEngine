@@ -52,6 +52,8 @@ namespace FlaxEditor
         public SpriteHandle Info32;
         public SpriteHandle Warning32;
         public SpriteHandle Error32;
+        public SpriteHandle Bone32;
+        public SpriteHandle BoneFull32;
 
         // Visject
         public SpriteHandle VisjectBoxOpen32;

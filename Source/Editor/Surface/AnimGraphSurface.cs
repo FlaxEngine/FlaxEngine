@@ -282,7 +282,7 @@ namespace FlaxEditor.Surface
 
         /// <inheritdoc />
         public AnimGraphSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
-        : base(owner, onSave, undo)
+        : base(owner, onSave, undo, CreateStyle())
         {
             // Find custom nodes for Anim Graph
             var customNodes = Editor.Instance.CodeEditing.AnimGraphNodes.GetArchetypes();
@@ -297,6 +297,15 @@ namespace FlaxEditor.Surface
                     ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
                 }
             }
+        }
+
+        private static SurfaceStyle CreateStyle()
+        {
+            var editor = Editor.Instance;
+            var style = SurfaceStyle.CreateStyleHandler(editor);
+            style.Icons.ArrowOpen = editor.Icons.Bone32;
+            style.Icons.ArrowClose = editor.Icons.BoneFull32;
+            return style;
         }
 
         private void OnScriptsReloadBegin()
