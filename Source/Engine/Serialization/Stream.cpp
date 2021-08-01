@@ -27,6 +27,8 @@ void ReadStream::ReadStringAnsi(StringAnsi* data)
     }
 
     data->ReserveSpace(length);
+    if (length == 0)
+        return;
     char* ptr = data->Get();
     ASSERT(ptr != nullptr);
     Read(ptr, length);
@@ -44,6 +46,8 @@ void ReadStream::ReadStringAnsi(StringAnsi* data, int8 lock)
     }
 
     data->ReserveSpace(length);
+    if (length == 0)
+        return;
     char* ptr = data->Get();
     ASSERT(ptr != nullptr);
     Read(ptr, length);
@@ -68,6 +72,8 @@ void ReadStream::ReadString(String* data)
     }
 
     data->ReserveSpace(length);
+    if (length == 0)
+        return;
     Char* ptr = data->Get();
     ASSERT(ptr != nullptr);
     Read(ptr, length);
@@ -86,6 +92,8 @@ void ReadStream::ReadString(String* data, int16 lock)
     }
 
     data->ReserveSpace(length);
+    if (length == 0)
+        return;
     Char* ptr = data->Get();
     ASSERT(ptr != nullptr);
     Read(ptr, length);
