@@ -141,14 +141,26 @@ namespace FlaxEditor.GUI.Timeline
             public TTimeline Timeline;
 
             /// <summary>
-            /// Gets or sets the total duration of the timeline in the frames amount.
+            /// Gets or sets the total duration of the timeline (in frames).
             /// </summary>
-            [EditorDisplay("General"), EditorOrder(10), Limit(1), Tooltip("Total duration of the timeline event the frames amount.")]
+            [EditorDisplay("General"), EditorOrder(10), Limit(1), VisibleIf(nameof(UseFrames)), Tooltip("Total duration of the timeline (in frames).")]
             public int DurationFrames
             {
                 get => Timeline.DurationFrames;
                 set => Timeline.DurationFrames = value;
             }
+
+            /// <summary>
+            /// Gets or sets the total duration of the timeline (in seconds).
+            /// </summary>
+            [EditorDisplay("General"), EditorOrder(10), Limit(0.0f, float.MaxValue, 0.001f), VisibleIf(nameof(UseFrames), true), Tooltip("Total duration of the timeline (in seconds).")]
+            public float Duration
+            {
+                get => Timeline.Duration;
+                set => Timeline.Duration = value;
+            }
+
+            private bool UseFrames => Timeline.TimeShowMode == TimeShowModes.Frames;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ProxyBase{TTimeline}"/> class.

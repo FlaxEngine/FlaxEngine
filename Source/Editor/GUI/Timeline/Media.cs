@@ -45,14 +45,26 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <summary>
-            /// Gets or sets the total duration of the media event in the timeline sequence frames amount.
+            /// Gets or sets the total duration of the media event (in frames).
             /// </summary>
-            [EditorDisplay("General"), EditorOrder(-1000), Limit(1), Tooltip("Total duration of the media event in the timeline sequence frames amount.")]
+            [EditorDisplay("General"), EditorOrder(-1000), Limit(1), VisibleIf(nameof(UseFrames)), Tooltip("Total duration of the media event (in frames).")]
             public int DurationFrames
             {
                 get => Media.DurationFrames;
                 set => Media.DurationFrames = value;
             }
+
+            /// <summary>
+            /// Gets or sets the total duration of the timeline (in seconds).
+            /// </summary>
+            [EditorDisplay("General"), EditorOrder(-1000), Limit(0.0f, float.MaxValue, 0.001f), VisibleIf(nameof(UseFrames), true), Tooltip("Total duration of the timeline (in seconds).")]
+            public float Duration
+            {
+                get => Media.Duration;
+                set => Media.Duration = value;
+            }
+
+            private bool UseFrames => Media.Timeline.TimeShowMode == Timeline.TimeShowModes.Frames;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ProxyBase{TTrack,TMedia}"/> class.
