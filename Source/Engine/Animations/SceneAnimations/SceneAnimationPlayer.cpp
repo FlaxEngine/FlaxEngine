@@ -220,6 +220,41 @@ void SceneAnimationPlayer::MapObject(const Guid& from, const Guid& to)
     _objectsMapping[from] = to;
 }
 
+void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
+{
+    SceneAnimation* anim = Animation.Get();
+    if (!anim || !anim->IsLoaded())
+        return;
+    for (int32 j = 0; j < anim->Tracks.Count(); j++)
+    {
+        const auto& track = anim->Tracks[j];
+        if (track.Name != from)
+            continue;
+        switch (track.Type)
+        {
+        case SceneAnimation::Track::Types::Actor:
+        {
+            const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
+            _objectsMapping[trackData->ID] = to;
+            break;
+        }
+        case SceneAnimation::Track::Types::Script:
+        {
+            const auto trackData = track.GetData<SceneAnimation::ScriptTrack::Data>();
+            _objectsMapping[trackData->ID] = to;
+            break;
+        }
+        case SceneAnimation::Track::Types::CameraCut:
+        {
+            const auto trackData = track.GetData<SceneAnimation::CameraCutTrack::Data>();
+            _objectsMapping[trackData->ID] = to;
+            break;
+        }
+        default: ;
+        }
+    }
+}
+
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 {
     // Restore all tracks

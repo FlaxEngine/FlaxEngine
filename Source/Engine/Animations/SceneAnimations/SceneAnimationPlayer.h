@@ -198,6 +198,13 @@ public:
     /// <param name="to">The destination object to animate.</param>
     API_FUNCTION() void MapObject(const Guid& from, const Guid& to);
 
+    /// <summary>
+    /// Adds an object mapping for the object track. The track name `from` will be redirected to the specified object `to`. Can be used to reuse the same animation for different objects.
+    /// </summary>
+    /// <param name="from">The source track name from the scene animation asset to replace.</param>
+    /// <param name="to">The destination object to animate.</param>
+    API_FUNCTION() void MapTrack(const StringView& from, const Guid& to);
+
 private:
 
     void Restore(SceneAnimation* anim, int32 stateIndexOffset);
