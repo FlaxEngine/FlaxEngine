@@ -301,8 +301,6 @@ namespace FlaxEngine.GUI
             for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
-
-                // Check collision
                 if (IntersectsChildContent(child, point, out var childLocation))
                 {
                     result = child;
@@ -322,13 +320,10 @@ namespace FlaxEngine.GUI
         {
             if (isValid == null)
                 throw new ArgumentNullException(nameof(isValid));
-
             Control result = null;
             for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
-
-                // Check collision
                 if (isValid(child) && IntersectsChildContent(child, point, out var childLocation))
                 {
                     result = child;
@@ -349,8 +344,6 @@ namespace FlaxEngine.GUI
             for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
-
-                // Check collision
                 if (IntersectsChildContent(child, point, out var childLocation))
                 {
                     var containerControl = child as ContainerControl;
@@ -360,6 +353,7 @@ namespace FlaxEngine.GUI
                         child = childAtRecursive;
                     }
                     result = child;
+                    break;
                 }
             }
             return result;
