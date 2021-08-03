@@ -665,7 +665,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var arrowTransform = Matrix3x3.Translation2D(new Vector2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * Matrix3x3.Translation2D(endPos);
 
                     Render2D.PushTransform(ref arrowTransform);
-                    Render2D.DrawSprite(surface.Style.Icons.ArrowClose, arrowRect, color);
+                    Render2D.DrawSprite(Editor.Instance.Icons.VisjectArrowClosed32, arrowRect, color);
                     Render2D.PopTransform();
 
                     endPos -= dir * 4.0f;
