@@ -107,6 +107,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             float orthoScale = 1.0f;
             float fov = 60.0f;
             float customAspectRatio = 0.0f;
+            view.RenderLayersMask = new LayersMask(uint.MaxValue);
 
             // Try to evaluate camera properties based on the initial camera state
             if (cam)
@@ -119,6 +120,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 orthoScale = cam.OrthographicScale;
                 fov = cam.FieldOfView;
                 customAspectRatio = cam.CustomAspectRatio;
+                view.RenderLayersMask = cam.RenderLayersMask;
             }
 
             // Try to evaluate camera properties based on the animated tracks
@@ -176,7 +178,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             view.NonJitteredProjection = view.Projection;
             view.TemporalAAJitter = Vector4.Zero;
             view.ModelLODDistanceFactor = 100.0f;
-            view.Flags = ViewFlags.DefaultGame & ~(ViewFlags.MotionBlur | ViewFlags.EyeAdaptation);
+            view.Flags = ViewFlags.DefaultGame & ~(ViewFlags.MotionBlur);
             view.UpdateCachedData();
             task.View = view;
         }
