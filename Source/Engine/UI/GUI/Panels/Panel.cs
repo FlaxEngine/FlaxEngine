@@ -173,6 +173,15 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Cuts the scroll bars value smoothing and imminently goes to the target scroll value.
+        /// </summary>
+        public void FastScroll()
+        {
+            HScrollBar?.FastScroll();
+            VScrollBar?.FastScroll();
+        }
+
+        /// <summary>
         /// Scrolls the view to the given control area.
         /// </summary>
         /// <param name="c">The control.</param>

@@ -152,16 +152,7 @@ namespace FlaxEditor.GUI
             /// <summary>
             /// Gets the point time and value on a curve.
             /// </summary>
-            public Vector2 TimeValue
-            {
-                get
-                {
-                    var k = Editor.GetKeyframe(Index);
-                    var time = Editor.GetKeyframeTime(k);
-                    var value = Editor.GetKeyframeValue(k);
-                    return new Vector2(time, Editor.Accessor.GetCurveValue(ref value, Component));
-                }
-            }
+            public Vector2 Point => Editor.GetKeyframePoint(Index, Component);
 
             /// <inheritdoc />
             public override void Draw()
@@ -190,21 +181,8 @@ namespace FlaxEditor.GUI
                 return false;
             }
 
-            /// <summary>
-            /// Adds this keyframe to the selection.
-            /// </summary>
-            public void Select()
-            {
-                IsSelected = true;
-            }
-
-            /// <summary>
-            /// Removes this keyframe from the selection.
-            /// </summary>
-            public void Deselect()
-            {
-                IsSelected = false;
-            }
+            /// <inheritdoc />
+            protected override bool ShowTooltip => base.ShowTooltip && !Editor._contents._isMovingSelection;
 
             /// <summary>
             /// Updates the tooltip.
@@ -350,7 +328,11 @@ namespace FlaxEditor.GUI
         public override Vector2 ViewOffset
         {
             get => _mainPanel.ViewOffset;
-            set => _mainPanel.ViewOffset = value;
+            set
+            {
+                _mainPanel.ViewOffset = value;
+                _mainPanel.FastScroll();
+            }
         }
 
         /// <inheritdoc />
@@ -614,7 +596,7 @@ namespace FlaxEditor.GUI
                 var p = _points[i];
                 if (p.IsSelected)
                 {
-                    p.Deselect();
+                    p.IsSelected = false;
                     indicesToRemove.Add(p.Index);
                 }
             }
@@ -628,23 +610,11 @@ namespace FlaxEditor.GUI
             OnEditingEnd();
         }
 
-        /// <summary>
-        /// Shows the whole curve.
-        /// </summary>
-        public void ShowWholeCurve()
+        /// <inheritdoc />
+        public override void ShowWholeCurve()
         {
             ViewScale = ApplyUseModeMask(EnableZoom, _mainPanel.Size / _contents.Size, ViewScale);
             ViewOffset = ApplyUseModeMask(EnablePanning, -_mainPanel.ControlsBounds.Location, ViewOffset);
-            UpdateKeyframes();
-        }
-
-        /// <summary>
-        /// Resets the view.
-        /// </summary>
-        public void ResetView()
-        {
-            ViewScale = ApplyUseModeMask(EnableZoom, Vector2.One, ViewScale);
-            ViewOffset = ApplyUseModeMask(EnablePanning, Vector2.Zero, ViewOffset);
             UpdateKeyframes();
         }
 
@@ -671,7 +641,7 @@ namespace FlaxEditor.GUI
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Deselect();
+                _points[i].IsSelected = false;
             }
         }
 
@@ -679,7 +649,7 @@ namespace FlaxEditor.GUI
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Select();
+                _points[i].IsSelected = true;
             }
         }
 
@@ -1242,6 +1212,13 @@ namespace FlaxEditor.GUI
             UpdateKeyframes();
             UpdateTooltips();
             OnEdited();
+        }
+
+        /// <inheritdoc />
+        public override Vector2 GetKeyframePoint(int index, int component)
+        {
+            var k = _keyframes[index];
+            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         /// <inheritdoc />
@@ -1911,6 +1888,13 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override Vector2 GetKeyframePoint(int index, int component)
+        {
+            var k = _keyframes[index];
+            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+        }
+
+        /// <inheritdoc />
         public override int KeyframesCount => _keyframes.Count;
 
         /// <inheritdoc />
@@ -1928,35 +1912,32 @@ namespace FlaxEditor.GUI
             // Place keyframes
             Rectangle curveContentAreaBounds = _mainPanel.GetClientArea();
             var viewScale = ViewScale;
+            var pointsSize = _showCollapsed ? new Vector2(4.0f / viewScale.X, Height - 2.0f) : KeyframesSize / viewScale;
             for (int i = 0; i < _points.Count; i++)
             {
                 var p = _points[i];
                 var k = _keyframes[p.Index];
-
-                var location = GetKeyframePoint(ref k, p.Component);
-                var point = new Vector2
+                var point = GetKeyframePoint(ref k, p.Component);
+                var location = new Vector2
                 (
-                 location.X * UnitsPerSecond - p.Width * 0.5f,
-                 location.Y * -UnitsPerSecond - p.Height * 0.5f + curveContentAreaBounds.Height
+                 point.X * UnitsPerSecond - pointsSize.X * 0.5f,
+                 point.Y * -UnitsPerSecond - pointsSize.Y * 0.5f + curveContentAreaBounds.Height
                 );
-
                 if (_showCollapsed)
                 {
-                    point.Y = 1.0f;
-                    p.Size = new Vector2(4.0f / viewScale.X, Height - 2.0f);
+                    location.Y = 1.0f;
                     p.Visible = p.Component == 0;
                 }
                 else
                 {
-                    p.Size = KeyframesSize / viewScale;
                     p.Visible = true;
                 }
-                p.Location = point;
+                p.Bounds = new Rectangle(location, pointsSize);
             }
 
             // Calculate bounds
             var bounds = _points[0].Bounds;
-            for (var i = 1; i < _points.Count; i++)
+            for (int i = 1; i < _points.Count; i++)
             {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
             }

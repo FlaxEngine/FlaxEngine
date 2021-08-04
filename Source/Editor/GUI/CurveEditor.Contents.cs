@@ -77,13 +77,11 @@ namespace FlaxEditor.GUI
                 // Moving view
                 if (_rightMouseDown)
                 {
-                    // Calculate delta
                     Vector2 delta = location - _movingViewLastPos;
-                    delta *= GetUseModeMask(_editor.EnablePanning);
+                    delta *= GetUseModeMask(_editor.EnablePanning) * _editor.ViewScale;
                     if (delta.LengthSquared > 0.01f)
                     {
-                        // Move view
-                        _editor.ViewOffset += delta * _editor.ViewScale;
+                        _editor._mainPanel.ViewOffset += delta;
                         _movingViewLastPos = location;
                         Cursor = CursorType.SizeAll;
                     }
@@ -239,7 +237,7 @@ namespace FlaxEditor.GUI
                         if (Root.GetKey(KeyboardKeys.Control))
                         {
                             // Add to selection
-                            keyframe.Select();
+                            keyframe.IsSelected = true;
                             _editor.UpdateTangents();
                         }
                         // Check if node isn't selected
@@ -247,7 +245,7 @@ namespace FlaxEditor.GUI
                         {
                             // Select node
                             _editor.ClearSelection();
-                            keyframe.Select();
+                            keyframe.IsSelected = true;
                             _editor.UpdateTangents();
                         }
 
@@ -260,7 +258,7 @@ namespace FlaxEditor.GUI
                         if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._points.Count)
                             _movingSelectionOffsets = new Vector2[_editor._points.Count];
                         for (int i = 0; i < _movingSelectionOffsets.Length; i++)
-                            _movingSelectionOffsets[i] = _editor._points[i].TimeValue - _movingSelectionStart;
+                            _movingSelectionOffsets[i] = _editor._points[i].Point - _movingSelectionStart;
                         _editor.OnEditingStart();
                         Focus();
                         Tooltip?.Hide();
@@ -361,7 +359,7 @@ namespace FlaxEditor.GUI
                         {
                             // Select node
                             selectionCount = 1;
-                            point.Select();
+                            point.IsSelected = true;
                             _editor.UpdateTangents();
                         }
 

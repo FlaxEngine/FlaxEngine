@@ -154,6 +154,21 @@ namespace FlaxEditor.GUI
         public abstract void UpdateTangents();
 
         /// <summary>
+        /// Shows the whole curve.
+        /// </summary>
+        public abstract void ShowWholeCurve();
+
+        /// <summary>
+        /// Resets the view.
+        /// </summary>
+        public void ResetView()
+        {
+            ViewScale = ApplyUseModeMask(EnableZoom, Vector2.One, ViewScale);
+            ViewOffset = ApplyUseModeMask(EnablePanning, Vector2.Zero, ViewOffset);
+            UpdateKeyframes();
+        }
+
+        /// <summary>
         /// Evaluates the animation curve value at the specified time.
         /// </summary>
         /// <param name="result">The interpolated value from the curve at provided time.</param>
@@ -203,6 +218,14 @@ namespace FlaxEditor.GUI
         /// <param name="index">The keyframe index.</param>
         /// <param name="value">The keyframe value.</param>
         public abstract void SetKeyframeValue(int index, object value);
+
+        /// <summary>
+        /// Gets the keyframe point (in keyframes space).
+        /// </summary>
+        /// <param name="index">The keyframe index.</param>
+        /// <param name="component">The keyframe value component index.</param>
+        /// <returns>The point in time/value space.</returns>
+        public abstract Vector2 GetKeyframePoint(int index, int component);
 
         /// <summary>
         /// Converts the <see cref="UseMode"/> into the <see cref="Vector2"/> mask.
