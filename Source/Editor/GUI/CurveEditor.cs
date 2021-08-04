@@ -611,12 +611,14 @@ namespace FlaxEditor.GUI
             private bool _rightMouseDown;
             internal Vector2 _leftMouseDownPos = Vector2.Minimum;
             private Vector2 _rightMouseDownPos = Vector2.Minimum;
+            private Vector2 _movingViewLastPos;
             internal Vector2 _mousePos = Vector2.Minimum;
-            private float _mouseMoveAmount;
             internal bool _isMovingSelection;
             internal bool _isMovingTangent;
+            internal bool _movedKeyframes;
             private TangentPoint _movingTangent;
-            private Vector2 _movingSelectionViewPos;
+            private Vector2 _movingSelectionStart;
+            private Vector2[] _movingSelectionOffsets;
             private Vector2 _cmShowPos;
 
             /// <summary>
@@ -669,14 +671,13 @@ namespace FlaxEditor.GUI
                 if (_rightMouseDown)
                 {
                     // Calculate delta
-                    Vector2 delta = location - _rightMouseDownPos;
+                    Vector2 delta = location - _movingViewLastPos;
                     delta *= GetUseModeMask(_editor.EnablePanning);
                     if (delta.LengthSquared > 0.01f)
                     {
                         // Move view
-                        _mouseMoveAmount += delta.Length;
                         _editor.ViewOffset += delta * _editor.ViewScale;
-                        _rightMouseDownPos = location;
+                        _movingViewLastPos = location;
                         Cursor = CursorType.SizeAll;
                     }
 
@@ -685,99 +686,82 @@ namespace FlaxEditor.GUI
                 // Moving selection
                 else if (_isMovingSelection)
                 {
-                    // Calculate delta (apply view offset)
-                    Vector2 viewDelta = _editor.ViewOffset - _movingSelectionViewPos;
-                    _movingSelectionViewPos = _editor.ViewOffset;
                     var viewRect = _editor._mainPanel.GetClientArea();
-                    var delta = location - _leftMouseDownPos - viewDelta;
-                    _mouseMoveAmount += delta.Length;
-                    if (delta.LengthSquared > 0.01f)
+                    var locationKeyframes = PointToKeyframes(location, ref viewRect);
+                    var accessor = _editor.Accessor;
+                    var components = accessor.GetCurveComponents();
+                    for (var i = 0; i < _editor._points.Count; i++)
                     {
-                        // Move selected keyframes
-                        var keyframeDelta = PointToKeyframes(location, ref viewRect) - PointToKeyframes(_leftMouseDownPos - viewDelta, ref viewRect);
-                        var accessor = _editor.Accessor;
-                        var components = accessor.GetCurveComponents();
-                        for (var i = 0; i < _editor._points.Count; i++)
+                        var p = _editor._points[i];
+                        if (p.IsSelected)
                         {
-                            var p = _editor._points[i];
-                            if (p.IsSelected)
+                            var k = _editor.GetKeyframe(p.Index);
+                            float time = _editor.GetKeyframeTime(k);
+                            float value = _editor.GetKeyframeValue(k, p.Component);
+
+                            float minTime = p.Index != 0 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index - 1)) + Mathf.Epsilon : float.MinValue;
+                            float maxTime = p.Index != _editor.KeyframesCount - 1 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index + 1)) - Mathf.Epsilon : float.MaxValue;
+
+                            var offset = _movingSelectionOffsets[i];
+
+                            if (!_editor.ShowCollapsed)
                             {
-                                var k = _editor.GetKeyframe(p.Index);
-                                float time = _editor.GetKeyframeTime(k);
-                                float value = _editor.GetKeyframeValue(k, p.Component);
-
-                                float minTime = p.Index != 0 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index - 1)) + Mathf.Epsilon : float.MinValue;
-                                float maxTime = p.Index != _editor.KeyframesCount - 1 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index + 1)) - Mathf.Epsilon : float.MaxValue;
-
-                                if (!_editor.ShowCollapsed)
-                                {
-                                    // Move on value axis
-                                    value += keyframeDelta.Y;
-                                }
-
-                                // Let the first selected point of this keyframe to edit time
-                                bool isFirstSelected = false;
-                                for (var j = 0; j < components; j++)
-                                {
-                                    var idx = p.Index * components + j;
-                                    if (idx == i)
-                                    {
-                                        isFirstSelected = true;
-                                        break;
-                                    }
-                                    if (_editor._points[idx].IsSelected)
-                                        break;
-                                }
-                                if (isFirstSelected)
-                                {
-                                    time += keyframeDelta.X;
-
-                                    if (_editor.FPS.HasValue)
-                                    {
-                                        float fps = _editor.FPS.Value;
-                                        time = Mathf.Floor(time * fps) / fps;
-                                    }
-
-                                    time = Mathf.Clamp(time, minTime, maxTime);
-                                }
-
-                                // TODO: snapping keyframes to grid when moving
-
-                                _editor.SetKeyframeInternal(p.Index, time, value, p.Component);
+                                // Move on value axis
+                                value = locationKeyframes.Y + offset.Y;
                             }
+
+                            // Let the first selected point of this keyframe to edit time
+                            bool isFirstSelected = false;
+                            for (var j = 0; j < components; j++)
+                            {
+                                var idx = p.Index * components + j;
+                                if (idx == i)
+                                {
+                                    isFirstSelected = true;
+                                    break;
+                                }
+                                if (_editor._points[idx].IsSelected)
+                                    break;
+                            }
+                            if (isFirstSelected)
+                            {
+                                time = locationKeyframes.X + offset.X;
+
+                                if (_editor.FPS.HasValue)
+                                {
+                                    float fps = _editor.FPS.Value;
+                                    time = Mathf.Floor(time * fps) / fps;
+                                }
+                                time = Mathf.Clamp(time, minTime, maxTime);
+                            }
+
+                            // TODO: snapping keyframes to grid when moving
+
+                            _editor.SetKeyframeInternal(p.Index, time, value, p.Component);
                         }
                         _editor.UpdateKeyframes();
                         _editor.UpdateTooltips();
                         if (_editor.EnablePanning == UseMode.On)
                         {
-                            _editor._mainPanel.ScrollViewTo(PointToParent(location));
+                            //_editor._mainPanel.ScrollViewTo(PointToParent(_editor._mainPanel, location));
                         }
-                        _leftMouseDownPos = location;
                         Cursor = CursorType.SizeAll;
+                        _movedKeyframes = true;
                     }
-
                     return;
                 }
                 // Moving tangent
                 else if (_isMovingTangent)
                 {
-                    // Calculate delta (apply view offset)
-                    Vector2 viewDelta = _editor.ViewOffset - _movingSelectionViewPos;
-                    _movingSelectionViewPos = _editor.ViewOffset;
                     var viewRect = _editor._mainPanel.GetClientArea();
-                    var delta = location - _leftMouseDownPos - viewDelta;
-                    _mouseMoveAmount += delta.Length;
-                    if (delta.LengthSquared > 0.01f)
-                    {
-                        // Move selected tangent
-                        var keyframeDelta = PointToKeyframes(location, ref viewRect) - PointToKeyframes(_leftMouseDownPos - viewDelta, ref viewRect);
-                        var direction = _movingTangent.IsIn ? -1.0f : 1.0f;
-                        _movingTangent.TangentValue += direction * keyframeDelta.Y;
-                        _editor.UpdateTangents();
-                        _leftMouseDownPos = location;
-                        Cursor = CursorType.SizeNS;
-                    }
-
+                    var direction = _movingTangent.IsIn ? -1.0f : 1.0f;
+                    var k = _editor.GetKeyframe(_movingTangent.Index);
+                    var kv = _editor.GetKeyframeValue(k);
+                    var value = _editor.Accessor.GetCurveValue(ref kv, _movingTangent.Component);
+                    _movingTangent.TangentValue = direction * (PointToKeyframes(location, ref viewRect).Y - value);
+                    _editor.UpdateTangents();
+                    Cursor = CursorType.SizeNS;
+                    _movedKeyframes = true;
                     return;
                 }
                 // Selecting
@@ -835,6 +819,7 @@ namespace FlaxEditor.GUI
                 {
                     _rightMouseDown = true;
                     _rightMouseDownPos = location;
+                    _movingViewLastPos = location;
                 }
 
                 // Check if any node is under the mouse
@@ -861,11 +846,17 @@ namespace FlaxEditor.GUI
 
                         // Start moving selected nodes
                         StartMouseCapture();
-                        _mouseMoveAmount = 0;
                         _isMovingSelection = true;
-                        _movingSelectionViewPos = _editor.ViewOffset;
+                        _movedKeyframes = false;
+                        var viewRect = _editor._mainPanel.GetClientArea();
+                        _movingSelectionStart = PointToKeyframes(location, ref viewRect);
+                        if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._points.Count)
+                            _movingSelectionOffsets = new Vector2[_editor._points.Count];
+                        for (int i = 0; i < _movingSelectionOffsets.Length; i++)
+                            _movingSelectionOffsets[i] = _editor._points[i].TimeValue - _movingSelectionStart;
                         _editor.OnEditingStart();
                         Focus();
+                        Tooltip?.Hide();
                         return true;
                     }
                 }
@@ -875,12 +866,12 @@ namespace FlaxEditor.GUI
                     {
                         // Start moving tangent
                         StartMouseCapture();
-                        _mouseMoveAmount = 0;
                         _isMovingTangent = true;
+                        _movedKeyframes = false;
                         _movingTangent = tangent;
-                        _movingSelectionViewPos = _editor.ViewOffset;
                         _editor.OnEditingStart();
                         Focus();
+                        Tooltip?.Hide();
                         return true;
                     }
                 }
@@ -922,16 +913,17 @@ namespace FlaxEditor.GUI
                     // Editing tangent
                     if (_isMovingTangent)
                     {
-                        if (_mouseMoveAmount > 3.0f)
+                        if (_movedKeyframes)
                         {
                             _editor.OnEdited();
                             _editor.OnEditingEnd();
+                            _editor.UpdateKeyframes();
                         }
                     }
                     // Moving keyframes
                     else if (_isMovingSelection)
                     {
-                        if (_mouseMoveAmount > 3.0f)
+                        if (_movedKeyframes)
                         {
                             _editor.OnEdited();
                             _editor.OnEditingEnd();
@@ -945,6 +937,7 @@ namespace FlaxEditor.GUI
 
                     _isMovingSelection = false;
                     _isMovingTangent = false;
+                    _movedKeyframes = false;
                 }
                 if (_rightMouseDown && button == MouseButton.Right)
                 {
@@ -953,7 +946,7 @@ namespace FlaxEditor.GUI
                     Cursor = CursorType.Default;
 
                     // Check if no move has been made at all
-                    if (_mouseMoveAmount < 3.0f)
+                    if (Vector2.Distance(ref location, ref _rightMouseDownPos) < 3.0f)
                     {
                         var selectionCount = _editor.SelectionCount;
                         var underMouse = GetChildAt(location);
@@ -993,7 +986,6 @@ namespace FlaxEditor.GUI
                         _editor.OnShowContextMenu(cm, selectionCount);
                         cm.Show(this, location);
                     }
-                    _mouseMoveAmount = 0;
                 }
 
                 if (base.OnMouseUp(location, button))
@@ -1072,6 +1064,20 @@ namespace FlaxEditor.GUI
             /// Flag for selected keyframes.
             /// </summary>
             public bool IsSelected;
+
+            /// <summary>
+            /// Gets the point time and value on a curve.
+            /// </summary>
+            public Vector2 TimeValue
+            {
+                get
+                {
+                    var k = Editor.GetKeyframe(Index);
+                    var time = Editor.GetKeyframeTime(k);
+                    var value = Editor.GetKeyframeValue(k);
+                    return new Vector2(time, Editor.Accessor.GetCurveValue(ref value, Component));
+                }
+            }
 
             /// <inheritdoc />
             public override void Draw()
@@ -2878,7 +2884,8 @@ namespace FlaxEditor.GUI
                 bounds.Height = Mathf.Max(bounds.Height, 1.0f);
                 bounds.Location = ApplyUseModeMask(EnablePanning, bounds.Location, _contents.Location);
                 bounds.Size = ApplyUseModeMask(EnablePanning, bounds.Size, _contents.Size);
-                _contents.Bounds = bounds;
+                if (!_contents._isMovingSelection)
+                    _contents.Bounds = bounds;
             }
             else if (_contents.Bounds == Rectangle.Empty)
             {
