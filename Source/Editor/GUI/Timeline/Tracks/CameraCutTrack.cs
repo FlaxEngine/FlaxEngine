@@ -24,7 +24,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        private Image[] _thumbnails = new Image[2];
+        private Image[] _thumbnails = new Image[3];
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CameraCutMedia"/> class.
@@ -124,7 +124,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             // Try to evaluate camera properties based on the animated tracks
-            float time = req.ThumbnailIndex == 0 ? Start : Start + Duration;
+            float time = Start;
+            if (req.ThumbnailIndex == 1)
+                time += Duration;
+            else if (req.ThumbnailIndex == 2)
+                time += Duration * 0.5f;
             foreach (var subTrack in track.SubTracks)
             {
                 if (subTrack is MemberTrack memberTrack)
@@ -204,13 +208,22 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                         Bounds = new Rectangle(2, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
                 }
-                else
+                else if (req.ThumbnailIndex == 1)
                 {
                     image = new Image
                     {
                         AnchorPreset = AnchorPresets.MiddleRight,
                         Parent = this,
                         Bounds = new Rectangle(Width - 2 - CameraCutThumbnailRenderer.Width, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
+                    };
+                }
+                else
+                {
+                    image = new Image
+                    {
+                        AnchorPreset = AnchorPresets.MiddleCenter,
+                        Parent = this,
+                        Bounds = new Rectangle(Width * 0.5f - 1 - CameraCutThumbnailRenderer.Width * 0.5f, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
                 }
                 image.UnlockChildrenRecursive();
@@ -295,7 +308,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnDurationFramesChanged();
 
-            UpdateThumbnails(new[] { 1 });
+            UpdateThumbnails(new[] { 1, 2 });
         }
 
         /// <inheritdoc />
