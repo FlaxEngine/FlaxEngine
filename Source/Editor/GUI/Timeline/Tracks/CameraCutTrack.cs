@@ -226,14 +226,47 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateUI()
         {
-            var width = Mathf.Min(CameraCutThumbnailRenderer.Width, (Width - 6.0f) * 0.5f);
-            for (int i = 0; i < _thumbnails.Length; i++)
+            if (_thumbnails == null)
+                return;
+            var width = Width - (_thumbnails.Length + 1) * 2;
+            if (width < 10.0f)
+            {
+                for (int i = 0; i < _thumbnails.Length; i++)
+                {
+                    var image = _thumbnails[i];
+                    if (image != null)
+                        image.Visible = false;
+                }
+                return;
+            }
+            var count = Mathf.Min(Mathf.FloorToInt(width / CameraCutThumbnailRenderer.Width), _thumbnails.Length);
+            if (count == 0 && _thumbnails.Length != 0)
+            {
+                var image = _thumbnails[0];
+                if (image != null)
+                {
+                    image.Width = Mathf.Min(CameraCutThumbnailRenderer.Width, width);
+                    image.SetAnchorPreset(image.AnchorPreset, false);
+                    image.Visible = true;
+                }
+                return;
+            }
+            for (int i = 0; i < count; i++)
             {
                 var image = _thumbnails[i];
                 if (image != null)
                 {
-                    image.Width = width;
-                    image.Visible = width >= 10.0f;
+                    image.Width = CameraCutThumbnailRenderer.Width;
+                    image.SetAnchorPreset(image.AnchorPreset, false);
+                    image.Visible = true;
+                }
+            }
+            for (int i = count; i < _thumbnails.Length; i++)
+            {
+                var image = _thumbnails[i];
+                if (image != null)
+                {
+                    image.Visible = false;
                 }
             }
         }
