@@ -239,9 +239,9 @@ namespace FlaxEditor.Windows
         {
             switch (button.Text)
             {
-                case "Alphabetic Order": Editor.Windows.ContentWin._sortType = SortType.AlphabeticOrder;
+                case "Alphabetic Order": _sortType = SortType.AlphabeticOrder;
                     break;
-                case "Alphabetic Reverse": Editor.Windows.ContentWin._sortType = SortType.AlphabeticReverse;
+                case "Alphabetic Reverse": _sortType = SortType.AlphabeticReverse;
                     break;
             }
             RefreshView(SelectedNode);
@@ -718,12 +718,12 @@ namespace FlaxEditor.Windows
                         items.Add(node.Folder);
                     }
                 }
-                _view.ShowItems(items, Editor.Windows.ContentWin._sortType);
+                _view.ShowItems(items, _sortType);
             }
             else
             {
                 // Show folder contents
-                _view.ShowItems(target.Folder.Children, Editor.Windows.ContentWin._sortType);
+                _view.ShowItems(target.Folder.Children, _sortType);
             }
         }
 
