@@ -25,6 +25,7 @@ protected:
     GPUBuffer* _indexBuffer;
     mutable Array<byte> _cachedIndexBuffer;
     mutable Array<byte> _cachedVertexBuffer;
+    mutable int32 _cachedIndexBufferCount;
 
 public:
 
@@ -46,7 +47,6 @@ public:
     /// <summary>
     /// Gets the skinned model owning this mesh.
     /// </summary>
-    /// <returns>The skinned model</returns>
     FORCE_INLINE SkinnedModel* GetSkinnedModel() const
     {
         return (SkinnedModel*)_model;
@@ -55,7 +55,6 @@ public:
     /// <summary>
     /// Gets the mesh index.
     /// </summary>
-    /// <returns>The index</returns>
     FORCE_INLINE int32 GetIndex() const
     {
         return _index;
@@ -64,7 +63,6 @@ public:
     /// <summary>
     /// Determines whether this mesh is initialized (has vertex and index buffers initialized).
     /// </summary>
-    /// <returns>True if this instance is initialized, otherwise false.</returns>
     FORCE_INLINE bool IsInitialized() const
     {
         return _vertexBuffer != nullptr;
@@ -241,7 +239,7 @@ public:
     // [MeshBase]
     bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
     Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
-    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result) const override;
+    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
 

@@ -147,13 +147,13 @@ Array<String> SkinnedModel::GetBlendShapes()
 
 ContentLoadTask* SkinnedModel::RequestLODDataAsync(int32 lodIndex)
 {
-    const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
+    const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
     return RequestChunkDataAsync(chunkIndex);
 }
 
 void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
 {
-    const int32 chunkIndex = SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
+    const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
     GetChunkData(chunkIndex, data);
 }
 
@@ -617,7 +617,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 }
 
                 // Override meshes data chunk with the fetched GPU meshes memory
-                auto lodChunk = GET_CHUNK(SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
+                auto lodChunk = GET_CHUNK(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
                 if (lodChunk == nullptr)
                     return true;
                 lodChunk->Data.Copy(meshesStream.GetHandle(), meshesStream.GetPosition());
@@ -631,7 +631,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
         // Load all chunks with a mesh data
         for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
         {
-            if (LoadChunk(SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lodIndex)))
+            if (LoadChunk(MODEL_LOD_TO_CHUNK_INDEX(lodIndex)))
                 return true;
         }
     }

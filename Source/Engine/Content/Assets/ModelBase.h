@@ -7,6 +7,16 @@
 #include "Engine/Graphics/Models/MaterialSlot.h"
 #include "Engine/Streaming/StreamableResource.h"
 
+// Note: we use the first chunk as a header, next is the highest quality lod and then lower ones
+//
+// Example:
+// Chunk 0: Header
+// Chunk 1: LOD0
+// Chunk 2: LOD1
+// ..
+//
+#define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
+
 class MeshBase;
 
 /// <summary>
@@ -58,7 +68,6 @@ public:
     /// <summary>
     /// Gets amount of the level of details in the model.
     /// </summary>
-    /// <returns>Amount of the level of details in the model.</returns>
     virtual int32 GetLODsCount() const = 0;
 
     /// <summary>

@@ -45,7 +45,6 @@ public:
     /// <summary>
     /// Gets the triangle count.
     /// </summary>
-    /// <returns>The triangles</returns>
     API_PROPERTY() FORCE_INLINE int32 GetTriangleCount() const
     {
         return _triangles;
@@ -54,7 +53,6 @@ public:
     /// <summary>
     /// Gets the vertex count.
     /// </summary>
-    /// <returns>The vertices</returns>
     API_PROPERTY() FORCE_INLINE int32 GetVertexCount() const
     {
         return _vertices;
@@ -63,7 +61,6 @@ public:
     /// <summary>
     /// Gets the box.
     /// </summary>
-    /// <returns>The bounding box.</returns>
     API_PROPERTY() FORCE_INLINE const BoundingBox& GetBox() const
     {
         return _box;
@@ -72,7 +69,6 @@ public:
     /// <summary>
     /// Gets the sphere.
     /// </summary>
-    /// <returns>The bounding sphere.</returns>
     API_PROPERTY() FORCE_INLINE const BoundingSphere& GetSphere() const
     {
         return _sphere;
@@ -129,6 +125,7 @@ public:
     /// </summary>
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
+    /// <param name="count">The amount of items inside the result buffer.</param>
     /// <returns>True if failed, otherwise false</returns>
-    virtual bool DownloadDataCPU(MeshBufferType type, BytesContainer& result) const = 0;
+    virtual bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const = 0;
 };

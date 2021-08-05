@@ -9,16 +9,6 @@
 
 class StreamSkinnedModelLODTask;
 
-// Note: we use the first chunk as a header, next is the highest quality lod and then lower ones
-//
-// Example:
-// Chunk 0: Header
-// Chunk 1: LOD0
-// Chunk 2: LOD1
-// ..
-//
-#define SKINNED_MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
-
 /// <summary>
 /// Skinned model asset that contains model object made of meshes that can be rendered on the GPU using skeleton bones skinning.
 /// </summary>

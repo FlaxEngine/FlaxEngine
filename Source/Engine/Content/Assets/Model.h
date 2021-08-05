@@ -5,16 +5,6 @@
 #include "ModelBase.h"
 #include "Engine/Graphics/Models/ModelLOD.h"
 
-// Note: we use the first chunk as a header, next is the highest quality lod and then lower ones
-//
-// Example:
-// Chunk 0: Header
-// Chunk 1: LOD0
-// Chunk 2: LOD1
-// ..
-//
-#define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
-
 class Mesh;
 class StreamModelLODTask;
 

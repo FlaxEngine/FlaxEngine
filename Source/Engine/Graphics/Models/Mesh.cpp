@@ -7,7 +7,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Level/Scene/Scene.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
@@ -293,6 +293,9 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
     _triangles = triangles;
     _vertices = vertices;
     _use16BitIndexBuffer = use16BitIndexBuffer;
+    _cachedVertexBuffer[0].Clear();
+    _cachedVertexBuffer[1].Clear();
+    _cachedVertexBuffer[2].Clear();
 
     return false;
 
@@ -314,6 +317,10 @@ void Mesh::Unload()
     _triangles = 0;
     _vertices = 0;
     _use16BitIndexBuffer = false;
+    _cachedIndexBuffer.Resize(0);
+    _cachedVertexBuffer[0].Clear();
+    _cachedVertexBuffer[1].Clear();
+    _cachedVertexBuffer[2].Clear();
 }
 
 bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const
@@ -506,13 +513,94 @@ Task* Mesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) co
     return buffer ? buffer->DownloadDataAsync(result) : nullptr;
 }
 
-bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) const
+bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
 {
-#if !BUILD_RELEASE
-    // TODO: implement this
-    LOG(Error, "Mesh::DownloadDataCPU not implemented.");
-#endif
-    return true;
+    if (_cachedVertexBuffer[0].IsEmpty())
+    {
+        PROFILE_CPU();
+        auto model = GetModel();
+        ScopeLock lock(model->Locker);
+        if (model->IsVirtual())
+        {
+            LOG(Error, "Cannot access CPU data of virtual models. Use GPU data download");
+            return true;
+        }
+
+        // Fetch chunk with data from drive/memory
+        const auto chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(GetLODIndex());
+        if (model->LoadChunk(chunkIndex))
+            return true;
+        const auto chunk = model->GetChunk(chunkIndex);
+        if (!chunk)
+        {
+            LOG(Error, "Missing chunk.");
+            return true;
+        }
+
+        MemoryReadStream stream(chunk->Get(), chunk->Size());
+
+        // Seek to find mesh location
+        for (int32 i = 0; i <= _index; i++)
+        {
+            // #MODEL_DATA_FORMAT_USAGE
+            uint32 vertices;
+            stream.ReadUint32(&vertices);
+            uint32 triangles;
+            stream.ReadUint32(&triangles);
+            uint32 indicesCount = triangles * 3;
+            bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
+            uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
+            if (vertices == 0 || triangles == 0)
+            {
+                LOG(Error, "Invalid mesh data.");
+                return true;
+            }
+            auto vb0 = stream.Read<VB0ElementType>(vertices);
+            auto vb1 = stream.Read<VB1ElementType>(vertices);
+            bool hasColors = stream.ReadBool();
+            VB2ElementType18* vb2 = nullptr;
+            if (hasColors)
+            {
+                vb2 = stream.Read<VB2ElementType18>(vertices);
+            }
+            auto ib = stream.Read<byte>(indicesCount * ibStride);
+
+            if (i != _index)
+                continue;
+
+            // Cache mesh data
+            _cachedIndexBufferCount = indicesCount;
+            _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
+            _cachedVertexBuffer[0].Set((const byte*)vb0, vertices * sizeof(VB0ElementType));
+            _cachedVertexBuffer[1].Set((const byte*)vb1, vertices * sizeof(VB1ElementType));
+            if (hasColors)
+                _cachedVertexBuffer[2].Set((const byte*)vb2, vertices * sizeof(VB2ElementType));
+            break;
+        }
+    }
+
+    switch (type)
+    {
+    case MeshBufferType::Index:
+        result.Link(_cachedIndexBuffer);
+        count = _cachedIndexBufferCount;
+        break;
+    case MeshBufferType::Vertex0:
+        result.Link(_cachedVertexBuffer[0]);
+        count = _cachedVertexBuffer[0].Count() / sizeof(VB0ElementType);
+        break;
+    case MeshBufferType::Vertex1:
+        result.Link(_cachedVertexBuffer[1]);
+        count = _cachedVertexBuffer[1].Count() / sizeof(VB1ElementType);
+        break;
+    case MeshBufferType::Vertex2:
+        result.Link(_cachedVertexBuffer[2]);
+        count = _cachedVertexBuffer[2].Count() / sizeof(VB2ElementType);
+        break;
+    default:
+        return true;
+    }
+    return false;
 }
 
 ScriptingObject* Mesh::GetParentModel()
@@ -645,145 +733,50 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
         }
     }
 
-    // Check if load data from GPU
+    MeshBufferType bufferType;
+    switch (type)
+    {
+    case InternalBufferType::VB0:
+        bufferType = MeshBufferType::Vertex0;
+        break;
+    case InternalBufferType::VB1:
+        bufferType = MeshBufferType::Vertex1;
+        break;
+    case InternalBufferType::VB2:
+        bufferType = MeshBufferType::Vertex2;
+        break;
+    case InternalBufferType::IB16:
+    case InternalBufferType::IB32:
+        bufferType = MeshBufferType::Index;
+        break;
+    default:
+        return true;
+    }
+    BytesContainer data;
     if (forceGpu)
     {
-        MeshBufferType bufferType;
-        switch (type)
-        {
-        case InternalBufferType::VB0:
-            bufferType = MeshBufferType::Vertex0;
-            break;
-        case InternalBufferType::VB1:
-            bufferType = MeshBufferType::Vertex1;
-            break;
-        case InternalBufferType::VB2:
-            bufferType = MeshBufferType::Vertex2;
-            break;
-        case InternalBufferType::IB16:
-        case InternalBufferType::IB32:
-            bufferType = MeshBufferType::Index;
-            break;
-        default: CRASH;
-            return true;
-        }
-
+        // Get data from GPU
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
-        BytesContainer data;
         auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
             return true;
-
-        model->Locker.Unlock();
-
         task->Start();
+        model->Locker.Unlock();
         if (task->Wait())
         {
             LOG(Error, "Task failed.");
             return true;
         }
-
-        ConvertMeshData(mesh, type, resultObj, data.Get());
-
         model->Locker.Lock();
-
-        return false;
     }
-
-    // Get data from drive/memory
+    else
     {
-        // Fetch chunk with data
-        const auto chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(mesh->GetLODIndex());
-        if (model->LoadChunk(chunkIndex))
+        // Get data from CPU
+        int32 count;
+        if (DownloadDataCPU(bufferType, data, count))
             return true;
-        const auto chunk = model->GetChunk(chunkIndex);
-        if (!chunk)
-        {
-            LOG(Error, "Missing chunk.");
-            return true;
-        }
-
-        MemoryReadStream stream(chunk->Get(), chunk->Size());
-
-        // Seek to find mesh location
-        for (int32 i = 0; i < mesh->GetIndex(); i++)
-        {
-            // #MODEL_DATA_FORMAT_USAGE
-            uint32 vertices;
-            stream.ReadUint32(&vertices);
-            uint32 triangles;
-            stream.ReadUint32(&triangles);
-            uint32 indicesCount = triangles * 3;
-            bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
-            uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-            if (vertices == 0 || triangles == 0)
-            {
-                LOG(Error, "Invalid mesh data.");
-                return true;
-            }
-            auto vb0 = stream.Read<VB0ElementType>(vertices);
-            auto vb1 = stream.Read<VB1ElementType>(vertices);
-            bool hasColors = stream.ReadBool();
-            VB2ElementType18* vb2 = nullptr;
-            if (hasColors)
-            {
-                vb2 = stream.Read<VB2ElementType18>(vertices);
-            }
-            auto ib = stream.Read<byte>(indicesCount * ibStride);
-        }
-
-        // Get mesh data
-        void* data = nullptr;
-        {
-            // #MODEL_DATA_FORMAT_USAGE
-            uint32 vertices;
-            stream.ReadUint32(&vertices);
-            uint32 triangles;
-            stream.ReadUint32(&triangles);
-            uint32 indicesCount = triangles * 3;
-            bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
-            uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-            if (vertices == 0 || triangles == 0)
-            {
-                LOG(Error, "Invalid mesh data.");
-                return true;
-            }
-            auto vb0 = stream.Read<VB0ElementType>(vertices);
-            auto vb1 = stream.Read<VB1ElementType>(vertices);
-            bool hasColors = stream.ReadBool();
-            VB2ElementType18* vb2 = nullptr;
-            if (hasColors)
-            {
-                vb2 = stream.Read<VB2ElementType18>(vertices);
-            }
-            auto ib = stream.Read<byte>(indicesCount * ibStride);
-
-            if (mesh->HasVertexColors() != hasColors || mesh->Use16BitIndexBuffer() != use16BitIndexBuffer)
-            {
-                LOG(Error, "Invalid mesh data loaded from chunk.");
-                return true;
-            }
-
-            switch (type)
-            {
-            case InternalBufferType::VB0:
-                data = vb0;
-                break;
-            case InternalBufferType::VB1:
-                data = vb1;
-                break;
-            case InternalBufferType::VB2:
-                data = vb2;
-                break;
-            case InternalBufferType::IB16:
-            case InternalBufferType::IB32:
-                data = ib;
-                break;
-            }
-        }
-
-        ConvertMeshData(mesh, type, resultObj, data);
     }
 
+    ConvertMeshData(mesh, type, resultObj, data.Get());
     return false;
 }
