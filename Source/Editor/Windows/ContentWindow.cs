@@ -39,7 +39,7 @@ namespace FlaxEditor.Windows
         private TextBox _foldersSearchBox;
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
-        private string _sortBy = "Alphabetic Order";
+        private MethodSort _sortBy;
 
         private RootContentTreeNode _root;
 
@@ -237,7 +237,13 @@ namespace FlaxEditor.Windows
 
         private void OnSortByButtonClicked(ContextMenuButton button)
         {
-            Editor.Windows.ContentWin._sortBy = button.Text;
+            switch (button.Text)
+            {
+                case "Alphabetic Order": Editor.Windows.ContentWin._sortBy = MethodSort.AlphabeticOrder;
+                    break;
+                case "Alphabetic Reverse": Editor.Windows.ContentWin._sortBy = MethodSort.AlphabeticReverse;
+                    break;
+            }
             RefreshView(SelectedNode);
         }
 

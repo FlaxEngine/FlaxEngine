@@ -28,6 +28,22 @@ namespace FlaxEditor.Content.GUI
     }
 
     /// <summary>
+    /// The method sort for items.
+    /// </summary>
+    public enum MethodSort
+    {
+        /// <summary> 
+        /// The classic alphabetic sort method (A-Z).
+        /// </summary>
+        AlphabeticOrder,
+        
+        /// <summary>                    
+        /// The reverse alphabetic sort method (Z-A).
+        /// </summary>                   
+        AlphabeticReverse
+    }
+
+    /// <summary>
     /// Main control for <see cref="ContentWindow"/> used to present collection of <see cref="ContentItem"/>.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
@@ -220,7 +236,7 @@ namespace FlaxEditor.Content.GUI
         /// <param name="items">The items to show.</param>
         /// <param name="sortMethod">The sort method for items.</param>
         /// <param name="additive">If set to <c>true</c> items will be added to the current selection. Otherwise selection will be cleared before.</param>
-        public void ShowItems(List<ContentItem> items, string sortMethod, bool additive = false)
+        public void ShowItems(List<ContentItem> items, MethodSort sortMethod, bool additive = false)
         {
             if (items == null)
                 throw new ArgumentNullException();
@@ -253,7 +269,7 @@ namespace FlaxEditor.Content.GUI
             // Sort items depending on sortMethod parameter
             _children.Sort(((control, control1) =>
                                {
-                                   if (sortMethod == "Alphabetic Reverse")
+                                   if (sortMethod == MethodSort.AlphabeticReverse)
                                    {
                                        if (control.CompareTo(control1) > 0)
                                        {
