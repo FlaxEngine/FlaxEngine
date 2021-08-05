@@ -2,9 +2,9 @@
 
 using System;
 using FlaxEditor.Content;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
 using FlaxEngine;
-using DockState = FlaxEditor.GUI.Docking.DockState;
 
 namespace FlaxEditor.Modules
 {
@@ -42,7 +42,6 @@ namespace FlaxEditor.Modules
             var proxy = Editor.ContentDatabase.GetProxy(item);
             if (proxy == null)
             {
-                // Error
                 Editor.Log("Missing content proxy object for " + item);
                 return null;
             }
@@ -58,24 +57,31 @@ namespace FlaxEditor.Modules
             }
             if (window != null && !disableAutoShow)
             {
-                // Check if there is a floating window that has the same size
-                Vector2 defaultSize = window.DefaultSize;
-                for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
+                var newLocation = (DockState)Editor.Options.Options.Interface.NewWindowLocation;
+                if (newLocation == DockState.Float)
                 {
-                    var win = Editor.UI.MasterPanel.FloatingPanels[i];
-
-                    // Check if size is similar
-                    if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                    // Check if there is a floating window that has the same size
+                    Vector2 defaultSize = window.DefaultSize;
+                    for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
                     {
-                        // Dock
-                        window.Show(DockState.DockFill, win);
-                        window.Focus();
-                        return window;
-                    }
-                }
+                        var win = Editor.UI.MasterPanel.FloatingPanels[i];
 
-                // Show floating
-                window.ShowFloating(defaultSize);
+                        // Check if size is similar
+                        if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                        {
+                            // Dock
+                            window.Show(DockState.DockFill, win);
+                            window.Focus();
+                            return window;
+                        }
+                    }
+
+                    window.ShowFloating(defaultSize);
+                }
+                else
+                {
+                    window.Show(newLocation);
+                }
             }
 
             return window;
@@ -122,7 +128,7 @@ namespace FlaxEditor.Modules
                 if (item is NewItem ni)
                 {
                     if (!ni.Proxy.IsFileNameValid(shortName))
-                    { 
+                    {
                         hint = "Name does not follow " + ni.Proxy.Name + " name restrictions !";
                         return false;
                     }
@@ -131,7 +137,7 @@ namespace FlaxEditor.Modules
                 {
                     var proxy = Editor.ContentDatabase.GetProxy(item);
                     if (proxy != null && !proxy.IsFileNameValid(shortName))
-                    { 
+                    {
                         hint = "Name does not follow " + proxy.Name + " name restrictions !";
                         return false;
                     }
