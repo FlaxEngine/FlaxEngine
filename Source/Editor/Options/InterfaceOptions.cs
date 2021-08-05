@@ -110,8 +110,8 @@ namespace FlaxEditor.Options
         /// Gets or sets the method window opening.
         /// </summary>
         [DefaultValue(DockStateProxy.Float)]
-        [EditorDisplay("Interface", "Define The Method Window Opening"), EditorOrder(150), Tooltip("Define the opening method for windows, open a in new tab by default.")]
-        public DockStateProxy DockNewWindow { get; set; } = DockStateProxy.Float;
+        [EditorDisplay("Interface", "Define The Opening Window Method"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
+        public DockStateProxy NewWindowMethod { get; set; } = DockStateProxy.Float;
         
         /// <summary>
         /// Gets or sets the timestamps prefix mode for debug log messages.
