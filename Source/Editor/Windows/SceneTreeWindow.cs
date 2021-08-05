@@ -276,7 +276,7 @@ namespace FlaxEditor.Windows
             if (!Editor.StateMachine.CurrentState.CanEditScene)
                 return;
 
-            ShowContextMenu(node, ref location);
+            ShowContextMenu(node, location);
         }
 
         /// <inheritdoc />
@@ -379,7 +379,7 @@ namespace FlaxEditor.Windows
                 {
                     // Show context menu
                     Editor.SceneEditing.Deselect();
-                    ShowContextMenu(this, ref location);
+                    ShowContextMenu(Parent, location + _searchBox.BottomLeft);
                 }
 
                 return true;
