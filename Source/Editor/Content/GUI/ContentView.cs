@@ -218,10 +218,10 @@ namespace FlaxEditor.Content.GUI
         /// Shows the items collection in the view.
         /// </summary>
         /// <param name="items">The items to show.</param>
+        /// <param name="sortMethod">The sort method for items.</param>
         /// <param name="additive">If set to <c>true</c> items will be added to the current selection. Otherwise selection will be cleared before.</param>
         public void ShowItems(List<ContentItem> items, string sortMethod, bool additive = false)
         {
-            Console.WriteLine("GROS CON");
             if (items == null)
                 throw new ArgumentNullException();
 
@@ -250,28 +250,24 @@ namespace FlaxEditor.Content.GUI
                 items[i].AddReference(this);
             }
 
-            // Sort items
-            ContentItem oui = (ContentItem) _children[0];
-            Console.WriteLine("Ici " + oui);
+            // Sort items depending on sortMethod parameter
             _children.Sort(((control, control1) =>
                                {
                                    if (sortMethod == "Alphabetic Reverse")
                                    {
-                                       if (((ContentItem)control).CompareTo((ContentItem)control1) > 0)
-                                           return -1;
-                                       if (((ContentItem)control).CompareTo((ContentItem)control1) == 0)
-                                           return 0;
-
-
+                                       if (control.CompareTo(control1) > 0)
+                                       {
+                                           return -1; 
+                                       }
+                                       if (control.CompareTo(control1) == 0)
+                                       {
+                                           return 0;    
+                                       }
                                        return 1;
                                    }
-                                   
-                                       return (((ContentItem)control).CompareTo((ContentItem)control1));
-                                
+                                   return control.CompareTo(control1);
                                }));
-         
             
-
             // Unload and perform UI layout
             IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
