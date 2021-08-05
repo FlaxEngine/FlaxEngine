@@ -183,6 +183,19 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Cuts the scroll bar value smoothing and imminently goes to the target scroll value.
+        /// </summary>
+        public void FastScroll()
+        {
+            if (!Mathf.NearEqual(_value, _targetValue))
+            {
+                _value = _targetValue;
+                SetUpdate(ref _update, null);
+                OnValueChanged();
+            }
+        }
+
+        /// <summary>
         /// Scrolls the view to the desire range (favors minimum value if cannot cover whole range in a bounds).
         /// </summary>
         /// <param name="min">The view minimum.</param>

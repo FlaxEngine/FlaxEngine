@@ -1276,24 +1276,24 @@ namespace FlaxEditor.GUI.Timeline
                 case KeyboardKeys.ArrowUp:
                 {
                     int index = IndexInParent;
-                    if (index > 0)
+                    while (index != 0)
                     {
-                        do
-                        {
-                            toSelect = Parent.GetChild(--index) as Track;
-                        } while (index != -1 && toSelect != null && !toSelect.HasParentsExpanded);
+                        toSelect = Parent.GetChild(--index) as Track;
+                        if (toSelect != null && toSelect.HasParentsExpanded)
+                            break;
+                        toSelect = null;
                     }
                     break;
                 }
                 case KeyboardKeys.ArrowDown:
                 {
                     int index = IndexInParent;
-                    if (index < Parent.ChildrenCount - 1)
+                    while (index < Parent.ChildrenCount - 1)
                     {
-                        do
-                        {
-                            toSelect = Parent.GetChild(++index) as Track;
-                        } while (index != Parent.ChildrenCount && toSelect != null && !toSelect.HasParentsExpanded);
+                        toSelect = Parent.GetChild(++index) as Track;
+                        if (toSelect != null && toSelect.HasParentsExpanded)
+                            break;
+                        toSelect = null;
                     }
                     break;
                 }

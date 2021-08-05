@@ -9,491 +9,15 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
-// ReSharper disable RedundantAssignment
-
 namespace FlaxEditor.GUI
 {
-    /// <summary>
-    /// The base class for <see cref="CurveBase{T}"/> editors. Allows to use generic curve editor without type information at compile-time.
-    /// </summary>
-    [HideInEditor]
-    public abstract class CurveEditorBase : ContainerControl
-    {
-        /// <summary>
-        /// The UI use mode flags.
-        /// </summary>
-        [Flags]
-        public enum UseMode
-        {
-            /// <summary>
-            /// Disable usage.
-            /// </summary>
-            Off = 0,
-
-            /// <summary>
-            /// Allow only vertical usage.
-            /// </summary>
-            Vertical = 1,
-
-            /// <summary>
-            /// Allow only horizontal usage.
-            /// </summary>
-            Horizontal = 2,
-
-            /// <summary>
-            /// Allow both vertical and horizontal usage.
-            /// </summary>
-            On = Vertical | Horizontal,
-        }
-
-        /// <summary>
-        /// Occurs when curve gets edited.
-        /// </summary>
-        public event Action Edited;
-
-        /// <summary>
-        /// Occurs when curve data editing starts (via UI).
-        /// </summary>
-        public event Action EditingStart;
-
-        /// <summary>
-        /// Occurs when curve data editing ends (via UI).
-        /// </summary>
-        public event Action EditingEnd;
-
-        /// <summary>
-        /// The maximum amount of keyframes to use in a single curve.
-        /// </summary>
-        public int MaxKeyframes = ushort.MaxValue;
-
-        /// <summary>
-        /// True if enable view zooming. Otherwise user won't be able to zoom in or out.
-        /// </summary>
-        public UseMode EnableZoom = UseMode.On;
-
-        /// <summary>
-        /// True if enable view panning. Otherwise user won't be able to move the view area.
-        /// </summary>
-        public UseMode EnablePanning = UseMode.On;
-
-        /// <summary>
-        /// Gets or sets the scroll bars usage.
-        /// </summary>
-        public abstract ScrollBars ScrollBars { get; set; }
-
-        /// <summary>
-        /// Enables drawing start/end values continuous lines.
-        /// </summary>
-        public bool ShowStartEndLines;
-
-        /// <summary>
-        /// Enables drawing background.
-        /// </summary>
-        public bool ShowBackground = true;
-
-        /// <summary>
-        /// Enables drawing time and values axes (lines and labels).
-        /// </summary>
-        public bool ShowAxes = true;
-
-        /// <summary>
-        /// Gets the type of the curves keyframes value.
-        /// </summary>
-        public abstract Type ValueType { get; }
-
-        /// <summary>
-        /// The amount of frames per second of the curve animation (optional). Can be used to restrict the keyframes time values to the given time quantization rate.
-        /// </summary>
-        public abstract float? FPS { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether show curve collapsed as a list of keyframe points rather than a full curve.
-        /// </summary>
-        public abstract bool ShowCollapsed { get; set; }
-
-        /// <summary>
-        /// Gets or sets the view offset (via scroll bars).
-        /// </summary>
-        public abstract Vector2 ViewOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the view scale.
-        /// </summary>
-        public abstract Vector2 ViewScale { get; set; }
-
-        /// <summary>
-        /// Gets the amount of keyframes added to the curve.
-        /// </summary>
-        public abstract int KeyframesCount { get; }
-
-        /// <summary>
-        /// Called when curve gets edited.
-        /// </summary>
-        public void OnEdited()
-        {
-            Edited?.Invoke();
-        }
-
-        /// <summary>
-        /// Called when curve data editing starts (via UI).
-        /// </summary>
-        public void OnEditingStart()
-        {
-            EditingStart?.Invoke();
-        }
-
-        /// <summary>
-        /// Called when curve data editing ends (via UI).
-        /// </summary>
-        public void OnEditingEnd()
-        {
-            EditingEnd?.Invoke();
-        }
-
-        /// <summary>
-        /// Updates the keyframes positioning.
-        /// </summary>
-        public abstract void UpdateKeyframes();
-
-        /// <summary>
-        /// Updates the tangents positioning.
-        /// </summary>
-        public abstract void UpdateTangents();
-
-        /// <summary>
-        /// Evaluates the animation curve value at the specified time.
-        /// </summary>
-        /// <param name="result">The interpolated value from the curve at provided time.</param>
-        /// <param name="time">The time to evaluate the curve at.</param>
-        /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
-        public abstract void Evaluate(out object result, float time, bool loop = false);
-
-        /// <summary>
-        /// Gets the keyframes collection (as boxed objects).
-        /// </summary>
-        /// <returns>The array of boxed keyframe values of type <see cref="BezierCurve{T}.Keyframe"/> or <see cref="LinearCurve{T}.Keyframe"/>.</returns>
-        public abstract object[] GetKeyframes();
-
-        /// <summary>
-        /// Sets the keyframes collection (as boxed objects).
-        /// </summary>
-        /// <param name="keyframes">The array of boxed keyframe values of type <see cref="BezierCurve{T}.Keyframe"/> or <see cref="LinearCurve{T}.Keyframe"/>.</param>
-        public abstract void SetKeyframes(object[] keyframes);
-
-        /// <summary>
-        /// Adds the new keyframe (as boxed object).
-        /// </summary>
-        /// <param name="time">The keyframe time.</param>
-        /// <param name="value">The keyframe value.</param>
-        public abstract void AddKeyframe(float time, object value);
-
-        /// <summary>
-        /// Gets the keyframe data (as boxed objects).
-        /// </summary>
-        /// <param name="index">The keyframe index.</param>
-        /// <param name="time">The keyframe time.</param>
-        /// <param name="value">The keyframe value (boxed).</param>
-        /// <param name="tangentIn">The keyframe 'In' tangent value (boxed).</param>
-        /// <param name="tangentOut">The keyframe 'Out' tangent value (boxed).</param>
-        public abstract void GetKeyframe(int index, out float time, out object value, out object tangentIn, out object tangentOut);
-
-        /// <summary>
-        /// Gets the existing keyframe value (as boxed object).
-        /// </summary>
-        /// <param name="index">The keyframe index.</param>
-        /// <returns>The keyframe value.</returns>
-        public abstract object GetKeyframe(int index);
-
-        /// <summary>
-        /// Sets the existing keyframe value (as boxed object).
-        /// </summary>
-        /// <param name="index">The keyframe index.</param>
-        /// <param name="value">The keyframe value.</param>
-        public abstract void SetKeyframeValue(int index, object value);
-
-        /// <summary>
-        /// Converts the <see cref="UseMode"/> into the <see cref="Vector2"/> mask.
-        /// </summary>
-        /// <param name="mode">The mode.</param>
-        /// <returns>The mask.</returns>
-        protected static Vector2 GetUseModeMask(UseMode mode)
-        {
-            return new Vector2((mode & UseMode.Horizontal) == UseMode.Horizontal ? 1.0f : 0.0f, (mode & UseMode.Vertical) == UseMode.Vertical ? 1.0f : 0.0f);
-        }
-
-        /// <summary>
-        /// Filters the given value using the <see cref="UseMode"/>.
-        /// </summary>
-        /// <param name="mode">The mode.</param>
-        /// <param name="value">The value to process.</param>
-        /// <param name="defaultValue">The default value.</param>
-        /// <returns>The combined value.</returns>
-        protected static Vector2 ApplyUseModeMask(UseMode mode, Vector2 value, Vector2 defaultValue)
-        {
-            return new Vector2(
-                               (mode & UseMode.Horizontal) == UseMode.Horizontal ? value.X : defaultValue.X,
-                               (mode & UseMode.Vertical) == UseMode.Vertical ? value.Y : defaultValue.Y
-                              );
-        }
-    }
-
     /// <summary>
     /// The generic curve editor control.
     /// </summary>
     /// <typeparam name="T">The keyframe value type.</typeparam>
     /// <seealso cref="CurveEditorBase" />
-    public abstract class CurveEditor<T> : CurveEditorBase where T : new()
+    public abstract partial class CurveEditor<T> : CurveEditorBase where T : new()
     {
-        /// <summary>
-        /// The generic keyframe value accessor object for curve editor.
-        /// </summary>
-        /// <typeparam name="U">The keyframe value type.</typeparam>
-        public interface IKeyframeAccess<U> where U : new()
-        {
-            /// <summary>
-            /// Gets the default value.
-            /// </summary>
-            /// <param name="value">The value.</param>
-            void GetDefaultValue(out U value);
-
-            /// <summary>
-            /// Gets the curve components count. Vector types should return amount of component to use for value editing.
-            /// </summary>
-            /// <returns>The components count.</returns>
-            int GetCurveComponents();
-
-            /// <summary>
-            /// Gets the value of the component for the curve.
-            /// </summary>
-            /// <param name="value">The keyframe value.</param>
-            /// <param name="component">The component index.</param>
-            /// <returns>The curve value.</returns>
-            float GetCurveValue(ref U value, int component);
-
-            /// <summary>
-            /// Sets the curve value of the component.
-            /// </summary>
-            /// <param name="curve">The curve value to assign.</param>
-            /// <param name="value">The keyframe value.</param>
-            /// <param name="component">The component index.</param>
-            void SetCurveValue(float curve, ref U value, int component);
-        }
-
-        private class KeyframeAccess :
-        IKeyframeAccess<bool>,
-        IKeyframeAccess<int>,
-        IKeyframeAccess<double>,
-        IKeyframeAccess<float>,
-        IKeyframeAccess<Vector2>,
-        IKeyframeAccess<Vector3>,
-        IKeyframeAccess<Vector4>,
-        IKeyframeAccess<Quaternion>,
-        IKeyframeAccess<Color32>,
-        IKeyframeAccess<Color>
-        {
-            void IKeyframeAccess<bool>.GetDefaultValue(out bool value)
-            {
-                value = false;
-            }
-
-            int IKeyframeAccess<bool>.GetCurveComponents()
-            {
-                return 1;
-            }
-
-            float IKeyframeAccess<bool>.GetCurveValue(ref bool value, int component)
-            {
-                return value ? 1 : 0;
-            }
-
-            void IKeyframeAccess<bool>.SetCurveValue(float curve, ref bool value, int component)
-            {
-                value = curve >= 0.5f;
-            }
-
-            void IKeyframeAccess<int>.GetDefaultValue(out int value)
-            {
-                value = 0;
-            }
-
-            int IKeyframeAccess<int>.GetCurveComponents()
-            {
-                return 1;
-            }
-
-            float IKeyframeAccess<int>.GetCurveValue(ref int value, int component)
-            {
-                return value;
-            }
-
-            void IKeyframeAccess<int>.SetCurveValue(float curve, ref int value, int component)
-            {
-                value = (int)curve;
-            }
-
-            void IKeyframeAccess<double>.GetDefaultValue(out double value)
-            {
-                value = 0.0;
-            }
-
-            int IKeyframeAccess<double>.GetCurveComponents()
-            {
-                return 1;
-            }
-
-            float IKeyframeAccess<double>.GetCurveValue(ref double value, int component)
-            {
-                return (float)value;
-            }
-
-            void IKeyframeAccess<double>.SetCurveValue(float curve, ref double value, int component)
-            {
-                value = curve;
-            }
-
-            void IKeyframeAccess<float>.GetDefaultValue(out float value)
-            {
-                value = 0.0f;
-            }
-
-            int IKeyframeAccess<float>.GetCurveComponents()
-            {
-                return 1;
-            }
-
-            float IKeyframeAccess<float>.GetCurveValue(ref float value, int component)
-            {
-                return value;
-            }
-
-            void IKeyframeAccess<float>.SetCurveValue(float curve, ref float value, int component)
-            {
-                value = curve;
-            }
-
-            void IKeyframeAccess<Vector2>.GetDefaultValue(out Vector2 value)
-            {
-                value = Vector2.Zero;
-            }
-
-            int IKeyframeAccess<Vector2>.GetCurveComponents()
-            {
-                return 2;
-            }
-
-            float IKeyframeAccess<Vector2>.GetCurveValue(ref Vector2 value, int component)
-            {
-                return value[component];
-            }
-
-            void IKeyframeAccess<Vector2>.SetCurveValue(float curve, ref Vector2 value, int component)
-            {
-                value[component] = curve;
-            }
-
-            void IKeyframeAccess<Vector3>.GetDefaultValue(out Vector3 value)
-            {
-                value = Vector3.Zero;
-            }
-
-            int IKeyframeAccess<Vector3>.GetCurveComponents()
-            {
-                return 3;
-            }
-
-            float IKeyframeAccess<Vector3>.GetCurveValue(ref Vector3 value, int component)
-            {
-                return value[component];
-            }
-
-            void IKeyframeAccess<Vector3>.SetCurveValue(float curve, ref Vector3 value, int component)
-            {
-                value[component] = curve;
-            }
-
-            void IKeyframeAccess<Vector4>.GetDefaultValue(out Vector4 value)
-            {
-                value = Vector4.Zero;
-            }
-
-            int IKeyframeAccess<Vector4>.GetCurveComponents()
-            {
-                return 4;
-            }
-
-            float IKeyframeAccess<Vector4>.GetCurveValue(ref Vector4 value, int component)
-            {
-                return value[component];
-            }
-
-            void IKeyframeAccess<Vector4>.SetCurveValue(float curve, ref Vector4 value, int component)
-            {
-                value[component] = curve;
-            }
-
-            public void GetDefaultValue(out Quaternion value)
-            {
-                value = Quaternion.Identity;
-            }
-
-            int IKeyframeAccess<Quaternion>.GetCurveComponents()
-            {
-                return 3;
-            }
-
-            float IKeyframeAccess<Quaternion>.GetCurveValue(ref Quaternion value, int component)
-            {
-                return value.EulerAngles[component];
-            }
-
-            void IKeyframeAccess<Quaternion>.SetCurveValue(float curve, ref Quaternion value, int component)
-            {
-                var euler = value.EulerAngles;
-                euler[component] = curve;
-                Quaternion.Euler(euler.X, euler.Y, euler.Z, out value);
-            }
-
-            void IKeyframeAccess<Color>.GetDefaultValue(out Color value)
-            {
-                value = Color.Black;
-            }
-
-            int IKeyframeAccess<Color>.GetCurveComponents()
-            {
-                return 4;
-            }
-
-            float IKeyframeAccess<Color>.GetCurveValue(ref Color value, int component)
-            {
-                return value[component];
-            }
-
-            void IKeyframeAccess<Color>.SetCurveValue(float curve, ref Color value, int component)
-            {
-                value[component] = curve;
-            }
-
-            void IKeyframeAccess<Color32>.GetDefaultValue(out Color32 value)
-            {
-                value = Color32.Black;
-            }
-
-            int IKeyframeAccess<Color32>.GetCurveComponents()
-            {
-                return 4;
-            }
-
-            float IKeyframeAccess<Color32>.GetCurveValue(ref Color32 value, int component)
-            {
-                return value[component];
-            }
-
-            void IKeyframeAccess<Color32>.SetCurveValue(float curve, ref Color32 value, int component)
-            {
-                value[component] = (byte)Mathf.Clamp(curve, 0, 255);
-            }
-        }
-
         private class Popup : ContextMenuBase
         {
             private CustomEditorPresenter _presenter;
@@ -601,454 +125,6 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
-        /// The curve contents container control.
-        /// </summary>
-        /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-        protected class ContentsBase : ContainerControl
-        {
-            private readonly CurveEditor<T> _editor;
-            internal bool _leftMouseDown;
-            private bool _rightMouseDown;
-            internal Vector2 _leftMouseDownPos = Vector2.Minimum;
-            private Vector2 _rightMouseDownPos = Vector2.Minimum;
-            internal Vector2 _mousePos = Vector2.Minimum;
-            private float _mouseMoveAmount;
-            internal bool _isMovingSelection;
-            internal bool _isMovingTangent;
-            private TangentPoint _movingTangent;
-            private Vector2 _movingSelectionViewPos;
-            private Vector2 _cmShowPos;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="ContentsBase"/> class.
-            /// </summary>
-            /// <param name="editor">The curve editor.</param>
-            public ContentsBase(CurveEditor<T> editor)
-            {
-                _editor = editor;
-            }
-
-            private void UpdateSelectionRectangle()
-            {
-                var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
-
-                // Find controls to select
-                for (int i = 0; i < Children.Count; i++)
-                {
-                    if (Children[i] is KeyframePoint p)
-                    {
-                        p.IsSelected = p.Bounds.Intersects(ref selectionRect);
-                    }
-                }
-
-                _editor.UpdateTangents();
-            }
-
-            /// <inheritdoc />
-            public override bool IntersectsContent(ref Vector2 locationParent, out Vector2 location)
-            {
-                // Pass all events
-                location = PointFromParent(ref locationParent);
-                return true;
-            }
-
-            /// <inheritdoc />
-            public override void OnMouseEnter(Vector2 location)
-            {
-                _mousePos = location;
-
-                base.OnMouseEnter(location);
-            }
-
-            /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
-            {
-                _mousePos = location;
-
-                // Moving view
-                if (_rightMouseDown)
-                {
-                    // Calculate delta
-                    Vector2 delta = location - _rightMouseDownPos;
-                    delta *= GetUseModeMask(_editor.EnablePanning);
-                    if (delta.LengthSquared > 0.01f)
-                    {
-                        // Move view
-                        _mouseMoveAmount += delta.Length;
-                        _editor.ViewOffset += delta * _editor.ViewScale;
-                        _rightMouseDownPos = location;
-                        Cursor = CursorType.SizeAll;
-                    }
-
-                    return;
-                }
-                // Moving selection
-                else if (_isMovingSelection)
-                {
-                    // Calculate delta (apply view offset)
-                    Vector2 viewDelta = _editor.ViewOffset - _movingSelectionViewPos;
-                    _movingSelectionViewPos = _editor.ViewOffset;
-                    var viewRect = _editor._mainPanel.GetClientArea();
-                    var delta = location - _leftMouseDownPos - viewDelta;
-                    _mouseMoveAmount += delta.Length;
-                    if (delta.LengthSquared > 0.01f)
-                    {
-                        // Move selected keyframes
-                        var keyframeDelta = PointToKeyframes(location, ref viewRect) - PointToKeyframes(_leftMouseDownPos - viewDelta, ref viewRect);
-                        var accessor = _editor.Accessor;
-                        var components = accessor.GetCurveComponents();
-                        for (var i = 0; i < _editor._points.Count; i++)
-                        {
-                            var p = _editor._points[i];
-                            if (p.IsSelected)
-                            {
-                                var k = _editor.GetKeyframe(p.Index);
-                                float time = _editor.GetKeyframeTime(k);
-                                float value = _editor.GetKeyframeValue(k, p.Component);
-
-                                float minTime = p.Index != 0 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index - 1)) + Mathf.Epsilon : float.MinValue;
-                                float maxTime = p.Index != _editor.KeyframesCount - 1 ? _editor.GetKeyframeTime(_editor.GetKeyframe(p.Index + 1)) - Mathf.Epsilon : float.MaxValue;
-
-                                if (!_editor.ShowCollapsed)
-                                {
-                                    // Move on value axis
-                                    value += keyframeDelta.Y;
-                                }
-
-                                // Let the first selected point of this keyframe to edit time
-                                bool isFirstSelected = false;
-                                for (var j = 0; j < components; j++)
-                                {
-                                    var idx = p.Index * components + j;
-                                    if (idx == i)
-                                    {
-                                        isFirstSelected = true;
-                                        break;
-                                    }
-                                    if (_editor._points[idx].IsSelected)
-                                        break;
-                                }
-                                if (isFirstSelected)
-                                {
-                                    time += keyframeDelta.X;
-
-                                    if (_editor.FPS.HasValue)
-                                    {
-                                        float fps = _editor.FPS.Value;
-                                        time = Mathf.Floor(time * fps) / fps;
-                                    }
-
-                                    time = Mathf.Clamp(time, minTime, maxTime);
-                                }
-
-                                // TODO: snapping keyframes to grid when moving
-
-                                _editor.SetKeyframeInternal(p.Index, time, value, p.Component);
-                            }
-                        }
-                        _editor.UpdateKeyframes();
-                        _editor.UpdateTooltips();
-                        if (_editor.EnablePanning == UseMode.On)
-                        {
-                            _editor._mainPanel.ScrollViewTo(PointToParent(location));
-                        }
-                        _leftMouseDownPos = location;
-                        Cursor = CursorType.SizeAll;
-                    }
-
-                    return;
-                }
-                // Moving tangent
-                else if (_isMovingTangent)
-                {
-                    // Calculate delta (apply view offset)
-                    Vector2 viewDelta = _editor.ViewOffset - _movingSelectionViewPos;
-                    _movingSelectionViewPos = _editor.ViewOffset;
-                    var viewRect = _editor._mainPanel.GetClientArea();
-                    var delta = location - _leftMouseDownPos - viewDelta;
-                    _mouseMoveAmount += delta.Length;
-                    if (delta.LengthSquared > 0.01f)
-                    {
-                        // Move selected tangent
-                        var keyframeDelta = PointToKeyframes(location, ref viewRect) - PointToKeyframes(_leftMouseDownPos - viewDelta, ref viewRect);
-                        var direction = _movingTangent.IsIn ? -1.0f : 1.0f;
-                        _movingTangent.TangentValue += direction * keyframeDelta.Y;
-                        _editor.UpdateTangents();
-                        _leftMouseDownPos = location;
-                        Cursor = CursorType.SizeNS;
-                    }
-
-                    return;
-                }
-                // Selecting
-                else if (_leftMouseDown)
-                {
-                    UpdateSelectionRectangle();
-                    return;
-                }
-
-                base.OnMouseMove(location);
-            }
-
-            /// <inheritdoc />
-            public override void OnLostFocus()
-            {
-                // Clear flags and state
-                if (_leftMouseDown)
-                {
-                    _leftMouseDown = false;
-                }
-                if (_rightMouseDown)
-                {
-                    _rightMouseDown = false;
-                    Cursor = CursorType.Default;
-                }
-                _isMovingSelection = false;
-                _isMovingTangent = false;
-
-                base.OnLostFocus();
-            }
-
-            /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
-            {
-                if (base.OnMouseDown(location, button))
-                {
-                    // Clear flags
-                    _isMovingSelection = false;
-                    _isMovingTangent = false;
-                    _rightMouseDown = false;
-                    _leftMouseDown = false;
-                    return true;
-                }
-
-                // Cache data
-                _isMovingSelection = false;
-                _isMovingTangent = false;
-                _mousePos = location;
-                if (button == MouseButton.Left)
-                {
-                    _leftMouseDown = true;
-                    _leftMouseDownPos = location;
-                }
-                if (button == MouseButton.Right)
-                {
-                    _rightMouseDown = true;
-                    _rightMouseDownPos = location;
-                }
-
-                // Check if any node is under the mouse
-                var underMouse = GetChildAt(location);
-                if (underMouse is KeyframePoint keyframe)
-                {
-                    if (_leftMouseDown)
-                    {
-                        // Check if user is pressing control
-                        if (Root.GetKey(KeyboardKeys.Control))
-                        {
-                            // Add to selection
-                            keyframe.Select();
-                            _editor.UpdateTangents();
-                        }
-                        // Check if node isn't selected
-                        else if (!keyframe.IsSelected)
-                        {
-                            // Select node
-                            _editor.ClearSelection();
-                            keyframe.Select();
-                            _editor.UpdateTangents();
-                        }
-
-                        // Start moving selected nodes
-                        StartMouseCapture();
-                        _mouseMoveAmount = 0;
-                        _isMovingSelection = true;
-                        _movingSelectionViewPos = _editor.ViewOffset;
-                        _editor.OnEditingStart();
-                        Focus();
-                        return true;
-                    }
-                }
-                else if (underMouse is TangentPoint tangent && tangent.Visible)
-                {
-                    if (_leftMouseDown)
-                    {
-                        // Start moving tangent
-                        StartMouseCapture();
-                        _mouseMoveAmount = 0;
-                        _isMovingTangent = true;
-                        _movingTangent = tangent;
-                        _movingSelectionViewPos = _editor.ViewOffset;
-                        _editor.OnEditingStart();
-                        Focus();
-                        return true;
-                    }
-                }
-                else
-                {
-                    if (_leftMouseDown)
-                    {
-                        // Start selecting
-                        StartMouseCapture();
-                        _editor.ClearSelection();
-                        _editor.UpdateTangents();
-                        Focus();
-                        return true;
-                    }
-                    if (_rightMouseDown)
-                    {
-                        // Start navigating
-                        StartMouseCapture();
-                        Focus();
-                        return true;
-                    }
-                }
-
-                Focus();
-                return true;
-            }
-
-            /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
-            {
-                _mousePos = location;
-
-                if (_leftMouseDown && button == MouseButton.Left)
-                {
-                    _leftMouseDown = false;
-                    EndMouseCapture();
-                    Cursor = CursorType.Default;
-
-                    // Editing tangent
-                    if (_isMovingTangent)
-                    {
-                        if (_mouseMoveAmount > 3.0f)
-                        {
-                            _editor.OnEdited();
-                            _editor.OnEditingEnd();
-                        }
-                    }
-                    // Moving keyframes
-                    else if (_isMovingSelection)
-                    {
-                        if (_mouseMoveAmount > 3.0f)
-                        {
-                            _editor.OnEdited();
-                            _editor.OnEditingEnd();
-                        }
-                    }
-                    // Selecting
-                    else
-                    {
-                        UpdateSelectionRectangle();
-                    }
-
-                    _isMovingSelection = false;
-                    _isMovingTangent = false;
-                }
-                if (_rightMouseDown && button == MouseButton.Right)
-                {
-                    _rightMouseDown = false;
-                    EndMouseCapture();
-                    Cursor = CursorType.Default;
-
-                    // Check if no move has been made at all
-                    if (_mouseMoveAmount < 3.0f)
-                    {
-                        var selectionCount = _editor.SelectionCount;
-                        var underMouse = GetChildAt(location);
-                        if (selectionCount == 0 && underMouse is KeyframePoint point)
-                        {
-                            // Select node
-                            selectionCount = 1;
-                            point.Select();
-                            _editor.UpdateTangents();
-                        }
-
-                        var viewRect = _editor._mainPanel.GetClientArea();
-                        _cmShowPos = PointToKeyframes(location, ref viewRect);
-
-                        var cm = new ContextMenu.ContextMenu();
-                        cm.AddButton("Add keyframe", () => _editor.AddKeyframe(_cmShowPos)).Enabled = _editor.KeyframesCount < _editor.MaxKeyframes;
-                        if (selectionCount == 0)
-                        {
-                        }
-                        else if (selectionCount == 1)
-                        {
-                            cm.AddButton("Edit keyframe", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframe", _editor.RemoveKeyframes);
-                        }
-                        else
-                        {
-                            cm.AddButton("Edit keyframes", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframes", _editor.RemoveKeyframes);
-                        }
-                        cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
-                        if (_editor.EnableZoom != UseMode.Off || _editor.EnablePanning != UseMode.Off)
-                        {
-                            cm.AddSeparator();
-                            cm.AddButton("Show whole curve", _editor.ShowWholeCurve);
-                            cm.AddButton("Reset view", _editor.ResetView);
-                        }
-                        _editor.OnShowContextMenu(cm, selectionCount);
-                        cm.Show(this, location);
-                    }
-                    _mouseMoveAmount = 0;
-                }
-
-                if (base.OnMouseUp(location, button))
-                {
-                    // Clear flags
-                    _rightMouseDown = false;
-                    _leftMouseDown = false;
-                    return true;
-                }
-
-                return true;
-            }
-
-            /// <inheritdoc />
-            public override bool OnMouseWheel(Vector2 location, float delta)
-            {
-                if (base.OnMouseWheel(location, delta))
-                    return true;
-
-                // Zoom in/out
-                if (_editor.EnableZoom != UseMode.Off && IsMouseOver && !_leftMouseDown && RootWindow.GetKey(KeyboardKeys.Control))
-                {
-                    // TODO: preserve the view center point for easier zooming
-                    _editor.ViewScale += GetUseModeMask(_editor.EnableZoom) * (delta * 0.1f);
-                    return true;
-                }
-
-                return false;
-            }
-
-            /// <inheritdoc />
-            protected override void SetScaleInternal(ref Vector2 scale)
-            {
-                base.SetScaleInternal(ref scale);
-
-                _editor.UpdateKeyframes();
-            }
-
-            /// <summary>
-            /// Converts the input point from curve editor contents control space into the keyframes time/value coordinates.
-            /// </summary>
-            /// <param name="point">The point.</param>
-            /// <param name="curveContentAreaBounds">The curve contents area bounds.</param>
-            /// <returns>The result.</returns>
-            private Vector2 PointToKeyframes(Vector2 point, ref Rectangle curveContentAreaBounds)
-            {
-                // Contents -> Keyframes
-                return new Vector2(
-                                   (point.X + Location.X) / UnitsPerSecond,
-                                   (point.Y + Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
-                                  );
-            }
-        }
-
-        /// <summary>
         /// The single keyframe control.
         /// </summary>
         protected class KeyframePoint : Control
@@ -1072,6 +148,11 @@ namespace FlaxEditor.GUI
             /// Flag for selected keyframes.
             /// </summary>
             public bool IsSelected;
+
+            /// <summary>
+            /// Gets the point time and value on a curve.
+            /// </summary>
+            public Vector2 Point => Editor.GetKeyframePoint(Index, Component);
 
             /// <inheritdoc />
             public override void Draw()
@@ -1100,21 +181,8 @@ namespace FlaxEditor.GUI
                 return false;
             }
 
-            /// <summary>
-            /// Adds this keyframe to the selection.
-            /// </summary>
-            public void Select()
-            {
-                IsSelected = true;
-            }
-
-            /// <summary>
-            /// Removes this keyframe from the selection.
-            /// </summary>
-            public void Deselect()
-            {
-                IsSelected = false;
-            }
+            /// <inheritdoc />
+            protected override bool ShowTooltip => base.ShowTooltip && !Editor._contents._isMovingSelection;
 
             /// <summary>
             /// Updates the tooltip.
@@ -1260,7 +328,11 @@ namespace FlaxEditor.GUI
         public override Vector2 ViewOffset
         {
             get => _mainPanel.ViewOffset;
-            set => _mainPanel.ViewOffset = value;
+            set
+            {
+                _mainPanel.ViewOffset = value;
+                _mainPanel.FastScroll();
+            }
         }
 
         /// <inheritdoc />
@@ -1524,7 +596,7 @@ namespace FlaxEditor.GUI
                 var p = _points[i];
                 if (p.IsSelected)
                 {
-                    p.Deselect();
+                    p.IsSelected = false;
                     indicesToRemove.Add(p.Index);
                 }
             }
@@ -1538,23 +610,11 @@ namespace FlaxEditor.GUI
             OnEditingEnd();
         }
 
-        /// <summary>
-        /// Shows the whole curve.
-        /// </summary>
-        public void ShowWholeCurve()
+        /// <inheritdoc />
+        public override void ShowWholeCurve()
         {
             ViewScale = ApplyUseModeMask(EnableZoom, _mainPanel.Size / _contents.Size, ViewScale);
             ViewOffset = ApplyUseModeMask(EnablePanning, -_mainPanel.ControlsBounds.Location, ViewOffset);
-            UpdateKeyframes();
-        }
-
-        /// <summary>
-        /// Resets the view.
-        /// </summary>
-        public void ResetView()
-        {
-            ViewScale = ApplyUseModeMask(EnableZoom, Vector2.One, ViewScale);
-            ViewOffset = ApplyUseModeMask(EnablePanning, Vector2.Zero, ViewOffset);
             UpdateKeyframes();
         }
 
@@ -1581,7 +641,7 @@ namespace FlaxEditor.GUI
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Deselect();
+                _points[i].IsSelected = false;
             }
         }
 
@@ -1589,7 +649,7 @@ namespace FlaxEditor.GUI
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Select();
+                _points[i].IsSelected = true;
             }
         }
 
@@ -2152,6 +1212,13 @@ namespace FlaxEditor.GUI
             UpdateKeyframes();
             UpdateTooltips();
             OnEdited();
+        }
+
+        /// <inheritdoc />
+        public override Vector2 GetKeyframePoint(int index, int component)
+        {
+            var k = _keyframes[index];
+            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         /// <inheritdoc />
@@ -2821,6 +1888,13 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override Vector2 GetKeyframePoint(int index, int component)
+        {
+            var k = _keyframes[index];
+            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+        }
+
+        /// <inheritdoc />
         public override int KeyframesCount => _keyframes.Count;
 
         /// <inheritdoc />
@@ -2838,35 +1912,32 @@ namespace FlaxEditor.GUI
             // Place keyframes
             Rectangle curveContentAreaBounds = _mainPanel.GetClientArea();
             var viewScale = ViewScale;
+            var pointsSize = _showCollapsed ? new Vector2(4.0f / viewScale.X, Height - 2.0f) : KeyframesSize / viewScale;
             for (int i = 0; i < _points.Count; i++)
             {
                 var p = _points[i];
                 var k = _keyframes[p.Index];
-
-                var location = GetKeyframePoint(ref k, p.Component);
-                var point = new Vector2
+                var point = GetKeyframePoint(ref k, p.Component);
+                var location = new Vector2
                 (
-                 location.X * UnitsPerSecond - p.Width * 0.5f,
-                 location.Y * -UnitsPerSecond - p.Height * 0.5f + curveContentAreaBounds.Height
+                 point.X * UnitsPerSecond - pointsSize.X * 0.5f,
+                 point.Y * -UnitsPerSecond - pointsSize.Y * 0.5f + curveContentAreaBounds.Height
                 );
-
                 if (_showCollapsed)
                 {
-                    point.Y = 1.0f;
-                    p.Size = new Vector2(4.0f / viewScale.X, Height - 2.0f);
+                    location.Y = 1.0f;
                     p.Visible = p.Component == 0;
                 }
                 else
                 {
-                    p.Size = KeyframesSize / viewScale;
                     p.Visible = true;
                 }
-                p.Location = point;
+                p.Bounds = new Rectangle(location, pointsSize);
             }
 
             // Calculate bounds
             var bounds = _points[0].Bounds;
-            for (var i = 1; i < _points.Count; i++)
+            for (int i = 1; i < _points.Count; i++)
             {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
             }
@@ -2878,7 +1949,8 @@ namespace FlaxEditor.GUI
                 bounds.Height = Mathf.Max(bounds.Height, 1.0f);
                 bounds.Location = ApplyUseModeMask(EnablePanning, bounds.Location, _contents.Location);
                 bounds.Size = ApplyUseModeMask(EnablePanning, bounds.Size, _contents.Size);
-                _contents.Bounds = bounds;
+                if (!_contents._isMovingSelection)
+                    _contents.Bounds = bounds;
             }
             else if (_contents.Bounds == Rectangle.Empty)
             {

@@ -430,7 +430,7 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
 {
     // Ensure path is in a valid format
     String pathNorm(path);
-    FileSystem::NormalizePath(pathNorm);
+    StringUtils::PathRemoveRelativeParts(pathNorm);
 
 #if USE_EDITOR
     if (!FileSystem::FileExists(pathNorm))

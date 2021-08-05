@@ -24,7 +24,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        private Image[] _thumbnails = new Image[2];
+        private Image[] _thumbnails = new Image[3];
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CameraCutMedia"/> class.
@@ -107,6 +107,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             float orthoScale = 1.0f;
             float fov = 60.0f;
             float customAspectRatio = 0.0f;
+            view.RenderLayersMask = new LayersMask(uint.MaxValue);
 
             // Try to evaluate camera properties based on the initial camera state
             if (cam)
@@ -119,10 +120,15 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 orthoScale = cam.OrthographicScale;
                 fov = cam.FieldOfView;
                 customAspectRatio = cam.CustomAspectRatio;
+                view.RenderLayersMask = cam.RenderLayersMask;
             }
 
             // Try to evaluate camera properties based on the animated tracks
-            float time = req.ThumbnailIndex == 0 ? Start : Start + Duration;
+            float time = Start;
+            if (req.ThumbnailIndex == 1)
+                time += Duration;
+            else if (req.ThumbnailIndex == 2)
+                time += Duration * 0.5f;
             foreach (var subTrack in track.SubTracks)
             {
                 if (subTrack is MemberTrack memberTrack)
@@ -176,7 +182,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             view.NonJitteredProjection = view.Projection;
             view.TemporalAAJitter = Vector4.Zero;
             view.ModelLODDistanceFactor = 100.0f;
-            view.Flags = ViewFlags.DefaultGame & ~(ViewFlags.MotionBlur | ViewFlags.EyeAdaptation);
+            view.Flags = ViewFlags.DefaultGame & ~(ViewFlags.MotionBlur);
             view.UpdateCachedData();
             task.View = view;
         }
@@ -202,13 +208,22 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                         Bounds = new Rectangle(2, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
                 }
-                else
+                else if (req.ThumbnailIndex == 1)
                 {
                     image = new Image
                     {
                         AnchorPreset = AnchorPresets.MiddleRight,
                         Parent = this,
                         Bounds = new Rectangle(Width - 2 - CameraCutThumbnailRenderer.Width, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
+                    };
+                }
+                else
+                {
+                    image = new Image
+                    {
+                        AnchorPreset = AnchorPresets.MiddleCenter,
+                        Parent = this,
+                        Bounds = new Rectangle(Width * 0.5f - 1 - CameraCutThumbnailRenderer.Width * 0.5f, 2, CameraCutThumbnailRenderer.Width, CameraCutThumbnailRenderer.Height),
                     };
                 }
                 image.UnlockChildrenRecursive();
@@ -226,14 +241,47 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateUI()
         {
-            var width = Mathf.Min(CameraCutThumbnailRenderer.Width, (Width - 6.0f) * 0.5f);
-            for (int i = 0; i < _thumbnails.Length; i++)
+            if (_thumbnails == null)
+                return;
+            var width = Width - (_thumbnails.Length + 1) * 2;
+            if (width < 10.0f)
+            {
+                for (int i = 0; i < _thumbnails.Length; i++)
+                {
+                    var image = _thumbnails[i];
+                    if (image != null)
+                        image.Visible = false;
+                }
+                return;
+            }
+            var count = Mathf.Min(Mathf.FloorToInt(width / CameraCutThumbnailRenderer.Width), _thumbnails.Length);
+            if (count == 0 && _thumbnails.Length != 0)
+            {
+                var image = _thumbnails[0];
+                if (image != null)
+                {
+                    image.Width = Mathf.Min(CameraCutThumbnailRenderer.Width, width);
+                    image.SetAnchorPreset(image.AnchorPreset, false);
+                    image.Visible = true;
+                }
+                return;
+            }
+            for (int i = 0; i < count; i++)
             {
                 var image = _thumbnails[i];
                 if (image != null)
                 {
-                    image.Width = width;
-                    image.Visible = width >= 10.0f;
+                    image.Width = CameraCutThumbnailRenderer.Width;
+                    image.SetAnchorPreset(image.AnchorPreset, false);
+                    image.Visible = true;
+                }
+            }
+            for (int i = count; i < _thumbnails.Length; i++)
+            {
+                var image = _thumbnails[i];
+                if (image != null)
+                {
+                    image.Visible = false;
                 }
             }
         }
@@ -260,7 +308,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnDurationFramesChanged();
 
-            UpdateThumbnails(new[] { 1 });
+            UpdateThumbnails(new[] { 1, 2 });
         }
 
         /// <inheritdoc />

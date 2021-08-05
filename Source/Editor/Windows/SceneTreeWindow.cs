@@ -282,10 +282,10 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
-            Editor.SceneEditing.SelectionChanged += OnOnSelectionChanged;
+            Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
         }
 
-        private void OnOnSelectionChanged()
+        private void OnSelectionChanged()
         {
             _isUpdatingSelection = true;
 
@@ -312,6 +312,7 @@ namespace FlaxEditor.Windows
                 // For single node selected scroll view so user can see it
                 if (nodes.Count == 1)
                 {
+                    nodes[0].ExpandAllParents(true);
                     ScrollViewTo(nodes[0]);
                 }
             }

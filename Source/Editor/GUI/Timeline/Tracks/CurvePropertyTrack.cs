@@ -259,6 +259,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             Height = IsExpanded ? ExpandedHeight : CollapsedHeight;
             UpdateCurve();
+            if (IsExpanded)
+                Curve.ShowWholeCurve();
 
             base.OnExpandedChanged();
         }
