@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
+using FlaxEditor.GUI.Docking;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
@@ -36,6 +37,42 @@ namespace FlaxEditor.Options
             /// </summary>
             TimeSinceStartup,
         }
+    
+        /// <summary>
+        /// A proxy DockState for window open method.
+        /// </summary>
+        public enum DockStateProxy
+        {
+            /// <summary>
+            /// The floating window.
+            /// </summary>
+            Float = DockState.Float,
+            
+            /// <summary>
+            /// The dock fill as a tab.
+            /// </summary>
+            DockFill = DockState.DockFill,
+            
+            /// <summary>
+            /// The dock left.
+            /// </summary>
+            DockLeft = DockState.DockLeft,
+            
+            /// <summary>
+            /// The dock right.
+            /// </summary>
+            DockRight = DockState.DockRight,
+            
+            /// <summary>
+            /// The dock top.
+            /// </summary>
+            DockTop = DockState.DockTop,
+            
+            /// <summary>
+            /// The dock bottom.
+            /// </summary>
+            DockBottom = DockState.DockBottom
+        }
 
         /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
@@ -69,6 +106,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface", "Center Mouse On Game Window Focus"), EditorOrder(100), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
         public bool CenterMouseOnGameWinFocus { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets the method window opening.
+        /// </summary>
+        [DefaultValue(DockStateProxy.Float)]
+        [EditorDisplay("Interface", "Define The Opening Window Method"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
+        public DockStateProxy NewWindowMethod { get; set; } = DockStateProxy.Float;
+        
         /// <summary>
         /// Gets or sets the timestamps prefix mode for debug log messages.
         /// </summary>
