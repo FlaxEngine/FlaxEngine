@@ -227,16 +227,21 @@ Task* SkinnedMesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& res
     return buffer ? buffer->DownloadDataAsync(result) : nullptr;
 }
 
-bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) const
+bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
 {
     if (_cachedVertexBuffer.IsEmpty())
     {
         PROFILE_CPU();
         auto model = GetSkinnedModel();
         ScopeLock lock(model->Locker);
+        if (model->IsVirtual())
+        {
+            LOG(Error, "Cannot access CPU data of virtual models. Use GPU data download");
+            return true;
+        }
 
         // Fetch chunk with data from drive/memory
-        const auto chunkIndex = _lodIndex + 1;
+        const auto chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(_lodIndex);
         if (model->LoadChunk(chunkIndex))
             return true;
         const auto chunk = model->GetChunk(chunkIndex);
@@ -283,6 +288,7 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) c
                 continue;
 
             // Cache mesh data
+            _cachedIndexBufferCount = indicesCount;
             _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
             _cachedVertexBuffer.Set((const byte*)vb0, vertices * sizeof(VB0SkinnedElementType));
             break;
@@ -293,9 +299,11 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result) c
     {
     case MeshBufferType::Index:
         result.Link(_cachedIndexBuffer);
+        count = _cachedIndexBufferCount;
         break;
     case MeshBufferType::Vertex0:
         result.Link(_cachedVertexBuffer);
+        count = _cachedVertexBuffer.Count() / sizeof(VB0SkinnedElementType);
         break;
     default:
         return true;
@@ -533,16 +541,19 @@ bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 type
         if (task == nullptr)
             return true;
         task->Start();
+        model->Locker.Unlock();
         if (task->Wait())
         {
             LOG(Error, "Task failed.");
             return true;
         }
+        model->Locker.Lock();
     }
     else
     {
         // Get data from CPU
-        if (DownloadDataCPU(bufferType, data))
+        int32 count;
+        if (DownloadDataCPU(bufferType, data, count))
             return true;
     }
 

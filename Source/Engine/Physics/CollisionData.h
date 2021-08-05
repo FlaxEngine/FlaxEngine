@@ -197,13 +197,13 @@ public:
 #if COMPILE_WITH_PHYSICS_COOKING
 
     /// <summary>
-    /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.
+    /// Cooks the mesh collision data and updates the virtual asset.
     /// </summary>
     /// <remarks>
     /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
     /// </remarks>
     /// <param name="type">The collision data type.</param>
-    /// <param name="model">The source model.</param>
+    /// <param name="model">The source model. If model is virtual then this method cannot be called from the main thread.</param>
     /// <param name="modelLodIndex">The source model LOD index.</param>
     /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be used to exclude particular material slots from collision cooking.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>

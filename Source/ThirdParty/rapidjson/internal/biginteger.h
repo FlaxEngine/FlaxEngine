@@ -18,7 +18,11 @@
 #include "../rapidjson.h"
 
 #if defined(_MSC_VER) && defined(_M_AMD64)
-#include <intrin0.h> // for _umul128
+#if _MSC_VER <= 1900
+#include <intrin.h>
+#else
+#include <intrin0.h>
+#endif
 #pragma intrinsic(_umul128)
 #endif
 

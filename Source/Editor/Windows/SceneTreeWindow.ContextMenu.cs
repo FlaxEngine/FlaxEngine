@@ -167,7 +167,7 @@ namespace FlaxEditor.Windows
         /// </summary>
         /// <param name="parent">The parent control.</param>
         /// <param name="location">The location (within a given control).</param>
-        private void ShowContextMenu(Control parent, ref Vector2 location)
+        private void ShowContextMenu(Control parent, Vector2 location)
         {
             var contextMenu = CreateContextMenu();
 

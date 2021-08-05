@@ -78,11 +78,11 @@ void BlendShapesInstance::Update(SkinnedModel* skinnedModel)
         if (!instance.IsUsed)
             continue;
         const SkinnedMesh* mesh = e.Key;
-        const int32 vertexCount = mesh->GetVertexCount();
 
         // Get skinned mesh vertex buffer data (original, cached on CPU)
         BytesContainer vertexBuffer;
-        if (mesh->DownloadDataCPU(MeshBufferType::Vertex0, vertexBuffer))
+        int32 vertexCount;
+        if (mesh->DownloadDataCPU(MeshBufferType::Vertex0, vertexBuffer, vertexCount))
         {
             // Don't use this mesh if failed to get it's vertices data
             instance.IsUsed = false;

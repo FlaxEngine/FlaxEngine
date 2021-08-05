@@ -168,14 +168,6 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
     }
     else
     {
-        // Model data gather requires to use async tasks (main thread cannot stall)
-        // TODO: if asset is not virtual then maybe use the asset container and read raw bytes from file??
-        if (IsInMainThread())
-        {
-            LOG(Warning, "Cannot generate collision data on a main thread.");
-            return true;
-        }
-
         // Ensure model is loaded
         if (arg.Model == nullptr)
         {
@@ -193,51 +185,100 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         Array<MeshBase*> meshes;
         arg.Model->GetMeshes(meshes, lodIndex);
 
-        // Download model LOD data from the GPU.
-        // It's easier than reading internal, versioned mesh storage format.
-        // Also it works with virtual assets that have no dedicated storage.
-        // Note: request all meshes data at once and wait for the tasks to be done.
+        // Get mesh data
         const int32 meshesCount = meshes.Count();
         Array<BytesContainer> vertexBuffers;
         Array<BytesContainer> indexBuffers;
+        Array<int32> vertexCounts;
+        Array<int32> indexCounts;
         vertexBuffers.Resize(meshesCount);
+        vertexCounts.Resize(meshesCount);
         indexBuffers.Resize(needIndexBuffer ? meshesCount : 0);
-
-        // Start tasks
-        int32 vCount = 0;
-        int32 iCount = 0;
-        Array<Task*> tasks(meshesCount + meshesCount);
-        for (int32 i = 0; i < meshesCount; i++)
+        indexCounts.Resize(needIndexBuffer ? meshesCount : 0);
+        bool useCpuData = IsInMainThread() && !arg.Model->IsVirtual();
+        if (!useCpuData)
         {
-            const auto& mesh = *meshes[i];
-            if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
-                continue;
-
-            auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
-            if (task == nullptr)
-                return true;
-            task->Start();
-            tasks.Add(task);
-            vCount += mesh.GetVertexCount();
-
-            if (needIndexBuffer)
+            // If mesh data is already cached in memory then we could use it instead of GPU
+            useCpuData |= arg.Model->HasChunkLoaded(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
+        }
+        if (useCpuData)
+        {
+            // Read directly from the asset storage
+            for (int32 i = 0; i < meshesCount; i++)
             {
-                task = mesh.DownloadDataGPUAsync(MeshBufferType::Index, indexBuffers[i]);
-                if (task == nullptr)
+                const auto& mesh = *meshes[i];
+                if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                    continue;
+
+                int32 count;
+                if (mesh.DownloadDataCPU(MeshBufferType::Vertex0, vertexBuffers[i], count))
+                {
+                    LOG(Error, "Failed to download mesh {0} data from model {1} LOD{2}", i, arg.Model.ToString(), lodIndex);
                     return true;
-                task->Start();
-                tasks.Add(task);
-                iCount += mesh.GetTriangleCount() * 3;
+                }
+                vertexCounts[i] = count;
+
+                if (needIndexBuffer)
+                {
+                    if (mesh.DownloadDataCPU(MeshBufferType::Index, indexBuffers[i], count))
+                    {
+                        LOG(Error, "Failed to download mesh {0} data from model {1} LOD{2}", i, arg.Model.ToString(), lodIndex);
+                        return true;
+                    }
+                    indexCounts[i] = count;
+                }
             }
         }
+        else
+        {
+            // Download model LOD data from the GPU.
+            // It's easier than reading internal, versioned mesh storage format.
+            // Also it works with virtual assets that have no dedicated storage.
+            // Note: request all meshes data at once and wait for the tasks to be done.
+            Array<Task*> tasks(meshesCount + meshesCount);
+            for (int32 i = 0; i < meshesCount; i++)
+            {
+                const auto& mesh = *meshes[i];
+                if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                    continue;
 
-        // Wait for tasks
-        if (Task::WaitAll(tasks))
-            return true;
-        tasks.Resize(0);
+                auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
+                if (task == nullptr)
+                {
+                    LOG(Error, "Failed to download mesh {0} data from model {1} LOD{2}", i, arg.Model.ToString(), lodIndex);
+                    return true;
+                }
+                int32 count = mesh.GetVertexCount();
+                task->Start();
+                tasks.Add(task);
+                vertexCounts[i] = count;
+
+                if (needIndexBuffer)
+                {
+                    task = mesh.DownloadDataGPUAsync(MeshBufferType::Index, indexBuffers[i]);
+                    if (task == nullptr)
+                    {
+                        LOG(Error, "Failed to download mesh {0} data from model {1} LOD{2}", i, arg.Model.ToString(), lodIndex);
+                        return true;
+                    }
+                    count = mesh.GetTriangleCount() * 3;
+                    task->Start();
+                    tasks.Add(task);
+                    indexCounts[i] = count;
+                }
+            }
+            if (Task::WaitAll(tasks))
+                return true;
+        }
 
         // Combine meshes into one
+        int32 vCount = 0;
+        for (int32 i = 0; i < vertexCounts.Count(); i++)
+            vCount += vertexCounts[0];
         finalVertexData.Allocate(vCount);
+        int32 iCount = 0;
+        for (int32 i = 0; i < indexCounts.Count(); i++)
+            iCount += indexCounts[0];
         finalIndexData.Allocate(iCount);
         int32 vertexCounter = 0, indexCounter = 0;
         for (int32 i = 0; i < meshesCount; i++)
@@ -248,15 +289,15 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             const auto& vData = vertexBuffers[i];
 
             const int32 firstVertexIndex = vertexCounter;
-            const int32 vertexCount = mesh.GetVertexCount();
+            const int32 vertexCount = vertexCounts[i];
             Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Vector3));
             vertexCounter += vertexCount;
 
             if (needIndexBuffer)
             {
                 const auto& iData = indexBuffers[i];
-                const int32 indexCount = mesh.GetTriangleCount() * 3;
-                if (mesh.Use16BitIndexBuffer())
+                const int32 indexCount = indexCounts[i];
+                if (iData.Length() / indexCount == sizeof(uint16))
                 {
                     auto dst = finalIndexData.Get() + indexCounter;
                     auto src = iData.Get<uint16>();

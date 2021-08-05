@@ -241,7 +241,7 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public void FocusOrShow()
         {
-            FocusOrShow((DockState)Editor.Instance.Options.Options.Interface.NewWindowMethod);
+            FocusOrShow((DockState)Editor.Instance.Options.Options.Interface.NewWindowLocation);
         }
 
         /// <summary>
