@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
-using System.Net.Sockets;
 using FlaxEditor.GUI.Docking;
 using FlaxEngine;
 
