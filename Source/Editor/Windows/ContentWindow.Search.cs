@@ -230,7 +230,7 @@ namespace FlaxEditor.Windows
             }
 
             _view.IsSearching = true;
-            _view.ShowItems(items);
+            _view.ShowItems(items, Editor.Windows.ContentWin._sortBy);
         }
 
         private void UpdateItemsSearchFilter(ContentFolder folder, List<ContentItem> items, bool[] filters)

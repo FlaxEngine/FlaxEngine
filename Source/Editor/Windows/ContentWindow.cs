@@ -39,6 +39,7 @@ namespace FlaxEditor.Windows
         private TextBox _foldersSearchBox;
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
+        private string _sortBy;
 
         private RootContentTreeNode _root;
 
@@ -215,6 +216,11 @@ namespace FlaxEditor.Windows
                         filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
                 }
             };
+            
+            var sortBy = menu.AddChildMenu("Sort by");
+            sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked);
+            sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked);
+            sortBy.ContextMenu.AddButton("Last Modified", OnSortByButtonClicked);
 
             return menu;
         }
@@ -228,6 +234,13 @@ namespace FlaxEditor.Windows
         {
             var i = (int)filterButton.Tag;
             _viewDropdown.OnClicked(i);
+        }
+
+        private void OnSortByButtonClicked(ContextMenuButton button)
+        {
+            Editor.Windows.ContentWin._sortBy = button.Text;
+            RefreshView(SelectedNode);
+            Console.WriteLine(Editor.Windows.ContentWin._sortBy);
         }
 
         /// <summary>
@@ -701,12 +714,12 @@ namespace FlaxEditor.Windows
                         items.Add(node.Folder);
                     }
                 }
-                _view.ShowItems(items);
+                _view.ShowItems(items, Editor.Windows.ContentWin._sortBy);
             }
             else
             {
                 // Show folder contents
-                _view.ShowItems(target.Folder.Children);
+                _view.ShowItems(target.Folder.Children, Editor.Windows.ContentWin._sortBy);
             }
         }
 
