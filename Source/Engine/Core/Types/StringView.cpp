@@ -12,9 +12,8 @@ StringView StringBuilder::ToStringView() const
 StringView StringView::Empty;
 
 StringView::StringView(const String& str)
+    : StringViewBase<Char>(str.Get(), str.Length())
 {
-    _data = str.Get();
-    _length = str.Length();
 }
 
 bool StringView::operator==(const String& other) const
@@ -74,9 +73,8 @@ bool operator!=(const String& a, const StringView& b)
 StringAnsiView StringAnsiView::Empty;
 
 StringAnsiView::StringAnsiView(const StringAnsi& str)
+    : StringViewBase<char>(str.Get(), str.Length())
 {
-    _data = str.Get();
-    _length = str.Length();
 }
 
 bool StringAnsiView::operator==(const StringAnsi& other) const

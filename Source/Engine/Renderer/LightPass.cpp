@@ -206,7 +206,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
 
     // Bind output
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView;
+    const bool depthBufferReadOnly = (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) != 0;
     GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetRenderTarget(depthBufferRTV, lightBuffer);
