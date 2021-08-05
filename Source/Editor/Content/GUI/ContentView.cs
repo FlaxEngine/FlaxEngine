@@ -30,7 +30,7 @@ namespace FlaxEditor.Content.GUI
     /// <summary>
     /// The method sort for items.
     /// </summary>
-    public enum MethodSort
+    public enum SortType
     {
         /// <summary> 
         /// The classic alphabetic sort method (A-Z).
@@ -234,9 +234,9 @@ namespace FlaxEditor.Content.GUI
         /// Shows the items collection in the view.
         /// </summary>
         /// <param name="items">The items to show.</param>
-        /// <param name="sortMethod">The sort method for items.</param>
+        /// <param name="sortType">The sort method for items.</param>
         /// <param name="additive">If set to <c>true</c> items will be added to the current selection. Otherwise selection will be cleared before.</param>
-        public void ShowItems(List<ContentItem> items, MethodSort sortMethod, bool additive = false)
+        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false)
         {
             if (items == null)
                 throw new ArgumentNullException();
@@ -269,7 +269,7 @@ namespace FlaxEditor.Content.GUI
             // Sort items depending on sortMethod parameter
             _children.Sort(((control, control1) =>
                                {
-                                   if (sortMethod == MethodSort.AlphabeticReverse)
+                                   if (sortType == SortType.AlphabeticReverse)
                                    {
                                        if (control.CompareTo(control1) > 0)
                                        {
