@@ -40,6 +40,7 @@ namespace FlaxEditor.Windows
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
         private SortType _sortType;
+        private string _buttonNameChecked = "Alphabetic Order";
 
         private RootContentTreeNode _root;
 
@@ -218,8 +219,18 @@ namespace FlaxEditor.Windows
             };
             
             var sortBy = menu.AddChildMenu("Sort by");
-            sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked);
-            sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked);
+            sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked).Tag = SortType.AlphabeticOrder;
+            sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked).Tag = SortType.AlphabeticReverse;
+            sortBy.ContextMenu.VisibleChanged += control =>
+            {
+                if (!control.Visible)
+                    return;
+                foreach (var item in ((ContextMenu)control).Items)
+                {
+                    if (item is ContextMenuButton button)
+                        button.Checked = _buttonNameChecked == button.Text;
+                }
+            };
 
             return menu;
         }
@@ -237,6 +248,7 @@ namespace FlaxEditor.Windows
 
         private void OnSortByButtonClicked(ContextMenuButton button)
         {
+            _buttonNameChecked = button.Text;
             switch (button.Text)
             {
                 case "Alphabetic Order": _sortType = SortType.AlphabeticOrder;
