@@ -553,7 +553,7 @@ namespace Flax.Build
                 var graph = new TaskGraph(reference.Project.ProjectFolderPath);
                 var skipBuild = target.IsPreBuilt || (Configuration.SkipTargets != null && Configuration.SkipTargets.Contains(target.Name));
                 target.PreBuild();
-                referencedBuildData = BuildTargetNativeCppBindingsOnly(buildData.Rules, graph, target, buildContext, buildData.Toolchain, buildData.Platform, buildData.Architecture, buildData.Configuration, skipBuild);
+                referencedBuildData = BuildTargetNativeCppBindingsOnly(buildData.Rules, graph, target, buildContext, buildData.Platform, buildData.Architecture, buildData.Configuration, skipBuild);
                 if (!skipBuild)
                 {
                     using (new ProfileEventScope("PrepareTasks"))
@@ -935,7 +935,7 @@ namespace Flax.Build
             return buildData;
         }
 
-        private static BuildData BuildTargetNativeCppBindingsOnly(RulesAssembly rules, TaskGraph graph, Target target, Dictionary<Target, BuildData> buildContext, Toolchain toolchain, Platform platform, TargetArchitecture architecture, TargetConfiguration configuration, bool skipBuild = false)
+        private static BuildData BuildTargetNativeCppBindingsOnly(RulesAssembly rules, TaskGraph graph, Target target, Dictionary<Target, BuildData> buildContext, Platform platform, TargetArchitecture architecture, TargetConfiguration configuration, bool skipBuild = false)
         {
             if (buildContext.TryGetValue(target, out var buildData))
                 return buildData;
@@ -954,7 +954,7 @@ namespace Flax.Build
                 throw new Exception($"Cannot build target {target.Name}. The project file is missing (.flaxproj located in the folder above).");
 
             // Setup build environment for the target
-            var targetBuildOptions = GetBuildOptions(target, toolchain.Platform, toolchain, toolchain.Architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
+            var targetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
 
             using (new ProfileEventScope("PreBuild"))
             {
@@ -992,13 +992,16 @@ namespace Flax.Build
                     {
                         using (new ProfileEventScope(reference.Project.Name))
                         {
-                            if (buildData.Toolchain == null)
-                                buildData.Toolchain = platform.GetToolchain(architecture);
-
                             if (Configuration.BuildBindingsOnly || reference.Project.IsCSharpOnlyProject || !platform.HasRequiredSDKsInstalled)
+                            {
                                 BuildTargetReferenceNativeCppBindingsOnly(buildContext, buildData, reference);
+                            }
                             else
+                            {
+                                if (buildData.Toolchain == null)
+                                    buildData.Toolchain = platform.GetToolchain(architecture);
                                 BuildTargetReferenceNativeCpp(buildContext, buildData, reference);
+                            }
                         }
                     }
                 }

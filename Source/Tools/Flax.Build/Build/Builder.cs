@@ -313,7 +313,6 @@ namespace Flax.Build
                                 //throw new Exception(string.Format("Platform {0} {1} is not supported.", targetPlatform, architecture));
 
                                 var platform = Platform.GetPlatform(targetPlatform);
-                                var toolchain = platform.GetToolchain(architecture);
 
                                 // Special case: building C# bindings only (eg. when building Linux game on Windows without C++ scripting or for C#-only projects)
                                 if (Configuration.BuildBindingsOnly || (project.IsCSharpOnlyProject && platform.HasModularBuildSupport))
@@ -327,7 +326,7 @@ namespace Flax.Build
                                         switch (target.Type)
                                         {
                                         case TargetType.NativeCpp:
-                                            BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, toolchain, platform, architecture, configuration);
+                                            BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, platform, architecture, configuration);
                                             break;
                                         case TargetType.DotNet:
                                             BuildTargetDotNet(rules, graph, target, platform, configuration);
@@ -338,6 +337,7 @@ namespace Flax.Build
                                     continue;
                                 }
 
+                                var toolchain = platform.GetToolchain(architecture);
                                 using (new ProfileEventScope(target.Name))
                                 {
                                     Log.Info(string.Format("Building target {0} in {1} for {2} {3}", target.Name, configuration, targetPlatform, architecture));
