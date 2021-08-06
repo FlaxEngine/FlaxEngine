@@ -24,6 +24,8 @@
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
     ENSURE_CAN_COOK;
+    if (input.VertexCount == 0)
+        LOG(Warning, "Empty mesh data for collision cooking.");
 
     // Init options
     PxConvexMeshDesc desc;
@@ -62,6 +64,8 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
 bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& output)
 {
     ENSURE_CAN_COOK;
+    if (input.VertexCount == 0 || input.IndexCount == 0)
+        LOG(Warning, "Empty mesh data for collision cooking.");
 
     // Init options
     PxTriangleMeshDesc desc;
