@@ -39,6 +39,7 @@ namespace FlaxEditor.Windows
         private TextBox _foldersSearchBox;
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
+        private SortType _sortType;
 
         private RootContentTreeNode _root;
 
@@ -215,6 +216,20 @@ namespace FlaxEditor.Windows
                         filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
                 }
             };
+            
+            var sortBy = menu.AddChildMenu("Sort by");
+            sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked).Tag = SortType.AlphabeticOrder;
+            sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked).Tag = SortType.AlphabeticReverse;
+            sortBy.ContextMenu.VisibleChanged += control =>
+            {
+                if (!control.Visible)
+                    return;
+                foreach (var item in ((ContextMenu)control).Items)
+                {
+                    if (item is ContextMenuButton button)
+                        button.Checked = _sortType == (SortType)button.Tag;
+                }
+            };
 
             return menu;
         }
@@ -228,6 +243,18 @@ namespace FlaxEditor.Windows
         {
             var i = (int)filterButton.Tag;
             _viewDropdown.OnClicked(i);
+        }
+
+        private void OnSortByButtonClicked(ContextMenuButton button)
+        {
+            switch ((SortType)button.Tag)
+            {
+                case SortType.AlphabeticOrder: _sortType = SortType.AlphabeticOrder;
+                    break;
+                case SortType.AlphabeticReverse: _sortType = SortType.AlphabeticReverse;
+                    break;
+            }
+            RefreshView(SelectedNode);
         }
 
         /// <summary>
@@ -701,12 +728,12 @@ namespace FlaxEditor.Windows
                         items.Add(node.Folder);
                     }
                 }
-                _view.ShowItems(items);
+                _view.ShowItems(items, _sortType);
             }
             else
             {
                 // Show folder contents
-                _view.ShowItems(target.Folder.Children);
+                _view.ShowItems(target.Folder.Children, _sortType);
             }
         }
 
