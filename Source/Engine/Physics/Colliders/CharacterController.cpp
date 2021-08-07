@@ -105,7 +105,14 @@ void CharacterController::SetStepOffset(float value)
     _stepOffset = value;
 
     if (_controller)
-        _controller->setStepOffset(value);
+    {
+        const float scaling = _cachedScale.GetAbsolute().MaxValue();
+        const float contactOffset = Math::Max(_contactOffset, ZeroTolerance);
+        const float minSize = 0.001f;
+        const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+        const float radius = Math::Max(Math::Abs(_radius) * scaling - contactOffset, minSize);
+        _controller->setStepOffset(Math::Min(value, height + radius * 2.0f - minSize));
+    }
 }
 
 void CharacterController::SetUpDirection(const Vector3& up)
@@ -223,7 +230,6 @@ void CharacterController::CreateController()
     desc.slopeLimit = Math::Cos(_slopeLimit * DegreesToRadians);
     desc.nonWalkableMode = static_cast<PxControllerNonWalkableMode::Enum>(_nonWalkableMode);
     desc.climbingMode = PxCapsuleClimbingMode::eEASY;
-    desc.stepOffset = _stepOffset;
     if (Material && !Material->WaitForLoaded())
         desc.material = ((PhysicalMaterial*)Material->Instance)->GetPhysXMaterial();
     else
@@ -233,6 +239,7 @@ void CharacterController::CreateController()
     const float minSize = 0.001f;
     desc.height = Math::Max(Math::Abs(_height) * scaling, minSize);
     desc.radius = Math::Max(Math::Abs(_radius) * scaling - desc.contactOffset, minSize);
+    desc.stepOffset = Math::Min(_stepOffset, desc.height + desc.radius * 2.0f - minSize);
 
     // Create controller
     _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
