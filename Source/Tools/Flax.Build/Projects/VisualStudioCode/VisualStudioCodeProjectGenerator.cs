@@ -404,8 +404,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginRootObject();
                 json.BeginArray("configurations");
                 json.BeginObject();
+                var project = solution.MainProject ?? solution.Projects.FirstOrDefault(x => x.Name == Globals.Project.Name);
+                if (project != null)
                 {
-                    var project = solution.MainProject ?? solution.Projects.First(x => x.Name == Globals.Project.Name);
                     json.AddField("name", project.Name);
 
                     var targetPlatform = Platform.BuildPlatform.Target;
