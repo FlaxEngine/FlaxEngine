@@ -239,7 +239,6 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args)
     cmdLine.Append(buildToolPath);
     cmdLine.Append(TEXT("\" "));
     cmdLine.Append(args.Get(), args.Length());
-    cmdLine.Append(TEXT('\0'));
     // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
