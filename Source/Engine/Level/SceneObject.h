@@ -46,6 +46,7 @@ typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 
 #define DECLARE_SCENE_OBJECT_ABSTRACT(type) \
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
+    static type* Spawn(const SpawnParams& params) { return nullptr; } \
     explicit type(const SpawnParams& params)
 
 #define DECLARE_SCENE_OBJECT_NO_SPAWN(type) \

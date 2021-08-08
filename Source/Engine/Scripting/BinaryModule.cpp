@@ -492,6 +492,7 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     ScriptingObject* object = nativeTypePtr->Script.Spawn(params);
     if (!object)
     {
+        LOG(Error, "Failed to spawn object of type {0} with native base type {1}.", managedTypePtr->ToString(), nativeTypePtr->ToString());
         return nullptr;
     }
 
