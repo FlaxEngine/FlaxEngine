@@ -142,7 +142,7 @@ bool sortInstallations(RiderInstallation* const& i1, RiderInstallation* const& i
     StringUtils::Parse(values2[0].Get(), &version2[0]);
     StringUtils::Parse(values2[1].Get(), &version2[1]);
     
-    if(values1.Count() > 2)
+    if(values2.Count() > 2)
         StringUtils::Parse(values2[2].Get(), &version2[2]);
 
     // Compare by MAJOR.MINOR.BUILD
