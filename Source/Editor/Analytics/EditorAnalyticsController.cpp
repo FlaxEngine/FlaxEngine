@@ -7,7 +7,8 @@
 
 void RegisterGameCookingStart(GameCooker::EventType type)
 {
-    auto platform = ToString(GameCooker::GetCurrentData().Platform);
+    auto& data = *GameCooker::GetCurrentData();
+    auto platform = ToString(data.Platform);
     if (type == GameCooker::EventType::BuildStarted)
     {
         EditorAnalytics::SendEvent("Actions", "GameCooker.Start", platform);

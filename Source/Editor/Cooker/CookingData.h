@@ -3,11 +3,11 @@
 #pragma once
 
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Enums.h"
+#include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Core/Types/Guid.h"
+#include "Engine/Scripting/ScriptingObject.h"
 
 class GameCooker;
 class PlatformTools;
@@ -125,47 +125,50 @@ extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuratio
 /// <summary>
 /// Game cooking temporary data.
 /// </summary>
-struct FLAXENGINE_API CookingData
+API_CLASS(Sealed, Namespace="FlaxEditor") class FLAXENGINE_API CookingData : public PersistentScriptingObject
 {
+DECLARE_SCRIPTING_TYPE(CookingData);
+public:
+
     /// <summary>
     /// The platform.
     /// </summary>
-    BuildPlatform Platform;
+    API_FIELD(ReadOnly) BuildPlatform Platform;
 
     /// <summary>
     /// The configuration.
     /// </summary>
-    BuildConfiguration Configuration;
+    API_FIELD(ReadOnly) BuildConfiguration Configuration;
 
     /// <summary>
     /// The options.
     /// </summary>
-    BuildOptions Options;
+    API_FIELD(ReadOnly) BuildOptions Options;
 
     /// <summary>
     /// The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).
     /// </summary>
-    Array<String> CustomDefines;
+    API_FIELD(ReadOnly) Array<String> CustomDefines;
 
     /// <summary>
     /// The original output path (actual OutputPath could be modified by the Platform Tools or a plugin for additional layout customizations or packaging). This path is preserved.
     /// </summary>
-    String OriginalOutputPath;
+    API_FIELD(ReadOnly) String OriginalOutputPath;
 
     /// <summary>
     /// The output path for data files (Content, Mono, etc.).
     /// </summary>
-    String DataOutputPath;
+    API_FIELD(ReadOnly) String DataOutputPath;
 
     /// <summary>
     /// The output path for binaries (native executable and native code libraries).
     /// </summary>
-    String NativeCodeOutputPath;
+    API_FIELD(ReadOnly) String NativeCodeOutputPath;
 
     /// <summary>
     /// The output path for binaries (C# code libraries).
     /// </summary>
-    String ManagedCodeOutputPath;
+    API_FIELD(ReadOnly) String ManagedCodeOutputPath;
 
     /// <summary>
     /// The platform tools.
@@ -248,7 +251,7 @@ public:
     /// </summary>
     HashSet<Guid> Assets;
 
-    struct BinaryModule
+    struct BinaryModuleInfo
     {
         String Name;
         String NativePath;
@@ -258,16 +261,9 @@ public:
     /// <summary>
     /// The binary modules used in the build. Valid after scripts compilation step. This list includes game, all plugins modules and engine module.
     /// </summary>
-    Array<BinaryModule, InlinedAllocation<64>> BinaryModules;
+    Array<BinaryModuleInfo, InlinedAllocation<64>> BinaryModules;
 
 public:
-
-    void Init()
-    {
-        RootAssets.Clear();
-        Assets.Clear();
-        Stats = Statistics();
-    }
 
     /// <summary>
     /// Gets the absolute path to the Platform Data folder that contains the binary files used by the current build configuration.

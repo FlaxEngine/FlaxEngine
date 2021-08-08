@@ -68,7 +68,7 @@ namespace GameCookerImpl
     String ProgressMsg;
     float ProgressValue;
 
-    CookingData Data;
+    CookingData* Data = nullptr;
     Array<GameCooker::BuildStep*> Steps;
     Dictionary<BuildPlatform, PlatformTools*> Tools;
 
@@ -154,6 +154,11 @@ CookingData::Statistics::Statistics()
     ContentSizeMB = 0;
 }
 
+CookingData::CookingData(const SpawnParams& params)
+    : PersistentScriptingObject(params)
+{
+}
+
 String CookingData::GetGameBinariesPath() const
 {
     const Char* archDir;
@@ -179,7 +184,7 @@ String CookingData::GetGameBinariesPath() const
         return String::Empty;
     }
 
-    return GetPlatformBinariesRoot() / TEXT("Game") / archDir / ToString(Configuration);
+    return GetPlatformBinariesRoot() / TEXT("Game") / archDir / ::ToString(Configuration);
 }
 
 String CookingData::GetPlatformBinariesRoot() const
@@ -239,7 +244,7 @@ public:
 
 GameCookerService GameCookerServiceInstance;
 
-const CookingData& GameCooker::GetCurrentData()
+CookingData* GameCooker::GetCurrentData()
 {
     return Data;
 }
@@ -331,8 +336,8 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     CancelFlag = 0;
     ProgressMsg.Clear();
     ProgressValue = 1.0f;
-    CookingData& data = Data;
-    data.Init();
+    Data = New<CookingData>();
+    CookingData& data = *Data;
     data.Tools = tools;
     data.Platform = platform;
     data.Configuration = configuration;
@@ -448,7 +453,7 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
 
 bool GameCookerImpl::Build()
 {
-    CookingData& data = Data;
+    CookingData& data = *Data;
     LOG(Info, "Starting Game Cooker...");
     LOG(Info, "Platform: {0}, Configuration: {2}, Options: {1}", ::ToString(data.Platform), (int32)data.Options, ::ToString(data.Configuration));
     LOG(Info, "Output Path: {0}", data.OriginalOutputPath);
@@ -472,7 +477,7 @@ bool GameCookerImpl::Build()
     CallEvent(GameCooker::EventType::BuildStarted);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildStarted(data);
-    Data.Tools->OnBuildStarted(data);
+    data.Tools->OnBuildStarted(data);
     data.InitProgress(Steps.Count());
 
     // Execute all steps in a sequence
@@ -511,10 +516,12 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    Data.Tools->OnBuildEnded(data, failed);
+    data.Tools->OnBuildEnded(data, failed);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildEnded(data, failed);
     CallEvent(failed ? GameCooker::EventType::BuildFailed : GameCooker::EventType::BuildDone);
+    Delete(Data);
+    Data = nullptr;
 
     return failed;
 }

@@ -56,7 +56,7 @@ public:
     /// <summary>
     /// Gets the current build data. Valid only during active build process.
     /// </summary>
-    static const CookingData& GetCurrentData();
+    API_PROPERTY() static CookingData* GetCurrentData();
 
     /// <summary>
     /// Determines whether game building is running.
