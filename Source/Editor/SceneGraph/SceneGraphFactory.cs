@@ -134,7 +134,8 @@ namespace FlaxEditor.SceneGraph
             try
             {
                 // Try to pick custom node type for that actor object
-                if (CustomNodesTypes.TryGetValue(actor.GetType(), out customType))
+                var type = actor.GetType();
+                if (CustomNodesTypes.TryGetValue(type, out customType))
                 {
                     // Use custom type
                     _sharedArgsContainer[0] = actor;
@@ -142,8 +143,21 @@ namespace FlaxEditor.SceneGraph
                 }
                 else
                 {
+                    // Check if the actor type inherits from one of the custom types but doesn't provide own node type
+                    foreach (var e in CustomNodesTypes)
+                    {
+                        if (e.Key.IsAssignableFrom(type))
+                        {
+                            // Use custom type
+                            _sharedArgsContainer[0] = actor;
+                            result = (ActorNode)Activator.CreateInstance(e.Value, _sharedArgsContainer);
+                            break;
+                        }
+                    }
+
                     // Use default type for actors
-                    result = new ActorNode(actor);
+                    if (result == null)
+                        result = new ActorNode(actor);
                 }
 
                 // Build children
