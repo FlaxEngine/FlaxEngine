@@ -25,7 +25,7 @@ void WindowsClipboard::SetText(const StringView& text)
 {
     const int32 size = (text.Length() + 1) * sizeof(Char);
     const HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, size);
-    Platform::MemoryCopy(GlobalLock(hMem), text.GetText(), size);
+    Platform::MemoryCopy(GlobalLock(hMem), String(text).GetText(), size);
     GlobalUnlock(hMem);
 
     OpenClipboard(nullptr);

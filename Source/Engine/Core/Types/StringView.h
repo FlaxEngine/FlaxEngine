@@ -63,9 +63,12 @@ public:
         const int32 lengthDiff = Length() - str.Length();
         if (lengthDiff != 0)
             return lengthDiff;
+        if (Length() == 0)
+            return 0;
+        // We know here that both this StringView and str are not empty, and therefore Get() below are valid.
         if (searchCase == StringSearchCase::CaseSensitive)
-            return StringUtils::Compare(this->GetText(), str.GetText(), Length());
-        return StringUtils::CompareIgnoreCase(this->GetText(), str.GetText(), Length());
+            return StringUtils::Compare(this->Get(), str.Get(), Length());
+        return StringUtils::CompareIgnoreCase(this->Get(), str.Get(), Length());
     }
 
 public:
@@ -95,7 +98,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the pointer to the string.
+    /// Gets the pointer to the string. Pointer can be null, and won't be null-terminated.
     /// </summary>
     FORCE_INLINE constexpr const T* operator*() const
     {
@@ -103,7 +106,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the pointer to the string.
+    /// Gets the pointer to the string. Pointer can be null, and won't be null-terminated.
     /// </summary>
     FORCE_INLINE constexpr const T* Get() const
     {
@@ -111,9 +114,9 @@ public:
     }
 
     /// <summary>
-    /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always valid (read-only).
+    /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always non-null, but is not null-terminated.
     /// </summary>
-    FORCE_INLINE const T* GetText() const
+    FORCE_INLINE const T* GetNonTerminatedText() const
     {
         return _data ? _data : (const T*)TEXT("");
     }
@@ -177,15 +180,17 @@ public:
     {
         if (prefix.IsEmpty() || Length() < prefix.Length())
             return false;
+        // We know that this StringView is not empty, and therefore Get() below is valid.
         if (searchCase == StringSearchCase::IgnoreCase)
-            return StringUtils::CompareIgnoreCase(this->GetText(), *prefix, prefix.Length()) == 0;
-        return StringUtils::Compare(this->GetText(), *prefix, prefix.Length()) == 0;
+            return StringUtils::CompareIgnoreCase(this->Get(), *prefix, prefix.Length()) == 0;
+        return StringUtils::Compare(this->Get(), *prefix, prefix.Length()) == 0;
     }
 
     bool EndsWith(const StringViewBase& suffix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
     {
         if (suffix.IsEmpty() || Length() < suffix.Length())
             return false;
+        // We know that this StringView is not empty, and therefore accessing data below is valid.
         if (searchCase == StringSearchCase::IgnoreCase)
             return StringUtils::CompareIgnoreCase(&(*this)[Length() - suffix.Length()], *suffix) == 0;
         return StringUtils::Compare(&(*this)[Length() - suffix.Length()], *suffix) == 0;
@@ -232,7 +237,7 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    /// <param name="str">The characters sequence.</param>
+    /// <param name="str">The characters sequence. If null, constructed StringView will be empty.</param>
     StringView(const Char* str)
     {
         _data = str;
@@ -242,7 +247,7 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
-    /// <param name="str">The characters sequence.</param>
+    /// <param name="str">The characters sequence. Can be null if length is zero.</param>
     /// <param name="length">The characters sequence length (excluding null-terminator character).</param>
     constexpr StringView(const Char* str, int32 length)
         : StringViewBase<Char>(str, length)
@@ -270,7 +275,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const StringView& other) const
     {
-        return StringUtils::Compare(this->GetText(), other.GetText()) == 0;
+        return this->Compare(other) == 0;
     }
 
     /// <summary>
@@ -280,7 +285,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const StringView& other) const
     {
-        return StringUtils::Compare(this->GetText(), other.GetText()) != 0;
+        return this->Compare(other) != 0;
     }
 
     /// <summary>
@@ -290,7 +295,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const Char* other) const
     {
-        return StringUtils::Compare(this->GetText(), other ? other : TEXT("")) == 0;
+        return this->Compare(StringView(other)) == 0;
     }
 
     /// <summary>
@@ -300,7 +305,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const Char* other) const
     {
-        return StringUtils::Compare(this->GetText(), other ? other : TEXT("")) != 0;
+        return this->Compare(StringView(other)) != 0;
     }
 
     /// <summary>
@@ -459,7 +464,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const StringAnsiView& other) const
     {
-        return StringUtils::Compare(this->GetText(), other.GetText()) == 0;
+        return this->Compare(other) == 0;
     }
 
     /// <summary>
@@ -469,7 +474,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const StringAnsiView& other) const
     {
-        return StringUtils::Compare(this->GetText(), other.GetText()) != 0;
+        return this->Compare(other) != 0;
     }
 
     /// <summary>
@@ -479,7 +484,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const char* other) const
     {
-        return StringUtils::Compare(this->GetText(), other ? other : "") == 0;
+        return this->Compare(StringAnsiView(other)) == 0;
     }
 
     /// <summary>
@@ -489,7 +494,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const char* other) const
     {
-        return StringUtils::Compare(this->GetText(), other ? other : "") != 0;
+        return this->Compare(StringAnsiView(other)) != 0;
     }
 
     /// <summary>

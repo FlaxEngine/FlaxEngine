@@ -166,7 +166,7 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "String")
                 return $"(StringView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
-                return $"((StringView){value}).GetText()";
+                return $"((StringView){value}).GetNonTerminatedText()"; // This is a bug, as we need a null-terminated strig here. Any idea how to fix it?
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")

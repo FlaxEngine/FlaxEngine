@@ -120,36 +120,36 @@ public:
 
 public:
 
-    // Compare two strings with case sensitive
+    // Compare two strings with case sensitive. Strings must not be null.
     static int32 Compare(const Char* str1, const Char* str2);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 Compare(const Char* str1, const Char* str2, int32 maxCount);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 CompareIgnoreCase(const Char* str1, const Char* str2);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 CompareIgnoreCase(const Char* str1, const Char* str2, int32 maxCount);
 
-    // Compare two strings with case sensitive
+    // Compare two strings with case sensitive. Strings must not be null.
     static int32 Compare(const char* str1, const char* str2);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 Compare(const char* str1, const char* str2, int32 maxCount);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 CompareIgnoreCase(const char* str1, const char* str2);
 
-    // Compare two strings without case sensitive
+    // Compare two strings without case sensitive. Strings must not be null.
     static int32 CompareIgnoreCase(const char* str1, const char* str2, int32 maxCount);
 
 public:
 
-    // Get string length
+    // Get string length. Returns 0 if str is null.
     static int32 Length(const Char* str);
 
-    // Get string length
+    // Get string length. Returns 0 if str is null.
     static int32 Length(const char* str);
 
     // Copy string

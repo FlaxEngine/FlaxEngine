@@ -435,7 +435,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     }
 
     // Show dialog
-    int result = MessageBoxW(parent ? static_cast<HWND>(parent->GetNativePtr()) : nullptr, text.GetText(), caption.GetText(), flags);
+    int result = MessageBoxW(parent ? static_cast<HWND>(parent->GetNativePtr()) : nullptr, String(text).GetText(), String(caption).GetText(), flags);
 
     // Translate result to dialog result
     DialogResult dialogResult;
@@ -948,10 +948,12 @@ int32 WindowsPlatform::StartProcess(const StringView& filename, const StringView
         LOG(Info, "Working directory: {0}", workingDir);
     }
 
+    String filenameString(filename);
+
     SHELLEXECUTEINFOW shExecInfo = { 0 };
     shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOW);
     shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-    shExecInfo.lpFile = filename.GetText();
+    shExecInfo.lpFile = filenameString.GetText();
     shExecInfo.lpParameters = args.HasChars() ? args.Get() : nullptr;
     shExecInfo.lpDirectory = workingDir.HasChars() ? workingDir.Get() : nullptr;
     shExecInfo.nShow = hiddenWindow ? SW_HIDE : SW_SHOW;
@@ -1109,7 +1111,7 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
 
     // Create the process
     PROCESS_INFORMATION procInfo;
-    if (!CreateProcessW(nullptr, const_cast<LPWSTR>(cmdLine.GetText()), nullptr, nullptr, TRUE, dwCreationFlags, (LPVOID)environmentStr, workingDir.HasChars() ? workingDir.Get() : nullptr, &startupInfoEx.StartupInfo, &procInfo))
+    if (!CreateProcessW(nullptr, const_cast<LPWSTR>(String(cmdLine).GetText()), nullptr, nullptr, TRUE, dwCreationFlags, (LPVOID)environmentStr, String(workingDir).GetText(), &startupInfoEx.StartupInfo, &procInfo))
     {
         LOG(Warning, "Cannot start process '{0}'. Error code: 0x{1:x}", cmdLine, static_cast<int64>(GetLastError()));
         goto ERROR_EXIT;

@@ -278,18 +278,18 @@ String Localization::GetPluralString(const String& id, int32 n, const String& fa
 {
     CHECK_RETURN(n >= 1, fallback);
     n--;
-    StringView result;
+    const String* result = nullptr;
     for (auto& e : Instance.LocalizedStringTables)
     {
         const auto table = e.Get();
         const auto messages = table ? table->Entries.TryGet(id) : nullptr;
         if (messages && messages->Count() > n)
         {
-            result = messages->At(n);
+            result = &messages->At(n);
             break;
         }
     }
-    if (result.IsEmpty())
-        result = fallback;
-    return String::Format(result.GetText(), n);
+    if (!result)
+        result = &fallback;
+    return String::Format(result->GetText(), n);
 }
