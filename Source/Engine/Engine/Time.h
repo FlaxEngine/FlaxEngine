@@ -78,7 +78,7 @@ public:
 
         virtual void OnBeforeRun(float targetFps, double currentTime);
         virtual void OnReset(float targetFps, double currentTime);
-        virtual bool OnTickBegin(float targetFps, float maxDeltaTime);
+        virtual bool OnTickBegin(float targetFps, float maxDeltaTime, bool forceTick = false);
         virtual void OnTickEnd();
 
     protected:
@@ -101,12 +101,13 @@ public:
     public:
 
         // [TickData]
-        bool OnTickBegin(float targetFps, float maxDeltaTime) override;
+        bool OnTickBegin(float targetFps, float maxDeltaTime, bool forceTick = false) override;
     };
 
 private:
 
     static bool _gamePaused;
+    static bool _forceDraw;
     static float _physicsMaxDeltaTime;
 
 public:
@@ -115,6 +116,11 @@ public:
     /// The time at which the game started (UTC local).
     /// </summary>
     API_FIELD(ReadOnly) static DateTime StartupTime;
+
+    /// <summary>
+    /// When true, draw and update calls are invoked at the same exact frames.
+    /// </summary>
+    API_FIELD() static bool IsDrawSyncedWithUpdate;
 
     /// <summary>
     /// The target amount of the game logic updates per second (script updates frequency).

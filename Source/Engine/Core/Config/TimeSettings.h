@@ -5,12 +5,36 @@
 #include "Engine/Core/Config/Settings.h"
 
 /// <summary>
+/// Contains available time update modes for update and draw calls.
+/// </summary>
+API_ENUM(Namespace="FlaxEditor.Content.Settings") enum class FLAXENGINE_API TimeUpdateMode
+{
+    /// <summary>
+    /// Update and draw run separately - i.e. can run at different FPS, might get called at the same frame but this is not guaranteed.
+    /// Not recommended, might cause visible stutter and other graphical glitches when update is running less often than draw.
+    /// </summary>
+    UpdateAndDrawSeparated,
+    
+    /// <summary>
+    /// Update and draw run together. Update is called every time draw is also going to be called.
+    /// </summary>
+    UpdateAndDrawPaired
+};
+
+/// <summary>
 /// Time and game simulation settings container.
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API TimeSettings : public SettingsBase
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(TimeSettings);
 public:
+
+    /// <summary>
+    /// The mode at which update and draw is called. Does not affect fixed update/physics fps.
+    /// When set to UpdateAndDrawPaired, only UpdateFPS and PhysicsFPS properties are in use, DrawFPS does not affect timing.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\", \"Update mode\")")
+    TimeUpdateMode UpdateMode = TimeUpdateMode::UpdateAndDrawPaired;
 
     /// <summary>
     /// The target amount of the game logic updates per second (script updates frequency).
@@ -27,7 +51,7 @@ public:
     /// <summary>
     /// The target amount of the frames rendered per second (actual game FPS).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(3), Limit(0, 1000), EditorDisplay(\"General\", \"Draw FPS\")")
+    API_FIELD(Attributes="EditorOrder(3), Limit(0, 1000), EditorDisplay(\"General\", \"Draw FPS\"), VisibleIf(\"IsDrawFPSUsed\")")
     float DrawFPS = 60.0f;
 
     /// <summary>
