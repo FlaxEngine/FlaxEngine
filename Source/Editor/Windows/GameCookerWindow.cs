@@ -446,12 +446,18 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private struct QueueItem
+        {
+            public string PresetName;
+            public BuildTarget Target;
+        }
+
         private PresetsColumn _presets;
         private TargetsColumn _targets;
         private int _selectedPresetIndex = -1;
         private int _selectedTargetIndex = -1;
         private CustomEditorPresenter _targetSettings;
-        private readonly Queue<BuildTarget> _buildingQueue = new Queue<BuildTarget>();
+        private readonly Queue<QueueItem> _buildingQueue = new Queue<QueueItem>();
         private string _preBuildAction;
         private string _postBuildAction;
         private BuildPreset[] _data;
@@ -487,16 +493,19 @@ namespace FlaxEditor.Windows
         {
             if (type == GameCooker.EventType.BuildStarted)
             {
+                Debug.Log("Cooking started: " + (GameCooker.CurrentData.Preset ?? "null"));
+                Debug.Log("Cooking started: " + (GameCooker.CurrentData.PresetTarget ?? "null"));
+
                 // Execute pre-build action
                 if (!string.IsNullOrEmpty(_preBuildAction))
-                    ExecueAction(_preBuildAction);
+                    ExecuteAction(_preBuildAction);
                 _preBuildAction = null;
             }
             else if (type == GameCooker.EventType.BuildDone)
             {
                 // Execute post-build action
                 if (!string.IsNullOrEmpty(_postBuildAction))
-                    ExecueAction(_postBuildAction);
+                    ExecuteAction(_postBuildAction);
                 _postBuildAction = null;
             }
             else if (type == GameCooker.EventType.BuildFailed)
@@ -506,7 +515,7 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void ExecueAction(string action)
+        private void ExecuteAction(string action)
         {
             string command = "echo off\ncd \"" + Globals.ProjectFolder.Replace('/', '\\') + "\"\necho on\n" + action;
             command = command.Replace("\n", "\r\n");
@@ -545,21 +554,30 @@ namespace FlaxEditor.Windows
             Editor.Log("Building all targets");
             foreach (var e in preset.Targets)
             {
-                _buildingQueue.Enqueue(e.DeepClone());
+                _buildingQueue.Enqueue(new QueueItem
+                {
+                    PresetName = preset.Name,
+                    Target = e.DeepClone(),
+                });
             }
         }
 
         /// <summary>
         /// Builds the target.
         /// </summary>
+        /// <param name="preset">The preset.</param>
         /// <param name="target">The target.</param>
-        public void Build(BuildTarget target)
+        public void Build(BuildPreset preset, BuildTarget target)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
             Editor.Log("Building target");
-            _buildingQueue.Enqueue(target.DeepClone());
+            _buildingQueue.Enqueue(new QueueItem
+            {
+                PresetName = preset.Name,
+                Target = target.DeepClone(),
+            });
         }
 
         private void BuildTarget()
@@ -569,7 +587,8 @@ namespace FlaxEditor.Windows
             if (_data[_selectedPresetIndex].Targets == null || _data[_selectedPresetIndex].Targets.Length <= _selectedTargetIndex)
                 return;
 
-            Build(_data[_selectedPresetIndex].Targets[_selectedTargetIndex]);
+            var preset = _data[_selectedPresetIndex];
+            Build(preset, preset.Targets[_selectedTargetIndex]);
         }
 
         private void BuildAllTargets()
@@ -825,12 +844,13 @@ namespace FlaxEditor.Windows
             {
                 if (_buildingQueue.Count > 0)
                 {
-                    var target = _buildingQueue.Dequeue();
+                    var item = _buildingQueue.Dequeue();
+                    var target = item.Target;
 
                     _preBuildAction = target.PreBuildAction;
                     _postBuildAction = target.PostBuildAction;
 
-                    GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines);
+                    GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines, item.PresetName, target.Name);
                 }
                 else if (_exitOnBuildEnd)
                 {

@@ -146,6 +146,16 @@ public:
     API_FIELD(ReadOnly) BuildOptions Options;
 
     /// <summary>
+    /// The name of build preset used for cooking (can be used by editor and game plugins).
+    /// </summary>
+    API_FIELD(ReadOnly) String Preset;
+
+    /// <summary>
+    /// The name of build preset target used for cooking (can be used by editor and game plugins).
+    /// </summary>
+    API_FIELD(ReadOnly) String PresetTarget;
+
+    /// <summary>
     /// The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).
     /// </summary>
     API_FIELD(ReadOnly) Array<String> CustomDefines;

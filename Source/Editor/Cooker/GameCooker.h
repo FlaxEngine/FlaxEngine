@@ -83,7 +83,9 @@ public:
     /// <param name="outputPath">The output path (output directory).</param>
     /// <param name="options">The build options.</param>
     /// <param name="customDefines">The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).</param>
-    API_FUNCTION() static void Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines);
+    /// <param name="preset">The name of build preset used for cooking (can be used by editor and game plugins).</param>
+    /// <param name="presetTarget">The name of build preset target used for cooking (can be used by editor and game plugins).</param>
+    API_FUNCTION() static void Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines, const StringView& preset = StringView::Empty, const StringView& presetTarget = StringView::Empty);
 
     /// <summary>
     /// Sends a cancel event to the game building service.

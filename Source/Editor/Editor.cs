@@ -1189,7 +1189,7 @@ namespace FlaxEditor
                     return true;
                 }
 
-                Windows.GameCookerWin.Build(target);
+                Windows.GameCookerWin.Build(preset, target);
             }
 
             Windows.GameCookerWin.ExitOnBuildQueueEnd();
