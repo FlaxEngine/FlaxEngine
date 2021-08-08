@@ -10,7 +10,7 @@
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API BoxVolume : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(BoxVolume);
+DECLARE_SCENE_OBJECT(BoxVolume);
 protected:
 
     Vector3 _size;
@@ -47,7 +47,7 @@ protected:
     }
 
 #if USE_EDITOR
-    virtual Color GetWiresColor() = 0;
+    virtual Color GetWiresColor();
 #endif
 
 public:
