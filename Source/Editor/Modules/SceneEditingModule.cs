@@ -216,7 +216,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void OnDirty(IEnumerable<SceneGraphNode> objects)
+        private void OnDirty(List<SceneGraphNode> objects)
         {
             var options = Editor.Options.Options;
             var isPlayMode = Editor.StateMachine.IsPlayMode;
@@ -236,7 +236,7 @@ namespace FlaxEditor.Modules
             {
                 foreach (var obj in objects)
                 {
-                    if (obj is ActorNode node && node.Actor.Scene && node.AffectsNavigationWithChildren)
+                    if (obj is ActorNode node && node.Actor && node.Actor.Scene && node.AffectsNavigationWithChildren)
                     {
                         var bounds = node.Actor.BoxWithChildren;
                         Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
