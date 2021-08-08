@@ -109,7 +109,7 @@ namespace FlaxEditor.Windows.Assets
 
             contextMenu.AddSeparator();
 
-            b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
+            b = contextMenu.AddButton("Create Prefab", () => Editor.Prefabs.CreatePrefab(Selection));
             b.Enabled = isSingleActorSelected &&
                         (Selection[0] as ActorNode).CanCreatePrefab &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;

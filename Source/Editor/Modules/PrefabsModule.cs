@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.Content;
@@ -49,8 +50,20 @@ namespace FlaxEditor.Modules
         /// </remarks>
         public void CreatePrefab()
         {
-            // Check selection
-            var selection = Editor.SceneEditing.Selection;
+            CreatePrefab(Editor.SceneEditing.Selection);
+        }
+
+        /// <summary>
+        /// Starts the creating prefab for the selected actor by showing the new item creation dialog in <see cref="ContentWindow"/>.
+        /// </summary>
+        /// <remarks>
+        /// To create prefab manually (from code) use <see cref="PrefabManager.CreatePrefab"/> method.
+        /// </remarks>
+        /// <param name="selection">The scene selection to use.</param>
+        public void CreatePrefab(List<SceneGraphNode> selection)
+        {
+            if (selection == null)
+                selection = Editor.SceneEditing.Selection;
             if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.CanCreatePrefab)
             {
                 CreatePrefab(actorNode.Actor);
