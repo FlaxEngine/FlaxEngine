@@ -493,9 +493,6 @@ namespace FlaxEditor.Windows
         {
             if (type == GameCooker.EventType.BuildStarted)
             {
-                Debug.Log("Cooking started: " + (GameCooker.CurrentData.Preset ?? "null"));
-                Debug.Log("Cooking started: " + (GameCooker.CurrentData.PresetTarget ?? "null"));
-
                 // Execute pre-build action
                 if (!string.IsNullOrEmpty(_preBuildAction))
                     ExecuteAction(_preBuildAction);
