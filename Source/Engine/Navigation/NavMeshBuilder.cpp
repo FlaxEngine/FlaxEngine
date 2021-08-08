@@ -258,6 +258,11 @@ struct NavigationSceneRasterization
 
             collisionData->ExtractGeometry(vb, ib);
 
+            Matrix meshColliderToWorld;
+            meshCollider->GetLocalToWorldMatrix(meshColliderToWorld);
+            for(auto& v : vb)
+                Vector3::Transform(v, meshColliderToWorld, v);
+
             e.RasterizeTriangles();
         }
         else if (const auto* splineCollider = dynamic_cast<SplineCollider*>(actor))
