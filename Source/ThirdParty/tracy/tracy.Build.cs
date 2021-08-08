@@ -34,7 +34,10 @@ public class tracy : ThirdPartyModule
 
         options.PublicDefinitions.Add("TRACY_ENABLE");
         if (options.Platform.Target == TargetPlatform.Windows)
+        {
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
+            options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
+        }
     }
 
     /// <inheritdoc />

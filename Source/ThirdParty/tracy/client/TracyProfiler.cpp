@@ -228,6 +228,7 @@ static int64_t SetupHwTimer()
     uint32_t regs[4];
     CpuId( regs, 1 );
     if( !( regs[3] & ( 1 << 4 ) ) ) InitFailure( "CPU doesn't support RDTSC instruction." );
+#if !defined TRACY_NO_INVARIANT_CHECK
     CpuId( regs, 0x80000007 );
     if( !( regs[3] & ( 1 << 8 ) ) )
     {
@@ -241,6 +242,7 @@ static int64_t SetupHwTimer()
 #endif
         }
     }
+#endif
 #endif
 
     return Profiler::GetTime();
