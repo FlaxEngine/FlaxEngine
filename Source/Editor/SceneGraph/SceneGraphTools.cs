@@ -125,5 +125,33 @@ namespace FlaxEditor.SceneGraph
                 FillTree(target, result);
             }
         }
+
+        /// <summary>
+        /// Builds the list made of all nodes in the input scene tree root and child tree. The result collection contains all nodes in the tree.
+        /// </summary>
+        /// <param name="node">The node.</param>
+        /// <returns>The result.</returns>
+        public static List<SceneGraphNode> BuildAllNodes<T>(this T node)
+        where T : SceneGraphNode
+        {
+            var list = new List<SceneGraphNode>();
+            BuildAllNodes(node, list);
+            return list;
+        }
+
+        /// <summary>
+        /// Builds the list made of all nodes in the input scene tree root and child tree. The result collection contains all nodes in the tree.
+        /// </summary>
+        /// <param name="node">The node.</param>
+        /// <param name="result">The result.</param>
+        public static void BuildAllNodes<T>(this T node, List<SceneGraphNode> result)
+        where T : SceneGraphNode
+        {
+            if (node == null || result == null)
+                throw new ArgumentNullException();
+            result.Clear();
+            result.Add(node);
+            FillTree(node, result);
+        }
     }
 }

@@ -135,6 +135,7 @@ namespace FlaxEditor.Actions
                 node.Delete();
             }
             _nodeParents.Clear();
+            FlaxEngine.Scripting.FlushRemovedObjects();
         }
 
         /// <summary>
