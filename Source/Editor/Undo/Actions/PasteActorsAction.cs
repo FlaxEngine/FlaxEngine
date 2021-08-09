@@ -141,15 +141,20 @@ namespace FlaxEditor.Actions
             for (int i = 0; i < nodeParents.Count; i++)
             {
                 var node = nodeParents[i];
-                var parent = node.Actor?.Parent;
+                var actor = node.Actor;
+                var parent = actor?.Parent;
                 if (parent != null)
                 {
                     // Fix name collisions
-                    string name = node.Name;
-                    Actor[] children = parent.Children;
-                    if (children.Any(x => x.Name == name))
+                    var name = actor.Name;
+                    for (int j = 0; j < parent.ChildrenCount; j++)
                     {
-                        node.Actor.Name = StringUtils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
+                        var child = parent.Children[j];
+                        if (child != actor && child.Name == actor.Name)
+                        {
+                            var children = parent.Children;
+                            actor.Name = StringUtils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
+                        }
                     }
                 }
 
