@@ -1111,7 +1111,7 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
 
     // Create the process
     PROCESS_INFORMATION procInfo;
-    if (!CreateProcessW(nullptr, const_cast<LPWSTR>(String(cmdLine).GetText()), nullptr, nullptr, TRUE, dwCreationFlags, (LPVOID)environmentStr, String(workingDir).GetText(), &startupInfoEx.StartupInfo, &procInfo))
+    if (!CreateProcessW(nullptr, const_cast<LPWSTR>(String(cmdLine).GetText()), nullptr, nullptr, TRUE, dwCreationFlags, (LPVOID)environmentStr, workingDir.HasChars() ? workingDir.Get() : nullptr, &startupInfoEx.StartupInfo, &procInfo))
     {
         LOG(Warning, "Cannot start process '{0}'. Error code: 0x{1:x}", cmdLine, static_cast<int64>(GetLastError()));
         goto ERROR_EXIT;
