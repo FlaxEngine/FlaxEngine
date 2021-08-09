@@ -213,6 +213,21 @@ public:
         /// Collider that represents the wheel shape and it's placement. Has to be attached as a child to the vehicle. Triangle mesh collider is not supported (use convex mesh or basic shapes).
         /// </summary>
         API_FIELD() ScriptingObjectReference<Collider> Collider;
+
+        /// <summary>
+        /// Spring damper rate of suspension unit.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0)") float SuspensionDampingRate = 1.0f;
+
+        /// <summary>
+        /// The maximum offset for the suspension that wheel can go above resting location.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0)") float SuspensionMaxRaise = 10.0f;
+
+        /// <summary>
+        /// The maximum offset for the suspension that wheel can go below resting location.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0)") float SuspensionMaxDrop = 10.0f;
     };
 
     /// <summary>
@@ -246,6 +261,21 @@ public:
         /// The friction experienced by the tire for the combination of tire type and surface type after accounting.
         /// </summary>
         API_FIELD() float TireFriction = 0.0f;
+
+        /// <summary>
+        /// The steer angle (in degrees) of the wheel about the "up" vector accounting for input steer and toe and, if applicable, Ackermann steer correction.
+        /// </summary>
+        API_FIELD() float SteerAngle = 0.0f;
+
+        /// <summary>
+        /// The rotation angle (in degrees) about the rolling axis for the specified wheel.
+        /// </summary>
+        API_FIELD() float RotationAngle = 0.0f;
+
+        /// <summary>
+        /// The compression of the suspension spring. Offsets the wheel location.
+        /// </summary>
+        API_FIELD() float SuspensionOffset = 0.0f;
     };
 
 private:

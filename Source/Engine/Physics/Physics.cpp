@@ -845,10 +845,12 @@ void Physics::CollectResults()
                 state.TireContactPoint = P2C(perWheel.tireContactPoint);
                 state.TireContactNormal = P2C(perWheel.tireContactNormal);
                 state.TireFriction = perWheel.tireFriction;
+                state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
+                state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
+                const float suspensionOffsetDelta = perWheel.suspJounce - state.SuspensionOffset;
+                state.SuspensionOffset = perWheel.suspJounce;
 
-                const float wheelRotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
-                const float wheelSteerAngle = RadiansToDegrees * perWheel.steerAngle;
-                wheelData.Collider->SetLocalOrientation(Quaternion::Euler(0, wheelSteerAngle, wheelRotationAngle) * wheelData.LocalOrientation);
+                wheelData.Collider->SetLocalOrientation(Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation);
             }
         }
     }

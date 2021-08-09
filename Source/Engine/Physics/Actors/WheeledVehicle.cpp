@@ -303,12 +303,11 @@ void WheeledVehicle::Setup()
 
         PxVehicleSuspensionData suspensionData;
         const float suspensionFrequency = 7.0f;
-        const float suspensionDampingRatio = 1.0f;
-        suspensionData.mMaxCompression = 10.0f;
-        suspensionData.mMaxDroop = 10.0f;
+        suspensionData.mMaxCompression = wheel.SuspensionMaxRaise;
+        suspensionData.mMaxDroop = wheel.SuspensionMaxDrop;
         suspensionData.mSprungMass = sprungMasses[i];
         suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
-        suspensionData.mSpringDamperRate = suspensionDampingRatio * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
+        suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
 
         PxVehicleTireData tire;
         tire.mType = 0;
