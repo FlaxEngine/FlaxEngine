@@ -847,10 +847,24 @@ void Physics::CollectResults()
                 state.TireFriction = perWheel.tireFriction;
                 state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
                 state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
-                const float suspensionOffsetDelta = perWheel.suspJounce - state.SuspensionOffset;
                 state.SuspensionOffset = perWheel.suspJounce;
 
+                // Rotate wheel
                 wheelData.Collider->SetLocalOrientation(Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation);
+
+                // Apply suspension offset (cannot move collider because it breaks driving so move it's children but preserve the initial pose)
+                for (auto child : wheelData.Collider->Children)
+                {
+                    int32 poseIndex = 0;
+                    for (; poseIndex < wheelData.ChildrenPoses.Count(); poseIndex++)
+                    {
+                        if (wheelData.ChildrenPoses[poseIndex].Child == child)
+                            break;
+                    }
+                    if (poseIndex == wheelData.ChildrenPoses.Count())
+                        wheelData.ChildrenPoses.Add({ child, child->GetLocalPosition() });
+                    child->SetPosition(wheelData.Collider->GetTransform().LocalToWorld(wheelData.ChildrenPoses[poseIndex].Pose) + Vector3(0, perWheel.suspJounce, 0));
+                }
             }
         }
     }
