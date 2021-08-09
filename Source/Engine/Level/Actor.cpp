@@ -1611,21 +1611,22 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
         // Create object
         auto obj = SceneObjectsFactory::Spawn(document, modifier);
+        sceneObjects->At(i) = obj;
         if (obj == nullptr)
         {
             LOG(Warning, "Cannot create object.");
-            return true;
+            continue;
         }
         obj->RegisterObject();
 
         // Add to results
-        sceneObjects->At(i) = obj;
         Actor* actor = dynamic_cast<Actor*>(obj);
         if (actor)
         {
             output.Add(actor);
         }
     }
+    // TODO: optimize this to call json parsing only once per-object instead of twice (spawn + load)
     stream.SetPosition(startPos);
     for (int32 i = 0; i < objectsCount; i++)
     {
@@ -1639,7 +1640,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         int32 orderInParent;
         stream.ReadInt32(&orderInParent);
 
-        // Load JSON 
+        // Load JSON
         rapidjson_flax::Document document;
         {
             PROFILE_CPU_NAMED("Json.Parse");
@@ -1653,7 +1654,10 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
         // Deserialize object
         auto obj = sceneObjects->At(i);
-        SceneObjectsFactory::Deserialize(obj, document, modifier);
+        if (obj)
+            SceneObjectsFactory::Deserialize(obj, document, modifier);
+        else
+            SceneObjectsFactory::HandleObjectDeserializationError(document);
     }
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
