@@ -998,25 +998,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
             auto& objData = data[i];
             auto obj = sceneObjects->At(i);
             if (obj)
-            {
                 SceneObjectsFactory::Deserialize(obj, objData, modifier.Value);
-            }
             else
-            {
                 SceneObjectsFactory::HandleObjectDeserializationError(objData);
-
-                // Try to log some useful info about missing object (eg. it's parent name for faster fixing)
-                const auto parentIdMember = objData.FindMember("ParentID");
-                if (parentIdMember != objData.MemberEnd() && parentIdMember->value.IsString())
-                {
-                    Guid parentId = JsonTools::GetGuid(parentIdMember->value);
-                    Actor* parent = Scripting::FindObject<Actor>(parentId);
-                    if (parent)
-                    {
-                        LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
-                    }
-                }
-            }
         }
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
     }

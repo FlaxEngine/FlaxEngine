@@ -344,11 +344,23 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneO
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
 {
+    // Print invalid object data contents
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writer(buffer);
     value.Accept(writer.GetWriter());
-
     LOG(Warning, "Failed to deserialize scene object from data: {0}", String(buffer.GetString()));
+
+    // Try to log some useful info about missing object (eg. it's parent name for faster fixing)
+    const auto parentIdMember = value.FindMember("ParentID");
+    if (parentIdMember != value.MemberEnd() && parentIdMember->value.IsString())
+    {
+        const Guid parentId = JsonTools::GetGuid(parentIdMember->value);
+        Actor* parent = Scripting::FindObject<Actor>(parentId);
+        if (parent)
+        {
+            LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
+        }
+    }
 }
 
 Actor* SceneObjectsFactory::CreateActor(int32 typeId, const Guid& id)
