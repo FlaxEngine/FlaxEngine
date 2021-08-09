@@ -285,6 +285,12 @@ private:
         Collider* Collider;
         Quaternion LocalOrientation;
         WheelState State;
+        struct ChildPose
+        {
+            Actor* Child;
+            Vector3 Pose;
+        };
+        Array<ChildPose, InlinedAllocation<4>> ChildrenPoses;
     };
 
     void* _drive = nullptr;

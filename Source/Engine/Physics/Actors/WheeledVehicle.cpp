@@ -300,6 +300,7 @@ void WheeledVehicle::Setup()
         auto& data = _wheelsData[i];
         data.Collider = wheel.Collider;
         data.LocalOrientation = wheel.Collider->GetLocalOrientation();
+        data.ChildrenPoses.Resize(0);
 
         PxVehicleSuspensionData suspensionData;
         const float suspensionFrequency = 7.0f;
@@ -507,11 +508,25 @@ void WheeledVehicle::Setup()
 void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 {
     // Wheels shapes
-    for (auto& wheel : _wheels)
+    for (auto& data : _wheelsData)
     {
+        int32 wheelIndex = 0;
+        for (; wheelIndex < _wheels.Count(); wheelIndex++)
+        {
+            if (_wheels[wheelIndex].Collider == data.Collider)
+                break;
+        }
+        if (wheelIndex == _wheels.Count())
+            break;
+        auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_CYLINDER(wheel.Collider->GetPosition(), wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
+            const Vector3 basePos = wheel.Collider->GetPosition();
+            const Vector3 currentPos = basePos + Vector3(0, data.State.SuspensionOffset, 0);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, true);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, true);
+            DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, true);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
         }
     }
 }
@@ -519,11 +534,25 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 void WheeledVehicle::OnDebugDrawSelected()
 {
     // Wheels shapes
-    for (auto& wheel : _wheels)
+    for (auto& data : _wheelsData)
     {
+        int32 wheelIndex = 0;
+        for (; wheelIndex < _wheels.Count(); wheelIndex++)
+        {
+            if (_wheels[wheelIndex].Collider == data.Collider)
+                break;
+        }
+        if (wheelIndex == _wheels.Count())
+            break;
+        auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_CYLINDER(wheel.Collider->GetPosition(), wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
+            const Vector3 basePos = wheel.Collider->GetPosition();
+            const Vector3 currentPos = basePos + Vector3(0, data.State.SuspensionOffset, 0);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, false);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, false);
+            DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, false);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
         }
     }
 
