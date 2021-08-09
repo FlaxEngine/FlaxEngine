@@ -32,14 +32,14 @@ namespace FlaxEditor.Content.GUI
     /// </summary>
     public enum SortType
     {
-        /// <summary> 
+        /// <summary>
         /// The classic alphabetic sort method (A-Z).
         /// </summary>
         AlphabeticOrder,
-        
-        /// <summary>                    
+
+        /// <summary>
         /// The reverse alphabetic sort method (Z-A).
-        /// </summary>                   
+        /// </summary>
         AlphabeticReverse
     }
 
@@ -272,18 +272,14 @@ namespace FlaxEditor.Content.GUI
                                    if (sortType == SortType.AlphabeticReverse)
                                    {
                                        if (control.CompareTo(control1) > 0)
-                                       {
-                                           return -1; 
-                                       }
+                                           return -1;
                                        if (control.CompareTo(control1) == 0)
-                                       {
-                                           return 0;    
-                                       }
+                                           return 0;
                                        return 1;
                                    }
                                    return control.CompareTo(control1);
                                }));
-            
+
             // Unload and perform UI layout
             IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
