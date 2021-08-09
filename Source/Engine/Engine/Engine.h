@@ -156,8 +156,7 @@ public:
     /// <summary>
     /// Checks whenever the game viewport is focused by the user (eg. can receive input).
     /// </summary>
-    /// <returns>True if game viewport is focused, otherwise false.</returns>
-    static bool HasGameViewportFocus();
+    API_PROPERTY() static bool HasGameViewportFocus();
 
 private:
 
