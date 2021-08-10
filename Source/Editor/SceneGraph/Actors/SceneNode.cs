@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System.Net;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph.GUI;
 using FlaxEngine;
 
@@ -17,9 +19,6 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <summary>
         /// Gets or sets a value indicating whether this scene is edited.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if this scene is edited; otherwise, <c>false</c>.
-        /// </value>
         public bool IsEdited
         {
             get => _isEdited;
@@ -28,7 +27,6 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (_isEdited != value)
                 {
                     _isEdited = value;
-
                     _treeNode.UpdateText();
                 }
             }
@@ -37,9 +35,6 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <summary>
         /// Gets the scene.
         /// </summary>
-        /// <value>
-        /// The scene.
-        /// </value>
         public Scene Scene => _actor as Scene;
 
         /// <summary>
@@ -68,5 +63,25 @@ namespace FlaxEditor.SceneGraph.Actors
 
         /// <inheritdoc />
         public override SceneNode ParentScene => this;
+
+        /// <inheritdoc />
+        public override void OnContextMenu(ContextMenu contextMenu)
+        {
+            contextMenu.AddSeparator();
+            contextMenu.AddButton("Save scene", OnSave).LinkTooltip("Saves this scene.").Enabled = IsEdited && !Editor.IsPlayMode;
+            contextMenu.AddButton("Unload scene", OnUnload).LinkTooltip("Unloads this scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
+
+            base.OnContextMenu(contextMenu);
+        }
+
+        private void OnSave()
+        {
+            Editor.Instance.Scene.SaveScene(this);
+        }
+
+        private void OnUnload()
+        {
+            Editor.Instance.Scene.CloseScene(Scene);
+        }
     }
 }
