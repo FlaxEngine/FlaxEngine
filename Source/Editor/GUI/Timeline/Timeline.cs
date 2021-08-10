@@ -288,7 +288,7 @@ namespace FlaxEditor.GUI.Timeline
         private TimeIntervalsHeader _timeIntervalsHeader;
         private ContainerControl _backgroundScroll;
         private Background _background;
-        private Panel _backgroundArea;
+        private BackgroundArea _backgroundArea;
         private TimelineEdge _leftEdge;
         private TimelineEdge _rightEdge;
         private Button _addTrackButton;
@@ -305,6 +305,7 @@ namespace FlaxEditor.GUI.Timeline
         private PositionHandle _positionHandle;
         private bool _isRightMouseButtonDown;
         private Vector2 _rightMouseButtonDownPos;
+        private Vector2 _rightMouseButtonMovePos;
         private float _zoom = 1.0f;
         private bool _isMovingPositionHandle;
         private bool _canPlayPauseStop = true;
@@ -912,7 +913,7 @@ namespace FlaxEditor.GUI.Timeline
                 Offsets = new Margin(0, 0, 0, HeaderTopAreaHeight),
                 Parent = _splitter.Panel2
             };
-            _backgroundArea = new Panel(ScrollBars.Both)
+            _backgroundArea = new BackgroundArea(this)
             {
                 AutoFocus = false,
                 ClipChildren = false,
@@ -1954,6 +1955,38 @@ namespace FlaxEditor.GUI.Timeline
             }
         }
 
+        internal void ShowContextMenu(Vector2 location)
+        {
+            if (!ContainsFocus)
+                Focus();
+
+            var controlUnderMouse = GetChildAtRecursive(location);
+            var mediaUnderMouse = controlUnderMouse;
+            while (mediaUnderMouse != null && !(mediaUnderMouse is Media))
+            {
+                mediaUnderMouse = mediaUnderMouse.Parent;
+            }
+
+            var menu = new ContextMenu.ContextMenu();
+            if (mediaUnderMouse is Media media)
+            {
+                media.OnTimelineShowContextMenu(menu, controlUnderMouse);
+                if (media.PropertiesEditObject != null)
+                {
+                    menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, ref location, media.Track));
+                }
+            }
+            if (PropertiesEditObject != null)
+            {
+                menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, ref location, this));
+            }
+            menu.AddSeparator();
+            menu.AddButton("Reset zoom", () => Zoom = 1.0f);
+            menu.AddButton("Show whole timeline", ShowWholeTimeline);
+            OnShowContextMenu(menu);
+            menu.Show(this, location);
+        }
+
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
@@ -1986,8 +2019,8 @@ namespace FlaxEditor.GUI.Timeline
             {
                 _isRightMouseButtonDown = true;
                 _rightMouseButtonDownPos = location;
+                _rightMouseButtonMovePos = location;
                 Focus();
-
                 return true;
             }
 
@@ -2006,38 +2039,8 @@ namespace FlaxEditor.GUI.Timeline
             if (button == MouseButton.Right && _isRightMouseButtonDown)
             {
                 _isRightMouseButtonDown = false;
-
                 if (Vector2.Distance(ref location, ref _rightMouseButtonDownPos) < 4.0f)
-                {
-                    if (!ContainsFocus)
-                        Focus();
-
-                    var controlUnderMouse = GetChildAtRecursive(location);
-                    var mediaUnderMouse = controlUnderMouse;
-                    while (mediaUnderMouse != null && !(mediaUnderMouse is Media))
-                    {
-                        mediaUnderMouse = mediaUnderMouse.Parent;
-                    }
-
-                    var menu = new ContextMenu.ContextMenu();
-                    if (mediaUnderMouse is Media media)
-                    {
-                        media.OnTimelineShowContextMenu(menu, controlUnderMouse);
-                        if (media.PropertiesEditObject != null)
-                        {
-                            menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, ref location, media.Track));
-                        }
-                    }
-                    if (PropertiesEditObject != null)
-                    {
-                        menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, ref location, this));
-                    }
-                    menu.AddSeparator();
-                    menu.AddButton("Reset zoom", () => Zoom = 1.0f);
-                    menu.AddButton("Show whole timeline", ShowWholeTimeline);
-                    OnShowContextMenu(menu);
-                    menu.Show(this, location);
-                }
+                    ShowContextMenu(location);
             }
 
             return base.OnMouseUp(location, button);
