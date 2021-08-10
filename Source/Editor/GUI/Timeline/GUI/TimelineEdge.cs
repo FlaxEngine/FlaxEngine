@@ -37,7 +37,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
         public override void Draw()
         {
             var style = Style.Current;
-            var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y;
+            var timeAxisOverlap = Timeline.HeaderTopAreaHeight * 0.5f;
+            var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y - timeAxisOverlap;
 
             var moveColor = style.ProgressNormal;
             var thickness = 2.0f;

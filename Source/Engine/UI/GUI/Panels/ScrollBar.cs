@@ -140,6 +140,7 @@ namespace FlaxEngine.GUI
                 {
                     _targetValue = value;
                     _value = value;
+                    SetUpdate(ref _update, null);
                     OnValueChanged();
                 }
             }
