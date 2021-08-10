@@ -74,23 +74,21 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             // Setup time axis ticks
-            int minDistanceBetweenTicks = 4000;
-            int maxDistanceBetweenTicks = 6000;
+            var minDistanceBetweenTicks = 50.0f;
+            var maxDistanceBetweenTicks = 100.0f;
             var zoom = Timeline.UnitsPerSecond * _timeline.Zoom;
             var left = Vector2.Min(leftSideMin, rightSideMax).X;
             var right = Vector2.Max(leftSideMin, rightSideMax).X;
-            var pixelRange = (right - left) * zoom;
             var leftFrame = Mathf.Floor((left - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var rightFrame = Mathf.Ceil((right - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var min = leftFrame;
             var max = rightFrame;
-            var range = max - min;
             int smallestTick = 0;
             int biggestTick = _tickSteps.Length - 1;
             for (int i = _tickSteps.Length - 1; i >= 0; i--)
             {
                 // Calculate how far apart these modulo tick steps are spaced
-                float tickSpacing = _tickSteps[i] * pixelRange / range;
+                float tickSpacing = _tickSteps[i] * _timeline.Zoom;
 
                 // Calculate the strength of the tick markers based on the spacing
                 _tickStrengths[i] = Mathf.Saturate((tickSpacing - minDistanceBetweenTicks) / (maxDistanceBetweenTicks - minDistanceBetweenTicks));
@@ -117,14 +115,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
 
                 // Draw all ticks
                 int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 1);
-                int startTick = Mathf.FloorToInt(min / _tickSteps[l]);
-                int endTick = Mathf.CeilToInt(max / _tickSteps[l]);
+                var lStep = _tickSteps[l];
+                var lNextStep = _tickSteps[l + 1];
+                int startTick = Mathf.FloorToInt(min / lStep);
+                int endTick = Mathf.CeilToInt(max / lStep);
                 Color lineColor = style.ForegroundDisabled.RGBMultiplied(0.7f).AlphaMultiplied(strength);
                 for (int i = startTick; i <= endTick; i++)
                 {
-                    if (l < biggestTick && (i % Mathf.RoundToInt(_tickSteps[l + 1] / _tickSteps[l]) == 0))
+                    if (l < biggestTick && (i % Mathf.RoundToInt(lNextStep / lStep) == 0))
                         continue;
-                    var tick = i * _tickSteps[l];
+                    var tick = i * lStep;
                     var time = tick / _timeline.FramesPerSecond;
                     var x = time * zoom + Timeline.StartOffset;
 
@@ -163,15 +163,17 @@ namespace FlaxEditor.GUI.Timeline.GUI
 
                 // Draw all ticks
                 int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 1);
-                int startTick = Mathf.FloorToInt(min / _tickSteps[l]);
-                int endTick = Mathf.CeilToInt(max / _tickSteps[l]);
+                var lStep = _tickSteps[l];
+                var lNextStep = _tickSteps[l + 1];
+                int startTick = Mathf.FloorToInt(min / lStep);
+                int endTick = Mathf.CeilToInt(max / lStep);
                 Color lineColor = style.Foreground.RGBMultiplied(0.8f).AlphaMultiplied(strength);
                 Color labelColor = style.ForegroundDisabled.AlphaMultiplied(strength);
                 for (int i = startTick; i <= endTick; i++)
                 {
-                    if (l < biggestTick && (i % Mathf.RoundToInt(_tickSteps[l + 1] / _tickSteps[l]) == 0))
+                    if (l < biggestTick && (i % Mathf.RoundToInt(lNextStep / lStep) == 0))
                         continue;
-                    var tick = i * _tickSteps[l];
+                    var tick = i * lStep;
                     var time = tick / _timeline.FramesPerSecond;
                     var x = time * zoom + Timeline.StartOffset;
 
@@ -195,17 +197,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     default: throw new ArgumentOutOfRangeException();
                     }
                     var labelRect = new Rectangle(x + 2, -verticalLinesHeaderExtend + timeAxisHeaderOffset, 50, verticalLinesHeaderExtend);
-                    Render2D.DrawText(
-                        style.FontSmall,
-                        labelText,
-                        labelRect,
-                        labelColor,
-                        TextAlignment.Near,
-                        TextAlignment.Center,
-                        TextWrapping.NoWrap,
-                        1.0f,
-                        0.8f
-                    );
+                    Render2D.DrawText(style.FontSmall, labelText, labelRect, labelColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.8f);
                 }
             }
         }
