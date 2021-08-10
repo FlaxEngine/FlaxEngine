@@ -27,7 +27,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
         {
             var style = Style.Current;
             var icon = Editor.Instance.Icons.VisjectArrowClosed32;
-            var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y;
+            var timeAxisOverlap = Timeline.HeaderTopAreaHeight * 0.5f;
+            var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y - timeAxisOverlap;
 
             Matrix3x3.RotationZ(Mathf.PiOverTwo, out var m1);
             var m2 = Matrix3x3.Translation2D(0, timeAxisHeaderOffset);
@@ -36,7 +37,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             Render2D.DrawSprite(icon, new Rectangle(new Vector2(4, -Width), Size), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground);
             Render2D.PopTransform();
 
-            Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));
+            Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));
 
             base.Draw();
         }

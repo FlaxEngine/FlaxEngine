@@ -959,12 +959,12 @@ namespace FlaxEditor.GUI.Timeline
         private void UpdatePositionHandle()
         {
             var handleWidth = 12.0f;
-            _positionHandle.Bounds = new Rectangle(
-                                                   StartOffset * 2.0f - handleWidth * 0.5f + _currentFrame / _framesPerSecond * UnitsPerSecond * Zoom,
-                                                   HeaderTopAreaHeight * -0.5f,
-                                                   handleWidth,
-                                                   HeaderTopAreaHeight * 0.5f
-                                                  );
+            var bounds = new Rectangle();
+            bounds.Location.X = StartOffset * 2.0f - handleWidth * 0.5f + _currentFrame / _framesPerSecond * UnitsPerSecond * Zoom;
+            bounds.Location.Y = 0;
+            bounds.Size.X = handleWidth;
+            bounds.Size.Y = HeaderTopAreaHeight * 0.5f;
+            _positionHandle.Bounds = bounds;
         }
 
         private void OnFpsPopupShowing(ComboBox comboBox)
@@ -1936,8 +1936,8 @@ namespace FlaxEditor.GUI.Timeline
                 _background.Bounds = new Rectangle(StartOffset, 0, Duration * UnitsPerSecond * Zoom, height);
 
                 var edgeWidth = 6.0f;
-                _leftEdge.Bounds = new Rectangle(_background.Left - edgeWidth * 0.5f + StartOffset, HeaderTopAreaHeight * -0.5f, edgeWidth, height + HeaderTopAreaHeight * 0.5f);
-                _rightEdge.Bounds = new Rectangle(_background.Right - edgeWidth * 0.5f + StartOffset, HeaderTopAreaHeight * -0.5f, edgeWidth, height + HeaderTopAreaHeight * 0.5f);
+                _leftEdge.Bounds = new Rectangle(_background.Left - edgeWidth * 0.5f + StartOffset, 0, edgeWidth, height);
+                _rightEdge.Bounds = new Rectangle(_background.Right - edgeWidth * 0.5f + StartOffset, 0, edgeWidth, height);
 
                 _backgroundScroll.Bounds = new Rectangle(0, 0, _background.Width + 5 * StartOffset, height);
             }
