@@ -96,14 +96,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Update tooltip
                 if (_value is SceneObject sceneObject)
                 {
-                    var str = sceneObject is Actor actor ? actor.Name : type.Name;
-                    var o = sceneObject.Parent;
-                    while (o)
-                    {
-                        str = o.Name + " -> " + str;
-                        o = o.Parent;
-                    }
-                    TooltipText = str;
+                    TooltipText = Utilities.Utils.GetTooltip(sceneObject);
                 }
                 else
                 {

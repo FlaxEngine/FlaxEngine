@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -197,8 +198,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 AddMemberTag tag;
                 tag.Member = m;
                 tag.Archetype = EventTrack.GetArchetype();
-
-                menu.AddButton(sb.ToString(), OnAddMemberTrack).Tag = tag;
+                var tooltip = Surface.SurfaceUtils.GetVisualScriptMemberInfoDescription(new ScriptMemberInfo(m));
+                menu.AddButton(sb.ToString(), OnAddMemberTrack).LinkTooltip(tooltip).Tag = tag;
                 count++;
             }
 
@@ -295,7 +296,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 AddMemberTag tag;
                 tag.Member = m;
                 tag.Archetype = archetype;
-                menu.AddButton(name + " " + m.Name, OnAddMemberTrack).Tag = tag;
+                var tooltip = Surface.SurfaceUtils.GetVisualScriptMemberInfoDescription(new ScriptMemberInfo(m));
+                menu.AddButton(name + " " + m.Name, OnAddMemberTrack).LinkTooltip(tooltip).Tag = tag;
                 count++;
             }
 

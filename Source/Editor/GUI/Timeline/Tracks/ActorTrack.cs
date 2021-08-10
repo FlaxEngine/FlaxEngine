@@ -103,7 +103,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.Actor && IsActorValid(actorNode.Actor))
                 {
-                    menu.AddButton("Select " + actorNode.Actor, OnClickedSelectActor);
+                    menu.AddButton("Select " + actorNode.Actor, OnClickedSelectActor).TooltipText = Utilities.Utils.GetTooltip(actorNode.Actor);
                 }
                 else
                 {
