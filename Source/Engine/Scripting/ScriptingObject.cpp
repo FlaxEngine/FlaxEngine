@@ -244,6 +244,20 @@ bool ScriptingObject::CanCast(MClass* from, MClass* to)
     return from->IsSubClassOf(to);
 }
 
+bool ScriptingObject::CanCast(MClass* from, MonoClass* to)
+{
+    if (!from && !to)
+        return true;
+    CHECK_RETURN(from && to, false);
+
+#if PLATFORM_LINUX
+    // Cannot enter GC unsafe region if the thread is not attached
+    MCore::AttachThread();
+#endif
+
+    return from->IsSubClassOf(to);
+}
+
 void ScriptingObject::OnDeleteObject()
 {
     // Cleanup managed object
@@ -542,13 +556,17 @@ public:
 
     static MonoObject* FindObject(Guid* id, MonoReflectionType* type)
     {
-        ScriptingObject* obj = Scripting::FindObject(*id, Scripting::FindClass(MUtils::GetClass(type)));
+        ScriptingObject* obj = Scripting::FindObject(*id);
+        if (obj && !obj->Is(MUtils::GetClass(type)))
+            obj = nullptr;
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
 
     static MonoObject* TryFindObject(Guid* id, MonoReflectionType* type)
     {
-        ScriptingObject* obj = Scripting::TryFindObject(*id, Scripting::FindClass(MUtils::GetClass(type)));
+        ScriptingObject* obj = Scripting::TryFindObject(*id);
+        if (obj && !obj->Is(MUtils::GetClass(type)))
+            obj = nullptr;
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
 

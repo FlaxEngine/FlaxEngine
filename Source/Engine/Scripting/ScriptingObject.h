@@ -62,7 +62,6 @@ public:
     /// <summary>
     /// Gets the managed instance object.
     /// </summary>
-    /// <returns>The Mono managed object or null if not created.</returns>
     MonoObject* GetManagedInstance() const;
 
     /// <summary>
@@ -131,6 +130,7 @@ public:
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
     static bool CanCast(MClass* from, MClass* to);
+    static bool CanCast(MClass* from, MonoClass* to);
 
     template<typename T>
     static T* Cast(ScriptingObject* obj)
@@ -143,6 +143,11 @@ public:
     bool Is(MClass* type) const
     {
         return CanCast(GetClass(), type);
+    }
+
+    bool Is(MonoClass* klass) const
+    {
+        return CanCast(GetClass(), klass);
     }
 
     template<typename T>
