@@ -580,7 +580,7 @@ namespace FlaxEditor.GUI.Timeline
             get => _zoom;
             set
             {
-                value = Mathf.Clamp(value, 0.0001f, 1000.0f);
+                value = Mathf.Clamp(value, 0.00001f, 1000.0f);
                 if (Mathf.NearEqual(_zoom, value))
                     return;
 
@@ -1039,6 +1039,13 @@ namespace FlaxEditor.GUI.Timeline
             showTimeAs.ContextMenu.AddButton("Time", () => TimeShowMode = TimeShowModes.Time).Checked = TimeShowMode == TimeShowModes.Time;
 
             menu.AddButton("Show preview values", () => ShowPreviewValues = !ShowPreviewValues).Checked = ShowPreviewValues;
+
+            {
+                var zoom = menu.AddButton("Zoom");
+                var zoomValue = new FloatValueBox(Zoom, 140, 2, 50.0f, 0.00001f, 1000.0f, 0.001f);
+                zoomValue.Parent = zoom;
+                zoomValue.ValueChanged += () => Zoom = zoomValue.Value;
+            }
 
             OnShowViewContextMenu(menu);
 
