@@ -251,6 +251,15 @@ namespace FlaxEditor.Modules
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 
+            // In play-mode Editor mocks the level streaming script
+            if (Editor.IsPlayMode)
+            {
+                if (!additive)
+                    Level.UnloadAllScenesAsync();
+                Level.LoadSceneAsync(sceneId);
+                return;
+            }
+
             if (!additive)
             {
                 // Ensure to save all pending changes
@@ -272,6 +281,13 @@ namespace FlaxEditor.Modules
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 
+            // In play-mode Editor mocks the level streaming script
+            if (Editor.IsPlayMode)
+            {
+                Level.UnloadSceneAsync(scene);
+                return;
+            }
+
             // Ensure to save all pending changes
             if (CheckSaveBeforeClose())
                 return;
@@ -288,6 +304,13 @@ namespace FlaxEditor.Modules
             // Check if cannot change scene now
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
+
+            // In play-mode Editor mocks the level streaming script
+            if (Editor.IsPlayMode)
+            {
+                Level.UnloadAllScenesAsync();
+                return;
+            }
 
             // Ensure to save all pending changes
             if (CheckSaveBeforeClose())
