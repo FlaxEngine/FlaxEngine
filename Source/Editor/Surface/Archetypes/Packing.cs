@@ -122,10 +122,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     GetBox(0).CurrentType = type;
                     Title = (_isUnpacking ? "Unpack " : "Pack ") + type.Name;
-                    var attributes = type.GetAttributes(false);
-                    var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                    if (tooltipAttribute != null)
-                        TooltipText += "\n" + tooltipAttribute.Text;
+                    TooltipText = SurfaceUtils.GetVisualScriptTypeDescription(type);
                 }
                 else
                 {

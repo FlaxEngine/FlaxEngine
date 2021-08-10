@@ -76,14 +76,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (_value)
                 {
                     _valueName = _value.Name;
-                    TooltipText = _value.TypeName;
-
-                    var attributes = _value.GetAttributes(false);
-                    var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                    if (tooltipAttribute != null)
-                    {
-                        TooltipText += "\n" + tooltipAttribute.Text;
-                    }
+                    TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(_value);
                 }
                 else
                 {

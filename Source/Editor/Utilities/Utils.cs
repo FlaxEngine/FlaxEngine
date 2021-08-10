@@ -76,6 +76,18 @@ namespace FlaxEditor.Utilities
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
         }
 
+        internal static string GetTooltip(SceneObject obj)
+        {
+            var str = obj is Actor actor ? actor.Name : TypeUtils.GetObjectType(obj).Name;
+            var o = obj.Parent;
+            while (o)
+            {
+                str = o.Name + " -> " + str;
+                o = o.Parent;
+            }
+            return str;
+        }
+
         /// <summary>
         /// The colors for the keyframes used by the curve editor.
         /// </summary>

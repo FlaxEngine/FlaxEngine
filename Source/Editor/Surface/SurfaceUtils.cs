@@ -427,6 +427,22 @@ namespace FlaxEditor.Surface
             return !TypeUtils.IsDelegate(managedType);
         }
 
+        internal static string GetVisualScriptTypeDescription(ScriptType type)
+        {
+            var sb = new StringBuilder();
+            if (type.IsStatic)
+                sb.Append("static ");
+            else if (type.IsAbstract)
+                sb.Append("abstract ");
+            sb.Append(type.TypeName);
+
+            var attributes = type.GetAttributes(false);
+            var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+            if (tooltipAttribute != null)
+                sb.Append("\n").Append(tooltipAttribute.Text);
+            return sb.ToString();
+        }
+
         internal static string GetVisualScriptMemberInfoDescription(ScriptMemberInfo member)
         {
             var name = member.Name;

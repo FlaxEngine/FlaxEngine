@@ -204,14 +204,7 @@ namespace FlaxEditor.Windows
                     continue;
 
                 var item = _groupSearch.AddChild(CreateActorItem(CustomEditors.CustomEditorsUtil.GetPropertyNameUI(text), actorType));
-                item.TooltipText = actorType.TypeName;
-                var attributes = actorType.GetAttributes(false);
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    item.TooltipText += '\n';
-                    item.TooltipText += tooltipAttribute.Text;
-                }
+                item.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(actorType);
 
                 var highlights = new List<Rectangle>(ranges.Length);
                 var style = Style.Current;
