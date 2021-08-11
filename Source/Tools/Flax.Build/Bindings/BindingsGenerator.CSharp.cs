@@ -665,7 +665,11 @@ namespace Flax.Build.Bindings
                 indent += "    ";
                 var eventInstance = eventInfo.IsStatic ? string.Empty : "__unmanagedPtr, ";
                 contents.Append(indent).Append($"add {{ Internal_{eventInfo.Name} += value; if (Internal_{eventInfo.Name}_Count++ == 0) Internal_{eventInfo.Name}_Bind({eventInstance}true); }}").AppendLine();
-                contents.Append(indent).Append($"remove {{ Internal_{eventInfo.Name} -= value; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }}").AppendLine();
+                contents.Append(indent).Append("remove { ").AppendLine();
+                contents.Append("#if FLAX_EDITOR || BUILD_DEBUG").AppendLine();
+                contents.Append(indent).Append($"if (Internal_{eventInfo.Name} != null) {{ bool invalid = true; foreach (Delegate e in Internal_{eventInfo.Name}.GetInvocationList()) {{ if (e == (Delegate)value) {{ invalid = false; break; }} }} if (invalid) throw new Exception(\"Cannot unregister from event if not registered before.\"); }}").AppendLine();
+                contents.Append("#endif").AppendLine();
+                contents.Append(indent).Append($"Internal_{eventInfo.Name} -= value; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }}").AppendLine();
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).Append('}').AppendLine();
 
