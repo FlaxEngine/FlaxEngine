@@ -1036,6 +1036,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     {
         PROFILE_CPU_NAMED("BeginPlay");
 
+        ScopeLock lock(ScenesLock);
         Scenes.Add(scene);
         SceneBeginData beginData;
         scene->BeginPlay(&beginData);
