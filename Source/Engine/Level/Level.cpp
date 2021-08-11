@@ -382,13 +382,11 @@ public:
 
     Guid SceneId;
     AssetReference<JsonAsset> SceneAsset;
-    bool AutoInitialize;
 
-    LoadSceneAction(const Guid& sceneId, JsonAsset* sceneAsset, bool autoInitialize)
+    LoadSceneAction(const Guid& sceneId, JsonAsset* sceneAsset)
     {
         SceneId = sceneId;
         SceneAsset = sceneAsset;
-        AutoInitialize = autoInitialize;
     }
 
     bool CanDo() const override
@@ -410,7 +408,7 @@ public:
         }
 
         // Load scene
-        if (Level::loadScene(SceneAsset.Get(), AutoInitialize))
+        if (Level::loadScene(SceneAsset.Get()))
         {
             LOG(Error, "Failed to deserialize scene {0}", SceneId);
             CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
@@ -580,7 +578,7 @@ public:
             }
 
             // Load scene
-            if (Level::loadScene(document, false))
+            if (Level::loadScene(document))
             {
                 LOG(Error, "Failed to deserialize scene {0}", scenes[i].Name);
                 CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, scenes[i].ID);
@@ -588,18 +586,6 @@ public:
             }
         }
         scenes.Resize(0);
-
-        // Initialize scenes (will link references and create managed objects using new assembly)
-        if (Level::Scenes.HasItems())
-        {
-            LOG(Info, "Prepare scene objects");
-            SceneBeginData beginData;
-            for (auto scene : Level::Scenes)
-            {
-                scene->BeginPlay(&beginData);
-            }
-            beginData.OnDone();
-        }
 
         // Fire event
         LOG(Info, "Scripts reloading end. Total time: {0}ms", static_cast<int32>((DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
@@ -805,13 +791,13 @@ bool LevelImpl::unloadScenes()
     return false;
 }
 
-bool Level::loadScene(const Guid& sceneId, bool autoInitialize)
+bool Level::loadScene(const Guid& sceneId)
 {
     const auto sceneAsset = Content::LoadAsync<JsonAsset>(sceneId);
-    return loadScene(sceneAsset, autoInitialize);
+    return loadScene(sceneAsset);
 }
 
-bool Level::loadScene(const String& scenePath, bool autoInitialize)
+bool Level::loadScene(const String& scenePath)
 {
     LOG(Info, "Loading scene from file. Path: \'{0}\'", scenePath);
 
@@ -830,10 +816,10 @@ bool Level::loadScene(const String& scenePath, bool autoInitialize)
         return true;
     }
 
-    return loadScene(sceneData, autoInitialize);
+    return loadScene(sceneData);
 }
 
-bool Level::loadScene(JsonAsset* sceneAsset, bool autoInitialize)
+bool Level::loadScene(JsonAsset* sceneAsset)
 {
     // Keep reference to the asset (prevent unloading during action)
     AssetReference<JsonAsset> ref = sceneAsset;
@@ -845,10 +831,10 @@ bool Level::loadScene(JsonAsset* sceneAsset, bool autoInitialize)
         return true;
     }
 
-    return loadScene(*sceneAsset->Data, sceneAsset->DataEngineBuild, autoInitialize);
+    return loadScene(*sceneAsset->Data, sceneAsset->DataEngineBuild);
 }
 
-bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scene** outScene)
+bool Level::loadScene(const BytesContainer& sceneData, Scene** outScene)
 {
     if (sceneData.IsInvalid())
     {
@@ -868,10 +854,10 @@ bool Level::loadScene(const BytesContainer& sceneData, bool autoInitialize, Scen
         return true;
     }
 
-    return loadScene(document, autoInitialize, outScene);
+    return loadScene(document, outScene);
 }
 
-bool Level::loadScene(rapidjson_flax::Document& document, bool autoInitialize, Scene** outScene)
+bool Level::loadScene(rapidjson_flax::Document& document, Scene** outScene)
 {
     auto data = document.FindMember("Data");
     if (data == document.MemberEnd())
@@ -880,10 +866,10 @@ bool Level::loadScene(rapidjson_flax::Document& document, bool autoInitialize, S
         return true;
     }
     const int32 saveEngineBuild = JsonTools::GetInt(document, "EngineBuild", 0);
-    return loadScene(data->value, saveEngineBuild, autoInitialize, outScene);
+    return loadScene(data->value, saveEngineBuild, outScene);
 }
 
-bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoInitialize, Scene** outScene)
+bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene)
 {
     PROFILE_CPU_NAMED("Level.LoadScene");
 
@@ -1051,19 +1037,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoI
         PROFILE_CPU_NAMED("BeginPlay");
 
         Scenes.Add(scene);
-
-        if (autoInitialize)
-        {
-            SceneBeginData beginData;
-            scene->BeginPlay(&beginData);
-            beginData.OnDone();
-        }
-        else
-        {
-            // Send warning to log just in case (easier to track if scene will be loaded without init)
-            // Why? Because we can load collection of scenes and then call for all of them init so references between objects in a different scenes will be resolved without leaks.
-            //LOG(Warning, "Scene \'{0}:{1}\', has been loaded but not initialized. Remember to call OnBeginPlay().", scene->GetName(), scene->GetID());
-        }
+        SceneBeginData beginData;
+        scene->BeginPlay(&beginData);
+        beginData.OnDone();
     }
 
     // Fire event
@@ -1245,7 +1221,7 @@ void Level::SaveAllScenesAsync()
         _sceneActions.Enqueue(New<SaveSceneAction>(Scenes[i]));
 }
 
-bool Level::LoadScene(const Guid& id, bool autoInitialize)
+bool Level::LoadScene(const Guid& id)
 {
     // Check ID
     if (!id.IsValid())
@@ -1281,7 +1257,7 @@ bool Level::LoadScene(const Guid& id, bool autoInitialize)
     }
 
     // Load scene
-    if (loadScene(sceneAsset, autoInitialize))
+    if (loadScene(sceneAsset))
     {
         LOG(Error, "Failed to deserialize scene {0}", id);
         CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, id);
@@ -1290,10 +1266,10 @@ bool Level::LoadScene(const Guid& id, bool autoInitialize)
     return false;
 }
 
-Scene* Level::LoadSceneFromBytes(const BytesContainer& data, bool autoInitialize)
+Scene* Level::LoadSceneFromBytes(const BytesContainer& data)
 {
     Scene* scene = nullptr;
-    if (loadScene(data, autoInitialize, &scene))
+    if (loadScene(data, &scene))
     {
         LOG(Error, "Failed to deserialize scene from bytes");
         CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, Guid::Empty);
@@ -1319,7 +1295,7 @@ bool Level::LoadSceneAsync(const Guid& id)
     }
 
     ScopeLock lock(_sceneActionsLocker);
-    _sceneActions.Enqueue(New<LoadSceneAction>(id, sceneAsset, true));
+    _sceneActions.Enqueue(New<LoadSceneAction>(id, sceneAsset));
 
     return false;
 }

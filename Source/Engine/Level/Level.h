@@ -278,17 +278,15 @@ public:
     /// Loads scene from the asset.
     /// </summary>
     /// <param name="id">Scene ID</param>
-    /// <param name="autoInitialize">Enable/disable auto scene initialization, otherwise user should do it (in that situation scene is registered but not in a gameplay, call OnBeginPlay to start logic for it; it will deserialize scripts and references to the other objects).</param>
     /// <returns>True if loading cannot be done, otherwise false.</returns>
-    API_FUNCTION() static bool LoadScene(const Guid& id, bool autoInitialize = true);
+    API_FUNCTION() static bool LoadScene(const Guid& id);
 
     /// <summary>
     /// Loads scene from the bytes.
     /// </summary>
     /// <param name="data">The scene data to load.</param>
-    /// <param name="autoInitialize">Enable/disable auto scene initialization, otherwise user should do it (in that situation scene is registered but not in a gameplay, call OnBeginPlay to start logic for it; it will deserialize scripts and references to the other objects).</param>
     /// <returns>Loaded scene object, otherwise null if cannot load data (then see log for more information).</returns>
-    API_FUNCTION() static Scene* LoadSceneFromBytes(const BytesContainer& data, bool autoInitialize = true);
+    API_FUNCTION() static Scene* LoadSceneFromBytes(const BytesContainer& data);
 
     /// <summary>
     /// Loads scene from the asset. Done in the background.
@@ -479,10 +477,10 @@ private:
     };
 
     static void callActorEvent(ActorEventType eventType, Actor* a, Actor* b);
-    static bool loadScene(const Guid& sceneId, bool autoInitialize);
-    static bool loadScene(const String& scenePath, bool autoInitialize);
-    static bool loadScene(JsonAsset* sceneAsset, bool autoInitialize);
-    static bool loadScene(const BytesContainer& sceneData, bool autoInitialize, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Document& document, bool autoInitialize, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, bool autoInitialize, Scene** outScene = nullptr);
+    static bool loadScene(const Guid& sceneId);
+    static bool loadScene(const String& scenePath);
+    static bool loadScene(JsonAsset* sceneAsset);
+    static bool loadScene(const BytesContainer& sceneData, Scene** outScene = nullptr);
+    static bool loadScene(rapidjson_flax::Document& document, Scene** outScene = nullptr);
+    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr);
 };
