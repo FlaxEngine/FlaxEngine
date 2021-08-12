@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace FlaxEngine
 {
     /// <summary>
-    /// A collection of common math functions.
+    /// A collection of common math functions on single floating-points.
     /// </summary>
     [HideInEditor]
     public static class Mathf
