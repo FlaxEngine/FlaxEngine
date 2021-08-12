@@ -212,6 +212,7 @@ namespace FlaxEngine.Json
                         break;
                     }
                     case JsonToken.Comment: break;
+                    case JsonToken.String: break;
                     default: return value;
                     }
                 }
@@ -302,10 +303,15 @@ namespace FlaxEngine.Json
                         break;
                     }
                     case JsonToken.Comment: break;
+                    case JsonToken.String: break;
                     default: return str;
                     }
                 }
             }
+            else
+                return null;
+            if (existingValue == null && str.Id == null && str.Value == null)
+                return null;
             return str;
         }
 
