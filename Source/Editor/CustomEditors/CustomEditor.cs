@@ -102,11 +102,6 @@ namespace FlaxEditor.CustomEditors
         protected bool IsSetBlocked => _isSetBlocked;
 
         /// <summary>
-        /// Gets a value indicating whether this editor needs value propagation up (value synchronization when one of the child editors changes value, used by the struct types).
-        /// </summary>
-        protected virtual bool NeedsValuePropagationUp => Values.HasValueType;
-
-        /// <summary>
         /// The linked label used to show this custom editor. Can be null if not used (eg. editor is inlined or is using a very customized UI layout).
         /// </summary>
         public PropertyNameLabel LinkedLabel;
@@ -281,7 +276,7 @@ namespace FlaxEditor.CustomEditors
 
                 // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
                 var obj = _parent;
-                while (obj._parent != null && !(obj._parent is SyncPointEditor)) // && obj.NeedsValuePropagationUp)
+                while (obj._parent != null && !(obj._parent is SyncPointEditor))
                 {
                     obj.Values.Set(obj._parent.Values, obj.Values);
                     obj = obj._parent;
@@ -301,12 +296,15 @@ namespace FlaxEditor.CustomEditors
             _isSetBlocked = false;
 
             // Update children
+            if (_skipChildrenRefresh)
+            {
+                _skipChildrenRefresh = false;
+                return;
+            }
             try
             {
-                var childrenCount = _skipChildrenRefresh ? 0 : _children.Count;
-                for (int i = 0; i < childrenCount; i++)
+                for (int i = 0; i < _children.Count; i++)
                     _children[i].RefreshInternal();
-                _skipChildrenRefresh = false;
             }
             catch (TargetException ex)
             {

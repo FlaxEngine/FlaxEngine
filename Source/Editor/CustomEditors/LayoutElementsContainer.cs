@@ -31,6 +31,11 @@ namespace FlaxEditor.CustomEditors
         public readonly List<LayoutElement> Children = new List<LayoutElement>();
 
         /// <summary>
+        /// The child custom editors.
+        /// </summary>
+        public readonly List<CustomEditor> Editors = new List<CustomEditor>();
+
+        /// <summary>
         /// Gets the control represented by this element.
         /// </summary>
         public abstract ContainerControl ContainerControl { get; }
@@ -722,6 +727,7 @@ namespace FlaxEditor.CustomEditors
             var customEditor = CustomEditor.CurrentCustomEditor;
             Assert.IsNotNull(customEditor);
             customEditor.OnChildCreated(editor);
+            Editors.Add(editor);
         }
 
         /// <summary>
@@ -730,6 +736,7 @@ namespace FlaxEditor.CustomEditors
         public virtual void ClearLayout()
         {
             Children.Clear();
+            Editors.Clear();
         }
 
         /// <inheritdoc />
