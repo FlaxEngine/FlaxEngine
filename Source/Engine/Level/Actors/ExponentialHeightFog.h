@@ -25,13 +25,13 @@ public:
     /// <summary>
     /// The fog density factor.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), DefaultValue(0.02f), Limit(0.000001f, 0.8f, 0.001f), EditorDisplay(\"Exponential Height Fog\")")
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(0.02f), Limit(0.0000001f, 100.0f, 0.001f), EditorDisplay(\"Exponential Height Fog\")")
     float FogDensity = 0.02f;
 
     /// <summary>
     /// The fog height density factor that controls how the density increases as height decreases. The smaller values produce more visible transition larger.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(0.2f), Limit(0.001f, 2.0f, 0.001f), EditorDisplay(\"Exponential Height Fog\")")
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(0.2f), Limit(0.0001f, 10.0f, 0.001f), EditorDisplay(\"Exponential Height Fog\")")
     float FogHeightFalloff = 0.2f;
 
     /// <summary>
