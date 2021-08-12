@@ -337,6 +337,9 @@ namespace FlaxEditor.Viewport
         public Undo Undo { get; }
 
         /// <inheritdoc />
+        public RootNode SceneGraphRoot => _window.Graph.Root;
+
+        /// <inheritdoc />
         public EditorViewport Viewport => this;
 
         /// <inheritdoc />

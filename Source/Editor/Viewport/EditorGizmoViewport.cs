@@ -21,10 +21,12 @@ namespace FlaxEditor.Viewport
         /// </summary>
         /// <param name="task">The task.</param>
         /// <param name="undo">The undo.</param>
-        public EditorGizmoViewport(SceneRenderTask task, Undo undo)
+        /// <param name="sceneGraphRoot">The scene graph root.</param>
+        public EditorGizmoViewport(SceneRenderTask task, Undo undo, SceneGraph.RootNode sceneGraphRoot)
         : base(task, new FPSCamera(), true)
         {
             Undo = undo;
+            SceneGraphRoot = sceneGraphRoot;
 
             SetUpdate(ref _update, OnUpdate);
         }
@@ -72,6 +74,9 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public Undo Undo { get; }
+
+        /// <inheritdoc />
+        public SceneGraph.RootNode SceneGraphRoot { get; }
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

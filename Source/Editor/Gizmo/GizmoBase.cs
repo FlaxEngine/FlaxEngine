@@ -81,6 +81,13 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <summary>
+        /// Performs scene objects snapping to the ground.
+        /// </summary>
+        public virtual void SnapToGround()
+        {
+        }
+
+        /// <summary>
         /// Draws the gizmo.
         /// </summary>
         /// <param name="renderContext">The rendering context.</param>
