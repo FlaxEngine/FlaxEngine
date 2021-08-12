@@ -212,6 +212,7 @@ namespace FlaxEngine.Json
                         break;
                     }
                     case JsonToken.Comment: break;
+                    case JsonToken.String: break;
                     default: return value;
                     }
                 }
@@ -244,16 +245,21 @@ namespace FlaxEngine.Json
         /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
         {
+#if FLAX_EDITOR
+            bool writeTypename = (serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects;
+#else
+            bool writeTypename = false;
+#endif
             var str = (LocalizedString)value;
-            if (string.IsNullOrEmpty(str.Id))
+            if (string.IsNullOrEmpty(str.Id) && !writeTypename)
             {
-                writer.WriteValue(str.Value);
+                writer.WriteValue(str.Value ?? string.Empty);
             }
             else
             {
                 writer.WriteStartObject();
 #if FLAX_EDITOR
-                if ((serializer.TypeNameHandling & TypeNameHandling.Objects) == TypeNameHandling.Objects)
+                if (writeTypename)
                 {
                     writer.WritePropertyName("$type");
                     writer.WriteValue("FlaxEngine.LocalizedString, FlaxEngine.CSharp");
@@ -297,10 +303,15 @@ namespace FlaxEngine.Json
                         break;
                     }
                     case JsonToken.Comment: break;
+                    case JsonToken.String: break;
                     default: return str;
                     }
                 }
             }
+            else
+                return null;
+            if (existingValue == null && str.Id == null && str.Value == null)
+                return null;
             return str;
         }
 

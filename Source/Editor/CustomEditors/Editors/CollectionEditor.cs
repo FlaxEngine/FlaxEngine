@@ -154,6 +154,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 var panel = layout.VerticalPanel();
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
+
+                // Use separate layout cells for each collection items to improve layout updates for them in separation
+                var useSharedLayout = elementType.IsPrimitive || elementType.IsEnum;
+
                 if (_canReorderItems)
                 {
                     for (int i = 0; i < size; i++)
@@ -178,7 +182,9 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
 
                         var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                        panel.Object(new CollectionItemLabel(this, i), new ListValueContainer(elementType, i, Values), overrideEditor);
+                        var property = panel.AddPropertyItem(new CollectionItemLabel(this, i));
+                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
+                        itemLayout.Object(new ListValueContainer(elementType, i, Values), overrideEditor);
                     }
                 }
                 else
@@ -194,7 +200,9 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
 
                         var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                        panel.Object("Element " + i, new ListValueContainer(elementType, i, Values), overrideEditor);
+                        var property = panel.AddPropertyItem("Element " + i);
+                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
+                        itemLayout.Object(new ListValueContainer(elementType, i, Values), overrideEditor);
                     }
                 }
             }

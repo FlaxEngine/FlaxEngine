@@ -216,6 +216,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.BackgroundColor = _background;
                 var keysEnumerable = ((IDictionary)Values[0]).Keys.OfType<object>();
                 var keys = keysEnumerable as object[] ?? keysEnumerable.ToArray();
+                var valuesType = new ScriptType(valueType);
+
+                // Use separate layout cells for each collection items to improve layout updates for them in separation
+                var useSharedLayout = valueType.IsPrimitive || valueType.IsEnum;
+
                 for (int i = 0; i < size; i++)
                 {
                     if (i != 0 && spacing > 0f)
@@ -239,7 +244,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     var key = keys.ElementAt(i);
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                    panel.Object(new DictionaryItemLabel(this, key), new DictionaryValueContainer(new ScriptType(valueType), key, Values), overrideEditor);
+                    var property = panel.AddPropertyItem(new DictionaryItemLabel(this, key));
+                    var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
+                    itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
                 }
             }
             _elementsCount = size;
