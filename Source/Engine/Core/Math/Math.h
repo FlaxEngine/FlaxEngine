@@ -140,11 +140,6 @@ namespace Math
         return exp2f(value);
     }
 
-    static FORCE_INLINE double Abs(const double value)
-    {
-        return fabs(value);
-    }
-
     static FORCE_INLINE float Abs(const float value)
     {
         return fabsf(value);
@@ -158,11 +153,6 @@ namespace Math
     static FORCE_INLINE int64 Abs(const int64 value)
     {
         return value < 0 ? -value : value;
-    }
-
-    static FORCE_INLINE double Mod(const double a, const double b)
-    {
-        return fmod(a, b);
     }
 
     static FORCE_INLINE float Mod(const float a, const float b)
@@ -432,14 +422,6 @@ namespace Math
     static float SmootherStep(float amount)
     {
         return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
-    }
-
-    // Determines whether the specified value is close to zero (0.0)
-    // @param a The floating value
-    // @returns True if the specified value is close to zero (0.0). otherwise false
-    inline bool IsZero(double a)
-    {
-        return Abs(a) < 1e-7;
     }
 
     // Determines whether the specified value is close to zero (0.0f)
