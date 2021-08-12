@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Core.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include <math.h>
 
