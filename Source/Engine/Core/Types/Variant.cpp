@@ -6,6 +6,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Vector2.h"
@@ -950,7 +951,7 @@ bool Variant::operator==(const Variant& other) const
         case VariantType::Float:
             return Math::NearEqual(AsFloat, other.AsFloat);
         case VariantType::Double:
-            return Math::Abs(AsDouble - other.AsDouble) < ZeroTolerance;
+            return Mathd::Abs(AsDouble - other.AsDouble) < ZeroTolerance;
         case VariantType::Pointer:
             return AsPointer == other.AsPointer;
         case VariantType::String:
@@ -1103,7 +1104,7 @@ Variant::operator bool() const
     case VariantType::Float:
         return !Math::IsZero(AsFloat);
     case VariantType::Double:
-        return !Math::IsZero(AsDouble);
+        return !Mathd::IsZero(AsDouble);
     case VariantType::Pointer:
         return AsPointer != nullptr;
     case VariantType::String:
@@ -2850,7 +2851,7 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         switch (to.Type)
         {
         case VariantType::Bool:
-            return Variant(Math::Abs(v.AsDouble) > ZeroTolerance);
+            return Variant(Mathd::Abs(v.AsDouble) > ZeroTolerance);
         case VariantType::Int16:
             return Variant((int16)v.AsDouble);
         case VariantType::Int:
