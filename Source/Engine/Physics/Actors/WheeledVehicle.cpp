@@ -324,13 +324,12 @@ void WheeledVehicle::Setup()
         wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
 
         PxVec3 centreOffset = centerOfMassOffset.transformInv(offsets[i]);
-        float suspensionForceOffset = 0.0f;
-        PxVec3 forceAppPointOffset(centreOffset.x, centreOffset.y, centreOffset.z + suspensionForceOffset);
+        PxVec3 forceAppPointOffset(centreOffset.z, centreOffset.y + wheel.SuspensionForceOffset, centreOffset.z);
 
         wheelsSimData->setTireData(i, tire);
         wheelsSimData->setWheelData(i, wheelData);
         wheelsSimData->setSuspensionData(i, suspensionData);
-        wheelsSimData->setSuspTravelDirection(i, PxVec3(0, -1, 0));
+        wheelsSimData->setSuspTravelDirection(i, centerOfMassOffset.rotate(PxVec3(0.0f, -1.0f, 0.0f)));
         wheelsSimData->setWheelCentreOffset(i, centreOffset);
         wheelsSimData->setSuspForceAppPointOffset(i, forceAppPointOffset);
         wheelsSimData->setTireForceAppPointOffset(i, forceAppPointOffset);
