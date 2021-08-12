@@ -219,6 +219,12 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
+        protected override bool IsSelected(SceneGraphNode obj)
+        {
+            return _selection.Contains(obj);
+        }
+
+        /// <inheritdoc />
         protected override void OnApplyTransformation(ref Vector3 translationDelta, ref Quaternion rotationDelta, ref Vector3 scaleDelta)
         {
             base.OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);

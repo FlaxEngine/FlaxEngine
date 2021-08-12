@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.SceneGraph;
 using FlaxEngine;
 
 namespace FlaxEditor.Gizmo
@@ -398,15 +399,7 @@ namespace FlaxEditor.Gizmo
             // Snap to ground
             if (_activeAxis == Axis.None && SelectionCount != 0 && Owner.SnapToGround)
             {
-                if (Physics.RayCast(Position, Vector3.Down, out var hit, float.MaxValue, uint.MaxValue, false))
-                {
-                    StartTransforming();
-                    var translationDelta = hit.Point - Position;
-                    var rotationDelta = Quaternion.Identity;
-                    var scaleDelta = Vector3.Zero;
-                    OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
-                    EndTransforming();
-                }
+                SnapToGround();
             }
             // Only when is active
             else if (_isActive)
@@ -517,6 +510,39 @@ namespace FlaxEditor.Gizmo
             UpdateMatrices();
         }
 
+        /// <inheritdoc />
+        public override void SnapToGround()
+        {
+            if (Owner.SceneGraphRoot == null)
+                return;
+            var ray = new Ray(Position, Vector3.Down);
+            while (true)
+            {
+                var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
+                var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
+                if (hit != null)
+                {
+                    // Skip snapping selection to itself
+                    if (IsSelected(hit))
+                    {
+                        GetSelectedObjectsBounds(out var selectionBounds, out _);
+                        ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
+                        continue;
+                    }
+
+                    // Snap
+                    StartTransforming();
+                    var translationDelta = ray.GetPoint(distance) - Position;
+                    var rotationDelta = Quaternion.Identity;
+                    var scaleDelta = Vector3.Zero;
+                    OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
+                    EndTransforming();
+                }
+                break;
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this tool can transform objects.
         /// </summary>
@@ -544,6 +570,13 @@ namespace FlaxEditor.Gizmo
         /// <param name="bounds">The bounds of the selected objects (merged bounds).</param>
         /// <param name="navigationDirty">True if editing the selected objects transformations marks the navigation system area dirty (for auto-rebuild), otherwise skip update.</param>
         protected abstract void GetSelectedObjectsBounds(out BoundingBox bounds, out bool navigationDirty);
+
+        /// <summary>
+        /// Checks if the specified object is selected.
+        /// </summary>
+        /// <param name="obj">The object to check.</param>
+        /// <returns>True if it's selected, otherwise false.</returns>
+        protected abstract bool IsSelected(SceneGraphNode obj);
 
         /// <summary>
         /// Called when user starts transforming selected objects.
