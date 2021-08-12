@@ -89,5 +89,10 @@ namespace FlaxEditor.Gizmo
         /// Gets a <see cref="FlaxEditor.Undo"/> object used by the gizmo owner.
         /// </summary>
         Undo Undo { get; }
+
+        /// <summary>
+        /// Gets the root tree node for the scene graph.
+        /// </summary>
+        SceneGraph.RootNode SceneGraphRoot { get; }
     }
 }

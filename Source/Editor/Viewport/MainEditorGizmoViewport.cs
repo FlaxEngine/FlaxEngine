@@ -184,7 +184,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         /// <param name="editor">Editor instance.</param>
         public MainEditorGizmoViewport(Editor editor)
-        : base(Object.New<SceneRenderTask>(), editor.Undo)
+        : base(Object.New<SceneRenderTask>(), editor.Undo, editor.Scene.Root)
         {
             _editor = editor;
             _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);

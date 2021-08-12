@@ -228,6 +228,11 @@ public:
         /// The maximum offset for the suspension that wheel can go below resting location.
         /// </summary>
         API_FIELD(Attributes="Limit(0)") float SuspensionMaxDrop = 10.0f;
+
+        /// <summary>
+        /// The vertical offset from where suspension forces are applied.
+        /// </summary>
+        API_FIELD() float SuspensionForceOffset = 0.0f;
     };
 
     /// <summary>

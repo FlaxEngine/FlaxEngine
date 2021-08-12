@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Gizmo;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Tools.Foliage.Undo;
 using FlaxEngine;
 
@@ -85,6 +86,12 @@ namespace FlaxEditor.Tools.Foliage
         {
             bounds = BoundingBox.Empty;
             navigationDirty = false;
+        }
+
+        /// <inheritdoc />
+        protected override bool IsSelected(SceneGraphNode obj)
+        {
+            return false;
         }
 
         /// <inheritdoc />
@@ -229,6 +236,21 @@ namespace FlaxEditor.Tools.Foliage
             var action = new EditSelectedInstanceIndexAction(GizmoMode.SelectedInstanceIndex, instanceIndex);
             action.Do();
             Owner.Undo?.AddAction(action);
+        }
+
+        /// <inheritdoc />
+        public override void SnapToGround()
+        {
+            if (Physics.RayCast(Position, Vector3.Down, out var hit, float.MaxValue, uint.MaxValue, false))
+            {
+                // Snap
+                StartTransforming();
+                var translationDelta = hit.Point - Position;
+                var rotationDelta = Quaternion.Identity;
+                var scaleDelta = Vector3.Zero;
+                OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
+                EndTransforming();
+            }
         }
 
         /// <inheritdoc />
