@@ -29,6 +29,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.Vertical)
         {
             Title = "Properties";
+            AutoFocus = true;
 
             Presenter = new CustomEditorPresenter(editor.Undo);
             Presenter.Panel.Parent = this;
