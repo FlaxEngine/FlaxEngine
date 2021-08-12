@@ -5,7 +5,7 @@
 #include <math.h>
 #include "Engine/Core/Types/BaseTypes.h"
 
-namespace Mathd
+namespace Math
 {
     /// <summary>
     /// Computes the sine and cosine of a scalar float.
