@@ -102,6 +102,22 @@ namespace FlaxEditor.CustomEditors
         }
 
         /// <summary>
+        /// Gets a value indicating whether all values in the collection are null. Returns true if collection is empty.
+        /// </summary>
+        public bool IsNull
+        {
+            get
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    if (this[i] != null)
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this any value in the collection is of value type (eg. a structure, not a class type). Returns false if collection is empty.
         /// </summary>
         public bool HasValueType

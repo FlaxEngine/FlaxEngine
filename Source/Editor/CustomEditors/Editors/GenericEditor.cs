@@ -228,6 +228,7 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private VisibleIfCache[] _visibleIfCaches;
+        private bool _isNull;
 
         /// <summary>
         /// Gets the items for the type
@@ -264,7 +265,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Skip properties without getter or setter
                     if (!p.HasGet || (!p.HasSet && !showInEditor))
                         continue;
-                    
+
                     // Skip hidden fields, handle special attributes
                     if ((!p.IsPublic && !showInEditor) || attributes.Any(x => x is HideInEditorAttribute))
                         continue;
@@ -421,7 +422,9 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
+            var values = Values;
             _visibleIfCaches = null;
+            _isNull = values != null && values.IsNull;
 
             // Collect items to edit
             List<ItemInfo> items;
@@ -446,12 +449,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             Parent = layout.ContainerControl,
                             Location = new Vector2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
                         };
-                        button.Clicked += () =>
-                        {
-                            var newType = Values.Type;
-                            SetValue(newType.CreateInstance());
-                            RebuildLayoutOnRefresh();
-                        };
+                        button.Clicked += () => SetValue(Values.Type.CreateInstance());
                     }
 
                     layout.Label("<null>");
@@ -558,6 +556,13 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Refresh()
         {
+            // Automatic refresh when value nullability changed
+            if (_isNull != Values.IsNull)
+            {
+                RebuildLayout();
+                return;
+            }
+
             if (_visibleIfCaches != null)
             {
                 try
