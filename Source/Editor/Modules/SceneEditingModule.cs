@@ -383,6 +383,7 @@ namespace FlaxEditor.Modules
             var objects = Selection.Where(x => x.CanDelete).ToList().BuildAllNodes().Where(x => x.CanDelete).ToList();
             if (objects.Count == 0)
                 return;
+            var isSceneTreeFocus = Editor.Windows.SceneWin.ContainsFocus;
 
             SelectionDeleteBegin?.Invoke();
 
@@ -404,6 +405,9 @@ namespace FlaxEditor.Modules
             SelectionDeleteEnd?.Invoke();
 
             OnDirty(objects);
+
+            if (isSceneTreeFocus)
+                Editor.Windows.SceneWin.Focus();
         }
 
         /// <summary>
