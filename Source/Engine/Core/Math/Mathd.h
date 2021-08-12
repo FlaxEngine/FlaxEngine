@@ -8,7 +8,7 @@
 namespace Math
 {
     /// <summary>
-    /// Computes the sine and cosine of a scalar float.
+    /// Computes the sine and cosine of a scalar double.
     /// </summary>
     /// <param name="angle">The input angle (in radians).</param>
     /// <param name="sine">The output sine value.</param>
@@ -198,7 +198,7 @@ namespace Math
     }
 
     /// <summary>
-    /// Compares the sign of two floating-point values.
+    /// Compares the sign of two double values.
     /// </summary>
     /// <param name="a">The first value.</param>
     /// <param name="b">The second value.</param>
@@ -209,7 +209,7 @@ namespace Math
     }
 
     /// <summary>
-    /// Compares the sign of two floating-point values.
+    /// Compares the sign of two double values.
     /// </summary>
     /// <param name="a">The first value.</param>
     /// <param name="b">The second value.</param>
@@ -220,7 +220,7 @@ namespace Math
     }
 
     /// <summary>
-    /// Checks if a and b are not even almost equal, taking into account the magnitude of floating point numbers
+    /// Checks if a and b are not even almost equal, taking into account the magnitude of double numbers
     /// </summary>
     /// <param name="a">The left value to compare</param>
     /// <param name="b">The right value to compare</param>
