@@ -270,8 +270,8 @@ public:
     explicit operator float() const;
     explicit operator double() const;
     explicit operator void*() const;
-    explicit operator StringView() const;
-    explicit operator StringAnsiView() const;
+    explicit operator StringView() const;       // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
+    explicit operator StringAnsiView() const;   // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
     explicit operator ScriptingObject*() const;
     explicit operator struct _MonoObject*() const;
     explicit operator Asset*() const;

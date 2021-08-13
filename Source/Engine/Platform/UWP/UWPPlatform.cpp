@@ -35,7 +35,7 @@ void RunUWP()
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
-    return (DialogResult)CUWPPlatform->ShowMessageDialog(parent ? parent->GetImpl() : nullptr, text.GetText(), caption.GetText(), (UWPPlatformImpl::MessageBoxButtons)buttons, (UWPPlatformImpl::MessageBoxIcon)icon);
+    return (DialogResult)CUWPPlatform->ShowMessageDialog(parent ? parent->GetImpl() : nullptr, String(text).GetText(), String(caption).GetText(), (UWPPlatformImpl::MessageBoxButtons)buttons, (UWPPlatformImpl::MessageBoxIcon)icon);
 }
 
 bool UWPPlatform::Init()

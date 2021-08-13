@@ -413,67 +413,97 @@ public:
         return replacedChars;
     }
 
+    /// <summary>
+    /// Replaces all occurences of searchText within current string with replacementText.
+    /// </summary>
+    /// <param name="searchText">String to search for. If empty or null no replacements are done.</param>
+    /// <param name="replacementText">String to replace with. Null is treated as empty string.</param>
+    /// <returns>Number of replacements made. (In case-sensitive mode if search text and replacement text are equal no replacements are done, and zero is returned.)</returns>
     int32 Replace(const T* searchText, const T* replacementText, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
     {
-        int32 replacedCount = 0;
-        if (HasChars() && searchText && *searchText && replacementText && (searchCase == StringSearchCase::IgnoreCase || StringUtils::Compare(searchText, replacementText) != 0))
+        const int32 searchTextLength = StringUtils::Length(searchText);
+        const int32 replacementTextLength = StringUtils::Length(replacementText);
+        return Replace(searchText, searchTextLength, replacementText, replacementTextLength, searchCase);
+    }
+
+    /// <summary>
+    /// Replaces all occurences of searchText within current string with replacementText.
+    /// </summary>
+    /// <param name="searchText">String to search for. If empty or null no replacements are done.</param>
+    /// <param name="searchTextLength">Length of searchText.</param>
+    /// <param name="replacementText">String to replace with. Null is treated as empty string.</param>
+    /// <param name="replacementTextLength">Length of replacementText.</param>
+    /// <returns>Number of replacements made. (In case-sensitive mode if search text and replacement text are equal no replacements are done, and zero is returned.)</returns>
+    int32 Replace(const T* searchText, int32 searchTextLength, const T* replacementText, int32 replacementTextLength, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
+    {
+        if (!HasChars())
+            return 0;
+
+        if (searchTextLength == 0)
+            return 0;
+
+        // If we are doing case sensitive search and replacement text is equal to search text, we do nothing.
+        if ((searchCase == StringSearchCase::CaseSensitive) && (searchTextLength == replacementTextLength) && (StringUtils::Compare(searchText, replacementText) == 0))
         {
-            const int32 searchTextLength = StringUtils::Length(searchText);
-            const int32 replacementTextLength = StringUtils::Length(replacementText);
-            if (searchTextLength == replacementTextLength)
+            return 0;
+        }
+
+        int32 replacedCount = 0;
+
+        if (searchTextLength == replacementTextLength)
+        {
+            T* pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(_data, searchText) : StringUtils::Find(_data, searchText));
+            while (pos != nullptr)
             {
-                T* pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(_data, searchText) : StringUtils::Find(_data, searchText));
-                while (pos != nullptr)
-                {
-                    replacedCount++;
+                replacedCount++;
 
-                    for (int32 i = 0; i < replacementTextLength; i++)
-                        pos[i] = replacementText[i];
+                for (int32 i = 0; i < replacementTextLength; i++)
+                    pos[i] = replacementText[i];
 
-                    if (pos + searchTextLength - **this < Length())
-                        pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(pos + searchTextLength, searchText) : StringUtils::Find(pos + searchTextLength, searchText));
-                    else
-                        break;
-                }
+                if (pos + searchTextLength - **this < Length())
+                    pos = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(pos + searchTextLength, searchText) : StringUtils::Find(pos + searchTextLength, searchText));
+                else
+                    break;
             }
-            else if (Contains(searchText, searchCase))
+        }
+        else if (Contains(searchText, searchCase))
+        {
+            T* readPosition = _data;
+            T* searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
+            while (searchPosition != nullptr)
             {
-                T* readPosition = _data;
-                T* searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
-                while (searchPosition != nullptr)
-                {
-                    replacedCount++;
-                    readPosition = searchPosition + searchTextLength;
-                    searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
-                }
-
-                const auto oldLength = _length;
-                const auto oldData = _data;
-                _length += replacedCount * (replacementTextLength - searchTextLength);
-                _data = (T*)Platform::Allocate((_length + 1) * sizeof(T), 16);
-
-                T* writePosition = _data;
-                readPosition = oldData;
+                replacedCount++;
+                readPosition = searchPosition + searchTextLength;
                 searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
-                while (searchPosition != nullptr)
-                {
-                    const int32 writeOffset = (int32)(searchPosition - readPosition);
-                    Platform::MemoryCopy(writePosition, readPosition, writeOffset * sizeof(T));
-                    writePosition += writeOffset;
-
-                    Platform::MemoryCopy(writePosition, replacementText, replacementTextLength * sizeof(T));
-                    writePosition += replacementTextLength;
-
-                    readPosition = searchPosition + searchTextLength;
-                    searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
-                }
-
-                const int32 writeOffset = (int32)(oldData - readPosition) + oldLength;
-                Platform::MemoryCopy(writePosition, readPosition, writeOffset * sizeof(T));
-
-                _data[_length] = 0;
-                Platform::Free(oldData);
             }
+
+            const auto oldLength = _length;
+            const auto oldData = _data;
+            _length += replacedCount * (replacementTextLength - searchTextLength);
+            _data = (T*)Platform::Allocate((_length + 1) * sizeof(T), 16);
+
+            T* writePosition = _data;
+            readPosition = oldData;
+            searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
+            while (searchPosition != nullptr)
+            {
+                const int32 writeOffset = (int32)(searchPosition - readPosition);
+                Platform::MemoryCopy(writePosition, readPosition, writeOffset * sizeof(T));
+                writePosition += writeOffset;
+
+                if (replacementTextLength > 0)
+                    Platform::MemoryCopy(writePosition, replacementText, replacementTextLength * sizeof(T));
+                writePosition += replacementTextLength;
+
+                readPosition = searchPosition + searchTextLength;
+                searchPosition = (T*)(searchCase == StringSearchCase::IgnoreCase ? StringUtils::FindIgnoreCase(readPosition, searchText) : StringUtils::Find(readPosition, searchText));
+            }
+
+            const int32 writeOffset = (int32)(oldData - readPosition) + oldLength;
+            Platform::MemoryCopy(writePosition, readPosition, writeOffset * sizeof(T));
+
+            _data[_length] = 0;
+            Platform::Free(oldData);
         }
 
         return replacedCount;

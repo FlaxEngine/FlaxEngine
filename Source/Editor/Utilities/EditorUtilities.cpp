@@ -816,6 +816,6 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const StringView& fi
     String text;
     if (File::ReadAllText(file, text))
         return true;
-    text.Replace(findWhat.GetText(), replaceWith.GetText());
+    text.Replace(findWhat.Get(), findWhat.Length(), replaceWith.Get(), replaceWith.Length());
     return File::WriteAllText(file, text, Encoding::ANSI);
 }
