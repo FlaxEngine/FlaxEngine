@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#if COMPILE_WITH_PROFILER
+#include "Engine/Profiler/ProfilerSrcLoc.h"
+#endif
 #include "MTypes.h"
 
 /// <summary>
@@ -42,6 +45,7 @@ public:
 
 #if COMPILE_WITH_PROFILER
     MString ProfilerName;
+    SourceLocationData ProfilerData;
 #endif
 
 #if USE_MONO

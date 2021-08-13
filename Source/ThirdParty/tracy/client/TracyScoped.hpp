@@ -12,8 +12,22 @@
 
 namespace tracy
 {
+void ScopedZone::Begin(const SourceLocationData* srcloc)
+{
+#ifdef TRACY_ON_DEMAND
+    if (!GetProfiler().IsConnected()) return;
+#endif
+    TracyLfqPrepare( QueueType::ZoneBegin );
+    MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
+    MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+    TracyLfqCommit;
+}
+
 void ScopedZone::Begin(uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz)
 {
+#ifdef TRACY_ON_DEMAND
+    if (!GetProfiler().IsConnected()) return;
+#endif
     TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
@@ -23,6 +37,9 @@ void ScopedZone::Begin(uint32_t line, const char* source, size_t sourceSz, const
 
 void ScopedZone::End()
 {
+#ifdef TRACY_ON_DEMAND
+    if (!GetProfiler().IsConnected()) return;
+#endif
     TracyLfqPrepare( QueueType::ZoneEnd );
     MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
     TracyLfqCommit;

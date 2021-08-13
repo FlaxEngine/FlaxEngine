@@ -5,6 +5,9 @@
 #include "../BinaryAsset.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Visject/VisjectGraph.h"
+#if COMPILE_WITH_PROFILER
+#include "Engine/Profiler/ProfilerSrcLoc.h"
+#endif
 
 #define VISUAL_SCRIPT_GRAPH_MAX_CALL_STACK 250
 #define VISUAL_SCRIPT_DEBUGGING USE_EDITOR
@@ -118,6 +121,7 @@ public:
         Array<StringAnsi, InlinedAllocation<16>> ParamNames;
 #if COMPILE_WITH_PROFILER
         StringAnsi ProfilerName;
+        SourceLocationData ProfilerData;
 #endif
     };
 
