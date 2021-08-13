@@ -263,10 +263,10 @@ namespace FlaxEngine
         /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
-        public int[] DownloadIndexBuffer(bool forceGpu = false)
+        public uint[] DownloadIndexBuffer(bool forceGpu = false)
         {
             var triangles = TriangleCount;
-            var result = new int[triangles * 3];
+            var result = new uint[triangles * 3];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB32))
                 throw new FlaxException("Failed to download mesh data.");
             return result;

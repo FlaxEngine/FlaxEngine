@@ -645,9 +645,9 @@ namespace FlaxEditor.Windows.Assets
                         for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
                         {
                             // Cache triangle indices
-                            int i0 = meshData.IndexBuffer[i + 0];
-                            int i1 = meshData.IndexBuffer[i + 1];
-                            int i2 = meshData.IndexBuffer[i + 2];
+                            uint i0 = meshData.IndexBuffer[i + 0];
+                            uint i1 = meshData.IndexBuffer[i + 1];
+                            uint i2 = meshData.IndexBuffer[i + 2];
 
                             // Cache triangle uvs positions and transform positions to output target
                             Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
@@ -820,7 +820,7 @@ namespace FlaxEditor.Windows.Assets
 
         private struct MeshData
         {
-            public int[] IndexBuffer;
+            public uint[] IndexBuffer;
             public SkinnedMesh.Vertex[] VertexBuffer;
         }
 

@@ -20,7 +20,7 @@ namespace FlaxEngine.Utilities
             /// <summary>
             /// The index buffer.
             /// </summary>
-            public int[] IndexBuffer;
+            public uint[] IndexBuffer;
 
             /// <summary>
             /// The vertex buffer.
