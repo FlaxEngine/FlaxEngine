@@ -167,7 +167,7 @@ void PlatformBase::Exit()
 
 #if COMPILE_WITH_PROFILER
 
-#define TRACY_ENABLE_MEMORY (TRACY_ENABLE && !USE_EDITOR)
+#define TRACY_ENABLE_MEMORY (TRACY_ENABLE)
 
 void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 {
