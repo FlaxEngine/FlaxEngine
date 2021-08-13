@@ -60,18 +60,23 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
     ProfilerName.Get()[className.Length()] = ':';
     ProfilerName.Get()[className.Length() + 1] = ':';
     Platform::MemoryCopy(ProfilerName.Get() + className.Length() + 2, _name.Get(), _name.Length());
+    ProfilerData.name = ProfilerName.Get();
+    ProfilerData.function = _name.Get();
+    ProfilerData.file = nullptr;
+    ProfilerData.line = 0;
+    ProfilerData.color = 0;
 #endif
 }
 
 MonoObject* MMethod::Invoke(void* instance, void** params, MonoObject** exception) const
 {
-    PROFILE_CPU_NAMED(*ProfilerName);
+    PROFILE_CPU_SRC_LOC(ProfilerData);
     return mono_runtime_invoke(_monoMethod, instance, params, exception);
 }
 
 MonoObject* MMethod::InvokeVirtual(MonoObject* instance, void** params, MonoObject** exception) const
 {
-    PROFILE_CPU_NAMED(*ProfilerName);
+    PROFILE_CPU_SRC_LOC(ProfilerData);
     MonoMethod* virtualMethod = mono_object_get_virtual_method(instance, _monoMethod);
     return mono_runtime_invoke(virtualMethod, instance, params, exception);
 }
