@@ -193,6 +193,14 @@ public:
     /// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
     /// <returns>The loaded asset or null if failed.</returns>
+    static Asset* LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type);
+
+    /// <summary>
+    /// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
+    /// </summary>
+    /// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
+    /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
+    /// <returns>The loaded asset or null if failed.</returns>
     static Asset* LoadAsyncInternal(const Char* internalPath, const ScriptingTypeHandle& type);
 
     /// <summary>

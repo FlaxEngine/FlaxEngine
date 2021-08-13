@@ -1659,7 +1659,7 @@ void LinuxClipboard::SetText(const StringView& text)
         return;
     X11::Window window = (X11::Window)mainWindow->GetNativePtr();
 
-    Impl::ClipboardText.Set(text.GetText(), text.Length());
+    Impl::ClipboardText.Set(text.Get(), text.Length());
     X11::XSetSelectionOwner(xDisplay, xAtomClipboard, window, CurrentTime); // CLIPBOARD
     X11::XSetSelectionOwner(xDisplay, (X11::Atom)1, window, CurrentTime); // XA_PRIMARY
 }
