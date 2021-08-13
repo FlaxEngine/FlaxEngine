@@ -45,7 +45,7 @@ namespace ProfilerInternal
 #else
         ScopeLock lock(ManagedSourceLocationsLocker);
         tracy::SourceLocationData* srcLoc = nullptr;
-        for (auto& e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
+        for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
         {
             if (name == e->Name)
             {
