@@ -73,6 +73,7 @@ public:
     }
 
     void Update() override;
+    void Dispose() override;
 };
 
 InputService InputServiceInstance;
@@ -913,4 +914,25 @@ void InputService::Update()
             }
         }
     }
+}
+
+void InputService::Dispose()
+{
+    // Dispose input devices
+    if (Input::Mouse)
+    {
+        Input::Mouse->DeleteObject();
+        Input::Mouse = nullptr;
+    }
+    if (Input::Keyboard)
+    {
+        Input::Keyboard->DeleteObject();
+        Input::Keyboard = nullptr;
+    }
+    for (int32 i = 0; i < Input::Gamepads.Count(); i++)
+        Input::Gamepads[i]->DeleteObject();
+    Input::Gamepads.Clear();
+    for (int32 i = 0; i < Input::CustomDevices.Count(); i++)
+        Input::CustomDevices[i]->DeleteObject();
+    Input::CustomDevices.Clear();
 }

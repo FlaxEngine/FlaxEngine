@@ -134,9 +134,13 @@ void JobSystemService::Dispose()
 
     for (int32 i = 0; i < ThreadsCount; i++)
     {
-        if (Threads[i] && Threads[i]->IsRunning())
-            Threads[i]->Kill(true);
-        Threads[i] = nullptr;
+        if (Threads[i])
+        {
+            if (Threads[i]->IsRunning())
+                Threads[i]->Kill(true);
+            Delete(Threads[i]);
+            Threads[i] = nullptr;
+        }
     }
 }
 
