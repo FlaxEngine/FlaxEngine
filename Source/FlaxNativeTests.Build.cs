@@ -19,6 +19,8 @@ public class FlaxNativeTestsTarget : EngineTarget
         // Initialize
         OutputName = "FlaxNativeTests";
         ConfigurationName = "Tests";
+
+        // TODO: All platforms would benefit from the tests.
         Platforms = new[]
         {
             TargetPlatform.Windows,
@@ -51,10 +53,11 @@ public class FlaxNativeTestsTarget : EngineTarget
     /// <inheritdoc />
     public override Target SelectReferencedTarget(ProjectInfo project, Target[] projectTargets)
     {
-        var testTargetName = "FlaxNativeTests";
+        var testTargetName = "FlaxNativeTests"; // Should this be added to .flaxproj, similarly as "GameTarget" and "EditorTarget"?
         var result = projectTargets.FirstOrDefault(x => x.Name == testTargetName);
         if (result == null)
-            throw new Exception("Invalid or missing test target {testTargetName} specified in project {project.Name} (referenced by project {Project.Name}).");
+            // Apparently .NET compiler that is used for building .Build.cs files is different that one used for building Flax.Build itself. String interpolation ($) does't work here.
+            throw new Exception(string.Format("Invalid or missing test target {0} specified in project {1} (referenced by project {2}).", testTargetName, project.Name, Project.Name));
         return result;
     }
 }

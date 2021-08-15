@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_LINUX
+#if PLATFORM_WINDOWS || PLATFORM_LINUX
 
 #define CATCH_CONFIG_RUNNER
 #include <ThirdParty/catch2/catch.hpp>
