@@ -65,10 +65,11 @@ public:
 
     /// <summary>
     /// Lexicographically tests how this string compares to the other given string.
+    /// In case sensitive mode 'A' is less than 'a'.
     /// </summary>
     /// <param name="str">The another string test against.</param>
     /// <param name="searchCase">The case sensitivity mode.</param>
-    /// <returns>0 if equal, -1 if less than, 1 if greater than.</returns>
+    /// <returns>0 if equal, negative number if less than, positive number if greater than.</returns>
     int32 Compare(const StringBase& str, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
         if (searchCase == StringSearchCase::CaseSensitive)
@@ -352,7 +353,7 @@ public:
     bool StartsWith(T c, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
         const int32 length = Length();
-        if (searchCase == StringSearchCase::IgnoreCase)
+        if (searchCase == StringSearchCase::CaseSensitive)
             return length > 0 && _data[0] == c;
         return length > 0 && StringUtils::ToLower(_data[0]) == StringUtils::ToLower(c);
     }
@@ -360,14 +361,16 @@ public:
     bool EndsWith(T c, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
         const int32 length = Length();
-        if (searchCase == StringSearchCase::IgnoreCase)
+        if (searchCase == StringSearchCase::CaseSensitive)
             return length > 0 && _data[length - 1] == c;
         return length > 0 && StringUtils::ToLower(_data[length - 1]) == StringUtils::ToLower(c);
     }
 
     bool StartsWith(const StringBase& prefix, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
-        if (prefix.IsEmpty() || Length() < prefix.Length())
+        if (prefix.IsEmpty())
+            return true;
+        if (Length() < prefix.Length())
             return false;
         if (searchCase == StringSearchCase::IgnoreCase)
             return StringUtils::CompareIgnoreCase(this->GetText(), *prefix, prefix.Length()) == 0;
@@ -376,7 +379,9 @@ public:
 
     bool EndsWith(const StringBase& suffix, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
-        if (suffix.IsEmpty() || Length() < suffix.Length())
+        if (suffix.IsEmpty())
+            return true;
+        if (Length() < suffix.Length())
             return false;
         if (searchCase == StringSearchCase::IgnoreCase)
             return StringUtils::CompareIgnoreCase(&(*this)[Length() - suffix.Length()], *suffix) == 0;
@@ -429,22 +434,19 @@ public:
     /// <summary>
     /// Replaces all occurences of searchText within current string with replacementText.
     /// </summary>
-    /// <param name="searchText">String to search for. If empty or null no replacements are done.</param>
-    /// <param name="searchTextLength">Length of searchText.</param>
+    /// <param name="searchText">String to search for.</param>
+    /// <param name="searchTextLength">Length of searchText. Must be greater than zero.</param>
     /// <param name="replacementText">String to replace with. Null is treated as empty string.</param>
     /// <param name="replacementTextLength">Length of replacementText.</param>
-    /// <returns>Number of replacements made. (In case-sensitive mode if search text and replacement text are equal no replacements are done, and zero is returned.)</returns>
+    /// <returns>Number of replacements made (in other words number of occurences of searchText).</returns>
     int32 Replace(const T* searchText, int32 searchTextLength, const T* replacementText, int32 replacementTextLength, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
     {
         if (!HasChars())
             return 0;
 
         if (searchTextLength == 0)
-            return 0;
-
-        // If we are doing case sensitive search and replacement text is equal to search text, we do nothing.
-        if ((searchCase == StringSearchCase::CaseSensitive) && (searchTextLength == replacementTextLength) && (StringUtils::Compare(searchText, replacementText) == 0))
         {
+            ASSERT(false);  // Empty search text never makes sense, and is always sign of a bug in calling code.
             return 0;
         }
 
