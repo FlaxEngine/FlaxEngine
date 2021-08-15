@@ -7,7 +7,7 @@ using Flax.Build;
 using Flax.Build.NativeCpp;
 
 /// <summary>
-/// The Flax Editor target that builds standalone tests.
+/// Target that builds standalone, native tests.
 /// </summary>
 public class FlaxNativeTestsTarget : EngineTarget
 {

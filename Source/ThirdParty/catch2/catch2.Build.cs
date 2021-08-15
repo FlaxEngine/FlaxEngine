@@ -16,16 +16,5 @@ public class catch2 : HeaderOnlyModule
 
         LicenseType = LicenseTypes.BoostSoftwareLicense;
         LicenseFilePath = "LICENSE.txt";
-
-        // Merge into test binary
-        BinaryModuleName = "Engine.Tests";
-    }
-
-    /// <inheritdoc />
-    public override void GetFilesToDeploy(List<string> files)
-    {
-        base.GetFilesToDeploy(files);
-
-        files.AddRange(Directory.GetFiles(FolderPath, "*.hpp", SearchOption.AllDirectories));
     }
 }
