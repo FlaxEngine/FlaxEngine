@@ -54,21 +54,23 @@ public:
 
     /// <summary>
     /// Lexicographically tests how this string compares to the other given string.
+    /// In case sensitive mode 'A' is less than 'a'.
     /// </summary>
     /// <param name="str">The another string test against.</param>
     /// <param name="searchCase">The case sensitivity mode.</param>
-    /// <returns>0 if equal, -1 if less than, 1 if greater than.</returns>
+    /// <returns>0 if equal, negative number if less than, positive number if greater than.</returns>
     int32 Compare(const StringViewBase& str, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
-        const int32 lengthDiff = Length() - str.Length();
-        if (lengthDiff != 0)
-            return lengthDiff;
-        if (Length() == 0)
+        const bool thisIsShorter = Length() < str.Length();
+        const int32 minLength = thisIsShorter ? Length() : str.Length();
+        const int32 prefixCompare = (searchCase == StringSearchCase::CaseSensitive)
+                                    ? StringUtils::Compare(this->GetNonTerminatedText(), str.GetNonTerminatedText(), minLength)
+                                    : StringUtils::CompareIgnoreCase(this->GetNonTerminatedText(), str.GetNonTerminatedText(), minLength);
+        if (prefixCompare != 0)
+            return prefixCompare;
+        if (Length() == str.Length())
             return 0;
-        // We know here that both this StringView and str are not empty, and therefore Get() below are valid.
-        if (searchCase == StringSearchCase::CaseSensitive)
-            return StringUtils::Compare(this->Get(), str.Get(), Length());
-        return StringUtils::CompareIgnoreCase(this->Get(), str.Get(), Length());
+        return thisIsShorter ? -1 : 1;
     }
 
 public:

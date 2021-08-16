@@ -226,7 +226,9 @@ bool String::IsANSI() const
 
 bool String::StartsWith(const StringView& prefix, StringSearchCase searchCase) const
 {
-    if (prefix.IsEmpty() || prefix.Length() > Length())
+    if (prefix.IsEmpty())
+        return true;
+    if (prefix.Length() > Length())
         return false;
     if (searchCase == StringSearchCase::IgnoreCase)
         return !StringUtils::CompareIgnoreCase(this->GetText(), *prefix, prefix.Length());
@@ -235,7 +237,9 @@ bool String::StartsWith(const StringView& prefix, StringSearchCase searchCase) c
 
 bool String::EndsWith(const StringView& suffix, StringSearchCase searchCase) const
 {
-    if (suffix.IsEmpty() || suffix.Length() > Length())
+    if (suffix.IsEmpty())
+        return true;
+    if (suffix.Length() > Length())
         return false;
     if (searchCase == StringSearchCase::IgnoreCase)
         return !StringUtils::CompareIgnoreCase(&(*this)[Length() - suffix.Length()], *suffix);
