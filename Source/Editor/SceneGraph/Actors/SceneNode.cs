@@ -70,7 +70,11 @@ namespace FlaxEditor.SceneGraph.Actors
             contextMenu.AddSeparator();
             var path = Scene.Path;
             if (!string.IsNullOrEmpty(path) && File.Exists(path))
-                contextMenu.AddButton("Select in Content", OnSelect).LinkTooltip("Finds and selects the scene asset int Content window.");
+            {
+                var b = contextMenu.AddButton("Show in content window", OnSelect);
+                b.Icon = Editor.Instance.Icons.Search12;
+                b.TooltipText = "Finds and selects the scene asset int Content window.";
+            }
             contextMenu.AddButton("Save scene", OnSave).LinkTooltip("Saves this scene.").Enabled = IsEdited && !Editor.IsPlayMode;
             contextMenu.AddButton("Unload scene", OnUnload).LinkTooltip("Unloads this scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
