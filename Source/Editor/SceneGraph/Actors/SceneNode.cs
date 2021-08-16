@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System.Net;
+using System.IO;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph.GUI;
 using FlaxEngine;
@@ -68,12 +68,20 @@ namespace FlaxEditor.SceneGraph.Actors
         public override void OnContextMenu(ContextMenu contextMenu)
         {
             contextMenu.AddSeparator();
+            var path = Scene.Path;
+            if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                contextMenu.AddButton("Select in Content", OnSelect).LinkTooltip("Finds and selects the scene asset int Content window.");
             contextMenu.AddButton("Save scene", OnSave).LinkTooltip("Saves this scene.").Enabled = IsEdited && !Editor.IsPlayMode;
             contextMenu.AddButton("Unload scene", OnUnload).LinkTooltip("Unloads this scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
             base.OnContextMenu(contextMenu);
         }
 
+        private void OnSelect()
+        {
+            Editor.Instance.Windows.ContentWin.Select(Editor.Instance.ContentDatabase.Find(Scene.Path));
+        }
+        
         private void OnSave()
         {
             Editor.Instance.Scene.SaveScene(this);
