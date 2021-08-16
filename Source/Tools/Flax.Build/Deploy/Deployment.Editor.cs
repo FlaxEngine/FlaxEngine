@@ -86,6 +86,8 @@ namespace Flax.Deploy
                     var files = new List<string>();
                     foreach (var module in rules.Modules)
                     {
+                        if (!module.Deploy)
+                            continue;
                         module.GetFilesToDeploy(files);
                         files.Add(module.FilePath);
                         foreach (var file in files)

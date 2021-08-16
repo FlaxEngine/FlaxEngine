@@ -1,11 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
-
 #include <ThirdParty/catch2/catch.hpp>
-
 
 TEST_CASE("String Replace works") {
     SECTION("Char, case sensitive") {

@@ -43,6 +43,11 @@ namespace Flax.Build
         public bool BuildCSharp = true;
 
         /// <summary>
+        /// True if module can be deployed.
+        /// </summary>
+        public bool Deploy = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         public Module()
