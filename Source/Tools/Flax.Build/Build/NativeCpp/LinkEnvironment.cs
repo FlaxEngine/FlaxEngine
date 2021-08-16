@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -77,6 +77,11 @@ namespace Flax.Build.NativeCpp
         public bool GenerateWindowsMetadata = false;
 
         /// <summary>
+        /// Use CONSOLE subsystem on Windows instead of the WINDOWS one.
+        /// </summary>
+        public bool LinkAsConsoleProgram = false;
+
+        /// <summary>
         /// Enables documentation generation.
         /// </summary>
         public bool GenerateDocumentation = false;
@@ -114,6 +119,7 @@ namespace Flax.Build.NativeCpp
                 LinkTimeCodeGeneration = LinkTimeCodeGeneration,
                 UseIncrementalLinking = UseIncrementalLinking,
                 GenerateWindowsMetadata = GenerateWindowsMetadata,
+                LinkAsConsoleProgram = LinkAsConsoleProgram,
                 GenerateDocumentation = GenerateDocumentation
             };
             foreach (var e in InputFiles)
