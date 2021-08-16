@@ -420,11 +420,17 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         /// <inheritdoc />
+        internal override void Initialize(CustomEditorPresenter presenter, LayoutElementsContainer layout, ValueContainer values)
+        {
+            _isNull = values != null && values.IsNull;
+
+            base.Initialize(presenter, layout, values);
+        }
+
+        /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var values = Values;
             _visibleIfCaches = null;
-            _isNull = values != null && values.IsNull;
 
             // Collect items to edit
             List<ItemInfo> items;
