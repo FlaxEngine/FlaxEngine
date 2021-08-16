@@ -183,7 +183,7 @@ namespace FlaxEditor.GUI.ContextMenu
             case KeyboardKeys.ArrowUp:
                 for (int i = IndexInParent - 1; i >= 0; i--)
                 {
-                    if (ParentContextMenu.ItemsContainer.Children[i] is ContextMenuButton item && item.Visible)
+                    if (ParentContextMenu.ItemsContainer.Children[i] is ContextMenuButton item && item.Visible && item.Enabled)
                     {
                         item.Focus();
                         ParentContextMenu.ItemsContainer.ScrollViewTo(item);
@@ -194,7 +194,7 @@ namespace FlaxEditor.GUI.ContextMenu
             case KeyboardKeys.ArrowDown:
                 for (int i = IndexInParent + 1; i < ParentContextMenu.ItemsContainer.Children.Count; i++)
                 {
-                    if (ParentContextMenu.ItemsContainer.Children[i] is ContextMenuButton item && item.Visible)
+                    if (ParentContextMenu.ItemsContainer.Children[i] is ContextMenuButton item && item.Visible && item.Enabled)
                     {
                         item.Focus();
                         ParentContextMenu.ItemsContainer.ScrollViewTo(item);

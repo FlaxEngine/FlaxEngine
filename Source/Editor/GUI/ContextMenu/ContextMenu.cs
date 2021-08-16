@@ -456,18 +456,30 @@ namespace FlaxEditor.GUI.ContextMenu
             if (base.OnKeyDown(key))
                 return true;
 
-            // Se;ect the first item
-            if (key == KeyboardKeys.ArrowDown)
+            switch (key)
             {
+            case KeyboardKeys.ArrowDown:
                 for (int i = 0; i < _panel.Children.Count; i++)
                 {
-                    if (_panel.Children[i] is ContextMenuButton item && item.Visible)
+                    if (_panel.Children[i] is ContextMenuButton item && item.Visible && item.Enabled)
                     {
                         item.Focus();
                         _panel.ScrollViewTo(item);
                         return true;
                     }
                 }
+                break;
+            case KeyboardKeys.ArrowUp:
+                for (int i = _panel.Children.Count - 1; i >= 0; i--)
+                {
+                    if (_panel.Children[i] is ContextMenuButton item && item.Visible && item.Enabled)
+                    {
+                        item.Focus();
+                        _panel.ScrollViewTo(item);
+                        return true;
+                    }
+                }
+                break;
             }
 
             return false;
