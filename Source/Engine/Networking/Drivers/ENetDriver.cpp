@@ -153,7 +153,7 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
     void* peer = nullptr;
     if(_peerMap.TryGet(connectionId, peer))
     {
-        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
+        enet_peer_disconnect_now((ENetPeer*)peer, 0);
         _peerMap.Remove(connectionId);
     }
     else
