@@ -175,7 +175,7 @@ ManagedEditor::~ManagedEditor()
 void ManagedEditor::Init()
 {
     // Note: editor modules should perform quite fast init, any longer things should be done in async during 'editor splash screen time
-    void* args[3];
+    void* args[4];
     MClass* mclass = GetClass();
     if (mclass == nullptr)
     {
@@ -194,14 +194,16 @@ void ManagedEditor::Init()
     MonoObject* exception = nullptr;
     bool isHeadless = CommandLine::Options.Headless.IsTrue();
     bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
+    bool newProject = CommandLine::Options.NewProject.IsTrue();
     args[0] = &isHeadless;
     args[1] = &skipCompile;
+    args[2] = &newProject;
     Guid sceneId;
     if (!CommandLine::Options.Play.HasValue() || (CommandLine::Options.Play.HasValue() && Guid::Parse(CommandLine::Options.Play.GetValue(), sceneId)))
     {
         sceneId = Guid::Empty;
     }
-    args[2] = &sceneId;
+    args[3] = &sceneId;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
