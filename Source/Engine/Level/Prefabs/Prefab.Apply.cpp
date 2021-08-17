@@ -849,9 +849,9 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             }
         }
 
-        // Deserialize prefab objects (apply modifications)
+        // Create prefab objects
         auto& data = *Data;
-        sceneObjects->Resize(ObjectsCount);
+        sceneObjects->Resize(ObjectsCount + newPrefabInstanceIdToDataIndex.Count());
         for (int32 i = 0; i < ObjectsCount; i++)
         {
             SceneObject* obj = SceneObjectsFactory::Spawn(data[i], modifier.Value);
@@ -864,6 +864,25 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             }
             obj->RegisterObject();
         }
+
+        // Create new prefab objects
+        int32 newPrefabInstanceIdToDataIndexCounter = 0;
+        int32 newPrefabInstanceIdToDataIndexStart = ObjectsCount;
+        for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
+        {
+            const int32 dataIndex = i->Value;
+            SceneObject* obj = SceneObjectsFactory::Spawn(diffDataDocument[dataIndex], modifier.Value);
+            sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++) = obj;
+            if (!obj)
+            {
+                // This should not happen but who knows
+                SceneObjectsFactory::HandleObjectDeserializationError(diffDataDocument[dataIndex]);
+                continue;
+            }
+            obj->RegisterObject();
+        }
+
+        // Deserialize prefab objects and apply modifications
         for (int32 i = 0; i < ObjectsCount; i++)
         {
             SceneObject* obj = sceneObjects->At(i);
@@ -897,6 +916,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
 
                 obj->DeleteObject();
                 obj->SetParent(nullptr);
+                sceneObjects->At(i) = nullptr;
             }
         }
         for (int32 i = 0; i < sceneObjects->Count(); i++)
@@ -906,22 +926,6 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         }
 
         // Deserialize new prefab objects
-        int32 newPrefabInstanceIdToDataIndexCounter = 0;
-        int32 newPrefabInstanceIdToDataIndexStart = sceneObjects->Count();
-        sceneObjects->Resize(sceneObjects->Count() + newPrefabInstanceIdToDataIndex.Count());
-        for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
-        {
-            const int32 dataIndex = i->Value;
-            SceneObject* obj = SceneObjectsFactory::Spawn(diffDataDocument[dataIndex], modifier.Value);
-            sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++) = obj;
-            if (!obj)
-            {
-                // This should not happen but who knows
-                SceneObjectsFactory::HandleObjectDeserializationError(diffDataDocument[dataIndex]);
-                continue;
-            }
-            obj->RegisterObject();
-        }
         newPrefabInstanceIdToDataIndexCounter = 0;
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
@@ -950,6 +954,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 }
             }
         }
+
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
         if (sceneObjects.Value->IsEmpty())
         {
