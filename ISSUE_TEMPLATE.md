@@ -4,7 +4,7 @@ https://github.com/flaxengine/FlaxEngine/issues?q=is%3Aissue
 
 **Issue description:**
 <!-- What happened, and what was expected. -->
-
+<!-- Log file, can be found in the project directory's `Logs` folder (optional) -->
 
 **Steps to reproduce:**
 <!-- Enter minimal reproduction steps if available. -->
