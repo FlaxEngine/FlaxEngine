@@ -248,6 +248,34 @@ namespace Math
         return ulp > maxUlp;
     }
 
+    /// <summary>
+        /// Checks if a and b are almost equals, taking into account the magnitude of double precision floating point numbers
+        /// </summary>
+        /// <param name="a">The left value to compare</param>
+        /// <param name="b">The right value to compare</param>
+        /// <returns>True if a almost equal to b, otherwise false</returns>
+        static bool NearEqual(double a, double b)
+        {
+            // Check if the numbers are really close - needed when comparing numbers near zero
+            if (IsZero(a - b))
+                return true;
+    
+            // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+            const int64 aInt = *(int64*)&a;
+            const int64 bInt = *(int64*)&b;
+    
+            // Different signs means they do not match
+            if (aInt < 0 != bInt < 0)
+                return false;
+    
+            // Find the difference in ULPs
+            const int64 ulp = Abs(aInt - bInt);
+    
+            // Choose of maxUlp = 4
+            // according to http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
+            const int maxUlp = 4;
+            return ulp <= maxUlp;
+        }
 
     /// <summary>
     /// Checks if a and b are almost equals within the given epsilon value.
