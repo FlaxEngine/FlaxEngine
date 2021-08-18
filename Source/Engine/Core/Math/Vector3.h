@@ -6,6 +6,9 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
+struct Double2;
+struct Double3;
+struct Double4;
 struct Quaternion;
 struct Matrix;
 struct Vector2;
@@ -134,7 +137,7 @@ public:
     // Init
     // @param xy Vector2 with X and Y components values
     // @param z Z component value
-    Vector3(const Vector2& xy, float z);
+    explicit Vector3(const Vector2& xy, float z);
 
     // Init
     // @param xy Vector3 value
@@ -157,6 +160,19 @@ public:
     // @param xyz Vector4 value
     explicit Vector3(const Vector4& xyz);
 
+    // Init
+    // @param xy Double2 with X and Y components values
+    // @param z Z component value
+    explicit  Vector3(const Double2& xy, float z);
+
+    // Init
+    // @param xyz Double3 value
+    explicit Vector3(const Double3& xyz);
+
+    // Init
+    // @param xyzw Double4 value
+    explicit  Vector3(const Double4& xyzw);
+    
     // Init
     // @param color Color value
     explicit Vector3(const Color& color);

@@ -6,6 +6,9 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
+struct Double2;
+struct Double3;
+struct Double4;
 struct Vector3;
 struct Vector4;
 struct Int2;
@@ -107,6 +110,18 @@ public:
     // @param v Vector4 to use X and Y components
     explicit Vector2(const Vector4& xyzw);
 
+    // Init
+    // @param xy Double2 to use X and Y components
+    explicit Vector2(const Double2& xy);
+
+    // Init
+    // @param xyz Double3 to use X and Y components
+    explicit Vector2(const Double3& xyz);
+
+    // Init
+    // @param xyzw Double4 to use X and Y components
+    explicit Vector2(const Double4& xyzw);
+    
     // Init
     // @param color Color value
     explicit Vector2(const Color& color);
