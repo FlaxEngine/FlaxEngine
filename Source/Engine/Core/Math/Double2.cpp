@@ -1,6 +1,8 @@
 ﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Double2.h"
+#include "Double3.h"
+#include "Double4.h"
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -12,10 +14,10 @@
 
 static_assert(sizeof(Double2) == 16, "Invalid Double2 type size.");
 
-const Double2 Double2::Zero(0);
-const Double2 Double2::One(1);
-const Double2 Double2::UnitX(1, 0);
-const Double2 Double2::UnitY(0, 1);
+const Double2 Double2::Zero(0.0);
+const Double2 Double2::One(1.0);
+const Double2 Double2::UnitX(1.0, 0.0);
+const Double2 Double2::UnitY(0.0, 1.0);
 const Double2 Double2::Minimum(MIN_double);
 const Double2 Double2::Maximum(MAX_double);
 
@@ -55,6 +57,18 @@ Double2::Double2(const Vector4& xyzw)
 {
 }
 
+Double2::Double2(const Double3& xyz)
+    : X(xyz.X)
+    , Y(xyz.Y)
+{
+}
+
+Double2::Double2(const Double4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
+{
+}
+
 Double2::Double2(const Color& color)
     : X(color.R)
     , Y(color.G)
@@ -81,12 +95,12 @@ Double2 Double2::Normalize(const Double2& v)
 
 Int2 Double2::CeilToInt(const Double2& v)
 {
-    return Int2(Math::CeilToInt(v.X), Math::CeilToInt(v.Y));
+    return Int2((int32)Math::CeilToInt(v.X), (int32)Math::CeilToInt(v.Y));
 }
 
 Int2 Double2::FloorToInt(const Double2& v)
 {
-    return Int2(Math::FloorToInt(v.X), Math::FloorToInt(v.Y));
+    return Int2((int32)Math::FloorToInt(v.X), (int32)Math::FloorToInt(v.Y));
 }
 
 double Double2::TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2)

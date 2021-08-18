@@ -7,6 +7,8 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
+struct Double3;
+struct Double4;
 struct Vector2;
 struct Vector3;
 struct Vector4;
@@ -89,6 +91,16 @@ public:
     {
     }
 
+    /// <summary>
+    /// Init
+    /// </summary>
+    /// <param name="v">X and Z components in an array</param>
+    explicit Double2(double xy[2])
+        : X(xy[0])
+        , Y(xy[1])
+    {
+    }
+    
     // Init
     // @param v Int2 to use X and Y components
     explicit Double2(const Int2& xy);
@@ -112,6 +124,14 @@ public:
     // Init
     // @param v Vector4 to use X and Y components
     explicit Double2(const Vector4& xyzw);
+
+    // Init
+    // @param v Double3 to use X and Y components
+    explicit Double2(const Double3& xyz);
+
+    // Init
+    // @param v Double4 to use X and Y components
+    explicit Double2(const Double4& xyzw);
 
     // Init
     // @param color Color value
