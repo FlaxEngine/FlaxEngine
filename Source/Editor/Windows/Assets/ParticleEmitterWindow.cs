@@ -120,7 +120,6 @@ namespace FlaxEditor.Windows.Assets
 
             // Asset properties proxy
             _properties = new PropertiesProxy();
-            _propertiesEditor.Select(_properties);
 
             // Preview properties editor
             _previewTab = new Tab("Preview");
@@ -217,14 +216,13 @@ namespace FlaxEditor.Windows.Assets
             get => _asset.LoadSurface(true);
             set
             {
-                // Save data to the temporary asset
                 if (_asset.SaveSurface(value))
                 {
-                    // Error
                     _surface.MarkAsEdited();
                     Editor.LogError("Failed to save Particle Emitter surface data");
                 }
                 _asset.Reload();
+                _asset.WaitForLoaded();
                 _preview.PreviewActor.ResetSimulation();
                 _previewTab.Presenter.BuildLayoutOnUpdate();
             }
@@ -253,6 +251,14 @@ namespace FlaxEditor.Windows.Assets
         {
             _surface.Save();
             return false;
+        }
+
+        /// <inheritdoc />
+        protected override void OnSurfaceEditingStart()
+        {
+            _propertiesEditor.Select(_properties);
+
+            base.OnSurfaceEditingStart();
         }
 
         /// <inheritdoc />
