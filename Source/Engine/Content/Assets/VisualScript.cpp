@@ -1222,6 +1222,11 @@ Asset::LoadResult VisualScript::load()
         method.ProfilerName.Get()[assetName.Length()] = ':';
         method.ProfilerName.Get()[assetName.Length() + 1] = ':';
         Platform::MemoryCopy(method.ProfilerName.Get() + assetName.Length() + 2, method.Name.Get(), method.Name.Length());
+        method.ProfilerData.name = method.ProfilerName.Get();
+        method.ProfilerData.function = method.Name.Get();
+        method.ProfilerData.file = nullptr;
+        method.ProfilerData.line = 0;
+        method.ProfilerData.color = 0;
     }
 #endif
 
@@ -2139,7 +2144,7 @@ VisualScriptingBinaryModule* VisualScripting::GetBinaryModule()
 Variant VisualScripting::Invoke(VisualScript::Method* method, ScriptingObject* instance, Span<Variant> parameters)
 {
     CHECK_RETURN(method && method->Script->IsLoaded(), Variant::Zero);
-    PROFILE_CPU_NAMED(*method->ProfilerName);
+    PROFILE_CPU_SRC_LOC(method->ProfilerData);
 
     // Add to the calling stack
     ScopeContext scope;

@@ -166,7 +166,7 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "String")
                 return $"(StringView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
-                return $"((StringView){value}).GetText()";
+                return $"((StringView){value}).GetNonTerminatedText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
@@ -1028,7 +1028,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
             contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
             contents.AppendLine($"        auto method = scriptVTable[{scriptVTableIndex}];");
-            contents.AppendLine("        PROFILE_CPU_NAMED(*method->ProfilerName);");
+            contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
             contents.AppendLine("        MonoObject* exception = nullptr;");
 
             contents.AppendLine("        auto prevWrapperCallInstance = WrapperCallInstance;");
@@ -1290,7 +1290,7 @@ namespace Flax.Build.Bindings
                 contents.Append("        if (!mmethod)").AppendLine();
                 contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                 contents.Append("        CHECK(mmethod);").AppendLine();
-                contents.Append("        PROFILE_CPU_NAMED(*mmethod->ProfilerName);").AppendLine();
+                contents.Append($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::On{eventInfo.Name}\");").AppendLine();
                 contents.Append("        MonoObject* exception = nullptr;").AppendLine();
                 if (paramsCount == 0)
                     contents.AppendLine("        void** params = nullptr;");

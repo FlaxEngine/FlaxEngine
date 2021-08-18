@@ -9,13 +9,29 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Profiler/Profiler.h"
+#if TRACY_ENABLE && !PROFILE_CPU_USE_TRANSIENT_DATA
+#include "Engine/Core/Collections/ChunkedArray.h"
+#endif
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 
 namespace ProfilerInternal
 {
 #if COMPILE_WITH_PROFILER
-    Array<int32> ManagedEventsGPU;
+    Array<int32, InlinedAllocation<32>> ManagedEventsGPU;
+#if TRACY_ENABLE && !PROFILE_CPU_USE_TRANSIENT_DATA
+    CriticalSection ManagedSourceLocationsLocker;
+
+    struct Location
+    {
+        String Name;
+        StringAnsi NameAnsi;
+        tracy::SourceLocationData SrcLocation;
+    };
+
+    ChunkedArray<Location, 256> ManagedSourceLocations;
+#endif
 #endif
 
     void BeginEvent(MonoString* nameObj)
@@ -24,7 +40,34 @@ namespace ProfilerInternal
         const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
         ProfilerCPU::BeginEvent(*name);
 #if TRACY_ENABLE
+#if PROFILE_CPU_USE_TRANSIENT_DATA
         tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
+#else
+        ScopeLock lock(ManagedSourceLocationsLocker);
+        tracy::SourceLocationData* srcLoc = nullptr;
+        for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
+        {
+            if (name == e->Name)
+            {
+                srcLoc = &e->SrcLocation;
+                break;
+            }
+        }
+        if (!srcLoc)
+        {
+            auto& e = ManagedSourceLocations.AddOne();
+            e.Name = name;
+            e.NameAnsi = name.Get();
+            srcLoc = &e.SrcLocation;
+            srcLoc->name = e.NameAnsi.Get();
+            srcLoc->function = nullptr;
+            srcLoc->file = nullptr;
+            srcLoc->line = 0;
+            srcLoc->color = 0;
+        }
+        //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
+        tracy::ScopedZone::Begin(srcLoc);
+#endif
 #endif
 #endif
     }

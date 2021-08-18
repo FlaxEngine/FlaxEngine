@@ -272,8 +272,10 @@ namespace FlaxEditor
                 module.OnEndInit();
         }
 
-        internal void Init(bool isHeadless, bool skipCompile, Guid startupScene)
+        internal void Init(bool isHeadless, bool skipCompile, bool newProject, Guid startupScene)
         {
+            if (newProject)
+                InitProject();
             EnsureState<LoadingState>();
             _isHeadlessMode = isHeadless;
             _startupSceneCmdLine = startupScene;
@@ -471,6 +473,33 @@ namespace FlaxEditor
                 StateMachine.EditingSceneState.AutoSaveStatus = msg;
                 UI.UpdateStatusBar();
             }
+        }
+
+        private void InitProject()
+        {
+            // Initialize empty project with default game configuration
+            Log("Initialize new project");
+            var project = GameProject;
+            var gameSettings = new GameSettings
+            {
+                ProductName = project.Name,
+                CompanyName = project.Company,
+            };
+            GameSettings.Save(gameSettings);
+            GameSettings.Save(new TimeSettings());
+            GameSettings.Save(new AudioSettings());
+            GameSettings.Save(new PhysicsSettings());
+            GameSettings.Save(new LayersAndTagsSettings());
+            GameSettings.Save(new InputSettings());
+            GameSettings.Save(new GraphicsSettings());
+            GameSettings.Save(new NavigationSettings());
+            GameSettings.Save(new LocalizationSettings());
+            GameSettings.Save(new BuildSettings());
+            GameSettings.Save(new StreamingSettings());
+            GameSettings.Save(new WindowsPlatformSettings());
+            GameSettings.Save(new LinuxPlatformSettings());
+            GameSettings.Save(new AndroidPlatformSettings());
+            GameSettings.Save(new UWPPlatformSettings());
         }
 
         internal void OnPlayBeginning()

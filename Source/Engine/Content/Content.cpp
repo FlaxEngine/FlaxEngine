@@ -384,12 +384,12 @@ Asset* Content::LoadAsyncInternal(const StringView& internalPath, MClass* type)
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
     if (scriptingType)
-        return LoadAsyncInternal(internalPath.GetText(), scriptingType);
+        return LoadAsyncInternal(internalPath, scriptingType);
     LOG(Error, "Failed to find asset type '{0}'.", String(type->GetFullName()));
     return nullptr;
 }
 
-Asset* Content::LoadAsyncInternal(const Char* internalPath, const ScriptingTypeHandle& type)
+Asset* Content::LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type)
 {
 #if USE_EDITOR
     const String path = Globals::EngineContentFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
@@ -409,6 +409,11 @@ Asset* Content::LoadAsyncInternal(const Char* internalPath, const ScriptingTypeH
     }
 
     return asset;
+}
+
+Asset* Content::LoadAsyncInternal(const Char* internalPath, const ScriptingTypeHandle& type)
+{
+    return LoadAsyncInternal(StringView(internalPath), type);
 }
 
 FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type)

@@ -388,6 +388,105 @@ int32 Editor::LoadProduct()
         projectPath.Clear();
     }
 
+    // Create new project option
+    if (CommandLine::Options.NewProject)
+    {
+        if (projectPath.IsEmpty())
+            projectPath = Platform::GetWorkingDirectory();
+        else if (!FileSystem::DirectoryExists(projectPath))
+            FileSystem::CreateDirectory(projectPath);
+        FileSystem::NormalizePath(projectPath);
+
+        String folderName = StringUtils::GetFileName(projectPath);
+        String tmpName;
+        for (int32 i = 0; i < folderName.Length(); i++)
+        {
+            Char c = folderName[i];
+            if (StringUtils::IsAlnum(c) && c != ' ' && c != '.')
+                tmpName += c;
+        }
+
+        // Create project file
+        ProjectInfo newProject;
+        newProject.Name = MoveTemp(tmpName);
+        newProject.ProjectPath = projectPath / newProject.Name + TEXT(".flaxproj");
+        newProject.ProjectFolderPath = projectPath;
+        newProject.Version = Version(1, 0);
+        newProject.Company = TEXT("My Company");
+        newProject.MinEngineVersion = FLAXENGINE_VERSION;
+        newProject.GameTarget = TEXT("GameTarget");
+        newProject.EditorTarget = TEXT("GameEditorTarget");
+        auto& flaxRef = newProject.References.AddOne();
+        flaxRef.Name = TEXT("$(EnginePath)/Flax.flaxproj");
+        flaxRef.Project = nullptr;
+        if (newProject.SaveProject())
+            return 10;
+
+        // Generate source files
+        if (FileSystem::CreateDirectory(projectPath / TEXT("Content")))
+            return 11;
+        if (FileSystem::CreateDirectory(projectPath / TEXT("Source/Game")))
+            return 11;
+        bool failed = File::WriteAllText(projectPath / TEXT("Source/GameTarget.Build.cs"),TEXT(
+                                             "using Flax.Build;\n"
+                                             "\n"
+                                             "public class GameTarget : GameProjectTarget\n"
+                                             "{\n"
+                                             "    /// <inheritdoc />\n"
+                                             "    public override void Init()\n"
+                                             "    {\n"
+                                             "        base.Init();\n"
+                                             "\n"
+                                             "        // Reference the modules for game\n"
+                                             "        Modules.Add(\"Game\");\n"
+                                             "    }\n"
+                                             "}\n"), Encoding::Unicode);
+        failed |= File::WriteAllText(projectPath / TEXT("Source/GameEditorTarget.Build.cs"),TEXT(
+                                         "using Flax.Build;\n"
+                                         "\n"
+                                         "public class GameEditorTarget : GameProjectEditorTarget\n"
+                                         "{\n"
+                                         "    /// <inheritdoc />\n"
+                                         "    public override void Init()\n"
+                                         "    {\n"
+                                         "        base.Init();\n"
+                                         "\n"
+                                         "        // Reference the modules for editor\n"
+                                         "        Modules.Add(\"Game\");\n"
+                                         "    }\n"
+                                         "}\n"), Encoding::Unicode);
+        failed |= File::WriteAllText(projectPath / TEXT("Source/Game/Game.Build.cs"),TEXT(
+                                         "using Flax.Build;\n"
+                                         "using Flax.Build.NativeCpp;\n"
+                                         "\n"
+                                         "public class Game : GameModule\n"
+                                         "{\n"
+                                         "    /// <inheritdoc />\n"
+                                         "    public override void Init()\n"
+                                         "    {\n"
+                                         "        base.Init();\n"
+                                         "\n"
+                                         "        // C#-only scripting\n"
+                                         "        BuildNativeCode = false;\n"
+                                         "    }\n"
+                                         "\n"
+                                         "    /// <inheritdoc />\n"
+                                         "    public override void Setup(BuildOptions options)\n"
+                                         "    {\n"
+                                         "        base.Setup(options);\n"
+                                         "\n"
+                                         "        options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;\n"
+                                         "\n"
+                                         "        // Here you can modify the build options for your game module\n"
+                                         "        // To reference another module use: options.PublicDependencies.Add(\"Audio\");\n"
+                                         "        // To add C++ define use: options.PublicDefinitions.Add(\"COMPILE_WITH_FLAX\");\n"
+                                         "        // To learn more see scripting documentation.\n"
+                                         "    }\n"
+                                         "}\n"), Encoding::Unicode);
+        if (failed)
+            return 12;
+    }
+
     // Missing project case
     if (projectPath.IsEmpty())
     {

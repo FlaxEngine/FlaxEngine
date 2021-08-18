@@ -386,33 +386,31 @@ struct TIsPODType<ProfilerCPU::Event>
     enum { Value = true };
 };
 
+#include "ProfilerSrcLoc.h"
+
 // Shortcut macros for profiling a single code block execution on CPU
 // Use ZoneTransient for Tracy for code that can be hot-reloaded (eg. in Editor) or if name can be a variable
+#define PROFILE_CPU_USE_TRANSIENT_DATA 0
 
-#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name)
-
-#if defined(_MSC_VER)
-
-#if USE_EDITOR
-#define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
-#else
-#define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(TEXT(__FUNCTION__))
-#endif
-
-#else
-
-#if USE_EDITOR
+#if PROFILE_CPU_USE_TRANSIENT_DATA
 #define PROFILE_CPU() ZoneTransient(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(__FUNCTION__)
+#define PROFILE_CPU_NAMED(name) ZoneTransientN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name)
 #else
 #define PROFILE_CPU() ZoneNamed(___tracy_scoped_zone, true); ScopeProfileBlockCPU ProfileBlockCPU(__FUNCTION__)
+#define PROFILE_CPU_NAMED(name) ZoneNamedN(___tracy_scoped_zone, name, true); ScopeProfileBlockCPU ProfileBlockCPU(name)
 #endif
 
+#ifdef TRACY_ENABLE
+#define PROFILE_CPU_SRC_LOC(srcLoc) tracy::ScopedZone ___tracy_scoped_zone( (tracy::SourceLocationData*)&(srcLoc) ); ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
+#else
+#define PROFILE_CPU_SRC_LOC(srcLoc) ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
 #endif
 
 #else
 
 // Empty macros for disabled profiler
-#define PROFILE_CPU_NAMED(name)
 #define PROFILE_CPU()
+#define PROFILE_CPU_NAMED(name)
+#define PROFILE_CPU_SRC_LOC(srcLoc)
 
 #endif

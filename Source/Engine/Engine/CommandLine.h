@@ -135,6 +135,11 @@ public:
         String Project;
 
         /// <summary>
+        /// -new (generates the project files inside the specified project folder or uses current workspace folder)
+        /// </summary>
+        Nullable<bool> NewProject;
+
+        /// <summary>
         /// -genprojectfiles (generates the scripts project files)
         /// </summary>
         Nullable<bool> GenProjectFiles;

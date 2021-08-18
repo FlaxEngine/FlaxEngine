@@ -169,8 +169,8 @@ public:
     /// <summary>
     /// Copy memory region
     /// </summary>
-    /// <param name="dst">Destination memory address</param>
-    /// <param name="src">Source memory address</param>
+    /// <param name="dst">Destination memory address. Must not be null, even if size is zero.</param>
+    /// <param name="src">Source memory address. Must not be null, even if size is zero.</param>
     /// <param name="size">Size of the memory to copy in bytes</param>
     FORCE_INLINE static void MemoryCopy(void* dst, const void* src, uint64 size)
     {
@@ -180,7 +180,7 @@ public:
     /// <summary>
     /// Set memory region with given value
     /// </summary>
-    /// <param name="dst">Destination memory address</param>
+    /// <param name="dst">Destination memory address. Must not be null, even if size is zero.</param>
     /// <param name="size">Size of the memory to set in bytes</param>
     /// <param name="value">Value to set</param>
     FORCE_INLINE static void MemorySet(void* dst, uint64 size, int32 value)
@@ -191,7 +191,7 @@ public:
     /// <summary>
     /// Clear memory region with zeros
     /// </summary>
-    /// <param name="dst">Destination memory address</param>
+    /// <param name="dst">Destination memory address. Must not be null, even if size is zero.</param>
     /// <param name="size">Size of the memory to clear in bytes</param>
     FORCE_INLINE static void MemoryClear(void* dst, uint64 size)
     {
@@ -201,8 +201,8 @@ public:
     /// <summary>
     /// Compare two blocks of the memory.
     /// </summary>
-    /// <param name="buf1">The first buffer address.</param>
-    /// <param name="buf2">The second buffer address.</param>
+    /// <param name="buf1">The first buffer address. Must not be null, even if size is zero.</param>
+    /// <param name="buf2">The second buffer address. Must not be null, even if size is zero.</param>
     /// <param name="size">Size of the memory to compare in bytes.</param>
     FORCE_INLINE static int32 MemoryCompare(const void* buf1, const void* buf2, uint64 size)
     {
