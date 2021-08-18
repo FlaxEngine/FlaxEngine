@@ -229,7 +229,7 @@ namespace FlaxEditor.Windows.Assets
                     layout.Label("No parameters");
                     return;
                 }
-                if (!materialInstance.IsLoaded || materialInstance.BaseMaterial && !materialInstance.BaseMaterial.IsLoaded)
+                if (!materialInstance.IsLoaded || (materialInstance.BaseMaterial && !materialInstance.BaseMaterial.IsLoaded))
                 {
                     layout.Label("Loading...");
                     return;
@@ -352,10 +352,9 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Material properties editor
-            _editor = new CustomEditorPresenter(_undo);
+            _editor = new CustomEditorPresenter(_undo, "Loading...");
             _editor.Panel.Parent = _split.Panel2;
             _properties = new PropertiesProxy();
-            _editor.Select(_properties);
             _editor.Modified += OnMaterialPropertyEdited;
 
             // Setup input actions
@@ -479,16 +478,11 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Check if need to load
             if (_isWaitingForLoad && _asset.IsLoaded && (_asset.BaseMaterial == null || _asset.BaseMaterial.IsLoaded))
             {
-                // Clear flag
                 _isWaitingForLoad = false;
-
-                // Init material properties and parameters proxy
                 _properties.OnLoad(this);
-
-                // Setup
+                _editor.Select(_properties);
                 ClearEditedFlag();
                 _undo.Clear();
                 _editor.BuildLayout();

@@ -604,7 +604,7 @@ namespace FlaxEditor.Surface
                     Parent = this
                 };
 
-                Presenter = new CustomEditorPresenter(undo);
+                Presenter = new CustomEditorPresenter(undo, "Loading...");
                 Presenter.Panel.Parent = scrollPanel;
             }
 
@@ -744,7 +744,7 @@ namespace FlaxEditor.Surface
             }
             else
             {
-                _propertiesEditor = new CustomEditorPresenter(_undo);
+                _propertiesEditor = new CustomEditorPresenter(_undo, "Loading...");
                 _propertiesEditor.Panel.Parent = _split2.Panel2;
             }
             _propertiesEditor.Modified += OnPropertyEdited;
@@ -897,6 +897,16 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Called when surface gets loaded and user can edit it.
+        /// </summary>
+        protected virtual void OnSurfaceEditingStart()
+        {
+            _undo.Clear();
+            _surface.Enabled = true;
+            _propertiesEditor.BuildLayout();
+        }
+
+        /// <summary>
         /// Loads the surface from the asset. Called during <see cref="Update"/> when asset is loaded and surface is missing.
         /// </summary>
         /// <returns>True if failed, otherwise false.</returns>
@@ -939,10 +949,7 @@ namespace FlaxEditor.Surface
                     return;
                 }
 
-                // Setup
-                _undo.Clear();
-                _surface.Enabled = true;
-                _propertiesEditor.BuildLayout();
+                OnSurfaceEditingStart();
                 ClearEditedFlag();
                 if (_showWholeGraphOnLoad)
                 {

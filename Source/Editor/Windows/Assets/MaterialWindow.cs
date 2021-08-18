@@ -222,7 +222,6 @@ namespace FlaxEditor.Windows.Assets
 
             // Asset properties proxy
             _properties = new PropertiesProxy();
-            _propertiesEditor.Select(_properties);
 
             // Surface
             _surface = new MaterialSurface(this, Save, _undo)
@@ -324,17 +323,14 @@ namespace FlaxEditor.Windows.Assets
             get => _asset.LoadSurface(true);
             set
             {
-                // Create material info
                 FillMaterialInfo(out var info);
-
-                // Save data to the temporary material
                 if (_asset.SaveSurface(value, info))
                 {
-                    // Error
                     _surface.MarkAsEdited();
                     Editor.LogError("Failed to save material surface data");
                 }
                 _asset.Reload();
+                _asset.WaitForLoaded();
             }
         }
 
@@ -347,7 +343,6 @@ namespace FlaxEditor.Windows.Assets
             // Load surface graph
             if (_surface.Load())
             {
-                // Error
                 Editor.LogError("Failed to load material surface.");
                 return true;
             }
@@ -360,6 +355,14 @@ namespace FlaxEditor.Windows.Assets
         {
             _surface.Save();
             return false;
+        }
+
+        /// <inheritdoc />
+        protected override void OnSurfaceEditingStart()
+        {
+            _propertiesEditor.Select(_properties);
+
+            base.OnSurfaceEditingStart();
         }
 
         /// <inheritdoc />
