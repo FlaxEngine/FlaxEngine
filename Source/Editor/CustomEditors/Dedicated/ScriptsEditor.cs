@@ -629,7 +629,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 group.Panel.TooltipText = scriptType.TypeName;
                 var tooltip = (TooltipAttribute)typeAttributes.FirstOrDefault(x => x is TooltipAttribute);
                 if (tooltip != null)
-                    group.Panel.TooltipText = '\n' + tooltip.Text;
+                    group.Panel.TooltipText += '\n' + tooltip.Text;
                 if (script.HasPrefabLink)
                     group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.ProgressNormal;
 
