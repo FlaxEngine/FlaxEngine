@@ -933,41 +933,34 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneLoading, scene, sceneId);
 
-    // Maps the loaded actor object to the json data with the RemovedObjects array (used to skip restoring objects removed per prefab instance)
-    SceneObjectsFactory::ActorToRemovedObjectsDataLookup actorToRemovedObjectsData;
-
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
     sceneObjects->At(0) = scene;
 
+    SceneObjectsFactory::Context context(modifier.Value);
     {
         PROFILE_CPU_NAMED("Spawn");
 
         // Spawn all scene objects
         for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
         {
-            auto& objData = data[i];
-            auto obj = SceneObjectsFactory::Spawn(objData, modifier.Value);
+            auto& stream = data[i];
+            auto obj = SceneObjectsFactory::Spawn(context, stream);
             sceneObjects->At(i) = obj;
             if (obj)
-            {
-                // Register object so it can be later referenced during deserialization (FindObject will work to link references between objects)
                 obj->RegisterObject();
-
-                // Special case for actors
-                if (auto actor = dynamic_cast<Actor*>(obj))
-                {
-                    // Check for RemovedObjects listing
-                    const auto removedObjects = SERIALIZE_FIND_MEMBER(objData, "RemovedObjects");
-                    if (removedObjects != objData.MemberEnd())
-                    {
-                        actorToRemovedObjectsData.Add(actor, &removedObjects->value);
-                    }
-                }
-            }
+            else
+                SceneObjectsFactory::HandleObjectDeserializationError(stream);
         }
     }
+
+    SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, data, modifier.Value);
+
+    SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
+
+    // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+    SceneObjectsFactory::SynchronizeNewPrefabInstances(context, prefabSyncData);
 
     // /\ all above this has to be done on an any thread
     // \/ all below this has to be done on multiple threads at once
@@ -984,9 +977,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
             auto& objData = data[i];
             auto obj = sceneObjects->At(i);
             if (obj)
-                SceneObjectsFactory::Deserialize(obj, objData, modifier.Value);
-            else
-                SceneObjectsFactory::HandleObjectDeserializationError(objData);
+                SceneObjectsFactory::Deserialize(context, obj, objData);
         }
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
     }
@@ -994,11 +985,15 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // /\ all above this has to be done on multiple threads at once
     // \/ all below this has to be done on an any thread
 
+    // Synchronize prefab instances (prefab may have objects removed or reordered so deserialized instances need to synchronize with it)
+    // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+    SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
+
     // Call post load event to connect all scene actors
     {
         PROFILE_CPU_NAMED("Post Load");
 
-        for (int32 i = 0; i < objectsCount; i++)
+        for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects->At(i);
             if (obj)
@@ -1006,17 +1001,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         }
     }
 
-    // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-    SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
-
     // Delete objects without parent
     for (int32 i = 1; i < objectsCount; i++)
     {
         SceneObject* obj = sceneObjects->At(i);
         if (obj && obj->GetParent() == nullptr)
         {
-            sceneObjects->At(i) = nullptr;
             LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
             obj->DeleteObject();
         }

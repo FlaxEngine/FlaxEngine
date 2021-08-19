@@ -123,8 +123,6 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     // Prepare
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
-    CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache prefabDataIndexToSceneObject = ActorsCache::SceneObjectsListCache.Get();
-    prefabDataIndexToSceneObject->Resize(objectsCount);
     CollectionPoolCache<ISerializeModifier, Cache::ISerializeModifierClearCallback>::ScopeCache modifier = Cache::ISerializeModifier.Get();
     modifier->IdsMapping.EnsureCapacity(prefab->ObjectsIds.Count() * 4);
     for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
@@ -136,34 +134,35 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         objectsCache->Clear();
         objectsCache->SetCapacity(prefab->ObjectsDataCache.Capacity());
     }
+    auto& data = *prefab->Data;
+    SceneObjectsFactory::Context context(modifier.Value);
 
     // Deserialize prefab objects
-    auto& data = *prefab->Data;
     Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     for (int32 i = 0; i < objectsCount; i++)
     {
         auto& stream = data[i];
-
-        SceneObject* obj = SceneObjectsFactory::Spawn(stream, modifier.Value);
-        prefabDataIndexToSceneObject->operator[](i) = obj;
+        auto obj = SceneObjectsFactory::Spawn(context, stream);
         sceneObjects->At(i) = obj;
         if (obj)
-        {
             obj->RegisterObject();
-        }
         else
-        {
             SceneObjectsFactory::HandleObjectDeserializationError(stream);
-        }
+    }
+    SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, data, modifier.Value);
+    if (withSynchronization)
+    {
+        // Synchronize new prefab instances (prefab may have new objects added so deserialized instances need to synchronize with it)
+        // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SynchronizeNewPrefabInstances(context, prefabSyncData);
+        Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     }
     for (int32 i = 0; i < objectsCount; i++)
     {
         auto& stream = data[i];
-        SceneObject* obj = prefabDataIndexToSceneObject->At(i);
+        SceneObject* obj = sceneObjects->At(i);
         if (obj)
-        {
-            SceneObjectsFactory::Deserialize(obj, stream, modifier.Value);
-        }
+            SceneObjectsFactory::Deserialize(context, obj, stream);
     }
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
@@ -198,26 +197,8 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
     if (withSynchronization)
     {
-        // Maps the loaded actor object to the json data with the RemovedObjects array (used to skip restoring objects removed per prefab instance)
-        SceneObjectsFactory::ActorToRemovedObjectsDataLookup actorToRemovedObjectsData;
-        for (int32 i = 0; i < objectsCount; i++)
-        {
-            auto& stream = data[i];
-            Actor* actor = dynamic_cast<Actor*>(prefabDataIndexToSceneObject->At(i));
-            if (!actor)
-                continue;
-
-            // Check for RemovedObjects listing
-            const auto removedObjects = stream.FindMember("RemovedObjects");
-            if (removedObjects != stream.MemberEnd())
-            {
-                actorToRemovedObjectsData.Add(actor, &removedObjects->value);
-            }
-        }
-
-        // TODO: consider caching actorToRemovedObjectsData per prefab
-
-        SceneObjectsFactory::SynchronizePrefabInstances(*sceneObjects.Value, actorToRemovedObjectsData, modifier.Value);
+        // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
     }
 
     // Delete objects without parent or with invalid linkage to the prefab
@@ -274,7 +255,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     for (int32 i = 0; i < objectsCount; i++)
     {
         auto& stream = data[i];
-        SceneObject* obj = prefabDataIndexToSceneObject->At(i);
+        SceneObject* obj = sceneObjects->At(i);
         if (!obj)
             continue;
 

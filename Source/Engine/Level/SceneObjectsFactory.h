@@ -3,43 +3,46 @@
 #pragma once
 
 #include "SceneObject.h"
+#include "Engine/Core/Collections/Dictionary.h"
 
 /// <summary>
 /// Helper class for scene objects creation and deserialization utilities.
 /// </summary>
-class SceneObjectsFactory
+class FLAXENGINE_API SceneObjectsFactory
 {
 public:
 
-    typedef Dictionary<Actor*, const rapidjson_flax::Value*, HeapAllocation> ActorToRemovedObjectsDataLookup;
+    struct PrefabInstance
+    {
+        Guid RootId;
+        Prefab* Prefab;
+        Dictionary<Guid, Guid> IdsMapping;
+    };
 
-public:
+    struct Context
+    {
+        ISerializeModifier* Modifier;
+        int32 CurrentInstance = -1;
+        Array<PrefabInstance> Instances;
+        Dictionary<Guid, int32> ObjectToInstance;
+
+        Context(ISerializeModifier* modifier);
+    };
 
     /// <summary>
     /// Creates the scene object from the specified data value. Does not perform deserialization.
     /// </summary>
+    /// <param name="context">The serialization context.</param>
     /// <param name="stream">The serialized data stream.</param>
-    /// <param name="modifier">The serialization modifier. Cannot be null.</param>
-    static SceneObject* Spawn(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier);
+    static SceneObject* Spawn(Context& context, ISerializable::DeserializeStream& stream);
 
     /// <summary>
     /// Deserializes the scene object from the specified data value.
     /// </summary>
+    /// <param name="context">The serialization context.</param>
     /// <param name="obj">The instance to deserialize.</param>
     /// <param name="stream">The serialized data stream.</param>
-    /// <param name="modifier">The serialization modifier. Cannot be null.</param>
-    static void Deserialize(SceneObject* obj, ISerializable::DeserializeStream& stream, ISerializeModifier* modifier);
-
-    /// <summary>
-    /// Synchronizes the prefab instances. Prefabs may have new objects added or some removed so deserialized instances need to synchronize with it. Handles also changing prefab object parent in the instance.
-    /// </summary>
-    /// <remarks>
-    /// Should be called after scene objects deserialization and PostLoad event when scene objects hierarchy is ready (parent-child relation exists). But call it before Init and BeginPlay events.
-    /// </remarks>
-    /// <param name="sceneObjects">The loaded scene objects. Collection will be modified after usage.</param>
-    /// <param name="actorToRemovedObjectsData">Maps the loaded actor object to the json data with the RemovedObjects array (used to skip restoring objects removed per prefab instance).</param>
-    /// <param name="modifier">The objects deserialization modifier. Collection will be modified after usage.</param>
-    static void SynchronizePrefabInstances(Array<SceneObject*>& sceneObjects, const ActorToRemovedObjectsDataLookup& actorToRemovedObjectsData, ISerializeModifier* modifier);
+    static void Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream);
 
     /// <summary>
     /// Handles the object deserialization error.
@@ -56,7 +59,64 @@ public:
     /// <returns>The created actor, or null if failed.</returns>
     static Actor* CreateActor(int32 typeId, const Guid& id);
 
+public:
+
+    struct PrefabSyncData
+    {
+        friend SceneObjectsFactory;
+        // The created scene objects. Collection can be modified (eg. for spawning missing objects).
+        Array<SceneObject*>& SceneObjects;
+        // The scene objects data.
+        const ISerializable::DeserializeStream& Data;
+        // The objects deserialization modifier. Collection will be modified (eg. for spawned objects mapping).
+        ISerializeModifier* Modifier;
+
+        PrefabSyncData(Array<SceneObject*>& sceneObjects, const ISerializable::DeserializeStream& data, ISerializeModifier* modifier);
+
+    private:
+        struct NewObj
+        {
+            Prefab* Prefab;
+            const ISerializable::DeserializeStream* PrefabData;
+            Guid PrefabObjectId;
+            Guid Id;
+        };
+
+        int32 InitialCount;
+        Array<NewObj> NewObjects;
+    };
+
+    /// <summary>
+    /// Initializes the prefab instances inside the scene objects for proper references deserialization.
+    /// </summary>
+    /// <remarks>
+    /// Should be called after spawning scene objects but before scene objects deserialization.
+    /// </remarks>
+    /// <param name="context">The serialization context.</param>
+    /// <param name="data">The sync data.</param>
+    static void SetupPrefabInstances(Context& context, PrefabSyncData& data);
+
+    /// <summary>
+    /// Synchronizes the new prefab instances by spawning missing objects that were added to prefab but were not saved with scene objects collection.
+    /// </summary>
+    /// <remarks>
+    /// Should be called after spawning scene objects but before scene objects deserialization and PostLoad event when scene objects hierarchy is ready (parent-child relation exists). But call it before Init and BeginPlay events.
+    /// </remarks>
+    /// <param name="context">The serialization context.</param>
+    /// <param name="data">The sync data.</param>
+    static void SynchronizeNewPrefabInstances(Context& context, PrefabSyncData& data);
+
+    /// <summary>
+    /// Synchronizes the prefab instances. Prefabs may have objects removed so deserialized instances need to synchronize with it. Handles also changing prefab object parent in the instance.
+    /// </summary>
+    /// <remarks>
+    /// Should be called after scene objects deserialization and PostLoad event when scene objects hierarchy is ready (parent-child relation exists). But call it before Init and BeginPlay events.
+    /// </remarks>
+    /// <param name="context">The serialization context.</param>
+    /// <param name="data">The sync data.</param>
+    static void SynchronizePrefabInstances(Context& context, PrefabSyncData& data);
+
 private:
 
-    static void SynchronizeNewPrefabInstance(Prefab* prefab, Actor* actor, const Guid& prefabObjectId, Array<SceneObject*>& sceneObjects, ISerializeModifier* modifier);
+    static void SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId);
 };

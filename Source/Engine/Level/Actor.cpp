@@ -1593,6 +1593,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     modifier->EngineBuild = engineBuild;
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
+    SceneObjectsFactory::Context context(modifier);
 
     // Deserialize objects
     Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
@@ -1623,7 +1624,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         }
 
         // Create object
-        auto obj = SceneObjectsFactory::Spawn(document, modifier);
+        auto obj = SceneObjectsFactory::Spawn(context, document);
         sceneObjects->At(i) = obj;
         if (obj == nullptr)
         {
@@ -1668,7 +1669,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         // Deserialize object
         auto obj = sceneObjects->At(i);
         if (obj)
-            SceneObjectsFactory::Deserialize(obj, document, modifier);
+            SceneObjectsFactory::Deserialize(context, obj, document);
         else
             SceneObjectsFactory::HandleObjectDeserializationError(document);
     }

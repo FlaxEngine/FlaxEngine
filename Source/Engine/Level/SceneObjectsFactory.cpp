@@ -8,15 +8,21 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/ISerializeModifier.h"
+#include "Engine/Serialization/SerializationFwd.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/ThreadLocal.h"
 
-SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier)
+SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
+    : Modifier(modifier)
+{
+}
+
+SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::DeserializeStream& stream)
 {
     // Get object id
     Guid id = JsonTools::GetGuid(stream, "ID");
-    modifier->IdsMapping.TryGet(id, id);
+    context.Modifier->IdsMapping.TryGet(id, id);
     if (!id.IsValid())
     {
         LOG(Warning, "Invalid object id.");
@@ -59,10 +65,10 @@ SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream
         }
 
         // Map prefab object ID to the deserialized instance ID
-        modifier->IdsMapping[prefabObjectId] = id;
+        context.Modifier->IdsMapping[prefabObjectId] = id;
 
         // Create prefab instance (recursive prefab loading to support nested prefabs)
-        obj = Spawn(*(ISerializable::DeserializeStream*)prefabData, modifier);
+        obj = Spawn(context, *(ISerializable::DeserializeStream*)prefabData);
     }
     else
     {
@@ -139,7 +145,7 @@ SceneObject* SceneObjectsFactory::Spawn(ISerializable::DeserializeStream& stream
     return obj;
 }
 
-void SceneObjectsFactory::Deserialize(SceneObject* obj, ISerializable::DeserializeStream& stream, ISerializeModifier* modifier)
+void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream)
 {
     // Check for prefab instance
     Guid prefabObjectId;
@@ -175,171 +181,21 @@ void SceneObjectsFactory::Deserialize(SceneObject* obj, ISerializable::Deseriali
         }
 
         // Deserialize prefab data (recursive prefab loading to support nested prefabs)
-        Deserialize(obj, *(ISerializable::DeserializeStream*)prefabData, modifier);
+        Deserialize(context, obj, *(ISerializable::DeserializeStream*)prefabData);
+    }
+
+    int32 instanceIndex;
+    if (context.ObjectToInstance.TryGet(obj->GetID(), instanceIndex) && instanceIndex != context.CurrentInstance)
+    {
+        // Apply the current prefab instance objects ids table to resolve references inside a prefab properly
+        context.CurrentInstance = instanceIndex;
+        auto& instance = context.Instances[instanceIndex];
+        for (auto& e : instance.IdsMapping)
+            context.Modifier->IdsMapping[e.Key] = e.Value;
     }
 
     // Load data
-    obj->Deserialize(stream, modifier);
-}
-
-bool Contains(Actor* actor, const SceneObjectsFactory::ActorToRemovedObjectsDataLookup& actorToRemovedObjectsData, const Guid& prefabObjectId)
-{
-    // Check if actor has any removed objects registered
-    const rapidjson_flax::Value* data;
-    if (actorToRemovedObjectsData.TryGet(actor, data))
-    {
-        const int32 size = static_cast<int32>(data->Size());
-        for (int32 i = 0; i < size; i++)
-        {
-            if (JsonTools::GetGuid(data->operator[](i)) == prefabObjectId)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-void SceneObjectsFactory::SynchronizePrefabInstances(Array<SceneObject*>& sceneObjects, const ActorToRemovedObjectsDataLookup& actorToRemovedObjectsData, ISerializeModifier* modifier)
-{
-    PROFILE_CPU_NAMED("SynchronizePrefabInstances");
-
-    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
-
-    // Check all objects with prefab linkage for moving to a proper parent
-    const int32 objectsToCheckCount = sceneObjects.Count();
-    for (int32 i = 0; i < objectsToCheckCount; i++)
-    {
-        SceneObject* obj = sceneObjects[i];
-        if (!obj)
-            continue;
-        SceneObject* parent = obj->GetParent();
-        const Guid prefabId = obj->GetPrefabID();
-        if (parent == nullptr || !obj->HasPrefabLink() || !parent->HasPrefabLink() || parent->GetPrefabID() != prefabId)
-            continue;
-        const Guid prefabObjectId = obj->GetPrefabObjectID();
-        const Guid parentPrefabObjectId = parent->GetPrefabObjectID();
-
-        // Load prefab
-        auto prefab = Content::LoadAsync<Prefab>(prefabId);
-        if (prefab == nullptr)
-        {
-            LOG(Warning, "Missing prefab with id={0}.", prefabId);
-            continue;
-        }
-        if (prefab->WaitForLoaded())
-        {
-            LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
-            continue;
-        }
-
-        // Get the actual parent object stored in the prefab data
-        const ISerializable::DeserializeStream* objData;
-        Guid actualParentPrefabId;
-        if (!prefab->ObjectsDataCache.TryGet(prefabObjectId, objData) || !JsonTools::GetGuidIfValid(actualParentPrefabId, *objData, "ParentID"))
-            continue;
-
-        // Validate
-        if (actualParentPrefabId != parentPrefabObjectId)
-        {
-            // Invalid connection object found!
-            LOG(Info, "Object {0} has invalid parent object {4} -> {5} (PrefabObjectID: {1}, PrefabID: {2}, Path: {3})", obj->GetSceneObjectId(), prefabObjectId, prefab->GetID(), prefab->GetPath(), parentPrefabObjectId, actualParentPrefabId);
-
-            // Map actual prefab object id to the current scene objects collection
-            modifier->IdsMapping.TryGet(actualParentPrefabId, actualParentPrefabId);
-
-            // Find parent
-            const auto actualParent = Scripting::FindObject<Actor>(actualParentPrefabId);
-            if (!actualParent)
-            {
-                LOG(Warning, "The actual parent is missing.");
-                continue;
-            }
-
-            // Reparent
-            obj->SetParent(actualParent, false);
-        }
-
-        // Preserve order in parent (values from prefab are used)
-        if (i != 0)
-        {
-            const auto defaultInstance = prefab->GetDefaultInstance(obj->GetPrefabObjectID());
-            if (defaultInstance)
-            {
-                obj->SetOrderInParent(defaultInstance->GetOrderInParent());
-            }
-        }
-    }
-
-    // Check all actors with prefab linkage for adding missing objects
-    for (int32 i = 0; i < objectsToCheckCount; i++)
-    {
-        Actor* actor = dynamic_cast<Actor*>(sceneObjects[i]);
-        if (!actor || !actor->HasPrefabLink())
-            continue;
-        const Guid actorId = actor->GetID();
-        const Guid prefabId = actor->GetPrefabID();
-        const Guid actorPrefabObjectId = actor->GetPrefabObjectID();
-
-        // Map prefab object id to this actor so the new objects gets added to it
-        modifier->IdsMapping[actorPrefabObjectId] = actorId;
-
-        // Load prefab
-        auto prefab = Content::LoadAsync<Prefab>(prefabId);
-        if (prefab == nullptr)
-        {
-            LOG(Warning, "Missing prefab with id={0}.", prefabId);
-            continue;
-        }
-        if (prefab->WaitForLoaded())
-        {
-            LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
-            continue;
-        }
-
-        // Check if the given actor has new children or scripts added (inside the prefab that it uses)
-        // TODO: consider caching prefab objects structure maybe to boost this logic?
-        for (auto it = prefab->ObjectsDataCache.Begin(); it.IsNotEnd(); ++it)
-        {
-            // Use only objects that are linked to the current actor
-            const Guid parentId = JsonTools::GetGuid(*it->Value, "ParentID");
-            if (parentId != actorPrefabObjectId)
-                continue;
-
-            // Use only objects that are missing
-            const Guid prefabObjectId = JsonTools::GetGuid(*it->Value, "ID");
-            if (actor->GetChildByPrefabObjectId(prefabObjectId) != nullptr ||
-                actor->GetScriptByPrefabObjectId(prefabObjectId) != nullptr)
-                continue;
-
-            // Skip if object was marked to be removed per instance
-            if (Contains(actor, actorToRemovedObjectsData, prefabObjectId))
-                continue;
-
-            // Create instance (including all children)
-            Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
-            SynchronizeNewPrefabInstance(prefab, actor, prefabObjectId, sceneObjects, modifier);
-        }
-    }
-
-    // Call post load event to the new objects
-    for (int32 i = objectsToCheckCount; i < sceneObjects.Count(); i++)
-    {
-        SceneObject* obj = sceneObjects[i];
-
-        // Preserve order in parent (values from prefab are used)
-        auto prefab = Content::LoadAsync<Prefab>(obj->GetPrefabID());
-        const auto defaultInstance = prefab && prefab->IsLoaded() ? prefab->GetDefaultInstance(obj->GetPrefabObjectID()) : nullptr;
-        if (defaultInstance)
-        {
-            obj->SetOrderInParent(defaultInstance->GetOrderInParent());
-        }
-
-        obj->PostLoad();
-    }
-
-    Scripting::ObjectsLookupIdMapping.Set(nullptr);
+    obj->Deserialize(stream, context.Modifier);
 }
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
@@ -434,7 +290,248 @@ Actor* SceneObjectsFactory::CreateActor(int32 typeId, const Guid& id)
     return nullptr;
 }
 
-void SceneObjectsFactory::SynchronizeNewPrefabInstance(Prefab* prefab, Actor* actor, const Guid& prefabObjectId, Array<SceneObject*>& sceneObjects, ISerializeModifier* modifier)
+SceneObjectsFactory::PrefabSyncData::PrefabSyncData(Array<SceneObject*>& sceneObjects, const ISerializable::DeserializeStream& data, ISerializeModifier* modifier)
+    : SceneObjects(sceneObjects)
+    , Data(data)
+    , Modifier(modifier)
+    , InitialCount(0)
+{
+}
+
+void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData& data)
+{
+    PROFILE_CPU_NAMED("SetupPrefabInstances");
+    const int32 count = data.Data.Size();
+    ASSERT(count <= data.SceneObjects.Count())
+    for (int32 i = 0; i < count; i++)
+    {
+        SceneObject* obj = data.SceneObjects[i];
+        if (!obj)
+            continue;
+        const auto& stream = data.Data[i];
+        Guid prefabObjectId, prefabId;
+        if (!JsonTools::GetGuidIfValid(prefabObjectId, stream, "PrefabObjectID"))
+            continue;
+        if (!JsonTools::GetGuidIfValid(prefabId, stream, "PrefabID"))
+            continue;
+        const Guid parentId = JsonTools::GetGuid(stream, "ParentID");
+        const Guid id = obj->GetID();
+        auto prefab = Content::LoadAsync<Prefab>(prefabId);
+
+        // Check if it's parent is in the same prefab
+        int32 index;
+        if (context.ObjectToInstance.TryGet(parentId, index) && context.Instances[index].Prefab == prefab)
+        {
+            // Use parent object as prefab instance
+        }
+        else
+        {
+            // Use new prefab instance
+            index = context.Instances.Count();
+            auto& e = context.Instances.AddOne();
+            e.Prefab = prefab;
+            e.RootId = id;
+        }
+        context.ObjectToInstance[id] = index;
+
+        // Add to the prefab instance IDs mapping
+        auto& prefabInstance = context.Instances[index];
+        prefabInstance.IdsMapping[prefabObjectId] = id;
+    }
+}
+
+void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, PrefabSyncData& data)
+{
+    PROFILE_CPU_NAMED("SynchronizeNewPrefabInstances");
+
+    Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
+    data.InitialCount = data.SceneObjects.Count();
+
+    // Check all actors with prefab linkage for adding missing objects
+    for (int32 i = 0; i < data.InitialCount; i++)
+    {
+        Actor* actor = dynamic_cast<Actor*>(data.SceneObjects[i]);
+        if (!actor)
+            continue;
+        const auto& stream = data.Data[i];
+        Guid actorId, actorPrefabObjectId, prefabId;
+        if (!JsonTools::GetGuidIfValid(actorPrefabObjectId, stream, "PrefabObjectID"))
+            continue;
+        if (!JsonTools::GetGuidIfValid(prefabId, stream, "PrefabID"))
+            continue;
+        if (!JsonTools::GetGuidIfValid(actorId, stream, "ID"))
+            continue;
+        const Guid actorParentId = JsonTools::GetGuid(stream, "ParentID");
+
+        // Map prefab object id to this actor so the new objects gets added to it
+        data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
+
+        // Load prefab
+        auto prefab = Content::LoadAsync<Prefab>(prefabId);
+        if (prefab == nullptr)
+        {
+            LOG(Warning, "Missing prefab with id={0}.", prefabId);
+            continue;
+        }
+        if (prefab->WaitForLoaded())
+        {
+            LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
+            continue;
+        }
+
+        // Check for RemovedObjects list
+        const auto removedObjects = SERIALIZE_FIND_MEMBER(stream, "RemovedObjects");
+
+        // Check if the given actor has new children or scripts added (inside the prefab that it uses)
+        // TODO: consider caching prefab objects structure maybe to boost this logic?
+        for (auto it = prefab->ObjectsDataCache.Begin(); it.IsNotEnd(); ++it)
+        {
+            // Use only objects that are linked to the current actor
+            const Guid parentId = JsonTools::GetGuid(*it->Value, "ParentID");
+            if (parentId != actorPrefabObjectId)
+                continue;
+
+            // Skip if object was marked to be removed per instance
+            const Guid prefabObjectId = JsonTools::GetGuid(*it->Value, "ID");
+            if (removedObjects != stream.MemberEnd())
+            {
+                auto& list = removedObjects->value;
+                const int32 size = static_cast<int32>(list.Size());
+                bool removed = false;
+                for (int32 j = 0; j < size; j++)
+                {
+                    if (JsonTools::GetGuid(list[j]) == prefabObjectId)
+                    {
+                        removed = true;
+                        break;
+                    }
+                }
+                if (removed)
+                    continue;
+            }
+
+            // Use only objects that are missing
+            bool spawned = false;
+            for (int32 j = i + 1; j < data.InitialCount; j++)
+            {
+                const auto& jData = data.Data[j];
+                const Guid jParentId = JsonTools::GetGuid(jData, "ParentID");
+                //if (jParentId == actorParentId)
+                //    break;
+                if (jParentId != actorId)
+                    continue;
+                const Guid jPrefabObjectId = JsonTools::GetGuid(jData, "PrefabObjectID");
+                if (jPrefabObjectId != prefabObjectId)
+                    continue;
+
+                // This object exists in the saved scene objects list
+                spawned = true;
+                break;
+            }
+            if (spawned)
+                continue;
+
+            // Create instance (including all children)
+            Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
+            SynchronizeNewPrefabInstance(context, data, prefab, actor, prefabObjectId);
+        }
+    }
+
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
+}
+
+void SceneObjectsFactory::SynchronizePrefabInstances(Context& context, PrefabSyncData& data)
+{
+    PROFILE_CPU_NAMED("SynchronizePrefabInstances");
+
+    // Check all objects with prefab linkage for moving to a proper parent
+    for (int32 i = 0; i < data.InitialCount; i++)
+    {
+        SceneObject* obj = data.SceneObjects[i];
+        if (!obj)
+            continue;
+        SceneObject* parent = obj->GetParent();
+        const Guid prefabId = obj->GetPrefabID();
+        if (parent == nullptr || !obj->HasPrefabLink() || !parent->HasPrefabLink() || parent->GetPrefabID() != prefabId)
+            continue;
+        const Guid prefabObjectId = obj->GetPrefabObjectID();
+        const Guid parentPrefabObjectId = parent->GetPrefabObjectID();
+
+        // Load prefab
+        auto prefab = Content::LoadAsync<Prefab>(prefabId);
+        if (prefab == nullptr)
+        {
+            LOG(Warning, "Missing prefab with id={0}.", prefabId);
+            continue;
+        }
+        if (prefab->WaitForLoaded())
+        {
+            LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
+            continue;
+        }
+
+        // Get the actual parent object stored in the prefab data
+        const ISerializable::DeserializeStream* objData;
+        Guid actualParentPrefabId;
+        if (!prefab->ObjectsDataCache.TryGet(prefabObjectId, objData) || !JsonTools::GetGuidIfValid(actualParentPrefabId, *objData, "ParentID"))
+            continue;
+
+        // Validate
+        if (actualParentPrefabId != parentPrefabObjectId)
+        {
+            // Invalid connection object found!
+            LOG(Info, "Object {0} has invalid parent object {4} -> {5} (PrefabObjectID: {1}, PrefabID: {2}, Path: {3})", obj->GetSceneObjectId(), prefabObjectId, prefab->GetID(), prefab->GetPath(), parentPrefabObjectId, actualParentPrefabId);
+
+            // Map actual prefab object id to the current scene objects collection
+            data.Modifier->IdsMapping.TryGet(actualParentPrefabId, actualParentPrefabId);
+
+            // Find parent
+            const auto actualParent = Scripting::FindObject<Actor>(actualParentPrefabId);
+            if (!actualParent)
+            {
+                LOG(Warning, "The actual parent is missing.");
+                continue;
+            }
+
+            // Reparent
+            obj->SetParent(actualParent, false);
+        }
+
+        // Preserve order in parent (values from prefab are used)
+        if (i != 0)
+        {
+            const auto defaultInstance = prefab->GetDefaultInstance(obj->GetPrefabObjectID());
+            if (defaultInstance)
+            {
+                obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+            }
+        }
+    }
+
+    Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
+
+    // Synchronize new prefab objects
+    for (int32 i = 0; i < data.NewObjects.Count(); i++)
+    {
+        SceneObject* obj = data.SceneObjects[data.InitialCount + i];
+        auto& newObj = data.NewObjects[i];
+
+        // Deserialize object with prefab data
+        Deserialize(context, obj, *(ISerializable::DeserializeStream*)newObj.PrefabData);
+        obj->LinkPrefab(newObj.Prefab->GetID(), newObj.PrefabObjectId);
+
+        // Preserve order in parent (values from prefab are used)
+        const auto defaultInstance = newObj.Prefab->GetDefaultInstance(newObj.PrefabObjectId);
+        if (defaultInstance)
+        {
+            obj->SetOrderInParent(defaultInstance->GetOrderInParent());
+        }
+    }
+
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
+}
+
+void SceneObjectsFactory::SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId)
 {
     PROFILE_CPU_NAMED("SynchronizeNewPrefabInstance");
 
@@ -450,22 +547,33 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Prefab* prefab, Actor* ac
     }
 
     // Map prefab object ID to the new prefab object instance
-    modifier->IdsMapping[prefabObjectId] = Guid::New();
-    Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
+    Guid id = Guid::New();
+    data.Modifier->IdsMapping[prefabObjectId] = id;
 
     // Create prefab instance (recursive prefab loading to support nested prefabs)
-    auto child = Spawn(*(ISerializable::DeserializeStream*)prefabData, modifier);
+    auto child = Spawn(context, *(ISerializable::DeserializeStream*)prefabData);
     if (!child)
     {
         LOG(Warning, "Failed to create object {1} from prefab {0}.", prefab->ToString(), prefabObjectId);
         return;
     }
-    child->RegisterObject();
-    Deserialize(child, *(ISerializable::DeserializeStream*)prefabData, modifier);
 
     // Register object
-    child->LinkPrefab(prefab->GetID(), prefabObjectId);
-    sceneObjects.Add(child);
+    child->RegisterObject();
+    data.SceneObjects.Add(child);
+    auto& newObj = data.NewObjects.AddOne();
+    newObj.Prefab = prefab;
+    newObj.PrefabData = prefabData;
+    newObj.PrefabObjectId = prefabObjectId;
+    newObj.Id = id;
+    int32 instanceIndex = -1;
+    if (context.ObjectToInstance.TryGet(actor->GetID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
+    {
+        // Add to the prefab instance IDs mapping
+        context.ObjectToInstance[id] = instanceIndex;
+        auto& prefabInstance = context.Instances[instanceIndex];
+        prefabInstance.IdsMapping[prefabObjectId] = id;
+    }
 
     // Use loop to add even more objects to added objects (prefab can have one new object that has another child, we need to add that child)
     // TODO: prefab could cache lookup object id -> children ids
@@ -475,7 +583,7 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Prefab* prefab, Actor* ac
         if (JsonTools::GetGuidIfValid(qParentId, *q->Value, "ParentID") && qParentId == prefabObjectId)
         {
             const Guid qPrefabObjectId = JsonTools::GetGuid(*q->Value, "ID");
-            SynchronizeNewPrefabInstance(prefab, actor, qPrefabObjectId, sceneObjects, modifier);
+            SynchronizeNewPrefabInstance(context, data, prefab, actor, qPrefabObjectId);
         }
     }
 }
