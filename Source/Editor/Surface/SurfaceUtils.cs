@@ -92,6 +92,7 @@ namespace FlaxEditor.Surface
             case MaterialParameterType.GPUTexture: return typeof(GPUTexture);
             case MaterialParameterType.Matrix: return typeof(Matrix);
             case MaterialParameterType.ChannelMask: return typeof(ChannelMask);
+            case MaterialParameterType.TextureGroupSampler: return typeof(int);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
