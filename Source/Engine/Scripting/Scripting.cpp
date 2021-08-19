@@ -763,7 +763,7 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     // Check if object can be an asset and try to load it
     if (!type)
     {
-        result = Content::LoadAsync(id, Asset::GetStaticClass());
+        result = Content::LoadAsync<Asset>(id);
         if (!result)
             LOG(Warning, "Unable to find scripting object with ID={0}", id);
         return result;
@@ -781,6 +781,10 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
 
 ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
 {
+    if (!id.IsValid())
+        return nullptr;
+    PROFILE_CPU();
+
     // Try to map object id
     const auto idsMapping = ObjectsLookupIdMapping.Get();
     if (idsMapping)
