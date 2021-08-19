@@ -194,16 +194,16 @@ void PS_Decal(
 	Out2 = float4(material.Emissive, material.Opacity);
 #if USE_NORMAL
 	// GBuffer1
-	Out3 = float4(material.WorldNormal * 0.5f + 0.5f, 1);
+	Out3 = float4(material.WorldNormal * 0.5f + 0.5f, material.Opacity);
 #endif
 #elif USE_NORMAL
 	// GBuffer1
-	Out2 = float4(material.WorldNormal * 0.5f + 0.5f, 1);
+	Out2 = float4(material.WorldNormal * 0.5f + 0.5f, material.Opacity);
 #endif
 #elif DECAL_BLEND_MODE == DECAL_BLEND_MODE_STAIN
 	Out0 = float4(material.Color, material.Opacity);
 #elif DECAL_BLEND_MODE == DECAL_BLEND_MODE_NORMAL
-	Out0 = float4(material.WorldNormal * 0.5f + 0.5f, 1);
+	Out0 = float4(material.WorldNormal * 0.5f + 0.5f, material.Opacity);
 #elif DECAL_BLEND_MODE == DECAL_BLEND_MODE_EMISSIVE
 	Out0 = float4(material.Emissive * material.Opacity, material.Opacity);
 #else
