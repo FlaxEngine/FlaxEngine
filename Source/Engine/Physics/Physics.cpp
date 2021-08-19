@@ -661,6 +661,8 @@ void Physics::CollectResults()
         int32 wheelsCount = 0;
         for (auto wheelVehicle : WheelVehicles)
         {
+            if (!wheelVehicle->IsActiveInHierarchy())
+                continue;
             auto drive = (PxVehicleWheels*)wheelVehicle->_drive;
             ASSERT(drive);
             WheelVehiclesCache.Add(drive);
@@ -810,13 +812,17 @@ void Physics::CollectResults()
         }
 
         // Setup cache for wheel states
-        WheelVehiclesResultsPerVehicle.Resize(WheelVehicles.Count(), false);
+        WheelVehiclesResultsPerVehicle.Resize(WheelVehiclesCache.Count(), false);
         WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
         wheelsCount = 0;
-        for (int32 i = 0; i < WheelVehicles.Count(); i++)
+        for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
         {
-            auto drive = (PxVehicleWheels*)WheelVehicles[i]->_drive;
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[i];
+            auto wheelVehicle = WheelVehicles[i];
+            if (!wheelVehicle->IsActiveInHierarchy())
+                continue;
+            auto drive = (PxVehicleWheels*)WheelVehicles[ii]->_drive;
+            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
+            ii++;
             perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
             perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;
             wheelsCount += perVehicle.nbWheelQueryResults;
@@ -827,11 +833,14 @@ void Physics::CollectResults()
         PxVehicleUpdates(LastDeltaTime, PhysicsScene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
 
         // Synchronize state
-        for (int32 i = 0; i < WheelVehicles.Count(); i++)
+        for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
         {
             auto wheelVehicle = WheelVehicles[i];
-            auto drive = WheelVehiclesCache[i];
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[i];
+            if (!wheelVehicle->IsActiveInHierarchy())
+                continue;
+            auto drive = WheelVehiclesCache[ii];
+            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
+            ii++;
 
             // Update wheels
             for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
