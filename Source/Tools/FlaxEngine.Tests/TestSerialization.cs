@@ -47,15 +47,15 @@ namespace FlaxEngine.Tests
         {
             ObjectOne obj = new ObjectOne();
 
-            Assert.AreEqual("{\n\t\"MyValue\": 0.0,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 0.0\n\t}\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
+            Assert.AreEqual("{\n\t\"MyValue\": 0.0,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 0.0\n\t},\n\t\"MyArray\": null\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
 
             obj.MyValue = 1.2f;
 
-            Assert.AreEqual("{\n\t\"MyValue\": 1.2,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 0.0\n\t}\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
+            Assert.AreEqual("{\n\t\"MyValue\": 1.2,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 0.0\n\t},\n\t\"MyArray\": null\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
 
             obj.MyVector.Y = 2.0f;
 
-            Assert.AreEqual("{\n\t\"MyValue\": 1.2,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 2.0\n\t}\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
+            Assert.AreEqual("{\n\t\"MyValue\": 1.2,\n\t\"MyVector\": {\n\t\t\"X\": 0.0,\n\t\t\"Y\": 2.0\n\t},\n\t\"MyArray\": null\n}", FilterLineBreak(JsonSerializer.Serialize(obj)));
 
             obj.MyArray = new[]
             {

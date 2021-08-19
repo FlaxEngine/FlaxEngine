@@ -877,7 +877,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the tooltip text.
         /// </summary>
-        [HideInEditor]
+        [HideInEditor, NoSerialize]
         public string TooltipText
         {
             get => _tooltipText;
@@ -887,7 +887,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the custom tooltip control linked. Use null to show default shared tooltip from the current <see cref="Style"/>.
         /// </summary>
-        [HideInEditor]
+        [HideInEditor, NoSerialize]
         public Tooltip CustomTooltip
         {
             get => _tooltip;
