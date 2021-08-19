@@ -560,10 +560,6 @@ public:
     {
         if (!id->IsValid())
             return nullptr;
-#if PLATFORM_LINUX
-        // Cannot enter GC unsafe region if the thread is not attached
-        MCore::AttachThread();
-#endif
         auto klass = MUtils::GetClass(type);
         ScriptingObject* obj = Scripting::TryFindObject(*id);
         if (!obj)
