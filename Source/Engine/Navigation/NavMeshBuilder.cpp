@@ -47,6 +47,11 @@ int32 BoxTrianglesIndicesCache[] =
 };
 
 #define NAV_MESH_TILE_MAX_EXTENT 100000000
+#define NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY 0
+
+#if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
+#include "Engine/Debug/DebugDraw.h"
+#endif
 
 struct OffMeshLink
 {
@@ -108,6 +113,9 @@ struct NavigationSceneRasterization
                 auto v0 = vb[ib[i0++]];
                 auto v1 = vb[ib[i0++]];
                 auto v2 = vb[ib[i0++]];
+#if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
+                DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
+#endif
 
                 auto n = Vector3::Cross(v0 - v1, v0 - v2);
                 n.Normalize();
@@ -124,6 +132,9 @@ struct NavigationSceneRasterization
                 auto v0 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
                 auto v1 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
                 auto v2 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
+#if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
+                DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
+#endif
 
                 auto n = Vector3::Cross(v0 - v1, v0 - v2);
                 n.Normalize();
@@ -223,6 +234,8 @@ struct NavigationSceneRasterization
         // Extract data from the actor
         if (const auto* boxCollider = dynamic_cast<BoxCollider*>(actor))
         {
+            if (boxCollider->GetIsTrigger())
+                return true;
             PROFILE_CPU_NAMED("BoxCollider");
 
             const OrientedBoundingBox box = boxCollider->GetOrientedBox();
@@ -232,6 +245,8 @@ struct NavigationSceneRasterization
         }
         else if (const auto* sphereCollider = dynamic_cast<SphereCollider*>(actor))
         {
+            if (sphereCollider->GetIsTrigger())
+                return true;
             PROFILE_CPU_NAMED("SphereCollider");
 
             const BoundingSphere sphere = sphereCollider->GetSphere();
@@ -241,6 +256,8 @@ struct NavigationSceneRasterization
         }
         else if (const auto* capsuleCollider = dynamic_cast<CapsuleCollider*>(actor))
         {
+            if (capsuleCollider->GetIsTrigger())
+                return true;
             PROFILE_CPU_NAMED("CapsuleCollider");
 
             const BoundingBox box = capsuleCollider->GetBox();
@@ -250,6 +267,8 @@ struct NavigationSceneRasterization
         }
         else if (const auto* meshCollider = dynamic_cast<MeshCollider*>(actor))
         {
+            if (meshCollider->GetIsTrigger())
+                return true;
             PROFILE_CPU_NAMED("MeshCollider");
 
             auto collisionData = meshCollider->CollisionData.Get();
@@ -260,13 +279,15 @@ struct NavigationSceneRasterization
 
             Matrix meshColliderToWorld;
             meshCollider->GetLocalToWorldMatrix(meshColliderToWorld);
-            for(auto& v : vb)
+            for (auto& v : vb)
                 Vector3::Transform(v, meshColliderToWorld, v);
 
             e.RasterizeTriangles();
         }
         else if (const auto* splineCollider = dynamic_cast<SplineCollider*>(actor))
         {
+            if (splineCollider->GetIsTrigger())
+                return true;
             PROFILE_CPU_NAMED("SplineCollider");
 
             auto collisionData = splineCollider->CollisionData.Get();
