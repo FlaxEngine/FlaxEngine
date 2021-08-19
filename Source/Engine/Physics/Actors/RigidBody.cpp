@@ -276,8 +276,7 @@ void RigidBody::UpdateMass()
     float raiseMassToPower = 0.75f;
     // TODO: link physical material or expose density parameter
 
-    PxVec3 centerOfMassOffset = C2P(_centerOfMassOffset);
-    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU, &centerOfMassOffset);
+    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU);
 
     // Grab old mass so we can apply new mass while maintaining inertia tensor
     const float oldMass = _actor->getMass();
