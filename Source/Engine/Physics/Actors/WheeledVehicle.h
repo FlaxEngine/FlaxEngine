@@ -322,6 +322,12 @@ public:
     bool UseReverseAsBrake = true;
 
     /// <summary>
+    /// If checked, the vehicle driving and steering inputs will be used as analog values (from gamepad), otherwise will be used as digital input (from keyboard).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")")
+    bool UseAnalogSteering = false;
+
+    /// <summary>
     /// Gets the vehicle driving model type.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;

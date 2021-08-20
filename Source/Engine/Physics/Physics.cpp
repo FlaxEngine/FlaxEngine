@@ -744,6 +744,23 @@ void Physics::CollectResults()
 		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
 	            }
             };
+            PxVehicleKeySmoothingData keySmoothing =
+            {
+                {
+                    3.0f,  // rise rate eANALOG_INPUT_ACCEL
+                    3.0f,  // rise rate eANALOG_INPUT_BRAKE
+                    10.0f, // rise rate eANALOG_INPUT_HANDBRAKE
+                    2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
+                    2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
+                },
+                {
+                    5.0f,  // fall rate eANALOG_INPUT__ACCEL
+                    5.0f,  // fall rate eANALOG_INPUT__BRAKE
+                    10.0f, // fall rate eANALOG_INPUT__HANDBRAKE
+                    5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
+                    5.0f   // fall rate eANALOG_INPUT_STEER_RIGHT
+                }
+            };
             // Reference: PhysX SDK docs
             // TODO: expose steer vs forward curve into per-vehicle (up to 8 points, values clamped into 0/1 range)
             static constexpr PxF32 steerVsForwardSpeedData[] =
@@ -759,28 +776,60 @@ void Physics::CollectResults()
             };
             const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
             // @formatter:on
-            switch (wheelVehicle->_driveTypeCurrent)
+            if (wheelVehicle->UseAnalogSteering)
             {
-            case WheeledVehicle::DriveTypes::Drive4W:
-            {
-                PxVehicleDrive4WRawInputData rawInputData;
-                rawInputData.setAnalogAccel(throttle);
-                rawInputData.setAnalogBrake(brake);
-                rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                break;
+                switch (wheelVehicle->_driveTypeCurrent)
+                {
+                case WheeledVehicle::DriveTypes::Drive4W:
+                {
+                    PxVehicleDrive4WRawInputData rawInputData;
+                    rawInputData.setAnalogAccel(throttle);
+                    rawInputData.setAnalogBrake(brake);
+                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                    PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                    break;
+                }
+                case WheeledVehicle::DriveTypes::DriveNW:
+                {
+                    PxVehicleDriveNWRawInputData rawInputData;
+                    rawInputData.setAnalogAccel(throttle);
+                    rawInputData.setAnalogBrake(brake);
+                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                    PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                    break;
+                }
+                }
             }
-            case WheeledVehicle::DriveTypes::DriveNW:
+            else
             {
-                PxVehicleDriveNWRawInputData rawInputData;
-                rawInputData.setAnalogAccel(throttle);
-                rawInputData.setAnalogBrake(brake);
-                rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                break;
-            }
+                const float deadZone = 0.1f;
+                switch (wheelVehicle->_driveTypeCurrent)
+                {
+                case WheeledVehicle::DriveTypes::Drive4W:
+                {
+                    PxVehicleDrive4WRawInputData rawInputData;
+                    rawInputData.setDigitalAccel(throttle > deadZone);
+                    rawInputData.setDigitalBrake(brake > deadZone);
+                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                    PxVehicleDrive4WSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                    break;
+                }
+                case WheeledVehicle::DriveTypes::DriveNW:
+                {
+                    PxVehicleDriveNWRawInputData rawInputData;
+                    rawInputData.setDigitalAccel(throttle > deadZone);
+                    rawInputData.setDigitalBrake(brake > deadZone);
+                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                    PxVehicleDriveNWSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                    break;
+                }
+                }
             }
         }
 
