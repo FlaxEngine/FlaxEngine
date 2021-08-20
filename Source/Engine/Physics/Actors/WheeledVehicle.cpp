@@ -291,7 +291,8 @@ void WheeledVehicle::Setup()
         offsets[i] = C2P(wheel.Collider->GetLocalPosition());
     }
     PxF32 sprungMasses[PX_MAX_NB_WHEELS];
-    PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, _actor->getMass(), 1, sprungMasses);
+    const float mass = _actor->getMass();
+    PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, mass, 1, sprungMasses);
     PxVehicleWheelsSimData* wheelsSimData = PxVehicleWheelsSimData::allocate(wheels.Count());
     for (int32 i = 0; i < wheels.Count(); i++)
     {
@@ -300,7 +301,6 @@ void WheeledVehicle::Setup()
         auto& data = _wheelsData[i];
         data.Collider = wheel.Collider;
         data.LocalOrientation = wheel.Collider->GetLocalOrientation();
-        data.ChildrenPoses.Resize(0);
 
         PxVehicleSuspensionData suspensionData;
         const float suspensionFrequency = 7.0f;
@@ -324,7 +324,7 @@ void WheeledVehicle::Setup()
         wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
 
         PxVec3 centreOffset = centerOfMassOffset.transformInv(offsets[i]);
-        PxVec3 forceAppPointOffset(centreOffset.z, centreOffset.y + wheel.SuspensionForceOffset, centreOffset.z);
+        PxVec3 forceAppPointOffset(centreOffset.z, wheel.SuspensionForceOffset, centreOffset.z);
 
         wheelsSimData->setTireData(i, tire);
         wheelsSimData->setWheelData(i, wheelData);
@@ -333,6 +333,8 @@ void WheeledVehicle::Setup()
         wheelsSimData->setWheelCentreOffset(i, centreOffset);
         wheelsSimData->setSuspForceAppPointOffset(i, forceAppPointOffset);
         wheelsSimData->setTireForceAppPointOffset(i, forceAppPointOffset);
+        wheelsSimData->setSubStepCount(4.0f * 100.0f, 3, 1);
+        wheelsSimData->setMinLongSlipDenominator(4.0f * 100.0f);
 
         PxShape* wheelShape = wheel.Collider->GetPxShape();
         if (wheel.Collider->IsActiveInHierarchy())
@@ -345,6 +347,9 @@ void WheeledVehicle::Setup()
             wheelShape->setQueryFilterData(filter);
             wheelShape->setSimulationFilterData(filter);
             wheelsSimData->setSceneQueryFilterData(i, filter);
+
+            // Remove wheels from the simulation (suspension force hold the vehicle)
+            wheelShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
         }
         else
         {
@@ -520,12 +525,16 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
         auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
-            const Vector3 basePos = wheel.Collider->GetPosition();
-            const Vector3 currentPos = basePos + Vector3(0, data.State.SuspensionOffset, 0);
+            const Vector3 currentPos = wheel.Collider->GetPosition();
+            const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, true);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, true);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, true);
             DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
+            if (!data.State.IsInAir)
+            {
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, true);
+            }
         }
     }
 }
@@ -546,12 +555,22 @@ void WheeledVehicle::OnDebugDrawSelected()
         auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
-            const Vector3 basePos = wheel.Collider->GetPosition();
-            const Vector3 currentPos = basePos + Vector3(0, data.State.SuspensionOffset, 0);
+            const Vector3 currentPos = wheel.Collider->GetPosition();
+            const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, false);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, false);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(P2C(_actor->getGlobalPose().transform(wheel.Collider->GetPxShape()->getLocalPose()).p), wheel.Radius * 0.11f), Color::OrangeRed * 0.8f, 0, false);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, false);
             DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
+            if (!data.State.SuspensionTraceStart.IsZero())
+            {
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.SuspensionTraceStart, 5.0f), Color::AliceBlue, 0, false);
+                DEBUG_DRAW_LINE(data.State.SuspensionTraceStart, data.State.SuspensionTraceEnd, data.State.IsInAir ? Color::Red : Color::Green, 0, false);
+            }
+            if (!data.State.IsInAir)
+            {
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, false);
+            }
         }
     }
 
