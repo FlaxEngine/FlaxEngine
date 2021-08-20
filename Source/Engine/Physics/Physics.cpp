@@ -31,6 +31,12 @@
 // Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
 #define SCRATCH_BLOCK_SIZE (1024 * 128)
 
+#define PHYSX_VEHICLE_DEBUG_TELEMETRY 0
+
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+#include "Engine/Core/Utilities.h"
+#endif
+
 class PhysXAllocator : public PxAllocatorCallback
 {
 public:
@@ -890,12 +896,18 @@ void Physics::CollectResults()
             auto drive = WheelVehiclesCache[ii];
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
             ii++;
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+            LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
+#endif
 
             // Update wheels
             for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
             {
                 auto& wheelData = wheelVehicle->_wheelsData[j];
                 auto& perWheel = perVehicle.wheelQueryResults[j];
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+                LOG(Info, "Vehicle[{}] Wheel[{}] longitudinalSlip={}, lateralSlip={}, suspSpringForce={}", ii, j, Utilities::RoundTo2DecimalPlaces(perWheel.longitudinalSlip), Utilities::RoundTo2DecimalPlaces(perWheel.lateralSlip), (int32)perWheel.suspSpringForce);
+#endif
 
                 auto& state = wheelData.State;
                 state.IsInAir = perWheel.isInAir;
