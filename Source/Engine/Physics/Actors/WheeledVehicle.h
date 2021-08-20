@@ -230,7 +230,7 @@ public:
         API_FIELD(Attributes="Limit(0), EditorDisplay(\"Suspension\"), EditorOrder(22)") float SuspensionMaxDrop = 10.0f;
 
         /// <summary>
-        /// The vertical offset from where suspension forces are applied.
+        /// The vertical offset from where suspension forces are applied (relative to the vehicle center of mass). The suspension force is applies on the vertical axis going though the wheel center.
         /// </summary>
         API_FIELD(Attributes="EditorDisplay(\"Suspension\"), EditorOrder(23)") float SuspensionForceOffset = 0.0f;
 
