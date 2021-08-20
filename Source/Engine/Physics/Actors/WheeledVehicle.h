@@ -233,6 +233,21 @@ public:
         /// The vertical offset from where suspension forces are applied.
         /// </summary>
         API_FIELD(Attributes="EditorDisplay(\"Suspension\"), EditorOrder(23)") float SuspensionForceOffset = 0.0f;
+
+        /// <summary>
+        /// The tire lateral stiffness to have given lateral slip.
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(30)") float TireLateralStiffness = 17.0f;
+
+        /// <summary>
+        /// The maximum tire load (normalized) at which tire cannot provide more lateral stiffness (no matter how much extra load is applied to it).
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(31)") float TireLateralMax = 2.0f;
+
+        /// <summary>
+        /// The tire longitudinal stiffness to have given longitudinal slip.
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(32)") float TireLongitudinalStiffness = 1000.0f;
     };
 
     /// <summary>

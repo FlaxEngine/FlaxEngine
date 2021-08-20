@@ -312,6 +312,9 @@ void WheeledVehicle::Setup()
 
         PxVehicleTireData tire;
         tire.mType = 0;
+        tire.mLatStiffX = wheel.TireLateralMax;
+        tire.mLatStiffY = wheel.TireLateralStiffness;
+        tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;
 
         PxVehicleWheelData wheelData;
         wheelData.mMass = wheel.Mass;
