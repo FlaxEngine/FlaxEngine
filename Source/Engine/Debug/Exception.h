@@ -13,7 +13,7 @@ namespace Log
     /// <summary>
     /// Represents errors that occur during application execution.
     /// </summary>
-    class Exception : public Object
+    class FLAXENGINE_API Exception : public Object
     {
     protected:
 
