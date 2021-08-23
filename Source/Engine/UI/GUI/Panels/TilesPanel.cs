@@ -72,7 +72,7 @@ namespace FlaxEngine.GUI
         /// Initializes a new instance of the <see cref="TilesPanel"/> class.
         /// </summary>
         public TilesPanel()
-        : this(2)
+        : this(0)
         {
         }
 
