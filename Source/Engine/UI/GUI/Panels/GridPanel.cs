@@ -93,28 +93,28 @@ namespace FlaxEngine.GUI
 
             int i = 0;
             Vector2 upperLeft = Vector2.Zero;
-            float reamingHeight = Height;
+            float remainingHeight = Height;
             for (int rowIndex = 0; rowIndex < _cellsV.Length; rowIndex++)
             {
                 upperLeft.X = 0;
-                float cellHeight = _cellsV[rowIndex] * reamingHeight;
+                float cellHeight = _cellsV[rowIndex] * remainingHeight;
                 if (_cellsV[rowIndex] < 0)
                 {
                     cellHeight = -_cellsV[rowIndex];
-                    reamingHeight -= cellHeight;
+                    remainingHeight -= cellHeight;
                 }
 
-                float reamingWidth = Width;
+                float remainingWidth = Width;
                 for (int columnIndex = 0; columnIndex < _cellsH.Length; columnIndex++)
                 {
                     if (i >= ChildrenCount)
                         break;
 
-                    float cellWidth = _cellsH[columnIndex] * reamingWidth;
+                    float cellWidth = _cellsH[columnIndex] * remainingWidth;
                     if (_cellsH[columnIndex] < 0)
                     {
                         cellWidth = -_cellsH[columnIndex];
-                        reamingWidth -= cellWidth;
+                        remainingWidth -= cellWidth;
                     }
 
                     var slotBounds = new Rectangle(upperLeft, cellWidth, cellHeight);
