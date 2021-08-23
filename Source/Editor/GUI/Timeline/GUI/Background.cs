@@ -236,6 +236,17 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 return true;
             }
 
+            // Scroll view horizontally
+            if (IsMouseOver && Root.GetKey(KeyboardKeys.Shift))
+            {
+                var scroll = _timeline.MediaBackground.HScrollBar;
+                if (scroll.Visible && scroll.Enabled)
+                {
+                    scroll.TargetValue -= delta * Timeline.UnitsPerSecond / _timeline.Zoom;
+                    return true;
+                }
+            }
+
             return false;
         }
 
