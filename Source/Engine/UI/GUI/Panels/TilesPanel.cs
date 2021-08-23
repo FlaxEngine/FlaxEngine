@@ -109,7 +109,7 @@ namespace FlaxEngine.GUI
             {
                 var c = _children[i];
 
-                c.Bounds = new Rectangle(x + TileMargin.Left, y + TileMargin.Top, itemsWidth + TileMargin.Width, itemsHeight + TileMargin.Height);
+                c.Bounds = new Rectangle(x + TileMargin.Left, y + TileMargin.Top, itemsWidth, itemsHeight);
 
                 x += itemsWidth + TileMargin.Width;
                 if (x + itemsWidth + TileMargin.Width > width)
