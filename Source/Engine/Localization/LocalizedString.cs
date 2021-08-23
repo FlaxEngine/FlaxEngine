@@ -41,7 +41,7 @@ namespace FlaxEngine
         /// <returns>The localized text.</returns>
         public string ToStringPlural(int n)
         {
-            return string.IsNullOrEmpty(Value) ? Localization.GetPluralString(Id, n) : Value;
+            return Localization.GetPluralString(Id, n, Value);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace FlaxEngine
         {
             if ((object)str == null)
                 return null;
-            return string.IsNullOrEmpty(str.Value) ? Localization.GetString(str.Id) : str.Value;
+            return Localization.GetString(str.Id, str.Value);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public bool Equals(string other)
         {
-            return Value == other || Localization.GetString(Id) == other;
+            return Value == other || Localization.GetString(Id, Value) == other;
         }
 
         /// <inheritdoc />
@@ -144,7 +144,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override string ToString()
         {
-            return string.IsNullOrEmpty(Value) ? Localization.GetString(Id) : Value;
+            return Localization.GetString(Id, Value);
         }
     }
 }

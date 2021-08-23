@@ -113,7 +113,10 @@ namespace FlaxEditor.Windows.Assets
             [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.CultureInfoEditor))]
             public string Locale;
 
-            [EditorOrder(10), EditorDisplay("Entries", EditorDisplayAttribute.InlineStyle), Tooltip("The string table. Maps the message id into the localized text. For plural messages the list contains separate items for value numbers.")]
+            [EditorOrder(10), EditorDisplay("General"), Tooltip("The fallback table to use for lookup."),]
+            public LocalizedStringTable FallBackTable;
+
+            [EditorOrder(20), EditorDisplay("Entries", EditorDisplayAttribute.InlineStyle), Tooltip("The string table. Maps the message id into the localized text. For plural messages the list contains separate items for value numbers.")]
             [Collection(Spacing = 10, OverrideEditorTypeName = "FlaxEditor.Windows.Assets.LocalizedStringTableWindow+EntryEditor")]
             public Dictionary<string, string[]> Entries;
         }
@@ -166,6 +169,7 @@ namespace FlaxEditor.Windows.Assets
 
             _asset.Locale = _proxy.Locale;
             _asset.Entries = _proxy.Entries;
+            _asset.FallbackTable = _proxy.FallBackTable;
             if (_asset.Save(_item.Path))
             {
                 Editor.LogError("Cannot save asset.");
@@ -192,6 +196,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Locale = _asset.Locale,
                 Entries = _asset.Entries,
+                FallBackTable = _asset.FallbackTable
             };
             _presenter.Select(_proxy);
             _undo.Clear();

@@ -18,8 +18,14 @@ public:
     /// </summary>
     API_FIELD()
     Array<AssetReference<LocalizedStringTable>> LocalizedStringTables;
+    /// <summary>
+    /// The last used lanaguage, only other thing that could be used is hardcoded "en" if this is not set too
+    /// </summary>
+    /// <returns></returns>
+    API_FIELD() String DefaultFallbackLanguage;
 
 public:
+
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>

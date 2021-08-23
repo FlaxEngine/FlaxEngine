@@ -4,6 +4,8 @@
 
 #include "CultureInfo.h"
 #include "Engine/Core/Types/BaseTypes.h"
+#include "LocalizedString.h"
+#include "LocalizationSettings.h"
 
 /// <summary>
 /// The language and culture localization manager.
@@ -59,4 +61,5 @@ public:
     /// <param name="fallback">The optional fallback string value to use if localized string is missing.</param>
     /// <returns>The localized text.</returns>
     API_FUNCTION() static String GetPluralString(const String& id, int32 n, const String& fallback = String::Empty);
+
 };

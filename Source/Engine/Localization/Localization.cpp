@@ -2,8 +2,6 @@
 
 #include "Localization.h"
 #include "CultureInfo.h"
-#include "LocalizedString.h"
-#include "LocalizationSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Engine/EngineService.h"
@@ -18,6 +16,8 @@ public:
     CultureInfo CurrentCulture;
     CultureInfo CurrentLanguage;
     Array<AssetReference<LocalizedStringTable>> LocalizedStringTables;
+
+    Dictionary<String, Array<AssetReference<LocalizedStringTable>, InlinedAllocation<8>>> tables;
 
     LocalizationService()
         : EngineService(TEXT("Localization"), -500)
@@ -122,7 +122,9 @@ void LocalizationService::OnLocalizationChanged()
 
     // Collect all localization tables into mapping locale -> tables
     auto& settings = *LocalizationSettings::Get();
-    Dictionary<String, Array<AssetReference<LocalizedStringTable>, InlinedAllocation<8>>> tables;
+
+        
+    tables.Clear();
     for (auto& e : settings.LocalizedStringTables)
     {
         auto table = e.Get();
@@ -142,9 +144,14 @@ void LocalizationService::OnLocalizationChanged()
             table = tables.TryGet(parentLanguage.GetName());
         if (!table)
         {
-            // Fallback to English
-            const CultureInfo english("en");
-            table = tables.TryGet(english.GetName());
+            // Fallback to Default
+            table = tables.TryGet(settings.DefaultFallbackLanguage);
+            if (!table)
+            {
+                // Fallback to English
+                const CultureInfo english("en");
+                table = tables.TryGet(english.GetName());
+            }
         }
     }
 
@@ -159,7 +166,7 @@ void LocalizationService::OnLocalizationChanged()
                 locale = e.Key;
                 break;
             }
-        }
+        }        
         LOG(Info, "Using localization for {0}", locale);
         Instance.LocalizedStringTables.Add(table->Get(), table->Count());
     }
@@ -258,15 +265,22 @@ void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
 
 String Localization::GetString(const String& id, const String& fallback)
 {
+    if (id.IsEmpty())
+        return fallback;
     String result;
     for (auto& e : Instance.LocalizedStringTables)
     {
         const auto table = e.Get();
-        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-        if (messages && messages->Count() != 0)
+        if (table)
+            result = table->GetString(id);
+    }
+    if (result.IsEmpty() && Instance.tables.ContainsKey(LocalizationSettings::Get()->DefaultFallbackLanguage)) {
+
+        for (auto& e : Instance.tables[LocalizationSettings::Get()->DefaultFallbackLanguage])
         {
-            result = messages->At(0);
-            break;
+            const auto table = e.Get();
+            if (table)
+                result = table->GetString(id);
         }
     }
     if (result.IsEmpty())
@@ -276,17 +290,24 @@ String Localization::GetString(const String& id, const String& fallback)
 
 String Localization::GetPluralString(const String& id, int32 n, const String& fallback)
 {
+    if (id.IsEmpty())
+        return fallback;
     CHECK_RETURN(n >= 1, fallback);
     n--;
     StringView result;
     for (auto& e : Instance.LocalizedStringTables)
     {
         const auto table = e.Get();
-        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-        if (messages && messages->Count() > n)
+        if(table)
+            result = table->GetPluralString(id, n);
+    }
+    if (result.IsEmpty() && Instance.tables.ContainsKey(LocalizationSettings::Get()->DefaultFallbackLanguage)) 
+    {
+        for (auto& e : Instance.tables[LocalizationSettings::Get()->DefaultFallbackLanguage])
         {
-            result = messages->At(n);
-            break;
+            const auto table = e.Get();
+            if (table)
+                result = table->GetPluralString(id, n);
         }
     }
     if (result.IsEmpty())
