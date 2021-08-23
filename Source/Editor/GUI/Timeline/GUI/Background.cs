@@ -223,8 +223,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
             // Zoom in/out
             if (IsMouseOver && Root.GetKey(KeyboardKeys.Control))
             {
-                // TODO: preserve the view center point for easier zooming
+                var locationTimeOld = _timeline.MediaBackground.PointFromParent(_timeline, _timeline.Size * 0.5f).X;
+                var frame = (locationTimeOld - Timeline.StartOffset * 2.0f) / _timeline.Zoom / Timeline.UnitsPerSecond * _timeline.FramesPerSecond;
+                
                 _timeline.Zoom += delta * 0.1f;
+
+                var locationTimeNew = frame / _timeline.FramesPerSecond * Timeline.UnitsPerSecond * _timeline.Zoom + Timeline.StartOffset * 2.0f;
+                var locationTimeDelta = locationTimeNew - locationTimeOld;
+                var scroll = _timeline.MediaBackground.HScrollBar;
+                if (scroll.Visible && scroll.Enabled)
+                    scroll.TargetValue += locationTimeDelta;
                 return true;
             }
 
