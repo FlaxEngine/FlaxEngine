@@ -128,7 +128,7 @@ public:
     rapidjson_flax::Document Data;
 
     /// <summary>
-    /// The mapping from prefab instance object id to serialized objects array index (in Data)
+    /// The mapping from prefab instance object id to serialized objects array index (in Data).
     /// </summary>
     Dictionary<Guid, int32> PrefabInstanceIdToDataIndex;
 
@@ -322,6 +322,26 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
             modifier->IdsMapping.Add(newPrefabObjectIds[i], Guid::New());
         }
 
+        // Create new objects added to prefab
+        int32 deserializeSceneObjectIndex = sceneObjects->Count();
+        SceneObjectsFactory::Context context(modifier.Value);
+        for (int32 i = 0; i < newPrefabObjectIds.Count(); i++)
+        {
+            const Guid prefabObjectId = newPrefabObjectIds[i];
+            const ISerializable::DeserializeStream* data;
+            if (!prefabObjectIdToDiffData.TryGet(prefabObjectId, data))
+            {
+                LOG(Warning, "Missing object linkage to the prefab object diff data.");
+                continue;
+            }
+
+            SceneObject* obj = SceneObjectsFactory::Spawn(context, *(ISerializable::DeserializeStream*)data);
+            if (!obj)
+                continue;
+            obj->RegisterObject();
+            sceneObjects->Add(obj);
+        }
+
         // Apply modifications
         for (int32 i = existingObjectsCount - 1; i >= 0; i--)
         {
@@ -349,25 +369,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
             }
         }
 
-        // Create new objects added to prefab
-        int32 deserializeSceneObjectIndex = sceneObjects->Count();
-        for (int32 i = 0; i < newPrefabObjectIds.Count(); i++)
-        {
-            const Guid prefabObjectId = newPrefabObjectIds[i];
-            const ISerializable::DeserializeStream* data;
-            if (!prefabObjectIdToDiffData.TryGet(prefabObjectId, data))
-            {
-                LOG(Warning, "Missing object linkage to the prefab object diff data.");
-                continue;
-            }
-
-            SceneObject* obj = SceneObjectsFactory::Spawn(*(ISerializable::DeserializeStream*)data, modifier.Value);
-            if (!obj)
-                continue;
-            obj->RegisterObject();
-            sceneObjects->Add(obj);
-        }
-
         // Deserialize new objects added to prefab
         for (int32 i = 0; i < newPrefabObjectIds.Count(); i++)
         {
@@ -377,7 +378,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                 continue;
 
             SceneObject* obj = sceneObjects->At(deserializeSceneObjectIndex);
-            SceneObjectsFactory::Deserialize(obj, *(ISerializable::DeserializeStream*)data, modifier.Value);
+            SceneObjectsFactory::Deserialize(context, obj, *(ISerializable::DeserializeStream*)data);
 
             // Link new prefab instance to prefab and prefab object
             obj->LinkPrefab(prefabId, prefabObjectId);
@@ -492,6 +493,9 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
 bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& prefabInstancesData, Actor* defaultInstance, SceneObjectsListCacheType& sceneObjects, const Guid& prefabId, rapidjson_flax::StringBuffer& tmpBuffer, const Array<Guid>& oldObjectsIds, const Array<Guid>& newObjectIds)
 {
+    if (prefabInstancesData.IsEmpty())
+        return false;
+
     // Fully serialize default instance scene objects (accumulate all prefab and nested prefabs changes into a single linear list of objects)
     rapidjson_flax::Document defaultInstanceData;
     {
@@ -849,12 +853,13 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             }
         }
 
-        // Deserialize prefab objects (apply modifications)
+        // Create prefab objects
         auto& data = *Data;
-        sceneObjects->Resize(ObjectsCount);
+        sceneObjects->Resize(ObjectsCount + newPrefabInstanceIdToDataIndex.Count());
+        SceneObjectsFactory::Context context(modifier.Value);
         for (int32 i = 0; i < ObjectsCount; i++)
         {
-            SceneObject* obj = SceneObjectsFactory::Spawn(data[i], modifier.Value);
+            SceneObject* obj = SceneObjectsFactory::Spawn(context, data[i]);
             sceneObjects->At(i) = obj;
             if (!obj)
             {
@@ -864,12 +869,31 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             }
             obj->RegisterObject();
         }
+
+        // Create new prefab objects
+        int32 newPrefabInstanceIdToDataIndexCounter = 0;
+        int32 newPrefabInstanceIdToDataIndexStart = ObjectsCount;
+        for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
+        {
+            const int32 dataIndex = i->Value;
+            SceneObject* obj = SceneObjectsFactory::Spawn(context, diffDataDocument[dataIndex]);
+            sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++) = obj;
+            if (!obj)
+            {
+                // This should not happen but who knows
+                SceneObjectsFactory::HandleObjectDeserializationError(diffDataDocument[dataIndex]);
+                continue;
+            }
+            obj->RegisterObject();
+        }
+
+        // Deserialize prefab objects and apply modifications
         for (int32 i = 0; i < ObjectsCount; i++)
         {
             SceneObject* obj = sceneObjects->At(i);
             if (!obj)
                 continue;
-            SceneObjectsFactory::Deserialize(obj, data[i], modifier.Value);
+            SceneObjectsFactory::Deserialize(context, obj, data[i]);
 
             int32 dataIndex;
             if (diffPrefabObjectIdToDataIndex.TryGet(obj->GetSceneObjectId(), dataIndex))
@@ -897,31 +921,11 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
 
                 obj->DeleteObject();
                 obj->SetParent(nullptr);
+                sceneObjects->At(i) = nullptr;
             }
-        }
-        for (int32 i = 0; i < sceneObjects->Count(); i++)
-        {
-            if (sceneObjects->At(i) == nullptr)
-                sceneObjects->RemoveAtKeepOrder(i);
         }
 
         // Deserialize new prefab objects
-        int32 newPrefabInstanceIdToDataIndexCounter = 0;
-        int32 newPrefabInstanceIdToDataIndexStart = sceneObjects->Count();
-        sceneObjects->Resize(sceneObjects->Count() + newPrefabInstanceIdToDataIndex.Count());
-        for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
-        {
-            const int32 dataIndex = i->Value;
-            SceneObject* obj = SceneObjectsFactory::Spawn(diffDataDocument[dataIndex], modifier.Value);
-            sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++) = obj;
-            if (!obj)
-            {
-                // This should not happen but who knows
-                SceneObjectsFactory::HandleObjectDeserializationError(diffDataDocument[dataIndex]);
-                continue;
-            }
-            obj->RegisterObject();
-        }
         newPrefabInstanceIdToDataIndexCounter = 0;
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
@@ -929,7 +933,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             SceneObject* obj = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
             if (!obj)
                 continue;
-            SceneObjectsFactory::Deserialize(obj, diffDataDocument[dataIndex], modifier.Value);
+            SceneObjectsFactory::Deserialize(context, obj, diffDataDocument[dataIndex]);
         }
         for (int32 j = 0; j < targetObjects->Count(); j++)
         {
@@ -950,6 +954,12 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 }
             }
         }
+        for (int32 i = 0; i < sceneObjects->Count(); i++)
+        {
+            if (sceneObjects->At(i) == nullptr)
+                sceneObjects->RemoveAtKeepOrder(i);
+        }
+
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
         if (sceneObjects.Value->IsEmpty())
         {

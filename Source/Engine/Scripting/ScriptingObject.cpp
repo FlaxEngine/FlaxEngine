@@ -7,6 +7,8 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Content/Asset.h"
+#include "Engine/Content/Content.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
@@ -231,6 +233,20 @@ bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTy
 }
 
 bool ScriptingObject::CanCast(MClass* from, MClass* to)
+{
+    if (!from && !to)
+        return true;
+    CHECK_RETURN(from && to, false);
+
+#if PLATFORM_LINUX
+    // Cannot enter GC unsafe region if the thread is not attached
+    MCore::AttachThread();
+#endif
+
+    return from->IsSubClassOf(to);
+}
+
+bool ScriptingObject::CanCast(MClass* from, MonoClass* to)
 {
     if (!from && !to)
         return true;
@@ -542,13 +558,38 @@ public:
 
     static MonoObject* FindObject(Guid* id, MonoReflectionType* type)
     {
-        ScriptingObject* obj = Scripting::FindObject(*id, Scripting::FindClass(MUtils::GetClass(type)));
-        return obj ? obj->GetOrCreateManagedInstance() : nullptr;
+        if (!id->IsValid())
+            return nullptr;
+        auto klass = MUtils::GetClass(type);
+        ScriptingObject* obj = Scripting::TryFindObject(*id);
+        if (!obj)
+        {
+            if (!klass || klass == ScriptingObject::GetStaticClass()->GetNative() || mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
+            {
+                obj = Content::LoadAsync<Asset>(*id);
+            }
+        }
+        if (obj)
+        {
+            if (klass && !obj->Is(klass))
+            {
+                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", *id, String(obj->GetType().Fullname), String(MUtils::GetClassFullname(klass)));
+                return nullptr;
+            }
+            return obj->GetOrCreateManagedInstance();
+        }
+        if (klass)
+            LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", *id, String(MUtils::GetClassFullname(klass)));
+        else
+            LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+        return nullptr;
     }
 
     static MonoObject* TryFindObject(Guid* id, MonoReflectionType* type)
     {
-        ScriptingObject* obj = Scripting::TryFindObject(*id, Scripting::FindClass(MUtils::GetClass(type)));
+        ScriptingObject* obj = Scripting::TryFindObject(*id);
+        if (obj && !obj->Is(MUtils::GetClass(type)))
+            obj = nullptr;
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
 

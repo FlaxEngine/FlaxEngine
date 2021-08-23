@@ -133,9 +133,9 @@ public:
     /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.
     /// </summary>
     /// <param name="id">The object unique identifier.</param>
-    /// <param name="type">The type of the object to find.</param>
+    /// <param name="type">The type of the object to find (optional).</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* FindObject(Guid id, MClass* type);
+    static ScriptingObject* FindObject(Guid id, MClass* type = nullptr);
 
     /// <summary>
     /// Tries to find the object by the given identifier.
@@ -152,9 +152,9 @@ public:
     /// Tries to find the object by the given identifier.
     /// </summary>
     /// <param name="id">The object unique identifier.</param>
-    /// <param name="type">The type of the object to find.</param>
+    /// <param name="type">The type of the object to find (optional).</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* TryFindObject(Guid id, MClass* type);
+    static ScriptingObject* TryFindObject(Guid id, MClass* type = nullptr);
 
     /// <summary>
     /// Finds the object by the given managed instance handle. Searches only registered scene objects.

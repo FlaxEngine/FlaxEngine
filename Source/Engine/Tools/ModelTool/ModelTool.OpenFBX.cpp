@@ -4,6 +4,7 @@
 
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Platform/FileSystem.h"

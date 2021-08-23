@@ -17,7 +17,90 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// <seealso cref="MemberTrack" />
     public abstract class CurvePropertyTrackBase : MemberTrack
     {
+        private sealed class Splitter : Control
+        {
+            private bool _clicked;
+            internal CurvePropertyTrackBase _track;
+
+            public override void Draw()
+            {
+                var style = Style.Current;
+                if (IsMouseOver || _clicked)
+                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), _clicked ? style.BackgroundSelected : style.BackgroundHighlighted);
+            }
+
+            public override void OnEndMouseCapture()
+            {
+                base.OnEndMouseCapture();
+
+                _clicked = false;
+            }
+
+            public override void Defocus()
+            {
+                base.Defocus();
+
+                _clicked = false;
+            }
+
+            public override void OnMouseEnter(Vector2 location)
+            {
+                base.OnMouseEnter(location);
+
+                Cursor = CursorType.SizeNS;
+            }
+
+            public override void OnMouseLeave()
+            {
+                Cursor = CursorType.Default;
+
+                base.OnMouseLeave();
+            }
+
+            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    _clicked = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+            
+            public override void OnMouseMove(Vector2 location)
+            {
+                base.OnMouseMove(location);
+
+                if (_clicked)
+                {
+                    var height = Mathf.Clamp(PointToParent(location).Y, 40.0f, 1000.0f);
+                    if (!Mathf.NearEqual(height, _track._expandedHeight))
+                    {
+                        _track.Height = _track._expandedHeight = height;
+                        _track.Timeline.ArrangeTracks();
+                    }
+                }
+            }
+            
+            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _clicked)
+                {
+                    _clicked = false;
+                    EndMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+        }
+
         private byte[] _curveEditingStartData;
+        private float _expandedHeight = 120.0f;
+        private Splitter _splitter;
 
         /// <summary>
         /// The curve editor.
@@ -25,7 +108,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public CurveEditorBase Curve;
 
         private const float CollapsedHeight = 20.0f;
-        private const float ExpandedHeight = 120.0f;
 
         /// <inheritdoc />
         public CurvePropertyTrackBase(ref TrackCreateOptions options)
@@ -155,6 +237,17 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.EnablePanning = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.ScrollBars = expanded ? ScrollBars.Vertical : ScrollBars.None;
             Curve.UpdateKeyframes();
+            if (expanded)
+            {
+                if(_splitter == null)
+                    _splitter = new Splitter
+                    {
+                        _track = this,
+                        Parent = Curve,
+                    };
+                var splitterHeight = 4.0f;
+                _splitter.Bounds = new Rectangle(0, Curve.Height - splitterHeight, Curve.Width, splitterHeight);
+            }
         }
 
         private void OnKeyframesEdited()
@@ -217,10 +310,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve == null)
                 return;
-
             Curve.Edited -= OnKeyframesEdited;
             Curve.Dispose();
             Curve = null;
+            _splitter = null;
         }
 
         /// <inheritdoc />
@@ -257,7 +350,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         protected override void OnExpandedChanged()
         {
-            Height = IsExpanded ? ExpandedHeight : CollapsedHeight;
+            Height = IsExpanded ? _expandedHeight : CollapsedHeight;
             UpdateCurve();
             if (IsExpanded)
                 Curve.ShowWholeCurve();

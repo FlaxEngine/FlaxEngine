@@ -43,10 +43,10 @@ bool MeshCollider::CanAttach(RigidBody* rigidBody) const
     CollisionDataType type = CollisionDataType::None;
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
-#if USE_EDITOR
+#if USE_EDITOR || !BUILD_RELEASE
     if (type == CollisionDataType::TriangleMesh)
     {
-        LOG(Warning, "Cannot attach {0} using Triangle Mesh collider {1} to RigidBody (not supported)", GetNamePath(), CollisionData->ToString());
+        LOG(Warning, "Cannot attach '{0}' using Triangle Mesh collider '{1}' to Rigid Body (not supported)", GetNamePath(), CollisionData->ToString());
     }
 #endif
     return type != CollisionDataType::TriangleMesh;

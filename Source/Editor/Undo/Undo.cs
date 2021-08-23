@@ -221,16 +221,20 @@ namespace FlaxEditor
                 var snapshotInstances = (object[])snapshotInstance;
                 if (snapshotInstances == null || snapshotInstances.Length != SnapshotInstances.Length)
                     throw new ArgumentException("Invalid multi undo action objects.");
-                var actions = new List<UndoActionObject>();
+                List<UndoActionObject> actions = null;
                 for (int i = 0; i < snapshotInstances.Length; i++)
                 {
                     var diff = Snapshot[i].Compare(snapshotInstances[i]);
                     if (diff.Count == 0)
                         continue;
+                    if (actions == null)
+                        actions = new List<UndoActionObject>();
                     actions.Add(new UndoActionObject(diff, ActionString, SnapshotInstances[i]));
                 }
-                if (actions.Count == 0)
+                if (actions == null)
                     return null;
+                if (actions.Count == 1)
+                    return actions[0];
                 return new MultiUndoAction(actions);
             }
         }

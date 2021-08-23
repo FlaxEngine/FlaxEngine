@@ -83,7 +83,18 @@ namespace FlaxEditor.GUI
                     {
                         _editor._mainPanel.ViewOffset += delta;
                         _movingViewLastPos = location;
-                        Cursor = CursorType.SizeAll;
+                        switch (_editor.EnablePanning)
+                        {
+                        case UseMode.Vertical:
+                            Cursor = CursorType.SizeNS;
+                            break;
+                        case UseMode.Horizontal:
+                            Cursor = CursorType.SizeWE;
+                            break;
+                        case UseMode.On:
+                            Cursor = CursorType.SizeAll;
+                            break;
+                        }
                     }
 
                     return;

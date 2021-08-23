@@ -404,9 +404,9 @@ private:
 
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
-    API_FUNCTION(NoProxy) bool UpdateMeshInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesInt(int32 triangleCount, MonoArray* trianglesObj);
+    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, MonoArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, MonoArray* trianglesObj);
     API_FUNCTION(NoProxy) bool DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI);
 };

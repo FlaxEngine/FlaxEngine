@@ -23,9 +23,12 @@ void WindowsClipboard::Clear()
 
 void WindowsClipboard::SetText(const StringView& text)
 {
-    const int32 size = (text.Length() + 1) * sizeof(Char);
-    const HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, size);
-    Platform::MemoryCopy(GlobalLock(hMem), text.GetText(), size);
+    const int32 sizeWithoutNull = text.Length() * sizeof(Char);
+    const HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, sizeWithoutNull + sizeof(Char));
+
+    Char* pMem = static_cast<Char*>(GlobalLock(hMem));
+    Platform::MemoryCopy(pMem, text.GetNonTerminatedText(), sizeWithoutNull);
+    Platform::MemorySet(pMem + text.Length(), sizeof(Char), 0);
     GlobalUnlock(hMem);
 
     OpenClipboard(nullptr);

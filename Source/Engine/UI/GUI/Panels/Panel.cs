@@ -14,6 +14,7 @@ namespace FlaxEngine.GUI
         private bool _alwaysShowScrollbars;
         private int _layoutUpdateLock;
         private ScrollBars _scrollBars;
+        private float _scrollBarsSize = ScrollBar.DefaultSize;
         private Margin _scrollMargin;
 
         /// <summary>
@@ -64,7 +65,7 @@ namespace FlaxEngine.GUI
                         VScrollBar = GetChild<VScrollBar>();
                     if (VScrollBar == null)
                     {
-                        VScrollBar = new VScrollBar(this, Width - ScrollBar.DefaultSize, Height)
+                        VScrollBar = new VScrollBar(this, Width - _scrollBarsSize, Height)
                         {
                             AnchorPreset = AnchorPresets.TopLeft
                         };
@@ -84,7 +85,7 @@ namespace FlaxEngine.GUI
                         HScrollBar = GetChild<HScrollBar>();
                     if (HScrollBar == null)
                     {
-                        HScrollBar = new HScrollBar(this, Height - ScrollBar.DefaultSize, Width)
+                        HScrollBar = new HScrollBar(this, Height - _scrollBarsSize, Width)
                         {
                             AnchorPreset = AnchorPresets.TopLeft
                         };
@@ -99,6 +100,22 @@ namespace FlaxEngine.GUI
                     HScrollBar = null;
                 }
 
+                PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the scroll bars.
+        /// </summary>
+        [EditorOrder(5), Tooltip("Scroll bars size.")]
+        public float ScrollBarsSize
+        {
+            get => _scrollBarsSize;
+            set
+            {
+                if (Mathf.NearEqual(_scrollBarsSize, value))
+                    return;
+                _scrollBarsSize = value;
                 PerformLayout();
             }
         }
@@ -410,7 +427,7 @@ namespace FlaxEngine.GUI
             if (VScrollBar != null)
             {
                 float height = Height;
-                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height > ScrollBar.DefaultSize;
+                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height > _scrollBarsSize;
 
                 if (VScrollBar.Enabled != vScrollEnabled)
                 {
@@ -432,12 +449,12 @@ namespace FlaxEngine.GUI
                 {
                     VScrollBar.SetScrollRange(scrollBounds.Top, Mathf.Max(Mathf.Max(0, scrollBounds.Top), scrollBounds.Height - height));
                 }
-                VScrollBar.Bounds = new Rectangle(Width - ScrollBar.DefaultSize, 0, ScrollBar.DefaultSize, Height);
+                VScrollBar.Bounds = new Rectangle(Width - _scrollBarsSize, 0, _scrollBarsSize, Height);
             }
             if (HScrollBar != null)
             {
                 float width = Width;
-                bool hScrollEnabled = (controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f) && width > ScrollBar.DefaultSize;
+                bool hScrollEnabled = (controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f) && width > _scrollBarsSize;
 
                 if (HScrollBar.Enabled != hScrollEnabled)
                 {
@@ -459,7 +476,7 @@ namespace FlaxEngine.GUI
                 {
                     HScrollBar.SetScrollRange(scrollBounds.Left, Mathf.Max(Mathf.Max(0, scrollBounds.Left), scrollBounds.Width - width));
                 }
-                HScrollBar.Bounds = new Rectangle(0, Height - ScrollBar.DefaultSize, Width - (VScrollBar != null && VScrollBar.Visible ? VScrollBar.Width : 0), ScrollBar.DefaultSize);
+                HScrollBar.Bounds = new Rectangle(0, Height - _scrollBarsSize, Width - (VScrollBar != null && VScrollBar.Visible ? VScrollBar.Width : 0), _scrollBarsSize);
             }
         }
 

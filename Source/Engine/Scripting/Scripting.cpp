@@ -754,13 +754,20 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     if (result)
     {
         // Check type
-        if (result->Is(type))
+        if (!type || result->Is(type))
             return result;
         LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", id, String(result->GetType().Fullname), String(type->GetFullName()));
         return nullptr;
     }
 
     // Check if object can be an asset and try to load it
+    if (!type)
+    {
+        result = Content::LoadAsync<Asset>(id);
+        if (!result)
+            LOG(Warning, "Unable to find scripting object with ID={0}", id);
+        return result;
+    }
     if (type == ScriptingObject::GetStaticClass() || type->IsSubClassOf(Asset::GetStaticClass()))
     {
         Asset* asset = Content::LoadAsync(id, type);
@@ -774,6 +781,10 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
 
 ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
 {
+    if (!id.IsValid())
+        return nullptr;
+    PROFILE_CPU();
+
     // Try to map object id
     const auto idsMapping = ObjectsLookupIdMapping.Get();
     if (idsMapping)
@@ -796,7 +807,7 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
 #endif
 
     // Check type
-    if (result && !result->Is(type))
+    if (result && type && !result->Is(type))
     {
         result = nullptr;
     }

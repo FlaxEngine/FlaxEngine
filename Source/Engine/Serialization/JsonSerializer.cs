@@ -73,7 +73,7 @@ namespace FlaxEngine.Json
                 ContractResolver = new ExtendedDefaultContractResolver(isManagedOnly),
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 TypeNameHandling = TypeNameHandling.Auto,
-                NullValueHandling = NullValueHandling.Ignore,
+                NullValueHandling = NullValueHandling.Include,
                 ObjectCreationHandling = ObjectCreationHandling.Auto,
             };
             if (ObjectConverter == null)
@@ -275,6 +275,11 @@ namespace FlaxEngine.Json
             var cache = Cache.Value;
             cache.IsDuringSerialization = false;
             Current.Value = cache;
+
+            /*// Debug json string reading
+            cache.MemoryStream.Initialize(jsonBuffer, jsonLength);
+            cache.Reader.DiscardBufferedData();
+            string json = cache.Reader.ReadToEnd();*/
 
             cache.MemoryStream.Initialize(jsonBuffer, jsonLength);
             cache.Reader.DiscardBufferedData();

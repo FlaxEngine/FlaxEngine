@@ -230,6 +230,19 @@ public:
     /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
     /// </remarks>
     /// <param name="type">The collision data type.</param>
+    /// <param name="vertices">The source geometry vertex buffer with vertices positions. Cannot be empty.</param>
+    /// <param name="triangles">The source data index buffer (triangles list). Uses 32-bit stride buffer. Cannot be empty. Length must be multiple of 3 (as 3 vertices build a triangle).</param>
+    /// <param name="convexFlags">The convex mesh generation flags.</param>
+    /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
+    API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
+
+    /// <summary>
+    /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.
+    /// </summary>
+    /// <remarks>
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// </remarks>
+    /// <param name="type">The collision data type.</param>
     /// <param name="modelData">The custom geometry.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>

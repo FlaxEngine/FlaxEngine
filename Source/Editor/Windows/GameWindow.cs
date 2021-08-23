@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Xml;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -483,6 +484,32 @@ namespace FlaxEditor.Windows
                 Focus();
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public override bool UseLayoutData => true;
+
+        /// <inheritdoc />
+        public override void OnLayoutSerialize(XmlWriter writer)
+        {
+            writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
+            writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize(XmlElement node)
+        {
+            if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
+                ShowGUI = value1;
+            if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
+                ShowDebugDraw = value1;
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize()
+        {
+            ShowGUI = true;
+            ShowDebugDraw = false;
         }
     }
 }

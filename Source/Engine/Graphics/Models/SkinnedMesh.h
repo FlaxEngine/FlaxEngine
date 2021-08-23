@@ -123,6 +123,19 @@ public:
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
+    /// <param name="ib">The index buffer in clockwise order.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, uint32* ib)
+    {
+        return UpdateMesh(vertexCount, triangleCount, vb, ib, false);
+    }
+
+    /// <summary>
+    /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// </summary>
+    /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
+    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
+    /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer, clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
     FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, uint16* ib)
@@ -245,7 +258,7 @@ private:
 
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
-    API_FUNCTION(NoProxy) bool UpdateMeshInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI);
 };

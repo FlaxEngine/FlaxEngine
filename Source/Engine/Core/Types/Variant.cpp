@@ -6,6 +6,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Vector2.h"

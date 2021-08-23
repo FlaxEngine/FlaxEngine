@@ -130,7 +130,43 @@ namespace FlaxEngine
             if (uv != null && uv.Length != vertices.Length)
                 throw new ArgumentOutOfRangeException(nameof(uv));
 
-            if (Internal_UpdateMeshInt(__unmanagedPtr, vertices, triangles, blendIndices, blendWeights, normals, tangents, uv))
+            if (Internal_UpdateMeshUInt(__unmanagedPtr, vertices, triangles, blendIndices, blendWeights, normals, tangents, uv))
+                throw new FlaxException("Failed to update mesh data.");
+        }
+
+        /// <summary>
+        /// Updates the skinned model mesh vertex and index buffer data.
+        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+        /// Mesh data will be cached and uploaded to the GPU with a delay.
+        /// </summary>
+        /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
+        /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+        /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
+        /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
+        /// <param name="normals">The normal vectors (per vertex).</param>
+        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="uv">The texture coordinates (per vertex).</param>
+        public void UpdateMesh(Vector3[] vertices, uint[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
+        {
+            // Validate state and input
+            if (!ParentSkinnedModel.IsVirtual)
+                throw new InvalidOperationException("Only virtual skinned models can be updated at runtime.");
+            if (vertices == null)
+                throw new ArgumentNullException(nameof(vertices));
+            if (triangles == null)
+                throw new ArgumentNullException(nameof(triangles));
+            if (triangles.Length == 0 || triangles.Length % 3 != 0)
+                throw new ArgumentOutOfRangeException(nameof(triangles));
+            if (normals != null && normals.Length != vertices.Length)
+                throw new ArgumentOutOfRangeException(nameof(normals));
+            if (tangents != null && tangents.Length != vertices.Length)
+                throw new ArgumentOutOfRangeException(nameof(tangents));
+            if (tangents != null && normals == null)
+                throw new ArgumentException("If you specify tangents then you need to also provide normals for the mesh.");
+            if (uv != null && uv.Length != vertices.Length)
+                throw new ArgumentOutOfRangeException(nameof(uv));
+
+            if (Internal_UpdateMeshUInt(__unmanagedPtr, vertices, triangles, blendIndices, blendWeights, normals, tangents, uv))
                 throw new FlaxException("Failed to update mesh data.");
         }
 
@@ -227,10 +263,10 @@ namespace FlaxEngine
         /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
-        public int[] DownloadIndexBuffer(bool forceGpu = false)
+        public uint[] DownloadIndexBuffer(bool forceGpu = false)
         {
             var triangles = TriangleCount;
-            var result = new int[triangles * 3];
+            var result = new uint[triangles * 3];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB32))
                 throw new FlaxException("Failed to download mesh data.");
             return result;

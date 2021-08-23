@@ -78,6 +78,21 @@ bool CollisionData::CookCollision(CollisionDataType type, const Span<Vector3>& v
     return CookCollision(type, &modelData, convexFlags, convexVertexLimit);
 }
 
+bool CollisionData::CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+{
+    CHECK_RETURN(vertices.Length() != 0, true);
+    CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
+    ModelData modelData;
+    modelData.LODs.Resize(1);
+    auto meshData = New<MeshData>();
+    modelData.LODs[0].Meshes.Add(meshData);
+    meshData->Positions.Set(vertices.Get(), vertices.Length());
+    meshData->Indices.Resize(triangles.Length());
+    for (int32 i = 0; i < triangles.Length(); i++)
+        meshData->Indices.Get()[i] = triangles.Get()[i];
+    return CookCollision(type, &modelData, convexFlags, convexVertexLimit);
+}
+
 bool CollisionData::CookCollision(CollisionDataType type, ModelData* modelData, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     // Validate state

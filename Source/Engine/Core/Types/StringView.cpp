@@ -18,12 +18,12 @@ StringView::StringView(const String& str)
 
 bool StringView::operator==(const String& other) const
 {
-    return StringUtils::Compare(this->GetText(), *other) == 0;
+    return this->Compare(StringView(other)) == 0;
 }
 
 bool StringView::operator!=(const String& other) const
 {
-    return StringUtils::Compare(this->GetText(), *other) != 0;
+    return this->Compare(StringView(other)) != 0;
 }
 
 StringView StringView::Left(int32 count) const
@@ -62,12 +62,12 @@ StringAnsi StringView::ToStringAnsi() const
 
 bool operator==(const String& a, const StringView& b)
 {
-    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) == 0;
+    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetNonTerminatedText(), b.Length()) == 0;
 }
 
 bool operator!=(const String& a, const StringView& b)
 {
-    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) != 0;
+    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetNonTerminatedText(), b.Length()) != 0;
 }
 
 StringAnsiView StringAnsiView::Empty;
@@ -79,12 +79,12 @@ StringAnsiView::StringAnsiView(const StringAnsi& str)
 
 bool StringAnsiView::operator==(const StringAnsi& other) const
 {
-    return StringUtils::Compare(this->GetText(), *other) == 0;
+    return this->Compare(StringAnsiView(other)) == 0;
 }
 
 bool StringAnsiView::operator!=(const StringAnsi& other) const
 {
-    return StringUtils::Compare(this->GetText(), *other) != 0;
+    return this->Compare(StringAnsiView(other)) != 0;
 }
 
 StringAnsi StringAnsiView::Substring(int32 startIndex) const
@@ -111,10 +111,10 @@ StringAnsi StringAnsiView::ToStringAnsi() const
 
 bool operator==(const StringAnsi& a, const StringAnsiView& b)
 {
-    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) == 0;
+    return a.Length() == b.Length() && StringUtils::Compare(a.GetText(), b.GetNonTerminatedText(), b.Length()) == 0;
 }
 
 bool operator!=(const StringAnsi& a, const StringAnsiView& b)
 {
-    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetText(), b.Length()) != 0;
+    return a.Length() != b.Length() || StringUtils::Compare(a.GetText(), b.GetNonTerminatedText(), b.Length()) != 0;
 }

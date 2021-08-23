@@ -675,7 +675,14 @@ namespace Flax.Build.Platforms
                 }
 
                 // Specify subsystem
-                args.Add("/SUBSYSTEM:WINDOWS");
+                if (linkEnvironment.LinkAsConsoleProgram)
+                {
+                    args.Add("/SUBSYSTEM:CONSOLE");
+                }
+                else
+                {
+                    args.Add("/SUBSYSTEM:WINDOWS");
+                }
 
                 // Generate Windows Metadata
                 if (linkEnvironment.GenerateWindowsMetadata)
