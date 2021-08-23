@@ -6,7 +6,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
-#if USE_EDITOR
+#if USE_EDITOR || !BUILD_RELEASE
 #include "Engine/Debug/DebugLog.h"
 #endif
 
