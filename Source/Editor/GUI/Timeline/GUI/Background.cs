@@ -46,10 +46,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var areaLeft = -X;
             var areaRight = Parent.Width + mediaBackground.ControlsBounds.BottomRight.X;
             var height = Height;
-            var leftSideMin = PointFromParent(Vector2.Zero);
-            var leftSideMax = BottomLeft;
-            var rightSideMin = UpperRight;
-            var rightSideMax = PointFromParent(Parent.BottomRight) + mediaBackground.ControlsBounds.BottomRight;
+
+            // Calculate the timeline range in the view to optimize background drawing
+            Render2D.PeekClip(out var globalClipping);
+            Render2D.PeekTransform(out var globalTransform);
+            var globalRect = new Rectangle(globalTransform.M31 + areaLeft, globalTransform.M32, areaRight * globalTransform.M11, height * globalTransform.M22);
+            var globalMask = Rectangle.Shared(globalClipping, globalRect);
+            var globalTransformInv = Matrix3x3.Invert(globalTransform);
+            var localRect = Rectangle.FromPoints(Matrix3x3.Transform2D(globalMask.UpperLeft, globalTransformInv), Matrix3x3.Transform2D(globalMask.BottomRight, globalTransformInv));
+            var localRectMin = localRect.UpperLeft;
+            var localRectMax = localRect.BottomRight;
 
             // Draw lines between tracks
             Render2D.DrawLine(new Vector2(areaLeft, 0.5f), new Vector2(areaRight, 0.5f), linesColor);
@@ -77,8 +83,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var minDistanceBetweenTicks = 50.0f;
             var maxDistanceBetweenTicks = 100.0f;
             var zoom = Timeline.UnitsPerSecond * _timeline.Zoom;
-            var left = Vector2.Min(leftSideMin, rightSideMax).X;
-            var right = Vector2.Max(leftSideMin, rightSideMax).X;
+            var left = Vector2.Min(localRectMin, localRectMax).X;
+            var right = Vector2.Max(localRectMin, localRectMax).X;
             var leftFrame = Mathf.Floor((left - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var rightFrame = Mathf.Ceil((right - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var min = leftFrame;
@@ -146,9 +152,15 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             // Darken area outside the duration
-            var outsideDurationAreaColor = new Color(0, 0, 0, 100);
-            Render2D.FillRectangle(new Rectangle(leftSideMin, leftSideMax.X - leftSideMin.X, height), outsideDurationAreaColor);
-            Render2D.FillRectangle(new Rectangle(rightSideMin, rightSideMax.X - rightSideMin.X, height), outsideDurationAreaColor);
+            {
+                var outsideDurationAreaColor = new Color(0, 0, 0, 100);
+                var leftSideMin = PointFromParent(Vector2.Zero);
+                var leftSideMax = BottomLeft;
+                var rightSideMin = UpperRight;
+                var rightSideMax = PointFromParent(Parent.BottomRight) + mediaBackground.ControlsBounds.BottomRight;
+                Render2D.FillRectangle(new Rectangle(leftSideMin, leftSideMax.X - leftSideMin.X, height), outsideDurationAreaColor);
+                Render2D.FillRectangle(new Rectangle(rightSideMin, rightSideMax.X - rightSideMin.X, height), outsideDurationAreaColor);
+            }
 
             // Draw time axis header
             var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y;

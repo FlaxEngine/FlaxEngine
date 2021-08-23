@@ -172,67 +172,82 @@ public:
         /// <summary>
         /// Wheel placement type.
         /// </summary>
-        API_FIELD() WheelTypes Type = WheelTypes::FrontLeft;
+        API_FIELD(Attributes="EditorOrder(0)") WheelTypes Type = WheelTypes::FrontLeft;
 
         /// <summary>
         /// Combined mass of the wheel and the tire in kg. Typically, a wheel has mass between 20Kg and 80Kg but can be lower and higher depending on the vehicle.
         /// </summary>
-        API_FIELD() float Mass = 20.0f;
+        API_FIELD(Attributes="EditorOrder(1)") float Mass = 20.0f;
 
         /// <summary>
         /// Distance in metres between the center of the wheel and the outside rim of the tire. It is important that the value of the radius closely matches the radius of the render mesh of the wheel. Any mismatch will result in the wheels either hovering above the ground or intersecting the ground.
         /// </summary>
-        API_FIELD() float Radius = 50.0f;
+        API_FIELD(Attributes="EditorOrder(2)") float Radius = 50.0f;
 
         /// <summary>
         /// Full width of the wheel in metres. This parameter has no bearing on the handling but is a very useful parameter to have when trying to render debug data relating to the wheel/tire/suspension.
         /// </summary>
-        API_FIELD() float Width = 20.0f;
+        API_FIELD(Attributes="EditorOrder(3)") float Width = 20.0f;
 
         /// <summary>
         /// Max steer angle that can be achieved by the wheel (in degrees).
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float MaxSteerAngle = 0.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(10)") float MaxSteerAngle = 0.0f;
 
         /// <summary>
         /// Damping rate applied to wheel. Specified in kilograms metres-squared per second (kg m^2 s^-1).
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float DampingRate = 0.25f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(11)") float DampingRate = 0.25f;
 
         /// <summary>
         /// Max brake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float MaxBrakeTorque = 1500.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(12)") float MaxBrakeTorque = 1500.0f;
 
         /// <summary>
         /// Max handbrake torque that can be applied to wheel. Specified in kilograms metres-squared per second-squared (kg m^2 s^-2)
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float MaxHandBrakeTorque = 2000.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(13)") float MaxHandBrakeTorque = 2000.0f;
 
         /// <summary>
         /// Collider that represents the wheel shape and it's placement. Has to be attached as a child to the vehicle. Triangle mesh collider is not supported (use convex mesh or basic shapes).
         /// </summary>
-        API_FIELD() ScriptingObjectReference<Collider> Collider;
+        API_FIELD(Attributes="EditorOrder(4)") ScriptingObjectReference<Collider> Collider;
 
         /// <summary>
         /// Spring damper rate of suspension unit.
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float SuspensionDampingRate = 1.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Suspension\"), EditorOrder(20)") float SuspensionDampingRate = 1.0f;
 
         /// <summary>
         /// The maximum offset for the suspension that wheel can go above resting location.
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float SuspensionMaxRaise = 10.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Suspension\"), EditorOrder(21)") float SuspensionMaxRaise = 10.0f;
 
         /// <summary>
         /// The maximum offset for the suspension that wheel can go below resting location.
         /// </summary>
-        API_FIELD(Attributes="Limit(0)") float SuspensionMaxDrop = 10.0f;
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Suspension\"), EditorOrder(22)") float SuspensionMaxDrop = 10.0f;
 
         /// <summary>
-        /// The vertical offset from where suspension forces are applied.
+        /// The vertical offset from where suspension forces are applied (relative to the vehicle center of mass). The suspension force is applies on the vertical axis going though the wheel center.
         /// </summary>
-        API_FIELD() float SuspensionForceOffset = 0.0f;
+        API_FIELD(Attributes="EditorDisplay(\"Suspension\"), EditorOrder(23)") float SuspensionForceOffset = 0.0f;
+
+        /// <summary>
+        /// The tire lateral stiffness to have given lateral slip.
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(30)") float TireLateralStiffness = 17.0f;
+
+        /// <summary>
+        /// The maximum tire load (normalized) at which tire cannot provide more lateral stiffness (no matter how much extra load is applied to it).
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(31)") float TireLateralMax = 2.0f;
+
+        /// <summary>
+        /// The tire longitudinal stiffness to have given longitudinal slip.
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(32)") float TireLongitudinalStiffness = 1000.0f;
     };
 
     /// <summary>
@@ -281,6 +296,18 @@ public:
         /// The compression of the suspension spring. Offsets the wheel location.
         /// </summary>
         API_FIELD() float SuspensionOffset = 0.0f;
+
+#if USE_EDITOR
+        /// <summary>
+        /// The start location of the suspension raycast start (Editor only for debugging).
+        /// </summary>
+        API_FIELD() Vector3 SuspensionTraceStart = Vector3::Zero;
+
+        /// <summary>
+        /// The start location of the suspension raycast end (Editor only for debugging).
+        /// </summary>
+        API_FIELD() Vector3 SuspensionTraceEnd = Vector3::Zero;
+#endif
     };
 
 private:
@@ -290,12 +317,6 @@ private:
         Collider* Collider;
         Quaternion LocalOrientation;
         WheelState State;
-        struct ChildPose
-        {
-            Actor* Child;
-            Vector3 Pose;
-        };
-        Array<ChildPose, InlinedAllocation<4>> ChildrenPoses;
     };
 
     void* _drive = nullptr;
@@ -314,6 +335,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Vehicle\")")
     bool UseReverseAsBrake = true;
+
+    /// <summary>
+    /// If checked, the vehicle driving and steering inputs will be used as analog values (from gamepad), otherwise will be used as digital input (from keyboard).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")")
+    bool UseAnalogSteering = false;
 
     /// <summary>
     /// Gets the vehicle driving model type.

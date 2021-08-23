@@ -131,7 +131,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("ZOINKS"),
     TEXT("Scooby dooby doo"),
     TEXT("You shall not load!"),
-    TEXT("The roof, the roof, the roof is on fire!")
+    TEXT("The roof, the roof, the roof is on fire!"),
+    TEXT("I've seen better documentation ...\nFrom ransomware gangs !")
 };
 
 SplashScreen::~SplashScreen()

@@ -31,6 +31,12 @@
 // Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
 #define SCRATCH_BLOCK_SIZE (1024 * 128)
 
+#define PHYSX_VEHICLE_DEBUG_TELEMETRY 0
+
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+#include "Engine/Core/Utilities.h"
+#endif
+
 class PhysXAllocator : public PxAllocatorCallback
 {
 public:
@@ -744,6 +750,23 @@ void Physics::CollectResults()
 		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
 	            }
             };
+            PxVehicleKeySmoothingData keySmoothing =
+            {
+                {
+                    3.0f,  // rise rate eANALOG_INPUT_ACCEL
+                    3.0f,  // rise rate eANALOG_INPUT_BRAKE
+                    10.0f, // rise rate eANALOG_INPUT_HANDBRAKE
+                    2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
+                    2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
+                },
+                {
+                    5.0f,  // fall rate eANALOG_INPUT__ACCEL
+                    5.0f,  // fall rate eANALOG_INPUT__BRAKE
+                    10.0f, // fall rate eANALOG_INPUT__HANDBRAKE
+                    5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
+                    5.0f   // fall rate eANALOG_INPUT_STEER_RIGHT
+                }
+            };
             // Reference: PhysX SDK docs
             // TODO: expose steer vs forward curve into per-vehicle (up to 8 points, values clamped into 0/1 range)
             static constexpr PxF32 steerVsForwardSpeedData[] =
@@ -759,28 +782,60 @@ void Physics::CollectResults()
             };
             const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
             // @formatter:on
-            switch (wheelVehicle->_driveTypeCurrent)
+            if (wheelVehicle->UseAnalogSteering)
             {
-            case WheeledVehicle::DriveTypes::Drive4W:
-            {
-                PxVehicleDrive4WRawInputData rawInputData;
-                rawInputData.setAnalogAccel(throttle);
-                rawInputData.setAnalogBrake(brake);
-                rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                break;
+                switch (wheelVehicle->_driveTypeCurrent)
+                {
+                case WheeledVehicle::DriveTypes::Drive4W:
+                {
+                    PxVehicleDrive4WRawInputData rawInputData;
+                    rawInputData.setAnalogAccel(throttle);
+                    rawInputData.setAnalogBrake(brake);
+                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                    PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                    break;
+                }
+                case WheeledVehicle::DriveTypes::DriveNW:
+                {
+                    PxVehicleDriveNWRawInputData rawInputData;
+                    rawInputData.setAnalogAccel(throttle);
+                    rawInputData.setAnalogBrake(brake);
+                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                    PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                    break;
+                }
+                }
             }
-            case WheeledVehicle::DriveTypes::DriveNW:
+            else
             {
-                PxVehicleDriveNWRawInputData rawInputData;
-                rawInputData.setAnalogAccel(throttle);
-                rawInputData.setAnalogBrake(brake);
-                rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                break;
-            }
+                const float deadZone = 0.1f;
+                switch (wheelVehicle->_driveTypeCurrent)
+                {
+                case WheeledVehicle::DriveTypes::Drive4W:
+                {
+                    PxVehicleDrive4WRawInputData rawInputData;
+                    rawInputData.setDigitalAccel(throttle > deadZone);
+                    rawInputData.setDigitalBrake(brake > deadZone);
+                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                    PxVehicleDrive4WSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
+                    break;
+                }
+                case WheeledVehicle::DriveTypes::DriveNW:
+                {
+                    PxVehicleDriveNWRawInputData rawInputData;
+                    rawInputData.setDigitalAccel(throttle > deadZone);
+                    rawInputData.setDigitalBrake(brake > deadZone);
+                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                    PxVehicleDriveNWSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
+                    break;
+                }
+                }
             }
         }
 
@@ -789,8 +844,8 @@ void Physics::CollectResults()
         {
             if (WheelRaycastBatchQuery)
                 WheelRaycastBatchQuery->release();
-            WheelQueryResults.Resize(wheelsCount);
-            WheelQueryResults.Resize(WheelQueryResults.Capacity());
+            WheelQueryResults.Resize(wheelsCount, false);
+            WheelHitResults.Resize(wheelsCount, false);
             PxBatchQueryDesc desc(wheelsCount, 0, 0);
             desc.queryMemory.userRaycastResultBuffer = WheelQueryResults.Get();
             desc.queryMemory.userRaycastTouchBuffer = WheelHitResults.Get();
@@ -841,12 +896,18 @@ void Physics::CollectResults()
             auto drive = WheelVehiclesCache[ii];
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
             ii++;
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+            LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
+#endif
 
             // Update wheels
             for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
             {
                 auto& wheelData = wheelVehicle->_wheelsData[j];
                 auto& perWheel = perVehicle.wheelQueryResults[j];
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+                LOG(Info, "Vehicle[{}] Wheel[{}] longitudinalSlip={}, lateralSlip={}, suspSpringForce={}", ii, j, Utilities::RoundTo2DecimalPlaces(perWheel.longitudinalSlip), Utilities::RoundTo2DecimalPlaces(perWheel.lateralSlip), (int32)perWheel.suspSpringForce);
+#endif
 
                 auto& state = wheelData.State;
                 state.IsInAir = perWheel.isInAir;
@@ -857,23 +918,21 @@ void Physics::CollectResults()
                 state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
                 state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
                 state.SuspensionOffset = perWheel.suspJounce;
+#if USE_EDITOR
+                state.SuspensionTraceStart = P2C(perWheel.suspLineStart);
+                state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength);
+#endif
 
-                // Rotate wheel
-                wheelData.Collider->SetLocalOrientation(Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation);
+                if (!wheelData.Collider)
+                    continue;
+                auto shape = wheelData.Collider->GetPxShape();
 
-                // Apply suspension offset (cannot move collider because it breaks driving so move it's children but preserve the initial pose)
-                for (auto child : wheelData.Collider->Children)
-                {
-                    int32 poseIndex = 0;
-                    for (; poseIndex < wheelData.ChildrenPoses.Count(); poseIndex++)
-                    {
-                        if (wheelData.ChildrenPoses[poseIndex].Child == child)
-                            break;
-                    }
-                    if (poseIndex == wheelData.ChildrenPoses.Count())
-                        wheelData.ChildrenPoses.Add({ child, child->GetLocalPosition() });
-                    child->SetPosition(wheelData.Collider->GetTransform().LocalToWorld(wheelData.ChildrenPoses[poseIndex].Pose) + Vector3(0, perWheel.suspJounce, 0));
-                }
+                // Update wheel collider transformation
+                auto localPose = shape->getLocalPose();
+                Transform t = wheelData.Collider->GetLocalTransform();
+                t.Orientation = Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation;
+                t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
+                wheelData.Collider->SetLocalTransform(t);
             }
         }
     }
