@@ -7,7 +7,7 @@
 #elif PLATFORM_UWP
 #include "Base/FileSystemWatcherBase.h"
 #elif PLATFORM_LINUX
-#include "Base/FileSystemWatcherBase.h"
+#include "Linux/LinuxFileSystemWatcher.h"
 #elif PLATFORM_PS4
 #include "Base/FileSystemWatcherBase.h"
 #elif PLATFORM_XBOX_SCARLETT
