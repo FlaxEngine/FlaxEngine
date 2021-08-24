@@ -793,7 +793,7 @@ namespace FlaxEditor.GUI
             }
 
             // Draw time and values axes
-            if (ShowAxes)
+            if (ShowAxes != UseMode.Off)
             {
                 var upperLeft = PointToKeyframes(viewRect.Location, ref viewRect);
                 var bottomRight = PointToKeyframes(viewRect.Size, ref viewRect);
@@ -804,8 +804,10 @@ namespace FlaxEditor.GUI
 
                 Render2D.PushClip(ref viewRect);
 
-                DrawAxis(Vector2.UnitX, ref viewRect, min.X, max.X, pixelRange.X);
-                DrawAxis(Vector2.UnitY, ref viewRect, min.Y, max.Y, pixelRange.Y);
+                if ((ShowAxes & UseMode.Vertical) == UseMode.Vertical)
+                    DrawAxis(Vector2.UnitX, ref viewRect, min.X, max.X, pixelRange.X);
+                if ((ShowAxes & UseMode.Horizontal) == UseMode.Horizontal)
+                    DrawAxis(Vector2.UnitY, ref viewRect, min.Y, max.Y, pixelRange.Y);
 
                 Render2D.PopClip();
             }

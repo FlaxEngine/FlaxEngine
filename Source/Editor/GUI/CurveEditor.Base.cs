@@ -87,7 +87,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Enables drawing time and values axes (lines and labels).
         /// </summary>
-        public bool ShowAxes = true;
+        public UseMode ShowAxes = UseMode.On;
 
         /// <summary>
         /// Gets the type of the curves keyframes value.

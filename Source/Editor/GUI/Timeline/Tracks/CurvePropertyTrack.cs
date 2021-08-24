@@ -231,8 +231,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
             Curve.ShowCollapsed = !expanded;
-            Curve.ShowBackground = expanded;
-            Curve.ShowAxes = expanded;
+            Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
             Curve.EnableZoom = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.EnablePanning = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.ScrollBars = expanded ? ScrollBars.Vertical : ScrollBars.None;
@@ -293,6 +292,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve = (CurveEditorBase)Activator.CreateInstance(curveEditorType);
             Curve.EnableZoom = CurveEditorBase.UseMode.Vertical;
             Curve.EnablePanning = CurveEditorBase.UseMode.Vertical;
+            Curve.ShowBackground = false;
             Curve.ScrollBars = ScrollBars.Vertical;
             Curve.Parent = Timeline?.MediaPanel;
             Curve.FPS = Timeline?.FramesPerSecond;

@@ -493,7 +493,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
             Curve.ShowCollapsed = !expanded;
             Curve.ShowBackground = expanded;
-            Curve.ShowAxes = expanded;
+            Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
             Curve.Visible = Visible;
             Curve.UpdateKeyframes();
         }
