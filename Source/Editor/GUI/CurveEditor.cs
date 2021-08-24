@@ -273,7 +273,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The keyframes size.
         /// </summary>
-        protected static readonly Vector2 KeyframesSize = new Vector2(5.0f);
+        protected static readonly Vector2 KeyframesSize = new Vector2(7.0f);
 
         /// <summary>
         /// The colors for the keyframe points.
@@ -1296,7 +1296,7 @@ namespace FlaxEditor.GUI
                 if (_showCollapsed)
                 {
                     point.Y = 1.0f;
-                    p.Size = new Vector2(4.0f / viewScale.X, Height - 2.0f);
+                    p.Size = new Vector2(KeyframesSize.X / viewScale.X, Height - 2.0f);
                     p.Visible = p.Component == 0;
                 }
                 else

@@ -251,7 +251,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                         Parent = Curve,
                     };
                 }
-                var splitterHeight = 4.0f;
+                var splitterHeight = 5.0f;
                 _splitter.Bounds = new Rectangle(0, Curve.Height - splitterHeight, Curve.Width, splitterHeight);
             }
         }

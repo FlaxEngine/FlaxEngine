@@ -75,7 +75,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 var track = tracks[i];
                 if (track.Visible && _timeline.SelectedTracks.Contains(track) && _timeline.ContainsFocus)
                 {
-                    Render2D.FillRectangle(new Rectangle(areaLeft, track.Top, areaRight, track.Height), style.BackgroundSelected);
+                    Render2D.FillRectangle(new Rectangle(areaLeft, track.Top, areaRight, track.Height), style.BackgroundSelected.RGBMultiplied(0.4f));
                 }
             }
 

@@ -509,7 +509,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The keyframes size.
         /// </summary>
-        private static readonly Vector2 KeyframesSize = new Vector2(5.0f);
+        private static readonly Vector2 KeyframesSize = new Vector2(7.0f);
 
         private Contents _contents;
         private Panel _mainPanel;

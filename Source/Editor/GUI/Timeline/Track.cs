@@ -32,7 +32,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// The default drag insert position margin.
         /// </summary>
-        public const float DefaultDragInsertPositionMargin = 2.0f;
+        public const float DefaultDragInsertPositionMargin = 4.0f;
 
         /// <summary>
         /// The header height.
