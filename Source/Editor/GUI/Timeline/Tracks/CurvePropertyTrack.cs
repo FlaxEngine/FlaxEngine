@@ -69,7 +69,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
                 return base.OnMouseDown(location, button);
             }
-            
+
             public override void OnMouseMove(Vector2 location)
             {
                 base.OnMouseMove(location);
@@ -84,7 +84,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     }
                 }
             }
-            
+
             public override bool OnMouseUp(Vector2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _clicked)
@@ -228,6 +228,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (!Visible)
                 return;
             var expanded = IsExpanded;
+            Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
             Curve.ShowCollapsed = !expanded;
@@ -238,7 +239,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.UpdateKeyframes();
             if (expanded)
             {
-                if(_splitter == null)
+                if (_splitter == null)
                     _splitter = new Splitter
                     {
                         _track = this,

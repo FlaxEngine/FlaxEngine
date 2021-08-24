@@ -1810,6 +1810,30 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Custom event for keyframes or curve editor view panning to handle timeline background panning horizontally too.
+        /// </summary>
+        /// <seealso cref="KeyframesEditor.CustomViewPanning"/>
+        /// <seealso cref="CurveEditorBase.CustomViewPanning"/>
+        /// <param name="delta">The input delta.</param>
+        /// <returns>The result input delta.</returns>
+        public Vector2 OnKeyframesViewPanning(Vector2 delta)
+        {
+            var area = _backgroundArea;
+            var hScroll = area.HScrollBar.Visible && area.HScrollBar.Enabled;
+            if (hScroll)
+            {
+                bool wasLocked = area.IsLayoutLocked;
+                area.IsLayoutLocked = true;
+                area.HScrollBar.TargetValue -= delta.X;
+                delta.X = 0.0f;
+                area.IsLayoutLocked = wasLocked;
+                area.PerformLayout();
+                area.Cursor = CursorType.SizeWE;
+            }
+            return delta;
+        }
+
+        /// <summary>
         /// Mark timeline as edited.
         /// </summary>
         public void MarkAsEdited()

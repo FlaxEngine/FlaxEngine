@@ -281,9 +281,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateEvents()
         {
-            if (Events == null)
+            if (Events == null || Timeline == null)
                 return;
-
+            Events.Visible = Visible;
+            if (!Visible)
+                return;
+            Events.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Events.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Events.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
             Events.Visible = Visible;

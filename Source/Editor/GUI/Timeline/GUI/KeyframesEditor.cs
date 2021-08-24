@@ -128,12 +128,19 @@ namespace FlaxEditor.GUI
                 {
                     // Calculate delta
                     Vector2 delta = location - _movingViewLastPos;
-                    if (delta.LengthSquared > 0.01f && _editor.EnablePanning)
+                    if (delta.LengthSquared > 0.01f)
                     {
-                        // Move view
-                        _editor.ViewOffset += delta * _editor.ViewScale;
-                        _movingViewLastPos = location;
-                        Cursor = CursorType.SizeAll;
+                        if (_editor.CustomViewPanning != null)
+                            delta = _editor.CustomViewPanning(delta);
+                        if (_editor.EnablePanning)
+                        {
+                            // Move view
+                            _editor.ViewOffset += delta * _editor.ViewScale;
+                            _movingViewLastPos = location;
+                            Cursor = CursorType.SizeAll;
+                        }
+                        else if (_editor.CustomViewPanning != null)
+                            Cursor = CursorType.SizeAll;
                     }
 
                     return;
@@ -559,6 +566,11 @@ namespace FlaxEditor.GUI
         /// Occurs when keyframes data editing ends (via UI).
         /// </summary>
         public event Action EditingEnd;
+
+        /// <summary>
+        /// The function for custom view panning. Gets input movement delta (in keyframes editor control space) and returns the renaming input delta to process by keyframes editor itself.
+        /// </summary>
+        public Func<Vector2, Vector2> CustomViewPanning;
 
         /// <summary>
         /// The maximum amount of keyframes to use.

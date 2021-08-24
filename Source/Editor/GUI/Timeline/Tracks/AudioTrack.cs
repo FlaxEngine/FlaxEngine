@@ -476,7 +476,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (_audioMedia == null || Curve == null || Timeline == null)
                 return;
-
+            Curve.Visible = Visible;
+            if (!Visible)
+                return;
+            Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(_audioMedia.X, Y + 1.0f, _audioMedia.Width, Height - 2.0f);
 
             var expanded = IsExpanded;

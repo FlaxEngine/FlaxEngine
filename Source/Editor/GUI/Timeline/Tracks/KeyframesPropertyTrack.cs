@@ -248,11 +248,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateKeyframes()
         {
-            if (Keyframes == null)
+            if (Keyframes == null || Timeline == null)
                 return;
             Keyframes.Visible = Visible;
             if (!Visible)
                 return;
+            Keyframes.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Keyframes.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Keyframes.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
             Keyframes.UpdateKeyframes();

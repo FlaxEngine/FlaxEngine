@@ -55,6 +55,11 @@ namespace FlaxEditor.GUI
         public event Action EditingEnd;
 
         /// <summary>
+        /// The function for custom view panning. Gets input movement delta (in curve control space) and returns the renaming input delta to process by curve editor itself.
+        /// </summary>
+        public Func<Vector2, Vector2> CustomViewPanning;
+
+        /// <summary>
         /// The maximum amount of keyframes to use in a single curve.
         /// </summary>
         public int MaxKeyframes = ushort.MaxValue;
