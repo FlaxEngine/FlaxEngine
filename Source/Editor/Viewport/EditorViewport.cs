@@ -463,13 +463,37 @@ namespace FlaxEditor.Viewport
 
                 // View mode widget
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
+
                 ViewWidgetButtonMenu = new ContextMenu();
                 var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
                 {
                     TooltipText = "View properties",
                     Parent = viewMode
                 };
+                var twoDimentionalViewButton = new ViewportWidgetButton("3D", SpriteHandle.Invalid, null, true)
+                {
+                    TooltipText = "2D Projection",
+                    Parent = viewMode,
+                };
                 viewMode.Parent = this;
+
+                // Toogle to 2D
+                {
+                    twoDimentionalViewButton.Toggled += button =>
+                    {
+                        _isTwoDimentional = _isOrtho = button.Checked;
+                        if (_isOrtho)
+                        {
+                            button.Text = "2D";
+                            OrientViewport(Quaternion.Identity);
+                        }
+                        else
+                        {
+                            button.Text = "3D";
+                            OrientViewport(ViewOrientation);
+                        }
+                    };
+                }
 
                 // Show
                 {
@@ -735,6 +759,7 @@ namespace FlaxEditor.Viewport
 
         private FpsCounter _fpsCounter;
         private ContextMenuButton _showFpsButon;
+        private bool _isTwoDimentional;
 
         /// <summary>
         /// Gets or sets a value indicating whether show or hide FPS counter.
@@ -1174,6 +1199,12 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 200.0f * MouseSpeed * _mouseSensitivity;
+                if (_isTwoDimentional)
+                {
+                    moveDelta.X -= mouseDelta.X;
+                    moveDelta.Y -= mouseDelta.Y;
+                    mouseDelta = Vector2.Zero;
+                }
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position
