@@ -16,7 +16,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for invoking events on a certain points in the time.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public class EventTrack : MemberTrack
+    public class EventTrack : MemberTrack, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -285,7 +285,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return;
             Events.Visible = Visible;
             if (!Visible)
+            {
+                Events.ClearSelection();
                 return;
+            }
+            Events.KeyframesEditorContext = Timeline;
             Events.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Events.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Events.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
@@ -406,6 +410,33 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return Events != null && Events.Visible ? Events.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesDelete(editor);
         }
     }
 }

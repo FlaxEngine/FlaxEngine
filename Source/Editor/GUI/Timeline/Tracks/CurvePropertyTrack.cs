@@ -15,7 +15,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object property via Curve.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public abstract class CurvePropertyTrackBase : MemberTrack
+    public abstract class CurvePropertyTrackBase : MemberTrack, IKeyframesEditorContext
     {
         private sealed class Splitter : Control
         {
@@ -226,8 +226,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return;
             Curve.Visible = Visible;
             if (!Visible)
+            {
+                Curve.ClearSelection();
                 return;
+            }
             var expanded = IsExpanded;
+            Curve.KeyframesEditorContext = Timeline;
             Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
@@ -240,11 +244,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (expanded)
             {
                 if (_splitter == null)
+                {
                     _splitter = new Splitter
                     {
                         _track = this,
                         Parent = Curve,
                     };
+                }
                 var splitterHeight = 4.0f;
                 _splitter.Bounds = new Rectangle(0, Curve.Height - splitterHeight, Curve.Width, splitterHeight);
             }
@@ -423,6 +429,33 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             DisposeCurve();
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return Curve != null && Curve.Visible ? Curve.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDelete(editor);
         }
     }
 

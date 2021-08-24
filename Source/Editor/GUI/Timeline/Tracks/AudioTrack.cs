@@ -225,7 +225,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The child volume track for audio track. Used to animate audio volume over time.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    class AudioVolumeTrack : Track
+    class AudioVolumeTrack : Track, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -478,7 +478,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return;
             Curve.Visible = Visible;
             if (!Visible)
+            {
+                Curve.ClearSelection();
                 return;
+            }
+            Curve.KeyframesEditorContext = Timeline;
             Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(_audioMedia.X, Y + 1.0f, _audioMedia.Width, Height - 2.0f);
 
@@ -638,6 +642,33 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             _previewValue = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return Curve != null && Curve.Visible ? Curve.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDelete(editor);
         }
     }
 }

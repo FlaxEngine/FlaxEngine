@@ -21,7 +21,7 @@ namespace FlaxEditor.GUI.Timeline
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     [HideInEditor]
-    public class Timeline : ContainerControl
+    public class Timeline : ContainerControl, IKeyframesEditorContext
     {
         private static readonly KeyValuePair<float, string>[] FPSValues =
         {
@@ -2392,6 +2392,50 @@ namespace FlaxEditor.GUI.Timeline
             DragHandlers.Clear();
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesDeselect(editor);
+            }
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            var globalControl = _backgroundArea;
+            var globalRect = Rectangle.FromPoints(control.PointToParent(globalControl, selection.UpperLeft), control.PointToParent(globalControl, selection.BottomRight));
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesSelection(editor, globalControl, globalRect);
+            }
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            int result = 0;
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    result += trackContext.OnKeyframesSelectionCount();
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesDelete(editor);
+            }
         }
     }
 }

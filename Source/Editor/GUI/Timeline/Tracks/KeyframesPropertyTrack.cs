@@ -15,7 +15,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object property via keyframes collection.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public class KeyframesPropertyTrack : MemberTrack
+    public class KeyframesPropertyTrack : MemberTrack, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -252,7 +252,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return;
             Keyframes.Visible = Visible;
             if (!Visible)
+            {
+                Keyframes.ClearSelection();
                 return;
+            }
+            Keyframes.KeyframesEditorContext = Timeline;
             Keyframes.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Keyframes.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Keyframes.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
@@ -386,6 +390,33 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return Keyframes != null && Keyframes.Visible ? Keyframes.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesDelete(editor);
         }
     }
 }

@@ -394,7 +394,24 @@ namespace FlaxEditor.GUI
                 UpdateKeyframes();
                 UpdateTangents();
                 if (value)
+                {
+                    // Synchronize selection for curve points when collapsed so all points fo the keyframe are selected
+                    for (var i = 0; i < _points.Count; i++)
+                    {
+                        var p = _points[i];
+                        if (p.IsSelected)
+                        {
+                            for (var j = 0; j < _points.Count; j++)
+                            {
+                                var q = _points[j];
+                                if (q.Index == p.Index)
+                                    q.IsSelected = true;
+                            }
+                        }
+                    }
+
                     ShowWholeCurve();
+                }
             }
         }
 
@@ -590,6 +607,16 @@ namespace FlaxEditor.GUI
 
         private void RemoveKeyframes()
         {
+            if (KeyframesEditorContext != null)
+                KeyframesEditorContext.OnKeyframesDelete(this);
+            else
+                RemoveKeyframesInner();
+        }
+
+        private void RemoveKeyframesInner()
+        {
+            if (SelectionCount == 0)
+                return;
             var indicesToRemove = new HashSet<int>();
             for (int i = 0; i < _points.Count; i++)
             {
@@ -600,8 +627,6 @@ namespace FlaxEditor.GUI
                     indicesToRemove.Add(p.Index);
                 }
             }
-            if (indicesToRemove.Count == 0)
-                return;
 
             OnEditingStart();
             RemoveKeyframesInternal(indicesToRemove);
@@ -630,14 +655,24 @@ namespace FlaxEditor.GUI
             get
             {
                 int result = 0;
-                for (int i = 0; i < _points.Count; i++)
-                    if (_points[i].IsSelected)
-                        result++;
+                if (ShowCollapsed)
+                {
+                    for (int i = 0; i < _points.Count; i++)
+                        if (_points[i].Component == 0 && _points[i].IsSelected)
+                            result++;
+                }
+                else
+                {
+                    for (int i = 0; i < _points.Count; i++)
+                        if (_points[i].IsSelected)
+                            result++;
+                }
                 return result;
             }
         }
 
-        private void ClearSelection()
+        /// <inheritdoc />
+        public override void ClearSelection()
         {
             for (int i = 0; i < _points.Count; i++)
             {
@@ -645,7 +680,10 @@ namespace FlaxEditor.GUI
             }
         }
 
-        private void SelectAll()
+        /// <summary>
+        /// Selects all keyframes.
+        /// </summary>
+        public void SelectAll()
         {
             for (int i = 0; i < _points.Count; i++)
             {
@@ -888,6 +926,7 @@ namespace FlaxEditor.GUI
             TickSteps = null;
             _tickStrengths = null;
             KeyframesChanged = null;
+            KeyframesEditorContext = null;
 
             base.OnDestroy();
         }

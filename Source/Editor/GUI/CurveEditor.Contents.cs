@@ -40,7 +40,14 @@ namespace FlaxEditor.GUI
             private void UpdateSelectionRectangle()
             {
                 var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+                if (_editor.KeyframesEditorContext != null)
+                    _editor.KeyframesEditorContext.OnKeyframesSelection(_editor, this, selectionRect);
+                else
+                    UpdateSelection(ref selectionRect);
+            }
 
+            internal void UpdateSelection(ref Rectangle selectionRect)
+            {
                 // Find controls to select
                 for (int i = 0; i < Children.Count; i++)
                 {
@@ -49,7 +56,6 @@ namespace FlaxEditor.GUI
                         p.IsSelected = p.Bounds.Intersects(ref selectionRect);
                     }
                 }
-
                 _editor.UpdateTangents();
             }
 
@@ -73,6 +79,21 @@ namespace FlaxEditor.GUI
             public override void OnMouseMove(Vector2 location)
             {
                 _mousePos = location;
+
+                // Start moving selection if movement started from the keyframe
+                if (_leftMouseDown && !_isMovingSelection && GetChildAt(_leftMouseDownPos) is KeyframePoint)
+                {
+                    // Start moving selected nodes
+                    _isMovingSelection = true;
+                    _movedKeyframes = false;
+                    var viewRect = _editor._mainPanel.GetClientArea();
+                    _movingSelectionStart = PointToKeyframes(location, ref viewRect);
+                    if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._points.Count)
+                        _movingSelectionOffsets = new Vector2[_editor._points.Count];
+                    for (int i = 0; i < _movingSelectionOffsets.Length; i++)
+                        _movingSelectionOffsets[i] = _editor._points[i].Point - _movingSelectionStart;
+                    _editor.OnEditingStart();
+                }
 
                 // Moving view
                 if (_rightMouseDown)
@@ -256,30 +277,32 @@ namespace FlaxEditor.GUI
                         // Check if user is pressing control
                         if (Root.GetKey(KeyboardKeys.Control))
                         {
-                            // Add to selection
-                            keyframe.IsSelected = true;
+                            // Toggle selection
+                            keyframe.IsSelected = !keyframe.IsSelected;
                             _editor.UpdateTangents();
                         }
                         // Check if node isn't selected
                         else if (!keyframe.IsSelected)
                         {
                             // Select node
-                            _editor.ClearSelection();
+                            if (_editor.KeyframesEditorContext != null)
+                                _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                            else
+                                _editor.ClearSelection();
                             keyframe.IsSelected = true;
                             _editor.UpdateTangents();
                         }
-
-                        // Start moving selected nodes
+                        if (_editor.ShowCollapsed)
+                        {
+                            // Synchronize selection for curve points when collapsed so all points fo the keyframe are selected
+                            for (var i = 0; i < _editor._points.Count; i++)
+                            {
+                                var p = _editor._points[i];
+                                if (p.Index == keyframe.Index)
+                                    p.IsSelected = keyframe.IsSelected;
+                            }
+                        }
                         StartMouseCapture();
-                        _isMovingSelection = true;
-                        _movedKeyframes = false;
-                        var viewRect = _editor._mainPanel.GetClientArea();
-                        _movingSelectionStart = PointToKeyframes(location, ref viewRect);
-                        if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._points.Count)
-                            _movingSelectionOffsets = new Vector2[_editor._points.Count];
-                        for (int i = 0; i < _movingSelectionOffsets.Length; i++)
-                            _movingSelectionOffsets[i] = _editor._points[i].Point - _movingSelectionStart;
-                        _editor.OnEditingStart();
                         Focus();
                         Tooltip?.Hide();
                         return true;
@@ -306,7 +329,10 @@ namespace FlaxEditor.GUI
                     {
                         // Start selecting
                         StartMouseCapture();
-                        _editor.ClearSelection();
+                        if (_editor.KeyframesEditorContext != null)
+                            _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                        else
+                            _editor.ClearSelection();
                         _editor.UpdateTangents();
                         Focus();
                         return true;
@@ -354,11 +380,6 @@ namespace FlaxEditor.GUI
                             _editor.OnEditingEnd();
                         }
                     }
-                    // Selecting
-                    else
-                    {
-                        UpdateSelectionRectangle();
-                    }
 
                     _isMovingSelection = false;
                     _isMovingTangent = false;
@@ -388,18 +409,15 @@ namespace FlaxEditor.GUI
 
                         var cm = new ContextMenu.ContextMenu();
                         cm.AddButton("Add keyframe", () => _editor.AddKeyframe(_cmShowPos)).Enabled = _editor.KeyframesCount < _editor.MaxKeyframes;
-                        if (selectionCount == 0)
+                        if (selectionCount > 0)
                         {
+                            cm.AddButton(selectionCount == 1 ? "Edit keyframe" : "Edit keyframes", () => _editor.EditKeyframes(this, location));
                         }
-                        else if (selectionCount == 1)
+                        var totalSelectionCount = _editor.KeyframesEditorContext?.OnKeyframesSelectionCount() ?? selectionCount;
+                        Debug.Log(totalSelectionCount);
+                        if (totalSelectionCount > 0)
                         {
-                            cm.AddButton("Edit keyframe", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframe", _editor.RemoveKeyframes);
-                        }
-                        else
-                        {
-                            cm.AddButton("Edit keyframes", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframes", _editor.RemoveKeyframes);
+                            cm.AddButton(totalSelectionCount == 1 ? "Remove keyframe" : "Remove keyframes", _editor.RemoveKeyframes);
                         }
                         cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
                         if (_editor.EnableZoom != UseMode.Off || _editor.EnablePanning != UseMode.Off)
@@ -463,6 +481,33 @@ namespace FlaxEditor.GUI
                                    (point.Y + Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
                                   );
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            ClearSelection();
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (_points.Count == 0)
+                return;
+            var selectionRect = Rectangle.FromPoints(_contents.PointFromParent(control, selection.UpperLeft), _contents.PointFromParent(control, selection.BottomRight));
+            _contents.UpdateSelection(ref selectionRect);
+        }
+
+        /// <inheritdoc />
+        public override int OnKeyframesSelectionCount()
+        {
+            return SelectionCount;
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            RemoveKeyframesInner();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace FlaxEditor.GUI
     /// The base class for <see cref="CurveBase{T}"/> editors. Allows to use generic curve editor without type information at compile-time.
     /// </summary>
     [HideInEditor]
-    public abstract class CurveEditorBase : ContainerControl
+    public abstract class CurveEditorBase : ContainerControl, IKeyframesEditor
     {
         /// <summary>
         /// The UI use mode flags.
@@ -123,6 +123,11 @@ namespace FlaxEditor.GUI
         /// Gets the amount of keyframes added to the curve.
         /// </summary>
         public abstract int KeyframesCount { get; }
+
+        /// <summary>
+        /// Clears the selection.
+        /// </summary>
+        public abstract void ClearSelection();
 
         /// <summary>
         /// Called when curve gets edited.
@@ -256,5 +261,20 @@ namespace FlaxEditor.GUI
                                (mode & UseMode.Vertical) == UseMode.Vertical ? value.Y : defaultValue.Y
                               );
         }
+
+        /// <inheritdoc />
+        public IKeyframesEditorContext KeyframesEditorContext { get; set; }
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesDeselect(IKeyframesEditor editor);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection);
+
+        /// <inheritdoc />
+        public abstract int OnKeyframesSelectionCount();
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesDelete(IKeyframesEditor editor);
     }
 }

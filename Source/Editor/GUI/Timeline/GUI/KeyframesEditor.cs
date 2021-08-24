@@ -15,7 +15,7 @@ namespace FlaxEditor.GUI
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     [HideInEditor]
-    public class KeyframesEditor : ContainerControl
+    public class KeyframesEditor : ContainerControl, IKeyframesEditor
     {
         /// <summary>
         /// A single keyframe.
@@ -91,7 +91,14 @@ namespace FlaxEditor.GUI
             private void UpdateSelectionRectangle()
             {
                 var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+                if (_editor.KeyframesEditorContext != null)
+                    _editor.KeyframesEditorContext.OnKeyframesSelection(_editor, this, selectionRect);
+                else
+                    UpdateSelection(ref selectionRect);
+            }
 
+            internal void UpdateSelection(ref Rectangle selectionRect)
+            {
                 // Find controls to select
                 for (int i = 0; i < Children.Count; i++)
                 {
@@ -122,6 +129,21 @@ namespace FlaxEditor.GUI
             public override void OnMouseMove(Vector2 location)
             {
                 _mousePos = location;
+
+                // Start moving selection if movement started from the keyframe
+                if (_leftMouseDown && !_isMovingSelection && GetChildAt(_leftMouseDownPos) is KeyframePoint)
+                {
+                    // Start moving selected nodes
+                    _isMovingSelection = true;
+                    _movedKeyframes = false;
+                    var viewRect = _editor._mainPanel.GetClientArea();
+                    _movingSelectionStart = PointToKeyframes(location, ref viewRect).X;
+                    if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._keyframes.Count)
+                        _movingSelectionOffsets = new float[_editor._keyframes.Count];
+                    for (int i = 0; i < _movingSelectionOffsets.Length; i++)
+                        _movingSelectionOffsets[i] = _editor._keyframes[i].Time - _movingSelectionStart;
+                    _editor.OnEditingStart();
+                }
 
                 // Moving view
                 if (_rightMouseDown)
@@ -248,28 +270,20 @@ namespace FlaxEditor.GUI
                         // Check if user is pressing control
                         if (Root.GetKey(KeyboardKeys.Control))
                         {
-                            // Add to selection
-                            keyframe.Select();
+                            // Toggle selection
+                            keyframe.IsSelected = !keyframe.IsSelected;
                         }
                         // Check if node isn't selected
                         else if (!keyframe.IsSelected)
                         {
                             // Select node
-                            _editor.ClearSelection();
-                            keyframe.Select();
+                            if (_editor.KeyframesEditorContext != null)
+                                _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                            else
+                                _editor.ClearSelection();
+                            keyframe.IsSelected = true;
                         }
-
-                        // Start moving selected nodes
                         StartMouseCapture();
-                        _isMovingSelection = true;
-                        _movedKeyframes = false;
-                        var viewRect = _editor._mainPanel.GetClientArea();
-                        _movingSelectionStart = PointToKeyframes(location, ref viewRect).X;
-                        if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._keyframes.Count)
-                            _movingSelectionOffsets = new float[_editor._keyframes.Count];
-                        for (int i = 0; i < _movingSelectionOffsets.Length; i++)
-                            _movingSelectionOffsets[i] = _editor._keyframes[i].Time - _movingSelectionStart;
-                        _editor.OnEditingStart();
                         Focus();
                         Tooltip?.Hide();
                         return true;
@@ -281,7 +295,10 @@ namespace FlaxEditor.GUI
                     {
                         // Start selecting
                         StartMouseCapture();
-                        _editor.ClearSelection();
+                        if (_editor.KeyframesEditorContext != null)
+                            _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                        else
+                            _editor.ClearSelection();
                         Focus();
                         return true;
                     }
@@ -319,11 +336,6 @@ namespace FlaxEditor.GUI
                             _editor.UpdateKeyframes();
                         }
                     }
-                    // Selecting
-                    else
-                    {
-                        UpdateSelectionRectangle();
-                    }
 
                     _isMovingSelection = false;
                     _movedKeyframes = false;
@@ -343,7 +355,7 @@ namespace FlaxEditor.GUI
                         {
                             // Select node
                             selectionCount = 1;
-                            point.Select();
+                            point.IsSelected = true;
                         }
 
                         var viewRect = _editor._mainPanel.GetClientArea();
@@ -351,18 +363,15 @@ namespace FlaxEditor.GUI
 
                         var cm = new ContextMenu.ContextMenu();
                         cm.AddButton("Add keyframe", () => _editor.AddKeyframe(_cmShowPos)).Enabled = _editor.Keyframes.Count < _editor.MaxKeyframes;
-                        if (selectionCount == 0)
+                        if (selectionCount > 0)
                         {
+                            cm.AddButton(selectionCount == 1 ? "Edit keyframe" : "Edit keyframes", () => _editor.EditKeyframes(this, location));
                         }
-                        else if (selectionCount == 1)
+                        var totalSelectionCount = _editor.KeyframesEditorContext?.OnKeyframesSelectionCount() ?? selectionCount;
+                        Debug.Log(totalSelectionCount);
+                        if (totalSelectionCount > 0)
                         {
-                            cm.AddButton("Edit keyframe", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframe", _editor.RemoveKeyframes);
-                        }
-                        else
-                        {
-                            cm.AddButton("Edit keyframes", () => _editor.EditKeyframes(this, location));
-                            cm.AddButton("Remove keyframes", _editor.RemoveKeyframes);
+                            cm.AddButton(totalSelectionCount == 1 ? "Remove keyframe" : "Remove keyframes", _editor.RemoveKeyframes);
                         }
                         cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
                         if (_editor.EnableZoom && _editor.EnablePanning)
@@ -480,16 +489,6 @@ namespace FlaxEditor.GUI
                 }
 
                 return false;
-            }
-
-            public void Select()
-            {
-                IsSelected = true;
-            }
-
-            public void Deselect()
-            {
-                IsSelected = false;
             }
 
             /// <summary>
@@ -980,7 +979,16 @@ namespace FlaxEditor.GUI
 
         private void RemoveKeyframes()
         {
-            bool edited = false;
+            if (KeyframesEditorContext != null)
+                KeyframesEditorContext.OnKeyframesDelete(this);
+            else
+                RemoveKeyframesInner();
+        }
+
+        private void RemoveKeyframesInner()
+        {
+            if (SelectionCount == 0)
+                return;
             var keyframes = new Dictionary<int, Keyframe>(_keyframes.Count);
             for (int i = 0; i < _points.Count; i++)
             {
@@ -991,12 +999,9 @@ namespace FlaxEditor.GUI
                 }
                 else
                 {
-                    p.Deselect();
-                    edited = true;
+                    p.IsSelected = false;
                 }
             }
-            if (!edited)
-                return;
 
             OnEditingStart();
             _keyframes.Clear();
@@ -1088,19 +1093,25 @@ namespace FlaxEditor.GUI
             }
         }
 
-        private void ClearSelection()
+        /// <summary>
+        /// Clears the selection.
+        /// </summary>
+        public void ClearSelection()
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Deselect();
+                _points[i].IsSelected = false;
             }
         }
 
-        private void SelectAll()
+        /// <summary>
+        /// Selects all keyframes.
+        /// </summary>
+        public void SelectAll()
         {
             for (int i = 0; i < _points.Count; i++)
             {
-                _points[i].Select();
+                _points[i].IsSelected = true;
             }
         }
 
@@ -1182,8 +1193,39 @@ namespace FlaxEditor.GUI
             // Cleanup
             _points.Clear();
             _keyframes.Clear();
+            KeyframesEditorContext = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public IKeyframesEditorContext KeyframesEditorContext { get; set; }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            ClearSelection();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (_keyframes.Count == 0)
+                return;
+            var selectionRect = Rectangle.FromPoints(_contents.PointFromParent(control, selection.UpperLeft), _contents.PointFromParent(control, selection.BottomRight));
+            _contents.UpdateSelection(ref selectionRect);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return SelectionCount;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            RemoveKeyframesInner();
         }
     }
 }
