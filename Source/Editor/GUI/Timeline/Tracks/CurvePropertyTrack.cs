@@ -457,6 +457,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesDelete(editor);
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesMove(editor, control, location, start, end);
+        }
     }
 
     /// <summary>

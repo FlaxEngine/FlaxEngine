@@ -2458,5 +2458,16 @@ namespace FlaxEditor.GUI.Timeline
                     trackContext.OnKeyframesDelete(editor);
             }
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            location = control.PointToParent(_backgroundArea, location);
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesMove(editor, _backgroundArea, location, start, end);
+            }
+        }
     }
 }

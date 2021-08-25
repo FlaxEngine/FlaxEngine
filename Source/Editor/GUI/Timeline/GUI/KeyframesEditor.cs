@@ -109,6 +109,69 @@ namespace FlaxEditor.GUI
                 }
             }
 
+            internal void OnMoveStart(Vector2 location)
+            {
+                // Start moving selected nodes
+                _isMovingSelection = true;
+                _movedKeyframes = false;
+                var viewRect = _editor._mainPanel.GetClientArea();
+                _movingSelectionStart = PointToKeyframes(location, ref viewRect).X;
+                if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._keyframes.Count)
+                    _movingSelectionOffsets = new float[_editor._keyframes.Count];
+                for (int i = 0; i < _movingSelectionOffsets.Length; i++)
+                    _movingSelectionOffsets[i] = _editor._keyframes[i].Time - _movingSelectionStart;
+                _editor.OnEditingStart();
+            }
+
+            internal void OnMove(Vector2 location)
+            {
+                var viewRect = _editor._mainPanel.GetClientArea();
+                var locationKeyframes = PointToKeyframes(location, ref viewRect);
+                for (var i = 0; i < _editor._points.Count; i++)
+                {
+                    var p = _editor._points[i];
+                    if (p.IsSelected)
+                    {
+                        var k = _editor._keyframes[p.Index];
+
+                        float minTime = p.Index != 0 ? _editor._keyframes[p.Index - 1].Time : float.MinValue;
+                        float maxTime = p.Index != _editor._keyframes.Count - 1 ? _editor._keyframes[p.Index + 1].Time : float.MaxValue;
+
+                        var offset = _movingSelectionOffsets[p.Index];
+                        k.Time = locationKeyframes.X + offset;
+                        if (_editor.FPS.HasValue)
+                        {
+                            float fps = _editor.FPS.Value;
+                            k.Time = Mathf.Floor(k.Time * fps) / fps;
+                        }
+                        k.Time = Mathf.Clamp(k.Time, minTime, maxTime);
+
+                        // TODO: snapping keyframes to grid when moving
+
+                        _editor._keyframes[p.Index] = k;
+                    }
+                    _editor.UpdateKeyframes();
+                    if (_editor.EnablePanning)
+                    {
+                        //_editor._mainPanel.ScrollViewTo(PointToParent(_editor._mainPanel, location));
+                    }
+                    Cursor = CursorType.SizeAll;
+                    _movedKeyframes = true;
+                }
+            }
+
+            internal void OnMoveEnd(Vector2 location)
+            {
+                if (_movedKeyframes)
+                {
+                    _editor.OnEdited();
+                    _editor.OnEditingEnd();
+                    _editor.UpdateKeyframes();
+                    _movedKeyframes = false;
+                }
+                _isMovingSelection = false;
+            }
+
             /// <inheritdoc />
             public override bool IntersectsContent(ref Vector2 locationParent, out Vector2 location)
             {
@@ -133,16 +196,10 @@ namespace FlaxEditor.GUI
                 // Start moving selection if movement started from the keyframe
                 if (_leftMouseDown && !_isMovingSelection && GetChildAt(_leftMouseDownPos) is KeyframePoint)
                 {
-                    // Start moving selected nodes
-                    _isMovingSelection = true;
-                    _movedKeyframes = false;
-                    var viewRect = _editor._mainPanel.GetClientArea();
-                    _movingSelectionStart = PointToKeyframes(location, ref viewRect).X;
-                    if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._keyframes.Count)
-                        _movingSelectionOffsets = new float[_editor._keyframes.Count];
-                    for (int i = 0; i < _movingSelectionOffsets.Length; i++)
-                        _movingSelectionOffsets[i] = _editor._keyframes[i].Time - _movingSelectionStart;
-                    _editor.OnEditingStart();
+                    if (_editor.KeyframesEditorContext != null)
+                        _editor.KeyframesEditorContext.OnKeyframesMove(_editor, this, location, true, false);
+                    else
+                        OnMoveStart(location);
                 }
 
                 // Moving view
@@ -170,40 +227,10 @@ namespace FlaxEditor.GUI
                 // Moving selection
                 else if (_isMovingSelection)
                 {
-                    var viewRect = _editor._mainPanel.GetClientArea();
-                    var locationKeyframes = PointToKeyframes(location, ref viewRect);
-                    for (var i = 0; i < _editor._points.Count; i++)
-                    {
-                        var p = _editor._points[i];
-                        if (p.IsSelected)
-                        {
-                            var k = _editor._keyframes[p.Index];
-
-                            float minTime = p.Index != 0 ? _editor._keyframes[p.Index - 1].Time : float.MinValue;
-                            float maxTime = p.Index != _editor._keyframes.Count - 1 ? _editor._keyframes[p.Index + 1].Time : float.MaxValue;
-
-                            var offset = _movingSelectionOffsets[p.Index];
-                            k.Time = locationKeyframes.X + offset;
-                            if (_editor.FPS.HasValue)
-                            {
-                                float fps = _editor.FPS.Value;
-                                k.Time = Mathf.Floor(k.Time * fps) / fps;
-                            }
-                            k.Time = Mathf.Clamp(k.Time, minTime, maxTime);
-
-                            // TODO: snapping keyframes to grid when moving
-
-                            _editor._keyframes[p.Index] = k;
-                        }
-                        _editor.UpdateKeyframes();
-                        if (_editor.EnablePanning)
-                        {
-                            //_editor._mainPanel.ScrollViewTo(PointToParent(_editor._mainPanel, location));
-                        }
-                        Cursor = CursorType.SizeAll;
-                        _movedKeyframes = true;
-                    }
-
+                    if (_editor.KeyframesEditorContext != null)
+                        _editor.KeyframesEditorContext.OnKeyframesMove(_editor, this, location, false, false);
+                    else
+                        OnMove(location);
                     return;
                 }
                 // Selecting
@@ -329,12 +356,10 @@ namespace FlaxEditor.GUI
                     // Moving keyframes
                     if (_isMovingSelection)
                     {
-                        if (_movedKeyframes)
-                        {
-                            _editor.OnEdited();
-                            _editor.OnEditingEnd();
-                            _editor.UpdateKeyframes();
-                        }
+                        if (_editor.KeyframesEditorContext != null)
+                            _editor.KeyframesEditorContext.OnKeyframesMove(_editor, this, location, false, true);
+                        else
+                            OnMoveEnd(location);
                     }
 
                     _isMovingSelection = false;
@@ -1226,6 +1251,18 @@ namespace FlaxEditor.GUI
         public void OnKeyframesDelete(IKeyframesEditor editor)
         {
             RemoveKeyframesInner();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            location = _contents.PointFromParent(control, location);
+            if (start)
+                _contents.OnMoveStart(location);
+            else if (end)
+                _contents.OnMoveEnd(location);
+            else
+                _contents.OnMove(location);
         }
     }
 }

@@ -438,5 +438,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Events != null && Events.Visible)
                 Events.OnKeyframesDelete(editor);
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesMove(editor, control, location, start, end);
+        }
     }
 }

@@ -40,5 +40,15 @@ namespace FlaxEditor.GUI
         /// </summary>
         /// <param name="editor">The source editor.</param>
         void OnKeyframesDelete(IKeyframesEditor editor);
+
+        /// <summary>
+        /// Called when keyframes selection should be moved.
+        /// </summary>
+        /// <param name="editor">The source editor.</param>
+        /// <param name="control">The source movement control.</param>
+        /// <param name="location">The source movement location (in source control local space).</param>
+        /// <param name="start">The movement start flag.</param>
+        /// <param name="end">The movement end flag.</param>
+        void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
     }
 }

@@ -276,5 +276,8 @@ namespace FlaxEditor.GUI
 
         /// <inheritdoc />
         public abstract void OnKeyframesDelete(IKeyframesEditor editor);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
     }
 }
