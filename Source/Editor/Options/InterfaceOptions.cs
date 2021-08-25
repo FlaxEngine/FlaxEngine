@@ -128,6 +128,13 @@ namespace FlaxEditor.Options
         public float IconsScale { get; set; } = 1.0f;
 
         /// <summary>
+        /// Gets or sets the editor content window orientation.
+        /// </summary>
+        [DefaultValue(FlaxEngine.GUI.Orientation.Horizontal)]
+        [EditorDisplay("Interface"), EditorOrder(280), Tooltip("Editor content window orientation.")]
+        public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
+
+        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.TimeSinceStartup)]
