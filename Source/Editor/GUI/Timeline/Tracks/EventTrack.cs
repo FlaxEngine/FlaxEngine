@@ -311,7 +311,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(this);
             if (!Utils.ArraysEqual(_eventsEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _eventsEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _eventsEditingStartData, after));
             _eventsEditingStartData = null;
         }
 

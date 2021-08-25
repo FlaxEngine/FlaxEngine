@@ -309,6 +309,7 @@ namespace FlaxEditor.GUI.Timeline
         private float _zoom = 1.0f;
         private bool _isMovingPositionHandle;
         private bool _canPlayPauseStop = true;
+        private List<IUndoAction> _batchedUndoActions;
 
         /// <summary>
         /// Gets or sets the current time showing mode.
@@ -1986,6 +1987,19 @@ namespace FlaxEditor.GUI.Timeline
             }
         }
 
+        /// <summary>
+        /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public void AddBatchedUndoAction(IUndoAction action)
+        {
+            if (Undo == null || !Undo.Enabled)
+                return;
+            if (_batchedUndoActions == null)
+                _batchedUndoActions = new List<IUndoAction>();
+            _batchedUndoActions.Add(action);
+        }
+
         internal void ShowContextMenu(Vector2 location)
         {
             if (!ContainsFocus)
@@ -2038,6 +2052,13 @@ namespace FlaxEditor.GUI.Timeline
                 scroll2.TargetValue = scroll1.Value;
             else
                 scroll1.TargetValue = scroll2.Value;
+
+            // Batch undo actions
+            if (_batchedUndoActions != null && _batchedUndoActions.Count != 0)
+            {
+                Undo.AddAction(_batchedUndoActions.Count == 1 ? _batchedUndoActions[0] : new MultiUndoAction(_batchedUndoActions));
+                _batchedUndoActions.Clear();
+            }
         }
 
         /// <inheritdoc />

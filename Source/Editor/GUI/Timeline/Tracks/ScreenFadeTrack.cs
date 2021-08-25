@@ -72,7 +72,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(Track);
             if (!Utils.ArraysEqual(_gradientEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, Track, _gradientEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, Track, _gradientEditingStartData, after));
             _gradientEditingStartData = null;
         }
 

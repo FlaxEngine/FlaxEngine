@@ -520,7 +520,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(this);
             if (!Utils.ArraysEqual(_curveEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
             _curveEditingStartData = null;
         }
 
