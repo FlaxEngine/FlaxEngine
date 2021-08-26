@@ -130,6 +130,8 @@ API_ENUM() enum class ArchitectureType
 #include "Linux/LinuxDefines.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Defines.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOneDefines.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettDefines.h"
 #elif PLATFORM_ANDROID
@@ -175,7 +177,7 @@ API_ENUM() enum class ArchitectureType
 
 // Platform family defines
 #define PLATFORM_WINDOWS_FAMILY (PLATFORM_WINDOWS || PLATFORM_UWP)
-#define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY || PLATFORM_XBOX_ONE)
+#define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY)
 #define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4)
 #define PLATFORM_APPLE_FAMILY (PLATFORM_IOS || PLATFORM_OSX)
 

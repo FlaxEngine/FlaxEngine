@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 
 #include "../../PlatformTools.h"
 
@@ -47,18 +47,5 @@ public:
     ArchitectureType GetArchitecture() const override;
 };
 
-/// <summary>
-/// The Xbox One platform support tools.
-/// </summary>
-class XboxOnePlatformTools : public UWPPlatformTools
-{
-public:
-
-    // [PlatformTools]
-    const Char* GetDisplayName() const override;
-    const Char* GetName() const override;
-    PlatformType GetPlatform() const override;
-    ArchitectureType GetArchitecture() const override;
-};
 
 #endif

@@ -10,6 +10,8 @@
 #include "Linux/LinuxThread.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Thread.h"
+#elif PLATFORM_XBOX_ONE
+#include "Win32/Win32Thread.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Win32/Win32Thread.h"
 #elif PLATFORM_ANDROID

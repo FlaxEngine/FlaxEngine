@@ -16,9 +16,13 @@
 // D3D11 and D3D12
 #if GRAPHICS_API_DIRECTX11 || GRAPHICS_API_DIRECTX12
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
+#if  PLATFORM_XBOX_SCARLETT
 #include <Scarlett/d3d12_xs.h>
+#else
+#include <XboxOne/d3d12_x.h>
+#endif
 typedef IGraphicsUnknown IDXGIFactory4;
 typedef IGraphicsUnknown IDXGISwapChain3;
 #define	D3D12_TEXTURE_DATA_PITCH_ALIGNMENT 256

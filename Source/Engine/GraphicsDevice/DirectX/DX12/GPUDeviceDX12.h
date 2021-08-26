@@ -157,14 +157,14 @@ public:
         return 0xffffffff;
     }
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
     void OnSuspend();
     void OnResume();
 #endif
 
 private:
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
     void updateFrameEvents();
 #endif
     void updateRes2Dispose();

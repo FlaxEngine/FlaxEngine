@@ -44,7 +44,6 @@ public class Platform : EngineModule
                 options.Libraries.Add("Dwmapi.dll");
             }
             break;
-        case TargetPlatform.XboxOne:
         case TargetPlatform.UWP:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
             options.SourcePaths.Add(Path.Combine(FolderPath, "UWP"));
@@ -57,7 +56,11 @@ public class Platform : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform"));
             break;
-        case TargetPlatform.XboxScarlett:
+            case TargetPlatform.XboxOne:
+                options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
+                options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform"));
+                break;
+            case TargetPlatform.XboxScarlett:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform"));
             break;
@@ -77,6 +80,7 @@ public class Platform : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "UWP", "UWPPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Linux", "LinuxPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Android", "AndroidPlatformSettings.h"));
+            AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform", "XboxOnePlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform", "XboxScarlettPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform", "PS4PlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform", "SwitchPlatformSettings.h"));

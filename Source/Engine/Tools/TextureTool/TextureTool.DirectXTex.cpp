@@ -18,7 +18,7 @@
 
 // Import DirectXTex library
 // Source: https://github.com/Microsoft/DirectXTex
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 DECLARE_HANDLE(HMONITOR);
 #endif
