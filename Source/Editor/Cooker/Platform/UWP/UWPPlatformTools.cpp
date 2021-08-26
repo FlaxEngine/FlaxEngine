@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 
 #include "UWPPlatformTools.h"
 #include "Engine/Platform/FileSystem.h"
@@ -521,26 +521,6 @@ PlatformType WSAPlatformTools::GetPlatform() const
 ArchitectureType WSAPlatformTools::GetArchitecture() const
 {
     return _arch;
-}
-
-const Char* XboxOnePlatformTools::GetDisplayName() const
-{
-    return TEXT("Xbox One");
-}
-
-const Char* XboxOnePlatformTools::GetName() const
-{
-    return TEXT("XboxOne");
-}
-
-PlatformType XboxOnePlatformTools::GetPlatform() const
-{
-    return PlatformType::XboxOne;
-}
-
-ArchitectureType XboxOnePlatformTools::GetArchitecture() const
-{
-    return ArchitectureType::x64;
 }
 
 #endif

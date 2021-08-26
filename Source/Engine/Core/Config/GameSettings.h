@@ -77,6 +77,7 @@ public:
     Guid UWPPlatform;
     Guid LinuxPlatform;
     Guid PS4Platform;
+    Guid XboxOnePlatform;
     Guid XboxScarlettPlatform;
     Guid AndroidPlatform;
     Guid SwitchPlatform;

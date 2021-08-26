@@ -31,7 +31,7 @@
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
 #endif
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 #include "Platform/UWP/UWPPlatformTools.h"
 #include "Engine/Platform/UWP/UWPPlatformSettings.h"
 #endif
@@ -41,6 +41,9 @@
 #endif
 #if PLATFORM_TOOLS_PS4
 #include "Platforms/PS4/Editor/PlatformTools/PS4PlatformTools.h"
+#endif
+#if PLATFORM_TOOLS_XBOX_ONE
+#include "Platforms/XboxOne/Editor/PlatformTools/XboxOnePlatformTools.h"
 #endif
 #if PLATFORM_TOOLS_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Editor/PlatformTools/XboxScarlettPlatformTools.h"

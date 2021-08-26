@@ -55,11 +55,11 @@ public class Graphics : EngineModule
             else
                 Log.WarningOnce("Building for Windows without DirectX 12 rendering backend (Windows 10 SDK is required)", ref _logMissingWindowsSDK);
             break;
-        case TargetPlatform.XboxOne:
         case TargetPlatform.UWP:
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
             break;
-        case TargetPlatform.XboxScarlett:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
             options.PrivateDependencies.Add("GraphicsDeviceDX12");
             break;
         case TargetPlatform.Linux:

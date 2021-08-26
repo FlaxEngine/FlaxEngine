@@ -10,6 +10,7 @@ namespace FlaxEditor.Content.Settings
     partial class GameSettings
     {
         internal const string PS4PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS4PlatformSettings";
+        internal const string XboxOnePlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxOnePlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
         internal const string SwitchPlatformSettingsTypename = "FlaxEditor.Content.Settings.SwitchPlatformSettings";
 
@@ -111,7 +112,7 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset WindowsPlatform;
 #endif
 
-#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
+#if FLAX_EDITOR || PLATFORM_UWP
         /// <summary>
         /// Reference to <see cref="UWPPlatformSettings"/> asset. Used to apply configuration on Universal Windows Platform.
         /// </summary>
@@ -133,6 +134,14 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         [EditorOrder(2040), EditorDisplay("Platform Settings", "PlayStation 4"), AssetReference(PS4PlatformSettingsTypename, true), Tooltip("Reference to PS4 Platform Settings asset")]
         public JsonAsset PS4Platform;
+#endif
+
+#if FLAX_EDITOR || PLATFORM_XBOX_ONE
+        /// <summary>
+        /// Reference to Xbox One Platform Settings asset. Used to apply configuration on Xbox ScOnearlett platform.
+        /// </summary>
+        [EditorOrder(2050), EditorDisplay("Platform Settings", "Xbox One"), AssetReference(XboxOnePlatformSettingsTypename, true), Tooltip("Reference to Xbox One Platform Settings asset")]
+        public JsonAsset XboxOnePlatform;
 #endif
 
 #if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
@@ -245,7 +254,7 @@ namespace FlaxEditor.Content.Settings
             if (type == typeof(WindowsPlatformSettings))
                 return LoadAsset<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
 #endif
-#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
+#if FLAX_EDITOR || PLATFORM_UWP 
             if (type == typeof(UWPPlatformSettings))
                 return LoadAsset<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
 #endif
@@ -256,6 +265,10 @@ namespace FlaxEditor.Content.Settings
 #if FLAX_EDITOR || PLATFORM_PS4
             if (type.FullName == PS4PlatformSettingsTypename)
                 return LoadAsset(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_XBOX_ONE
+            if (type.FullName == XboxOnePlatformSettingsTypename)
+                return LoadAsset(gameSettings.XboxOnePlatform, XboxOnePlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
             if (type.FullName == XboxScarlettPlatformSettingsTypename)

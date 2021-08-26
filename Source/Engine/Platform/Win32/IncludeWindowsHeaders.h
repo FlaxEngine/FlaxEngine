@@ -23,7 +23,7 @@
 #endif
 
 // Override for Xbox Scarlett
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 #define NOBITMAP
 #define NOMCX
 #define NOSERVICE

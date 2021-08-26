@@ -463,14 +463,6 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
-#if PLATFORM_TOOLS_UWP
-    case BuildPlatform::XboxOne:
-    {
-        const char* platformDefineName = "PLATFORM_XBOX_ONE";
-        COMPILE_PROFILE(DirectX_SM4, SHADER_FILE_CHUNK_INTERNAL_D3D_SM4_CACHE);
-        break;
-    }
-#endif
 #if PLATFORM_TOOLS_LINUX
     case BuildPlatform::LinuxX64:
     {
@@ -488,6 +480,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     {
         const char* platformDefineName = "PLATFORM_PS4";
         COMPILE_PROFILE(PS4, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
+        break;
+    }
+#endif
+#if PLATFORM_TOOLS_XBOX_ONE
+    case BuildPlatform::XboxOne:
+    {
+        const char* platformDefineName = "PLATFORM_XBOX_ONE";
+        COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
     }
 #endif

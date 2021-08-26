@@ -112,19 +112,6 @@ namespace Flax.Deps.Dependencies
 
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    // Fix the MSVC project settings for Xbox One
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.17763.0", "v141");
-
-                    // Build for Xbox One x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     var envVars = new Dictionary<string, string>
@@ -173,6 +160,19 @@ namespace Flax.Deps.Dependencies
                     Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "ORBIS");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "PS4", libraryFileName), Path.Combine(depsFolder, libraryFileName));
+
+                    break;
+                }
+                case TargetPlatform.XboxOne:
+                {
+                    // Fix the MSVC project settings for Xbox One
+                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
+
+                    // Build for Xbox One x64
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var filename in binariesToCopyMsvc)
+                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
 
                     break;
                 }

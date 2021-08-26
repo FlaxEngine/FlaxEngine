@@ -522,14 +522,6 @@ namespace Flax.Deps.Dependencies
 
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    ConfigureMsvc(options, "v141", "10.0.17763.0", "0x0A00", "_XBOX_ONE=1;DISABLE_JIT;WINAPI_FAMILY=WINAPI_FAMILY_PC_APP;HAVE_EXTERN_DEFINED_WINAPI_SUPPORT");
-
-                    BuildMsvc(options, platform, TargetArchitecture.x64);
-
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     var envVars = new Dictionary<string, string>
@@ -584,6 +576,14 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.PS4:
                 {
                     // TODO: implement automatic extraction of the package from mono-ps4-binaries
+                    break;
+                }
+                case TargetPlatform.XboxOne:
+                {
+                    ConfigureMsvc(options, "v142", "10.0.19041.0", "0x0A00", "_XBOX_ONE=1;DISABLE_JIT;WINAPI_FAMILY=WINAPI_FAMILY_GAMES;HAVE_EXTERN_DEFINED_WINAPI_SUPPORT;CRITICAL_SECTION_NO_DEBUG_INFO=0x01000000");
+
+                    BuildMsvc(options, platform, TargetArchitecture.x64);
+
                     break;
                 }
                 case TargetPlatform.XboxScarlett:

@@ -7,11 +7,7 @@
 #include "../Win32/Win32Defines.h"
 
 // Platform description
-#if PLATFORM_XBOX_ONE
-#define PLATFORM_TYPE PlatformType::XboxOne
-#else
 #define PLATFORM_TYPE PlatformType::UWP
-#endif
 
 // Use AOT for Mono
 #define USE_MONO_AOT 1

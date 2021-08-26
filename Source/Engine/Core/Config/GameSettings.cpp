@@ -49,12 +49,14 @@ IMPLEMENT_SETTINGS_GETTER(StreamingSettings, Streaming);
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
 IMPLEMENT_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
-#elif PLATFORM_UWP || PLATFORM_XBOX_ONE
+#elif PLATFORM_UWP 
 IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 #elif PLATFORM_LINUX
 IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 #elif PLATFORM_PS4
 IMPLEMENT_SETTINGS_GETTER(PS4PlatformSettings, PS4Platform);
+#elif PLATFORM_XBOX_ONE
+IMPLEMENT_SETTINGS_GETTER(XboxOnePlatformSettings, XboxOnePlatform);
 #elif PLATFORM_XBOX_SCARLETT
 IMPLEMENT_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatform);
 #elif PLATFORM_ANDROID
@@ -217,6 +219,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(UWPPlatform);
     DESERIALIZE(LinuxPlatform);
     DESERIALIZE(PS4Platform);
+    DESERIALIZE(XboxOnePlatform);
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
     DESERIALIZE(SwitchPlatform);

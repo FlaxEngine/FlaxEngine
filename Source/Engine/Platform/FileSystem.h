@@ -10,6 +10,8 @@
 #include "Linux/LinuxFileSystem.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4FileSystem.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOneFileSystem.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettFileSystem.h"
 #elif PLATFORM_ANDROID

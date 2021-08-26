@@ -17,6 +17,9 @@
 #if PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4PlatformSettings.h"
 #endif
+#if PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOnePlatformSettings.h"
+#endif
 #if PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettPlatformSettings.h"
 #endif

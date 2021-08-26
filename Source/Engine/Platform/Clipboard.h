@@ -10,6 +10,8 @@
 #include "Linux/LinuxClipboard.h"
 #elif PLATFORM_PS4
 #include "Base/ClipboardBase.h"
+#elif PLATFORM_XBOX_ONE
+#include "Base/ClipboardBase.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Base/ClipboardBase.h"
 #elif PLATFORM_ANDROID
