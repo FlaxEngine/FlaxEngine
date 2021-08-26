@@ -236,23 +236,24 @@ void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
         {
             const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         case SceneAnimation::Track::Types::Script:
         {
             const auto trackData = track.GetData<SceneAnimation::ScriptTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         case SceneAnimation::Track::Types::CameraCut:
         {
             const auto trackData = track.GetData<SceneAnimation::CameraCutTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         default: ;
         }
     }
+    LOG(Warning, "Missing track '{0}' in scene animation '{1}' to map into object ID={2}", from, anim->ToString(), to);
 }
 
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
@@ -744,7 +745,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Actor>(trackData->ID);
+                state.Object = Scripting::FindObject<Actor>(id);
                 if (!state.Object)
                 {
                     LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
