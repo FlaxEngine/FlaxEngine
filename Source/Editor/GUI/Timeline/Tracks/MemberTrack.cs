@@ -283,10 +283,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override bool CanDrag => false;
+        public override bool CanDrag => false;
 
         /// <inheritdoc />
-        protected override bool CanRename => false;
+        public override bool CanRename => false;
 
         /// <summary>
         /// Called when member gets changed.

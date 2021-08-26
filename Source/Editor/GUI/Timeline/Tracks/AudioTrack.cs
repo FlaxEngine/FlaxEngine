@@ -525,13 +525,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override bool CanDrag => false;
+        public override bool CanDrag => false;
 
         /// <inheritdoc />
-        protected override bool CanRename => false;
+        public override bool CanRename => false;
 
         /// <inheritdoc />
-        protected override bool CanExpand => true;
+        public override bool CanCopyPaste => false;
 
         /// <inheritdoc />
         public override void OnParentTrackChanged(Track parent)

@@ -336,7 +336,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override bool CanExpand => true;
+        public override bool CanExpand => true;
 
         /// <inheritdoc />
         protected override void OnMemberChanged(MemberInfo value, Type type)

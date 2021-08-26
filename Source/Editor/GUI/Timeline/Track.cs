@@ -708,17 +708,17 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// Gets a value indicating whether user can drag this track.
         /// </summary>
-        protected virtual bool CanDrag => true;
+        public virtual bool CanDrag => true;
 
         /// <summary>
         /// Gets a value indicating whether user can rename this track.
         /// </summary>
-        protected virtual bool CanRename => true;
+        public virtual bool CanRename => true;
 
         /// <summary>
         /// Gets a value indicating whether user can expand the track contents of the inner hierarchy.
         /// </summary>
-        protected virtual bool CanExpand => SubTracks.Count > 0;
+        public virtual bool CanExpand => SubTracks.Count > 0;
 
         /// <summary>
         /// Determines whether this track can get the child track.
