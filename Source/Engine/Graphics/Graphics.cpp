@@ -117,9 +117,6 @@ bool GraphicsService::Init()
     // Platform default
     if (!device)
     {
-#if PLATFORM_WINDOWS
-
-        // Windows
 #if GRAPHICS_API_DIRECTX11
         if (!device)
             device = CreateGPUDeviceDX11();
@@ -132,65 +129,9 @@ bool GraphicsService::Init()
         if (!device)
             device = CreateGPUDeviceVulkan();
 #endif
-
-#elif PLATFORM_UWP
-
-        // UWP
-		if (!device)
-		    device = CreateGPUDeviceDX11();
-
-#elif PLATFORM_LINUX
-
-        // Linux
-#if GRAPHICS_API_VULKAN
-		if (!device)
-			device = CreateGPUDeviceVulkan();
-#endif
-
-#elif PLATFORM_PS4
-
-        // PS4
 #if GRAPHICS_API_PS4
         if (!device)
             device = CreateGPUDevicePS4();
-#endif
-
-#elif PLATFORM_XBOX_ONE
-
-        // Xbox One
-#if GRAPHICS_API_DIRECTX12
-        if (!device)
-            device = CreateGPUDeviceDX12();
-#endif
-
-#elif PLATFORM_XBOX_SCARLETT
-
-        // Xbox Scarlett
-#if GRAPHICS_API_DIRECTX12
-	if (!device)
-		device = CreateGPUDeviceDX12();
-#endif
-
-#elif PLATFORM_ANDROID
-
-        // Android
-#if GRAPHICS_API_VULKAN
-        if (!device)
-            device = CreateGPUDeviceVulkan();
-#endif
-
-#elif PLATFORM_SWITCH
-
-        // Switch
-#if GRAPHICS_API_VULKAN
-        if (!device)
-            device = CreateGPUDeviceVulkan();
-#endif
-
-#elif !defined(GRAPHICS_API_NULL)
-
-#error "Platform does not support GPU devices."
-
 #endif
     }
 

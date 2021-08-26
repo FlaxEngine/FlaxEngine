@@ -198,20 +198,6 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
 {
 }
 
-#if PLATFORM_XBOX_SCARLETT
-namespace XboxScarlett
-{
-    extern Action OnSuspend;
-    extern Action OnResume;
-}
-#elif PLATFORM_XBOX_ONE
-namespace XboxOne
-{
-    extern Action OnSuspend;
-    extern Action OnResume;
-}
-#endif
-
 bool GPUDeviceDX12::Init()
 {
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
@@ -264,12 +250,9 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Hardware Version: {0}", hwVer);
     updateFrameEvents();
 
-#if PLATFORM_XBOX_SCARLETT
-    XboxScarlett::OnSuspend.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspend>(this);
-    XboxScarlett::OnResume.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResume>(this);
-#elif PLATFORM_XBOX_ONE
-    XboxOne::OnSuspend.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspend>(this);
-    XboxOne::OnResume.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResume>(this);
+#if PLATFORM_GDK
+    GDKPlatform::OnSuspend.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspend>(this);
+    GDKPlatform::OnResume.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResume>(this);
 #endif
 #else
     // Get DXGI adapter

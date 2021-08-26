@@ -58,10 +58,12 @@ public class Platform : EngineModule
             break;
         case TargetPlatform.XboxOne:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
+            options.SourcePaths.Add(Path.Combine(FolderPath, "GDK"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform"));
             break;
         case TargetPlatform.XboxScarlett:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
+            options.SourcePaths.Add(Path.Combine(FolderPath, "GDK"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform"));
             break;
         case TargetPlatform.Android:

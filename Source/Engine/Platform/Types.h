@@ -111,8 +111,8 @@ class XboxOnePlatform;
 typedef XboxOnePlatform Platform;
 class Win32Thread;
 typedef Win32Thread Thread;
-class XboxOneWindow;
-typedef XboxOneWindow Window;
+class GDKWindow;
+typedef GDKWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
 
@@ -134,8 +134,8 @@ class XboxScarlettPlatform;
 typedef XboxScarlettPlatform Platform;
 class Win32Thread;
 typedef Win32Thread Thread;
-class XboxScarlettWindow;
-typedef XboxScarlettWindow Window;
+class GDKWindow;
+typedef GDKWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
 
