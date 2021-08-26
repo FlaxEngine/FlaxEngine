@@ -16,6 +16,26 @@
 
 IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 
+const Char* UWPPlatformTools::GetDisplayName() const
+{
+    return TEXT("Windows Store");
+}
+
+const Char* UWPPlatformTools::GetName() const
+{
+    return TEXT("UWP");
+}
+
+PlatformType UWPPlatformTools::GetPlatform() const
+{
+    return PlatformType::UWP;
+}
+
+ArchitectureType UWPPlatformTools::GetArchitecture() const
+{
+    return _arch;
+}
+
 bool UWPPlatformTools::UseAOT() const
 {
     return true;
@@ -38,9 +58,8 @@ bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
 
 bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
 {
-    bool isXboxOne = data.Platform == BuildPlatform::XboxOne;
     const auto platformDataPath = Globals::StartupFolder / TEXT("Source/Platforms");
-    const auto uwpDataPath = platformDataPath / (isXboxOne ? TEXT("XboxOne") : TEXT("UWP")) / TEXT("Binaries");
+    const auto uwpDataPath = platformDataPath / TEXT("UWP/Binaries");
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = UWPPlatformSettings::Get();
     StringAnsi fileTemplate;
@@ -83,7 +102,6 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         mode = "x86";
         break;
     case BuildPlatform::UWPx64:
-    case BuildPlatform::XboxOne:
         mode = "x64";
         break;
     default:
@@ -240,8 +258,6 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             autoRotationPreferences += "DisplayOrientations.PortraitFlipped";
         }
         StringAnsi preferredLaunchWindowingMode = platformSettings->PreferredLaunchWindowingMode == UWPPlatformSettings::WindowMode::FullScreen ? "FullScreen" : "PreferredLaunchViewSize";
-        if (isXboxOne)
-            preferredLaunchWindowingMode = "FullScreen";
 
         // Write data to file
         auto file = FileWriteStream::Open(dstFlaxGeneratedPath);
@@ -501,26 +517,6 @@ bool UWPPlatformTools::OnPostProcess(CookingData& data)
     }
 
     return false;
-}
-
-const Char* WSAPlatformTools::GetDisplayName() const
-{
-    return TEXT("Windows Store");
-}
-
-const Char* WSAPlatformTools::GetName() const
-{
-    return TEXT("UWP");
-}
-
-PlatformType WSAPlatformTools::GetPlatform() const
-{
-    return PlatformType::UWP;
-}
-
-ArchitectureType WSAPlatformTools::GetArchitecture() const
-{
-    return _arch;
 }
 
 #endif

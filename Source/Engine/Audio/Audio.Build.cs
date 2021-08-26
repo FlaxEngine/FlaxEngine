@@ -67,7 +67,6 @@ public class Audio : EngineModule
             switch (options.Platform.Target)
             {
             case TargetPlatform.Windows:
-            case TargetPlatform.XboxOne:
             case TargetPlatform.UWP:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "OpenAL32.lib"));
                 options.DependencyFiles.Add(Path.Combine(depsRoot, "OpenAL32.dll"));

@@ -54,8 +54,8 @@ public class PhysX : DepsModule
         case TargetPlatform.Windows:
         case TargetPlatform.UWP:
         case TargetPlatform.Linux:
-            case TargetPlatform.XboxOne:
-            case TargetPlatform.XboxScarlett:
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
             switch (options.Architecture)
             {
             case TargetArchitecture.x86:

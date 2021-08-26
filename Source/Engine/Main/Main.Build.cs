@@ -57,10 +57,10 @@ public class Main : EngineModule
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Main"));
             break;
-            case TargetPlatform.XboxOne:
-                options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Main"));
-                break;
-            case TargetPlatform.XboxScarlett:
+        case TargetPlatform.XboxOne:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Main"));
+            break;
+        case TargetPlatform.XboxScarlett:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Main"));
             break;
         case TargetPlatform.Android:

@@ -138,7 +138,7 @@ namespace FlaxEditor.Content.Settings
 
 #if FLAX_EDITOR || PLATFORM_XBOX_ONE
         /// <summary>
-        /// Reference to Xbox One Platform Settings asset. Used to apply configuration on Xbox ScOnearlett platform.
+        /// Reference to Xbox One Platform Settings asset. Used to apply configuration on Xbox One platform.
         /// </summary>
         [EditorOrder(2050), EditorDisplay("Platform Settings", "Xbox One"), AssetReference(XboxOnePlatformSettingsTypename, true), Tooltip("Reference to Xbox One Platform Settings asset")]
         public JsonAsset XboxOnePlatform;

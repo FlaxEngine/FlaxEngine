@@ -63,6 +63,17 @@ namespace Flax.Deps.Dependencies
                     break;
                 }
                 case TargetPlatform.UWP:
+                {
+                    var solutionPath = Path.Combine(root, "DirectXTex_Windows10_2017.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Windows10_2017");
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var file in outputFileNames)
+                    {
+                        Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
+                    }
+                    break;
+                }
                 case TargetPlatform.XboxOne:
                 {
                     var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2017.sln");

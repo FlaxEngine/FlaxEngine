@@ -152,8 +152,8 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
                 binariesSubDir = "win.x86_64.vc142.md";
                 break;
             case TargetPlatform.Android:

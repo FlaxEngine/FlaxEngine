@@ -279,10 +279,10 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #endif
 #if PLATFORM_TOOLS_UWP
         case BuildPlatform::UWPx86:
-            result = New<WSAPlatformTools>(ArchitectureType::x86);
+            result = New<UWPPlatformTools>(ArchitectureType::x86);
             break;
         case BuildPlatform::UWPx64:
-            result = New<WSAPlatformTools>(ArchitectureType::x64);
+            result = New<UWPPlatformTools>(ArchitectureType::x64);
             break;
 #endif
 #if PLATFORM_TOOLS_XBOX_ONE
