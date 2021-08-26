@@ -534,6 +534,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public override bool CanCopyPaste => false;
 
         /// <inheritdoc />
+        public override bool CanExpand => true;
+
+        /// <inheritdoc />
         public override void OnParentTrackChanged(Track parent)
         {
             base.OnParentTrackChanged(parent);
@@ -629,6 +632,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             base.OnTimelineCurrentFrameChanged(frame);
 
             UpdatePreviewValue();
+        }
+
+        /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            clone.Name = Guid.NewGuid().ToString("N");
         }
 
         /// <inheritdoc />

@@ -1732,7 +1732,7 @@ namespace FlaxEditor.GUI.Timeline
                     GetTracks(SelectedTracks[i], tracks);
                 }
                 SelectedTracks.Clear();
-                if (withUndo & Undo != null)
+                if (withUndo && Undo != null && Undo.Enabled)
                 {
                     if (tracks.Count == 1)
                     {
@@ -1769,7 +1769,7 @@ namespace FlaxEditor.GUI.Timeline
             // Delete tracks
             var tracks = new List<Track>(4);
             GetTracks(track, tracks);
-            if (withUndo & Undo != null)
+            if (withUndo && Undo != null && Undo.Enabled)
             {
                 if (tracks.Count == 1)
                 {
@@ -1801,6 +1801,93 @@ namespace FlaxEditor.GUI.Timeline
             SelectedTracks.Remove(track);
             _tracks.Remove(track);
             track.OnDeleted();
+        }
+
+        /// <summary>
+        /// Duplicates the selected tracks/media events.
+        /// </summary>
+        /// <param name="withUndo">True if use undo/redo action for track duplication.</param>
+        public void DuplicateSelection(bool withUndo = true)
+        {
+            if (SelectedMedia.Count > 0)
+            {
+                throw new NotImplementedException("TODO: duplicating selected media events");
+            }
+
+            if (SelectedTracks.Count > 0)
+            {
+                // Duplicate selected tracks
+                var tracks = new List<Track>(SelectedTracks.Count);
+                for (int i = 0; i < SelectedTracks.Count; i++)
+                {
+                    GetTracks(SelectedTracks[i], tracks);
+                }
+                var clones = new Track[tracks.Count];
+                for (int i = 0; i < tracks.Count; i++)
+                {
+                    var track = tracks[i];
+                    var options = new TrackCreateOptions
+                    {
+                        Archetype = track.Archetype,
+                        Loop = track.Loop,
+                        Mute = track.Mute,
+                    };
+                    var clone = options.Archetype.Create(options);
+                    clone.Name = track.CanRename ? GetValidTrackName(track.Name) : track.Name;
+                    clone.Color = track.Color;
+                    clone.IsExpanded = track.IsExpanded;
+                    byte[] data;
+                    using (var memory = new MemoryStream(512))
+                    using (var stream = new BinaryWriter(memory))
+                    {
+                        // TODO: reuse memory stream to improve tracks duplication performance
+                        options.Archetype.Save(track, stream);
+                        data = memory.ToArray();
+                    }
+                    using (var memory = new MemoryStream(data))
+                    using (var stream = new BinaryReader(memory))
+                    {
+                        track.Archetype.Load(Timeline.FormatVersion, clone, stream);
+                    }
+                    var trackParent = track.ParentTrack;
+                    var trackIndex = track.TrackIndex + 1;
+                    if (trackParent != null && tracks.Contains(trackParent))
+                    {
+                        for (int j = 0; j < i; j++)
+                        {
+                            if (tracks[j] == trackParent)
+                            {
+                                trackParent = clones[j];
+                                break;
+                            }
+                        }
+                        trackIndex--;
+                    }
+                    clone.ParentTrack = trackParent;
+                    clone.TrackIndex = trackIndex;
+                    track.OnDuplicated(clone);
+                    AddTrack(clone, false);
+                    clones[i] = clone;
+                }
+                OnTracksOrderChanged();
+                if (withUndo && Undo != null && Undo.Enabled)
+                {
+                    if (clones.Length == 1)
+                    {
+                        Undo.AddAction(new AddRemoveTrackAction(this, clones[0], true));
+                    }
+                    else
+                    {
+                        var actions = new List<IUndoAction>();
+                        for (int i = 0; i < clones.Length; i++)
+                            actions.Add(new AddRemoveTrackAction(this, clones[i], true));
+                        Undo.AddAction(new MultiUndoAction(actions, "Remove tracks"));
+                    }
+                }
+                OnTracksChanged();
+                MarkAsEdited();
+                SelectedTracks[0].Focus();
+            }
         }
 
         /// <summary>
@@ -1943,6 +2030,20 @@ namespace FlaxEditor.GUI.Timeline
         {
             name = name?.Trim();
             return !string.IsNullOrEmpty(name) && _tracks.All(x => x.Name != name);
+        }
+
+        /// <summary>
+        /// Gets the name of the track that is valid to use for a timeline.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The track name.</returns>
+        public string GetValidTrackName(string name)
+        {
+            string newName = name;
+            int count = 0;
+            while (!IsTrackNameValid(newName))
+                newName = string.Format("{0} {1}", name, count++);
+            return newName;
         }
 
         /// <summary>
@@ -2185,7 +2286,7 @@ namespace FlaxEditor.GUI.Timeline
                 editor.Select(obj);
 
                 _timeline = timeline;
-                if (timeline.Undo != null && undoContext != null)
+                if (timeline.Undo != null && timeline.Undo.Enabled && undoContext != null)
                 {
                     _undoContext = undoContext;
                     if (undoContext is Track track)

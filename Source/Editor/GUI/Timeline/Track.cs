@@ -381,6 +381,14 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Called when track gets duplicated.
+        /// </summary>
+        /// <param name="clone">The cloned track instance.</param>
+        public virtual void OnDuplicated(Track clone)
+        {
+        }
+
+        /// <summary>
         /// Arranges the track and all its media. Called when timeline performs layout for the contents.
         /// </summary>
         public virtual void OnTimelineArrange()
@@ -714,6 +722,11 @@ namespace FlaxEditor.GUI.Timeline
         /// Gets a value indicating whether user can rename this track.
         /// </summary>
         public virtual bool CanRename => true;
+
+        /// <summary>
+        /// Gets a value indicating whether user can copy and paste this track.
+        /// </summary>
+        public virtual bool CanCopyPaste => true;
 
         /// <summary>
         /// Gets a value indicating whether user can expand the track contents of the inner hierarchy.
@@ -1248,6 +1261,13 @@ namespace FlaxEditor.GUI.Timeline
                 case KeyboardKeys.Delete:
                     _timeline.DeleteSelection();
                     return true;
+                case KeyboardKeys.D:
+                    if (Root.GetKey(KeyboardKeys.Control) && CanCopyPaste)
+                    {
+                        _timeline.DuplicateSelection();
+                        return true;
+                    }
+                    break;
                 case KeyboardKeys.ArrowLeft:
                     if (CanExpand && IsExpanded)
                     {

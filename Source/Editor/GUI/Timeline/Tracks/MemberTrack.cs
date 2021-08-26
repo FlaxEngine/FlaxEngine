@@ -288,6 +288,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override bool CanRename => false;
 
+        /// <inheritdoc />
+        public override bool CanCopyPaste => false;
+
         /// <summary>
         /// Called when member gets changed.
         /// </summary>
@@ -312,6 +315,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _previewValue.Visible = Timeline.ShowPreviewValues;
                 Timeline.ShowPreviewValuesChanged += OnTimelineShowPreviewValuesChanged;
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            clone.Name = Guid.NewGuid().ToString("N");
         }
 
         private void OnTimelineShowPreviewValuesChanged()

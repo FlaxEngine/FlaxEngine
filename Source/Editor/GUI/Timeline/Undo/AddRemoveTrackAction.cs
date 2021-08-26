@@ -44,7 +44,10 @@ namespace FlaxEditor.GUI.Timeline.Undo
         {
             var track = _timeline.FindTrack(_name);
             if (track != null)
+            {
+                Editor.LogWarning($"Cannot add track {_name}. It already exists.");
                 return;
+            }
             track = _options.Archetype.Create(_options);
             track.Name = _name;
             track.Color = _color;
@@ -64,6 +67,11 @@ namespace FlaxEditor.GUI.Timeline.Undo
         private void Remove()
         {
             var track = _timeline.FindTrack(_name);
+            if (track == null)
+            {
+                Editor.LogWarning($"Cannot remove track {_name}. It doesn't already exists.");
+                return;
+            }
             _timeline.Delete(track, false);
         }
 
