@@ -79,7 +79,7 @@ public:
     /// <summary>
     /// Gets the object layer (index). Can be used for selective rendering or ignoring raycasts.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-69), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorLayerEditor\")")
+    API_PROPERTY(Attributes="NoAnimate, HideInEditor")
     FORCE_INLINE int32 GetLayer() const
     {
         return _layer;
@@ -123,7 +123,7 @@ public:
     /// <summary>
     /// Gets the name of the tag.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-68), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTagEditor\")")
+    API_PROPERTY(Attributes="NoAnimate, HideInEditor")
     const String& GetTag() const;
 
     /// <summary>
@@ -147,7 +147,7 @@ public:
     /// <summary>
     /// Gets the actor name.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-100)")
+    API_PROPERTY(Attributes="NoAnimate, HideInEditor")
     FORCE_INLINE const String& GetName() const
     {
         return _name;
@@ -309,7 +309,7 @@ public:
     /// <summary>
     /// Gets value indicating if actor is active in the scene.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"General\"), DefaultValue(true), EditorOrder(-70)")
+    API_PROPERTY(Attributes="HideInEditor, DefaultValue(true)")
     FORCE_INLINE bool GetIsActive() const
     {
         return _isActive != 0;
@@ -349,7 +349,7 @@ public:
     /// <summary>
     /// Gets the actor static fags.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-80), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorStaticFlagsEditor\")")
+    API_PROPERTY(Attributes="NoAnimate, HideInEditor")
     FORCE_INLINE StaticFlags GetStaticFlags() const
     {
         return _staticFlags;
