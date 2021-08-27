@@ -188,7 +188,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     SplashScreen = JsonTools::GetGuid(stream, "SplashScreen");
     CustomSettings.Clear();
     const auto customSettings = stream.FindMember("CustomSettings");
-    if (customSettings != stream.MemberEnd())
+    if (customSettings != stream.MemberEnd() && customSettings->value.IsArray())
     {
         auto& items = customSettings->value;
         for (auto it = items.MemberBegin(); it != items.MemberEnd(); ++it)
