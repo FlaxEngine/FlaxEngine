@@ -952,11 +952,11 @@ namespace FlaxEditor.Modules
 
             var typeXboxOnePlatformSettings = TypeUtils.GetManagedType(GameSettings.XboxOnePlatformSettingsTypename);
             if (typeXboxOnePlatformSettings != null)
-                Proxy.Add(new SettingsProxy(typeXboxOnePlatformSettings, Editor.Instance.Icons.XBoxOne128));
+                Proxy.Add(new SettingsProxy(typeXboxOnePlatformSettings, Editor.Instance.Icons.XBOXSettings128));
 
             var typeXboxScarlettPlatformSettings = TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename);
             if (typeXboxScarlettPlatformSettings != null)
-                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings, Editor.Instance.Icons.XBoxScarletIcon128));
+                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings, Editor.Instance.Icons.XBOXSettings128));
 
             var typeSwitchPlatformSettings = TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename);
             if (typeSwitchPlatformSettings != null)

@@ -11,7 +11,7 @@
 /// <summary>
 /// Implementation of the window class for GDK platform.
 /// </summary>
-class GDKWindow : public WindowBase
+class FLAXENGINE_API GDKWindow : public WindowBase
 {
     friend GDKPlatform;
 private:

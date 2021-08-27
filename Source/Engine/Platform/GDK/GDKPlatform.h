@@ -9,7 +9,7 @@
 /// <summary>
 /// The GDK platform implementation and application management utilities.
 /// </summary>
-class GDKPlatform : public Win32Platform
+class FLAXENGINE_API GDKPlatform : public Win32Platform
 {
 public:
 
