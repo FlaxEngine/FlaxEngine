@@ -480,11 +480,7 @@ bool Asset::onLoad(LoadAssetTask* task)
     // Load asset
     LoadResult result;
     {
-#if TRACY_ENABLE
-        ZoneScoped;
-        const StringView name(GetPath());
-        ZoneName(*name, name.Length());
-#endif
+        PROFILE_CPU_ASSET(this);
         result = loadAsset();
     }
     const bool isLoaded = result == LoadResult::Ok;
