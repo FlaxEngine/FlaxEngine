@@ -81,7 +81,6 @@ protected:
 
     FORCE_INLINE int32 GetIndex()
     {
-        ASSERT(Count() < MaxThreads);
         int64 key = (int64)Platform::GetCurrentThreadID();
         auto index = Hash(key);
         while (true)
