@@ -10,6 +10,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -73,6 +74,9 @@ namespace FlaxEditor.Windows
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
             editor.ContentDatabase.ItemRemoved += ContentDatabaseOnItemRemoved;
 
+            var options = Editor.Options;
+            options.OptionsChanged += OnOptionsChanged;
+
             // Toolstrip
             _toolStrip = new ToolStrip(34.0f)
             {
@@ -91,7 +95,7 @@ namespace FlaxEditor.Windows
             };
 
             // Split panel
-            _split = new SplitPanel(Orientation.Horizontal, ScrollBars.Both, ScrollBars.Vertical)
+            _split = new SplitPanel(options.Options.Interface.ContentWindowOrientation, ScrollBars.Both, ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolStrip.Bottom, 0),
@@ -232,6 +236,13 @@ namespace FlaxEditor.Windows
             };
 
             return menu;
+        }
+
+        private void OnOptionsChanged(EditorOptions options)
+        {
+            _split.Orientation = options.Interface.ContentWindowOrientation;
+
+            RefreshView();
         }
 
         private void OnViewTypeButtonClicked(ContextMenuButton button)
@@ -916,6 +927,8 @@ namespace FlaxEditor.Windows
             _foldersSearchBox = null;
             _itemsSearchBox = null;
             _viewDropdown = null;
+
+            Editor.Options.OptionsChanged -= OnOptionsChanged;
 
             base.OnDestroy();
         }
