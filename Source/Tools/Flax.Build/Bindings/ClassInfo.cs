@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -64,6 +65,14 @@ namespace Flax.Build.Bindings
 
             if (UniqueFunctionNames == null)
                 UniqueFunctionNames = new HashSet<string>();
+
+            if (BaseType is ClassInfo baseClass)
+            {
+                if (baseClass.IsStatic)
+                    throw new Exception(string.Format("Class {0} inherits from thr class {1} that is {2}.", FullNameNative, baseClass.FullNameNative, "static"));
+                if (baseClass.IsSealed)
+                    throw new Exception(string.Format("Class {0} inherits from the class {1} that is {2}.", FullNameNative, baseClass.FullNameNative, "sealed"));
+            }
 
             foreach (var fieldInfo in Fields)
             {
