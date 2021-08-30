@@ -1,14 +1,15 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Math.h"
+#include "Mathd.h"
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Double2;
 struct Double3;
 struct Double4;
+struct Vector2;
 struct Vector3;
 struct Vector4;
 struct Int2;
@@ -20,9 +21,9 @@ struct Matrix;
 /// <summary>
 /// Represents a two dimensional mathematical vector.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Vector2
+API_STRUCT() struct FLAXENGINE_API Double2
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Vector2);
+DECLARE_SCRIPTING_TYPE_MINIMAL(Double2);
 public:
 
     union
@@ -32,50 +33,50 @@ public:
             /// <summary>
             /// The X component of the vector.
             /// </summary>
-            API_FIELD() float X;
+            API_FIELD() double X;
 
             /// <summary>
             /// The Y component of the vector.
             /// </summary>
-            API_FIELD() float Y;
+            API_FIELD() double Y;
         };
 
         // Raw values
-        float Raw[2];
+        double Raw[2];
     };
 
 public:
 
     // Vector with all components equal 0
-    static const Vector2 Zero;
+    static const Double2 Zero;
 
     // Vector with all components equal 1
-    static const Vector2 One;
+    static const Double2 One;
 
     // Vector X=1, Y=0
-    static const Vector2 UnitX;
+    static const Double2 UnitX;
 
     // Vector X=0, Y=1
-    static const Vector2 UnitY;
+    static const Double2 UnitY;
 
-    // A minimum Vector2
-    static const Vector2 Minimum;
+    // A minimum Double2
+    static const Double2 Minimum;
 
-    // A maximum Vector2
-    static const Vector2 Maximum;
+    // A maximum Double2
+    static const Double2 Maximum;
 
 public:
 
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector2()
+    Double2()
     {
     }
 
     // Init
     // @param xy Value to assign to the all components
-    Vector2(float xy)
+    Double2(double xy)
         : X(xy)
         , Y(xy)
     {
@@ -84,47 +85,57 @@ public:
     // Init
     // @param x X component value
     // @param y Y component value
-    Vector2(float x, float y)
+    Double2(double x, double y)
         : X(x)
         , Y(y)
     {
     }
 
+    /// <summary>
+    /// Init
+    /// </summary>
+    /// <param name="v">X and Z components in an array</param>
+    explicit Double2(double xy[2])
+        : X(xy[0])
+        , Y(xy[1])
+    {
+    }
+    
     // Init
     // @param v Int2 to use X and Y components
-    explicit Vector2(const Int2& xy);
+    explicit Double2(const Int2& xy);
 
     // Init
     // @param v Int3 to use X and Y components
-    explicit Vector2(const Int3& xyz);
+    explicit Double2(const Int3& xyz);
 
     // Init
     // @param v Int4 to use X and Y components
-    explicit Vector2(const Int4& xyzw);
+    explicit Double2(const Int4& xyzw);
+
+    // Init
+    // @param v Vector2 to use X and Y components
+    explicit Double2(const Vector2& xy);
     
     // Init
     // @param v Vector3 to use X and Y components
-    explicit Vector2(const Vector3& xyz);
+    explicit Double2(const Vector3& xyz);
 
     // Init
     // @param v Vector4 to use X and Y components
-    explicit Vector2(const Vector4& xyzw);
+    explicit Double2(const Vector4& xyzw);
 
     // Init
-    // @param xy Double2 to use X and Y components
-    explicit Vector2(const Double2& xy);
+    // @param v Double3 to use X and Y components
+    explicit Double2(const Double3& xyz);
 
     // Init
-    // @param xyz Double3 to use X and Y components
-    explicit Vector2(const Double3& xyz);
+    // @param v Double4 to use X and Y components
+    explicit Double2(const Double4& xyzw);
 
-    // Init
-    // @param xyzw Double4 to use X and Y components
-    explicit Vector2(const Double4& xyzw);
-    
     // Init
     // @param color Color value
-    explicit Vector2(const Color& color);
+    explicit Double2(const Color& color);
 
 public:
 
@@ -132,212 +143,212 @@ public:
 
 public:
 
-    // Arithmetic operators with Vector2
-    Vector2 operator+(const Vector2& b) const
+    // Arithmetic operators with Double2
+    Double2 operator+(const Double2& b) const
     {
         return Add(*this, b);
     }
 
-    Vector2 operator-(const Vector2& b) const
+    Double2 operator-(const Double2& b) const
     {
         return Subtract(*this, b);
     }
 
-    Vector2 operator*(const Vector2& b) const
+    Double2 operator*(const Double2& b) const
     {
         return Multiply(*this, b);
     }
 
-    Vector2 operator/(const Vector2& b) const
+    Double2 operator/(const Double2& b) const
     {
         return Divide(*this, b);
     }
 
-    Vector2 operator-() const
+    Double2 operator-() const
     {
-        return Vector2(-X, -Y);
+        return Double2(-X, -Y);
     }
 
-    // op= operators with Vector2
-    Vector2& operator+=(const Vector2& b)
+    // op= operators with Double2
+    Double2& operator+=(const Double2& b)
     {
         *this = Add(*this, b);
         return *this;
     }
 
-    Vector2& operator-=(const Vector2& b)
+    Double2& operator-=(const Double2& b)
     {
         *this = Subtract(*this, b);
         return *this;
     }
 
-    Vector2& operator*=(const Vector2& b)
+    Double2& operator*=(const Double2& b)
     {
         *this = Multiply(*this, b);
         return *this;
     }
 
-    Vector2& operator/=(const Vector2& b)
+    Double2& operator/=(const Double2& b)
     {
         *this = Divide(*this, b);
         return *this;
     }
 
-    // Arithmetic operators with float
-    Vector2 operator+(float b) const
+    // Arithmetic operators with double
+    Double2 operator+(double b) const
     {
         return Add(*this, b);
     }
 
-    Vector2 operator-(float b) const
+    Double2 operator-(double b) const
     {
         return Subtract(*this, b);
     }
 
-    Vector2 operator*(float b) const
+    Double2 operator*(double b) const
     {
         return Multiply(*this, b);
     }
 
-    Vector2 operator/(float b) const
+    Double2 operator/(double b) const
     {
         return Divide(*this, b);
     }
 
-    // op= operators with float
-    Vector2& operator+=(float b)
+    // op= operators with double
+    Double2& operator+=(double b)
     {
         *this = Add(*this, b);
         return *this;
     }
 
-    Vector2& operator-=(float b)
+    Double2& operator-=(double b)
     {
         *this = Subtract(*this, b);
         return *this;
     }
 
-    Vector2& operator*=(float b)
+    Double2& operator*=(double b)
     {
         *this = Multiply(*this, b);
         return *this;
     }
 
-    Vector2& operator/=(float b)
+    Double2& operator/=(double b)
     {
         *this = Divide(*this, b);
         return *this;
     }
 
     // Comparison operators
-    bool operator==(const Vector2& b) const
+    bool operator==(const Double2& b) const
     {
         return X == b.X && Y == b.Y;
     }
 
-    bool operator!=(const Vector2& b) const
+    bool operator!=(const Double2& b) const
     {
         return X != b.X || Y != b.Y;
     }
 
-    bool operator>(const Vector2& b) const
+    bool operator>(const Double2& b) const
     {
         return X > b.X && Y > b.Y;
     }
 
-    bool operator>=(const Vector2& b) const
+    bool operator>=(const Double2& b) const
     {
         return X >= b.X && Y >= b.Y;
     }
 
-    bool operator<(const Vector2& b) const
+    bool operator<(const Double2& b) const
     {
         return X < b.X && Y < b.Y;
     }
 
-    bool operator<=(const Vector2& b) const
+    bool operator<=(const Double2& b) const
     {
         return X <= b.X && Y <= b.Y;
     }
 
 public:
 
-    static bool NearEqual(const Vector2& a, const Vector2& b)
+    static bool NearEqual(const Double2& a, const Double2& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y);
     }
 
-    static bool NearEqual(const Vector2& a, const Vector2& b, float epsilon)
+    static bool NearEqual(const Double2& a, const Double2& b, double epsilon)
     {
         return Math::NearEqual(a.X, b.X, epsilon) && Math::NearEqual(a.Y, b.Y, epsilon);
     }
 
 public:
 
-    static float Dot(const Vector2& a, const Vector2& b)
+    static double Dot(const Double2& a, const Double2& b)
     {
         return a.X * b.X + a.Y * b.Y;
     }
 
-    static float Cross(const Vector2& a, const Vector2& b)
+    static double Cross(const Double2& a, const Double2& b)
     {
         return a.X * b.Y - a.Y * b.X;
     }
 
-    static void Add(const Vector2& a, const Vector2& b, Vector2& result)
+    static void Add(const Double2& a, const Double2& b, Double2& result)
     {
         result.X = a.X + b.X;
         result.Y = a.Y + b.Y;
     }
 
-    static Vector2 Add(const Vector2& a, const Vector2& b)
+    static Double2 Add(const Double2& a, const Double2& b)
     {
-        Vector2 result;
+        Double2 result;
         Add(a, b, result);
         return result;
     }
 
-    static void Subtract(const Vector2& a, const Vector2& b, Vector2& result)
+    static void Subtract(const Double2& a, const Double2& b, Double2& result)
     {
         result.X = a.X - b.X;
         result.Y = a.Y - b.Y;
     }
 
-    static Vector2 Subtract(const Vector2& a, const Vector2& b)
+    static Double2 Subtract(const Double2& a, const Double2& b)
     {
-        Vector2 result;
+        Double2 result;
         Subtract(a, b, result);
         return result;
     }
 
-    static Vector2 Multiply(const Vector2& a, const Vector2& b)
+    static Double2 Multiply(const Double2& a, const Double2& b)
     {
-        return Vector2(a.X * b.X, a.Y * b.Y);
+        return Double2(a.X * b.X, a.Y * b.Y);
     }
 
-    static Vector2 Multiply(const Vector2& a, float b)
+    static Double2 Multiply(const Double2& a, double b)
     {
-        return Vector2(a.X * b, a.Y * b);
+        return Double2(a.X * b, a.Y * b);
     }
 
-    static Vector2 Divide(const Vector2& a, const Vector2& b)
+    static Double2 Divide(const Double2& a, const Double2& b)
     {
-        return Vector2(a.X / b.X, a.Y / b.Y);
+        return Double2(a.X / b.X, a.Y / b.Y);
     }
 
-    static Vector2 Divide(const Vector2& a, float b)
+    static Double2 Divide(const Double2& a, double b)
     {
-        return Vector2(a.X / b, a.Y / b);
+        return Double2(a.X / b, a.Y / b);
     }
 
     // Calculates distance between two points in 2D
     // @param a 1st point
     // @param b 2nd point
     // @returns Distance
-    static float Distance(const Vector2& a, const Vector2& b)
+    static double Distance(const Double2& a, const Double2& b)
     {
-        const float x = a.X - b.X;
-        const float y = a.Y - b.Y;
+        const double x = a.X - b.X;
+        const double y = a.Y - b.Y;
         return Math::Sqrt(x * x + y * y);
     }
 
@@ -345,10 +356,10 @@ public:
     // @param a 1st point
     // @param b 2nd point
     // @returns Distance
-    static float DistanceSquared(const Vector2& a, const Vector2& b)
+    static double DistanceSquared(const Double2& a, const Double2& b)
     {
-        const float x = a.X - b.X;
-        const float y = a.Y - b.Y;
+        const double x = a.X - b.X;
+        const double y = a.Y - b.Y;
         return x * x + y * y;
     }
 
@@ -357,9 +368,9 @@ public:
     // @param min Minimum value
     // @param max Maximum value
     // @returns Clamped vector
-    static Vector2 Clamp(const Vector2& v, float min, float max)
+    static Double2 Clamp(const Double2& v, double min, double max)
     {
-        return Vector2(Math::Clamp(v.X, min, max), Math::Clamp(v.Y, min, max));
+        return Double2(Math::Clamp(v.X, min, max), Math::Clamp(v.Y, min, max));
     }
 
     // Clamp vector values within given range
@@ -367,18 +378,18 @@ public:
     // @param min Minimum value
     // @param max Maximum value
     // @returns Clamped vector
-    static Vector2 Clamp(const Vector2& v, const Vector2& min, const Vector2& max)
+    static Double2 Clamp(const Double2& v, const Double2& min, const Double2& max)
     {
-        return Vector2(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
+        return Double2(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
     }
 
     // Performs vector normalization (scales vector up to unit length)
     void Normalize()
     {
-        const float length = Length();
+        const double length = Length();
         if (!Math::IsZero(length))
         {
-            const float invLength = 1.0f / length;
+            const double invLength = 1. / length;
             X *= invLength;
             Y *= invLength;
         }
@@ -412,50 +423,50 @@ public:
 
     // Calculates length of the vector
     // @returns Length of the vector
-    float Length() const
+    double Length() const
     {
         return Math::Sqrt(X * X + Y * Y);
     }
 
     // Calculates the squared length of the vector
     // @returns The squared length of the vector
-    float LengthSquared() const
+    double LengthSquared() const
     {
         return X * X + Y * Y;
     }
 
     // Calculates inverted length of the vector (1 / Length())
-    float InvLength() const
+    double InvLength() const
     {
-        return 1.0f / Length();
+        return 1. / Length();
     }
 
     // Calculates a vector with values being absolute values of that vector
-    Vector2 GetAbsolute() const
+    Double2 GetAbsolute() const
     {
-        return Vector2(Math::Abs(X), Math::Abs(Y));
+        return Double2(Math::Abs(X), Math::Abs(Y));
     }
 
     // Calculates a vector with values being opposite to values of that vector
-    Vector2 GetNegative() const
+    Double2 GetNegative() const
     {
-        return Vector2(-X, -Y);
+        return Double2(-X, -Y);
     }
 
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
     /// <returns>Average arithmetic of all the components</returns>
-    float AverageArithmetic() const
+    double AverageArithmetic() const
     {
-        return (X + Y) * 0.5f;
+        return (X + Y) * 0.5;
     }
 
     /// <summary>
     /// Gets sum of all vector components values
     /// </summary>
     /// <returns>Sum of X,Y and Z</returns>
-    float SumValues() const
+    double SumValues() const
     {
         return X + Y;
     }
@@ -464,7 +475,7 @@ public:
     /// Gets multiplication result of all vector components values
     /// </summary>
     /// <returns>X * Y</returns>
-    float MulValues() const
+    double MulValues() const
     {
         return X * Y;
     }
@@ -473,7 +484,7 @@ public:
     /// Returns minimum value of all the components
     /// </summary>
     /// <returns>Minimum value</returns>
-    float MinValue() const
+    double MinValue() const
     {
         return Math::Min(X, Y);
     }
@@ -482,7 +493,7 @@ public:
     /// Returns maximum value of all the components
     /// </summary>
     /// <returns>Maximum value</returns>
-    float MaxValue() const
+    double MaxValue() const
     {
         return Math::Max(X, Y);
     }
@@ -521,7 +532,7 @@ public:
     // @param end End vector
     // @param amount Value between 0 and 1 indicating the weight of end
     // @param result When the method completes, contains the linear interpolation of the two vectors
-    static void Lerp(const Vector2& start, const Vector2& end, float amount, Vector2& result)
+    static void Lerp(const Double2& start, const Double2& end, double amount, Double2& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
         result.Y = Math::Lerp(start.Y, end.Y, amount);
@@ -534,73 +545,73 @@ public:
     // @param end End vector,
     // @param amount Value between 0 and 1 indicating the weight of @paramref end"/>,
     // @returns The linear interpolation of the two vectors
-    static Vector2 Lerp(const Vector2& start, const Vector2& end, float amount)
+    static Double2 Lerp(const Double2& start, const Double2& end, double amount)
     {
-        Vector2 result;
+        Double2 result;
         Lerp(start, end, amount, result);
         return result;
     }
 
-    static Vector2 Abs(const Vector2& v)
+    static Double2 Abs(const Double2& v)
     {
-        return Vector2(Math::Abs(v.X), Math::Abs(v.Y));
+        return Double2(Math::Abs(v.X), Math::Abs(v.Y));
     }
 
     // Creates vector from minimum components of two vectors
-    static Vector2 Min(const Vector2& a, const Vector2& b)
+    static Double2 Min(const Double2& a, const Double2& b)
     {
-        return Vector2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+        return Double2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
     }
 
     // Creates vector from minimum components of two vectors
-    static void Min(const Vector2& a, const Vector2& b, Vector2& result)
+    static void Min(const Double2& a, const Double2& b, Double2& result)
     {
-        result = Vector2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+        result = Double2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
     }
 
     // Creates vector from maximum components of two vectors
-    static Vector2 Max(const Vector2& a, const Vector2& b)
+    static Double2 Max(const Double2& a, const Double2& b)
     {
-        return Vector2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+        return Double2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 
     // Creates vector from maximum components of two vectors
-    static void Max(const Vector2& a, const Vector2& b, Vector2& result)
+    static void Max(const Double2& a, const Double2& b, Double2& result)
     {
-        result = Vector2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+        result = Double2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 
     // Returns normalized vector
-    static Vector2 Normalize(const Vector2& v);
+    static Double2 Normalize(const Double2& v);
 
-    static Vector2 Round(const Vector2& v)
+    static Double2 Round(const Double2& v)
     {
-        return Vector2(Math::Round(v.X), Math::Round(v.Y));
+        return Double2(Math::Round(v.X), Math::Round(v.Y));
     }
 
-    static Vector2 Ceil(const Vector2& v)
+    static Double2 Ceil(const Double2& v)
     {
-        return Vector2(Math::Ceil(v.X), Math::Ceil(v.Y));
+        return Double2(Math::Ceil(v.X), Math::Ceil(v.Y));
     }
 
-    static Vector2 Floor(const Vector2& v)
+    static Double2 Floor(const Double2& v)
     {
-        return Vector2(Math::Floor(v.X), Math::Floor(v.Y));
+        return Double2(Math::Floor(v.X), Math::Floor(v.Y));
     }
 
-    static Vector2 Frac(const Vector2& v)
+    static Double2 Frac(const Double2& v)
     {
-        return Vector2(v.X - (int32)v.X, v.Y - (int32)v.Y);
+        return Double2(v.X - (int64)v.X, v.Y - (int64)v.Y);
     }
 
-    static Int2 CeilToInt(const Vector2& v);
-    static Int2 FloorToInt(const Vector2& v);
+    static Int2 CeilToInt(const Double2& v);
+    static Int2 FloorToInt(const Double2& v);
 
-    static Vector2 Mod(const Vector2& v)
+    static Double2 Mod(const Double2& v)
     {
-        return Vector2(
-            (float)(v.X - (int32)v.X),
-            (float)(v.Y - (int32)v.Y)
+        return Double2(
+            v.X - (int64)v.X,
+            v.Y - (int64)v.Y
         );
     }
 
@@ -613,41 +624,41 @@ public:
     /// <param name="v1">The second triangle vertex.</param>
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
-    static float TriangleArea(const Vector2& v0, const Vector2& v1, const Vector2& v2);
+    static double TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2);
 };
 
-inline Vector2 operator+(float a, const Vector2& b)
+inline Double2 operator+(double a, const Double2& b)
 {
     return b + a;
 }
 
-inline Vector2 operator-(float a, const Vector2& b)
+inline Double2 operator-(double a, const Double2& b)
 {
-    return Vector2(a) - b;
+    return Double2(a) - b;
 }
 
-inline Vector2 operator*(float a, const Vector2& b)
+inline Double2 operator*(double a, const Double2& b)
 {
     return b * a;
 }
 
-inline Vector2 operator/(float a, const Vector2& b)
+inline Double2 operator/(double a, const Double2& b)
 {
-    return Vector2(a) / b;
+    return Double2(a) / b;
 }
 
 namespace Math
 {
-    FORCE_INLINE static bool NearEqual(const Vector2& a, const Vector2& b)
+    FORCE_INLINE static bool NearEqual(const Double2& a, const Double2& b)
     {
-        return Vector2::NearEqual(a, b);
+        return Double2::NearEqual(a, b);
     }
 }
 
 template<>
-struct TIsPODType<Vector2>
+struct TIsPODType<Double2>
 {
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(Vector2, "X:{0} Y:{1}", v.X, v.Y);
+DEFINE_DEFAULT_FORMATTING(Double2, "X:{0} Y:{1}", v.X, v.Y);

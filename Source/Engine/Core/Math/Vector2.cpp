@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+#include "Double2.h"
+#include "Double3.h"
+#include "Double4.h"
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -45,6 +48,24 @@ Vector2::Vector2(const Vector3& xyz)
 Vector2::Vector2(const Vector4& xyzw)
     : X(xyzw.X)
     , Y(xyzw.Y)
+{
+}
+
+Vector2::Vector2(const Double2& xy)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+{
+}
+
+Vector2::Vector2(const Double3& xyz)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+{
+}
+
+Vector2::Vector2(const Double4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
 {
 }
 
