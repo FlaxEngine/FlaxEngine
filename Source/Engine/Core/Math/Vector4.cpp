@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+#include "Double4.h"
+#include "Double3.h"
+#include "Double2.h"
 #include "Vector4.h"
 #include "Vector2.h"
 #include "Vector3.h"
@@ -70,8 +73,32 @@ Vector4::Vector4(const Int3& xyz, float w)
 Vector4::Vector4(const Int4& xyzw)
     : X(static_cast<float>(xyzw.X))
     , Y(static_cast<float>(xyzw.Y))
-    , Z(static_cast<float>(xyzw.X))
-    , W(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.Z))
+    , W(static_cast<float>(xyzw.W))
+{
+}
+
+Vector4::Vector4(const Double2& xy, float z, float w)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+    , Z(z)
+    , W(w)
+{
+}
+
+Vector4::Vector4(const Double3& xyz, float w)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+    , Z(static_cast<float>(xyz.Z))
+    , W(w)
+{
+}
+
+Vector4::Vector4(const Double4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.Z))
+    , W(static_cast<float>(xyzw.W))
 {
 }
 
