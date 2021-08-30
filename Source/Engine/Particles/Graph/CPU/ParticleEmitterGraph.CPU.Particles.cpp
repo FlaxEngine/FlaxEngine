@@ -419,7 +419,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
         Node* functionCallNode = nullptr;
         ASSERT(context.GraphStack.Count() >= 2);
         Graph* graph;
-        for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
+        for (int32 i = context.CallStackSize - 1; i >= 0; i--)
         {
             if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack[context.GraphStack.Count() - 1] == graph)
             {

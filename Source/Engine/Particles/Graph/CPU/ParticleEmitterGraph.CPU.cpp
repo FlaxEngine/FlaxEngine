@@ -131,7 +131,7 @@ void ParticleEmitterGraphCPUExecutor::Init(ParticleEmitter* emitter, ParticleEff
     context.DeltaTime = dt;
     context.ParticleIndex = 0;
     context.ViewTask = effect->GetRenderTask();
-    context.CallStack.Clear();
+    context.CallStackSize = 0;
     context.Functions.Clear();
 }
 
@@ -588,7 +588,7 @@ VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box
 {
     // Check if graph is looped or is too deep
     auto& context = Context.Get();
-    if (context.CallStack.Count() >= PARTICLE_EMITTER_MAX_CALL_STACK)
+    if (context.CallStackSize >= PARTICLE_EMITTER_MAX_CALL_STACK)
     {
         OnError(caller, box, TEXT("Graph is looped or too deep!"));
         return Value::Zero;
@@ -602,7 +602,7 @@ VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box
 #endif
 
     // Add to the calling stack
-    context.CallStack.Add(caller);
+    context.CallStack[context.CallStackSize++] = caller;
 
     // Call per group custom processing event
     Value value;
@@ -611,7 +611,7 @@ VisjectExecutor::Value ParticleEmitterGraphCPUExecutor::eatBox(Node* caller, Box
     (this->*func)(box, parentNode, value);
 
     // Remove from the calling stack
-    context.CallStack.RemoveLast();
+    context.CallStackSize--;
 
     return value;
 }

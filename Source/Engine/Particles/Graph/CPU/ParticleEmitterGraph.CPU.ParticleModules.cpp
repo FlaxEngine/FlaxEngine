@@ -610,10 +610,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         ValueType type(GetVariantType(attribute.ValueType));
         if (node->UsePerParticleDataResolve())
         {
+            Value value;
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
                 context.ParticleIndex = particleIndex;
-                const Value value = GetValue(box, 4).Cast(type);
+                value = GetValue(box, 4).Cast(type);
                 Platform::MemoryCopy(dataPtr, &value.AsPointer, dataSize);
                 dataPtr += stride;
             }
@@ -667,10 +668,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         ValueType type(GetVariantType(attribute.ValueType));
         if (node->UsePerParticleDataResolve())
         {
+            Value value;
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
                 context.ParticleIndex = particleIndex;
-                const Value value = GetValue(box, 2).Cast(type);
+                value = GetValue(box, 2).Cast(type);
                 Platform::MemoryCopy(dataPtr, &value.AsPointer, dataSize);
                 dataPtr += stride;
             }
