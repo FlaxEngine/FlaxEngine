@@ -366,6 +366,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.LinuxPlatform, obj);
             if (type.FullName == PS4PlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.PS4Platform, obj);
+            if (type.FullName == XboxOnePlatformSettingsTypename)
+                return SaveAsset(gameSettings, ref gameSettings.XboxOnePlatform, obj);
             if (type.FullName == XboxScarlettPlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.XboxScarlettPlatform, obj);
             if (type == typeof(AndroidPlatformSettings))

@@ -1023,6 +1023,15 @@ public:
     void Insert(int32 startIndex, const String& other);
 
     /// <summary>
+    /// Removes characters from the string at given location until the end.
+    /// </summary>
+    /// <param name="startIndex">The index of the first character to remove.</param>
+    void Remove(int32 startIndex)
+    {
+        Remove(startIndex, _length - startIndex);
+    }
+
+    /// <summary>
     /// Removes characters from the string at given location and length.
     /// </summary>
     /// <param name="startIndex">The index of the first character to remove.</param>

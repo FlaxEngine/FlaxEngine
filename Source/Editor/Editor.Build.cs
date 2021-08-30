@@ -11,12 +11,12 @@ using Microsoft.Win32;
 /// </summary>
 public class Editor : EditorModule
 {
-    private void AddPlatformTools(BuildOptions options, string platformToolsRoot, string platformToolsRootExternal, string platform, string macro)
+    private void AddPlatformTools(BuildOptions options, string platformToolsRoot, string platformToolsRootExternal, string platform, params string[] macros)
     {
         if (Directory.Exists(Path.Combine(platformToolsRoot, platform)))
         {
             // Platform Tools bundled inside Editor module
-            options.PrivateDefinitions.Add(macro);
+            options.PrivateDefinitions.AddRange(macros);
         }
         else
         {
@@ -24,7 +24,7 @@ public class Editor : EditorModule
             if (Directory.Exists(externalPath))
             {
                 // Platform Tools inside external platform implementation location
-                options.PrivateDefinitions.Add(macro);
+                options.PrivateDefinitions.AddRange(macros);
                 options.SourcePaths.Add(externalPath);
                 AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", platform, "Engine", "Platform", platform + "PlatformSettings.cs"));
             }
@@ -55,9 +55,9 @@ public class Editor : EditorModule
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Windows", "PLATFORM_TOOLS_WINDOWS");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_UWP");
-            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxOne", "PLATFORM_TOOLS_XBOX_ONE");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxOne", "PLATFORM_TOOLS_XBOX_ONE", "PLATFORM_TOOLS_GDK");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
-            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT", "PLATFORM_TOOLS_GDK");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Switch", "PLATFORM_TOOLS_SWITCH");
         }

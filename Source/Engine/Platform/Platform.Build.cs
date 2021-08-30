@@ -82,6 +82,7 @@ public class Platform : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "UWP", "UWPPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Linux", "LinuxPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Android", "AndroidPlatformSettings.h"));
+            options.SourceFiles.Add(Path.Combine(FolderPath, "GDK", "GDKPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform", "XboxOnePlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform", "XboxScarlettPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform", "PS4PlatformSettings.h"));

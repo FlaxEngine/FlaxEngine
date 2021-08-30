@@ -31,9 +31,12 @@ namespace FlaxEditor.Content.Create
             InputSettings,
             StreamingSettings,
             WindowsPlatformSettings,
+            [EditorDisplay(null, "UWP Platform Settings")]
             UWPPlatformSettings,
             LinuxPlatformSettings,
+            [EditorDisplay(null, "PS4 Platform Settings")]
             PS4PlatformSettings,
+            XboxOnePlatformSettings,
             XboxScarlettPlatformSettings,
             AndroidPlatformSettings,
             SwitchPlatformSettings,
@@ -56,6 +59,7 @@ namespace FlaxEditor.Content.Create
             typeof(UWPPlatformSettings),
             typeof(LinuxPlatformSettings),
             TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename),
+            TypeUtils.GetManagedType(GameSettings.XboxOnePlatformSettingsTypename),
             TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename),
             typeof(AndroidPlatformSettings),
             TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
@@ -203,6 +207,11 @@ namespace FlaxEditor.Content.Create
                     if (instance.PS4Platform != null)
                         return false;
                     instance.PS4Platform = asset;
+                    break;
+                case SettingsTypes.XboxOnePlatformSettings:
+                    if (instance.XboxOnePlatform != null)
+                        return false;
+                    instance.XboxOnePlatform = asset;
                     break;
                 case SettingsTypes.XboxScarlettPlatformSettings:
                     if (instance.XboxScarlettPlatform != null)
