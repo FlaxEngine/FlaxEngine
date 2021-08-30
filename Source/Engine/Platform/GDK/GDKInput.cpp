@@ -236,7 +236,7 @@ bool GDKGamepad::UpdateState()
     return false;
 }
 
-#else
+#elif PLATFORM_GDK
 
 void GDKInput::Init()
 {
