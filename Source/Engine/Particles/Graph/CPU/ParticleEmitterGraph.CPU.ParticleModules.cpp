@@ -14,6 +14,15 @@
 #define RAND3 Vector3(RAND, RAND, RAND)
 #define RAND4 Vector4(RAND, RAND, RAND, RAND)
 
+// Enable to insert CPU profiler events for particles modules
+#define PARTICLE_EMITTER_MODULES_PROFILE 0
+#if PARTICLE_EMITTER_MODULES_PROFILE
+#include "Engine/Profiler/ProfilerCPU.h"
+#define PARTICLE_EMITTER_MODULE(name) PROFILE_CPU_NAMED(name)
+#else
+#define PARTICLE_EMITTER_MODULE(name)
+#endif
+
 namespace
 {
     FORCE_INLINE Vector4 Mod289(Vector4 x)
@@ -181,6 +190,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 201:
     case 303:
     {
+        PARTICLE_EMITTER_MODULE("Orient Sprite");
         auto spriteFacingMode = node->Values[2].AsInt;
         {
             auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
@@ -223,6 +233,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 213:
     case 309:
     {
+        PARTICLE_EMITTER_MODULE("Orient Model");
         auto modelFacingMode = node->Values[2].AsInt;
         {
             auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
@@ -238,6 +249,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Update Age
     case 300:
     {
+        PARTICLE_EMITTER_MODULE("Update Age");
         auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* agePtr = start + attribute.Offset;
         for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
@@ -251,6 +263,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 301:
     case 304:
     {
+        PARTICLE_EMITTER_MODULE("Gravity/Force");
         auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* velocityPtr = start + attribute.Offset;
         auto box = node->GetBox(0);
@@ -278,6 +291,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Conform to Sphere
     case 305:
     {
+        PARTICLE_EMITTER_MODULE("Conform to Sphere");
         auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         auto& velocity = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
         auto& mass = context.Data->Buffer->Layout->Attributes[node->Attributes[2]];
@@ -340,6 +354,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Kill (sphere)
     case 306:
     {
+        PARTICLE_EMITTER_MODULE("Kill");
         auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + position.Offset;
@@ -388,6 +403,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Kill (box)
     case 307:
     {
+        PARTICLE_EMITTER_MODULE("Kill");
         auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + position.Offset;
@@ -441,6 +457,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Kill (custom)
     case 308:
     {
+        PARTICLE_EMITTER_MODULE("Kill (custom)");
         auto killBox = node->GetBox(0);
 
 #define INPUTS_FETCH() \
@@ -478,6 +495,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Linear Drag
     case 310:
     {
+        PARTICLE_EMITTER_MODULE("Linear Drag");
         auto box = node->GetBox(0);
         const bool useSpriteSize = node->Values[3].AsBool;
 
@@ -523,6 +541,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Turbulence
     case 311:
     {
+        PARTICLE_EMITTER_MODULE("Turbulence");
         auto& position = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         auto& velocity = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
         auto& mass = context.Data->Buffer->Layout->Attributes[node->Attributes[2]];
@@ -583,6 +602,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 200:
     case 302:
     {
+        PARTICLE_EMITTER_MODULE("Set Attribute");
         auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* dataPtr = start + attribute.Offset;
         int32 dataSize = attribute.GetSize();
@@ -639,6 +659,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 362:
     case 363:
     {
+        PARTICLE_EMITTER_MODULE("Set");
         auto& attribute = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         byte* dataPtr = start + attribute.Offset;
         int32 dataSize = attribute.GetSize();
@@ -668,6 +689,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (sphere surface)
     case 202:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -713,6 +735,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (plane)
     case 203:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -751,6 +774,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (circle)
     case 204:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -794,6 +818,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (disc)
     case 205:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -837,6 +862,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (box surface)
     case 206:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -887,6 +913,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (box volume)
     case 207:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -925,6 +952,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (cylinder)
     case 208:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -970,6 +998,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (line)
     case 209:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -1008,6 +1037,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (torus)
     case 210:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -1072,6 +1102,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (sphere volume)
     case 211:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
 
         byte* positionPtr = start + positionAttr.Offset;
@@ -1123,6 +1154,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Position (spiral)
     case 214:
     {
+        PARTICLE_EMITTER_MODULE("Position");
         auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
         auto& velocityAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[1]];
 
@@ -1173,6 +1205,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
         // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \
+	PARTICLE_EMITTER_MODULE("Collision"); \
 	auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]]; \
 	auto& velocityAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[1]]; \
 	auto& ageAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[2]]; \
