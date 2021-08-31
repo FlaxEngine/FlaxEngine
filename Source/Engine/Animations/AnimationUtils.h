@@ -101,7 +101,7 @@ namespace AnimationUtils
     {
         result.X = Math::Lerp(a.X, b.X, t);
         result.Y = Math::Lerp(a.Y, b.Y, t);
-        result.Y = Math::Lerp(a.Z, b.Z, t);
+        result.Z = Math::Lerp(a.Z, b.Z, t);
     }
 
     template<>
