@@ -234,9 +234,19 @@ namespace FlaxEditor.Windows
                 var editWindowViewport = Editor.Windows.EditWin.Viewport;
                 if (editWindowViewport.Task.LastUsedFrame != Engine.FrameCount)
                 {
+                    var drawDebugData = editWindowViewport.DebugDrawData;
+                    drawDebugData.Clear();
+                    var selectedParents = editWindowViewport.TransformGizmo.SelectedParents;
+                    if (selectedParents.Count > 0)
+                    {
+                        for (int i = 0; i < selectedParents.Count; i++)
+                        {
+                            if (selectedParents[i].IsActiveInHierarchy)
+                                selectedParents[i].OnDebugDraw(drawDebugData);
+                        }
+                    }
                     unsafe
                     {
-                        var drawDebugData = editWindowViewport.DebugDrawData;
                         fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
                         {
                             DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
