@@ -149,6 +149,7 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     // Skip if animation is not ready to use
     if (anim == nullptr || !anim->IsLoaded())
         return Value::Null;
+    PROFILE_CPU_ASSET(anim);
 
     // Calculate actual time position within the animation node (defined by length and loop mode)
     const float pos = GetAnimPos(newTimePos, startTimePos, loop, length);
@@ -607,8 +608,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Animation
         case 0:
         {
-            ANIM_GRAPH_PROFILE_EVENT("Sample");
-
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position

@@ -56,6 +56,10 @@ void AnimationsSystem::Job(int32 index)
     auto animatedModel = UpdateList[index];
     auto skinnedModel = animatedModel->SkinnedModel.Get();
     auto graph = animatedModel->AnimationGraph.Get();
+#if COMPILE_WITH_PROFILER && TRACY_ENABLE
+    const StringView graphName(graph->GetPath());
+    ZoneName(*graphName, graphName.Length());
+#endif
     if (graph && graph->IsLoaded() && graph->Graph.CanUseWithSkeleton(skinnedModel)
 #if USE_EDITOR
         && graph->Graph.Parameters.Count() == animatedModel->GraphInstance.Parameters.Count() // It may happen in editor so just add safe check to prevent any crashes

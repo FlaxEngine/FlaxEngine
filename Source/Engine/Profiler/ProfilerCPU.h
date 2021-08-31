@@ -402,8 +402,10 @@ struct TIsPODType<ProfilerCPU::Event>
 
 #ifdef TRACY_ENABLE
 #define PROFILE_CPU_SRC_LOC(srcLoc) tracy::ScopedZone ___tracy_scoped_zone( (tracy::SourceLocationData*)&(srcLoc) ); ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
+#define PROFILE_CPU_ASSET(asset) ZoneScoped; const StringView __tracy_asset_name((asset)->GetPath()); ZoneName(*__tracy_asset_name, __tracy_asset_name.Length())
 #else
 #define PROFILE_CPU_SRC_LOC(srcLoc) ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
+#define PROFILE_CPU_ASSET(asset)
 #endif
 
 #else

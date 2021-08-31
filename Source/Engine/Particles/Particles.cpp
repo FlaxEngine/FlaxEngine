@@ -1211,6 +1211,10 @@ void ParticlesSystem::Job(int32 index)
     }
     if (anyEmitterNotReady)
         return;
+#if COMPILE_WITH_PROFILER && TRACY_ENABLE
+    const StringView particleSystemName(particleSystem->GetPath());
+    ZoneName(*particleSystemName, particleSystemName.Length());
+#endif
 
     // Prepare instance data
     instance.Sync(particleSystem);
@@ -1287,6 +1291,7 @@ void ParticlesSystem::Job(int32 index)
         auto& data = instance.Emitters[track.AsEmitter.Index];
         ASSERT(emitter && emitter->IsLoaded());
         ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
+        PROFILE_CPU_ASSET(emitter);
 
         // Calculate new time position
         const float startTime = (float)track.AsEmitter.StartFrame / fps;

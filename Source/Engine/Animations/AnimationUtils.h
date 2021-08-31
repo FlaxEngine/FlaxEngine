@@ -90,9 +90,18 @@ namespace AnimationUtils
     }
 
     template<>
+    FORCE_INLINE void Interpolate<Vector2>(const Vector2& a, const Vector2& b, float t, Vector2& result)
+    {
+        result.X = Math::Lerp(a.X, b.X, t);
+        result.Y = Math::Lerp(a.Y, b.Y, t);
+    }
+
+    template<>
     FORCE_INLINE void Interpolate<Vector3>(const Vector3& a, const Vector3& b, float t, Vector3& result)
     {
-        Vector3::Lerp(a, b, t, result);
+        result.X = Math::Lerp(a.X, b.X, t);
+        result.Y = Math::Lerp(a.Y, b.Y, t);
+        result.Y = Math::Lerp(a.Z, b.Z, t);
     }
 
     template<>
@@ -191,7 +200,7 @@ namespace AnimationUtils
         const float uu = u * u;
         const float uuu = uu * u;
         const float ttt = tt * t;
-        result = uuu * p0 + 3 * uu * t * p1 + 3 * u * tt * p2 + ttt * p3;
+        result = uuu * p0 + (3 * uu * t) * p1 + (3 * u * tt) * p2 + ttt * p3;
     }
 
     template<>
@@ -202,7 +211,7 @@ namespace AnimationUtils
         const float uu = u * u;
         const float uuu = uu * u;
         const float ttt = tt * t;
-        result = uuu * p0 + 3 * uu * t * p1 + 3 * u * tt * p2 + ttt * p3;
+        result = uuu * p0 + (3 * uu * t) * p1 + (3 * u * tt) * p2 + ttt * p3;
     }
 
     template<>
