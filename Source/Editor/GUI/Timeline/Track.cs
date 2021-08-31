@@ -1023,6 +1023,8 @@ namespace FlaxEditor.GUI.Timeline
                 var menu = new ContextMenu.ContextMenu();
                 if (CanRename)
                     menu.AddButton("Rename", StartRenaming);
+                if (CanCopyPaste)
+                    menu.AddButton("Duplicate", () => Timeline.DuplicateSelection());
                 menu.AddButton("Delete", Delete);
                 if (CanExpand)
                 {
