@@ -414,5 +414,6 @@ struct TIsPODType<ProfilerCPU::Event>
 #define PROFILE_CPU()
 #define PROFILE_CPU_NAMED(name)
 #define PROFILE_CPU_SRC_LOC(srcLoc)
+#define PROFILE_CPU_ASSET(asset)
 
 #endif
