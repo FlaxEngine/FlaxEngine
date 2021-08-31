@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -77,7 +77,7 @@ namespace Math
 
     static FORCE_INLINE double InvSqrt(double value)
     {
-        return 1.0f / sqrt(value);
+        return 1.0 / sqrt(value);
     }
 
     static FORCE_INLINE double Log(const double value)
@@ -227,55 +227,19 @@ namespace Math
     /// <returns>False if a almost equal to b, otherwise true</returns>
     static bool NotNearEqual(double a, double b)
     {
-        // Check if the numbers are really close - needed when comparing numbers near zero
-        if (IsZero(a - b))
-            return false;
-
-        // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-        const int64 aInt = *(int64*)&a;
-        const int64 bInt = *(int64*)&b;
-
-        // Different signs means they do not match
-        if (aInt < 0 != bInt < 0)
-            return true;
-
-        // Find the difference in ULPs
-        const int64 ulp = Math::Abs(aInt - bInt);
-
-        // Choose of maxUlp = 4
-        // according to http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
-        const int maxUlp = 4;
-        return ulp > maxUlp;
+        return Abs(a - b) >= 2 * 2.2204460492503131e-016;
     }
 
     /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of double precision floating point numbers
-        /// </summary>
-        /// <param name="a">The left value to compare</param>
-        /// <param name="b">The right value to compare</param>
-        /// <returns>True if a almost equal to b, otherwise false</returns>
-        static bool NearEqual(double a, double b)
-        {
-            // Check if the numbers are really close - needed when comparing numbers near zero
-            if (IsZero(a - b))
-                return true;
-    
-            // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-            const int64 aInt = *(int64*)&a;
-            const int64 bInt = *(int64*)&b;
-    
-            // Different signs means they do not match
-            if (aInt < 0 != bInt < 0)
-                return false;
-    
-            // Find the difference in ULPs
-            const int64 ulp = Abs(aInt - bInt);
-    
-            // Choose of maxUlp = 4
-            // according to http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
-            const int maxUlp = 4;
-            return ulp <= maxUlp;
-        }
+    /// Checks if a and b are almost equals, taking into account the magnitude of double precision floating point numbers
+    /// </summary>
+    /// <param name="a">The left value to compare</param>
+    /// <param name="b">The right value to compare</param>
+    /// <returns>True if a almost equal to b, otherwise false</returns>
+    static bool NearEqual(double a, double b)
+    {
+        return Abs(a - b) < 2 * 2.2204460492503131e-016;
+    }
 
     /// <summary>
     /// Checks if a and b are almost equals within the given epsilon value.
@@ -381,10 +345,4 @@ namespace Math
         const double fraction = (x - a) / (b - a);
         return fraction * fraction * (3. - 2. * fraction);
     }
-
-//TODO: When double vectors are implemented
-    // Rotates position about the given axis by the given angle, in radians, and returns the offset to position
-    //Vector3 FLAXENGINE_API RotateAboutAxis(const Vector3& normalizedRotationAxis, float angle, const Vector3& positionOnAxis, const Vector3& position);
-
-    //Vector3 FLAXENGINE_API ExtractLargestComponent(const Vector3& v);
 }
