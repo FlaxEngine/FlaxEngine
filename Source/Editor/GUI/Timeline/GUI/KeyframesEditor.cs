@@ -294,13 +294,31 @@ namespace FlaxEditor.GUI
                 {
                     if (_leftMouseDown)
                     {
-                        // Check if user is pressing control
                         if (Root.GetKey(KeyboardKeys.Control))
                         {
                             // Toggle selection
                             keyframe.IsSelected = !keyframe.IsSelected;
                         }
-                        // Check if node isn't selected
+                        else if (Root.GetKey(KeyboardKeys.Shift))
+                        {
+                            // Select range
+                            keyframe.IsSelected = true;
+                            int selectionStart = 0;
+                            for (; selectionStart < _editor._points.Count; selectionStart++)
+                            {
+                                if (_editor._points[selectionStart].IsSelected)
+                                    break;
+                            }
+                            int selectionEnd = _editor._points.Count - 1;
+                            for (; selectionEnd > selectionStart; selectionEnd--)
+                            {
+                                if (_editor._points[selectionEnd].IsSelected)
+                                    break;
+                            }
+                            selectionStart++;
+                            for (; selectionStart < selectionEnd; selectionStart++)
+                                _editor._points[selectionStart].IsSelected = true;
+                        }
                         else if (!keyframe.IsSelected)
                         {
                             // Select node
@@ -1188,22 +1206,19 @@ namespace FlaxEditor.GUI
             if (base.OnKeyDown(key))
                 return true;
 
-            if (key == KeyboardKeys.Delete)
+            switch (key)
             {
+            case KeyboardKeys.Delete:
                 RemoveKeyframes();
                 return true;
-            }
-
-            if (Root.GetKey(KeyboardKeys.Control))
-            {
-                switch (key)
+            case KeyboardKeys.A:
+                if (Root.GetKey(KeyboardKeys.Control))
                 {
-                case KeyboardKeys.A:
                     SelectAll();
                     return true;
                 }
+                break;
             }
-
             return false;
         }
 

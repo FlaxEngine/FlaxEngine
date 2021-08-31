@@ -893,23 +893,20 @@ namespace FlaxEditor.GUI
             if (base.OnKeyDown(key))
                 return true;
 
-            if (key == KeyboardKeys.Delete)
+            switch (key)
             {
+            case KeyboardKeys.Delete:
                 RemoveKeyframes();
                 return true;
-            }
-
-            if (Root.GetKey(KeyboardKeys.Control))
-            {
-                switch (key)
+            case KeyboardKeys.A:
+                if (Root.GetKey(KeyboardKeys.Control))
                 {
-                case KeyboardKeys.A:
                     SelectAll();
                     UpdateTangents();
                     return true;
                 }
+                break;
             }
-
             return false;
         }
 

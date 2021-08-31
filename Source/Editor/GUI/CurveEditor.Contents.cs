@@ -301,14 +301,33 @@ namespace FlaxEditor.GUI
                 {
                     if (_leftMouseDown)
                     {
-                        // Check if user is pressing control
                         if (Root.GetKey(KeyboardKeys.Control))
                         {
                             // Toggle selection
                             keyframe.IsSelected = !keyframe.IsSelected;
                             _editor.UpdateTangents();
                         }
-                        // Check if node isn't selected
+                        else if (Root.GetKey(KeyboardKeys.Shift))
+                        {
+                            // Select range
+                            keyframe.IsSelected = true;
+                            int selectionStart = 0;
+                            for (; selectionStart < _editor._points.Count; selectionStart++)
+                            {
+                                if (_editor._points[selectionStart].IsSelected)
+                                    break;
+                            }
+                            int selectionEnd = _editor._points.Count - 1;
+                            for (; selectionEnd > selectionStart; selectionEnd--)
+                            {
+                                if (_editor._points[selectionEnd].IsSelected)
+                                    break;
+                            }
+                            selectionStart++;
+                            for (; selectionStart < selectionEnd; selectionStart++)
+                                _editor._points[selectionStart].IsSelected = true;
+                            _editor.UpdateTangents();
+                        }
                         else if (!keyframe.IsSelected)
                         {
                             // Select node
