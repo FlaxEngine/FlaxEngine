@@ -16,6 +16,9 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private readonly Timeline _timeline;
         private float[] _tickSteps;
         private float[] _tickStrengths;
+        private bool _leftMouseDown;
+        private Vector2 _leftMouseDownPos = Vector2.Minimum;
+        private Vector2 _mousePos = Vector2.Minimum;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Background"/> class.
@@ -26,6 +29,80 @@ namespace FlaxEditor.GUI.Timeline.GUI
             _timeline = timeline;
             _tickSteps = Utilities.Utils.CurveTickSteps;
             _tickStrengths = new float[_tickSteps.Length];
+        }
+
+        private void UpdateSelectionRectangle()
+        {
+            var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+            _timeline.OnKeyframesSelection(null, this, selectionRect);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+            {
+                _leftMouseDown = false;
+                return true;
+            }
+
+            _mousePos = location;
+            if (button == MouseButton.Left)
+            {
+                // Start selecting
+                _leftMouseDown = true;
+                _leftMouseDownPos = location;
+                StartMouseCapture();
+                _timeline.OnKeyframesDeselect(null);
+                Focus();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        {
+            _mousePos = location;
+
+            if (_leftMouseDown && button == MouseButton.Left)
+            {
+                // End selecting
+                _leftMouseDown = false;
+                EndMouseCapture();
+            }
+
+            if (base.OnMouseUp(location, button))
+            {
+                _leftMouseDown = false;
+                return true;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseMove(Vector2 location)
+        {
+            _mousePos = location;
+
+            // Selecting
+            if (_leftMouseDown)
+            {
+                UpdateSelectionRectangle();
+                return;
+            }
+
+            base.OnMouseMove(location);
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            _leftMouseDown = false;
+
+            base.OnLostFocus();
         }
 
         /// <inheritdoc />
@@ -139,6 +216,14 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 }
             }
 
+            // Draw selection rectangle
+            if (_leftMouseDown)
+            {
+                var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+                Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
+                Render2D.DrawRectangle(selectionRect, Color.Orange);
+            }
+
             DrawChildren();
 
             // Disabled overlay
@@ -225,7 +310,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             {
                 var locationTimeOld = _timeline.MediaBackground.PointFromParent(_timeline, _timeline.Size * 0.5f).X;
                 var frame = (locationTimeOld - Timeline.StartOffset * 2.0f) / _timeline.Zoom / Timeline.UnitsPerSecond * _timeline.FramesPerSecond;
-                
+
                 _timeline.Zoom += delta * 0.1f;
 
                 var locationTimeNew = frame / _timeline.FramesPerSecond * Timeline.UnitsPerSecond * _timeline.Zoom + Timeline.StartOffset * 2.0f;
