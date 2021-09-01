@@ -481,6 +481,12 @@ namespace FlaxEditor.GUI
                         }
                         cm.AddButton("Paste keyframes", () => KeyframesEditorUtils.Paste(_editor, point?.Time ?? _cmShowPos.X)).Enabled = KeyframesEditorUtils.CanPaste();
                         cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
+                        cm.AddButton("Select all keyframes", _editor.SelectAll);
+                        cm.AddButton("Copy all keyframes", () =>
+                        {
+                            _editor.SelectAll();
+                            _editor.CopyKeyframes(point);
+                        });
                         if (_editor.EnableZoom != UseMode.Off || _editor.EnablePanning != UseMode.Off)
                         {
                             cm.AddSeparator();
