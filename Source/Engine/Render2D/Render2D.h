@@ -408,7 +408,7 @@ public:
     /// <param name="t">The texture.</param>
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
-    /// /// <param name="color">The color.</param>
+    /// <param name="color">The color.</param>
     API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Color& color);
     
     /// <summary>
@@ -417,7 +417,7 @@ public:
     /// <param name="t">The texture.</param>
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
-    /// /// <param name="colors">The colors array.</param>
+    /// <param name="colors">The colors array.</param>
     API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Span<Color>& colors);
 
     /// <summary>
