@@ -464,6 +464,20 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesMove(editor, control, location, start, end);
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
     }
 
     /// <summary>

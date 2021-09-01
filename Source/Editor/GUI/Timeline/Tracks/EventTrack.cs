@@ -445,5 +445,19 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Events != null && Events.Visible)
                 Events.OnKeyframesMove(editor, control, location, start, end);
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
     }
 }

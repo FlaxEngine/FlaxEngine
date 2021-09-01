@@ -202,8 +202,19 @@ namespace FlaxEditor.GUI
         /// Adds the new keyframe (as boxed object).
         /// </summary>
         /// <param name="time">The keyframe time.</param>
-        /// <param name="value">The keyframe value.</param>
-        public abstract void AddKeyframe(float time, object value);
+        /// <param name="value">The keyframe value (boxed).</param>
+        /// <returns>The index of the keyframe.</returns>
+        public abstract int AddKeyframe(float time, object value);
+
+        /// <summary>
+        /// Adds the new keyframe (as boxed object).
+        /// </summary>
+        /// <param name="time">The keyframe time.</param>
+        /// <param name="value">The keyframe value (boxed).</param>
+        /// <param name="tangentIn">The keyframe 'In' tangent value (boxed).</param>
+        /// <param name="tangentOut">The keyframe 'Out' tangent value (boxed).</param>
+        /// <returns>The index of the keyframe.</returns>
+        public abstract int AddKeyframe(float time, object value, object tangentIn, object tangentOut);
 
         /// <summary>
         /// Gets the keyframe data (as boxed objects).
@@ -279,5 +290,11 @@ namespace FlaxEditor.GUI
 
         /// <inheritdoc />
         public abstract void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index);
     }
 }

@@ -2570,5 +2570,39 @@ namespace FlaxEditor.GUI.Timeline
                     trackContext.OnKeyframesMove(editor, _backgroundArea, location, start, end);
             }
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data)
+        {
+            var area = _backgroundArea;
+            var hScroll = area.HScrollBar.Visible && area.HScrollBar.Enabled;
+            if (hScroll && !timeOffset.HasValue)
+            {
+                // Offset copied keyframes relative to the current view start
+                timeOffset = (area.HScrollBar.Value - StartOffset * 2.0f) / (UnitsPerSecond * Zoom);
+            }
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesCopy(editor, timeOffset, data);
+            }
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            var area = _backgroundArea;
+            var hScroll = area.HScrollBar.Visible && area.HScrollBar.Enabled;
+            if (hScroll && !timeOffset.HasValue)
+            {
+                // Offset pasted keyframes relative to the current view start
+                timeOffset = (area.HScrollBar.Value - StartOffset * 2.0f) / (UnitsPerSecond * Zoom);
+            }
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+            }
+        }
     }
 }

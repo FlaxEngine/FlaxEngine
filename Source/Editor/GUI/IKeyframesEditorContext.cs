@@ -45,5 +45,22 @@ namespace FlaxEditor.GUI
         /// <param name="start">The movement start flag.</param>
         /// <param name="end">The movement end flag.</param>
         void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
+
+        /// <summary>
+        /// Called when keyframes selection should be copied.
+        /// </summary>
+        /// <param name="editor">The source editor.</param>
+        /// <param name="timeOffset">The additional time offset to apply to the copied keyframes (optional).</param>
+        /// <param name="data">The result copy data text stream.</param>
+        void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data);
+
+        /// <summary>
+        /// Called when keyframes should be pasted (from clipboard).
+        /// </summary>
+        /// <param name="editor">The source editor.</param>
+        /// <param name="timeOffset">The additional time offset to apply to the pasted keyframes (optional).</param>
+        /// <param name="datas">The pasted data text.</param>
+        /// <param name="index">The counter for the current data index. Set to -1 until the calling editor starts paste operation.</param>
+        void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index);
     }
 }
