@@ -837,15 +837,21 @@ namespace FlaxEditor.GUI
         /// <param name="k">The keyframe to add.</param>
         public void AddKeyframe(Keyframe k)
         {
+            var eps = Mathf.Epsilon;
             if (FPS.HasValue)
             {
                 float fps = FPS.Value;
                 k.Time = Mathf.Floor(k.Time * fps) / fps;
+                eps = 1.0f / fps;
             }
+
             int pos = 0;
             while (pos < _keyframes.Count && _keyframes[pos].Time < k.Time)
                 pos++;
-            _keyframes.Insert(pos, k);
+            if (_keyframes.Count > pos && Mathf.Abs(_keyframes[pos].Time - k.Time) < eps)
+                _keyframes[pos] = k;
+            else
+                _keyframes.Insert(pos, k);
 
             OnKeyframesChanged();
             OnEdited();
