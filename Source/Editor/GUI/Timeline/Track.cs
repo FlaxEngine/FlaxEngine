@@ -1032,6 +1032,10 @@ namespace FlaxEditor.GUI.Timeline
                     menu.AddButton("Expand All", ExpandAll);
                     menu.AddButton("Collapse All", CollapseAll);
                 }
+                if (SubTracks.Count > 1)
+                {
+                    menu.AddButton("Sort All", () => _timeline.SortTrack(this, _subTracks.Sort));
+                }
                 OnContextMenu(menu);
                 menu.Show(this, location);
             }
@@ -1341,6 +1345,18 @@ namespace FlaxEditor.GUI.Timeline
             // Base
             if (_opened)
                 base.OnKeyUp(key);
+        }
+
+        /// <inheritdoc />
+        public override int Compare(Control other)
+        {
+            if (other is Track otherTrack)
+            {
+                var name = Title ?? Name;
+                var otherName = otherTrack.Title ?? otherTrack.Name;
+                return string.Compare(name, otherName, StringComparison.InvariantCulture);
+            }
+            return base.Compare(other);
         }
 
         /// <inheritdoc />

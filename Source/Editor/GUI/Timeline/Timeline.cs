@@ -1820,11 +1820,53 @@ namespace FlaxEditor.GUI.Timeline
             {
                 menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, ref location, this));
             }
+            if (_tracks.Count > 1)
+            {
+                menu.AddButton("Sort tracks", SortTracks).TooltipText = "Sorts sub tracks alphabetically";
+            }
             menu.AddSeparator();
             menu.AddButton("Reset zoom", () => Zoom = 1.0f);
             menu.AddButton("Show whole timeline", ShowWholeTimeline);
             OnShowContextMenu(menu);
             menu.Show(this, location);
+        }
+
+        private void SortTracks()
+        {
+            var rootTracks = new List<Track>();
+            foreach (var track in _tracks)
+            {
+                if (track.ParentTrack == null)
+                    rootTracks.Add(track);
+            }
+
+            // TODO: undo for tracks sorting
+            _tracks.Clear();
+            rootTracks.Sort();
+            foreach (var track in rootTracks)
+                CollectTracks(track);
+
+            OnTracksOrderChanged();
+            MarkAsEdited();
+        }
+
+        internal void SortTrack(Track e, Action sort)
+        {
+            var rootTracks = new List<Track>();
+            foreach (var track in _tracks)
+            {
+                if (track.ParentTrack == null)
+                    rootTracks.Add(track);
+            }
+
+            // TODO: undo for tracks sorting
+            _tracks.Clear();
+            sort();
+            foreach (var track in rootTracks)
+                CollectTracks(track);
+
+            OnTracksOrderChanged();
+            MarkAsEdited();
         }
 
         /// <inheritdoc />
