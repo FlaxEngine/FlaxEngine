@@ -410,7 +410,7 @@ public:
     /// <param name="uvs">The uvs array.</param>
     /// <param name="color">The color.</param>
     API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Color& color);
-    
+
     /// <summary>
     /// Draws vertices array.
     /// </summary>

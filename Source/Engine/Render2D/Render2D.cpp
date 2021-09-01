@@ -1918,9 +1918,8 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs)
 {
-    CHECK(vertices.Length() == uvs.Length())
-
     RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() == uvs.Length())
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
@@ -1934,16 +1933,15 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Color& color)
 {
-    Color colors[3] = {(Color)color, (Color)color, (Color)color};
+    Color colors[3] = { (Color)color, (Color)color, (Color)color };
     Span<Color> spancolor(colors, 3);
     DrawTexturedTriangles(t, vertices, uvs, spancolor);
 }
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Span<Color>& colors)
 {
-    CHECK(vertices.Length() == uvs.Length())
-
     RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() == uvs.Length() == colors.Length())
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
@@ -1958,7 +1956,6 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
 void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha)
 {
     CHECK(vertices.Length() == colors.Length());
-
     RENDER2D_CHECK_RENDERING_STATE;
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
