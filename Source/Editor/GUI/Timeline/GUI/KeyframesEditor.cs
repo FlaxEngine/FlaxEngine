@@ -78,7 +78,7 @@ namespace FlaxEditor.GUI
             internal Vector2 _mousePos = Vector2.Minimum;
             private Vector2 _movingViewLastPos;
             internal bool _isMovingSelection;
-            internal bool _movedKeyframes;
+            private bool _movedKeyframes;
             private float _movingSelectionStart;
             private float[] _movingSelectionOffsets;
             private Vector2 _cmShowPos;
@@ -1328,6 +1328,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
         {
+            if (SelectionCount == 0)
+                return;
             location = _contents.PointFromParent(control, location);
             if (start)
                 _contents.OnMoveStart(location);
@@ -1340,7 +1342,7 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
         {
-            if (SelectionCount == 0)
+            if (SelectionCount == 0 || DefaultValue == null)
                 return;
             var offset = timeOffset ?? 0.0f;
             data.AppendLine(KeyframesEditorUtils.CopyPrefix);
@@ -1358,6 +1360,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
         {
+            if (DefaultValue == null)
+                return;
             if (index == -1)
             {
                 if (editor == this)
@@ -1369,7 +1373,7 @@ namespace FlaxEditor.GUI
                 return;
             var data = datas[index];
             var offset = timeOffset ?? 0.0f;
-            var eps = FPS.HasValue ? 1.0f / FPS.Value : Mathf.Epsilon;
+            var eps = FPS.HasValue ? 0.5f / FPS.Value : Mathf.Epsilon;
             try
             {
                 var lines = data.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);

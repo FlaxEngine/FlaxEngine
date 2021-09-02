@@ -580,7 +580,7 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
         {
-            if (_points.Count == 0)
+            if (SelectionCount == 0)
                 return;
             location = _contents.PointFromParent(control, location);
             if (start)
