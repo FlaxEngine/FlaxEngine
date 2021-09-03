@@ -573,7 +573,6 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 }
 
                 // Validate state data space
-                stateIndexOffset += track.TrackStateIndex;
                 if (stateIndexOffset + nestedAnim->TrackStatesCount > _tracks.Count())
                 {
                     LOG(Warning,
@@ -599,7 +598,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 }
 #endif
 
-                Tick(nestedAnim, mediaTime, dt, stateIndexOffset, callStack);
+                Tick(nestedAnim, mediaTime, dt, stateIndexOffset + track.TrackStateIndex, callStack);
             }
             break;
         }
