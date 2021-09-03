@@ -128,18 +128,31 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         protected override void OnAssetChanged()
         {
-            if (Asset)
+            base.OnAssetChanged();
+
+            CheckCyclicReferences();
+        }
+
+        /// <inheritdoc />
+        public override void OnTimelineChanged(Timeline timeline)
+        {
+            base.OnTimelineChanged(timeline);
+
+            CheckCyclicReferences();
+        }
+
+        private void CheckCyclicReferences()
+        {
+            if (Asset && Timeline is SceneAnimationTimeline timeline)
             {
                 var refs = Asset.GetReferences();
-                var id = ((SceneAnimationTimeline)Timeline)._id;
+                var id = timeline._id;
                 if (Asset.ID == id || refs.Contains(id))
                 {
                     Asset = null;
                     throw new Exception("Cannot use nested scene animation (recursion).");
                 }
             }
-
-            base.OnAssetChanged();
         }
     }
 }
