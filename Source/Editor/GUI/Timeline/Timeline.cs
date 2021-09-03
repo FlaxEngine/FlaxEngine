@@ -2137,5 +2137,20 @@ namespace FlaxEditor.GUI.Timeline
                     trackContext.OnKeyframesPaste(editor, timeOffset, datas, ref index);
             }
         }
+
+        /// <inheritdoc />
+        public void OnKeyframesGet(Action<string, float, object> get)
+        {
+            for (int i = 0; i < _tracks.Count; i++)
+            {
+                if (_tracks[i] is IKeyframesEditorContext trackContext)
+                    trackContext.OnKeyframesGet(get);
+            }
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+        }
     }
 }

@@ -87,7 +87,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         /// <inheritdoc />
         public StructPropertyTrack(ref TrackCreateOptions options)
-        : base(ref options, false, false)
+        : base(ref options, false, false, true)
         {
             // Add track button
             const float buttonSize = 14;

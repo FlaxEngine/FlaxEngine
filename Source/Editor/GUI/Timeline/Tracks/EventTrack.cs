@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -50,7 +51,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 e.EventParamsSizes[i] = stream.ReadInt32();
                 var paramTypeName = LoadName(stream);
-                e.EventParamsTypes[i] = Scripting.TypeUtils.GetType(paramTypeName).Type;
+                e.EventParamsTypes[i] = Scripting.TypeUtils.GetManagedType(paramTypeName);
                 if (e.EventParamsTypes[i] == null)
                     isInvalid = true;
             }
@@ -283,9 +284,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Events == null || Timeline == null)
                 return;
+            bool wasVisible = Events.Visible;
             Events.Visible = Visible;
             if (!Visible)
             {
+                if(wasVisible)
                 Events.ClearSelection();
                 return;
             }
@@ -413,51 +416,63 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesDeselect(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesSelection(editor, control, selection);
         }
 
         /// <inheritdoc />
-        public int OnKeyframesSelectionCount()
+        public new int OnKeyframesSelectionCount()
         {
             return Events != null && Events.Visible ? Events.OnKeyframesSelectionCount() : 0;
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDelete(IKeyframesEditor editor)
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesDelete(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesMove(editor, control, location, start, end);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesCopy(editor, timeOffset, data);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Events?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Events?.OnKeyframesSet(keyframes);
         }
     }
 }

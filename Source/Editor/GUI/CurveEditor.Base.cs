@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -296,5 +297,11 @@ namespace FlaxEditor.GUI
 
         /// <inheritdoc />
         public abstract void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesGet(string trackName, Action<string, float, object> get);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes);
     }
 }

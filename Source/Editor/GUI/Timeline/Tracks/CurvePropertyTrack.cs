@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -224,10 +225,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve == null || Timeline == null)
                 return;
+            bool wasVisible = Curve.Visible;
             Curve.Visible = Visible;
             if (!Visible)
             {
-                Curve.ClearSelection();
+                if (wasVisible)
+                    Curve.ClearSelection();
                 return;
             }
             var expanded = IsExpanded;
@@ -432,51 +435,63 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesDeselect(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesSelection(editor, control, selection);
         }
 
         /// <inheritdoc />
-        public int OnKeyframesSelectionCount()
+        public new int OnKeyframesSelectionCount()
         {
             return Curve != null && Curve.Visible ? Curve.OnKeyframesSelectionCount() : 0;
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDelete(IKeyframesEditor editor)
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesDelete(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesMove(editor, control, location, start, end);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesCopy(editor, timeOffset, data);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Curve?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Curve?.OnKeyframesSet(keyframes);
         }
     }
 

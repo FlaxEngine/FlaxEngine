@@ -12,7 +12,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track that represents a folder used to group and organize tracks.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    public class FolderTrack : Track
+    public class FolderTrack : ConductorTrack
     {
         /// <summary>
         /// Gets the archetype.

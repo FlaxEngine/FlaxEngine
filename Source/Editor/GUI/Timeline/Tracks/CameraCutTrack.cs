@@ -728,7 +728,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         /// <inheritdoc />
         public CameraCutTrack(ref TrackCreateOptions options)
-        : base(ref options)
+        : base(ref options, false)
         {
             Height = CameraCutThumbnailRenderer.Height + 8;
 

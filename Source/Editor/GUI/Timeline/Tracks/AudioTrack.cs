@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEditor.Viewport.Previews;
@@ -476,10 +477,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (_audioMedia == null || Curve == null || Timeline == null)
                 return;
+            bool wasVisible = Curve.Visible;
             Curve.Visible = Visible;
             if (!Visible)
             {
-                Curve.ClearSelection();
+                if (wasVisible)
+                    Curve.ClearSelection();
                 return;
             }
             Curve.KeyframesEditorContext = Timeline;
@@ -701,6 +704,18 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Curve?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Curve?.OnKeyframesSet(keyframes);
         }
     }
 }

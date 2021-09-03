@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -67,5 +69,18 @@ namespace FlaxEditor.GUI
         /// <param name="datas">The pasted data text.</param>
         /// <param name="index">The counter for the current data index. Set to -1 until the calling editor starts paste operation.</param>
         void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index);
+
+        /// <summary>
+        /// Called when collecting keyframes from the context.
+        /// </summary>
+        /// <param name="trackName">The name of the track.</param>
+        /// <param name="get">The getter function to call for all keyframes. Args are: track name, keyframe time, keyframe object.</param>
+        void OnKeyframesGet(string trackName, Action<string, float, object> get);
+
+        /// <summary>
+        /// Called when setting keyframes data (opposite to <see cref="OnKeyframesGet"/>).
+        /// </summary>
+        /// <param name="keyframes">The list of keyframes, null for empty list. Keyframe data is: time and keyframe object.</param>
+        void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes);
     }
 }

@@ -254,6 +254,16 @@ namespace FlaxEngine
             return string.Concat(graphemes);
         }
 
+        /// <summary>
+        /// Removes any new line characters (\r or \n) from the string.
+        /// </summary>
+        /// <param name="s">The string to process.</param>
+        /// <returns>The single-line string.</returns>
+        public static string RemoveNewLine(this string s)
+        {
+            return s.Replace("\n", "").Replace("\r", "");
+        }
+
         private static readonly Regex IncNameRegex1 = new Regex("(\\d+)$");
         private static readonly Regex IncNameRegex2 = new Regex("\\((\\d+)\\)$");
 

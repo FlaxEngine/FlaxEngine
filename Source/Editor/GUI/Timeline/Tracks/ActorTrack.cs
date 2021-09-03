@@ -65,9 +65,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             set => ActorID = value?.ID ?? Guid.Empty;
         }
 
-        /// <inheritdoc />
-        public ActorTrack(ref TrackCreateOptions options)
-        : base(ref options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ActorTrack"/> class.
+        /// </summary>
+        /// <param name="options">The track initial options.</param>
+        /// <param name="useProxyKeyframes">True if show sub-tracks keyframes as a proxy on this track, otherwise false.</param>
+        public ActorTrack(ref TrackCreateOptions options, bool useProxyKeyframes = true)
+        : base(ref options, useProxyKeyframes)
         {
             // Select Actor button
             const float buttonSize = 18;

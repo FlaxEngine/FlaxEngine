@@ -615,9 +615,9 @@ namespace FlaxEditor.GUI
             {
                 GetKeyframe(selectedIndices[i], out var time, out var value, out var tangentIn, out var tangentOut);
                 data.AppendLine((time + offset).ToString(CultureInfo.InvariantCulture));
-                data.AppendLine(JsonSerializer.Serialize(value).Replace(Environment.NewLine, ""));
-                data.AppendLine(JsonSerializer.Serialize(tangentIn).Replace(Environment.NewLine, ""));
-                data.AppendLine(JsonSerializer.Serialize(tangentOut).Replace(Environment.NewLine, ""));
+                data.AppendLine(JsonSerializer.Serialize(value).RemoveNewLine());
+                data.AppendLine(JsonSerializer.Serialize(tangentIn).RemoveNewLine());
+                data.AppendLine(JsonSerializer.Serialize(tangentOut).RemoveNewLine());
             }
         }
 

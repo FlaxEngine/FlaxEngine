@@ -13,7 +13,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object member (managed object).
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    public abstract class MemberTrack : Track
+    public abstract class MemberTrack : ConductorTrack
     {
         private float _previewValueLeft;
 
@@ -112,8 +112,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <param name="options">The track initial options.</param>
         /// <param name="useNavigationButtons">True if show keyframe navigation buttons, otherwise false.</param>
         /// <param name="useValuePreview">True if show current value preview, otherwise false.</param>
-        protected MemberTrack(ref TrackCreateOptions options, bool useNavigationButtons = true, bool useValuePreview = true)
-        : base(ref options)
+        /// <param name="useProxyKeyframes">True if show sub-tracks keyframes as a proxy on this track, otherwise false.</param>
+        protected MemberTrack(ref TrackCreateOptions options, bool useNavigationButtons = true, bool useValuePreview = true, bool useProxyKeyframes = false)
+        : base(ref options, useProxyKeyframes)
         {
             var uiLeft = _muteCheckbox.Offsets.Left;
 

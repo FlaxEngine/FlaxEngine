@@ -378,6 +378,12 @@ namespace FlaxEngine
             {
                 return Time > other.Time ? 1 : 0;
             }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Value?.ToString() ?? string.Empty;
+            }
         }
 
         /// <summary>
@@ -654,6 +660,12 @@ namespace FlaxEngine
             public int CompareTo(Keyframe other)
             {
                 return Time > other.Time ? 1 : 0;
+            }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Value?.ToString() ?? string.Empty;
             }
         }
 

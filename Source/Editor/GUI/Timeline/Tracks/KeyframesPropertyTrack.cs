@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -55,7 +56,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var keyframes = new KeyframesEditor.Keyframe[keyframesCount];
             var dataBuffer = new byte[e.ValueSize];
-            var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName).Type;
+            var propertyType = Scripting.TypeUtils.GetManagedType(e.MemberTypeName);
             if (propertyType == null)
             {
                 e.Keyframes.ResetKeyframes();
@@ -250,10 +251,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Keyframes == null || Timeline == null)
                 return;
+            bool wasVisible = Keyframes.Visible;
             Keyframes.Visible = Visible;
             if (!Visible)
             {
-                Keyframes.ClearSelection();
+                if (wasVisible)
+                    Keyframes.ClearSelection();
                 return;
             }
             Keyframes.KeyframesEditorContext = Timeline;
@@ -393,51 +396,63 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesDeselect(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesSelection(editor, control, selection);
         }
 
         /// <inheritdoc />
-        public int OnKeyframesSelectionCount()
+        public new int OnKeyframesSelectionCount()
         {
             return Keyframes != null && Keyframes.Visible ? Keyframes.OnKeyframesSelectionCount() : 0;
         }
 
         /// <inheritdoc />
-        public void OnKeyframesDelete(IKeyframesEditor editor)
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesDelete(editor);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesMove(editor, control, location, start, end);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesCopy(editor, timeOffset, data);
         }
 
         /// <inheritdoc />
-        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
         {
             if (Keyframes != null && Keyframes.Visible)
                 Keyframes.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Keyframes?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Keyframes?.OnKeyframesSet(keyframes);
         }
     }
 }

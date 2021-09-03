@@ -1327,6 +1327,34 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void OnKeyframesGet(string trackName, Action<string, float, object> get)
+        {
+            for (int i = 0; i < _keyframes.Count; i++)
+            {
+                var k = _keyframes[i];
+                get(trackName, k.Time, k);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            OnEditingStart();
+            _keyframes.Clear();
+            if (keyframes != null)
+            {
+                foreach (var e in keyframes)
+                {
+                    var k = (LinearCurve<T>.Keyframe)e.Value;
+                    _keyframes.Add(new LinearCurve<T>.Keyframe(e.Key, k.Value));
+                }
+            }
+            OnKeyframesChanged();
+            OnEdited();
+            OnEditingEnd();
+        }
+
+        /// <inheritdoc />
         public override int KeyframesCount => _keyframes.Count;
 
         /// <inheritdoc />
@@ -2017,6 +2045,34 @@ namespace FlaxEditor.GUI
         {
             var k = _keyframes[index];
             return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesGet(string trackName, Action<string, float, object> get)
+        {
+            for (int i = 0; i < _keyframes.Count; i++)
+            {
+                var k = _keyframes[i];
+                get(trackName, k.Time, k);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            OnEditingStart();
+            _keyframes.Clear();
+            if (keyframes != null)
+            {
+                foreach (var e in keyframes)
+                {
+                    var k = (BezierCurve<T>.Keyframe)e.Value;
+                    _keyframes.Add(new BezierCurve<T>.Keyframe(e.Key, k.Value, k.TangentIn, k.TangentOut));
+                }
+            }
+            OnKeyframesChanged();
+            OnEdited();
+            OnEditingEnd();
         }
 
         /// <inheritdoc />
