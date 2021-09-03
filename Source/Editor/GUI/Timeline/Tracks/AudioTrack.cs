@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Utilities;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -120,7 +121,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (AudioTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<AudioClip>(id);
             var m = e.TrackMedia;
             m.StartFrame = stream.ReadInt32();
@@ -391,7 +392,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 var time = (Timeline.CurrentFrame - _audioMedia.StartFrame) / Timeline.FramesPerSecond;
                 Curve.Evaluate(out var value, time, false);
-                Clipboard.Text = Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
+                Clipboard.Text = FlaxEngine.Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
             }).LinkTooltip("Copies the current track value to the clipboard").Enabled = Timeline.ShowPreviewValues;
         }
 
@@ -470,7 +471,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var time = (Timeline.CurrentFrame - _audioMedia.StartFrame) / Timeline.FramesPerSecond;
             Curve.Evaluate(out var value, time, false);
-            _previewValue.Text = Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
+            _previewValue.Text = FlaxEngine.Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
         }
 
         private void UpdateCurve()
@@ -522,7 +523,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private void OnCurveEditingEnd()
         {
             var after = EditTrackAction.CaptureData(this);
-            if (!Utils.ArraysEqual(_curveEditingStartData, after))
+            if (!FlaxEngine.Utils.ArraysEqual(_curveEditingStartData, after))
                 Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
             _curveEditingStartData = null;
         }

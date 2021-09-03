@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -65,7 +66,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (PostProcessMaterialTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<MaterialBase>(id);
             var m = e.TrackMedia;
             m.StartFrame = stream.ReadInt32();

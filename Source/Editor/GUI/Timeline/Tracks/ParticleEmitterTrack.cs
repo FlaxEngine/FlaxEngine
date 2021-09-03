@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -66,7 +67,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (ParticleEmitterTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<ParticleEmitter>(id);
             stream.ReadInt32(); // Skip emitterIndex
             var m = e.TrackMedia;
