@@ -845,7 +845,7 @@ void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Vector4& value)
 
 void GPUContextVulkan::ResetRenderTarget()
 {
-    if (_rtDepth != nullptr || _rtCount != 0 || _rtDepth)
+    if (_rtDepth || _rtCount != 0)
     {
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
@@ -999,12 +999,9 @@ void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
 
 void GPUContextVulkan::BindSampler(int32 slot, GPUSampler* sampler)
 {
-    ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    ASSERT(slot >= GPU_STATIC_SAMPLERS_COUNT && slot < GPU_MAX_SAMPLER_BINDED);
     const auto handle = sampler ? ((GPUSamplerVulkan*)sampler)->Sampler : nullptr;
-    if (_samplerHandles[slot] != handle)
-    {
-        _samplerHandles[slot] = handle;
-    }
+    _samplerHandles[slot] = handle;
 }
 
 void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)

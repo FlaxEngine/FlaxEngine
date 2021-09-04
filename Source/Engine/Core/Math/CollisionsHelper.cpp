@@ -1221,61 +1221,54 @@ ContainmentType CollisionsHelper::SphereContainsBox(const BoundingSphere& sphere
     if (!BoxIntersectsSphere(box, sphere))
         return ContainmentType::Disjoint;
 
-    const float radiussquared = sphere.Radius * sphere.Radius;
+    const float radiusSquared = sphere.Radius * sphere.Radius;
+
     vector.X = sphere.Center.X - box.Minimum.X;
     vector.Y = sphere.Center.Y - box.Maximum.Y;
     vector.Z = sphere.Center.Z - box.Maximum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Maximum.X;
     vector.Y = sphere.Center.Y - box.Maximum.Y;
     vector.Z = sphere.Center.Z - box.Maximum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Maximum.X;
     vector.Y = sphere.Center.Y - box.Minimum.Y;
     vector.Z = sphere.Center.Z - box.Maximum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Minimum.X;
     vector.Y = sphere.Center.Y - box.Minimum.Y;
     vector.Z = sphere.Center.Z - box.Maximum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Minimum.X;
     vector.Y = sphere.Center.Y - box.Maximum.Y;
     vector.Z = sphere.Center.Z - box.Minimum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Maximum.X;
     vector.Y = sphere.Center.Y - box.Maximum.Y;
     vector.Z = sphere.Center.Z - box.Minimum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Maximum.X;
     vector.Y = sphere.Center.Y - box.Minimum.Y;
     vector.Z = sphere.Center.Z - box.Minimum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     vector.X = sphere.Center.X - box.Minimum.X;
     vector.Y = sphere.Center.Y - box.Minimum.Y;
     vector.Z = sphere.Center.Z - box.Minimum.Z;
-
-    if (vector.LengthSquared() > radiussquared)
+    if (vector.LengthSquared() > radiusSquared)
         return ContainmentType::Intersects;
 
     return ContainmentType::Contains;

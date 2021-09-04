@@ -446,7 +446,6 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.VertexColors && info.VertexColors[_lodIndex])
     {
-        drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         // TODO: cache vertexOffset within the model LOD per-mesh
         uint32 vertexOffset = 0;
         for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)

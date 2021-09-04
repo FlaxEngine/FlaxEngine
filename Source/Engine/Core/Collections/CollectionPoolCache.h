@@ -61,6 +61,17 @@ public:
 
         T* Value;
 
+        ScopeCache() = delete;
+        ScopeCache(const ScopeCache& other) = delete;
+        ScopeCache& operator=(const ScopeCache& other) = delete;
+        ScopeCache& operator=(ScopeCache&& other) noexcept = delete;
+
+        ScopeCache(ScopeCache&& other) noexcept
+        {
+            Value = other.Value;
+            other.Value = nullptr;
+        }
+
         ~ScopeCache()
         {
             _pool->Release(Value);

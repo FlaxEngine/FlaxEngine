@@ -61,7 +61,7 @@ public:
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
-        return _asset == resource || (_asset && _asset == resource);
+        return _asset == resource;
     }
 
 protected:

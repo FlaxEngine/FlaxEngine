@@ -154,7 +154,6 @@ bool RenderBuffers::Init(int32 width, int32 height)
     _aspectRatio = static_cast<float>(width) / height;
     _viewport = Viewport(0, 0, static_cast<float>(width), static_cast<float>(height));
     LastEyeAdaptationTime = 0;
-    LastEyeAdaptationTime = 0;
 
     return result;
 }

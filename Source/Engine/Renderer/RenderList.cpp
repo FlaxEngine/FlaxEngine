@@ -636,7 +636,7 @@ DRAW:
             auto& drawCall = DrawCalls[list.Indices[batch.StartIndex]];
 
             int32 vbCount = 0;
-            while (drawCall.Geometry.VertexBuffers[vbCount] && vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers))
+            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
             {
                 vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
                 vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
@@ -687,7 +687,7 @@ DRAW:
             auto& drawCall = batch.DrawCall;
 
             int32 vbCount = 0;
-            while (drawCall.Geometry.VertexBuffers[vbCount] && vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers))
+            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
             {
                 vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
                 vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];

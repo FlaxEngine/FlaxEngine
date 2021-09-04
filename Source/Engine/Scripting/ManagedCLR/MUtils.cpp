@@ -175,8 +175,6 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
         return VariantType(VariantType::Float);
     if (klass == mono_get_double_class() || monoType->type == MONO_TYPE_R8)
         return VariantType(VariantType::Double);
-    if (klass == mono_get_double_class() || monoType->type == MONO_TYPE_BOOLEAN)
-        return VariantType(VariantType::Double);
     if (klass == mono_get_string_class() || monoType->type == MONO_TYPE_STRING)
         return VariantType(VariantType::String);
     if (klass == mono_get_intptr_class() || klass == mono_get_uintptr_class() || monoType->type == MONO_TYPE_PTR)

@@ -131,11 +131,7 @@ Asset::LoadResult SceneAnimation::load()
             auto& track = Tracks[i];
 
             track.Type = (Track::Types)stream.ReadByte();
-            // [Deprecated on 13.07.2019 expires on 13.11.2019]
-            if (version == 6184 || version == 6183)
-                track.Flag = Track::Flags::None;
-            else
-                track.Flag = (Track::Flags)stream.ReadByte();
+            track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
             stream.ReadString(&track.Name, -13);

@@ -147,7 +147,6 @@ namespace FlaxEngine
         {
             bool isRooted = (path.Length >= 2 && char.IsLetterOrDigit(path[0]) && path[1] == ':') ||
                             path.StartsWith("\\\\") ||
-                            path.StartsWith("/") ||
                             path.StartsWith("\\") ||
                             path.StartsWith("/");
             return !isRooted;

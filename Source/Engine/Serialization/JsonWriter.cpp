@@ -417,10 +417,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
         }
         else
         {
-            if (prefab)
-                LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
-            else
-                LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
+            LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
         }
     }
 

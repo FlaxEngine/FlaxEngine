@@ -730,7 +730,7 @@ void GPUContextDX12::ClearUA(GPUBuffer* buf, const Vector4& value)
 
 void GPUContextDX12::ResetRenderTarget()
 {
-    if (_rtDepth != nullptr || _rtCount != 0 || _rtDepth)
+    if (_rtDepth || _rtCount != 0)
     {
         _rtDirtyFlag = false;
         _psDirtyFlag = true;

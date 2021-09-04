@@ -113,7 +113,8 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     // Check if already prepared for this frame
     if (renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount)
     {
-        fog->GetVolumetricFogOptions(options);
+        if (fog)
+            fog->GetVolumetricFogOptions(options);
         return false;
     }
 

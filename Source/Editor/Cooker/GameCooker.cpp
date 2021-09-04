@@ -61,8 +61,8 @@ namespace GameCookerImpl
     MMethod* Internal_OnProgress = nullptr;
     MMethod* Internal_OnCollectAssets = nullptr;
 
-    bool IsRunning = false;
-    bool IsThreadRunning = false;
+    volatile bool IsRunning = false;
+    volatile bool IsThreadRunning = false;
     int64 CancelFlag = 0;
     int64 CancelThreadFlag = 0;
     ConditionVariable ThreadCond;

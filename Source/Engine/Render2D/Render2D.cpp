@@ -1941,7 +1941,8 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Span<Color>& colors)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    CHECK(vertices.Length() == uvs.Length() == colors.Length())
+    CHECK(vertices.Length() == uvs.Length());
+    CHECK(vertices.Length() == colors.Length());
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;

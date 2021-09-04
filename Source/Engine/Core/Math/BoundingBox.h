@@ -123,7 +123,7 @@ public:
     /// Sets the size of the box.
     /// </summary>
     /// <param name="value">The box size to set.</param>
-    void SetSize(const Vector3 value)
+    void SetSize(const Vector3& value)
     {
         Vector3 center;
         GetCenter(center);

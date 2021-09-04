@@ -180,7 +180,7 @@ void GPUContextDX11::ClearUA(GPUBuffer* buf, const Vector4& value)
 
 void GPUContextDX11::ResetRenderTarget()
 {
-    if (_rtCount > 0 || _uaOutput || _rtDepth)
+    if (_rtCount != 0 || _uaOutput || _rtDepth)
     {
         _omDirtyFlag = true;
         _rtCount = 0;

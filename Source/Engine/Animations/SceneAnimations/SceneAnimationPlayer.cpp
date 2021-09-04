@@ -267,13 +267,8 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
         switch (track.Type)
         {
         case SceneAnimation::Track::Types::Actor:
-        case SceneAnimation::Track::Types::CameraCut:
-        {
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            state.ManagedObject = state.Object ? state.Object.GetOrCreateManagedInstance() : nullptr;
-            break;
-        }
         case SceneAnimation::Track::Types::Script:
+        case SceneAnimation::Track::Types::CameraCut:
         {
             auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
             state.ManagedObject = state.Object ? state.Object.GetOrCreateManagedInstance() : nullptr;

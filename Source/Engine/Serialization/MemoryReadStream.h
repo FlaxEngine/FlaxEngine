@@ -78,7 +78,6 @@ public:
     /// <returns>The pointer to the data in memory.</returns>
     void* Read(uint32 bytes)
     {
-        ASSERT(bytes >= 0);
         ASSERT(GetLength() - GetPosition() >= bytes);
         const auto result = (void*)_position;
         _position += bytes;

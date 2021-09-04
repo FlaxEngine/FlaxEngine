@@ -31,9 +31,9 @@ void ParticleEffectParameter::Init(ParticleEffect* effect, int32 emitterIndex, i
 bool ParticleEffectParameter::IsValid() const
 {
     return _effect->ParticleSystem &&
+            _effect->Instance.Emitters.Count() > _emitterIndex &&
             _effect->ParticleSystem->Emitters[_emitterIndex] &&
-            _effect->ParticleSystem->Emitters[_emitterIndex]->Graph.Parameters.Count() > _paramIndex &&
-            _effect->Instance.Emitters.Count() > _emitterIndex;
+            _effect->ParticleSystem->Emitters[_emitterIndex]->Graph.Parameters.Count() > _paramIndex;
 }
 
 ParticleEmitter* ParticleEffectParameter::GetEmitter() const

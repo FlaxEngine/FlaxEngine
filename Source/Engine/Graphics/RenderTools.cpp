@@ -489,8 +489,7 @@ int32 MipLevelsCount(int32 width, bool useMipLevels)
     int32 result = 1;
     while (width > 1)
     {
-        if (width > 1)
-            width >>= 1;
+        width >>= 1;
         result++;
     }
 

@@ -102,7 +102,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     UnscaledTime = tickData.UnscaledTime.GetTotalSeconds();
 
 #if USE_EDITOR
-    // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn;'t crash on highly multi-threaded code
+    // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn't crash on highly multi-threaded code
     if (Animations::DebugFlow.IsBinded())
         Animations::DebugFlow(nullptr, nullptr, 0, 0);
 #endif

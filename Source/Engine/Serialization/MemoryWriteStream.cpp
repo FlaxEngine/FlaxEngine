@@ -131,8 +131,6 @@ void MemoryWriteStream::SetPosition(uint32 seek)
 
 void MemoryWriteStream::WriteBytes(const void* data, uint32 bytes)
 {
-    ASSERT(bytes >= 0);
-
     // Calculate current position
     const uint32 position = GetPosition();
 
