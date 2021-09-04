@@ -415,7 +415,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     }
 
     // Calculate memory usage
-    _memoryUsage = CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
 
     return false;
 }

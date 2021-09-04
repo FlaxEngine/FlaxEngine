@@ -561,7 +561,7 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
 
 uint64 GPUTexture::calculateMemoryUsage() const
 {
-    return CalculateTextureMemoryUsage(Format(), Width(), Height(), Depth(), MipLevels()) * ArraySize();
+    return RenderTools::CalculateTextureMemoryUsage(Format(), Width(), Height(), Depth(), MipLevels()) * ArraySize();
 }
 
 String GPUTexture::ToString() const

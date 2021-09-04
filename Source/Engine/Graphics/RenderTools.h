@@ -18,7 +18,7 @@ PACK_STRUCT(struct QuadShaderData
 /// <summary>
 /// Set of utilities for rendering.
 /// </summary>
-API_CLASS(Static) class RenderTools
+API_CLASS(Static) class FLAXENGINE_API RenderTools
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTools);
 public:
@@ -56,6 +56,8 @@ public:
 public:
 
     static void UpdateModelLODTransition(byte& lodTransition);
+    static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels);
+    static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels);
 
     /// <summary>
     /// Computes the bounds screen radius squared.
@@ -109,23 +111,6 @@ public:
         return ((uint32)(-(int32)(distanceI >> 31)) | 0x80000000) ^ distanceI;
     }
 };
-
-// Get texture memory usage
-// @param format Surface pixels format type
-// @param width Width in pixels
-// @param height Height in pixels
-// @param mipLevels Amount of mip levels
-// @returns Memory usage in bytes
-extern uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels);
-
-// Get texture memory usage
-// @param format Surface pixels format type
-// @param width Width in pixels
-// @param height Height in pixels
-// @param depth Depth in pixels
-// @param mipLevels Amount of mip levels
-// @returns Memory usage in bytes
-extern uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels);
 
 // Calculate mip levels count for a texture 1D
 // @param width Most detailed mip width

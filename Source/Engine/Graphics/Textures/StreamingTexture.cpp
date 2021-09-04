@@ -144,7 +144,7 @@ void StreamingTexture::UnloadTexture()
 uint64 StreamingTexture::GetTotalMemoryUsage() const
 {
     const uint64 arraySize = _header.IsCubeMap ? 6 : 1;
-    return CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
+    return RenderTools::CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
 }
 
 String StreamingTexture::ToString() const

@@ -207,8 +207,8 @@ class RenderListAllocation
 {
 public:
 
-    static void* Allocate(uintptr size);
-    static void Free(void* ptr, uintptr size);
+    static FLAXENGINE_API void* Allocate(uintptr size);
+    static FLAXENGINE_API void Free(void* ptr, uintptr size);
 
     template<typename T>
     class Data

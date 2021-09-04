@@ -395,6 +395,35 @@ void RenderTools::UpdateModelLODTransition(byte& lodTransition)
     lodTransition = static_cast<byte>(Math::Min<int32>(newProgress, 255));
 }
 
+uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels)
+{
+    uint64 result = 0;
+
+    if (mipLevels == 0)
+        mipLevels = 69;
+
+    uint32 rowPitch, slicePitch;
+    while (mipLevels > 0 && (width >= 1 || height >= 1))
+    {
+        ComputePitch(format, width, height, rowPitch, slicePitch);
+        result += slicePitch;
+
+        if (width > 1)
+            width >>= 1;
+        if (height > 1)
+            height >>= 1;
+
+        mipLevels--;
+    }
+
+    return result;
+}
+
+uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels)
+{
+    return CalculateTextureMemoryUsage(format, width, height, mipLevels) * depth;
+}
+
 float RenderTools::ComputeBoundsScreenRadiusSquared(const Vector3& origin, float radius, const Vector3& viewOrigin, const Matrix& projectionMatrix)
 {
     const float screenMultiple = 0.5f * Math::Max(projectionMatrix.Values[0][0], projectionMatrix.Values[1][1]);
@@ -450,35 +479,6 @@ int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Vecto
     }
 
     return 0;
-}
-
-uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels)
-{
-    uint64 result = 0;
-
-    if (mipLevels == 0)
-        mipLevels = 69;
-
-    uint32 rowPitch, slicePitch;
-    while (mipLevels > 0 && (width >= 1 || height >= 1))
-    {
-        RenderTools::ComputePitch(format, width, height, rowPitch, slicePitch);
-        result += slicePitch;
-
-        if (width > 1)
-            width >>= 1;
-        if (height > 1)
-            height >>= 1;
-
-        mipLevels--;
-    }
-
-    return result;
-}
-
-uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels)
-{
-    return CalculateTextureMemoryUsage(format, width, height, mipLevels) * depth;
 }
 
 int32 MipLevelsCount(int32 width, bool useMipLevels)

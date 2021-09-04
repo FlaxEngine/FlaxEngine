@@ -36,7 +36,7 @@ bool PreviewsCache::FlushTask::Run()
         return true;
     }
     auto mipData = _data.GetData(0, 0);
-    ASSERT(mipData->DepthPitch == CalculateTextureMemoryUsage(_cache->GetTexture()->Format(), _cache->Width(), _cache->Height(), 1));
+    ASSERT(mipData->DepthPitch == RenderTools::CalculateTextureMemoryUsage(_cache->GetTexture()->Format(), _cache->Width(), _cache->Height(), 1));
 
     ScopeLock lock(_cache->Locker);
 
@@ -250,7 +250,7 @@ CreateAssetResult PreviewsCache::create(CreateAssetContext& context)
     context.Data.CustomData.Copy(&textureHeader);
 
     // Create blank image (chunk 0)
-    uint64 imageSize = CalculateTextureMemoryUsage(ASSETS_ICONS_ATLAS_FORMAT, ASSETS_ICONS_ATLAS_SIZE, ASSETS_ICONS_ATLAS_SIZE, 1);
+    uint64 imageSize = RenderTools::CalculateTextureMemoryUsage(ASSETS_ICONS_ATLAS_FORMAT, ASSETS_ICONS_ATLAS_SIZE, ASSETS_ICONS_ATLAS_SIZE, 1);
     ASSERT(imageSize <= MAX_int32);
     if (context.AllocateChunk(0))
         return CreateAssetResult::CannotAllocateChunk;

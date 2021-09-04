@@ -52,7 +52,7 @@ public:
     /// </summary>
     /// <param name="index">Lightmap index</param>
     /// <returns>Lightmap or null if missing or not ready</returns>
-    Lightmap* GetReadyLightmap(int32 index);
+    FLAXENGINE_API Lightmap* GetReadyLightmap(int32 index);
 
     /// <summary>
     /// Gets lightmaps array
