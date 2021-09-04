@@ -95,7 +95,7 @@ void SMAA::Dispose()
 void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX));
+    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
 
     // Ensure to have valid data
     if (checkIfSkipPass())
