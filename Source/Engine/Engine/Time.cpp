@@ -103,7 +103,10 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
         }
 
         if (targetFps > ZeroTolerance)
-            NextBegin += (1.0 / targetFps);
+        {
+            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            NextBegin += (1.0 / targetFps) * skip;
+        }
     }
 
     // Update data
@@ -156,7 +159,10 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
         }
 
         if (targetFps > ZeroTolerance)
-            NextBegin += (1.0 / targetFps);
+        {
+            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            NextBegin += (1.0 / targetFps) * skip;
+        }
     }
     Samples.Add(deltaTime);
 
