@@ -24,6 +24,11 @@ namespace FlaxEngine.GUI
         protected bool _autoSize = true;
 
         /// <summary>
+        /// Flag whether or not it should control childs size
+        /// </summary>
+        protected bool _controlChildSize = false;
+
+        /// <summary>
         /// The control offset.
         /// </summary>
         protected Vector2 _offset;
@@ -142,6 +147,27 @@ namespace FlaxEngine.GUI
                 if (_autoSize != value)
                 {
                     _autoSize = value;
+                    if (value == true)
+                        ControlChildSize = false;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether this panel should control his imidiet children.
+        /// </summary>
+        [EditorOrder(40), Tooltip("Whether this panel should control his imidiet children")]
+        public bool ControlChildSize
+        {
+            get => _controlChildSize;
+            set
+            {
+                if (_controlChildSize != value)
+                {
+                    _controlChildSize = value;
+                    if (value == true)
+                        AutoSize = false;
                     PerformLayout();
                 }
             }
@@ -150,7 +176,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the panel area margin.
         /// </summary>
-        [EditorOrder(40), Tooltip("The panel area margin.")]
+        [EditorOrder(50), Tooltip("The panel area margin.")]
         public Margin Margin
         {
             get => _margin;
