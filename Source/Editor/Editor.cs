@@ -281,7 +281,11 @@ namespace FlaxEditor
             _startupSceneCmdLine = startupScene;
             Log("Editor init");
             if (isHeadless)
+            {
+                _modules.Remove(Windows);
+                _modules.Remove(UI);
                 Log("Running in headless mode");
+            }
 
             // Note: we don't sort modules before Init (optimized)
             _modules.Sort((a, b) => a.InitOrder - b.InitOrder);
@@ -352,9 +356,9 @@ namespace FlaxEditor
 
             // Close splash and show main window
             CloseSplashScreen();
-            Assert.IsNotNull(Windows.MainWindow);
             if (!IsHeadlessMode)
             {
+                Assert.IsNotNull(Windows.MainWindow);
                 Windows.MainWindow.Show();
                 Windows.MainWindow.Focus();
             }
@@ -391,6 +395,7 @@ namespace FlaxEditor
                     Scene.OpenScene(defaultSceneId);
 
                     // Use spawn point
+                    if(!IsHeadlessMode)
                     Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
                 }
                 break;
@@ -406,7 +411,7 @@ namespace FlaxEditor
                         Scene.OpenScene(lastSceneId);
 
                         // Restore view
-                        if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
+                        if (!IsHeadlessMode && ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
                             Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
                     }
                 }
@@ -530,9 +535,12 @@ namespace FlaxEditor
             // Cache last opened scene
             {
                 var lastSceneId = Level.ScenesCount > 0 ? Level.Scenes[0].ID : Guid.Empty;
-                var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
                 ProjectCache.SetCustomData(ProjectDataLastScene, lastSceneId.ToString());
-                ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
+                if (!IsHeadlessMode)
+                {
+                    var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
+                    ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
+                }
             }
 
             // Cleanup
