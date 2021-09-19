@@ -1215,6 +1215,13 @@ namespace FlaxEditor
 
             if (string.IsNullOrEmpty(targetName))
             {
+                if (IsHeadlessMode)
+                {
+                    foreach (var target in preset.Targets)
+                        GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines, preset.Name, target.Name);
+                    GameCooker.Event += OnGameCookerBuild;
+                    return false;
+                }
                 Windows.GameCookerWin.BuildAll(preset);
             }
             else
@@ -1225,12 +1232,28 @@ namespace FlaxEditor
                     Editor.LogWarning("Missing target.");
                     return true;
                 }
-
+                if (IsHeadlessMode)
+                {
+                    GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines, preset.Name, target.Name);
+                    GameCooker.Event += OnGameCookerBuild;
+                    return false;
+                }
                 Windows.GameCookerWin.Build(preset, target);
             }
 
             Windows.GameCookerWin.ExitOnBuildQueueEnd();
             return false;
+        }
+
+        private void OnGameCookerBuild(GameCooker.EventType type)
+        {
+            if (type == GameCooker.EventType.BuildStarted)
+                return;
+            if (GameCooker.IsRunning)
+                return;
+            GameCooker.Event -= OnGameCookerBuild;
+            //If failed exit code will be 1
+            Engine.RequestExit(type == GameCooker.EventType.BuildDone ? 0 : 1);
         }
 
         internal IntPtr GetMainWindowPtr()
