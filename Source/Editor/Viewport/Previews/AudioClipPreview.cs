@@ -85,6 +85,11 @@ namespace FlaxEditor.Viewport.Previews
         public DrawModes DrawMode = DrawModes.Fill;
 
         /// <summary>
+        /// The view offset parameter. Shifts the audio preview (in seconds).
+        /// </summary>
+        public float ViewOffset = 0.0f;
+
+        /// <summary>
         /// The view scale parameter. Increase it to zoom in the audio. Usage depends on the current <see cref="DrawMode"/>.
         /// </summary>
         public float ViewScale = 1.0f;
@@ -156,13 +161,14 @@ namespace FlaxEditor.Viewport.Previews
                 var localRectMax = localRect.BottomRight;
 
                 // Render each clip separately
+                var viewOffset = (uint)(info.SampleRate * info.NumChannels * ViewOffset);
                 for (uint clipIndex = 0; clipIndex < Mathf.CeilToInt(clipsInView); clipIndex++)
                 {
                     var clipStart = clipWidth * clipIndex;
                     var clipEnd = clipStart + clipWidth;
                     var xStart = Mathf.Max(clipStart, localRectMin.X);
                     var xEnd = Mathf.Min(Mathf.Min(width, clipEnd), localRectMax.X);
-                    var samplesOffset = (uint)((xStart - clipStart) * samplesPerIndex);
+                    var samplesOffset = (uint)((xStart - clipStart) * samplesPerIndex) + viewOffset;
 
                     // Render every audio channel separately
                     for (uint channelIndex = 0; channelIndex < info.NumChannels; channelIndex++)
@@ -197,18 +203,26 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            lock (_locker)
+            {
+                _asset = null;
+                _pcmData = null;
+            }
+
+            base.OnDestroy();
+        }
+
         /// <summary>
         /// Downloads the audio clip raw PCM data. Use it from async thread to prevent blocking,
         /// </summary>
         private void DownloadData()
         {
             var asset = _asset;
-
             if (!asset)
-            {
-                Editor.LogWarning("Failed to get audio clip PCM data. Missing asset.");
                 return;
-            }
 
             float[] data;
             AudioDataInfo dataInfo;
