@@ -11,6 +11,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
     [CustomEditor(typeof(EnvironmentProbe)), DefaultEditor]
     public class EnvironmentProbeEditor : ActorEditor
     {
+        private FlaxEngine.GUI.Button _bake;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -18,10 +20,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             if (Values.HasDifferentTypes == false)
             {
-                // Add 'Bake' button
                 layout.Space(10);
-                var button = layout.Button("Bake");
-                button.Button.Clicked += BakeButtonClicked;
+                _bake = layout.Button("Bake").Button;
+                _bake.Clicked += BakeButtonClicked;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            if (_bake != null)
+            {
+                _bake.Enabled = Values.Count != 0 && Values[0] is EnvironmentProbe probe && !probe.IsUsingCustomProbe;
             }
         }
 
@@ -29,7 +41,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             for (int i = 0; i < Values.Count; i++)
             {
-                if (Values[i] is EnvironmentProbe envProbe)
+                if (Values[i] is EnvironmentProbe envProbe && !envProbe.IsUsingCustomProbe)
                 {
                     envProbe.Bake();
                     Editor.Instance.Scene.MarkSceneEdited(envProbe.Scene);

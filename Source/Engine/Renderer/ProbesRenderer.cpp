@@ -151,7 +151,8 @@ Delegate<const ProbesRenderer::Entry&> ProbesRenderer::OnFinishBake;
 
 void ProbesRenderer::Bake(EnvironmentProbe* probe, float timeout)
 {
-    ASSERT(probe && dynamic_cast<EnvironmentProbe*>(probe));
+    if (!probe || probe->IsUsingCustomProbe())
+        return;
 
     // Check if already registered for bake
     for (int32 i = 0; i < _probesToBake.Count(); i++)
