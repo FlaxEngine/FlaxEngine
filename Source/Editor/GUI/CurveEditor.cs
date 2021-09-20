@@ -1407,13 +1407,14 @@ namespace FlaxEditor.GUI
             }
 
             // Adjust contents bounds to fill the curve area
-            if (EnablePanning != UseMode.Off)
+            if (EnablePanning != UseMode.Off || !ShowCollapsed)
             {
                 bounds.Width = Mathf.Max(bounds.Width, 1.0f);
                 bounds.Height = Mathf.Max(bounds.Height, 1.0f);
                 bounds.Location = ApplyUseModeMask(EnablePanning, bounds.Location, _contents.Location);
                 bounds.Size = ApplyUseModeMask(EnablePanning, bounds.Size, _contents.Size);
-                _contents.Bounds = bounds;
+                if (!_contents._isMovingSelection)
+                    _contents.Bounds = bounds;
             }
             else if (_contents.Bounds == Rectangle.Empty)
             {
@@ -2124,7 +2125,7 @@ namespace FlaxEditor.GUI
             }
 
             // Adjust contents bounds to fill the curve area
-            if (EnablePanning != UseMode.Off)
+            if (EnablePanning != UseMode.Off || !ShowCollapsed)
             {
                 bounds.Width = Mathf.Max(bounds.Width, 1.0f);
                 bounds.Height = Mathf.Max(bounds.Height, 1.0f);

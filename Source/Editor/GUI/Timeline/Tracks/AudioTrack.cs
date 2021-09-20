@@ -307,6 +307,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 ScrollBars = ScrollBars.None,
                 DefaultValue = 1.0f,
                 ShowStartEndLines = true,
+                ShowBackground = false,
             };
             Curve.Edited += OnCurveEdited;
             Curve.EditingStart += OnCurveEditingStart;
@@ -489,13 +490,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.KeyframesEditorContext = Timeline;
             Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(_audioMedia.X, Y + 1.0f, _audioMedia.Width, Height - 2.0f);
-
             var expanded = IsExpanded;
             if (expanded)
             {
-                //Curve.ViewScale = new Vector2(1.0f, CurveEditor<float>.UnitsPerSecond / Curve.Height);
-                Curve.ViewScale = new Vector2(Timeline.Zoom, 0.4f);
-                Curve.ViewOffset = new Vector2(0.0f, 30.0f);
+                Curve.ViewScale = new Vector2(Timeline.Zoom, 0.7f);
+                Curve.ViewOffset = new Vector2(0.0f, 35.0f);
             }
             else
             {
@@ -503,9 +502,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Curve.ViewOffset = Vector2.Zero;
             }
             Curve.ShowCollapsed = !expanded;
-            Curve.ShowBackground = expanded;
             Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
-            Curve.Visible = Visible;
             Curve.UpdateKeyframes();
         }
 
