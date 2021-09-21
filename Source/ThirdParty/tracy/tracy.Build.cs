@@ -10,6 +10,11 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class tracy : ThirdPartyModule
 {
+    /// <summary>
+    /// Enables on-demand profiling.
+    /// </summary>
+    public static bool OnDemand = true;
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -37,6 +42,10 @@ public class tracy : ThirdPartyModule
         {
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
             options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
+        }
+        if (OnDemand)
+        {
+            options.PublicDefinitions.Add("TRACY_ON_DEMAND");
         }
     }
 
