@@ -36,6 +36,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public PostProcessMaterialMedia()
         {
             CanSplit = true;
+            CanDelete = true;
         }
 
         /// <inheritdoc />

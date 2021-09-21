@@ -88,6 +88,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public AudioMedia()
         {
             CanSplit = true;
+            CanDelete = true;
             Preview = new AudioClipPreview
             {
                 AnchorPreset = AnchorPresets.StretchAll,

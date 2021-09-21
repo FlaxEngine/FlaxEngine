@@ -186,6 +186,11 @@ namespace FlaxEditor.GUI.Timeline
         public bool CanSplit;
 
         /// <summary>
+        /// Gets a value indicating whether this media can be removed.
+        /// </summary>
+        public bool CanDelete;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Media"/> class.
         /// </summary>
         protected Media()
@@ -200,6 +205,8 @@ namespace FlaxEditor.GUI.Timeline
         /// <param name="controlUnderMouse">The found control under the mouse cursor.</param>
         public virtual void OnTimelineShowContextMenu(ContextMenu.ContextMenu menu, Control controlUnderMouse)
         {
+            if (CanDelete && Track.Media.Count > Track.MinMediaCount)
+                menu.AddButton("Delete media", Delete);
         }
 
         /// <summary>
@@ -282,6 +289,14 @@ namespace FlaxEditor.GUI.Timeline
             Track?.AddMedia(clone);
             Timeline?.MarkAsEdited();
             return clone;
+        }
+
+        /// <summary>
+        /// Deletes this media.
+        /// </summary>
+        public void Delete()
+        {
+            _timeline.Delete(this);
         }
 
         /// <inheritdoc />

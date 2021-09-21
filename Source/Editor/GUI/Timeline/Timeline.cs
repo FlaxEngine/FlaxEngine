@@ -1451,7 +1451,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Deletes the tracks.
+        /// Deletes the track.
         /// </summary>
         /// <param name="track">The track to delete (and its sub tracks).</param>
         /// <param name="withUndo">True if use undo/redo action for track removing.</param>
@@ -1459,8 +1459,6 @@ namespace FlaxEditor.GUI.Timeline
         {
             if (track == null)
                 throw new ArgumentNullException();
-
-            // Delete tracks
             var tracks = new List<Track>(4);
             GetTracks(track, tracks);
             if (withUndo && Undo != null && Undo.Enabled)
@@ -1495,6 +1493,43 @@ namespace FlaxEditor.GUI.Timeline
             SelectedTracks.Remove(track);
             _tracks.Remove(track);
             track.OnDeleted();
+        }
+
+        /// <summary>
+        /// Deletes the media.
+        /// </summary>
+        /// <param name="media">The media to delete.</param>
+        /// <param name="withUndo">True if use undo/redo action for media removing.</param>
+        public void Delete(Media media, bool withUndo = true)
+        {
+            if (media == null)
+                throw new ArgumentNullException();
+            var track = media.Track;
+            if (track == null)
+                throw new InvalidOperationException();
+            if (withUndo && Undo != null && Undo.Enabled)
+            {
+                var before = EditTrackAction.CaptureData(track);
+                OnDeleteMedia(media);
+                var after = EditTrackAction.CaptureData(track);
+                Undo.AddAction(new EditTrackAction(this, track, before, after));
+            }
+            else
+            {
+                OnDeleteMedia(media);
+            }
+            MarkAsEdited();
+        }
+
+        /// <summary>
+        /// Called to delete media.
+        /// </summary>
+        /// <param name="media">The media.</param>
+        protected virtual void OnDeleteMedia(Media media)
+        {
+            SelectedMedia.Remove(media);
+            media.Track.RemoveMedia(media);
+            media.OnDeleted();
         }
 
         /// <summary>
