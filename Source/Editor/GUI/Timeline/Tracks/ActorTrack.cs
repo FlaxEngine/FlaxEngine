@@ -100,28 +100,15 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnShowAddContextMenu(menu);
 
+            OnSelectActorContextMenu(menu);
+
             var actor = Actor;
-            var selection = Editor.Instance.SceneEditing.Selection;
-
-            // Missing actor case
             if (actor == null)
-            {
-                if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.Actor && IsActorValid(actorNode.Actor))
-                {
-                    menu.AddButton("Select " + actorNode.Actor, OnClickedSelectActor).TooltipText = Utilities.Utils.GetTooltip(actorNode.Actor);
-                }
-                else
-                {
-                    menu.AddButton("No valid actor selected");
-                }
                 return;
-            }
-            else if (selection.Count == 1)
-            {
-                // TODO: add option to change the actor to the selected one
-            }
-
             var type = actor.GetType();
+            menu.AddSeparator();
+
+            // Properties and events
             if (AddProperties(this, menu, type) != 0)
                 menu.AddSeparator();
             if (AddEvents(this, menu, type) != 0)
@@ -144,6 +131,31 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 var name = CustomEditorsUtil.GetPropertyNameUI(script.GetType().Name);
                 menu.AddButton(name, OnAddScriptTrack).Tag = script;
             }
+        }
+
+        /// <inheritdoc />
+        protected override void OnContextMenu(ContextMenu.ContextMenu menu)
+        {
+            base.OnContextMenu(menu);
+
+            menu.AddSeparator();
+            OnSelectActorContextMenu(menu);
+        }
+
+        private void OnSelectActorContextMenu(ContextMenu.ContextMenu menu)
+        {
+            var actor = Actor;
+            var selection = Editor.Instance.SceneEditing.Selection;
+            foreach (var node in selection)
+            {
+                if (node is ActorNode actorNode && IsActorValid(actorNode.Actor) && actorNode.Actor != actor)
+                {
+                    var b = menu.AddButton("Select " + actorNode.Actor, OnClickedSelectActor);
+                    b.Tag = actorNode.Actor;
+                    b.TooltipText = Utilities.Utils.GetTooltip(actorNode.Actor);
+                }
+            }
+            menu.AddButton("Select...", OnClickedSelect).TooltipText = "Opens actor picker dialog to select the target actor for this track";
         }
 
         /// <summary>
@@ -169,7 +181,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <returns>True if it's valid, otherwise false.</returns>
         protected virtual bool IsActorValid(Actor actor)
         {
-            return true;
+            return actor;
+        }
+
+        /// <summary>
+        /// Called when actor gets changed.
+        /// </summary>
+        protected virtual void OnActorChanged()
+        {
         }
 
         private void OnAddScriptTrack(ContextMenuButton button)
@@ -178,16 +197,25 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             AddScriptTrack(script);
         }
 
-        private void OnClickedSelectActor()
+        private void OnClickedSelectActor(ContextMenuButton b)
         {
-            var selection = Editor.Instance.SceneEditing.Selection;
-            if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.Actor && IsActorValid(actorNode.Actor))
-            {
-                var oldName = Name;
-                Rename(actorNode.Actor.Name);
-                using (new TrackUndoBlock(this, new RenameTrackAction(Timeline, this, oldName, Name)))
-                    Actor = actorNode.Actor;
-            }
+            SetActor((Actor)b.Tag);
+        }
+
+        private void SetActor(Actor actor)
+        {
+            if (Actor == actor || !IsActorValid(actor))
+                return;
+            var oldName = Name;
+            Rename(actor.Name);
+            using (new TrackUndoBlock(this, new RenameTrackAction(Timeline, this, oldName, Name)))
+                Actor = actor;
+            OnActorChanged();
+        }
+
+        private void OnClickedSelect()
+        {
+            ActorSearchPopup.Show(this, PointFromScreen(FlaxEngine.Input.MouseScreenPosition), IsActorValid, SetActor);
         }
 
         private void OnClickedSelectActor(Image image, MouseButton button)

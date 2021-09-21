@@ -694,6 +694,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     var m = (CameraCutMedia)e.Media[i];
                     m.StartFrame = stream.ReadInt32();
                     m.DurationFrames = stream.ReadInt32();
+                    m.UpdateThumbnails();
                 }
             }
         }
@@ -827,6 +828,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         protected override bool IsActorValid(Actor actor)
         {
             return base.IsActorValid(actor) && actor is Camera;
+        }
+
+        /// <inheritdoc />
+        protected override void OnActorChanged()
+        {
+            base.OnActorChanged();
+
+            UpdateThumbnails();
         }
 
         /// <inheritdoc />
