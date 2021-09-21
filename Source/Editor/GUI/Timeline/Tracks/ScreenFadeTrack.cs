@@ -81,7 +81,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as ScreenFadeTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((ScreenFadeTrack)track, this) : null;
         }
 
         /// <inheritdoc />

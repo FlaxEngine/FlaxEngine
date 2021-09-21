@@ -540,13 +540,18 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
         {
         case SceneAnimation::Track::Types::PostProcessMaterial:
         {
-            const auto trackData = track.GetData<SceneAnimation::PostProcessMaterialTrack::Data>();
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            const bool isActive = Math::IsInRange(time, startTime, startTime + durationTime);
-            if (isActive && _postFxSettings.PostFxMaterials.Materials.Count() < POST_PROCESS_SETTINGS_MAX_MATERIALS)
+            const auto runtimeData = track.GetRuntimeData<SceneAnimation::PostProcessMaterialTrack::Runtime>();
+            for (int32 k = 0; k < runtimeData->Count; k++)
             {
-                _postFxSettings.PostFxMaterials.Materials.Add(track.Asset.As<MaterialBase>());
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                const bool isActive = Math::IsInRange(time, startTime, startTime + durationTime);
+                if (isActive && _postFxSettings.PostFxMaterials.Materials.Count() < POST_PROCESS_SETTINGS_MAX_MATERIALS)
+                {
+                    _postFxSettings.PostFxMaterials.Materials.Add(track.Asset.As<MaterialBase>());
+                    break;
+                }
             }
             break;
         }
@@ -648,29 +653,40 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             const auto clip = track.Asset.As<AudioClip>();
             if (!clip || !clip->IsLoaded())
                 break;
-            const auto trackData = track.GetData<SceneAnimation::AudioTrack::Data>();
             const auto runtimeData = track.GetRuntimeData<SceneAnimation::AudioTrack::Runtime>();
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            const bool loop = ((int32)track.Flag & (int32)SceneAnimation::Track::Flags::Loop) == (int32)SceneAnimation::Track::Flags::Loop;
-            float mediaTime = time - startTime;
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            auto audioSource = state.Object.As<AudioSource>();
-            if (!audioSource)
+            float mediaTime = -1, mediaDuration, playTime;
+            for (int32 k = 0; k < runtimeData->Count; k++)
             {
-                // Spawn audio source to play the clip
-                audioSource = New<AudioSource>();
-                audioSource->SetStaticFlags(StaticFlags::None);
-                audioSource->HideFlags = HideFlags::FullyHidden;
-                audioSource->Clip = clip;
-                audioSource->SetIsLooping(loop);
-                audioSource->SetParent(this, false, false);
-                _subActors.Add(audioSource);
-                state.Object = audioSource;
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                if (Math::IsInRange(time, startTime, startTime + durationTime))
+                {
+                    mediaTime = time - startTime;
+                    playTime = mediaTime + media.Offset;
+                    mediaDuration = durationTime;
+                    break;
+                }
             }
 
-            if (mediaTime >= 0.0f && mediaTime <= durationTime)
+            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
+            auto audioSource = state.Object.As<AudioSource>();
+            if (mediaTime >= 0.0f && mediaTime <= mediaDuration)
             {
+                const bool loop = ((int32)track.Flag & (int32)SceneAnimation::Track::Flags::Loop) == (int32)SceneAnimation::Track::Flags::Loop;
+                if (!audioSource)
+                {
+                    // Spawn audio source to play the clip
+                    audioSource = New<AudioSource>();
+                    audioSource->SetStaticFlags(StaticFlags::None);
+                    audioSource->HideFlags = HideFlags::FullyHidden;
+                    audioSource->Clip = clip;
+                    audioSource->SetIsLooping(loop);
+                    audioSource->SetParent(this, false, false);
+                    _subActors.Add(audioSource);
+                    state.Object = audioSource;
+                }
+
                 // Sample volume track
                 float volume = 1.0f;
                 if (runtimeData->VolumeTrackIndex != -1)
@@ -680,7 +696,9 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     if (volumeTrackRuntimeData)
                     {
                         SceneAnimation::AudioVolumeTrack::CurveType::KeyFrameData data(volumeTrackRuntimeData->Keyframes, volumeTrackRuntimeData->KeyframesCount);
-                        volumeCurve.Evaluate(data, volume, mediaTime, false);
+                        const auto& firstMedia = runtimeData->Media[0];
+                        auto firstMediaTime = time - firstMedia.StartFrame / fps;
+                        volumeCurve.Evaluate(data, volume, firstMediaTime, false);
                     }
                 }
 
@@ -688,9 +706,9 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 if (loop)
                 {
                     // Loop position
-                    mediaTime = Math::Mod(mediaTime, clipLength);
+                    playTime = Math::Mod(playTime, clipLength);
                 }
-                else if (mediaTime >= clipLength)
+                else if (playTime >= clipLength)
                 {
                     // Stop updating after end
                     break;
@@ -708,19 +726,19 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Synchronize playback position
                 const float maxAudioLag = 0.3f;
                 const auto audioTime = audioSource->GetTime();
-                //LOG(Info, "Audio: {0}, Media : {1}", audioTime, mediaTime);
-                if (Math::Abs(audioTime - mediaTime) > maxAudioLag &&
-                    Math::Abs(audioTime + clipLength - mediaTime) > maxAudioLag &&
-                    Math::Abs(mediaTime + clipLength - audioTime) > maxAudioLag)
+                //LOG(Info, "Audio: {0}, Media : {1}", audioTime, playTime);
+                if (Math::Abs(audioTime - playTime) > maxAudioLag &&
+                    Math::Abs(audioTime + clipLength - playTime) > maxAudioLag &&
+                    Math::Abs(playTime + clipLength - audioTime) > maxAudioLag)
                 {
-                    audioSource->SetTime(mediaTime);
+                    audioSource->SetTime(playTime);
                     //LOG(Info, "Set Time (current audio time: {0})", audioSource->GetTime());
                 }
 
                 // Keep playing
                 audioSource->Play();
             }
-            else
+            else if (audioSource)
             {
                 // End playback
                 audioSource->Stop();
@@ -998,6 +1016,27 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
         }
         case SceneAnimation::Track::Types::CameraCut:
         {
+            // Check if any camera cut media on a track is active
+            bool isActive = false;
+            const auto runtimeData = track.GetRuntimeData<SceneAnimation::CameraCutTrack::Runtime>();
+            for (int32 k = 0; k < runtimeData->Count; k++)
+            {
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                if (Math::IsInRange(time, startTime, startTime + durationTime))
+                {
+                    isActive = true;
+                    break;
+                }
+            }
+            if (!isActive)
+            {
+                // Skip updating child tracks if the current position is outside the media clip range
+                j += track.ChildrenCount;
+                break;
+            }
+
             // Cache actor to animate
             const auto trackData = track.GetData<SceneAnimation::CameraCutTrack::Data>();
             auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
@@ -1017,23 +1056,11 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             }
             state.ManagedObject = state.Object.GetOrCreateManagedInstance();
 
-            // Use camera
-            _isUsingCameraCuts = true;
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            float mediaTime = time - startTime;
-            if (mediaTime >= 0.0f && mediaTime <= durationTime)
+            // Override camera
+            if (_cameraCutCam == nullptr)
             {
-                if (_cameraCutCam == nullptr)
-                {
-                    // Override camera
-                    _cameraCutCam = (Camera*)state.Object.Get();
-                }
-            }
-            else
-            {
-                // Skip updating child tracks if the current position is outside the media clip range
-                j += track.ChildrenCount;
+                _cameraCutCam = (Camera*)state.Object.Get();
+                _isUsingCameraCuts = true;
             }
             break;
         }

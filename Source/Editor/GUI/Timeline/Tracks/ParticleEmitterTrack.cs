@@ -12,7 +12,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline media that represents a particle miter playback media event.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Media" />
-    public class ParticleEmitterMedia : SingleMediaAssetMedia
+    public class ParticleEmitterMedia : Media
     {
         private sealed class Proxy : ProxyBase<ParticleEmitterTrack, ParticleEmitterMedia>
         {
@@ -38,7 +38,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as ParticleEmitterTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((ParticleEmitterTrack)track, this) : null;
         }
     }
 
@@ -78,11 +78,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (ParticleEmitterTrack)track;
-            var emitterId = e.Asset?.ID ?? Guid.Empty;
-
-            stream.Write(emitterId.ToByteArray());
+            stream.WriteGuid(ref e.AssetID);
             stream.Write(((ParticleSystemTimeline)track.Timeline).Emitters.IndexOf(e));
-
             if (e.Media.Count != 0)
             {
                 var m = e.TrackMedia;
@@ -108,6 +105,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public ParticleEmitterTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+            MinMediaCount = 1;
+            MaxMediaCount = 1;
         }
 
         /// <inheritdoc />

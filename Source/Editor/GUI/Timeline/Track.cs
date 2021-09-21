@@ -172,6 +172,16 @@ namespace FlaxEditor.GUI.Timeline
         public bool Loop;
 
         /// <summary>
+        /// The minimum amount of media items for this track.
+        /// </summary>
+        public int MinMediaCount = 0;
+
+        /// <summary>
+        /// The maximum amount of media items for this track.
+        /// </summary>
+        public int MaxMediaCount = 1024;
+
+        /// <summary>
         /// The track archetype.
         /// </summary>
         public TrackArchetype Archetype;

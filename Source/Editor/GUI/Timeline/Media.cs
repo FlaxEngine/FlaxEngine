@@ -115,6 +115,11 @@ namespace FlaxEditor.GUI.Timeline
         public event Action StartFrameChanged;
 
         /// <summary>
+        /// Gets the end frame of the media (start + duration).
+        /// </summary>
+        public int EndFrame => _startFrame + _durationFrames;
+
+        /// <summary>
         /// Gets or sets the total duration of the media event in the timeline sequence frames amount.
         /// </summary>
         public int DurationFrames
@@ -174,6 +179,11 @@ namespace FlaxEditor.GUI.Timeline
         /// The track properties editing proxy object. Assign it to add media properties editing support.
         /// </summary>
         public object PropertiesEditObject;
+
+        /// <summary>
+        /// Gets a value indicating whether this media can be split.
+        /// </summary>
+        public bool CanSplit;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Media"/> class.
@@ -256,6 +266,22 @@ namespace FlaxEditor.GUI.Timeline
         {
             X = Start * Timeline.UnitsPerSecond * _timeline.Zoom + Timeline.StartOffset;
             Width = Duration * Timeline.UnitsPerSecond * _timeline.Zoom;
+        }
+
+        /// <summary>
+        /// Splits the media at the specified frame.
+        /// </summary>
+        /// <param name="frame">The frame to split at.</param>
+        /// <returns>The another media created after this media split.</returns>
+        public virtual Media Split(int frame)
+        {
+            var clone = (Media)Activator.CreateInstance(GetType());
+            clone.StartFrame = frame;
+            clone.DurationFrames = EndFrame - frame;
+            DurationFrames = DurationFrames - clone.DurationFrames;
+            Track?.AddMedia(clone);
+            Timeline?.MarkAsEdited();
+            return clone;
         }
 
         /// <inheritdoc />

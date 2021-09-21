@@ -44,9 +44,16 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnSpawned()
         {
-            // Ensure to have valid media added
-            // ReSharper disable once UnusedVariable
-            var media = TrackMedia;
+            // Ensure to have minimum valid media count
+            for (int i = Media.Count; i < MinMediaCount; i++)
+            {
+                var m = new TMedia
+                {
+                    StartFrame = 0,
+                    DurationFrames = Timeline?.DurationFrames ?? 60,
+                };
+                AddMedia(m);
+            }
 
             base.OnSpawned();
         }

@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 
@@ -11,13 +12,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline media that represents a post-process material media event.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Media" />
-    public class PostProcessMaterialMedia : SingleMediaAssetMedia
+    public class PostProcessMaterialMedia : Media
     {
         private sealed class Proxy : ProxyBase<PostProcessMaterialTrack, PostProcessMaterialMedia>
         {
-            /// <summary>
-            /// Gets or sets the post process material to show.
-            /// </summary>
             [EditorDisplay("General"), EditorOrder(10), Tooltip("The post process material to show.")]
             public MaterialBase PostProcessMaterial
             {
@@ -32,12 +30,20 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PostProcessMaterialMedia"/> class.
+        /// </summary>
+        public PostProcessMaterialMedia()
+        {
+            CanSplit = true;
+        }
+
         /// <inheritdoc />
         public override void OnTimelineChanged(Track track)
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as PostProcessMaterialTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((PostProcessMaterialTrack)track, this) : null;
         }
     }
 
@@ -68,28 +74,40 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             var e = (PostProcessMaterialTrack)track;
             Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<MaterialBase>(id);
-            var m = e.TrackMedia;
-            m.StartFrame = stream.ReadInt32();
-            m.DurationFrames = stream.ReadInt32();
+            if (version <= 3)
+            {
+                // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                var m = e.TrackMedia;
+                m.StartFrame = stream.ReadInt32();
+                m.DurationFrames = stream.ReadInt32();
+            }
+            else
+            {
+                var count = stream.ReadInt32();
+                while (e.Media.Count > count)
+                    e.RemoveMedia(e.Media.Last());
+                while (e.Media.Count < count)
+                    e.AddMedia(new PostProcessMaterialMedia());
+                for (int i = 0; i < count; i++)
+                {
+                    var m = e.Media[i];
+                    m.StartFrame = stream.ReadInt32();
+                    m.DurationFrames = stream.ReadInt32();
+                }
+            }
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (PostProcessMaterialTrack)track;
-            var materialId = e.Asset?.ID ?? Guid.Empty;
-
-            stream.Write(materialId.ToByteArray());
-
-            if (e.Media.Count != 0)
+            stream.WriteGuid(ref e.AssetID);
+            var count = e.Media.Count;
+            stream.Write(count);
+            for (int i = 0; i < count; i++)
             {
-                var m = e.TrackMedia;
+                var m = e.Media[i];
                 stream.Write(m.StartFrame);
                 stream.Write(m.DurationFrames);
-            }
-            else
-            {
-                stream.Write(0);
-                stream.Write(track.Timeline.DurationFrames);
             }
         }
 
@@ -100,6 +118,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public PostProcessMaterialTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+            MinMediaCount = 1;
         }
     }
 }

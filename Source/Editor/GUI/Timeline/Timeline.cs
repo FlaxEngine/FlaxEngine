@@ -38,7 +38,7 @@ namespace FlaxEditor.GUI.Timeline
             new KeyValuePair<float, string>(0, "Custom"),
         };
 
-        internal const int FormatVersion = 3;
+        internal const int FormatVersion = 4;
 
         /// <summary>
         /// The base class for timeline properties proxy objects.
@@ -1585,6 +1585,39 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Splits the media (all or selected only) at the given frame.
+        /// </summary>
+        /// <param name="frame">The frame to split at.</param>
+        public void Split(int frame)
+        {
+            List<IUndoAction> actions = null;
+            foreach (var track in _tracks)
+            {
+                byte[] trackData = null;
+                for (int i = track.Media.Count - 1; i >= 0; i--)
+                {
+                    if (track.Media.Count >= track.MaxMediaCount)
+                        break;
+                    var media = track.Media[i];
+                    if (media.CanSplit && media.StartFrame < frame && media.EndFrame > frame)
+                    {
+                        if (Undo != null && Undo.Enabled)
+                            trackData = EditTrackAction.CaptureData(track);
+                        media.Split(frame);
+                    }
+                }
+                if (trackData != null)
+                {
+                    if (actions == null)
+                        actions = new List<IUndoAction>();
+                    actions.Add(new EditTrackAction(this, track, trackData, EditTrackAction.CaptureData(track)));
+                }
+            }
+            if (actions != null)
+                Undo.AddAction(new MultiUndoAction(actions, "Split"));
+        }
+
+        /// <summary>
         /// Called once to setup the drag drop handling for the timeline (lazy init on first drag action).
         /// </summary>
         protected virtual void SetupDragDrop()
@@ -1979,6 +2012,9 @@ namespace FlaxEditor.GUI.Timeline
                     return true;
                 }
                 break;
+            case KeyboardKeys.S:
+                Split(CurrentFrame);
+                return true;
             }
 
             return false;

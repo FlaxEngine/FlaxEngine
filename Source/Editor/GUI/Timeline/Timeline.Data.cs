@@ -104,8 +104,9 @@ namespace FlaxEditor.GUI.Timeline
                     }
                     break;
                 }
-                case 2:
-                case 3:
+                case 2: // [Deprecated in 2020 expires on 03.09.2023]
+                case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                case 4:
                 {
                     // Load properties
                     FramesPerSecond = stream.ReadSingle();
