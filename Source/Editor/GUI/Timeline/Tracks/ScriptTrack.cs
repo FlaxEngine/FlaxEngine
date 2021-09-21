@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -32,13 +33,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (ScriptTrack)track;
-            e.ScriptID = new Guid(stream.ReadBytes(16));
+            e.ScriptID = stream.ReadGuid();
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (ScriptTrack)track;
-            stream.Write(e.ScriptID.ToByteArray());
+            stream.WriteGuid(ref e.ScriptID);
         }
 
         /// <summary>

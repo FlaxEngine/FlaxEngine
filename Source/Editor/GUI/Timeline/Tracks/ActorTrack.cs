@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -37,13 +38,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (ActorTrack)track;
-            e.ActorID = new Guid(stream.ReadBytes(16));
+            e.ActorID = stream.ReadGuid();
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (ActorTrack)track;
-            stream.Write(e.ActorID.ToByteArray());
+            stream.WriteGuid(ref e.ActorID);
         }
 
         /// <summary>
