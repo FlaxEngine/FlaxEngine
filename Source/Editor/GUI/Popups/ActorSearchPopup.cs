@@ -32,9 +32,8 @@ namespace FlaxEditor.GUI
             public ActorItemView(Actor actor)
             {
                 _actor = actor;
-
                 Name = actor.Name;
-                TooltipText = actor.TypeName;
+                TooltipText = Utilities.Utils.GetTooltip(actor);
             }
 
             /// <inheritdoc />

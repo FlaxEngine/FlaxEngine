@@ -78,13 +78,16 @@ namespace FlaxEditor.Utilities
 
         internal static string GetTooltip(SceneObject obj)
         {
-            var str = obj is Actor actor ? actor.Name : TypeUtils.GetObjectType(obj).Name;
+            var actor = obj as Actor;
+            var str = actor != null ? actor.Name : TypeUtils.GetObjectType(obj).Name;
             var o = obj.Parent;
             while (o)
             {
                 str = o.Name + " -> " + str;
                 o = o.Parent;
             }
+            if (actor != null)
+                str += string.Format(" ({0})", TypeUtils.GetObjectType(obj).Name);
             return str;
         }
 
