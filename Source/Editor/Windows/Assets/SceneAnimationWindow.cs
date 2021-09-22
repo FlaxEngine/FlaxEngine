@@ -592,8 +592,10 @@ namespace FlaxEditor.Windows.Assets
         private ToolStripButton _saveButton;
         private ToolStripButton _undoButton;
         private ToolStripButton _redoButton;
+        private ToolStripButton _previewButton;
         private ToolStripButton _renderButton;
         private FlaxObjectRefPickerControl _previewPlayerPicker;
+        private SceneAnimationPlayer _previewPlayer;
         private Undo _undo;
         private bool _tmpSceneAnimationIsDirty;
         private bool _isWaitingForTimelineLoad;
@@ -628,7 +630,9 @@ namespace FlaxEditor.Windows.Assets
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
                 Parent = this,
-                Enabled = false
+                CanPlayPause = Editor.IsPlayMode,
+                CanPlayStop = Editor.IsPlayMode,
+                Enabled = false,
             };
             _timeline.Modified += OnTimelineModified;
             _timeline.PlayerChanged += OnTimelinePlayerChanged;
@@ -640,6 +644,7 @@ namespace FlaxEditor.Windows.Assets
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
+            _previewButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Refresh64, OnPreviewButtonClicked).SetAutoCheck(true).LinkTooltip("If checked, enables live-preview of the animation on a scene while editing");
             _renderButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Build64, OnRenderButtonClicked).LinkTooltip("Open the scene animation rendering utility...");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/scene-animations/index.html")).LinkTooltip("See documentation to learn more");
@@ -680,6 +685,54 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
+        private void OnPreviewButtonClicked()
+        {
+            if (_previewButton.Checked)
+            {
+                // Use utility player actor for live-preview
+                if (!_previewPlayer)
+                {
+                    _previewPlayer = new SceneAnimationPlayer
+                    {
+                        Animation = Asset,
+                        HideFlags = HideFlags.FullyHidden,
+                        RestoreStateOnStop = true,
+                        PlayOnStart = false,
+                        RandomStartTime = false,
+                        UseTimeScale = false,
+                        UpdateMode = SceneAnimationPlayer.UpdateModes.Manual,
+                    };
+                    Level.SpawnActor(_previewPlayer);
+
+                    // Live-preview player is in pause or play mode (stopped on the usage end)
+                    _previewPlayer.Play();
+                    _previewPlayer.Pause();
+                }
+                var time = _timeline.CurrentTime;
+                _timeline.Player = _previewPlayer;
+                _previewPlayerPicker.Value = null;
+                _cachedPlayerId = Guid.Empty;
+                _previewPlayer.Time = time;
+            }
+            else
+            {
+                if (_timeline.Player == _previewPlayer)
+                {
+                    _timeline.Player = null;
+                    _previewPlayerPicker.Value = null;
+                    _cachedPlayerId = Guid.Empty;
+                }
+                if (_previewPlayer)
+                {
+                    _previewPlayer.Stop();
+                    Object.Destroy(_previewPlayer);
+                    _previewPlayer = null;
+                }
+            }
+            _previewPlayerPicker.Visible = !_previewButton.Checked;
+            _timeline.CanPlayPause = _previewButton.Checked || Editor.IsPlayMode;
+        }
+
         private void OnRenderButtonClicked()
         {
             if (_popup != null)
@@ -713,16 +766,29 @@ namespace FlaxEditor.Windows.Assets
                 _timeline.Player = null;
                 _cachedPlayerId = id;
             }
+            if (actor == _previewPlayer)
+            {
+                _previewPlayer = null;
+                if (_previewButton.Checked)
+                {
+                    _previewButton.Checked = false;
+                    OnPreviewButtonClicked();
+                }
+            }
         }
 
         private void OnTimelinePlayerChanged()
         {
+            if (_previewButton.Checked)
+                return;
             _previewPlayerPicker.Value = _timeline.Player;
             _cachedPlayerId = _timeline.Player?.ID ?? Guid.Empty;
         }
 
         private void OnPreviewPlayerPickerChanged()
         {
+            if (_previewButton.Checked)
+                return;
             _timeline.Player = _previewPlayerPicker.Value as SceneAnimationPlayer;
         }
 
@@ -743,7 +809,19 @@ namespace FlaxEditor.Windows.Assets
 
             if (_timeline.IsModified)
             {
+                var time = _timeline.CurrentTime;
+                var isPlaying = _previewPlayer?.IsPlaying ?? false;
                 _timeline.Save(_asset);
+                if (_previewButton.Checked && _previewPlayer != null)
+                {
+                    // Preserve playback time in live-preview mode when editing the asset
+                    _asset.WaitForLoaded();
+                    _previewPlayer.Play();
+                    if (!isPlaying)
+                        _previewPlayer.Pause();
+                    _previewPlayer.Time = time;
+                    _timeline.CurrentTime = time;
+                }
             }
 
             return false;
@@ -770,6 +848,7 @@ namespace FlaxEditor.Windows.Assets
             _saveButton.Enabled = IsEdited;
             _undoButton.Enabled = _undo.CanUndo;
             _redoButton.Enabled = _undo.CanRedo;
+            _previewButton.Enabled = Level.IsAnySceneLoaded && Editor.StateMachine.IsEditMode;
             _renderButton.Enabled = Level.IsAnySceneLoaded && (Editor.IsPlayMode || Editor.StateMachine.IsEditMode);
 
             base.UpdateToolstrip();
@@ -813,6 +892,8 @@ namespace FlaxEditor.Windows.Assets
             base.OnPlayBegin();
 
             UpdateToolstrip();
+            _timeline.CanPlayPause = true;
+            _timeline.CanPlayStop = true;
         }
 
         /// <inheritdoc />
@@ -821,6 +902,8 @@ namespace FlaxEditor.Windows.Assets
             base.OnPlayEnd();
 
             UpdateToolstrip();
+            _timeline.CanPlayPause = _previewButton.Checked;
+            _timeline.CanPlayStop = false;
         }
 
         /// <inheritdoc />
@@ -839,24 +922,16 @@ namespace FlaxEditor.Windows.Assets
             // Check if temporary asset need to be updated
             if (_tmpSceneAnimationIsDirty)
             {
-                // Clear flag
                 _tmpSceneAnimationIsDirty = false;
-
-                // Update
                 RefreshTempAsset();
             }
 
             // Check if need to load timeline
             if (_isWaitingForTimelineLoad && _asset.IsLoaded)
             {
-                // Clear flag
                 _isWaitingForTimelineLoad = false;
-
-                // Load timeline data from the asset
                 _timeline._id = OriginalAsset.ID;
                 _timeline.Load(_asset);
-
-                // Setup
                 _undo.Clear();
                 _timeline.SetNoTracksText(null);
                 _timeline.Enabled = true;
@@ -874,6 +949,27 @@ namespace FlaxEditor.Windows.Assets
                         _timeline.Player = obj;
                 }
             }
+
+            // Manually tick the live-preview animation player
+            if (_previewButton.Checked && _previewPlayer != null)
+            {
+                if (_previewPlayer.IsPlaying)
+                {
+                    // Preview is playing
+                    _previewPlayer.Tick(Time.UnscaledDeltaTime);
+                }
+                else if (Mathf.NearEqual(_previewPlayer.Time, _timeline.CurrentFrame))
+                {
+                    // Preview is paused
+                    _previewPlayer.Time = _timeline.CurrentTime;
+                }
+                else
+                {
+                    // User is seeking
+                    _previewPlayer.Time = _timeline.CurrentTime;
+                    _previewPlayer.Tick(0.0f);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -884,7 +980,7 @@ namespace FlaxEditor.Windows.Assets
         {
             writer.WriteAttributeString("TimelineSplitter", _timeline.Splitter.SplitterValue.ToString());
             writer.WriteAttributeString("TimeShowMode", _timeline.TimeShowMode.ToString());
-            var id = _timeline.Player?.ID ?? _cachedPlayerId;
+            var id = _previewButton.Checked ? Guid.Empty : (_timeline.Player?.ID ?? _cachedPlayerId);
             writer.WriteAttributeString("SelectedPlayer", id.ToString());
             writer.WriteAttributeString("ShowPreviewValues", _timeline.ShowPreviewValues.ToString());
             writer.WriteAttributeString("ShowSelected3dTrack", _timeline.ShowSelected3dTrack.ToString());
@@ -920,6 +1016,11 @@ namespace FlaxEditor.Windows.Assets
         {
             Level.ActorDeleted -= OnActorDeleted;
 
+            if (_previewButton.Checked)
+            {
+                _previewButton.Checked = false;
+                OnPreviewButtonClicked();
+            }
             if (_popup != null)
             {
                 _popup.Dispose();

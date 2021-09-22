@@ -231,7 +231,6 @@ namespace FlaxEditor.GUI.Timeline
                 state = PlaybackStates.Disabled;
 
             PlaybackState = state;
-            CanPlayPauseStop = Editor.IsPlayMode;
 
             if (_player && _player.Animation)
             {

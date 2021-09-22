@@ -134,17 +134,13 @@ void AudioSource::Play()
 void AudioSource::Pause()
 {
     if (_state != States::Playing)
-    {
-        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetNamePath());
         return;
-    }
 
     _state = States::Paused;
 
     if (_isActuallyPlayingSth)
     {
         AudioBackend::Source::Pause(this);
-
         _isActuallyPlayingSth = false;
     }
 }

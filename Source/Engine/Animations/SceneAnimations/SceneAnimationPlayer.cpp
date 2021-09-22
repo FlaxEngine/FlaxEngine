@@ -33,6 +33,11 @@ SceneAnimationPlayer::SceneAnimationPlayer(const SpawnParams& params)
     Animation.Loaded.Bind<SceneAnimationPlayer, &SceneAnimationPlayer::OnAnimationModified>(this);
 }
 
+float SceneAnimationPlayer::GetTime() const
+{
+    return _time;
+}
+
 void SceneAnimationPlayer::SetTime(float value)
 {
     _time = value;
@@ -137,8 +142,6 @@ void SceneAnimationPlayer::Stop()
 
 void SceneAnimationPlayer::Tick(float dt)
 {
-    CHECK(IsActiveInHierarchy() && _state == PlayState::Playing);
-
     // Reset temporary state
     _postFxSettings.PostFxMaterials.Materials.Clear();
     _postFxSettings.CameraArtifacts.OverrideFlags &= ~CameraArtifactsSettings::Override::ScreenFadeColor;
@@ -731,7 +734,10 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 }
 
                 // Keep playing
-                audioSource->Play();
+                if (_state == PlayState::Playing)
+                    audioSource->Play();
+                else
+                    audioSource->Pause();
             }
             else if (audioSource)
             {
@@ -871,7 +877,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     }
                     else
                     {
-                        *(MonoObject**)value = (MonoObject*)boxed;
+                        *(MonoObject**)value = boxed;
                     }
                 }
                 else

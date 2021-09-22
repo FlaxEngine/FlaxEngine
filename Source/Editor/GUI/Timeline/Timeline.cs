@@ -221,7 +221,7 @@ namespace FlaxEditor.GUI.Timeline
         private Vector2 _rightMouseButtonMovePos;
         private float _zoom = 1.0f;
         private bool _isMovingPositionHandle;
-        private bool _canPlayPauseStop = true;
+        private bool _canPlayPause = true, _canStop = true;
         private List<IUndoAction> _batchedUndoActions;
 
         /// <summary>
@@ -290,7 +290,11 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// Gets the current animation time position (in seconds).
         /// </summary>
-        public float CurrentTime => _currentFrame / _framesPerSecond;
+        public float CurrentTime
+        {
+            get => _currentFrame / _framesPerSecond;
+            set => CurrentFrame = (int)(value * _framesPerSecond);
+        }
 
         /// <summary>
         /// Occurs when current playback animation frame gets changed.
@@ -511,16 +515,31 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether user can use Play/Pause/Stop buttons, otherwise those should be disabled.
+        /// Gets or sets a value indicating whether user can use Play and Pause buttons, otherwise those should be disabled.
         /// </summary>
-        public bool CanPlayPauseStop
+        public bool CanPlayPause
         {
-            get => _canPlayPauseStop;
+            get => _canPlayPause;
             set
             {
-                if (_canPlayPauseStop == value)
+                if (_canPlayPause == value)
                     return;
-                _canPlayPauseStop = value;
+                _canPlayPause = value;
+                UpdatePlaybackButtons();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether user can use Stop button, otherwise those should be disabled.
+        /// </summary>
+        public bool CanPlayStop
+        {
+            get => _canStop;
+            set
+            {
+                if (_canStop == value)
+                    return;
+                _canStop = value;
                 UpdatePlaybackButtons();
             }
         }
@@ -1146,7 +1165,7 @@ namespace FlaxEditor.GUI.Timeline
                 if (_playbackPlay != null)
                 {
                     _playbackPlay.Visible = true;
-                    _playbackPlay.Enabled = _canPlayPauseStop;
+                    _playbackPlay.Enabled = _canPlayPause;
                     _playbackPlay.Brush = new SpriteBrush(icons.Play64);
                     _playbackPlay.Tag = false;
                 }
@@ -1167,12 +1186,12 @@ namespace FlaxEditor.GUI.Timeline
                 if (_playbackStop != null)
                 {
                     _playbackStop.Visible = true;
-                    _playbackStop.Enabled = _canPlayPauseStop;
+                    _playbackStop.Enabled = _canStop;
                 }
                 if (_playbackPlay != null)
                 {
                     _playbackPlay.Visible = true;
-                    _playbackPlay.Enabled = _canPlayPauseStop;
+                    _playbackPlay.Enabled = _canPlayPause;
                     _playbackPlay.Brush = new SpriteBrush(icons.Pause64);
                     _playbackPlay.Tag = true;
                 }
@@ -1193,12 +1212,12 @@ namespace FlaxEditor.GUI.Timeline
                 if (_playbackStop != null)
                 {
                     _playbackStop.Visible = true;
-                    _playbackStop.Enabled = _canPlayPauseStop;
+                    _playbackStop.Enabled = _canStop;
                 }
                 if (_playbackPlay != null)
                 {
                     _playbackPlay.Visible = true;
-                    _playbackPlay.Enabled = _canPlayPauseStop;
+                    _playbackPlay.Enabled = _canPlayPause;
                     _playbackPlay.Brush = new SpriteBrush(icons.Play64);
                     _playbackPlay.Tag = false;
                 }
@@ -2038,7 +2057,7 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 break;
             case KeyboardKeys.Spacebar:
-                if (CanPlayPauseStop)
+                if (CanPlayPause)
                 {
                     if (PlaybackState == PlaybackStates.Playing)
                         OnPause();
