@@ -197,7 +197,7 @@ namespace FlaxEditor.GUI.Timeline
                             continue;
                         var track = (NestedSceneAnimationTrack)timeline.NewTrack(NestedSceneAnimationTrack.GetArchetype());
                         track.Asset = sceneAnimation;
-                        track.TrackMedia.DurationFrames = sceneAnimation.DurationFrames;
+                        track.TrackMedia.Duration = sceneAnimation.Duration;
                         track.Rename(assetItem.ShortName);
                         timeline.AddTrack(track);
                     }
@@ -208,7 +208,7 @@ namespace FlaxEditor.GUI.Timeline
                             continue;
                         var track = (AudioTrack)timeline.NewTrack(AudioTrack.GetArchetype());
                         track.Asset = audioClip;
-                        track.TrackMedia.DurationFrames = (int)(audioClip.Length * timeline.FramesPerSecond);
+                        track.TrackMedia.Duration = audioClip.Length;
                         track.Rename(assetItem.ShortName);
                         timeline.AddTrack(track);
                     }
