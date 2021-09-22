@@ -160,7 +160,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
     _currentFrameIndex = 0;
     _width = width;
     _height = height;
-    _memoryUsage = CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
 
     getBackBuffer();
 #else
