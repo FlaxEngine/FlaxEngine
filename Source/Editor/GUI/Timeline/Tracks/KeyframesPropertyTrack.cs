@@ -208,7 +208,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     if (frame == Timeline.CurrentFrame)
                     {
                         // Skip if value is the same
-                        if (k.Value == value)
+                        if (Equals(k.Value, value))
                             return;
 
                         // Update existing key value
