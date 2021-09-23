@@ -172,7 +172,7 @@ struct OpenFbxImporterData
 
     bool ImportMaterialTexture(const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
     {
-        const ofbx::Texture* tex = mat->getTexture(ofbx::Texture::DIFFUSE);
+        const ofbx::Texture* tex = mat->getTexture(textureType);
         if (tex)
         {
             // Find texture file path
