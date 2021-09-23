@@ -729,7 +729,7 @@ namespace FlaxEditor.Windows.Assets
                     _previewPlayer = null;
                 }
             }
-            _previewPlayerPicker.Visible = !_previewButton.Checked;
+            _previewPlayerPicker.Parent.Visible = !_previewButton.Checked;
             _timeline.CanPlayPause = _previewButton.Checked || Editor.IsPlayMode;
         }
 
