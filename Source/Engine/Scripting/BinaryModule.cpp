@@ -49,6 +49,17 @@ const ScriptingType& ScriptingTypeHandle::GetType() const
     return Module->Types[TypeIndex];
 }
 
+bool ScriptingTypeHandle::IsAssignableFrom(ScriptingTypeHandle c) const
+{
+    while (c)
+    {
+        if (c == *this)
+            return true;
+        c = c.GetType().GetBaseType();
+    }
+    return false;
+}
+
 bool ScriptingTypeHandle::operator==(const ScriptingTypeInitializer& other) const
 {
     return Module == other.Module && TypeIndex == other.TypeIndex;
