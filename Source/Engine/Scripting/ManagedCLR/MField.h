@@ -8,7 +8,7 @@
 /// <summary>
 /// Encapsulates information about a single Mono (managed) fields belonging to some managed class. This object also allows you to access the field data of an object instance.
 /// </summary>
-class MField
+class FLAXENGINE_API MField
 {
     friend MClass;
 
