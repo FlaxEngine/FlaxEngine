@@ -251,22 +251,22 @@ namespace Flax.Build
             var modules = new List<Module>();
             switch (target.LinkType)
             {
-            case TargetLinkType.Monolithic:
-                // Include all modules
-                modules.AddRange(buildModules.Keys);
-                break;
-            case TargetLinkType.Modular:
-            {
-                // Include all modules from the project that contains this target
-                var sourcePath = Path.Combine(project.ProjectFolderPath, "Source");
-                foreach (var module in buildModules.Keys)
-                {
-                    if (module.FolderPath.StartsWith(sourcePath))
-                        modules.Add(module);
-                }
-                break;
-            }
-            default: throw new ArgumentOutOfRangeException();
+                case TargetLinkType.Monolithic:
+                    // Include all modules
+                    modules.AddRange(buildModules.Keys);
+                    break;
+                case TargetLinkType.Modular:
+                    {
+                        // Include all modules from the project that contains this target
+                        var sourcePath = Path.Combine(project.ProjectFolderPath, "Source");
+                        foreach (var module in buildModules.Keys)
+                        {
+                            if (module.FolderPath.StartsWith(sourcePath))
+                                modules.Add(module);
+                        }
+                        break;
+                    }
+                default: throw new ArgumentOutOfRangeException();
             }
             modules.RemoveAll(x => x == null || string.IsNullOrEmpty(x.BinaryModuleName));
             return modules.GroupBy(x => x.BinaryModuleName).ToArray();
@@ -807,12 +807,12 @@ namespace Flax.Build
             var outputPath = Path.GetDirectoryName(outputTargetFilePath);
             switch (target.LinkType)
             {
-            case TargetLinkType.Monolithic:
-            {
-                if (!buildData.Target.IsPreBuilt)
-                    LinkNativeBinary(buildData, targetBuildOptions, outputTargetFilePath);
-                break;
-            }
+                case TargetLinkType.Monolithic:
+                    {
+                        if (!buildData.Target.IsPreBuilt)
+                            LinkNativeBinary(buildData, targetBuildOptions, outputTargetFilePath);
+                        break;
+                    }
             }
 
             // Generate target build output info
@@ -839,50 +839,50 @@ namespace Flax.Build
                     };
                     switch (target.LinkType)
                     {
-                    case TargetLinkType.Monolithic:
-                    {
-                        if (binaryModule.Any(x => x.BuildNativeCode))
-                        {
-                            // Target merges all modules into a one native binary
-                            binaryModuleInfo.NativePath = outputTargetFilePath;
-                        }
-                        else
-                        {
-                            // C#-only binary module
-                            binaryModuleInfo.NativePath = string.Empty;
-                        }
-                        if (!binaryModule.Any(x => x.BuildCSharp))
-                        {
-                            // Skip C#
-                            binaryModuleInfo.ManagedPath = string.Empty;
-                        }
-                        break;
-                    }
-                    case TargetLinkType.Modular:
-                    {
-                        // Every module produces own set of binaries
-                        if (binaryModule.Count() != 1)
-                            throw new Exception("Cannot output binary if it uses multiple modules.");
-                        var module = binaryModule.First();
-                        if (module.BuildNativeCode)
-                        {
-                            var moduleOptions = buildData.Modules[module];
-                            var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
-                            binaryModuleInfo.NativePath = outputLib;
-                        }
-                        else
-                        {
-                            // C#-only binary module
-                            binaryModuleInfo.NativePath = string.Empty;
-                        }
-                        if (!module.BuildCSharp)
-                        {
-                            // Skip C#
-                            binaryModuleInfo.ManagedPath = string.Empty;
-                        }
-                        break;
-                    }
-                    default: throw new ArgumentOutOfRangeException();
+                        case TargetLinkType.Monolithic:
+                            {
+                                if (binaryModule.Any(x => x.BuildNativeCode))
+                                {
+                                    // Target merges all modules into a one native binary
+                                    binaryModuleInfo.NativePath = outputTargetFilePath;
+                                }
+                                else
+                                {
+                                    // C#-only binary module
+                                    binaryModuleInfo.NativePath = string.Empty;
+                                }
+                                if (!binaryModule.Any(x => x.BuildCSharp))
+                                {
+                                    // Skip C#
+                                    binaryModuleInfo.ManagedPath = string.Empty;
+                                }
+                                break;
+                            }
+                        case TargetLinkType.Modular:
+                            {
+                                // Every module produces own set of binaries
+                                if (binaryModule.Count() != 1)
+                                    throw new Exception("Cannot output binary if it uses multiple modules.");
+                                var module = binaryModule.First();
+                                if (module.BuildNativeCode)
+                                {
+                                    var moduleOptions = buildData.Modules[module];
+                                    var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
+                                    binaryModuleInfo.NativePath = outputLib;
+                                }
+                                else
+                                {
+                                    // C#-only binary module
+                                    binaryModuleInfo.NativePath = string.Empty;
+                                }
+                                if (!module.BuildCSharp)
+                                {
+                                    // Skip C#
+                                    binaryModuleInfo.ManagedPath = string.Empty;
+                                }
+                                break;
+                            }
+                        default: throw new ArgumentOutOfRangeException();
                     }
 
                     binaryModuleInfo.NativePathProcessed = BuildTargetInfo.ProcessPath(binaryModuleInfo.NativePath, project.ProjectFolderPath);
@@ -954,7 +954,7 @@ namespace Flax.Build
                 throw new Exception($"Cannot build target {target.Name}. The project file is missing (.flaxproj located in the folder above).");
 
             // Setup build environment for the target
-            var targetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
+            var targetBuildOptions = GetBuildOptions(target, platform, platform.GetToolchain(architecture), architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
 
             using (new ProfileEventScope("PreBuild"))
             {
@@ -977,7 +977,7 @@ namespace Flax.Build
                 Target = target,
                 TargetOptions = targetBuildOptions,
                 Platform = platform,
-                Toolchain = null,
+                Toolchain = targetBuildOptions.Toolchain,
                 Architecture = architecture,
                 Configuration = configuration,
             };
@@ -998,8 +998,6 @@ namespace Flax.Build
                             }
                             else
                             {
-                                if (buildData.Toolchain == null)
-                                    buildData.Toolchain = platform.GetToolchain(architecture);
                                 BuildTargetReferenceNativeCpp(buildContext, buildData, reference);
                             }
                         }
