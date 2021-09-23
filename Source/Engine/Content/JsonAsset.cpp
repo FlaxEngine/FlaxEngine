@@ -15,7 +15,6 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #include "Engine/Core/Cache.h"
-#include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
