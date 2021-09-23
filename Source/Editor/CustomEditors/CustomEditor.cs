@@ -619,6 +619,13 @@ namespace FlaxEditor.CustomEditors
                 JsonSerializer.ParseID(text, out var id);
                 obj = FlaxEngine.Object.Find<FlaxEngine.Object>(ref id);
             }
+            else if (Color.TryParseHex(text, out var color))
+            {
+                // Hex color
+                obj = color;
+                if (Values.Type.Type == typeof(Color32))
+                    obj = (Color32)color;
+            }
             else
             {
                 // Default
