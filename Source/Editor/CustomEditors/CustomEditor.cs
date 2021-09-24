@@ -380,7 +380,7 @@ namespace FlaxEditor.CustomEditors
                     return false;
 
                 // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor != null && ParentEditor.Values.Type != ScriptType.Null && ParentEditor.Values.Type.IsArray)
+                if (ParentEditor is Editors.ArrayEditor)
                     return false;
 
                 return true;
@@ -465,7 +465,7 @@ namespace FlaxEditor.CustomEditors
                     return false;
 
                 // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor != null && ParentEditor.Values.Type != ScriptType.Null && ParentEditor.Values.Type.IsArray)
+                if (ParentEditor is Editors.ArrayEditor)
                     return false;
 
                 return true;
