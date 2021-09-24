@@ -884,8 +884,11 @@ void Physics::CollectResults()
         }
 
         // Update vehicles
-        PxVehicleSuspensionRaycasts(WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelQueryResults.Count(), WheelQueryResults.Get());
-        PxVehicleUpdates(LastDeltaTime, PhysicsScene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
+        if (WheelVehiclesCache.Count() != 0)
+        {
+            PxVehicleSuspensionRaycasts(WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelQueryResults.Count(), WheelQueryResults.Get());
+            PxVehicleUpdates(LastDeltaTime, PhysicsScene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
+        }
 
         // Synchronize state
         for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
