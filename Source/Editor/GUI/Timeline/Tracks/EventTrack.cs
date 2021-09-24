@@ -288,8 +288,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Events.Visible = Visible;
             if (!Visible)
             {
-                if(wasVisible)
-                Events.ClearSelection();
+                if (wasVisible)
+                    Events.ClearSelection();
                 return;
             }
             Events.KeyframesEditorContext = Timeline;

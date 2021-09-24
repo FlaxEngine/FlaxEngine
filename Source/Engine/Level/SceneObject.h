@@ -195,7 +195,7 @@ public:
     /// </summary>
     /// <param name="prefabId">The prefab asset identifier.</param>
     /// <param name="prefabObjectId">The prefab object identifier.</param>
-    API_FUNCTION() virtual void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId);
+    API_FUNCTION(Attributes="NoAnimate") virtual void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId);
 
     /// <summary>
     /// Breaks the prefab linkage for this object, all its scripts, and all child actors.

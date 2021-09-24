@@ -46,7 +46,7 @@ private:
         MonoObject* ManagedObject = nullptr;
         MProperty* Property = nullptr;
         MField* Field = nullptr;
-        MMethod* Method = nullptr;
+        void* Method = nullptr;
         int32 RestoreStateIndex = -1;
 
         TrackInstance()

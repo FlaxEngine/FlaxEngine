@@ -19,7 +19,6 @@
 #include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MMethod.h"
 
 // This could be Update, LateUpdate or FixedUpdate
 #define UPDATE_POINT Update
@@ -274,7 +273,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
         case SceneAnimation::Track::Types::CameraCut:
         {
             auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            state.ManagedObject = state.Object ? state.Object.GetOrCreateManagedInstance() : nullptr;
+            state.ManagedObject = state.Object.GetOrCreateManagedInstance();
             break;
         }
         case SceneAnimation::Track::Types::KeyframesProperty:
@@ -947,26 +946,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             if (track.ParentIndex == -1)
                 break;
             const auto runtimeData = track.GetRuntimeData<SceneAnimation::EventTrack::Runtime>();
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            const auto& parentTrack = anim->Tracks[track.ParentIndex];
-
-            // Skip if parent object is missing
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
-            if (!instance)
-                break;
-
-            // Cache method
-            if (!state.Method)
-            {
-                MClass* mclass = Scripting::FindClass(mono_object_get_class(instance));
-                state.Method = mclass->GetMethod(runtimeData->EventName, runtimeData->EventParamsCount);
-
-                // Skip if method is missing
-                if (!state.Method)
-                    break;
-            }
-
-            void* params[SceneAnimation::EventTrack::MaxParams];
+            void* paramsData[SceneAnimation::EventTrack::MaxParams];
 
             // Check if hit any event key since the last update
             float lastTime = time - dt;
@@ -994,18 +974,34 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     ptr += sizeof(float);
                     for (int32 paramIndex = 0; paramIndex < runtimeData->EventParamsCount; paramIndex++)
                     {
-                        params[paramIndex] = (void*)ptr;
+                        paramsData[paramIndex] = (void*)ptr;
                         ptr += runtimeData->EventParamSizes[paramIndex];
                     }
 
-                    // Invoke the method
-                    MonoObject* exception = nullptr;
-                    // TODO: use method thunk
-                    state.Method->Invoke(instance, params, &exception);
-                    if (exception)
+                    auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
+                    const auto& parentTrack = anim->Tracks[track.ParentIndex];
+                    auto& parentTrackState = _tracks[stateIndexOffset + parentTrack.TrackStateIndex];
+                    if (parentTrackState.ManagedObject)
                     {
-                        MException ex(exception);
-                        ex.Log(LogType::Error, TEXT("Event"));
+                        auto instance = parentTrackState.ManagedObject;
+
+                        // Cache method
+                        if (!state.Method)
+                        {
+                            state.Method = mono_class_get_method_from_name(mono_object_get_class(instance), runtimeData->EventName, runtimeData->EventParamsCount);
+                            if (!state.Method)
+                                break;
+                        }
+
+                        // Invoke the method
+                        Variant result;
+                        MonoObject* exception = nullptr;
+                        mono_runtime_invoke((MonoMethod*)state.Method, instance, paramsData, &exception);
+                        if (exception)
+                        {
+                            MException ex(exception);
+                            ex.Log(LogType::Error, TEXT("Event"));
+                        }
                     }
                 }
                 else
