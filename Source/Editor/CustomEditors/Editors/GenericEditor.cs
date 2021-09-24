@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -332,6 +333,52 @@ namespace FlaxEditor.CustomEditors.Editors
             return ScriptMemberInfo.Null;
         }
 
+        private void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
+        {
+            if (layout == null || canRevertReference && canRevertDefault)
+                return;
+
+            foreach (var editor in layout.Editors)
+            {
+                canRevertReference |= editor.CanRevertReferenceValue;
+                canRevertDefault |= editor.CanRevertDefaultValue;
+            }
+
+            foreach (var child in layout.Children)
+                GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference, ref canRevertDefault);
+        }
+
+        private void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
+        {
+            if (layout == null)
+                return;
+
+            foreach (var editor in layout.Editors)
+            {
+                if (toDefault && editor.CanRevertDefaultValue)
+                    editor.RevertToDefaultValue();
+                else if (!toDefault && editor.CanRevertReferenceValue)
+                    editor.RevertToReferenceValue();
+            }
+
+            foreach (var child in layout.Children)
+                OnGroupPanelRevert(child as LayoutElementsContainer, toDefault);
+        }
+
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        {
+            var group = (GroupElement)groupPanel.Tag;
+            bool canRevertReference = false, canRevertDefault = false;
+            GroupPanelCheckIfCanRevert(group, ref canRevertReference, ref canRevertDefault);
+
+            var menu = new ContextMenu();
+            var revertToPrefab = menu.AddButton("Revert to Prefab", () => OnGroupPanelRevert(group, false));
+            revertToPrefab.Enabled = canRevertReference;
+            var resetToDefault = menu.AddButton("Reset to default", () => OnGroupPanelRevert(group, true));
+            resetToDefault.Enabled = canRevertDefault;
+            menu.Show(groupPanel, location);
+        }
+
         /// <summary>
         /// Spawns the property for the given item.
         /// </summary>
@@ -510,7 +557,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (item.UseGroup)
                 {
                     if (lastGroup == null || lastGroup.Panel.HeaderText != item.Display.Group)
+                    {
                         lastGroup = layout.Group(item.Display.Group);
+                        lastGroup.Panel.Tag = lastGroup;
+                        lastGroup.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+                    }
                     itemLayout = lastGroup;
                 }
                 else

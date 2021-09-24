@@ -394,9 +394,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasDefaultValue)
                 return;
-
-            Editor.Log("Reverting object changes to default");
-
             RevertDiffToDefault(this);
         }
 
@@ -479,9 +476,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasReferenceValue)
                 return;
-
-            Editor.Log("Reverting object changes to prefab");
-
             RevertDiffToReference(this);
         }
 
