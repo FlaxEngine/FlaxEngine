@@ -12,9 +12,6 @@
 #include "Engine/Scripting/Script.h"
 #include <ThirdParty/PhysX/extensions/PxJoint.h>
 
-#define PX_PARENT_ACTOR_ID PxJointActorIndex::eACTOR0
-#define PX_TARGET_ACTOR_ID PxJointActorIndex::eACTOR1
-
 Joint::Joint(const SpawnParams& params)
     : Actor(params)
     , _joint(nullptr)
@@ -75,7 +72,7 @@ void Joint::SetTargetAnchor(const Vector3& value)
 
     if (_joint)
     {
-        _joint->setLocalPose(PX_TARGET_ACTOR_ID, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
+        _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
     }
 }
 
@@ -88,7 +85,7 @@ void Joint::SetTargetAnchorRotation(const Quaternion& value)
 
     if (_joint)
     {
-        _joint->setLocalPose(PX_TARGET_ACTOR_ID, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
+        _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
     }
 }
 
@@ -119,7 +116,7 @@ void Joint::Create()
     // Create joint object
     JointData data;
     data.Physics = Physics::GetPhysics();
-    data.Actor0 = parent ? parent->GetRigidActor() : nullptr;
+    data.Actor0 = parent->GetRigidActor();
     data.Actor1 = target ? target->GetRigidActor() : nullptr;
     data.Pos0 = _localTransform.Translation;
     data.Rot0 = _localTransform.Orientation;
@@ -332,6 +329,6 @@ void Joint::OnTransformChanged()
 
     if (_joint)
     {
-        _joint->setLocalPose(PX_PARENT_ACTOR_ID, PxTransform(C2P(_localTransform.Translation), C2P(_localTransform.Orientation)));
+        _joint->setLocalPose(PxJointActorIndex::eACTOR0, PxTransform(C2P(_localTransform.Translation), C2P(_localTransform.Orientation)));
     }
 }

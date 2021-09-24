@@ -162,7 +162,7 @@ namespace FlaxEditor.Windows
                 WatermarkText = "Search...",
                 Parent = this,
             };
-            _searchBox.TextChanged += OnSearchBoxTextChanged;
+            _searchBox.TextChanged += Refresh;
             _hScroll = new HScrollBar(this, Height - _scrollSize, Width - _scrollSize, _scrollSize)
             {
                 ThumbThickness = 10,
@@ -227,11 +227,6 @@ namespace FlaxEditor.Windows
             menu.AddButton("Load log file...", LoadLogFile);
 
             menu.Show(_viewDropdown.Parent, _viewDropdown.BottomLeft);
-        }
-
-        private void OnSearchBoxTextChanged()
-        {
-            Refresh();
         }
 
         private void ToggleLogTypeShow(LogType type)

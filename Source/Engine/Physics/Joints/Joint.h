@@ -10,7 +10,7 @@ class IPhysicsActor;
 
 /// <summary>
 /// A base class for all Joint types. Joints constrain how two rigidbodies move relative to one another (for example a door hinge).
-/// One of the bodies in the joint must always be movable (non-kinematic).
+/// One of the bodies in the joint must always be movable (non-kinematic and non-static).
 /// </summary>
 /// <remarks>
 /// Joint constraint is created between the parent physic actor (rigidbody, character controller, etc.) and the specified target actor.
@@ -125,7 +125,6 @@ public:
     /// <summary>
     /// Gets the native PhysX joint object.
     /// </summary>
-    /// <returns>The PhysX joint.</returns>
     FORCE_INLINE PxJoint* GetPhysXJoint() const
     {
         return _joint;
