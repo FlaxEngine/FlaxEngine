@@ -78,7 +78,7 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
 - **Development/** - engine development files
   - **Scripts/** - utility scripts
 - **packages/** - Nuget packages cache location
-- **Source/** - source code lcoation
+- **Source/** - source code location
   - **Editor/** - Flax Editor source code
   - **Engine/** - Flax Engine source code
   - **Platforms/** - per-platform sources and dependency files
