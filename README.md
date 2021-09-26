@@ -6,7 +6,7 @@
 Flax Engine is a high quality modern 3D game engine written in C++ and C#.
 From stunning graphics to powerful scripts - Flax can give everything for your games. Designed for fast workflow with many ready to use features waiting for you right now. To learn more see the website ([www.flaxengine.com](https://flaxengine.com)).
 
-This repository contains full source code of the Flax (excluding NDA-protected platforms support). Anyone is welcome to contribute or use the modified source in Flax-based games.
+This repository contains full source code of the Flax Engine (excluding NDA-protected platforms support). Anyone is welcome to contribute or use the modified source in Flax-based games.
 
 # Development
 
@@ -69,15 +69,15 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
 - **Binaries/** - executable files
   - **Editor/** - Flax Editor binaries
   - **Tools/** - tools binaries
-- **Cache/** - local data cache folder used by engine and tools
+- **Cache/** - local data cache folder used by the engine and tools
   - **Intermediate/** - intermediate files and cache for engine build
     - ***ProjectName*/** - per-project build cache data
     - **Deps/** - Flax.Build dependencies building cache
   - **Projects/** - project files location
-- **Content/** - assets and binary files used by engine and editor
+- **Content/** - assets and binary files used by the engine and editor
 - **Development/** - engine development files
   - **Scripts/** - utility scripts
-- **packages/** - Nuget packages cache location
+- **packages/** - NuGet packages cache location
 - **Source/** - source code location
   - **Editor/** - Flax Editor source code
   - **Engine/** - Flax Engine source code
@@ -88,7 +88,7 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
       - **Binaries/** - per-platform binaries
         - **Game/** - Flax Game binaries
         - **Mono/** - Mono runtime files and data
-        - **ThirdParty/** - prebuild 3rd Party binaries
+        - **ThirdParty/** - prebuilt 3rd Party binaries
   - **Shaders/** - shaders source code
   - **ThirdParty/** - 3rd Party source code
   - **Tools/** - development tools source code
