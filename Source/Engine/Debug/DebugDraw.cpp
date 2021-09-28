@@ -45,6 +45,8 @@
 #define DEBUG_DRAW_CYLINDER_RESOLUTION 12
 #define DEBUG_DRAW_CYLINDER_VERTICES (DEBUG_DRAW_CYLINDER_RESOLUTION * 4)
 //
+#define DEBUG_DRAW_CONE_RESOLUTION 32
+//
 #define DEBUG_DRAW_TRIANGLE_SPHERE_RESOLUTION 12
 
 struct DebugSphereCache
@@ -1489,6 +1491,51 @@ namespace
             }
         }
     }
+
+    void DrawCone(Array<DebugTriangle>* list, const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration)
+    {
+        const float tolerance = 0.001f;
+        const float angle1 = Math::Clamp(angleXY, tolerance, PI - tolerance);
+        const float angle2 = Math::Clamp(angleXZ, tolerance, PI - tolerance);
+
+        const float sinX1 = Math::Sin(0.5f * angle1);
+        const float sinY2 = Math::Sin(0.5f * angle2);
+        const float sinSqX1 = sinX1 * sinX1;
+        const float sinSqY2 = sinY2 * sinY2;
+
+        DebugTriangle t;
+        t.Color = Color32(color);
+        t.TimeLeft = duration;
+        const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+        t.V0 = world.GetTranslation();
+
+        Vector3 vertices[DEBUG_DRAW_CONE_RESOLUTION];
+        for (uint32 i = 0; i < DEBUG_DRAW_CONE_RESOLUTION; i++)
+        {
+            const float alpha = (float)i / (float)DEBUG_DRAW_CONE_RESOLUTION;
+            const float azimuth = alpha * TWO_PI;
+
+            const float phi = Math::Atan2(Math::Sin(azimuth) * sinY2, Math::Cos(azimuth) * sinX1);
+            const float sinPhi = Math::Sin(phi);
+            const float cosPhi = Math::Cos(phi);
+            const float sinSqPhi = sinPhi * sinPhi;
+            const float cosSqPhi = cosPhi * cosPhi;
+
+            const float rSq = sinSqX1 * sinSqY2 / (sinSqX1 * sinSqPhi + sinSqY2 * cosSqPhi);
+            const float r = Math::Sqrt(rSq);
+            const float s = Math::Sqrt(1 - rSq);
+
+            Vector3 vertex = Vector3(2 * s * (r * cosPhi), 2 * s * (r * sinPhi), 1 - 2 * rSq) * radius;
+            Vector3::Transform(vertex, world, vertices[i]);
+        }
+
+        for (uint32 i = 0; i < DEBUG_DRAW_CONE_RESOLUTION; i++)
+        {
+            t.V1 = vertices[i];
+            t.V2 = vertices[(i + 1) % DEBUG_DRAW_CONE_RESOLUTION];
+            list->Add(t);
+        }
+    }
 }
 
 void DebugDraw::DrawCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
@@ -1509,6 +1556,26 @@ void DebugDraw::DrawWireCylinder(const Vector3& position, const Quaternion& orie
     else
         list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
     ::DrawCylinder(list, position, orientation, radius, height, color, duration);
+}
+
+void DebugDraw::DrawCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    ::DrawCone(list, position, orientation, radius, angleXY, angleXZ, color, duration);
+}
+
+void DebugDraw::DrawWireCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
+    ::DrawCone(list, position, orientation, radius, angleXY, angleXZ, color, duration);
 }
 
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)

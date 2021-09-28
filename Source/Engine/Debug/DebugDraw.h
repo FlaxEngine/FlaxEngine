@@ -357,6 +357,32 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
     API_FUNCTION() static void DrawWireCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
+    /// Draws the cone.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="orientation">The orientation.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="angleXY">The angle (in radians) of the cone over the XY axis (cone forward is over X).</param>
+    /// <param name="angleXZ">The angle (in radians) of the cone over the XZ axis (cone forward is over X).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the wireframe cone.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="orientation">The orientation.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="angleXY">The angle (in radians) of the cone over the XY axis (cone forward is over X).</param>
+    /// <param name="angleXZ">The angle (in radians) of the cone over the XZ axis (cone forward is over X).</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawWireCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
     /// Draws the wireframe arrow.
     /// </summary>
     /// <param name="position">The arrow origin position.</param>
@@ -427,6 +453,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest) DebugDraw::DrawTube(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_BOX(box, color, duration, depthTest) DebugDraw::DrawBox(box, color, duration, depthTest)
 #define DEBUG_DRAW_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawCylinder(position, orientation, radius, height, color, duration, depthTest)
+#define DEBUG_DRAW_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest) DebugDraw::DrawCone(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLE(v0, v1, v2, color, duration, depthTest) DebugDraw::DrawWireTriangle(v0, v1, v2, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLES(vertices, color, duration, depthTest) DebugDraw::DrawWireTriangles(vertices, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLES_EX(vertices, indices, color, duration, depthTest) DebugDraw::DrawWireTriangles(vertices, indices, color, duration, depthTest)
@@ -435,6 +462,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_SPHERE(sphere, color, duration, depthTest) DebugDraw::DrawWireSphere(sphere, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest) DebugDraw::DrawWireTube(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawWireCylinder(position, orientation, radius, height, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest) DebugDraw::DrawWireCone(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireArrow(position, orientation, scale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration) DebugDraw::DrawText(text, position, color, size, duration)
 
@@ -451,6 +479,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_BOX(box, color, duration, depthTest)
 #define DEBUG_DRAW_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
+#define DEBUG_DRAW_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLE(v0, v1, v2, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLES(vertices, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TRIANGLES_EX(vertices, indices, color, duration, depthTest)
@@ -459,6 +488,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 #define DEBUG_DRAW_WIRE_SPHERE(sphere, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)
 
