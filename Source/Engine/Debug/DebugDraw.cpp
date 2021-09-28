@@ -1646,8 +1646,8 @@ void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orienta
     Vector3::Transform(Vector3::Up, orientation, up);
     Vector3::Transform(Vector3::Right, orientation, right);
     const auto end = position + direction * (100.0f * scale);
-    const auto capEnd = position + direction * (60.0f * scale);
-    const float arrowSidesRatio = scale * 40.0f;
+    const auto capEnd = position + direction * (70.0f * scale);
+    const float arrowSidesRatio = scale * 30.0f;
 
     DrawLine(position, end, color, duration, depthTest);
     DrawLine(end, capEnd + up * arrowSidesRatio, color, duration, depthTest);
