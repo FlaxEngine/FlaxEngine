@@ -208,6 +208,11 @@ namespace Flax.Deploy
                     DeployFiles(src, dstDebug, "*.pdb");
                     File.Delete(Path.Combine(dstDebug, "FlaxEngine.CSharp.pdb"));
                     File.Delete(Path.Combine(dstDebug, "Newtonsoft.Json.pdb"));
+                    if (configuration == TargetConfiguration.Development)
+                    {
+                        // Deploy Editor executable debug file for Development configuration to improve crash reporting
+                        DeployFile(src, dst, "FlaxEditor.pdb");
+                    }
                 }
                 else if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
                 {
