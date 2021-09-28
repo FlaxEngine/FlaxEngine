@@ -954,7 +954,7 @@ namespace Flax.Build
                 throw new Exception($"Cannot build target {target.Name}. The project file is missing (.flaxproj located in the folder above).");
 
             // Setup build environment for the target
-            var targetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
+            var targetBuildOptions = GetBuildOptions(target, platform, platform.TryGetToolchain(architecture), architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
 
             using (new ProfileEventScope("PreBuild"))
             {
@@ -977,7 +977,7 @@ namespace Flax.Build
                 Target = target,
                 TargetOptions = targetBuildOptions,
                 Platform = platform,
-                Toolchain = null,
+                Toolchain = targetBuildOptions.Toolchain,
                 Architecture = architecture,
                 Configuration = configuration,
             };

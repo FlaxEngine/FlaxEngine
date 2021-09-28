@@ -184,6 +184,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Tries to create the build toolchain for a given architecture. Returns null if platform is not supported.
+        /// </summary>
+        /// <param name="targetArchitecture">The target architecture.</param>
+        /// <returns>The toolchain.</returns>
+        public Toolchain TryGetToolchain(TargetArchitecture targetArchitecture)
+        {
+            return HasRequiredSDKsInstalled ? GetToolchain(targetArchitecture) : null;
+        }
+
+        /// <summary>
         /// Creates the build toolchain for a given architecture.
         /// </summary>
         /// <param name="targetArchitecture">The target architecture.</param>

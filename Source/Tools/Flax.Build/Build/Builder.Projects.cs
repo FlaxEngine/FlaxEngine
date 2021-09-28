@@ -34,7 +34,7 @@ namespace Flax.Build
                         var platform = Platform.BuildPlatform;
                         var architecture = TargetArchitecture.AnyCPU;
                         var architectureName = "AnyCPU";
-                        var toolchain = platform.HasRequiredSDKsInstalled ? platform.GetToolchain(architecture) : null;
+                        var toolchain = platform.TryGetToolchain(architecture);
 
                         var configuration = TargetConfiguration.Debug;
                         var configurationName = "Debug";
@@ -113,7 +113,7 @@ namespace Flax.Build
                             if (platform is IProjectCustomizer customizer)
                                 customizer.GetProjectArchitectureName(project, platform, architecture, ref architectureName);
 
-                            var toolchain = platform.HasRequiredSDKsInstalled ? platform.GetToolchain(architecture) : null;
+                            var toolchain = platform.TryGetToolchain(architecture);
                             var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
                             var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                             foreach (var module in modules)
