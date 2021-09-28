@@ -47,6 +47,8 @@
 //
 #define DEBUG_DRAW_CONE_RESOLUTION 32
 //
+#define DEBUG_DRAW_ARC_RESOLUTION 32
+//
 #define DEBUG_DRAW_TRIANGLE_SPHERE_RESOLUTION 12
 
 struct DebugSphereCache
@@ -1576,6 +1578,65 @@ void DebugDraw::DrawWireCone(const Vector3& position, const Quaternion& orientat
     else
         list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
     ::DrawCone(list, position, orientation, radius, angleXY, angleXZ, color, duration);
+}
+
+void DebugDraw::DrawArc(const Vector3& position, const Quaternion& orientation, float radius, float angle, const Color& color, float duration, bool depthTest)
+{
+    if (angle <= 0)
+        return;
+    if (angle > TWO_PI)
+        angle = TWO_PI;
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    const int32 resolution = Math::CeilToInt((float)DEBUG_DRAW_CONE_RESOLUTION / TWO_PI * angle);
+    const float angleStep = angle / (float)resolution;
+    const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+    float currentAngle = 0.0f;
+    DebugTriangle t;
+    t.Color = Color32(color);
+    t.TimeLeft = duration;
+    t.V0 = world.GetTranslation();
+    Vector3 pos(Math::Cos(0) * radius, Math::Sin(0) * radius, 0);
+    Vector3::Transform(pos, world, t.V2);
+    for (int32 i = 0; i < resolution; i++)
+    {
+        t.V1 = t.V2;
+        currentAngle += angleStep;
+        pos = Vector3(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
+        Vector3::Transform(pos, world, t.V2);
+        list->Add(t);
+    }
+}
+
+void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientation, float radius, float angle, const Color& color, float duration, bool depthTest)
+{
+    if (angle <= 0)
+        return;
+    if (angle > TWO_PI)
+        angle = TWO_PI;
+    const int32 resolution = Math::CeilToInt((float)DEBUG_DRAW_CONE_RESOLUTION / TWO_PI * angle);
+    const float angleStep = angle / (float)resolution;
+    const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+    float currentAngle = 0.0f;
+    Vector3 prevPos(world.GetTranslation());
+    if (angle >= TWO_PI)
+    {
+        prevPos = Vector3(Math::Cos(TWO_PI - angleStep) * radius, Math::Sin(TWO_PI - angleStep) * radius, 0);
+        Vector3::Transform(prevPos, world, prevPos);
+    }
+    for (int32 i = 0; i <= resolution; i++)
+    {
+        Vector3 pos(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
+        Vector3::Transform(pos, world, pos);
+        DrawLine(prevPos, pos, color, duration, depthTest);
+        currentAngle += angleStep;
+        prevPos = pos;
+    }
+    if (angle < TWO_PI)
+        DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
 }
 
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)
