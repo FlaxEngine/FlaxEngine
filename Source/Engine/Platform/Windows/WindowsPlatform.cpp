@@ -1221,6 +1221,7 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     if (folder.HasChars() && !SymbolsPath.Contains(folder))
     {
         SymbolsPath.Add(folder);
+        SymbolsPath.Last().Replace('/', '\\');
         OnSymbolsPathModified();
     }
     DbgHelpUnlock();
