@@ -277,10 +277,10 @@ void D6Joint::Serialize(SerializeStream& stream, const void* otherObj)
     char motionLabel[8] = "Motion?";
     for (int32 i = 0; i < 6; i++)
     {
-        motionLabel[6] = '0' + i;
         if (!other || _motion[i] != other->_motion[i])
         {
-            stream.Key(motionLabel, ARRAY_COUNT(motionLabel));
+            motionLabel[6] = '0' + i;
+            stream.Key(motionLabel, ARRAY_COUNT(motionLabel) - 1);
             stream.Enum(_motion[i]);
         }
     }
@@ -294,32 +294,31 @@ void D6Joint::Serialize(SerializeStream& stream, const void* otherObj)
     char driveLabel_Acceleration[20] = "Drive?.Acceleration";
     for (int32 i = 0; i < 6; i++)
     {
-        driveLabel_Stiffness[5] = '0' + i;
-        driveLabel_Damping[5] = '0' + i;
-        driveLabel_ForceLimit[5] = '0' + i;
-        driveLabel_Acceleration[5] = '0' + i;
-
         if (!other || _drive[i].Stiffness != other->_drive[i].Stiffness)
         {
-            stream.Key(driveLabel_Stiffness, ARRAY_COUNT(driveLabel_Stiffness));
+            driveLabel_Stiffness[5] = '0' + i;
+            stream.Key(driveLabel_Stiffness, ARRAY_COUNT(driveLabel_Stiffness) - 1);
             stream.Float(_drive[i].Stiffness);
         }
 
         if (!other || _drive[i].Damping != other->_drive[i].Damping)
         {
-            stream.Key(driveLabel_Damping, ARRAY_COUNT(driveLabel_Damping));
+            driveLabel_Damping[5] = '0' + i;
+            stream.Key(driveLabel_Damping, ARRAY_COUNT(driveLabel_Damping) - 1);
             stream.Float(_drive[i].Damping);
         }
 
         if (!other || _drive[i].ForceLimit != other->_drive[i].ForceLimit)
         {
-            stream.Key(driveLabel_ForceLimit, ARRAY_COUNT(driveLabel_ForceLimit));
+            driveLabel_ForceLimit[5] = '0' + i;
+            stream.Key(driveLabel_ForceLimit, ARRAY_COUNT(driveLabel_ForceLimit) - 1);
             stream.Float(_drive[i].ForceLimit);
         }
 
         if (!other || _drive[i].Acceleration != other->_drive[i].Acceleration)
         {
-            stream.Key(driveLabel_Acceleration, ARRAY_COUNT(driveLabel_Acceleration));
+            driveLabel_Acceleration[5] = '0' + i;
+            stream.Key(driveLabel_Acceleration, ARRAY_COUNT(driveLabel_Acceleration) - 1);
             stream.Bool(_drive[i].Acceleration);
         }
     }
