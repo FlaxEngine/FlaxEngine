@@ -196,6 +196,73 @@ float D6Joint::GetCurrentSwingZAngle() const
     return _joint ? static_cast<PxD6Joint*>(_joint)->getSwingZAngle() : 0.0f;
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+float GetAngle(float angle, D6JointMotion motion)
+{
+    switch (motion)
+    {
+    case D6JointMotion::Limited:
+        return angle * DegreesToRadians;
+    case D6JointMotion::Free:
+        return PI;
+    default:
+        return 0.0f;
+    }
+}
+
+void D6Joint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 target = GetTargetPosition();
+    const Quaternion sourceRotation = GetOrientation();
+    const Quaternion targetRotation = GetTargetOrientation();
+    const float swingSize = 15.0f;
+    const float twistSize = 9.0f;
+    const Color swingColor = Color::Green.AlphaMultiplied(0.6f);
+    const Color twistColor = Color::Yellow.AlphaMultiplied(0.5f);
+    DebugDraw::DrawWireArrow(source, sourceRotation, swingSize / 100.0f * 0.5f, Color::Red, 0, false);
+    if (_motion[(int32)D6JointAxis::SwingY] == D6JointMotion::Locked && _motion[(int32)D6JointAxis::SwingZ] == D6JointMotion::Locked)
+    {
+        // Swing is locked
+    }
+    else if (_motion[(int32)D6JointAxis::SwingY] == D6JointMotion::Free && _motion[(int32)D6JointAxis::SwingZ] == D6JointMotion::Free)
+    {
+        // Swing is free
+        DEBUG_DRAW_SPHERE(BoundingSphere(source, swingSize), swingColor, 0, false);
+    }
+    else
+    {
+        // Swing is limited
+        const float angleY = GetAngle(_limitSwing.YLimitAngle, _motion[(int32)D6JointAxis::SwingY]);
+        const float angleZ = GetAngle(_limitSwing.ZLimitAngle, _motion[(int32)D6JointAxis::SwingZ]);
+        DEBUG_DRAW_CONE(source, sourceRotation, swingSize, angleY, angleZ, swingColor, 0, false);
+    }
+    if (_motion[(int32)D6JointAxis::Twist] == D6JointMotion::Locked)
+    {
+        // Twist is locked
+    }
+    else if (_motion[(int32)D6JointAxis::Twist] == D6JointMotion::Free)
+    {
+        // Twist is free
+        DEBUG_DRAW_ARC(source, sourceRotation, twistSize, TWO_PI, twistColor, 0, false);
+    }
+    else
+    {
+        // Twist is limited
+        const float lower = _limitTwist.Lower * DegreesToRadians;
+        const float upper = Math::Max(lower, _limitTwist.Upper * DegreesToRadians);
+        DEBUG_DRAW_ARC(source, sourceRotation * Quaternion::Euler(0, 0, lower), twistSize, upper - lower, twistColor, 0, false);
+    }
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
+
 void D6Joint::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

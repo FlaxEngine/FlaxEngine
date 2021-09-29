@@ -156,6 +156,9 @@ public:
 public:
 
     // [Joint]
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
+#endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 

@@ -88,6 +88,39 @@ float DistanceJoint::GetCurrentDistance() const
     return _joint ? static_cast<PxDistanceJoint*>(_joint)->getDistance() : 0.0f;
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void DistanceJoint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 target = GetTargetPosition();
+    Vector3 dir = target - source;
+    const float len = dir.Length();
+    dir *= 1.0f / len;
+    Vector3 start = source, end = target;
+    float max = 0, min = 0;
+    if (_flags & DistanceJointFlag::MinDistance)
+    {
+        min = Math::Min(_minDistance, len);
+        start += dir * min;
+        DEBUG_DRAW_LINE(source, start, Color::Red * 0.6f, 0, false);
+    }
+    if (_flags & DistanceJointFlag::MaxDistance)
+    {
+        max = Math::Min(_maxDistance, len - min);
+        end -= dir * max;
+        DEBUG_DRAW_LINE(end, target, Color::Red * 0.6f, 0, false);
+    }
+    DEBUG_DRAW_LINE(start, end, Color::Green * 0.6f, 0, false);
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
+
 void DistanceJoint::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

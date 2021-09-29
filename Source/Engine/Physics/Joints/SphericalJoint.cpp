@@ -43,6 +43,33 @@ void SphericalJoint::SetLimit(const LimitConeRange& value)
     }
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void SphericalJoint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 target = GetTargetPosition();
+    const float size = 15.0f;
+    const Color color = Color::Green.AlphaMultiplied(0.6f);
+    DebugDraw::DrawWireArrow(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
+    if (_flags & SphericalJointFlag::Limit)
+    {
+        DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);
+    }
+    else
+    {
+        DEBUG_DRAW_SPHERE(BoundingSphere(source, size), color, 0, false);
+    }
+    DEBUG_DRAW_LINE(source, target, Color::Green * 0.6f, 0, false);
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
+
 void SphericalJoint::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

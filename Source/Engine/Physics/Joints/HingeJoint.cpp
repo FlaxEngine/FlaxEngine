@@ -73,6 +73,40 @@ float HingeJoint::GetCurrentVelocity() const
     return _joint ? static_cast<PxRevoluteJoint*>(_joint)->getVelocity() : 0.0f;
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void HingeJoint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 target = GetTargetPosition();
+    const Quaternion xRotation = Quaternion::LookRotation(Vector3::UnitX, Vector3::UnitY);
+    const Quaternion sourceRotation = GetOrientation() * xRotation;
+    const Quaternion targetRotation = GetTargetOrientation() * xRotation;
+    const float size = 15.0f;
+    const Color color = Color::Green.AlphaMultiplied(0.6f);
+    DebugDraw::DrawWireArrow(source, sourceRotation, size / 100.0f * 0.5f, Color::Red, 0, false);
+    DebugDraw::DrawWireArrow(target, targetRotation, size / 100.0f * 0.5f, Color::Blue, 0, false);
+    if (_flags & HingeJointFlag::Limit)
+    {
+        const float upper = Math::Max(_limit.Upper, _limit.Lower);
+        const float range = Math::Abs(upper - _limit.Lower);
+        DEBUG_DRAW_ARC(source, sourceRotation * Quaternion::Euler(0, 0, _limit.Lower - 90.0f), size, range * DegreesToRadians, color, 0, false);
+        DEBUG_DRAW_WIRE_ARC(source, sourceRotation * Quaternion::Euler(0, 0, upper - 90.0f), size, (360.0f - range) * DegreesToRadians, Color::Red.AlphaMultiplied(0.6f), 0, false);
+    }
+    else
+    {
+        DEBUG_DRAW_ARC(source, sourceRotation, size, TWO_PI, color, 0, false);
+    }
+    DEBUG_DRAW_LINE(source, target, Color::Green * 0.6f, 0, false);
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
+
 void HingeJoint::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

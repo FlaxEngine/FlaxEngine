@@ -137,8 +137,6 @@ public:
     /// <param name="angular">The result angular force.</param>
     API_FUNCTION() void GetCurrentForce(API_PARAM(Out) Vector3& linear, API_PARAM(Out) Vector3& angular) const;
 
-public:
-
     /// <summary>
     /// Creates native join object.
     /// </summary>
@@ -169,16 +167,18 @@ protected:
         Vector3 Pos1;
     };
 
+    Vector3 GetTargetPosition() const;
+    Quaternion GetTargetOrientation() const;
     virtual PxJoint* CreateJoint(JointData& data) = 0;
+#if USE_EDITOR
+    virtual void DrawPhysicsDebug(RenderView& view);
+#endif
 
 private:
 
     void Delete();
     void SetActors();
     void OnTargetChanged();
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
 
 public:
 

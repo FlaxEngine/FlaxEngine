@@ -168,26 +168,44 @@ void Joint::OnTargetChanged()
     }
 }
 
+Vector3 Joint::GetTargetPosition() const
+{
+    Vector3 position = _targetAnchor;
+    if (Target)
+    {
+        position = Target->GetOrientation() * position + Target->GetPosition();
+    }
+    return position;
+}
+
+Quaternion Joint::GetTargetOrientation() const
+{
+    Quaternion rotation = _targetAnchorRotation;
+    if (Target)
+    {
+        rotation = Target->GetOrientation() * rotation;
+    }
+    return rotation;
+}
+
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
 
 void Joint::DrawPhysicsDebug(RenderView& view)
 {
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), 3.0f), Color::BlueViolet * 0.8f, 0, true);
-    if (Target)
+    if (view.Mode == ViewMode::PhysicsColliders)
     {
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(Target->GetPosition() + _targetAnchor, 4.0f), Color::AliceBlue * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), 3.0f), Color::BlueViolet * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetTargetPosition(), 4.0f), Color::AliceBlue * 0.8f, 0, true);
     }
 }
 
 void Joint::OnDebugDrawSelected()
 {
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), 3.0f), Color::BlueViolet * 0.8f, 0, false);
-    if (Target)
-    {
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(Target->GetPosition() + _targetAnchor, 4.0f), Color::AliceBlue * 0.8f, 0, false);
-    }
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetTargetPosition(), 4.0f), Color::AliceBlue * 0.8f, 0, false);
 
     // Base
     Actor::OnDebugDrawSelected();

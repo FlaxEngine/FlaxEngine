@@ -56,6 +56,30 @@ float SliderJoint::GetCurrentVelocity() const
     return _joint ? static_cast<PxPrismaticJoint*>(_joint)->getVelocity() : 0.0f;
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void SliderJoint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 normal = GetOrientation() * Vector3::Right;
+    float min = -100.0f, max = 100.0f;
+    if (_flags & SliderJointFlag::Limit)
+    {
+        min = _limit.Lower;
+        max = _limit.Upper;
+        if (max < min)
+            Swap(min, max);
+    }
+    DEBUG_DRAW_LINE(source + normal * min, source + normal * max, Color::Green * 0.6f, 0, false);
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
+
 void SliderJoint::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

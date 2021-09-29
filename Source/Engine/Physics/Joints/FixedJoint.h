@@ -11,6 +11,13 @@
 API_CLASS() class FLAXENGINE_API FixedJoint : public Joint
 {
 DECLARE_SCENE_OBJECT(FixedJoint);
+public:
+
+    // [Joint]
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
+#endif
+
 protected:
 
     // [Joint]
