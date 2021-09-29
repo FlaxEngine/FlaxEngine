@@ -586,6 +586,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &FindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &TryFindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ChangeID);
+    }
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)
     {
