@@ -42,6 +42,7 @@ void SliderJoint::SetLimit(const LimitLinearRange& value)
         limit.stiffness = value.Spring.Stiffness;
         limit.damping = value.Spring.Damping;
         limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
         joint->setLimit(limit);
     }
 }

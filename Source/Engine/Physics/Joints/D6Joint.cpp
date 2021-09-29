@@ -45,6 +45,7 @@ void D6Joint::SetDrive(const D6JointDriveType index, const D6JointDrive& value)
         drive.stiffness = value.Stiffness;
         drive.damping = value.Damping;
         drive.forceLimit = value.ForceLimit;
+        ASSERT_LOW_LAYER(drive.isValid());
         joint->setDrive(static_cast<PxD6Drive::Enum>(index), drive);
     }
 }
@@ -59,11 +60,12 @@ void D6Joint::SetLimitLinear(const LimitLinear& value)
     if (_joint)
     {
         auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointLinearLimit pxLimit(*Physics::GetTolerancesScale(), value.Extent, value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setLinearLimit(pxLimit);
+        PxJointLinearLimit limit(*Physics::GetTolerancesScale(), Math::Max(value.Extent, ZeroTolerance), value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setLinearLimit(limit);
     }
 }
 
@@ -77,11 +79,12 @@ void D6Joint::SetLimitTwist(const LimitAngularRange& value)
     if (_joint)
     {
         auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointAngularLimitPair pxLimit(value.Lower * DegreesToRadians, value.Upper * DegreesToRadians, value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setTwistLimit(pxLimit);
+        PxJointAngularLimitPair limit(value.Lower * DegreesToRadians, Math::Max(value.Upper, value.Lower) * DegreesToRadians, value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setTwistLimit(limit);
     }
 }
 
@@ -95,11 +98,12 @@ void D6Joint::SetLimitSwing(const LimitConeRange& value)
     if (_joint)
     {
         auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointLimitCone pxLimit(value.YLimitAngle * DegreesToRadians, value.ZLimitAngle * DegreesToRadians, value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setSwingLimit(pxLimit);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setSwingLimit(limit);
     }
 }
 
@@ -428,34 +432,38 @@ PxJoint* D6Joint::CreateJoint(JointData& data)
         drive.stiffness = value.Stiffness;
         drive.damping = value.Damping;
         drive.forceLimit = value.ForceLimit;
+        ASSERT_LOW_LAYER(drive.isValid());
         joint->setDrive(static_cast<PxD6Drive::Enum>(i), drive);
     }
 
     {
         const auto& value = _limitLinear;
-        PxJointLinearLimit pxLimit(*Physics::GetTolerancesScale(), Math::Max(value.Extent, 0.01f), value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setDistanceLimit(pxLimit);
+        PxJointLinearLimit limit(*Physics::GetTolerancesScale(), Math::Max(value.Extent, ZeroTolerance), value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setDistanceLimit(limit);
     }
 
     {
         const auto& value = _limitTwist;
-        PxJointAngularLimitPair pxLimit(value.Lower * DegreesToRadians, value.Upper * DegreesToRadians, value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setTwistLimit(pxLimit);
+        PxJointAngularLimitPair limit(value.Lower * DegreesToRadians, Math::Max(value.Upper, value.Lower) * DegreesToRadians, value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setTwistLimit(limit);
     }
 
     {
         const auto& value = _limitSwing;
-        PxJointLimitCone pxLimit(value.YLimitAngle * DegreesToRadians, value.ZLimitAngle * DegreesToRadians, value.ContactDist);
-        pxLimit.stiffness = value.Spring.Stiffness;
-        pxLimit.damping = value.Spring.Damping;
-        pxLimit.restitution = value.Restitution;
-        joint->setSwingLimit(pxLimit);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), value.ContactDist);
+        limit.stiffness = value.Spring.Stiffness;
+        limit.damping = value.Spring.Damping;
+        limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
+        joint->setSwingLimit(limit);
     }
 
     return joint;

@@ -35,10 +35,11 @@ void SphericalJoint::SetLimit(const LimitConeRange& value)
     if (_joint)
     {
         auto joint = static_cast<PxSphericalJoint*>(_joint);
-        PxJointLimitCone limit(value.YLimitAngle * DegreesToRadians, value.ZLimitAngle * DegreesToRadians, value.ContactDist);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), value.ContactDist);
         limit.stiffness = value.Spring.Stiffness;
         limit.damping = value.Spring.Damping;
         limit.restitution = value.Restitution;
+        ASSERT_LOW_LAYER(limit.isValid());
         joint->setLimitCone(limit);
     }
 }
@@ -110,7 +111,7 @@ PxJoint* SphericalJoint::CreateJoint(JointData& data)
     if (_flags & SphericalJointFlag::Limit)
         flags |= PxSphericalJointFlag::eLIMIT_ENABLED;
     joint->setSphericalJointFlags(static_cast<PxSphericalJointFlag::Enum>(flags));
-    PxJointLimitCone limit(_limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, _limit.ContactDist);
+    PxJointLimitCone limit(Math::Clamp(_limit.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(_limit.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), _limit.ContactDist);
     limit.stiffness = _limit.Spring.Stiffness;
     limit.damping = _limit.Spring.Damping;
     limit.restitution = _limit.Restitution;
