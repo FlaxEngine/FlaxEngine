@@ -517,7 +517,7 @@ public:
             obj->RegisterObject();
     }
 
-    static void Destroy(ManagedScriptingObject* obj, float timeLeft)
+    static void Destroy(ScriptingObject* obj, float timeLeft)
     {
         // Use scaled game time for removing actors/scripts by the user (maybe expose it to the api?)
         const bool useGameTime = timeLeft > ZeroTolerance;
@@ -526,7 +526,7 @@ public:
             obj->DeleteObject(timeLeft, useGameTime);
     }
 
-    static MonoString* GetTypeName(ManagedScriptingObject* obj)
+    static MonoString* GetTypeName(ScriptingObject* obj)
     {
         INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
         return MUtils::ToString(obj->GetType().Fullname);
@@ -569,7 +569,7 @@ public:
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
 
-    static void ChangeID(ManagedScriptingObject* obj, Guid* id)
+    static void ChangeID(ScriptingObject* obj, Guid* id)
     {
         INTERNAL_CALL_CHECK(obj);
         obj->ChangeID(*id);
@@ -586,7 +586,11 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &FindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &TryFindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ChangeID);
+
+    static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)
+    {
+        return New<PersistentScriptingObject>(params);
     }
 };
 
-IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN(ScriptingObject, FlaxEngine, "FlaxEngine.Object", nullptr, nullptr);
+ScriptingTypeInitializer ScriptingObject::TypeInitializer(GetBinaryModuleFlaxEngine(), StringAnsiView("FlaxEngine.Object", ARRAY_COUNT("FlaxEngine.Object") - 1), sizeof(ScriptingObject), &ScriptingObjectInternal::InitRuntime, &ScriptingObjectInternal::Spawn);
