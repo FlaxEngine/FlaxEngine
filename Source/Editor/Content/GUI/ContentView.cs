@@ -506,7 +506,7 @@ namespace FlaxEditor.Content.GUI
                     Select(item, true);
             }
             // Range select
-            else if (Root.GetKey(KeyboardKeys.Shift))
+            else if (_selection.Count != 0 && Root.GetKey(KeyboardKeys.Shift))
             {
                 int min = _selection.Min(x => x.IndexInParent);
                 int max = _selection.Max(x => x.IndexInParent);
