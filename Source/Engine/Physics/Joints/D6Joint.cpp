@@ -11,7 +11,7 @@ D6Joint::D6Joint(const SpawnParams& params)
     : Joint(params)
 {
     for (int32 i = 0; i < static_cast<int32>(D6JointAxis::MAX); i++)
-        _motion[i] = D6JointMotion::Free;
+        _motion[i] = D6JointMotion::Locked;
     _limitLinear.Extent = 100.0f;
 }
 
