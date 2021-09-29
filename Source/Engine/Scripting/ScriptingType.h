@@ -121,7 +121,7 @@ struct FLAXENGINE_API ScriptingType
     struct InterfaceImplementation
     {
         // Pointer to the type of the implemented interface.
-        const ScriptingTypeInitializer* InterfaceType;
+        const ScriptingTypeHandle* InterfaceType;
 
         // The offset (in bytes) from the object pointer to the interface implementation. Used for casting object to the interface.
         int16 VTableOffset;
@@ -290,7 +290,7 @@ struct FLAXENGINE_API ScriptingType
     /// <summary>
     /// Gets the pointer to the implementation of the given interface type for this scripting type (including base types). Returns null if given interface is not implemented.
     /// </summary>
-    const InterfaceImplementation* GetInterface(const ScriptingTypeInitializer* interfaceType) const;
+    const InterfaceImplementation* GetInterface(const ScriptingTypeHandle& interfaceType) const;
 
     String ToString() const;
 };

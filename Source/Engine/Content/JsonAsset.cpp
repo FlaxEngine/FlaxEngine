@@ -212,8 +212,8 @@ Asset::LoadResult JsonAsset::loadAsset()
         case ScriptingTypes::Class:
         {
             // Ensure that object can deserialized
-            const ScriptingType::InterfaceImplementation* interfaces = type.GetInterface(&ISerializable::TypeInitializer);
-            if (!interfaces)
+            const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
+            if (!interface)
             {
                 LOG(Warning, "Cannot deserialize {0} from Json Asset because it doesn't implement ISerializable interface.", type.ToString());
                 break;
@@ -231,7 +231,7 @@ Asset::LoadResult JsonAsset::loadAsset()
             // Deserialize object
             auto modifier = Cache::ISerializeModifier.Get();
             modifier->EngineBuild = DataEngineBuild;
-            ((ISerializable*)((byte*)instance + interfaces->VTableOffset))->Deserialize(*Data, modifier.Value);
+            ((ISerializable*)((byte*)instance + interface->VTableOffset))->Deserialize(*Data, modifier.Value);
             // TODO: delete object when containing BinaryModule gets unloaded
             break;
         }

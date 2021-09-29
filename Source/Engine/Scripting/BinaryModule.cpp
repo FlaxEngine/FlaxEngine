@@ -309,14 +309,14 @@ ScriptingObject* ScriptingType::GetDefaultInstance() const
     return Script.DefaultInstance;
 }
 
-const ScriptingType::InterfaceImplementation* ScriptingType::GetInterface(const ScriptingTypeInitializer* interfaceType) const
+const ScriptingType::InterfaceImplementation* ScriptingType::GetInterface(const ScriptingTypeHandle& interfaceType) const
 {
     const InterfaceImplementation* interfaces = Interfaces;
     if (interfaces)
     {
         while (interfaces->InterfaceType)
         {
-            if (interfaces->InterfaceType == interfaceType)
+            if (*interfaces->InterfaceType == interfaceType)
                 return interfaces;
             interfaces++;
         }
@@ -639,8 +639,6 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
     for (int32 typeIndex = 0; typeIndex < Types.Count(); typeIndex++)
     {
         ScriptingType& type = Types[typeIndex];
-        if (type.Type == ScriptingTypes::Interface)
-            continue; // TODO: generate C# class for interfaces in API
         ASSERT(type.ManagedClass == nullptr);
 
         // Cache class
