@@ -40,6 +40,7 @@ API_ENUM() enum class D6JointAxis
     /// </summary>
     SwingZ = 5,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
@@ -63,6 +64,7 @@ API_ENUM() enum class D6JointMotion
     /// </summary>
     Free,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
@@ -113,6 +115,7 @@ API_ENUM() enum class D6JointDriveType
     /// </summary>
     Slerp = 5,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 

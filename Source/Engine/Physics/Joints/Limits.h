@@ -330,12 +330,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LimitConeRange);
     /// <summary>
     /// The Y angle of the cone (in degrees). Movement is constrained between 0 and this angle on the Y axis.
     /// </summary>
-    API_FIELD() float YLimitAngle = 90.0f;
+    API_FIELD(Attributes="Limit(0.0f, 180.0f)") float YLimitAngle = 90.0f;
 
     /// <summary>
     /// The Z angle of the cone (in degrees). Movement is constrained between 0 and this angle on the Z axis.
     /// </summary>
-    API_FIELD() float ZLimitAngle = 90.0f;
+    API_FIELD(Attributes="Limit(0.0f, 180.0f)") float ZLimitAngle = 90.0f;
 
 public:
 
