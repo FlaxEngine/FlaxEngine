@@ -600,6 +600,24 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
     return nullptr;
 }
 
+ManagedBinaryModule* ManagedBinaryModule::FindModule(MonoClass* klass)
+{
+    // TODO: consider caching lookup table MonoImage* -> ManagedBinaryModule*
+    ManagedBinaryModule* module = nullptr;
+    MonoImage* mImage = mono_class_get_image(klass);
+    auto& modules = BinaryModule::GetModules();
+    for (auto e : modules)
+    {
+        auto managedModule = dynamic_cast<ManagedBinaryModule*>(e);
+        if (managedModule && managedModule->Assembly->GetMonoImage() == mImage)
+        {
+            module = managedModule;
+            break;
+        }
+    }
+    return module;
+}
+
 void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 {
     PROFILE_CPU();

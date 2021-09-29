@@ -367,19 +367,7 @@ public:
         }
 
         // Get the assembly with that class
-        // TODO: consider caching lookup table MonoImage* -> ManagedBinaryModule*
-        ManagedBinaryModule* module = nullptr;
-        MonoImage* mImage = mono_class_get_image(typeClass);
-        auto& modules = BinaryModule::GetModules();
-        for (auto e : modules)
-        {
-            auto managedModule = dynamic_cast<ManagedBinaryModule*>(e);
-            if (managedModule && managedModule->Assembly->GetMonoImage() == mImage)
-            {
-                module = managedModule;
-                break;
-            }
-        }
+        auto module = ManagedBinaryModule::FindModule(typeClass);
         if (module == nullptr)
         {
             LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
@@ -464,19 +452,7 @@ public:
         MonoClass* typeClass = mono_object_get_class(managedInstance);
 
         // Get the assembly with that class
-        // TODO: consider caching lookup table MonoImage* -> ManagedBinaryModule*
-        ManagedBinaryModule* module = nullptr;
-        MonoImage* mimage = mono_class_get_image(typeClass);
-        auto& modules = BinaryModule::GetModules();
-        for (auto e : modules)
-        {
-            auto managedModule = dynamic_cast<ManagedBinaryModule*>(e);
-            if (managedModule && managedModule->Assembly->GetMonoImage() == mimage)
-            {
-                module = managedModule;
-                break;
-            }
-        }
+        auto module = ManagedBinaryModule::FindModule(typeClass);
         if (module == nullptr)
         {
             LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));

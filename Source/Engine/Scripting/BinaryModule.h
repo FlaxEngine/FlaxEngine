@@ -297,6 +297,7 @@ public:
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
+    static ManagedBinaryModule* FindModule(MonoClass* klass);
 
 private:
 
