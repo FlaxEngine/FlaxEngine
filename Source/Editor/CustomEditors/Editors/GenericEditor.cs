@@ -4,12 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -365,6 +367,137 @@ namespace FlaxEditor.CustomEditors.Editors
                 OnGroupPanelRevert(child as LayoutElementsContainer, toDefault);
         }
 
+        private void OnGroupPanelCopy(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                layout.Editors[0].Copy();
+            }
+            else if (layout.Editors.Count != 0)
+            {
+                var data = new string[layout.Editors.Count];
+                var sb = new StringBuilder();
+                sb.Append("[\n");
+                for (var i = 0; i < layout.Editors.Count; i++)
+                {
+                    layout.Editors[i].Copy();
+                    if (i != 0)
+                        sb.Append(",\n");
+                    sb.Append(Clipboard.Text);
+                    data[i] = Clipboard.Text;
+                }
+                sb.Append("\n]");
+                Clipboard.Text = sb.ToString();
+                Clipboard.Text = JsonSerializer.Serialize(data);
+            }
+            else if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                    {
+                        OnGroupPanelCopy(childContainer);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
+        {
+            return layout.Editors.Count != 0 || layout.Children.Any(x => x is LayoutElementsContainer);
+        }
+
+        private void OnGroupPanelPaste(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                layout.Editors[0].Paste();
+            }
+            else if (layout.Editors.Count != 0)
+            {
+                var sb = Clipboard.Text;
+                if (!string.IsNullOrEmpty(sb))
+                {
+                    try
+                    {
+                        var data = JsonSerializer.Deserialize<string[]>(sb);
+                        if (data == null || data.Length != layout.Editors.Count)
+                            return;
+                        for (var i = 0; i < layout.Editors.Count; i++)
+                        {
+                            Clipboard.Text = data[i];
+                            layout.Editors[i].Paste();
+                        }
+                    }
+                    catch
+                    {
+                    }
+                    finally
+                    {
+                        Clipboard.Text = sb;
+                    }
+                }
+            }
+            else if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                    {
+                        OnGroupPanelPaste(childContainer);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                return layout.Editors[0].CanPaste;
+            }
+            if (layout.Editors.Count != 0)
+            {
+                var sb = Clipboard.Text;
+                if (!string.IsNullOrEmpty(sb))
+                {
+                    try
+                    {
+                        var data = JsonSerializer.Deserialize<string[]>(sb);
+                        if (data == null || data.Length != layout.Editors.Count)
+                            return false;
+                        for (var i = 0; i < layout.Editors.Count; i++)
+                        {
+                            Clipboard.Text = data[i];
+                            if (!layout.Editors[i].CanPaste)
+                                return false;
+                        }
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                    finally
+                    {
+                        Clipboard.Text = sb;
+                    }
+                }
+                return false;
+            }
+            if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                        return OnGroupPanelCanPaste(childContainer);
+                }
+            }
+            return false;
+        }
+
         private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
         {
             var group = (GroupElement)groupPanel.Tag;
@@ -376,6 +509,12 @@ namespace FlaxEditor.CustomEditors.Editors
             revertToPrefab.Enabled = canRevertReference;
             var resetToDefault = menu.AddButton("Reset to default", () => OnGroupPanelRevert(group, true));
             resetToDefault.Enabled = canRevertDefault;
+            menu.AddSeparator();
+            var copy = menu.AddButton("Copy", () => OnGroupPanelCopy(group));
+            copy.Enabled = OnGroupPanelCanCopy(group);
+            var paste = menu.AddButton("Paste", () => OnGroupPanelPaste(group));
+            paste.Enabled = OnGroupPanelCanPaste(group);
+
             menu.Show(groupPanel, location);
         }
 

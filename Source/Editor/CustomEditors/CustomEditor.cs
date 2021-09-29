@@ -520,8 +520,6 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void Copy()
         {
-            Editor.Log("Copy custom editor value");
-
             try
             {
                 string text;
@@ -658,8 +656,6 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void Paste()
         {
-            Editor.Log("Paste custom editor value");
-
             try
             {
                 if (GetClipboardObject(out var obj, true))
