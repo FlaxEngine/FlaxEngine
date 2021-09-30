@@ -125,19 +125,19 @@ public:
     // @param xy X and Y values in the vector
     // @param z Z component value
     // @param w W component value
-    Vector4(const Vector2& xy, float z, float w);
+    explicit Vector4(const Vector2& xy, float z, float w);
 
     // Init
     // @param xy X and Y values in the vector
     // @param zw Z and W values in the vector
     // @param z Z component value
     // @param w W component value
-    Vector4(const Vector2& xy, const Vector2& zw);
+    explicit Vector4(const Vector2& xy, const Vector2& zw);
 
     // Init
     // @param xyz X, Y and Z values in the vector
     // @param w W component value
-    Vector4(const Vector3& xyz, float w);
+    explicit Vector4(const Vector3& xyz, float w);
 
     // Init
     // @param xy X and Y values in the vector
