@@ -813,6 +813,11 @@ API_ENUM() enum class ViewMode
     /// Draw physics colliders debug view
     /// </summary>
     PhysicsColliders = 20,
+
+    /// <summary>
+    /// Draw Level Of Detail number as colors to debug LOD switches.
+    /// </summary>
+    LODPreview = 21,
 };
 
 /// <summary>

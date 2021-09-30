@@ -16,8 +16,9 @@ private:
     AssetReference<Model> _skyModel;
     AssetReference<Model> _boxModel;
 #if USE_EDITOR
-    class LightmapUVsDensityMaterialShader* _lightmapUVsDensityMaterialShader = nullptr;
-    class VertexColorsMaterialShader* _vertexColorsMaterialShader = nullptr;
+    class LightmapUVsDensityMaterialShader* _lightmapUVsDensity = nullptr;
+    class VertexColorsMaterialShader* _vertexColors = nullptr;
+    class LODPreviewMaterialShader* _lodPreview = nullptr;
 #endif
 
 public:

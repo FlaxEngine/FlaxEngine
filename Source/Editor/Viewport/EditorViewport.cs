@@ -1397,6 +1397,7 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density"),
             new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors"),
             new ViewModeOptions(ViewMode.PhysicsColliders, "Physics Colliders"),
+            new ViewModeOptions(ViewMode.LODPreview, "LOD Preview"),
         };
 
         private void WidgetCamSpeedShowHide(Control cm)

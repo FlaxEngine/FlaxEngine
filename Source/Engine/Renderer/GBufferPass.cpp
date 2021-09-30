@@ -2,8 +2,11 @@
 
 #include "GBufferPass.h"
 #include "RenderList.h"
+#if USE_EDITOR
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
+#include "Engine/Renderer/Editor/LODPreview.h"
+#endif
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -87,10 +90,36 @@ void GBufferPass::Dispose()
     _skyModel = nullptr;
     _boxModel = nullptr;
 #if USE_EDITOR
-    SAFE_DELETE(_lightmapUVsDensityMaterialShader);
-    SAFE_DELETE(_vertexColorsMaterialShader);
+    SAFE_DELETE(_lightmapUVsDensity);
+    SAFE_DELETE(_vertexColors);
+    SAFE_DELETE(_lodPreview);
 #endif
 }
+
+#if USE_EDITOR
+
+void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* material)
+{
+    if (material->IsReady())
+    {
+        auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
+        for (int32 i : drawCallsList.Indices)
+        {
+            auto& drawCall = renderContext.List->DrawCalls[i];
+            if (drawCall.Material->IsSurface())
+            {
+                drawCall.Material = material;
+            }
+        }
+        IMaterial::InstancingHandler handler;
+        if (!material->CanUseInstancing(handler))
+        {
+            drawCallsList.CanUseInstancing = false;
+        }
+    }
+}
+
+#endif
 
 void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer)
 {
@@ -133,47 +162,21 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     // Override draw calls material to use material debug shader
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
     {
-        if (!_lightmapUVsDensityMaterialShader)
-            _lightmapUVsDensityMaterialShader = New<LightmapUVsDensityMaterialShader>();
-        if (_lightmapUVsDensityMaterialShader->IsReady())
-        {
-            auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
-            for (int32 i : drawCallsList.Indices)
-            {
-                auto& drawCall = renderContext.List->DrawCalls[i];
-                if (drawCall.Material->IsSurface())
-                {
-                    drawCall.Material = _lightmapUVsDensityMaterialShader;
-                }
-            }
-            IMaterial::InstancingHandler handler;
-            if (!_lightmapUVsDensityMaterialShader->CanUseInstancing(handler))
-            {
-                drawCallsList.CanUseInstancing = false;
-            }
-        }
+        if (!_lightmapUVsDensity)
+            _lightmapUVsDensity = New<LightmapUVsDensityMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _lightmapUVsDensity);
     }
     else if (renderContext.View.Mode == ViewMode::VertexColors)
     {
-        if (!_vertexColorsMaterialShader)
-            _vertexColorsMaterialShader = New<VertexColorsMaterialShader>();
-        if (_vertexColorsMaterialShader->IsReady())
-        {
-            auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
-            for (int32 i : drawCallsList.Indices)
-            {
-                auto& drawCall = renderContext.List->DrawCalls[i];
-                if (drawCall.Material->IsSurface())
-                {
-                    drawCall.Material = _vertexColorsMaterialShader;
-                }
-            }
-            IMaterial::InstancingHandler handler;
-            if (!_vertexColorsMaterialShader->CanUseInstancing(handler))
-            {
-                drawCallsList.CanUseInstancing = false;
-            }
-        }
+        if (!_vertexColors)
+            _vertexColors = New<VertexColorsMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _vertexColors);
+    }
+    else if (renderContext.View.Mode == ViewMode::LODPreview)
+    {
+        if (!_lodPreview)
+            _lodPreview = New<LODPreviewMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _lodPreview);
     }
     if (renderContext.View.Mode == ViewMode::PhysicsColliders)
     {
