@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -934,6 +934,19 @@ public:
     /// <returns>The triangle area.</returns>
     static double TriangleArea(const Double3& v0, const Double3& v1, const Double3& v2);
 
+    /// <summary>
+    /// Calculates the angle (in radians) between from and to. This is always the smallest value.
+    /// </summary>
+    /// <param name="from">The first vector.</param>
+    /// <param name="to">The second vector.</param>
+    /// <returns>The angle (in radians).</returns>
+    static double Angle(const Double3& from, const Double3& to)
+    {
+        const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
+        if (Math::Abs(dot) > (1.0 - ZeroTolerance))
+            return dot > 0.0 ? 0.0 : PI;
+        return Math::Acos(dot);
+    }
 };
 
 inline Double3 operator+(double a, const Double3& b)
