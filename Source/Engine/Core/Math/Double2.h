@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -625,6 +625,20 @@ public:
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
     static double TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2);
+    
+	/// <summary>
+    /// Calculates the angle (in radians) between from and to. This is always the smallest value.
+    /// </summary>
+    /// <param name="from">The first vector.</param>
+    /// <param name="to">The second vector.</param>
+    /// <returns>The angle (in radians).</returns>
+    static double Angle(const Double2& from, const Double2& to)
+    {
+        const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
+        if (Math::Abs(dot) > (1.0 - ZeroTolerance))
+            return dot > 0.0 ? 0.0 : PI;
+        return Math::Acos(dot);
+    }
 };
 
 inline Double2 operator+(double a, const Double2& b)
