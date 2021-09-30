@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Double2.h"
 #include "Double3.h"
@@ -45,6 +45,20 @@ Double3::Double3(const Vector2& xy)
 {
 }
 
+Double3::Double3(const Vector3& xyz)
+    : X(xyz.X)
+    , Y(xyz.Y)
+    , Z(xyz.Z)
+{
+}
+
+Double3::Double3(const Vector4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
+    , Z(xyzw.Z)
+{
+}
+
 Double3::Double3(const Int2& xy, double z)
     : X(static_cast<double>(xy.X))
     , Y(static_cast<double>(xy.Y))
@@ -63,13 +77,6 @@ Double3::Double3(const Int4& xyzw)
     : X(static_cast<double>(xyzw.X))
     , Y(static_cast<double>(xyzw.Y))
     , Z(static_cast<double>(xyzw.Z))
-{
-}
-
-Double3::Double3(const Vector4& xyzw)
-    : X(xyzw.X)
-    , Y(xyzw.Y)
-    , Z(xyzw.Z)
 {
 }
 

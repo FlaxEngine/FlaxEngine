@@ -143,11 +143,19 @@ public:
     // Init
     // @param xy Vector2 value
     explicit Double3(const Vector2& xy);
+    
+    // Init
+    // @param xyz Vector3 value
+    explicit Double3(const Vector3& xyz);
 
     // Init
-    // @param xy Int22 with X and Y components values
+    // @param xyz Vector4 value
+    explicit Double3(const Vector4& xyzw);
+
+    // Init
+    // @param xy Int2 with X and Y components values
     // @param z Z component value
-    explicit  Double3(const Int2& xy, double z);
+    explicit Double3(const Int2& xy, double z);
 
     // Init
     // @param xyz Int3 value
@@ -155,21 +163,16 @@ public:
 
     // Init
     // @param xyzw Int4 value
-    explicit  Double3(const Int4& xyzw);
-
-    // Init
-    // @param xyz Vector4 value
-    explicit Double3(const Vector4& xyzw);
+    explicit Double3(const Int4& xyzw);
 
     // Init
     // @param xy Double2 value
-    Double3(const Double2& xy);
+    explicit Double3(const Double2& xy);
     
     // Init
     // @param xy Double2 value
     // @param z Z component value
     explicit Double3(const Double2& xy, double z);
-    
     
     // Init
     // @param xyzw Double4 value
