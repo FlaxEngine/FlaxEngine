@@ -188,7 +188,7 @@ bool ProjectInfo::LoadProject(const String& projectPath)
                 // Relative to project root
                 referencePath = ProjectFolderPath / reference.Name.Substring(15);
             }
-            else if (!FileSystem::IsRelative(reference.Name))
+            else if (FileSystem::IsRelative(reference.Name))
             {
                 // Relative to workspace
                 referencePath = Globals::StartupFolder / reference.Name;
