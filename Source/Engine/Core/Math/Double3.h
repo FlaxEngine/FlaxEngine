@@ -940,13 +940,8 @@ public:
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
-    static double Angle(const Double3& from, const Double3& to)
-    {
-        const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
-        if (Math::Abs(dot) > (1.0 - ZeroTolerance))
-            return dot > 0.0 ? 0.0 : PI;
-        return Math::Acos(dot);
-    }
+    static double Angle(const Double3& from, const Double3& to);
+
 };
 
 inline Double3 operator+(double a, const Double3& b)

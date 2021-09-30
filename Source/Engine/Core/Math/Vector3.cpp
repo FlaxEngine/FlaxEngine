@@ -383,3 +383,11 @@ float Vector3::TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3&
 {
     return (v2 - v0 ^ v1 - v0).Length() * 0.5f;
 }
+
+float Vector3::Angle(const Vector3& from, const Vector3& to)
+{
+    const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
+    if (Math::Abs(dot) > (1.0f - ZeroTolerance))
+        return dot > 0.0f ? 0.0f : PI;
+    return Math::Acos(dot);
+}

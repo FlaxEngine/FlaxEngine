@@ -390,3 +390,11 @@ double Double3::TriangleArea(const Double3& v0, const Double3& v1, const Double3
 {
     return (v2 - v0 ^ v1 - v0).Length() * 0.5;
 }
+
+double Double3::Angle(const Double3& from, const Double3& to)
+{
+    const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
+    if (Math::Abs(dot) > (1.0 - ZeroTolerance))
+        return dot > 0.0 ? 0.0 : PI;
+    return Math::Acos(dot);
+}
