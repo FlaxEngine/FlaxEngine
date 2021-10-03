@@ -8,6 +8,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,11 +24,28 @@ const DateTime UnixEpoch(1970, 1, 1);
 
 bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
 {
+    const StringAsANSI<> initialDirectoryAnsi(*initialDirectory, initialDirectory.Length());
     const StringAsANSI<> titleAnsi(*title, title.Length());
     char cmd[2048];
-    // TODO: multiSelect support
-    // TODO: filter support
-    sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+    if (FileSystem::FileExists(TEXT("/usr/bin/zenity")))
+    {
+        // TODO: initialDirectory support
+        // TODO: multiSelect support
+        // TODO: filter support
+        sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+    }
+    else if (FileSystem::FileExists(TEXT("/usr/bin/kdialog")))
+    {
+        // TODO: multiSelect support
+        // TODO: filter support
+        const char* initDir = initialDirectory.HasChars() ? initialDirectoryAnsi.Get() : ".";
+        sprintf(cmd, "/usr/bin/kdialog --getopenfilename \"%s\" --title \"%s\" ", initDir, titleAnsi.Get());
+    }
+    else
+    {
+        LOG(Error, "Missing file picker (install zenity or kdialog).");
+        return true;    
+    }
     FILE* f = popen(cmd, "r");
     char buf[2048];
     fgets(buf, ARRAY_COUNT(buf), f); 
