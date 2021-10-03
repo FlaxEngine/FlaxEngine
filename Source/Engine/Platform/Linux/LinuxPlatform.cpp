@@ -639,6 +639,9 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
+    if (CommandLine::Options.Headless)
+        return DialogResult::None;
+
 	// Setup for simple popup
 	const StringAsANSI<127> textAnsi(text.Get(), text.Length());
 	const StringAsANSI<511> captionAnsi(caption.Get(), caption.Length());
@@ -1352,6 +1355,8 @@ public:
 
 DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
 {
+    if (CommandLine::Options.Headless)
+        return DragDropEffect::None;
 	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 54);
 	auto cursorTransient = X11::XCreateFontCursor(xDisplay, 24);
 	auto cursorGood = X11::XCreateFontCursor(xDisplay, 4);
@@ -1654,6 +1659,8 @@ void LinuxClipboard::Clear()
 
 void LinuxClipboard::SetText(const StringView& text)
 {
+    if (CommandLine::Options.Headless)
+        return;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
     if (!mainWindow)
         return;
@@ -1674,6 +1681,8 @@ void LinuxClipboard::SetFiles(const Array<String>& files)
 
 String LinuxClipboard::GetText()
 {
+    if (CommandLine::Options.Headless)
+        return String::Empty;
     String result;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
     if (!mainWindow)
@@ -2062,10 +2071,8 @@ bool LinuxPlatform::Init()
 	Platform::MemoryClear(CursorsImg, sizeof(CursorsImg));
 
     // Skip setup if running in headless mode (X11 might not be available on servers)
-    if (CommandLine::Options.Headless.IsTrue())
-    {
+    if (CommandLine::Options.Headless)
         return false;
-    }
 
 	X11::XInitThreads();
 
