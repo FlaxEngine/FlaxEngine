@@ -4,6 +4,9 @@
 
 #include "Types/BaseTypes.h"
 #include "Types/String.h"
+#if _MSC_VER
+#include <intrin.h>
+#endif
 
 namespace Utilities
 {
@@ -42,5 +45,21 @@ namespace Utilities
         if (i >= ARRAY_COUNT(sizes))
             return String::Empty;
         return String::Format(TEXT("{0} {1}"), RoundTo2DecimalPlaces(dblSByte), sizes[i]);
+    }
+
+    // Returns the amount of set bits in 32-bit integer.
+    inline int32 CountBits(uint32 x)
+    {
+        // [Reference: https://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer]
+#ifdef __GNUC_
+        return __builtin_popcount(x);
+#elif _MSC_VER
+        return __popcnt(x);
+#else
+        x = x - ((x >> 1) & 0x55555555);
+        x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+        x = (x + (x >> 4)) & 0x0F0F0F0F;
+        return (x * 0x01010101) >> 24;
+#endif  
     }
 }
