@@ -38,10 +38,10 @@ public class tracy : ThirdPartyModule
         options.SourceFiles.Add(Path.Combine(FolderPath, "TracyClient.cpp"));
 
         options.PublicDefinitions.Add("TRACY_ENABLE");
+        options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
         if (options.Platform.Target == TargetPlatform.Windows)
         {
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
-            options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
         }
         if (OnDemand)
         {
