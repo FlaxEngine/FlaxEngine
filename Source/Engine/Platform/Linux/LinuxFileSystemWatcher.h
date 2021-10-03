@@ -18,8 +18,8 @@ public:
     /// </summary>
     /// <param name="directory">The directory to watch.</param>
     /// <param name="withSubDirs">True if monitor the directory tree rooted at the specified directory or just a given directory.</param>
-    /// <param name="root">Linux specific root directory watcher file descriptor.</param>
-    LinuxFileSystemWatcher(const String& directory, bool withSubDirs, int root= -1);
+    /// <param name="rootWatcher">Linux specific root directory watcher file descriptor.</param>
+    LinuxFileSystemWatcher(const String& directory, bool withSubDirs, int rootWatcher = -1);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="LinuxFileSystemWatcher"/> class.
@@ -36,6 +36,7 @@ public:
 private:
 
     int WachedDirectory;
+    int RootWatcher;
 };
 
 #endif

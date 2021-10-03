@@ -19,6 +19,7 @@
 namespace FileSystemWatchers
 {
     CriticalSection Locker;
+    int32 Count = 0;
     Dictionary<int, LinuxFileSystemWatcher*> RootWatchers;
     Dictionary<int, Pair<int, Pair<String, LinuxFileSystemWatcher*>>> Watchers;
 
@@ -161,6 +162,7 @@ namespace FileSystemWatchers
 
 LinuxFileSystemWatcher::LinuxFileSystemWatcher(const String& directory, bool withSubDirs, int rootWatcher)
     : FileSystemWatcherBase(directory, withSubDirs)
+    , RootWatcher(rootWatcher)
 {
     FileSystemWatchers::Locker.Lock();
     if (!FileSystemWatchers::Thread)
@@ -176,6 +178,8 @@ LinuxFileSystemWatcher::LinuxFileSystemWatcher(const String& directory, bool wit
     {
         const StringAsANSI<250> directoryAnsi(*directory, directory.Length());
         WachedDirectory = inotify_add_watch(FileSystemWatchers::WacherFileDescriptor, directoryAnsi.Get(), IN_MODIFY | IN_CREATE | IN_DELETE);
+        if (rootWatcher == -1)
+            FileSystemWatchers::Count++;
         FileSystemWatchers::Watchers[WachedDirectory] = Pair<int, Pair<String, LinuxFileSystemWatcher*>>(rootWatcher, Pair<String, LinuxFileSystemWatcher*>(directory, this));
         if (withSubDirs)
         {
@@ -194,8 +198,10 @@ LinuxFileSystemWatcher::~LinuxFileSystemWatcher()
         inotify_rm_watch(FileSystemWatchers::WacherFileDescriptor, WachedDirectory);
         FileSystemWatchers::RootWatchers.Remove(WachedDirectory);
         FileSystemWatchers::Watchers.Remove(WachedDirectory);
+        if (RootWatcher == -1)
+            FileSystemWatchers::Count--;
     }
-    if (FileSystemWatchers::RootWatchers.IsEmpty() && FileSystemWatchers::Thread)
+    if (FileSystemWatchers::Count == 0 && FileSystemWatchers::Thread)
     {
         FileSystemWatchers::ThreadActive = false;
         FileSystemWatchers::Thread->Join();
