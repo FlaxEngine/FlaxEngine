@@ -278,7 +278,7 @@ namespace FlaxEditor.Surface
             if (!handled && CanEdit)
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
-                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
+                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
                 {
                     if (Undo != null)
                     {
