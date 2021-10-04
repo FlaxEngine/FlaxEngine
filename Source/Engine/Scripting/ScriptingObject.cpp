@@ -75,7 +75,7 @@ MClass* ScriptingObject::GetClass() const
     return _type ? _type.GetType().ManagedClass : nullptr;
 }
 
-ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, ScriptingTypeHandle& interfaceType)
+ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType)
 {
     if (!interfaceObj || !interfaceType)
         return nullptr;
@@ -118,6 +118,30 @@ ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, ScriptingTyp
     }
 
     return nullptr;
+}
+
+void* ScriptingObject::ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType)
+{
+    if (!obj || !interfaceType)
+        return nullptr;
+    const ScriptingType& objectType = obj->GetType();
+    const ScriptingType::InterfaceImplementation* interface = objectType.GetInterface(interfaceType);
+    void* result = nullptr;
+    if (interface && interface->IsNative)
+    {
+        // Native interface so just offset pointer to the interface vtable start
+        result = (byte*)obj + interface->VTableOffset;
+    }
+    else if (interface)
+    {
+        // Interface implemented in scripting (eg. C# class inherits C++ interface)
+        if (!ScriptingObjectsInterfaceWrappers.TryGet(obj, result))
+        {
+            result = interfaceType.GetType().Interface.GetInterfaceWrapper(obj);
+            ScriptingObjectsInterfaceWrappers.Add(obj, result);
+        }
+    }
+    return result;
 }
 
 ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
@@ -632,24 +656,7 @@ public:
             const ScriptingTypeHandle interfaceType = ManagedBinaryModule::FindType(typeClass);
             if (interfaceType)
             {
-                const ScriptingType& objectType = obj->GetType();
-                const ScriptingType::InterfaceImplementation* interface = objectType.GetInterface(interfaceType);
-                if (interface && interface->IsNative)
-                {
-                    // Native interface so just offset pointer to the interface vtable start
-                    return (byte*)obj + interface->VTableOffset;
-                }
-                if (interface)
-                {
-                    // Interface implemented in scripting (eg. C# class inherits C++ interface)
-                    void* result;
-                    if (!ScriptingObjectsInterfaceWrappers.TryGet(obj, result))
-                    {
-                        result = interfaceType.GetType().Interface.GetInterfaceWrapper(obj);
-                        ScriptingObjectsInterfaceWrappers.Add(obj, result);
-                    }
-                    return result;
-                }
+                return ScriptingObject::ToInterface(obj, interfaceType);
             }
         }
         return nullptr;

@@ -109,7 +109,14 @@ public:
 public:
 
     // Tries to cast native interface object to scripting object instance. Returns null if fails.
-    static ScriptingObject* FromInterface(void* interfaceObj, ScriptingTypeHandle& interfaceType);
+    static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
+    static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
+    template<typename T>
+    static T* ToInterface(ScriptingObject* obj)
+    {
+        return (T*)ToInterface(obj, T::TypeInitializer);
+    }
+
     static ScriptingObject* ToNative(MonoObject* obj);
 
     static MonoObject* ToManaged(ScriptingObject* obj)
