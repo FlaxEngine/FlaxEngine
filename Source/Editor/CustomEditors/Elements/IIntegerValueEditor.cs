@@ -1,10 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using FlaxEngine;
+
 namespace FlaxEditor.CustomEditors.Elements
 {
     /// <summary>
     /// The integer value editor element.
     /// </summary>
+    [HideInEditor]
     public interface IIntegerValueEditor
     {
         /// <summary>

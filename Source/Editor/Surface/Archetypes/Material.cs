@@ -18,12 +18,12 @@ namespace FlaxEditor.Surface.Archetypes
         /// Customized <see cref="SurfaceNode"/> for main material node.
         /// </summary>
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
-        public class SurfaceNodeMaterial : SurfaceNode
+        internal class SurfaceNodeMaterial : SurfaceNode
         {
             /// <summary>
             /// Material node input boxes (each enum item value maps to box ID).
             /// </summary>
-            public enum MaterialNodeBoxes
+            internal enum MaterialNodeBoxes
             {
                 /// <summary>
                 /// The layer input.

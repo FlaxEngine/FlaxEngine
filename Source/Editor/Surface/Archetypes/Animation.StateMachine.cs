@@ -487,7 +487,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// <seealso cref="FlaxEditor.Surface.ISurfaceContext" />
         internal class StateMachineState : SurfaceNode, ISurfaceContext, IConnectionInstigator
         {
-            public class AddRemoveTransitionAction : IUndoAction
+            internal class AddRemoveTransitionAction : IUndoAction
             {
                 private readonly bool _isAdd;
                 private VisjectSurface _surface;
@@ -1400,7 +1400,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// It does not store GC objects references to make it more lightweight. Transition rule bytes data is stores in a separate way.
             /// </remarks>
             [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
-            public struct Data
+            internal struct Data
             {
                 /// <summary>
                 /// The transition flag types.

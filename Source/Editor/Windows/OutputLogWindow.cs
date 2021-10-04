@@ -42,7 +42,7 @@ namespace FlaxEditor.Windows
 
         private struct TextBlockTag
         {
-            public enum Types
+            internal enum Types
             {
                 CodeLocation
             };

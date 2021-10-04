@@ -10,6 +10,7 @@ namespace FlaxEditor.GUI
     /// <summary>
     /// Interface for keyframes/curves editors.
     /// </summary>
+    [HideInEditor]
     public interface IKeyframesEditor
     {
         /// <summary>

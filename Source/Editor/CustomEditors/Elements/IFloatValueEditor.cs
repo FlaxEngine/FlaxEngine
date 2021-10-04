@@ -7,6 +7,7 @@ namespace FlaxEditor.CustomEditors.Elements
     /// <summary>
     /// The floating point value editor element.
     /// </summary>
+    [HideInEditor]
     public interface IFloatValueEditor
     {
         /// <summary>

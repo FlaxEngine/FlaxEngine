@@ -16,6 +16,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// <summary>
     /// The base interface for <see cref="ObjectTrack"/>.
     /// </summary>
+    [HideInEditor]
     public interface IObjectTrack
     {
         /// <summary>

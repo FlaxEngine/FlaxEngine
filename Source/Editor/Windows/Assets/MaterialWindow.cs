@@ -255,7 +255,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Gets or sets the main material node.
         /// </summary>
-        public Surface.Archetypes.Material.SurfaceNodeMaterial MainNode
+        internal Surface.Archetypes.Material.SurfaceNodeMaterial MainNode
         {
             get
             {
