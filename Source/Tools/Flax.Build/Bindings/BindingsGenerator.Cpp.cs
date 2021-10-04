@@ -1270,6 +1270,20 @@ namespace Flax.Build.Bindings
             return string.Empty;
         }
 
+        private static bool GenerateCppAutoSerializationSkip(BuildData buildData, ApiTypeInfo caller, MemberInfo memberInfo, TypeInfo typeInfo)
+        {
+            if (memberInfo.IsStatic)
+                return true;
+            if (memberInfo.Access != AccessLevel.Public && !memberInfo.HasAttribute("Serialize"))
+                return true;
+            if (memberInfo.HasAttribute("NoSerialize") || memberInfo.HasAttribute("NonSerialized"))
+                return true;
+            var apiTypeInfo = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiTypeInfo != null && apiTypeInfo.IsInterface)
+                return true;
+            return false;
+        }
+
         private static void GenerateCppAutoSerialization(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo typeInfo, string typeNameNative)
         {
             var classInfo = typeInfo as ClassInfo;
@@ -1294,11 +1308,7 @@ namespace Flax.Build.Bindings
             {
                 foreach (var fieldInfo in classInfo.Fields)
                 {
-                    if (fieldInfo.IsStatic)
-                        continue;
-                    if (fieldInfo.Access != AccessLevel.Public && !fieldInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (fieldInfo.HasAttribute("NoSerialize") || fieldInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, fieldInfo, fieldInfo.Type))
                         continue;
 
                     var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, fieldInfo.Type, fieldInfo);
@@ -1308,11 +1318,9 @@ namespace Flax.Build.Bindings
 
                 foreach (var propertyInfo in classInfo.Properties)
                 {
-                    if (propertyInfo.IsStatic || propertyInfo.Getter == null || propertyInfo.Setter == null)
+                    if (propertyInfo.Getter == null || propertyInfo.Setter == null)
                         continue;
-                    if (propertyInfo.Access != AccessLevel.Public && !propertyInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (propertyInfo.HasAttribute("NoSerialize") || propertyInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, propertyInfo, propertyInfo.Type))
                         continue;
 
                     var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, propertyInfo.Type, propertyInfo);
@@ -1324,11 +1332,7 @@ namespace Flax.Build.Bindings
             {
                 foreach (var fieldInfo in structureInfo.Fields)
                 {
-                    if (fieldInfo.IsStatic)
-                        continue;
-                    if (fieldInfo.Access != AccessLevel.Public && !fieldInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (fieldInfo.HasAttribute("NoSerialize") || fieldInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, fieldInfo, fieldInfo.Type))
                         continue;
 
                     var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, fieldInfo.Type, fieldInfo);
