@@ -80,6 +80,18 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public void GetTypes(List<ScriptType> result, Func<ScriptType, bool> checkFunc)
+        {
+            var visualScripts = VisualScriptItem.VisualScripts;
+            for (var i = 0; i < visualScripts.Count; i++)
+            {
+                var t = visualScripts[i].ScriptType;
+                if (checkFunc(t))
+                    result.Add(t);
+            }
+        }
+
+        /// <inheritdoc />
         public void GetDerivedTypes(ScriptType baseType, List<ScriptType> result, Func<ScriptType, bool> checkFunc)
         {
             var visualScripts = VisualScriptItem.VisualScripts;

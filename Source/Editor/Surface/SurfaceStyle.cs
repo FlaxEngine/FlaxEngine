@@ -178,7 +178,7 @@ namespace FlaxEditor.Surface
                 color = Colors.Enum;
             else if (type.IsValueType)
                 color = Colors.Structures;
-            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type))
+            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type) || type.IsInterface)
                 color = Colors.Object;
             else if (hint == ConnectionsHint.Vector)
                 color = Colors.Vector;

@@ -1060,13 +1060,14 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Get instance object
     void* mInstance = nullptr;
+    const bool withInterfaces = !mMethod->IsStatic() && mMethod->GetParentClass()->IsInterface();
     if (!mMethod->IsStatic())
     {
         // Box instance into C# object
         MonoObject* instanceObject = MUtils::BoxVariant(instance);
 
         // Validate instance
-        if (!instanceObject || !mono_class_is_subclass_of(mono_object_get_class(instanceObject), mMethod->GetParentClass()->GetNative(), false))
+        if (!instanceObject || !mono_class_is_subclass_of(mono_object_get_class(instanceObject), mMethod->GetParentClass()->GetNative(), withInterfaces))
         {
             if (!instanceObject)
                 LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
@@ -1101,7 +1102,7 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Invoke the method
     MonoObject* exception = nullptr;
-    MonoObject* resultObject = mMethod->Invoke(mInstance, params, &exception);
+    MonoObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MonoObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
     if (exception)
     {
         MException ex(exception);
