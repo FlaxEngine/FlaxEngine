@@ -576,8 +576,6 @@ namespace Flax.Build.Bindings
 
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
-            if (desc.Name.Length < 2 || desc.Name[0] != 'I' || !char.IsUpper(desc.Name[1]))
-                throw new Exception($"Invalid API_INTERFACE name '{desc.Name}' (it must start with 'I' character followed by the uppercase character).");
 
             // Read inheritance
             ParseInheritance(ref context, desc, out _);
