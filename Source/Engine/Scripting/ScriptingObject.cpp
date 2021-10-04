@@ -9,6 +9,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
@@ -22,6 +23,9 @@
 
 #define ScriptingObject_unmanagedPtr "__unmanagedPtr"
 #define ScriptingObject_id "__internalId"
+
+// TODO: don't leak memory (use some kind of late manual GC for those wrapper objects)
+Dictionary<ScriptingObject*, void*> ScriptingObjectsInterfaceWrappers;
 
 ScriptingObject::ScriptingObject(const SpawnParams& params)
     : _gcHandle(0)
@@ -69,6 +73,51 @@ MonoObject* ScriptingObject::GetOrCreateManagedInstance() const
 MClass* ScriptingObject::GetClass() const
 {
     return _type ? _type.GetType().ManagedClass : nullptr;
+}
+
+ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, ScriptingTypeHandle& interfaceType)
+{
+    if (!interfaceObj || !interfaceType)
+        return nullptr;
+    PROFILE_CPU();
+
+    // Find the type which implements this interface and has the same vtable as interface object
+    // TODO: implement vtableInterface->type hashmap caching in Scripting service to optimize sequential interface casts
+    auto& modules = BinaryModule::GetModules();
+    for (auto module : modules)
+    {
+        for (auto& type : module->Types)
+        {
+            if (type.Type != ScriptingTypes::Script)
+                continue;
+            auto interfaceImpl = type.GetInterface(interfaceType);
+            if (interfaceImpl && interfaceImpl->IsNative)
+            {
+                ScriptingObject* predictedObj = (ScriptingObject*)((byte*)interfaceObj - interfaceImpl->VTableOffset);
+                void* predictedVTable = *(void***)predictedObj;
+                void* vtable = type.Script.VTable;
+                if (!vtable && type.GetDefaultInstance())
+                {
+                    // Use vtable from default instance of this type
+                    vtable = *(void***)type.GetDefaultInstance();
+                }
+                if (vtable == predictedVTable)
+                {
+                    ASSERT(predictedObj->GetType().GetInterface(interfaceType));
+                    return predictedObj;
+                }
+            }
+        }
+    }
+
+    // Special case for interface wrapper object
+    for (auto& e : ScriptingObjectsInterfaceWrappers)
+    {
+        if (e.Value == interfaceObj)
+            return e.Key;
+    }
+
+    return nullptr;
 }
 
 ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
@@ -575,6 +624,37 @@ public:
         obj->ChangeID(*id);
     }
 
+    static void* GetUnmanagedInterface(ScriptingObject* obj, MonoReflectionType* type)
+    {
+        if (obj && type)
+        {
+            auto typeClass = MUtils::GetClass(type);
+            const ScriptingTypeHandle interfaceType = ManagedBinaryModule::FindType(typeClass);
+            if (interfaceType)
+            {
+                const ScriptingType& objectType = obj->GetType();
+                const ScriptingType::InterfaceImplementation* interface = objectType.GetInterface(interfaceType);
+                if (interface && interface->IsNative)
+                {
+                    // Native interface so just offset pointer to the interface vtable start
+                    return (byte*)obj + interface->VTableOffset;
+                }
+                if (interface)
+                {
+                    // Interface implemented in scripting (eg. C# class inherits C++ interface)
+                    void* result;
+                    if (!ScriptingObjectsInterfaceWrappers.TryGet(obj, result))
+                    {
+                        result = interfaceType.GetType().Interface.GetInterfaceWrapper(obj);
+                        ScriptingObjectsInterfaceWrappers.Add(obj, result);
+                    }
+                    return result;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     static void InitRuntime()
     {
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create1", &Create1);
@@ -586,6 +666,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &FindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &TryFindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ChangeID);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetUnmanagedInterface", &GetUnmanagedInterface);
     }
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)

@@ -243,6 +243,8 @@ namespace Flax.Build.Bindings
                                 classInfo.Functions.Add(functionInfo);
                             else if (context.ScopeInfo is StructureInfo structureInfo)
                                 structureInfo.Functions.Add(functionInfo);
+                            else if (context.ScopeInfo is InterfaceInfo interfaceInfo)
+                                interfaceInfo.Functions.Add(functionInfo);
                             else
                                 throw new Exception($"Not supported free-function {functionInfo.Name} at line {tokenizer.CurrentLine}. Place it in the class to use API bindings for it.");
                         }

@@ -1263,8 +1263,7 @@ Asset::LoadResult VisualScript::load()
             if (visualScriptType.Script.ScriptVTable)
             {
                 // Override object vtable with hacked one that has Visual Script functions calls
-                ASSERT(visualScriptType.Script.VTable);
-                *(void**)object = visualScriptType.Script.VTable;
+                visualScriptType.HackObjectVTable(object, visualScriptType.BaseTypeHandle, 1);
             }
         }
         const int32 oldCount = _oldParamsLayout.Count();
@@ -1407,17 +1406,7 @@ void VisualScript::CacheScriptingType()
         type.ManagedClass = baseType.GetType().ManagedClass;
 
         // Create custom vtable for this class (build out of the wrapper C++ methods that call Visual Script graph)
-        // Call setup for all class starting from the first native type (first that uses virtual calls will allocate table of a proper size, further base types will just add own methods)
-        for (ScriptingTypeHandle e = nativeType; e;)
-        {
-            const ScriptingType& eType = e.GetType();
-            if (eType.Script.SetupScriptVTable)
-            {
-                ASSERT(eType.ManagedClass);
-                eType.Script.SetupScriptVTable(eType.ManagedClass, type.Script.ScriptVTable, type.Script.ScriptVTableBase);
-            }
-            e = eType.GetBaseType();
-        }
+        type.SetupScriptVTable(nativeType);
         MMethod** scriptVTable = (MMethod**)type.Script.ScriptVTable;
         while (scriptVTable && *scriptVTable)
         {
@@ -1484,37 +1473,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     }
 
     // Beware! Hacking vtables incoming! Undefined behaviors exploits! Low-level programming!
-    // What's happening here?
-    // We create a custom vtable for the Visual Script objects that use a native class object with virtual functions overrides.
-    // To make it easy to use in C++ we inject custom wrapper methods into C++ object vtable to execute Visual Script graph from them.
-    // Because virtual member functions calls are C++ ABI and impl-defined this is quite hard. But works.
-    if (visualScriptType.Script.ScriptVTable)
-    {
-        if (!visualScriptType.Script.VTable)
-        {
-            // Duplicate vtable
-            void** vtable = *(void***)object;
-            const int32 prefixSize = GetVTablePrefix();
-            int32 entriesCount = 0;
-            while (vtable[entriesCount] && entriesCount < 200)
-                entriesCount++;
-            const int32 size = entriesCount * sizeof(void*);
-            visualScriptType.Script.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
-            Platform::MemoryCopy((byte*)visualScriptType.Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
-
-            // Override vtable entries by the class
-            for (ScriptingTypeHandle e = baseTypeHandle; e;)
-            {
-                const ScriptingType& eType = e.GetType();
-                if (eType.Script.SetupScriptObjectVTable)
-                    eType.Script.SetupScriptObjectVTable(visualScriptType.Script.ScriptVTable, visualScriptType.Script.ScriptVTableBase, visualScriptType.Script.VTable, entriesCount, 1);
-                e = eType.GetBaseType();
-            }
-        }
-
-        // Override object vtable with hacked one that has Visual Script functions calls
-        *(void**)object = visualScriptType.Script.VTable;
-    }
+    visualScriptType.HackObjectVTable(object, baseTypeHandle, 1);
 
     // Mark as custom scripting type
     object->Flags |= ObjectFlags::IsCustomScriptingType;

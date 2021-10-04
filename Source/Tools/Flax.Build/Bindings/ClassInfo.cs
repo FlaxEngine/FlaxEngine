@@ -10,7 +10,7 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native class information for bindings generator.
     /// </summary>
-    public class ClassInfo : ClassStructInfo
+    public class ClassInfo : VirtualClassInfo
     {
         private static readonly HashSet<string> InBuildScriptingObjectTypes = new HashSet<string>
         {
@@ -31,12 +31,9 @@ namespace Flax.Build.Bindings
         public bool IsAutoSerialization;
         public bool NoSpawn;
         public bool NoConstructor;
-        public List<FunctionInfo> Functions = new List<FunctionInfo>();
         public List<PropertyInfo> Properties = new List<PropertyInfo>();
         public List<FieldInfo> Fields = new List<FieldInfo>();
         public List<EventInfo> Events = new List<EventInfo>();
-
-        internal HashSet<string> UniqueFunctionNames;
 
         private bool _isScriptingObject;
         private int _scriptVTableSize = -1;
@@ -132,21 +129,6 @@ namespace Flax.Build.Bindings
                 if (propertyInfo.Setter != null)
                     ProcessAndValidate(propertyInfo.Setter);
             }
-
-            foreach (var functionInfo in Functions)
-                ProcessAndValidate(functionInfo);
-        }
-
-        private void ProcessAndValidate(FunctionInfo functionInfo)
-        {
-            // Ensure that methods have unique names for bindings
-            if (UniqueFunctionNames == null)
-                UniqueFunctionNames = new HashSet<string>();
-            int idx = 1;
-            functionInfo.UniqueName = functionInfo.Name;
-            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
-                functionInfo.UniqueName = functionInfo.Name + idx++;
-            UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
 
         public override void Write(BinaryWriter writer)
@@ -158,7 +140,6 @@ namespace Flax.Build.Bindings
             writer.Write(IsAutoSerialization);
             writer.Write(NoSpawn);
             writer.Write(NoConstructor);
-            BindingsGenerator.Write(writer, Functions);
             BindingsGenerator.Write(writer, Properties);
             BindingsGenerator.Write(writer, Fields);
             BindingsGenerator.Write(writer, Events);
@@ -175,7 +156,6 @@ namespace Flax.Build.Bindings
             IsAutoSerialization = reader.ReadBoolean();
             NoSpawn = reader.ReadBoolean();
             NoConstructor = reader.ReadBoolean();
-            Functions = BindingsGenerator.Read(reader, Functions);
             Properties = BindingsGenerator.Read(reader, Properties);
             Fields = BindingsGenerator.Read(reader, Fields);
             Events = BindingsGenerator.Read(reader, Events);
@@ -183,25 +163,51 @@ namespace Flax.Build.Bindings
             base.Read(reader);
         }
 
-        public int GetScriptVTableSize(Builder.BuildData buildData, out int offset)
+        public override int GetScriptVTableSize(out int offset)
         {
             if (_scriptVTableSize == -1)
             {
                 if (BaseType is ClassInfo baseApiTypeInfo)
                 {
-                    _scriptVTableOffset = baseApiTypeInfo.GetScriptVTableSize(buildData, out _);
+                    _scriptVTableOffset = baseApiTypeInfo.GetScriptVTableSize(out _);
+                }
+                if (Interfaces != null)
+                {
+                    foreach (var interfaceInfo in Interfaces)
+                    {
+                        if (interfaceInfo.Access != AccessLevel.Public)
+                            continue;
+                        _scriptVTableOffset += interfaceInfo.GetScriptVTableSize(out _);
+                    }
                 }
                 _scriptVTableSize = _scriptVTableOffset + Functions.Count(x => x.IsVirtual);
+                if (IsSealed)
+                {
+                    // Skip vtables for sealed classes
+                    _scriptVTableSize = _scriptVTableOffset = 0;
+                }
             }
             offset = _scriptVTableOffset;
             return _scriptVTableSize;
         }
 
-        public override void AddChild(ApiTypeInfo apiTypeInfo)
+        public override int GetScriptVTableOffset(VirtualClassInfo classInfo)
         {
-            apiTypeInfo.Namespace = null;
-
-            base.AddChild(apiTypeInfo);
+            if (classInfo == BaseType)
+                return 0;
+            if (Interfaces != null)
+            {
+                var offset = BaseType is ClassInfo baseApiTypeInfo ? baseApiTypeInfo.GetScriptVTableSize(out _) : 0;
+                foreach (var interfaceInfo in Interfaces)
+                {
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    if (interfaceInfo == classInfo)
+                        return offset;
+                    offset += interfaceInfo.GetScriptVTableSize(out _);
+                }
+            }
+            throw new Exception($"Cannot get Script VTable offset for {classInfo} that is not part of {this}");
         }
 
         public override string ToString()

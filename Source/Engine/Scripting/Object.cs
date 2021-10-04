@@ -210,6 +210,17 @@ namespace FlaxEngine
             return GetUnmanagedPtr(reference.Get<Object>());
         }
 
+        /// <summary>
+        /// Gets the pointer to the native interface implementation. Handles null object reference or invalid cast (returns zero).
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The interface type.</param>
+        /// <returns>The native interface pointer.</returns>
+        public static IntPtr GetUnmanagedInterface(object obj, Type type)
+        {
+            return obj is Object o ? Internal_GetUnmanagedInterface(o.__unmanagedPtr, type) : IntPtr.Zero;
+        }
+
         /// <inheritdoc />
         public override int GetHashCode()
         {
@@ -244,6 +255,9 @@ namespace FlaxEngine
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_ChangeID(IntPtr obj, ref Guid id);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr Internal_GetUnmanagedInterface(IntPtr obj, Type type);
 
         #endregion
     }

@@ -66,4 +66,59 @@ namespace Flax.Build.Bindings
             base.Read(reader);
         }
     }
+
+    /// <summary>
+    /// The native class or interface information for bindings generator that contains virtual functions.
+    /// </summary>
+    public abstract class VirtualClassInfo : ClassStructInfo
+    {
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
+
+        internal HashSet<string> UniqueFunctionNames;
+
+        public override void Init(Builder.BuildData buildData)
+        {
+            base.Init(buildData);
+
+            foreach (var functionInfo in Functions)
+                ProcessAndValidate(functionInfo);
+        }
+
+        protected void ProcessAndValidate(FunctionInfo functionInfo)
+        {
+            // Ensure that methods have unique names for bindings
+            if (UniqueFunctionNames == null)
+                UniqueFunctionNames = new HashSet<string>();
+            int idx = 1;
+            functionInfo.UniqueName = functionInfo.Name;
+            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
+                functionInfo.UniqueName = functionInfo.Name + idx++;
+            UniqueFunctionNames.Add(functionInfo.UniqueName);
+        }
+
+        public abstract int GetScriptVTableSize(out int offset);
+
+        public abstract int GetScriptVTableOffset(VirtualClassInfo classInfo);
+
+        public override void Write(BinaryWriter writer)
+        {
+            BindingsGenerator.Write(writer, Functions);
+
+            base.Write(writer);
+        }
+
+        public override void Read(BinaryReader reader)
+        {
+            Functions = BindingsGenerator.Read(reader, Functions);
+
+            base.Read(reader);
+        }
+
+        public override void AddChild(ApiTypeInfo apiTypeInfo)
+        {
+            apiTypeInfo.Namespace = null;
+
+            base.AddChild(apiTypeInfo);
+        }
+    }
 }

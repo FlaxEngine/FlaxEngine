@@ -233,7 +233,7 @@ namespace Flax.Build.Bindings
             {
                 CSharpUsedNamespaces.Add(apiType.Namespace);
 
-                if (apiType.IsScriptingObject)
+                if (apiType.IsScriptingObject || apiType.IsInterface)
                     return typeInfo.Type.Replace("::", ".");
                 if (typeInfo.IsPtr && apiType.IsPod)
                     return typeInfo.Type.Replace("::", ".") + '*';
@@ -256,7 +256,7 @@ namespace Flax.Build.Bindings
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
             {
-                if (apiType.IsScriptingObject)
+                if (apiType.IsScriptingObject || apiType.IsInterface)
                     return "IntPtr";
             }
 
@@ -297,22 +297,26 @@ namespace Flax.Build.Bindings
             case "PersistentScriptingObject":
             case "ManagedScriptingObject":
                 // object
-                return "FlaxEngine.Object.GetUnmanagedPtr";
+                return "FlaxEngine.Object.GetUnmanagedPtr({0})";
             case "Function":
                 // delegate
-                return "Marshal.GetFunctionPointerForDelegate";
+                return "Marshal.GetFunctionPointerForDelegate({0})";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
                 {
                     // Scripting Object
                     if (apiType.IsScriptingObject)
-                        return "FlaxEngine.Object.GetUnmanagedPtr";
+                        return "FlaxEngine.Object.GetUnmanagedPtr({0})";
+
+                    // interface
+                    if (apiType.IsInterface)
+                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.FullNameManaged);
                 }
 
                 // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
                 if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
-                    return "FlaxEngine.Object.GetUnmanagedPtr";
+                    return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
                 // Default
                 return string.Empty;
@@ -358,8 +362,10 @@ namespace Flax.Build.Bindings
                 contents.Append(parameterInfo.Name);
             }
 
-            foreach (var parameterInfo in functionInfo.Glue.CustomParameters)
+            var customParametersCount = functionInfo.Glue.CustomParameters?.Count ?? 0;
+            for (var i = 0; i < customParametersCount; i++)
             {
+                var parameterInfo = functionInfo.Glue.CustomParameters[i];
                 if (separator)
                     contents.Append(", ");
                 separator = true;
@@ -424,15 +430,14 @@ namespace Flax.Build.Bindings
                         throw new Exception($"Cannot use Ref meta on parameter {parameterInfo} in function {functionInfo.Name} in {caller}.");
 
                     // Convert value
-                    contents.Append(convertFunc);
-                    contents.Append('(');
-                    contents.Append(isSetter ? "value" : parameterInfo.Name);
-                    contents.Append(')');
+                    contents.Append(string.Format(convertFunc, isSetter ? "value" : parameterInfo.Name));
                 }
             }
 
-            foreach (var parameterInfo in functionInfo.Glue.CustomParameters)
+            var customParametersCount = functionInfo.Glue.CustomParameters?.Count ?? 0;
+            for (var i = 0; i < customParametersCount; i++)
             {
+                var parameterInfo = functionInfo.Glue.CustomParameters[i];
                 if (separator)
                     contents.Append(", ");
                 separator = true;
@@ -451,10 +456,7 @@ namespace Flax.Build.Bindings
                 else
                 {
                     // Convert value
-                    contents.Append(convertFunc);
-                    contents.Append('(');
-                    contents.Append(parameterInfo.DefaultValue);
-                    contents.Append(')');
+                    contents.Append(string.Format(convertFunc, parameterInfo.DefaultValue));
                 }
             }
 
@@ -571,8 +573,24 @@ namespace Flax.Build.Bindings
             else if (classInfo.IsAbstract)
                 contents.Append("abstract ");
             contents.Append("unsafe partial class ").Append(classInfo.Name);
-            if (classInfo.BaseType != null && !classInfo.IsBaseTypeHidden)
+            var hasBase = classInfo.BaseType != null && !classInfo.IsBaseTypeHidden;
+            if (hasBase)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = classInfo.BaseType.Name }, classInfo));
+            var hasInterface = false;
+            if (classInfo.Interfaces != null)
+            {
+                foreach (var interfaceInfo in classInfo.Interfaces)
+                {
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    if (hasInterface || hasBase)
+                        contents.Append(", ");
+                    else
+                        contents.Append(" : ");
+                    hasInterface = true;
+                    contents.Append(interfaceInfo.FullNameManaged);
+                }
+            }
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
@@ -902,6 +920,71 @@ namespace Flax.Build.Bindings
                 GenerateCSharpWrapperFunction(buildData, contents, indent, classInfo, functionInfo);
             }
 
+            // Interface implementation
+            if (hasInterface)
+            {
+                foreach (var interfaceInfo in classInfo.Interfaces)
+                {
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    foreach (var functionInfo in interfaceInfo.Functions)
+                    {
+                        if (!classInfo.IsScriptingObject)
+                            throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
+
+                        contents.AppendLine();
+                        if (functionInfo.Comment.Length != 0)
+                            contents.Append(indent).AppendLine("/// <inheritdoc />");
+                        GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo.Attributes, null, false, useUnmanaged);
+                        contents.Append(indent);
+                        if (functionInfo.Access == AccessLevel.Public)
+                            contents.Append("public ");
+                        else if (functionInfo.Access == AccessLevel.Protected)
+                            contents.Append("protected ");
+                        else if (functionInfo.Access == AccessLevel.Private)
+                            contents.Append("private ");
+                        if (functionInfo.IsVirtual && !classInfo.IsSealed)
+                            contents.Append("virtual ");
+                        var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, classInfo);
+                        contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+
+                        for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                        {
+                            var parameterInfo = functionInfo.Parameters[i];
+                            if (i != 0)
+                                contents.Append(", ");
+                            if (!string.IsNullOrEmpty(parameterInfo.Attributes))
+                                contents.Append('[').Append(parameterInfo.Attributes).Append(']').Append(' ');
+
+                            var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, classInfo);
+                            if (parameterInfo.IsOut)
+                                contents.Append("out ");
+                            else if (parameterInfo.IsRef)
+                                contents.Append("ref ");
+                            contents.Append(managedType);
+                            contents.Append(' ');
+                            contents.Append(parameterInfo.Name);
+
+                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                            if (!string.IsNullOrEmpty(defaultValue))
+                                contents.Append(" = ").Append(defaultValue);
+                        }
+
+                        contents.Append(')').AppendLine().AppendLine(indent + "{");
+                        indent += "    ";
+
+                        contents.Append(indent);
+                        GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, functionInfo);
+
+                        indent = indent.Substring(0, indent.Length - 4);
+                        contents.AppendLine();
+                        contents.AppendLine(indent + "}");
+
+                        GenerateCSharpWrapperFunction(buildData, contents, indent, classInfo, functionInfo);
+                    }
+                }
+            }
+
             // Nested types
             foreach (var apiTypeInfo in classInfo.Children)
             {
@@ -1109,6 +1192,81 @@ namespace Flax.Build.Bindings
             }
         }
 
+        private static void GenerateCSharpInterface(BuildData buildData, StringBuilder contents, string indent, InterfaceInfo interfaceInfo)
+        {
+            // Begin
+            contents.AppendLine();
+            if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
+            {
+                contents.AppendFormat("namespace ");
+                contents.AppendLine(interfaceInfo.Namespace);
+                contents.AppendLine("{");
+                indent += "    ";
+            }
+            GenerateCSharpComment(contents, indent, interfaceInfo.Comment);
+            GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, true);
+            contents.Append(indent);
+            if (interfaceInfo.Access == AccessLevel.Public)
+                contents.Append("public ");
+            else if (interfaceInfo.Access == AccessLevel.Protected)
+                contents.Append("protected ");
+            else if (interfaceInfo.Access == AccessLevel.Private)
+                contents.Append("private ");
+            contents.Append("unsafe partial interface ").Append(interfaceInfo.Name);
+            contents.AppendLine();
+            contents.Append(indent + "{");
+            indent += "    ";
+
+            // Functions
+            foreach (var functionInfo in interfaceInfo.Functions)
+            {
+                if (functionInfo.IsStatic)
+                    throw new Exception($"Not supported {"static"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
+                if (functionInfo.NoProxy)
+                    throw new Exception($"Not supported {"NoProxy"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
+                if (!functionInfo.IsVirtual)
+                    throw new Exception($"Not supported {"non-virtual"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
+                if (functionInfo.Access != AccessLevel.Public)
+                    throw new Exception($"Not supported {"non-public"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
+
+                contents.AppendLine();
+                GenerateCSharpComment(contents, indent, functionInfo.Comment);
+                GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, functionInfo, true);
+                var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, interfaceInfo);
+                contents.Append(indent).Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    if (i != 0)
+                        contents.Append(", ");
+                    if (!string.IsNullOrEmpty(parameterInfo.Attributes))
+                        contents.Append('[').Append(parameterInfo.Attributes).Append(']').Append(' ');
+
+                    var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, interfaceInfo);
+                    if (parameterInfo.IsOut)
+                        contents.Append("out ");
+                    else if (parameterInfo.IsRef)
+                        contents.Append("ref ");
+                    contents.Append(managedType);
+                    contents.Append(' ');
+                    contents.Append(parameterInfo.Name);
+
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        contents.Append(" = ").Append(defaultValue);
+                }
+
+                contents.Append(");").AppendLine();
+            }
+
+            // End
+            indent = indent.Substring(0, indent.Length - 4);
+            contents.AppendLine(indent + "}");
+            if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
+                contents.AppendLine("}");
+        }
+
         private static bool GenerateCSharpType(BuildData buildData, StringBuilder contents, string indent, object type)
         {
             if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
@@ -1122,6 +1280,8 @@ namespace Flax.Build.Bindings
                     GenerateCSharpStructure(buildData, contents, indent, structureInfo);
                 else if (type is EnumInfo enumInfo)
                     GenerateCSharpEnum(buildData, contents, indent, enumInfo);
+                else if (type is InterfaceInfo interfaceInfo)
+                    GenerateCSharpInterface(buildData, contents, indent, interfaceInfo);
                 else
                     return false;
             }

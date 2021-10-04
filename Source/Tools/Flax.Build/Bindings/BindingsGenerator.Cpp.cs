@@ -35,9 +35,9 @@ namespace Flax.Build.Bindings
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleHeader;
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleSource;
         public static event Action<BuildData, ModuleInfo, StringBuilder> GenerateCppModuleSource;
-        public static event Action<BuildData, ClassInfo, StringBuilder> GenerateCppClassInternals;
-        public static event Action<BuildData, ClassInfo, StringBuilder> GenerateCppClassInitRuntime;
-        public static event Action<BuildData, ClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
+        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInternals;
+        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInitRuntime;
+        public static event Action<BuildData, VirtualClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
 
         private static readonly List<string> CppInBuildVariantStructures = new List<string>
         {
@@ -456,6 +456,13 @@ namespace Flax.Build.Bindings
                     {
                         type = "MonoObject*";
                         return "ScriptingObject::ToManaged((ScriptingObject*){0})";
+                    }
+
+                    // interface
+                    if (apiType.IsInterface)
+                    {
+                        type = "MonoObject*";
+                        return "ScriptingObject::ToManaged(ScriptingObject::FromInterface({0}, " + apiType.NativeName + "::TypeInitializer))";
                     }
 
                     // Non-POD structure passed as value (eg. it contains string or array inside)
@@ -977,7 +984,24 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
         }
 
-        private static void GenerateCppManagedWrapperFunction(BuildData buildData, StringBuilder contents, ClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex)
+        public static void GenerateCppReturn(BuildData buildData, StringBuilder contents, string indent, TypeInfo type)
+        {
+            contents.Append(indent);
+            if (type.IsVoid)
+            {
+                contents.AppendLine("return;");
+                return;
+            }
+            if (type.IsPtr)
+            {
+                contents.AppendLine("return nullptr;");
+                return;
+            }
+            contents.AppendLine($"{type} __return {{}};");
+            contents.Append(indent).AppendLine("return __return;");
+        }
+
+        private static void GenerateCppManagedWrapperFunction(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex)
         {
             contents.AppendFormat("    {0} {1}_ManagedWrapper(", functionInfo.ReturnType, functionInfo.UniqueName);
             var separator = false;
@@ -998,7 +1022,23 @@ namespace Flax.Build.Bindings
             contents.Append(')');
             contents.AppendLine();
             contents.AppendLine("    {");
-            contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
+            string scriptVTableOffset;
+            if (classInfo.IsInterface)
+            {
+                contents.AppendLine($"        auto object = ScriptingObject::FromInterface(this, {classInfo.NativeName}::TypeInitializer);");
+                contents.AppendLine("        if (object == nullptr)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            LOG(Error, \"Failed to cast interface {{0}} to scripting object\", TEXT(\"{classInfo.Name}\"));");
+                GenerateCppReturn(buildData, contents, "            ", functionInfo.ReturnType);
+                contents.AppendLine("        }");
+                contents.AppendLine($"        const int32 scriptVTableOffset = {scriptVTableIndex} + object->GetType().GetInterface({classInfo.NativeName}::TypeInitializer)->ScriptVTableOffset;");
+                scriptVTableOffset = "scriptVTableOffset";
+            }
+            else
+            {
+                contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
+                scriptVTableOffset = scriptVTableIndex.ToString();
+            }
             contents.AppendLine("        static THREADLOCAL void* WrapperCallInstance = nullptr;");
 
             contents.AppendLine("        ScriptingTypeHandle managedTypeHandle = object->GetTypeHandle();");
@@ -1013,7 +1053,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
             contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
-            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
+            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableOffset} + 2])(");
             separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
@@ -1026,8 +1066,8 @@ namespace Flax.Build.Bindings
             contents.AppendLine(");");
             contents.AppendLine("        }");
             contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
-            contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
-            contents.AppendLine($"        auto method = scriptVTable[{scriptVTableIndex}];");
+            contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableOffset}]);");
+            contents.AppendLine($"        auto method = scriptVTable[{scriptVTableOffset}];");
             contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
             contents.AppendLine("        MonoObject* exception = nullptr;");
 
@@ -1120,6 +1160,107 @@ namespace Flax.Build.Bindings
 
             contents.AppendLine("    }");
             contents.AppendLine();
+        }
+
+        private static string GenerateCppScriptVTable(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo)
+        {
+            var scriptVTableSize = classInfo.GetScriptVTableSize(out var scriptVTableOffset);
+            if (scriptVTableSize == 0)
+                return "nullptr, nullptr";
+
+            var scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                GenerateCppManagedWrapperFunction(buildData, contents, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex);
+                GenerateCppScriptWrapperFunction?.Invoke(buildData, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex, contents);
+                scriptVTableIndex++;
+            }
+
+            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MMethod.h");
+            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                var thunkParams = string.Empty;
+                var separator = false;
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    if (separator)
+                        thunkParams += ", ";
+                    separator = true;
+                    thunkParams += parameterInfo.Type;
+                }
+                var t = functionInfo.IsConst ? " const" : string.Empty;
+                contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
+                contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
+            }
+            contents.AppendLine("");
+
+            contents.AppendLine("    static void SetupScriptVTable(MClass* mclass, void**& scriptVTable, void**& scriptVTableBase)");
+            contents.AppendLine("    {");
+            if (classInfo.IsInterface)
+            {
+                contents.AppendLine("        ASSERT(scriptVTable);");
+            }
+            else
+            {
+                contents.AppendLine("        if (!scriptVTable)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            scriptVTable = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 1}, 16);");
+                contents.AppendLine($"            Platform::MemoryClear(scriptVTable, sizeof(void*) * {scriptVTableSize + 1});");
+                contents.AppendLine($"            scriptVTableBase = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 2}, 16);");
+                contents.AppendLine("        }");
+            }
+            scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+            }
+            contents.AppendLine("    }");
+            contents.AppendLine("");
+
+            contents.AppendLine("    static void SetupScriptObjectVTable(void** scriptVTable, void** scriptVTableBase, void** vtable, int32 entriesCount, int32 wrapperIndex)");
+            contents.AppendLine("    {");
+            scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendLine($"        if (scriptVTable[{scriptVTableIndex}])");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
+                contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
+                contents.AppendLine("            if (vtableIndex > 0 && vtableIndex < entriesCount)");
+                contents.AppendLine("            {");
+                contents.AppendLine($"                scriptVTableBase[{scriptVTableIndex} + 2] = vtable[vtableIndex];");
+                for (var i = 0; i < CppScriptObjectVirtualWrapperMethodsPostfixes.Count; i++)
+                {
+                    contents.AppendLine(i == 0 ? "                if (wrapperIndex == 0)" : $"                else if (wrapperIndex == {i})");
+                    contents.AppendLine("                {");
+                    contents.AppendLine($"                    auto thunkPtr = &{classInfo.NativeName}Internal::{functionInfo.UniqueName}{CppScriptObjectVirtualWrapperMethodsPostfixes[i]};");
+                    contents.AppendLine("                    vtable[vtableIndex] = *(void**)&thunkPtr;");
+                    contents.AppendLine("                }");
+                }
+                contents.AppendLine("            }");
+                contents.AppendLine("            else");
+                contents.AppendLine("            {");
+                contents.AppendLine($"                LOG(Error, \"Failed to find the vtable entry for method {{0}} in class {{1}}\", TEXT(\"{functionInfo.Name}\"), TEXT(\"{classInfo.Name}\"));");
+                contents.AppendLine("            }");
+                contents.AppendLine("        }");
+
+                scriptVTableIndex++;
+            }
+            contents.AppendLine("    }");
+            contents.AppendLine("");
+
+            return $"&{classInfo.NativeName}Internal::SetupScriptVTable, &{classInfo.NativeName}Internal::SetupScriptObjectVTable";
         }
 
         private static string GenerateCppAutoSerializationDefineType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo caller, TypeInfo memberType, MemberInfo member)
@@ -1225,7 +1366,7 @@ namespace Flax.Build.Bindings
             contents.Append('}').AppendLine();
         }
 
-        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ClassStructInfo typeInfo, string typeNameNative)
+        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, VirtualClassInfo typeInfo, string typeNameNative)
         {
             var interfacesPtr = "nullptr";
             var interfaces = typeInfo.Interfaces;
@@ -1236,7 +1377,8 @@ namespace Flax.Build.Bindings
                 for (int i = 0; i < interfaces.Count; i++)
                 {
                     var interfaceInfo = interfaces[i];
-                    contents.Append("    { &").Append(interfaceInfo.NativeName).Append("::TypeInitializer, (int16)VTABLE_OFFSET(").Append(typeInfo.NativeName).Append(", ").Append(interfaceInfo.NativeName).AppendLine(") },");
+                    var scriptVTableOffset = typeInfo.GetScriptVTableOffset(interfaceInfo);
+                    contents.AppendLine($"    {{ &{interfaceInfo.NativeName}::TypeInitializer, (int16)VTABLE_OFFSET({typeInfo.NativeName}, {interfaceInfo.NativeName}), {scriptVTableOffset}, true }},");
                 }
                 contents.AppendLine("    { nullptr, 0 },");
                 contents.AppendLine("};");
@@ -1253,6 +1395,7 @@ namespace Flax.Build.Bindings
             if (classInfo.Parent != null && !(classInfo.Parent is FileInfo))
                 classTypeNameInternal = classInfo.Parent.FullNameNative + '_' + classTypeNameInternal;
             var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
+            var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
 
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
@@ -1424,109 +1567,26 @@ namespace Flax.Build.Bindings
                 GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
             }
 
-            GenerateCppClassInternals?.Invoke(buildData, classInfo, contents);
-
-            // Virtual methods overrides
-            var setupScriptVTable = "nullptr, nullptr";
-            if (!classInfo.IsSealed)
+            // Interface implementation
+            if (hasInterface)
             {
-                var scriptVTableSize = classInfo.GetScriptVTableSize(buildData, out var scriptVTableOffset);
-                if (scriptVTableSize > 0)
+                foreach (var interfaceInfo in classInfo.Interfaces)
                 {
-                    var scriptVTableIndex = scriptVTableOffset;
-                    foreach (var functionInfo in classInfo.Functions)
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    foreach (var functionInfo in interfaceInfo.Functions)
                     {
-                        if (functionInfo.IsVirtual)
-                        {
-                            GenerateCppManagedWrapperFunction(buildData, contents, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex);
-                            GenerateCppScriptWrapperFunction?.Invoke(buildData, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex, contents);
-                            scriptVTableIndex++;
-                        }
-                    }
-
-                    if (scriptVTableOffset != scriptVTableSize)
-                    {
-                        CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MMethod.h");
-                        CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-
-                            var thunkParams = string.Empty;
-                            var separator = false;
-                            for (var i = 0; i < functionInfo.Parameters.Count; i++)
-                            {
-                                var parameterInfo = functionInfo.Parameters[i];
-                                if (separator)
-                                    thunkParams += ", ";
-                                separator = true;
-                                thunkParams += parameterInfo.Type;
-                            }
-                            var t = functionInfo.IsConst ? " const" : string.Empty;
-                            contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                            contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
-                        }
-                        contents.AppendLine("");
-
-                        contents.AppendLine("    static void SetupScriptVTable(MClass* mclass, void**& scriptVTable, void**& scriptVTableBase)");
-                        contents.AppendLine("    {");
-                        contents.AppendLine("        if (!scriptVTable)");
-                        contents.AppendLine("        {");
-                        contents.AppendLine($"            scriptVTable = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 1}, 16);");
-                        contents.AppendLine($"            Platform::MemoryClear(scriptVTable, sizeof(void*) * {scriptVTableSize + 1});");
-                        contents.AppendLine($"            scriptVTableBase = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 2}, 16);");
-                        contents.AppendLine("        }");
-                        scriptVTableIndex = scriptVTableOffset;
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-                            contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
-                        }
-                        contents.AppendLine("    }");
-                        contents.AppendLine("");
-
-                        contents.AppendLine("    static void SetupScriptObjectVTable(void** scriptVTable, void** scriptVTableBase, void** vtable, int32 entriesCount, int32 wrapperIndex)");
-                        contents.AppendLine("    {");
-                        scriptVTableIndex = scriptVTableOffset;
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-
-                            contents.AppendLine($"        if (scriptVTable[{scriptVTableIndex}])");
-                            contents.AppendLine("        {");
-                            contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
-                            contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
-                            contents.AppendLine("            if (vtableIndex > 0 && vtableIndex < entriesCount)");
-                            contents.AppendLine("            {");
-                            contents.AppendLine($"                scriptVTableBase[{scriptVTableIndex} + 2] = vtable[vtableIndex];");
-                            for (var i = 0; i < CppScriptObjectVirtualWrapperMethodsPostfixes.Count; i++)
-                            {
-                                contents.AppendLine(i == 0 ? "                if (wrapperIndex == 0)" : $"                else if (wrapperIndex == {i})");
-                                contents.AppendLine("                {");
-                                contents.AppendLine($"                    auto thunkPtr = &{classInfo.NativeName}Internal::{functionInfo.UniqueName}{CppScriptObjectVirtualWrapperMethodsPostfixes[i]};");
-                                contents.AppendLine("                    vtable[vtableIndex] = *(void**)&thunkPtr;");
-                                contents.AppendLine("                }");
-                            }
-                            contents.AppendLine("            }");
-                            contents.AppendLine("            else");
-                            contents.AppendLine("            {");
-                            contents.AppendLine($"                LOG(Error, \"Failed to find the vtable entry for method {{0}} in class {{1}}\", TEXT(\"{functionInfo.Name}\"), TEXT(\"{classInfo.Name}\"));");
-                            contents.AppendLine("            }");
-                            contents.AppendLine("        }");
-
-                            scriptVTableIndex++;
-                        }
-                        contents.AppendLine("    }");
-                        contents.AppendLine("");
-
-                        setupScriptVTable = $"&{classInfo.NativeName}Internal::SetupScriptVTable, &{classInfo.NativeName}Internal::SetupScriptObjectVTable";
+                        if (!classInfo.IsScriptingObject)
+                            throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
+                        GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
                     }
                 }
             }
+
+            GenerateCppClassInternals?.Invoke(buildData, classInfo, contents);
+
+            // Virtual methods overrides
+            var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, classInfo);
 
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
@@ -1557,6 +1617,18 @@ namespace Flax.Build.Bindings
                 foreach (var functionInfo in classInfo.Functions)
                 {
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
+                }
+                if (hasInterface)
+                {
+                    foreach (var interfaceInfo in classInfo.Interfaces)
+                    {
+                        if (interfaceInfo.Access != AccessLevel.Public)
+                            continue;
+                        foreach (var functionInfo in interfaceInfo.Functions)
+                        {
+                            contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
+                        }
+                    }
                 }
             }
             GenerateCppClassInitRuntime?.Invoke(buildData, classInfo, contents);
@@ -1811,29 +1883,102 @@ namespace Flax.Build.Bindings
         {
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
             var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
-            var interfaceTypeNameManagedInternalCall = interfaceTypeNameManaged.Replace('+', '/');
             var interfaceTypeNameInternal = interfaceInfo.NativeName;
             if (interfaceInfo.Parent != null && !(interfaceInfo.Parent is FileInfo))
                 interfaceTypeNameInternal = interfaceInfo.Parent.FullNameNative + '_' + interfaceTypeNameInternal;
+
+            // Wrapper interface implement to invoke scripting if inherited in C# or VS
+            contents.AppendLine();
+            contents.AppendFormat("class {0}Wrapper : public ", interfaceTypeNameInternal).Append(interfaceTypeNameNative).AppendLine();
+            contents.Append('{').AppendLine();
+            contents.AppendLine("public:");
+            contents.AppendLine("    ScriptingObject* Object;");
+            foreach (var functionInfo in interfaceInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendFormat("    {0} {1}(", functionInfo.ReturnType, functionInfo.Name);
+                var separator = false;
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    if (separator)
+                        contents.Append(", ");
+                    separator = true;
+                    contents.Append(parameterInfo.Type).Append(' ').Append(parameterInfo.Name);
+                }
+                contents.Append(") override").AppendLine();
+                contents.AppendLine("    {");
+                // TODO: try to use ScriptVTable for interfaces implementation in scripting to call proper function instead of manually check at runtime
+                if (functionInfo.Parameters.Count != 0)
+                {
+                    contents.AppendLine($"        Variant parameters[{functionInfo.Parameters.Count}];");
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                    {
+                        var parameterInfo = functionInfo.Parameters[i];
+                        contents.AppendLine($"        parameters[{i}] = {GenerateCppWrapperNativeToVariant(buildData, parameterInfo.Type, interfaceInfo, parameterInfo.Name)};");
+                    }
+                }
+                else
+                {
+                    contents.AppendLine("        Variant* parameters = nullptr;");
+                }
+                contents.AppendLine("        auto typeHandle = Object->GetTypeHandle();");
+                contents.AppendLine("        while (typeHandle)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, \"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+                contents.AppendLine("            if (method)");
+                contents.AppendLine("            {");
+                contents.AppendLine("                Variant __result;");
+                contents.AppendLine($"                typeHandle.Module->InvokeMethod(method, Object, Span<Variant>(parameters, {functionInfo.Parameters.Count}), __result);");
+                if (functionInfo.ReturnType.IsVoid)
+                    contents.AppendLine("                return;");
+                else
+                    contents.AppendLine($"                return {GenerateCppWrapperVariantToNative(buildData, functionInfo.ReturnType, interfaceInfo, "__result")};");
+                contents.AppendLine("            }");
+                contents.AppendLine("            typeHandle = typeHandle.GetType().GetBaseType();");
+                contents.AppendLine("        }");
+                GenerateCppReturn(buildData, contents, "        ", functionInfo.ReturnType);
+                contents.AppendLine("    }");
+            }
+            if (interfaceInfo.Name == "ISerializable")
+            {
+                // TODO: how to handle other interfaces that have some abstract native methods? maybe NativeOnly tag on interface? do it right and remove this hack
+                contents.AppendLine("    void Serialize(SerializeStream& stream, const void* otherObj) override {} void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override {}");
+            }
+            contents.Append('}').Append(';').AppendLine();
 
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", interfaceTypeNameInternal).AppendLine();
             contents.Append('{').AppendLine();
             contents.AppendLine("public:");
 
+            GenerateCppClassInternals?.Invoke(buildData, interfaceInfo, contents);
+
+            // Virtual methods overrides
+            var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, interfaceInfo);
+
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
+            GenerateCppClassInitRuntime?.Invoke(buildData, interfaceInfo, contents);
             contents.AppendLine("    }").AppendLine();
+
+            // Interface implementation wrapper accessor for scripting types
+            contents.AppendLine("    static void* GetInterfaceWrapper(ScriptingObject* obj)");
+            contents.AppendLine("    {");
+            contents.AppendLine($"        auto wrapper = New<{interfaceTypeNameInternal}Wrapper>();");
+            contents.AppendLine("        wrapper->Object = obj;");
+            contents.AppendLine("        return wrapper;");
+            contents.AppendLine("    }");
 
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
             // Type initializer
             contents.Append($"ScriptingTypeInitializer {interfaceTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
-            contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), ");
-            contents.Append($"&{interfaceTypeNameInternal}Internal::InitRuntime");
-            contents.Append(");");
+            contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), &{interfaceTypeNameInternal}Internal::InitRuntime,");
+            contents.Append(setupScriptVTable).Append($", &{interfaceTypeNameInternal}Internal::GetInterfaceWrapper").Append(");");
             contents.AppendLine();
 
             // Nested types

@@ -58,7 +58,6 @@ public:
     /// <summary>
     /// Gets the parent assembly.
     /// </summary>
-    /// <returns>The assembly.</returns>
     const MAssembly* GetAssembly() const
     {
         return _assembly;
@@ -67,7 +66,6 @@ public:
     /// <summary>
     /// Gets the full name of the class (namespace and typename).
     /// </summary>
-    /// <returns>The fullname.</returns>
     FORCE_INLINE const MString& GetFullName() const
     {
         return _fullname;
@@ -78,7 +76,6 @@ public:
     /// <summary>
     /// Gets the Mono class handle.
     /// </summary>
-    /// <returns>The Mono class.</returns>
     MonoClass* GetNative() const;
 
 #endif
@@ -86,7 +83,6 @@ public:
     /// <summary>
     /// Gets class visibility
     /// </summary>
-    /// <returns>Returns visibility struct.</returns>
     FORCE_INLINE MVisibility GetVisibility() const
     {
         return _visibility;
@@ -95,7 +91,6 @@ public:
     /// <summary>
     /// Gets if class is static
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsStatic() const
     {
         return _isStatic != 0;
@@ -104,7 +99,6 @@ public:
     /// <summary>
     /// Gets if class is abstract
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsAbstract() const
     {
         return _isAbstract != 0;
@@ -113,7 +107,6 @@ public:
     /// <summary>
     /// Gets if class is sealed
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsSealed() const
     {
         return _isSealed != 0;
@@ -122,7 +115,6 @@ public:
     /// <summary>
     /// Gets if class is interface
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsInterface() const
     {
         return _isInterface != 0;
@@ -131,19 +123,16 @@ public:
     /// <summary>
     /// Gets if class is generic
     /// </summary>
-    /// <returns>Returns true if class is generic type, otherwise false.</returns>
     bool IsGeneric() const;
 
     /// <summary>
     /// Gets the class type.
     /// </summary>
-    /// <returns>The type.</returns>
     MType GetType() const;
 
     /// <summary>
     /// Returns the base class of this class. Null if this class has no base.
     /// </summary>
-    /// <returns>The base class.</returns>
     MClass* GetBaseClass() const;
 
     /// <summary>
@@ -170,7 +159,6 @@ public:
     /// <summary>
     /// Returns the size of an instance of this class, in bytes.
     /// </summary>
-    /// <returns>The instance size (in bytes).</returns>
     uint32 GetInstanceSize() const;
 
 public:

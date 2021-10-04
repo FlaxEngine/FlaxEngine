@@ -108,6 +108,8 @@ public:
 
 public:
 
+    // Tries to cast native interface object to scripting object instance. Returns null if fails.
+    static ScriptingObject* FromInterface(void* interfaceObj, ScriptingTypeHandle& interfaceType);
     static ScriptingObject* ToNative(MonoObject* obj);
 
     static MonoObject* ToManaged(ScriptingObject* obj)

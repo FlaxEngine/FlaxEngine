@@ -261,7 +261,7 @@ public:
 private:
 
     int32 _firstManagedTypeIndex;
-    Array<char*> _managedTypesNames;
+    Array<void*> _managedMemoryBlocks;
 
 public:
 
@@ -298,11 +298,13 @@ public:
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
     static ManagedBinaryModule* FindModule(MonoClass* klass);
+    static ScriptingTypeHandle FindType(MonoClass* klass);
 
 private:
 
     void OnLoading(MAssembly* assembly);
     void OnLoaded(MAssembly* assembly);
+    void InitType(MClass* mclass);
     void OnUnloading(MAssembly* assembly);
 
 public:
