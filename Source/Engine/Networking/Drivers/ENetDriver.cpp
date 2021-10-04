@@ -50,6 +50,11 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
     // TODO: To reduce latency, we can use `enet_host_flush` to flush all packets. Maybe some API, like NetworkManager::FlushQueues()?
 }
 
+ENetDriver::ENetDriver(const SpawnParams& params)
+    : PersistentScriptingObject(params)
+{
+}
+
 void ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 {
     _networkHost = host;

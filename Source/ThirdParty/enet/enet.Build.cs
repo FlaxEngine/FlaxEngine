@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
 
@@ -26,7 +25,6 @@ public class ENet : DepsModule
     {
         base.Setup(options);
 
-        var depsRoot = options.DepsFolder;
         options.PublicDefinitions.Add("ENET");
     }
 }
