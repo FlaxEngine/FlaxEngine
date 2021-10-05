@@ -181,7 +181,7 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.ARM64: return "aarch64-unknown-linux-gnueabi";
                 default: throw new InvalidArchitectureException(architecture);
                 }
-            case TargetPlatform.PS4: return "orbis";
+            case TargetPlatform.PS4: return (string)Utilities.GetStaticValue("Flax.Build.Platforms.PS4Toolchain", "ToolchainName");
             case TargetPlatform.Android:
                 switch (architecture)
                 {

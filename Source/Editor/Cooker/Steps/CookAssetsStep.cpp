@@ -1040,6 +1040,8 @@ bool CookAssetsStep::Perform(CookingData& data)
     auto minDateTime = DateTime::MinValue();
 #endif
     int32 subStepIndex = 0;
+    AssetReference<Asset> assetRef;
+    assetRef.Unload.Bind([]() { LOG(Error, "Asset gets unloaded while cooking it!"); Platform::Sleep(100); });
     for (auto i = data.Assets.Begin(); i.IsNotEnd(); ++i)
     {
         BUILD_STEP_CANCEL_CHECK;
@@ -1097,16 +1099,16 @@ bool CookAssetsStep::Perform(CookingData& data)
         }
 
         // Load asset (and keep ref)
-        AssetReference<Asset> ref = Content::LoadAsync<Asset>(assetId);
-        if (ref == nullptr)
+        assetRef = Content::LoadAsync<Asset>(assetId);
+        if (assetRef == nullptr)
         {
             data.Error(TEXT("Failed to load asset included in build."));
             return true;
         }
-        e.Info.TypeName = ref->GetTypeName();
+        e.Info.TypeName = assetRef->GetTypeName();
 
         // Cook asset
-        if (Process(data, cache, ref.Get()))
+        if (Process(data, cache, assetRef.Get()))
             return true;
         data.Stats.CookedAssets++;
 

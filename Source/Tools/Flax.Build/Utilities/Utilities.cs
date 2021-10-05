@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Flax.Build
@@ -41,6 +42,23 @@ namespace Flax.Build
         public static T[] GetEmptyArray<T>()
         {
             return Enumerable.Empty<T>() as T[];
+        }
+
+        /// <summary>
+        /// Gets the static field value from a given type.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>The field value.</returns>
+        public static object GetStaticValue(string typeName, string fieldName)
+        {
+            var type = Type.GetType(typeName);
+            if (type == null)
+                throw new Exception($"Cannot find type \'{typeName}\'.");
+            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+            if (field == null)
+                throw new Exception($"Cannot find static public field \'{fieldName}\' in \'{typeName}\'.");
+            return field.GetValue(null);
         }
 
         /// <summary>
