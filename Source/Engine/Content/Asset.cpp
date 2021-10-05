@@ -516,7 +516,7 @@ void Asset::onLoaded()
     {
         onLoaded_MainThread();
     }
-    else
+    else if (OnLoaded.IsBinded())
     {
         Function<void()> action;
         action.Bind<Asset, &Asset::onLoaded>(this);
