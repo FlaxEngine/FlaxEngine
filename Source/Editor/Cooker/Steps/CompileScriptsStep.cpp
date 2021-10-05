@@ -222,14 +222,18 @@ bool CompileScriptsStep::Perform(CookingData& data)
         target, platform, architecture, configuration, logFile);
 #if PLATFORM_WINDOWS
     if (data.Platform == BuildPlatform::LinuxX64)
+#elif PLATFORM_LINUX
+    if (data.Platform == BuildPlatform::Windows64 || data.Platform == BuildPlatform::Windows32)
+#else
+    if (false)
+#endif
     {
-        // Skip building C++ for Linux on Windows (no need to install cross-toolchain to build C# game)
+        // Skip building C++ (no need to install cross-toolchain to build C#-only game)
         args += TEXT(" -BuildBindingsOnly");
 
-        // Assume FlaxGame was prebuilt for Linux
+        // Assume FlaxGame was prebuilt for target platform
         args += TEXT(" -SkipTargets=FlaxGame");
     }
-#endif
     for (auto& define : data.CustomDefines)
     {
         args += TEXT(" -D");
