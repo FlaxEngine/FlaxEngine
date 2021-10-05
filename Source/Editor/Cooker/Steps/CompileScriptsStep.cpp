@@ -12,6 +12,7 @@
 #include "Editor/Cooker/PlatformTools.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Engine/Engine/Globals.h"
 
 bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, const String& projectFolderPath)
 {
@@ -136,12 +137,8 @@ bool CompileScriptsStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Compiling game scripts"), 0);
 
     const ProjectInfo* project = Editor::Project;
-    const String& target = project->GameTarget;
-    if (target.IsEmpty())
-    {
-        LOG(Error, "Empty GameTarget in project.");
-        return true;
-    }
+    String target = project->GameTarget;
+    StringView workingDir;
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
     switch (data.Platform)
     {
@@ -189,6 +186,15 @@ bool CompileScriptsStep::Perform(CookingData& data)
         LOG(Error, "Unknown or unsupported build platform.");
         return true;
     }
+    String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
+    if (target.IsEmpty())
+    {
+        // Fallback to engine-only if game has no code
+        LOG(Warning, "Empty GameTarget in project.");
+        target = TEXT("FlaxGame");
+        workingDir = Globals::StartupFolder;
+        targetBuildInfo = Globals::StartupFolder / TEXT("Source/Platforms") / platform / TEXT("Binaries") / TEXT("Game") / architecture / configuration / target + TEXT(".Build.json");
+    }
     _extensionsToSkip.Clear();
     _extensionsToSkip.Add(TEXT(".exp"));
     _extensionsToSkip.Add(TEXT(".ilk"));
@@ -229,7 +235,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
         args += TEXT(" -D");
         args += define;
     }
-    if (ScriptsBuilder::RunBuildTool(args))
+    if (ScriptsBuilder::RunBuildTool(args, workingDir))
     {
         data.Error(TEXT("Failed to compile game scripts."));
         return true;
@@ -243,7 +249,6 @@ bool CompileScriptsStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Exporting binaries"), 0.8f);
 
     // Deploy binary modules
-    const String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / project->GameTarget / platform / architecture / configuration / target + TEXT(".Build.json");
     if (DeployBinaries(data, targetBuildInfo, project->ProjectFolderPath))
         return true;
 

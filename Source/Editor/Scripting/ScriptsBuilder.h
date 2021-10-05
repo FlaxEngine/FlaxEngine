@@ -97,8 +97,9 @@ public:
     /// Invokes the Flax.Build tool in the current project workspace and waits for the process end (blocking). Prints the build tool output to the log. Can be invoked from any thread.
     /// </summary>
     /// <param name="args">The Flax.Build tool invocation arguments.</param>
+    /// <param name="workingDir">The custom working directory. Use empty or null to execute build tool in the project folder.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() static bool RunBuildTool(const StringView& args);
+    API_FUNCTION() static bool RunBuildTool(const StringView& args, const StringView& workingDir = StringView::Empty);
 
     /// <summary>
     /// Generates the project files.

@@ -446,9 +446,10 @@ bool Scripting::Load()
     // Flax.Build outputs the <target>.Build.json with binary modules to use for game scripting
     const Char *target, *platform, *architecture, *configuration;
     ScriptsBuilder::GetBinariesConfiguration(target, platform, architecture, configuration);
-    if (target == nullptr)
+    if (StringUtils::Length(target) == 0)
     {
         LOG(Info, "Missing EditorTarget in project. Not using game script modules.");
+        _hasGameModulesLoaded = true;
         return false;
     }
     const String targetBuildInfo = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
