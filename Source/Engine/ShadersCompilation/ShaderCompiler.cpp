@@ -435,7 +435,7 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
         }
         else
         {
-            LOG(Error, "Invalid vertex shader layout element \'visible\' option value.");
+            LOG(Error, "Invalid option value \'{1}\' for  layout element \'visible\' flag on vertex shader \'{0}\'.", String(metaVS.Name), String(value));
             return true;
         }
     }

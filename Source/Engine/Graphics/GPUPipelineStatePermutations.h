@@ -45,6 +45,11 @@ public:
         return States[index];
     }
 
+    FORCE_INLINE GPUPipelineState*& operator[](int32 index)
+    {
+        return States[index];
+    }
+
 public:
 
     void CreatePipelineStates()

@@ -235,42 +235,25 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
     GPUBuffer* vertexBuffer2 = nullptr;
     GPUBuffer* indexBuffer = nullptr;
 
-    // Create vertex buffer 0
+    // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB0"));
+#define MESH_BUFFER_NAME(postfix) GetModel()->ToString() + TEXT(postfix)
 #else
-	vertexBuffer0 = GPUDevice::Instance->CreateBuffer(String::Empty);
+#define MESH_BUFFER_NAME(postfix) String::Empty
 #endif
+    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
     if (vertexBuffer0->Init(GPUBufferDescription::Vertex(sizeof(VB0ElementType), vertices, vb0)))
         goto ERROR_LOAD_END;
-
-    // Create vertex buffer 1
-#if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer1 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB1"));
-#else
-	vertexBuffer1 = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+    vertexBuffer1 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
     if (vertexBuffer1->Init(GPUBufferDescription::Vertex(sizeof(VB1ElementType), vertices, vb1)))
         goto ERROR_LOAD_END;
-
-    // Create vertex buffer 2
     if (vb2)
     {
-#if GPU_ENABLE_RESOURCE_NAMING
-        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB2"));
-#else
-		vertexBuffer2 = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
         if (vertexBuffer2->Init(GPUBufferDescription::Vertex(sizeof(VB2ElementType), vertices, vb2)))
             goto ERROR_LOAD_END;
     }
-
-    // Create index buffer
-#if GPU_ENABLE_RESOURCE_NAMING
-    indexBuffer = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".IB"));
-#else
-	indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+    indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));
     if (indexBuffer->Init(GPUBufferDescription::Index(ibStride, indicesCount, ib)))
         goto ERROR_LOAD_END;
 
@@ -299,6 +282,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
 
     return false;
 
+#undef MESH_BUFFER_NAME
 ERROR_LOAD_END:
 
     SAFE_DELETE_GPU_RESOURCE(vertexBuffer0);
