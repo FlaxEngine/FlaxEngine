@@ -245,6 +245,79 @@ namespace FlaxEditor.Modules
             }
         }
 
+        private static bool SelectActorsUsingAsset(Guid assetId, ref Guid id, Dictionary<Guid, bool> scannedAssets)
+        {
+            // Check for asset match or try to use cache
+            if (assetId == id)
+                return true;
+            if (scannedAssets.TryGetValue(id, out var result))
+                return result;
+            if (id == Guid.Empty || !FlaxEngine.Content.GetAssetInfo(id, out var assetInfo))
+                return false;
+            scannedAssets.Add(id, false);
+
+            // Skip scene assets
+            if (assetInfo.TypeName == "FlaxEngine.SceneAsset")
+                return false;
+
+            // Recursive check if this asset contains direct or indirect reference to the given asset
+            var asset = FlaxEngine.Content.Load<Asset>(assetInfo.ID, 1000);
+            if (asset)
+            {
+                var references = asset.GetReferences();
+                for (var i = 0; i < references.Length; i++)
+                {
+                    if (SelectActorsUsingAsset(assetId, ref references[i], scannedAssets))
+                    {
+                        scannedAssets[id] = true;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void SelectActorsUsingAsset(Guid assetId, SceneGraphNode node, List<SceneGraphNode> selection, Dictionary<Guid, bool> scannedAssets)
+        {
+            if (node is ActorNode actorNode && actorNode.Actor)
+            {
+                // To detect if this actor uses the given asset simply serialize it to json and check used asset ids
+                // TODO: check scripts too
+                var json = actorNode.Actor.ToJson();
+                JsonAssetBase.GetReferences(json, out var ids);
+                for (var i = 0; i < ids.Length; i++)
+                {
+                    if (SelectActorsUsingAsset(assetId, ref ids[i], scannedAssets))
+                    {
+                        selection.Add(actorNode);
+                        break;
+                    }
+                }
+            }
+
+            // Recursive check for children
+            for (int i = 0; i < node.ChildNodes.Count; i++)
+                SelectActorsUsingAsset(assetId, node.ChildNodes[i], selection, scannedAssets);
+        }
+
+        /// <summary>
+        /// Selects the actors using the given asset.
+        /// </summary>
+        /// <param name="assetId">The asset ID.</param>
+        /// <param name="additive">if set to <c>true</c> will use additive mode, otherwise will clear previous selection.</param>
+        public void SelectActorsUsingAsset(Guid assetId, bool additive = false)
+        {
+            // TODO: make it async action with progress
+            Profiler.BeginEvent("SelectActorsUsingAsset");
+            var selection = new List<SceneGraphNode>();
+            var scannedAssets = new Dictionary<Guid, bool>();
+            SelectActorsUsingAsset(assetId, Editor.Scene.Root, selection, scannedAssets);
+            Profiler.EndEvent();
+
+            Select(selection, additive);
+        }
+
         /// <summary>
         /// Spawns the specified actor to the game (with undo).
         /// </summary>

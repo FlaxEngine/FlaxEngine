@@ -83,6 +83,15 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
     }
 }
 
+void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& output)
+{
+    ISerializable::SerializeDocument document;
+    document.Parse(json.Get(), json.Length());
+    if (document.HasParseError())
+        return;
+    FindIds(document, output);
+}
+
 void JsonAssetBase::GetReferences(Array<Guid>& output) const
 {
     if (Data == nullptr)

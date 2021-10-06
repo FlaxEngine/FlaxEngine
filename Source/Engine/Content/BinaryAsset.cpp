@@ -114,10 +114,7 @@ void BinaryAsset::Reimport() const
 void BinaryAsset::GetImportMetadata(String& path, String& username) const
 {
     if (Metadata.IsInvalid())
-    {
-        LOG(Warning, "Missing asset metadata.");
         return;
-    }
 
     // Parse metadata and try to get import info
     rapidjson_flax::Document document;

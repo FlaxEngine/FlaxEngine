@@ -53,6 +53,15 @@ public:
     /// </summary>
     API_PROPERTY() String GetData() const;
 
+#if USE_EDITOR
+    /// <summary>
+    /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.
+    /// </summary>
+    /// <param name="json">The Json string.</param>
+    /// <param name="output">The output list of object IDs references by the asset (appended, not cleared).</param>
+    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& output);
+#endif
+
 public:
 
     // [Asset]
