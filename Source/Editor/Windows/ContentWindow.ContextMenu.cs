@@ -123,6 +123,7 @@ namespace FlaxEditor.Windows
                 // Custom options
                 ContextMenuShow?.Invoke(cm, item);
                 proxy?.OnContentWindowContextMenu(cm, item);
+                item.OnContextMenu(cm);
 
                 cm.AddButton("Copy name to Clipboard", () => Clipboard.Text = item.NamePath);
 

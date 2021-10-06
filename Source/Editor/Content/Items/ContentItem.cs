@@ -506,6 +506,14 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
+        /// Called when context menu is being prepared to show. Can be used to add custom options.
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu)
+        {
+        }
+
+        /// <summary>
         /// Called when item gets renamed or location gets changed (path modification).
         /// </summary>
         public virtual void OnPathChanged()
