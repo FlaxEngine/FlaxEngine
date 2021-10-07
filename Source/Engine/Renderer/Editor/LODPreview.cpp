@@ -11,19 +11,20 @@
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RenderList.h"
 
-PACK_STRUCT(struct LODPreviewMaterialShaderData {
+PACK_STRUCT(struct SingleColorShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Color Color;
-    Vector3 WorldInvScale;
+    Vector3 Dummy0;
     float LODDitherFactor;
     });
 
 LODPreviewMaterialShader::LODPreviewMaterialShader()
 {
-    _ps = GPUDevice::Instance->CreatePipelineState();
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/LODPreview"));
+    _psModel.CreatePipelineStates();
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/SingleColor"));
     if (!_shader)
         return;
 #if COMPILE_WITH_DEV_ENV
@@ -35,7 +36,7 @@ LODPreviewMaterialShader::LODPreviewMaterialShader()
 
 void LODPreviewMaterialShader::OnShaderReloading(Asset* obj)
 {
-    _ps->ReleaseGPU();
+    _psModel.Release();
 }
 
 #endif
@@ -50,6 +51,12 @@ bool LODPreviewMaterialShader::IsReady() const
     return _shader && _shader->IsLoaded();
 }
 
+bool LODPreviewMaterialShader::CanUseInstancing(InstancingHandler& handler) const
+{
+    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, SurfaceDrawCallHandler::WriteDrawCall, };
+    return true;
+}
+
 DrawPass LODPreviewMaterialShader::GetDrawModes() const
 {
     return DrawPass::GBuffer;
@@ -61,12 +68,14 @@ void LODPreviewMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.FirstDrawCall;
     auto shader = _shader->GetShader();
     auto cb = shader->GetCB(0);
-    if (!_ps->IsValid())
+    const int32 psIndex = params.DrawCallsCount == 1 ? 0 : 1;
+    auto ps = _psModel[psIndex];
+    if (!ps->IsValid())
     {
         auto psDesc = GPUPipelineState::Description::Default;
-        psDesc.VS = shader->GetVS("VS");
-        psDesc.PS = shader->GetPS("PS");
-        _ps->Init(psDesc);
+        psDesc.VS = shader->GetVS("VS_Model", psIndex);
+        psDesc.PS = shader->GetPS("PS_GBuffer");
+        ps->Init(psDesc);
     }
 
     // Find the LOD that produced this draw call
@@ -96,17 +105,11 @@ void LODPreviewMaterialShader::Bind(BindParameters& params)
     // Bind
     if (cb && cb->GetSize())
     {
-        ASSERT(cb->GetSize() == sizeof(LODPreviewMaterialShaderData));
-        LODPreviewMaterialShaderData data;
+        ASSERT_LOW_LAYER(cb->GetSize() == sizeof(SingleColorShaderData));
+        SingleColorShaderData data;
         Matrix::Transpose(params.RenderContext.View.Frustum.GetMatrix(), data.ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, data.WorldMatrix);
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        data.WorldInvScale = Vector3(
-            scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
-            scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
-            scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
+        data.LODDitherFactor = drawCall.Surface.LODDitherFactor;
         const Color colors[MODEL_MAX_LODS] = {
             Color::White,
             Color::Red,
@@ -117,11 +120,10 @@ void LODPreviewMaterialShader::Bind(BindParameters& params)
         };
         ASSERT(lodIndex < MODEL_MAX_LODS);
         data.Color = colors[lodIndex];
-        data.LODDitherFactor = drawCall.Surface.LODDitherFactor;
         context->UpdateCB(cb, &data);
         context->BindCB(0, cb);
     }
-    context->SetState(_ps);
+    context->SetState(ps);
 }
 
 #endif

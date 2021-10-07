@@ -6,6 +6,7 @@
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
 #include "Engine/Renderer/Editor/LODPreview.h"
+#include "Engine/Renderer/Editor/MaterialComplexity.h"
 #endif
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -93,6 +94,7 @@ void GBufferPass::Dispose()
     SAFE_DELETE(_lightmapUVsDensity);
     SAFE_DELETE(_vertexColors);
     SAFE_DELETE(_lodPreview);
+    SAFE_DELETE(_materialComplexity);
 #endif
 }
 
@@ -100,7 +102,12 @@ void GBufferPass::Dispose()
 
 void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* material)
 {
-    if (material->IsReady())
+    if (!material->IsReady())
+        return;
+    IMaterial::InstancingHandler handler;
+    const bool canUseInstancing = material->CanUseInstancing(handler);
+    const auto drawModes = material->GetDrawModes();
+    if (drawModes & DrawPass::GBuffer)
     {
         auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
         for (int32 i : drawCallsList.Indices)
@@ -111,11 +118,20 @@ void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* mat
                 drawCall.Material = material;
             }
         }
-        IMaterial::InstancingHandler handler;
-        if (!material->CanUseInstancing(handler))
+        drawCallsList.CanUseInstancing &= canUseInstancing;
+    }
+    if (drawModes & DrawPass::GBuffer)
+    {
+        auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
+        for (int32 i : drawCallsList.Indices)
         {
-            drawCallsList.CanUseInstancing = false;
+            auto& drawCall = renderContext.List->DrawCalls[i];
+            if (drawCall.Material->IsSurface())
+            {
+                drawCall.Material = material;
+            }
         }
+        drawCallsList.CanUseInstancing &= canUseInstancing;
     }
 }
 
@@ -177,6 +193,12 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
         if (!_lodPreview)
             _lodPreview = New<LODPreviewMaterialShader>();
         DebugOverrideDrawCallsMaterial(renderContext, _lodPreview);
+    }
+    else if (renderContext.View.Mode == ViewMode::MaterialComplexity)
+    {
+        if (!_materialComplexity)
+            _materialComplexity = New<MaterialComplexityMaterialShader>();
+        _materialComplexity->DebugOverrideDrawCallsMaterial(renderContext, context, lightBuffer);
     }
     if (renderContext.View.Mode == ViewMode::PhysicsColliders)
     {
@@ -257,6 +279,15 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
     // Cleanup
     context->ResetSR();
 }
+
+#if USE_EDITOR
+
+void GBufferPass::DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
+{
+    _materialComplexity->Draw(renderContext, context, lightBuffer);
+}
+
+#endif
 
 bool GBufferPass::IsDebugView(ViewMode mode)
 {

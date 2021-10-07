@@ -56,6 +56,23 @@ bool GPUPipelineState::Init(const Description& desc)
     CHECK_STAGE(PS);
 #undef CHECK_STAGE
 
+#if USE_EDITOR
+    // Estimate somehow performance cost of this pipeline state for the content profiling
+    const int32 textureLookupCost = 20;
+    const int32 tessCost = 300;
+    Complexity = Utilities::CountBits(_meta.UsedSRsMask) * textureLookupCost;
+    if (desc.PS)
+        Complexity += desc.PS->GetBindings().InstructionsCount;
+    if (desc.HS || desc.DS)
+        Complexity += tessCost;
+    if (desc.DepthWriteEnable)
+        Complexity += 5;
+    if (desc.DepthTestEnable)
+        Complexity += 5;
+    if (desc.BlendMode.BlendEnable)
+        Complexity += 20;
+#endif
+
     return false;
 }
 

@@ -818,6 +818,11 @@ API_ENUM() enum class ViewMode
     /// Draw Level Of Detail number as colors to debug LOD switches.
     /// </summary>
     LODPreview = 21,
+
+    /// <summary>
+    /// Draw material shaders complexity to visualize performance of pixels rendering.
+    /// </summary>
+    MaterialComplexity = 22,
 };
 
 /// <summary>

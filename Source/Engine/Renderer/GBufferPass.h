@@ -19,6 +19,7 @@ private:
     class LightmapUVsDensityMaterialShader* _lightmapUVsDensity = nullptr;
     class VertexColorsMaterialShader* _vertexColors = nullptr;
     class LODPreviewMaterialShader* _lodPreview = nullptr;
+    class MaterialComplexityMaterialShader* _materialComplexity = nullptr;
 #endif
 
 public:
@@ -35,6 +36,10 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     void RenderDebug(RenderContext& renderContext);
+
+#if USE_EDITOR
+    void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
+#endif
 
 public:
 

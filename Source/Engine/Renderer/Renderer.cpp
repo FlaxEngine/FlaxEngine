@@ -326,7 +326,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     // Check if debug emissive light
     if (renderContext.View.Mode == ViewMode::Emissive || renderContext.View.Mode == ViewMode::LightmapUVsDensity)
     {
-        // Render reflections debug view
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
@@ -334,6 +333,14 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         RenderTargetPool::Release(lightBuffer);
         return;
     }
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::MaterialComplexity)
+    {
+        GBufferPass::Instance()->DrawMaterialComplexity(renderContext, context, lightBuffer->View());
+        RenderTargetPool::Release(lightBuffer);
+        return;
+    }
+#endif
 
     // Render motion vectors
     MotionBlurPass::Instance()->RenderMotionVectors(renderContext);

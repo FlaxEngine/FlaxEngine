@@ -6,8 +6,8 @@
 
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Shader.h"
-#include "Engine/Content/Assets/Texture.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
+#include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 class GPUPipelineState;
 
@@ -19,7 +19,7 @@ class LODPreviewMaterialShader : public IMaterial
 private:
 
     AssetReference<Shader> _shader;
-    GPUPipelineState* _ps = nullptr;
+    GPUPipelineStatePermutations<2> _psModel;
     MaterialInfo _info;
 
 public:
@@ -40,6 +40,7 @@ public:
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
     bool IsReady() const override;
+    bool CanUseInstancing(InstancingHandler& handler) const override;
     DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;
 };

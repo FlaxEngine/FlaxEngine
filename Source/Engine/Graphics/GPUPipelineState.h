@@ -120,6 +120,9 @@ public:
     /// </summary>
     Description DebugDesc;
 #endif
+#if USE_EDITOR
+    int32 Complexity;
+#endif
 
 public:
 
