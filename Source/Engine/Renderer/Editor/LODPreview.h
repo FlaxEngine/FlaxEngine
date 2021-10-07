@@ -5,9 +5,8 @@
 #if USE_EDITOR
 
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Content/Assets/Shader.h"
+#include "Engine/Content/Assets/Material.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
-#include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 class GPUPipelineState;
 
@@ -18,9 +17,7 @@ class LODPreviewMaterialShader : public IMaterial
 {
 private:
 
-    AssetReference<Shader> _shader;
-    GPUPipelineStatePermutations<2> _psModel;
-    MaterialInfo _info;
+    AssetReference<Material> _material;
 
 public:
 
@@ -28,12 +25,6 @@ public:
     virtual ~LODPreviewMaterialShader()
     {
     }
-
-private:
-
-#if COMPILE_WITH_DEV_ENV
-    void OnShaderReloading(Asset* obj);
-#endif
 
 public:
 
