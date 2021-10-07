@@ -632,7 +632,7 @@ namespace FlaxEditor.Content.GUI
                 // Open
                 if (key == KeyboardKeys.Return && _selection.Count != 0)
                 {
-                    foreach (var e in _selection)
+                    foreach (var e in _selection.ToArray())
                         OnOpen?.Invoke(e);
                     return true;
                 }
