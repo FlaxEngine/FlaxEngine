@@ -912,12 +912,6 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, const Span<G
     }
 }
 
-void GPUContextVulkan::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
-{
-    // TODO: implement Draw Indirect and Pixel Shader write to UAV on Vulkan
-    MISSING_CODE("GPUContextVulkan::SetRenderTarget with UA output");
-}
-
 void GPUContextVulkan::ResetSR()
 {
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));

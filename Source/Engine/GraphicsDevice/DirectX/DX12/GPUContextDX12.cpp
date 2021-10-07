@@ -417,11 +417,11 @@ void GPUContextDX12::flushUAVs()
 
     // Count UAVs required to be bind to the pipeline (the index of the most significant bit that's set)
     const uint32 uaCount = Math::FloorLog2(uaMask) + 1;
-    ASSERT(uaCount <= GPU_MAX_UA_BINDED + 1);
+    ASSERT(uaCount <= GPU_MAX_UA_BINDED);
 
     // Fill table with source descriptors
     DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
-    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED + 1];
+    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED];
     for (uint32 i = 0; i < uaCount; i++)
     {
         const auto handle = _uaHandles[i];
@@ -716,7 +716,6 @@ void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 void GPUContextDX12::ClearUA(GPUBuffer* buf, const Vector4& value)
 {
     ASSERT(buf != nullptr && buf->IsUnorderedAccess());
-
     auto bufDX12 = reinterpret_cast<GPUBufferDX12*>(buf);
 
     SetResourceState(bufDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -795,17 +794,6 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
         _rtDepth = depthBufferDX12;
         Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
     }
-}
-
-void GPUContextDX12::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
-{
-    auto uaOutputDX12 = uaOutput ? (GPUBufferViewDX12*)uaOutput->View() : nullptr;
-
-    // Set render target normally
-    SetRenderTarget(nullptr, rt);
-
-    // Bind UAV output to the 2nd slot (after render target to match DX11 binding model)
-    _uaHandles[1] = uaOutputDX12;
 }
 
 void GPUContextDX12::ResetSR()

@@ -349,7 +349,8 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         // Generate bokeh points
         context->BindSR(0, input);
         context->BindSR(1, depthBlurTarget);
-        context->SetRenderTarget(*dofInput, _bokehBuffer);
+        context->BindUA(1, _bokehBuffer->View());
+        context->SetRenderTarget(*dofInput);
         context->SetViewportAndScissors((float)dofWidth, (float)dofHeight);
         context->SetState(_psBokehGeneration);
         context->DrawFullscreenTriangle();
@@ -390,9 +391,8 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
 
         // Cleanup
         context->ResetRenderTarget();
-        context->UnBindSR(0);
-        context->UnBindUA(0);
-        context->FlushState();
+        context->ResetUA();
+        context->ResetSR();
 
         // Vertical pass
         context->BindUA(0, dofTargetV->View());
@@ -408,10 +408,8 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         context->ResetRenderTarget();
 
         // Cleanup
-        context->UnBindSR(0);
-        context->UnBindSR(1);
-        context->UnBindUA(0);
-        context->FlushState();
+        context->ResetUA();
+        context->ResetSR();
         RenderTargetPool::Release(dofTargetH);
 
         dofOutput = dofTargetV;

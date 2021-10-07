@@ -305,13 +305,6 @@ public:
     /// <param name="rts">The array with render targets to bind.</param>
     API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) = 0;
 
-    /// <summary>
-    /// Sets the render target and unordered access output.
-    /// </summary>
-    /// <param name="rt">The render target to bind to output.</param>
-    /// <param name="uaOutput">The unordered access buffer to bind to output.</param>
-    API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput) = 0;
-
 public:
 
     /// <summary>

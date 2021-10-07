@@ -49,7 +49,6 @@ GPUContextDX11::GPUContextDX11(GPUDeviceDX11* device, ID3D11DeviceContext* conte
     , _omDirtyFlag(false)
     , _rtCount(0)
     , _rtDepth(nullptr)
-    , _uaOutput(nullptr)
     , _srDirtyFlag(false)
     , _uaDirtyFlag(false)
     , _cbDirtyFlag(false)
@@ -61,9 +60,9 @@ GPUContextDX11::GPUContextDX11(GPUDeviceDX11* device, ID3D11DeviceContext* conte
 #endif
 
     // Only DirectX 11 supports more than 1 UAV
-    _maxUASlotsForCS = GPU_MAX_UA_BINDED;
+    _maxUASlots = GPU_MAX_UA_BINDED;
     if (_device->GetRendererType() != RendererType::DirectX11)
-        _maxUASlotsForCS = 1;
+        _maxUASlots = 1;
 }
 
 GPUContextDX11::~GPUContextDX11()
@@ -86,7 +85,6 @@ void GPUContextDX11::FrameBegin()
     _rtCount = 0;
     _currentState = nullptr;
     _rtDepth = nullptr;
-    _uaOutput = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
@@ -180,12 +178,11 @@ void GPUContextDX11::ClearUA(GPUBuffer* buf, const Vector4& value)
 
 void GPUContextDX11::ResetRenderTarget()
 {
-    if (_rtCount != 0 || _uaOutput || _rtDepth)
+    if (_rtCount != 0 || _rtDepth)
     {
         _omDirtyFlag = true;
         _rtCount = 0;
         _rtDepth = nullptr;
-        _uaOutput = nullptr;
 
         Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
 
@@ -200,13 +197,12 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* rt)
     ID3D11RenderTargetView* rtv = rtDX11 ? rtDX11->RTV() : nullptr;
     int32 newRtCount = rtv ? 1 : 0;
 
-    if (_rtCount != newRtCount || _rtHandles[0] != rtv || _rtDepth != nullptr || _uaOutput)
+    if (_rtCount != newRtCount || _rtHandles[0] != rtv || _rtDepth != nullptr)
     {
         _omDirtyFlag = true;
         _rtCount = newRtCount;
         _rtDepth = nullptr;
         _rtHandles[0] = rtv;
-        _uaOutput = nullptr;
     }
 }
 
@@ -219,13 +215,12 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
     ID3D11DepthStencilView* dsv = depthBufferDX11 ? depthBufferDX11->DSV() : nullptr;
     int32 newRtCount = rtv ? 1 : 0;
 
-    if (_rtCount != newRtCount || _rtHandles[0] != rtv || _rtDepth != dsv || _uaOutput)
+    if (_rtCount != newRtCount || _rtHandles[0] != rtv || _rtDepth != dsv)
     {
         _omDirtyFlag = true;
         _rtCount = newRtCount;
         _rtDepth = dsv;
         _rtHandles[0] = rtv;
-        _uaOutput = nullptr;
     }
 }
 
@@ -244,32 +239,12 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     }
     int32 rtvsSize = sizeof(ID3D11RenderTargetView*) * rts.Length();
 
-    if (_rtCount != rts.Length() || _rtDepth != dsv || _uaOutput || Platform::MemoryCompare(_rtHandles, rtvs, rtvsSize) != 0)
+    if (_rtCount != rts.Length() || _rtDepth != dsv || Platform::MemoryCompare(_rtHandles, rtvs, rtvsSize) != 0)
     {
         _omDirtyFlag = true;
         _rtCount = rts.Length();
         _rtDepth = dsv;
-        _uaOutput = nullptr;
         Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
-    }
-}
-
-void GPUContextDX11::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
-{
-    auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rt);
-    auto uaOutputDX11 = reinterpret_cast<GPUBufferDX11*>(uaOutput);
-
-    ID3D11RenderTargetView* rtv = rtDX11 ? rtDX11->RTV() : nullptr;
-    ID3D11UnorderedAccessView* uav = uaOutputDX11 ? ((GPUBufferViewDX11*)uaOutputDX11->View())->UAV() : nullptr;
-    int32 newRtCount = rtv ? 1 : 0;
-
-    if (_rtCount != newRtCount || _rtHandles[0] != rtv || _rtDepth != nullptr || _uaOutput != uav)
-    {
-        _omDirtyFlag = true;
-        _rtCount = newRtCount;
-        _rtDepth = nullptr;
-        _rtHandles[0] = rtv;
-        _uaOutput = uav;
     }
 }
 
@@ -291,7 +266,8 @@ void GPUContextDX11::ResetUA()
     _uaDirtyFlag = false;
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
 
-    _context->CSSetUnorderedAccessViews(0, _maxUASlotsForCS, _uaHandles, nullptr);
+    _context->CSSetUnorderedAccessViews(0, _maxUASlots, _uaHandles, nullptr);
+    _context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr, 0, 0, nullptr, nullptr);
 }
 
 void GPUContextDX11::ResetCB()
@@ -791,10 +767,8 @@ void GPUContextDX11::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
 
 void GPUContextDX11::flushSRVs()
 {
-    // Check if need to flush shader resources
     if (_srDirtyFlag)
     {
-        // Clear flag
         _srDirtyFlag = false;
 
         // Flush with the driver
@@ -816,24 +790,23 @@ void GPUContextDX11::flushSRVs()
 
 void GPUContextDX11::flushUAVs()
 {
-    // Check if need to flush unordered access
     if (_uaDirtyFlag)
     {
-        // Clear flag
         _uaDirtyFlag = false;
 
         // Flush with the driver
         uint32 initialCounts[GPU_MAX_UA_BINDED] = { 0 };
-        _context->CSSetUnorderedAccessViews(0, _maxUASlotsForCS, _uaHandles, initialCounts);
+        if (CurrentCS)
+            _context->CSSetUnorderedAccessViews(0, _maxUASlots, _uaHandles, initialCounts);
+        else
+            _context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr, _rtCount, _maxUASlots - _rtCount, _uaHandles + _rtCount, initialCounts);
     }
 }
 
 void GPUContextDX11::flushCBs()
 {
-    // Check if need to flush constant buffers
     if (_cbDirtyFlag)
     {
-        // Clear flag
         _cbDirtyFlag = false;
 
         // Flush with the driver
@@ -855,47 +828,29 @@ void GPUContextDX11::flushCBs()
 
 void GPUContextDX11::flushOM()
 {
-    // Check if need to flush output merger state or/and unordered access views
     if (_omDirtyFlag)
     {
-#if _DEBUG
-		// Validate binded render targets amount
-		int32 rtCount = 0;
-		for (int i = 0; i < ARRAY_COUNT(_rtHandles) && i < _rtCount; i++)
-		{
-			if (_rtHandles[i] != nullptr)
-				rtCount++;
-			else
-				break;
-		}
-		ASSERT(rtCount == _rtCount);
-#endif
-
-        // Check if don't use UAVs and set output merger render targets table
-        if (_uaOutput == nullptr)
-        {
-            _context->OMSetRenderTargets(_rtCount, _rtHandles, _rtDepth);
-        }
-        else
-        {
-            // Note: current dx11 content implementation assumes that there must be one or more render targets binded in order to use uav output
-            ASSERT(_rtCount > 0);
-
-            uint32 initialCounts[1] = { 0 };
-            // TODO: set -1 if buffer had no ResetCounter call since last time
-            _context->OMSetRenderTargetsAndUnorderedAccessViews(_rtCount, _rtHandles, _rtDepth, _rtCount, 1, &_uaOutput, initialCounts);
-        }
-
-        // Clear flag
         _omDirtyFlag = false;
+        int32 uaCount = 0;
+        for (int32 i = _maxUASlots - 1; i >= 0; i--)
+        {
+            if (_uaHandles[i])
+            {
+                uaCount = i + 1;
+                break;
+            }
+        }
+
+        // Flush with the driver
+        if (uaCount > 0)
+            _context->OMSetRenderTargetsAndUnorderedAccessViews(_rtCount, _rtHandles, _rtDepth, 0, D3D11_KEEP_UNORDERED_ACCESS_VIEWS, nullptr, nullptr);
+        else
+            _context->OMSetRenderTargets(_rtCount, _rtHandles, _rtDepth);
     }
 }
 
 void GPUContextDX11::onDrawCall()
 {
-    ASSERT(_currentState);
-
-    // Flush
     flushCBs();
     flushSRVs();
     flushUAVs();

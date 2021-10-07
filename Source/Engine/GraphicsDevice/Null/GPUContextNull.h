@@ -72,10 +72,6 @@ public:
     {
     }
 
-    void SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput) override
-    {
-    }
-
     void ResetSR() override
     {
     }

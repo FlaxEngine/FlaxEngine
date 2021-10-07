@@ -23,14 +23,13 @@ private:
 #if GPU_ALLOW_PROFILE_EVENTS
     ID3DUserDefinedAnnotation* _userDefinedAnnotations;
 #endif
-    int32 _maxUASlotsForCS;
+    int32 _maxUASlots;
 
     // Output Merger
     bool _omDirtyFlag;
     int32 _rtCount;
     ID3D11DepthStencilView* _rtDepth;
     ID3D11RenderTargetView* _rtHandles[GPU_MAX_RT_BINDED];
-    ID3D11UnorderedAccessView* _uaOutput;
 
     // Shader Resources
     bool _srDirtyFlag;
@@ -113,7 +112,6 @@ public:
     void SetRenderTarget(GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) override;
-    void SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput) override;
     void ResetSR() override;
     void ResetUA() override;
     void ResetCB() override;
