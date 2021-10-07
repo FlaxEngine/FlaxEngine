@@ -183,6 +183,12 @@ bool TerrainMaterialShader::Load()
     // GBuffer Pass with lightmap (use pixel shader permutation for USE_LIGHTMAP=1)
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
+   
+#if USE_EDITOR
+    // Quad Overdraw
+    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+    _cache.QuadOverdraw.Init(psDesc);
+#endif
 
     // Depth Pass
     psDesc.CullMode = CullMode::TwoSided;

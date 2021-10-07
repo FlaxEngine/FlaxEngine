@@ -128,7 +128,7 @@ void DeformableMaterialShader::Unload()
 
 bool DeformableMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth;
+    _drawModes = DrawPass::Depth | DrawPass::QuadOverdraw;
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == 0;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == 0;
@@ -140,6 +140,13 @@ bool DeformableMaterialShader::Load()
         psDesc.HS = _shader->GetHS("HS");
         psDesc.DS = _shader->GetDS("DS");
     }
+    
+#if USE_EDITOR
+    // Quad Overdraw
+    psDesc.VS = _shader->GetVS("VS_SplineModel");
+    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+    _cache.QuadOverdraw.Init(psDesc);
+#endif
 
     if (_info.BlendMode == MaterialBlendMode::Opaque)
     {

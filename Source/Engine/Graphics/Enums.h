@@ -690,6 +690,12 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
+    /// The debug quad overdraw rendering (editor-only).
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor")
+    QuadOverdraw = 1 << 20,
+
+    /// <summary>
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -823,6 +829,11 @@ API_ENUM() enum class ViewMode
     /// Draw material shaders complexity to visualize performance of pixels rendering.
     /// </summary>
     MaterialComplexity = 22,
+
+    /// <summary>
+    /// Draw geometry overdraw to visualize performance of pixels rendering.
+    /// </summary>
+    QuadOverdraw = 23,
 };
 
 /// <summary>

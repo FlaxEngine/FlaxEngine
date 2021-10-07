@@ -154,7 +154,7 @@ void ForwardMaterialShader::Unload()
 
 bool ForwardMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth | DrawPass::Forward;
+    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
 
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == 0;
@@ -167,6 +167,17 @@ bool ForwardMaterialShader::Load()
         psDesc.HS = _shader->GetHS("HS");
         psDesc.DS = _shader->GetDS("DS");
     }
+
+#if USE_EDITOR
+    // Quad Overdraw
+    psDesc.VS = _shader->GetVS("VS");
+    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+    _cache.QuadOverdraw.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS", 1);
+    _cacheInstanced.Depth.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS_Skinned");
+    _cache.QuadOverdrawSkinned.Init(psDesc);
+#endif
 
     // Check if use transparent distortion pass
     if (_shader->HasShader("PS_Distortion"))

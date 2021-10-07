@@ -16,6 +16,9 @@ private:
         PipelineStateCache Default;
         PipelineStateCache Depth;
         PipelineStateCache Distortion;
+#if USE_EDITOR
+        PipelineStateCache QuadOverdraw;
+#endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
         {
@@ -27,6 +30,8 @@ private:
                 return &Distortion;
             case DrawPass::Forward:
                 return &Default;
+            case DrawPass::QuadOverdraw:
+                return &QuadOverdraw;
             default:
                 return nullptr;
             }
@@ -37,6 +42,9 @@ private:
             Default.Release();
             Depth.Release();
             Distortion.Release();
+#if USE_EDITOR
+            QuadOverdraw.Release();
+#endif
         }
     };
 

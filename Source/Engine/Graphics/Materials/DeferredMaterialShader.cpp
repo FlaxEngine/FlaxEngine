@@ -40,7 +40,7 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
 
 DrawPass DeferredMaterialShader::GetDrawModes() const
 {
-    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::MotionVectors;
+    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
 }
 
 bool DeferredMaterialShader::CanUseLightmap() const
@@ -194,6 +194,17 @@ bool DeferredMaterialShader::Load()
     psDesc.VS = _shader->GetVS("VS_Skinned");
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.DefaultSkinned.Init(psDesc);
+
+#if USE_EDITOR
+    // Quad Overdraw
+    psDesc.VS = _shader->GetVS("VS");
+    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+    _cache.QuadOverdraw.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS", 1);
+    _cacheInstanced.Depth.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS_Skinned");
+    _cache.QuadOverdrawSkinned.Init(psDesc);
+#endif
 
     // Motion Vectors pass
     psDesc.DepthWriteEnable = false;

@@ -201,7 +201,7 @@ void ParticleMaterialShader::Unload()
 
 bool ParticleMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth | DrawPass::Forward;
+    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == 0;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == 0;
@@ -209,6 +209,17 @@ bool ParticleMaterialShader::Load()
     auto vsSprite = _shader->GetVS("VS_Sprite");
     auto vsMesh = _shader->GetVS("VS_Model");
     auto vsRibbon = _shader->GetVS("VS_Ribbon");
+
+#if USE_EDITOR
+    // Quad Overdraw
+    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+    psDesc.VS = vsSprite;
+    _cacheSprite.QuadOverdraw.Init(psDesc);
+    psDesc.VS = vsMesh;
+    _cacheModel.QuadOverdraw.Init(psDesc);
+    psDesc.VS = vsRibbon;
+    _cacheRibbon.QuadOverdraw.Init(psDesc);
+#endif
 
     // Check if use transparent distortion pass
     if (_shader->HasShader("PS_Distortion"))

@@ -594,7 +594,7 @@ void ClipLODTransition(PixelInput input)
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
 void PS_Depth(PixelInput input)
-{	
+{
 #if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
 	ClipLODTransition(input);
@@ -614,5 +614,19 @@ void PS_Depth(PixelInput input)
 #endif
 #endif
 }
+
+#if _PS_QuadOverdraw
+
+#include "./Flax/Editor/QuadOverdraw.hlsl"
+
+// Pixel Shader function for Quad Overdraw Pass (editor-only)
+[earlydepthstencil]
+META_PS(USE_EDITOR, FEATURE_LEVEL_SM5)
+void PS_QuadOverdraw(float4 svPos : SV_Position, uint primId : SV_PrimitiveID)
+{
+	DoQuadOverdraw(svPos, primId);
+}
+
+#endif
 
 @9

@@ -30,6 +30,7 @@
 #include "Engine/Level/Level.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Editor/QuadOverdrawPass.h"
 #endif
 
 #if USE_EDITOR
@@ -80,6 +81,9 @@ bool RendererService::Init()
     PassList.Add(TAA::Instance());
     PassList.Add(SMAA::Instance());
     PassList.Add(HistogramPass::Instance());
+#if USE_EDITOR
+    PassList.Add(QuadOverdrawPass::Instance());
+#endif
 
     // Skip when using Null renderer
     if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
@@ -319,6 +323,19 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     // Get the light accumulation buffer
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
+
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::QuadOverdraw)
+    {
+        QuadOverdrawPass::Instance()->Render(renderContext, context, lightBuffer->View());
+        context->ResetRenderTarget();
+        context->SetRenderTarget(task->GetOutputView());
+        context->SetViewportAndScissors(task->GetOutputViewport());
+        context->Draw(lightBuffer);
+        RenderTargetPool::Release(lightBuffer);
+        return;
+    }
+#endif
 
     // Fill GBuffer
     GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());

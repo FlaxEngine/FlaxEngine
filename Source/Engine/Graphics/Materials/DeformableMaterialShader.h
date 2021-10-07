@@ -15,6 +15,9 @@ private:
     {
         PipelineStateCache Default;
         PipelineStateCache Depth;
+#if USE_EDITOR
+        PipelineStateCache QuadOverdraw;
+#endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
         {
@@ -25,6 +28,10 @@ private:
             case DrawPass::GBuffer:
             case DrawPass::Forward:
                 return &Default;
+#if USE_EDITOR
+            case DrawPass::QuadOverdraw:
+                return &QuadOverdraw;
+#endif
             default:
                 return nullptr;
             }
@@ -34,6 +41,9 @@ private:
         {
             Default.Release();
             Depth.Release();
+#if USE_EDITOR
+            QuadOverdraw.Release();
+#endif
         }
     };
 
