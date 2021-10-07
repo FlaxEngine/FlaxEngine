@@ -18,9 +18,8 @@ LODPreviewMaterialShader::LODPreviewMaterialShader()
 
 const MaterialInfo& LODPreviewMaterialShader::GetInfo() const
 {
-    if (_material)
-        return _material->GetInfo();
-    return MaterialInfo();
+    ASSERT_LOW_LAYER(_material);
+    return _material->GetInfo();
 }
 
 bool LODPreviewMaterialShader::IsReady() const

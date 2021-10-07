@@ -151,7 +151,11 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
     }
 
     // Draw transparency into Light buffer to include it into complexity drawing
-    context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, lightBuffer);
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* readOnlyDepthBuffer = depthBuffer->View();
+    if (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView)
+        readOnlyDepthBuffer = depthBuffer->ViewReadOnlyDepth();
+    context->SetRenderTarget(readOnlyDepthBuffer, lightBuffer);
     auto& distortionList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion];
     if (!distortionList.IsEmpty())
     {
