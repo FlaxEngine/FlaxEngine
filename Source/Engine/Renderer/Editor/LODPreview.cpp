@@ -13,7 +13,7 @@
 
 LODPreviewMaterialShader::LODPreviewMaterialShader()
 {
-    _material = Content::LoadAsyncInternal<Material>(TEXT("Editor/DebugMaterials/Single Color Surface"));
+    _material = Content::LoadAsyncInternal<Material>(TEXT("Editor/DebugMaterials/SingleColor/Surface"));
 }
 
 const MaterialInfo& LODPreviewMaterialShader::GetInfo() const

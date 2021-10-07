@@ -88,11 +88,11 @@ MaterialComplexityMaterialShader::MaterialComplexityMaterialShader()
 
     // Initialize material wrappers table with separate materials for each material domain type and shader configuration
 #define INIT_WRAPPER(i, domain, asset) _wrappers[i].Domain = MaterialDomain::domain; _wrappers[i].MaterialAsset = Content::LoadAsyncInternal<Material>(TEXT(asset))
-    INIT_WRAPPER(0, Surface, "Editor/DebugMaterials/Single Color Surface");
-    INIT_WRAPPER(1, Surface, "Editor/DebugMaterials/Single Color Surface Additive");
-    INIT_WRAPPER(2, Terrain, "Editor/DebugMaterials/Single Color Terrain");
-    INIT_WRAPPER(3, Particle, "Editor/DebugMaterials/Single Color Particle");
-    INIT_WRAPPER(4, Decal, "Editor/DebugMaterials/Single Color Decal");
+    INIT_WRAPPER(0, Surface, "Editor/DebugMaterials/SingleColor/Surface");
+    INIT_WRAPPER(1, Surface, "Editor/DebugMaterials/SingleColor/SurfaceAdditive");
+    INIT_WRAPPER(2, Terrain, "Editor/DebugMaterials/SingleColor/Terrain");
+    INIT_WRAPPER(3, Particle, "Editor/DebugMaterials/SingleColor/Particle");
+    INIT_WRAPPER(4, Decal, "Editor/DebugMaterials/SingleColor/Decal");
     // TODO: deformable splines rendering cost for complexity
     // TODO: volumetric fog particles rendering cost for complexity
 #undef INIT_WRAPPER
