@@ -1323,8 +1323,21 @@ namespace Flax.Build.Bindings
                     if (GenerateCppAutoSerializationSkip(buildData, typeInfo, propertyInfo, propertyInfo.Type))
                         continue;
 
-                    var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, propertyInfo.Type, propertyInfo);
-                    contents.Append($"    SERIALIZE{typeHint}_MEMBER({propertyInfo.Name}, {propertyInfo.Getter.Name}());").AppendLine();
+                    contents.Append("    {");
+                    contents.Append(" const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" value = {propertyInfo.Getter.Name}();");
+                    contents.Append(" if (other) { const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" otherValue = other->{propertyInfo.Getter.Name}();");
+                    contents.Append(" if (Serialization::ShouldSerialize(value, &otherValue)) { ");
+                    contents.Append($"stream.JKEY(\"{propertyInfo.Name}\"); Serialization::Serialize(stream, value, &otherValue);");
+                    contents.Append(" } } else if (Serialization::ShouldSerialize(value, nullptr)) { ");
+                    contents.Append($"stream.JKEY(\"{propertyInfo.Name}\"); Serialization::Serialize(stream, value, nullptr);");
+                    contents.Append(" }");
+                    contents.Append('}').AppendLine();
                     CppAutoSerializeProperties.Add(propertyInfo);
                 }
             }

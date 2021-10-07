@@ -29,6 +29,11 @@ namespace Flax.Build.Bindings
         public bool IsVoid => Type == "void" && !IsPtr;
 
         /// <summary>
+        /// Gets a value indicating whether this type is constant reference to a value.
+        /// </summary>
+        public bool IsConstRef => IsRef && IsConst;
+
+        /// <summary>
         /// Gets a value indicating whether this type is POD (plain old data).
         /// </summary>
         public bool IsPod(Builder.BuildData buildData, ApiTypeInfo caller)
