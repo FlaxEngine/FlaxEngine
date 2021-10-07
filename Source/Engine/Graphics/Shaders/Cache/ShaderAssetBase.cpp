@@ -273,7 +273,12 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
 #else
 #error "Unknown platform."
 #endif
-        platformDefine.Definition = nullptr;
+        platformDefine.Definition = "1";
+#if USE_EDITOR
+        auto& editorDefine = options.Macros.AddOne();
+        editorDefine.Name = "USE_EDITOR";
+        editorDefine.Definition = "1";
+#endif
         InitCompilationOptions(options);
         if (ShadersCompilation::Compile(options))
         {
