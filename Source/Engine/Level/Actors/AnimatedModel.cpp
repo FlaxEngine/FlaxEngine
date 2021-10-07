@@ -422,12 +422,19 @@ void AnimatedModel::UpdateLocalBounds()
         //box = SkinnedModel->GetBox(GraphInstance.RootTransform.GetWorld());
         //box = SkinnedModel->GetBox();
 
-        // Per-bone bounds estimated from positions
-        auto& skeleton = SkinnedModel->Skeleton;
-        const int32 bonesCount = skeleton.Bones.Count();
-        box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
-        for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
-            box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+        if (GraphInstance.NodesPose.Count() != 0)
+        {
+            // Per-bone bounds estimated from positions
+            auto& skeleton = SkinnedModel->Skeleton;
+            const int32 bonesCount = skeleton.Bones.Count();
+            box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
+            for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
+                box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+        }
+        else
+        {
+            box = SkinnedModel->GetBox();
+        }
 
         // Apply margin based on model dimensions
         const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
