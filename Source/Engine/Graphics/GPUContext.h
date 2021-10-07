@@ -198,11 +198,25 @@ public:
     API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f) = 0;
 
     /// <summary>
-    /// Clears an unordered access resource with a float value.
+    /// Clears an unordered access buffer with a float value.
     /// </summary>
     /// <param name="buf">The buffer to clear.</param>
     /// <param name="value">The clear value.</param>
     API_FUNCTION() virtual void ClearUA(GPUBuffer* buf, const Vector4& value) = 0;
+
+    /// <summary>
+    /// Clears an unordered access buffer with a unsigned value.
+    /// </summary>
+    /// <param name="buf">The buffer to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUBuffer* buf, const uint32 value[4]) = 0;
+
+    /// <summary>
+    /// Clears an unordered access texture with a unsigned value.
+    /// </summary>
+    /// <param name="texture">The texture to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUTexture* texture, const uint32 value[4]) = 0;
 
 public:
 

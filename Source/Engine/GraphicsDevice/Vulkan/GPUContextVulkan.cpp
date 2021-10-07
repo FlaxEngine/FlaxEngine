@@ -831,15 +831,46 @@ void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Vector4& value)
 {
     const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
-
     if (bufVulkan)
     {
         const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
         if (cmdBuffer->IsInsideRenderPass())
             EndRenderPass();
 
+        // TODO: add support for other components if buffer has them
         uint32_t* data = (uint32_t*)&value;
         vkCmdFillBuffer(cmdBuffer->GetHandle(), bufVulkan->GetHandle(), 0, bufVulkan->GetSize(), *data);
+    }
+}
+
+void GPUContextVulkan::ClearUA(GPUBuffer* buf, const uint32 value[4])
+{
+    const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
+    if (bufVulkan)
+    {
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        // TODO: add support for other components if buffer has them
+        vkCmdFillBuffer(cmdBuffer->GetHandle(), bufVulkan->GetHandle(), 0, bufVulkan->GetSize(), value[0]);
+    }
+}
+
+void GPUContextVulkan::ClearUA(GPUTexture* texture, const uint32 value[4])
+{
+    const auto texVulkan = static_cast<GPUTextureVulkan*>(texture);
+    if (texVulkan)
+    {
+        auto rtVulkan = static_cast<GPUTextureViewVulkan*>(texVulkan->View(0));
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        FlushBarriers();
+
+        vkCmdClearColorImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (const VkClearColorValue*)value, 1, &rtVulkan->Info.subresourceRange);
     }
 }
 

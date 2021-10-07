@@ -170,10 +170,22 @@ void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 void GPUContextDX11::ClearUA(GPUBuffer* buf, const Vector4& value)
 {
     ASSERT(buf != nullptr && buf->IsUnorderedAccess());
-
     auto uav = ((GPUBufferViewDX11*)buf->View())->UAV();
-
     _context->ClearUnorderedAccessViewFloat(uav, value.Raw);
+}
+
+void GPUContextDX11::ClearUA(GPUBuffer* buf, const uint32 value[4])
+{
+    ASSERT(buf != nullptr && buf->IsUnorderedAccess());
+    auto uav = ((GPUBufferViewDX11*)buf->View())->UAV();
+    _context->ClearUnorderedAccessViewUint(uav, value);
+}
+
+void GPUContextDX11::ClearUA(GPUTexture* texture, const uint32 value[4])
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto uav = ((GPUTextureViewDX11*)texture->View())->UAV();
+    _context->ClearUnorderedAccessViewUint(uav, value);
 }
 
 void GPUContextDX11::ResetRenderTarget()

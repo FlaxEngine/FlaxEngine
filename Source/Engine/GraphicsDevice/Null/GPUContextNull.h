@@ -56,6 +56,14 @@ public:
     {
     }
 
+    void ClearUA(GPUBuffer* buf, const uint32 value[4]) override
+    {
+    }
+
+    void ClearUA(GPUTexture* texture, const uint32 value[4]) override
+    {
+    }
+
     void ResetRenderTarget() override
     {
     }

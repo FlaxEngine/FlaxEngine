@@ -727,6 +727,34 @@ void GPUContextDX12::ClearUA(GPUBuffer* buf, const Vector4& value)
     _commandList->ClearUnorderedAccessViewFloat(desc.GPU, uav, bufDX12->GetResource(), value.Raw, 0, nullptr);
 }
 
+void GPUContextDX12::ClearUA(GPUBuffer* buf, const uint32 value[4])
+{
+    ASSERT(buf != nullptr && buf->IsUnorderedAccess());
+    auto bufDX12 = reinterpret_cast<GPUBufferDX12*>(buf);
+
+    SetResourceState(bufDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+
+    auto uav = ((GPUBufferViewDX12*)bufDX12->View())->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewUint(desc.GPU, uav, bufDX12->GetResource(), value, 0, nullptr);
+}
+
+void GPUContextDX12::ClearUA(GPUTexture* texture, const uint32 value[4])
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto texDX12 = reinterpret_cast<GPUTextureDX12*>(texture);
+
+    SetResourceState(texDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+
+    auto uav = ((GPUTextureViewDX12*)texDX12->View(0))->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewUint(desc.GPU, uav, texDX12->GetResource(), value, 0, nullptr);
+}
+
 void GPUContextDX12::ResetRenderTarget()
 {
     if (_rtDepth || _rtCount != 0)
