@@ -666,6 +666,36 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Opens the specified editor window (shows it with editor options handling for new windows).
+        /// </summary>
+        /// <param name="window">The window.</param>
+        public void Open(EditorWindow window)
+        {
+            var newLocation = (DockState)Editor.Options.Options.Interface.NewWindowLocation;
+            if (newLocation == DockState.Float)
+            {
+                // Check if there is a floating window that has the same size
+                Vector2 defaultSize = window.DefaultSize;
+                for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
+                {
+                    var win = Editor.UI.MasterPanel.FloatingPanels[i];
+                    if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                    {
+                        window.Show(DockState.DockFill, win);
+                        window.Focus();
+                        return;
+                    }
+                }
+
+                window.ShowFloating(defaultSize);
+            }
+            else
+            {
+                window.Show(newLocation);
+            }
+        }
+
+        /// <summary>
         /// Gets <see cref="EditorWindow"/> that is represented by the given serialized typename. Used to restore workspace layout.
         /// </summary>
         /// <param name="typename">The typename.</param>

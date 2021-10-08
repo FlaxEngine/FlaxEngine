@@ -57,31 +57,7 @@ namespace FlaxEditor.Modules
             }
             if (window != null && !disableAutoShow)
             {
-                var newLocation = (DockState)Editor.Options.Options.Interface.NewWindowLocation;
-                if (newLocation == DockState.Float)
-                {
-                    // Check if there is a floating window that has the same size
-                    Vector2 defaultSize = window.DefaultSize;
-                    for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
-                    {
-                        var win = Editor.UI.MasterPanel.FloatingPanels[i];
-
-                        // Check if size is similar
-                        if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
-                        {
-                            // Dock
-                            window.Show(DockState.DockFill, win);
-                            window.Focus();
-                            return window;
-                        }
-                    }
-
-                    window.ShowFloating(defaultSize);
-                }
-                else
-                {
-                    window.Show(newLocation);
-                }
+                Editor.Windows.Open(window);
             }
 
             return window;
