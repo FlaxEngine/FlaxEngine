@@ -587,6 +587,8 @@ const Char* ToString(PlatformType type)
         return TEXT("Android");
     case PlatformType::Switch:
         return TEXT("Switch");
+    case PlatformType::PS5:
+        return TEXT("PlayStation 5");
     default:
         return TEXT("");
     }

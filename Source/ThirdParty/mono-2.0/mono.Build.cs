@@ -76,6 +76,7 @@ public class mono : DepsModule
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             break;
         case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmono.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmonoruntime.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmonoutils.a"));

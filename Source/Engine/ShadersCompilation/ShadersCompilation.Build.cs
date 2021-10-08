@@ -58,6 +58,8 @@ public class ShadersCompilation : EngineModule
 
         if (Sdk.HasValid("PS4Sdk"))
             options.PrivateDependencies.Add("ShaderCompilerPS4");
+        if (Sdk.HasValid("PS5Sdk"))
+            options.PrivateDependencies.Add("ShaderCompilerPS5");
     }
 
     /// <inheritdoc />

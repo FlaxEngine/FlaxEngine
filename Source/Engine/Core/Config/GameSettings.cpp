@@ -55,6 +55,8 @@ IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 #elif PLATFORM_PS4
 IMPLEMENT_SETTINGS_GETTER(PS4PlatformSettings, PS4Platform);
+#elif PLATFORM_PS5
+IMPLEMENT_SETTINGS_GETTER(PS5PlatformSettings, PS5Platform);
 #elif PLATFORM_XBOX_ONE
 IMPLEMENT_SETTINGS_GETTER(XboxOnePlatformSettings, XboxOnePlatform);
 #elif PLATFORM_XBOX_SCARLETT
@@ -223,6 +225,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
     DESERIALIZE(SwitchPlatform);
+    DESERIALIZE(PS5Platform);
 }
 
 void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

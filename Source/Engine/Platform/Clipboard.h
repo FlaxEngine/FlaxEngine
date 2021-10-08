@@ -4,22 +4,10 @@
 
 #if PLATFORM_WINDOWS
 #include "Windows/WindowsClipboard.h"
-#elif PLATFORM_UWP
-#include "Base/ClipboardBase.h"
 #elif PLATFORM_LINUX
 #include "Linux/LinuxClipboard.h"
-#elif PLATFORM_PS4
-#include "Base/ClipboardBase.h"
-#elif PLATFORM_XBOX_ONE
-#include "Base/ClipboardBase.h"
-#elif PLATFORM_XBOX_SCARLETT
-#include "Base/ClipboardBase.h"
-#elif PLATFORM_ANDROID
-#include "Base/ClipboardBase.h"
-#elif PLATFORM_SWITCH
-#include "Base/ClipboardBase.h"
 #else
-#error Missing Clipboard implementation!
+#include "Base/ClipboardBase.h"
 #endif
 
 #include "Types.h"

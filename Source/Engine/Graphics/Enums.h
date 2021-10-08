@@ -70,6 +70,11 @@ API_ENUM() enum class RendererType
     /// </summary>
     PS4 = 11,
 
+    /// <summary>
+    /// PlayStation 5
+    /// </summary>
+    PS5 = 12,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };
@@ -120,6 +125,11 @@ API_ENUM() enum class ShaderProfile
     /// DirectX (Shader Model 6 compatible)
     /// </summary>
     DirectX_SM6 = 7,
+
+    /// <summary>
+    /// PlayStation 5
+    /// </summary>
+    PS5 = 8,
 
     API_ENUM(Attributes="HideInEditor")
     MAX

@@ -46,6 +46,7 @@ public class vorbis : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisfile.a"));
             break;
         case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

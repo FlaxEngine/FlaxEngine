@@ -52,6 +52,9 @@ const Char* ToString(RendererType value)
     case RendererType::PS4:
         result = TEXT("PS4");
         break;
+    case RendererType::PS5:
+        result = TEXT("PS5");
+        break;
     default:
         result = TEXT("?");
     }
@@ -86,6 +89,9 @@ const Char* ToString(ShaderProfile value)
         break;
     case ShaderProfile::PS4:
         result = TEXT("PS4");
+        break;
+    case ShaderProfile::PS5:
+        result = TEXT("PS5");
         break;
     default:
         result = TEXT("?");
@@ -289,6 +295,7 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
     switch (profile)
     {
     case ShaderProfile::DirectX_SM6:
+    case ShaderProfile::PS5:
         return FeatureLevel::SM6;
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::Vulkan_SM5:
@@ -313,6 +320,7 @@ bool RenderTools::CanSupportTessellation(ShaderProfile profile)
     case ShaderProfile::DirectX_SM6:
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::PS4:
+    case ShaderProfile::PS5:
         return true;
     default:
         return false;

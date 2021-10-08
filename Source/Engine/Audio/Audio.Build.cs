@@ -50,6 +50,10 @@ public class Audio : EngineModule
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Audio"));
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_SWITCH");
             break;
+        case TargetPlatform.PS5:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Audio"));
+            options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_PS5");
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

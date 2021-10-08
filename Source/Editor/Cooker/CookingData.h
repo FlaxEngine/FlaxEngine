@@ -93,6 +93,12 @@ API_ENUM() enum class BuildPlatform
     /// Switch.
     /// </summary>
     Switch = 10,
+
+    /// <summary>
+    /// PlayStation 5
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"PlayStation 5\")")
+    PS5 = 11,
 };
 
 extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);

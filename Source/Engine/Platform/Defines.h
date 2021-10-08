@@ -48,6 +48,11 @@ API_ENUM() enum class PlatformType
     /// Running on Switch.
     /// </summary>
     Switch = 8,
+
+    /// <summary>
+    /// Running on PlayStation 5.
+    /// </summary>
+    PS5 = 9,
 };
 
 /// <summary>
@@ -103,6 +108,9 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_PS4)
 #define PLATFORM_PS4 0
 #endif
+#if !defined(PLATFORM_PS5)
+#define PLATFORM_PS5 0
+#endif
 #if !defined(PLATFORM_XBOX_SCARLETT)
 #define PLATFORM_XBOX_SCARLETT 0
 #endif
@@ -130,6 +138,8 @@ API_ENUM() enum class ArchitectureType
 #include "Linux/LinuxDefines.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Defines.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5Defines.h"
 #elif PLATFORM_XBOX_ONE
 #include "Platforms/XboxOne/Engine/Platform/XboxOneDefines.h"
 #elif PLATFORM_XBOX_SCARLETT
@@ -178,7 +188,7 @@ API_ENUM() enum class ArchitectureType
 // Platform family defines
 #define PLATFORM_WINDOWS_FAMILY (PLATFORM_WINDOWS || PLATFORM_UWP || PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT)
 #define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY)
-#define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4)
+#define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5)
 #define PLATFORM_APPLE_FAMILY (PLATFORM_IOS || PLATFORM_OSX)
 
 // SIMD defines

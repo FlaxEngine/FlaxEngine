@@ -515,6 +515,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_PS5
+    case BuildPlatform::PS5:
+    {
+        const char* platformDefineName = "PLATFORM_PS5";
+        COMPILE_PROFILE(PS5, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
+        break;
+    }
+#endif
     default:
     {
         LOG(Warning, "Not implemented platform or shaders not supported.");

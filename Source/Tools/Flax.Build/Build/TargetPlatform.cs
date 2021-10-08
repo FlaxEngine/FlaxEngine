@@ -46,6 +46,11 @@ namespace Flax.Build
         /// Running on Switch.
         /// </summary>
         Switch = 8,
+
+        /// <summary>
+        /// Running on PlayStation 5.
+        /// </summary>
+        PS5 = 9,
     }
 
     /// <summary>

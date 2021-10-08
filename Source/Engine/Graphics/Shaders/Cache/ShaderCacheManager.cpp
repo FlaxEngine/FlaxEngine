@@ -11,7 +11,7 @@
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 
-const Char* ShaderProfileCacheDirNames[8] =
+const Char* ShaderProfileCacheDirNames[] =
 {
     // @formatter:off
     TEXT("EARTH_IS_NOT_FLAT_XD"), // Unknown
@@ -22,6 +22,7 @@ const Char* ShaderProfileCacheDirNames[8] =
     TEXT("VK_SM5"), // Vulkan_SM5
     TEXT("PS4"), // PS4
     TEXT("DX_SM6"), // DirectX_SM6
+    TEXT("PS5"), // PS5
     // @formatter:on
 };
 

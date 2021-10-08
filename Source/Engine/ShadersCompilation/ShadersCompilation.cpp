@@ -37,6 +37,9 @@
 #if COMPILE_WITH_PS4_SHADER_COMPILER
 #include "Platforms/PS4/Engine/ShaderCompilerPS4/ShaderCompilerPS4.h"
 #endif
+#if COMPILE_WITH_PS5_SHADER_COMPILER
+#include "Platforms/PS5/Engine/ShaderCompilerPS5/ShaderCompilerPS5.h"
+#endif
 
 namespace ShadersCompilationImpl
 {
@@ -151,7 +154,6 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
     switch (profile)
     {
 #if COMPILE_WITH_D3D_SHADER_COMPILER
-        // Direct 3D
     case ShaderProfile::DirectX_SM4:
     case ShaderProfile::DirectX_SM5:
         result = New<ShaderCompilerD3D>(profile);
@@ -163,15 +165,18 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
         break;
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER
-        // Vulkan
     case ShaderProfile::Vulkan_SM5:
         result = New<ShaderCompilerVulkan>(profile);
         break;
 #endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
-        // PS4
     case ShaderProfile::PS4:
         result = New<ShaderCompilerPS4>();
+        break;
+#endif
+#if COMPILE_WITH_PS5_SHADER_COMPILER
+    case ShaderProfile::PS5:
+        result = New<ShaderCompilerPS5>();
         break;
 #endif
     default:

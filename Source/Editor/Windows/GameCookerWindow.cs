@@ -44,6 +44,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.XboxScarlett, new XboxScarlett() },
                 { PlatformType.Android, new Android() },
                 { PlatformType.Switch, new Switch() },
+                { PlatformType.PS5, new PS5() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -59,6 +60,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.XboxScarlett].Init("Output/XboxScarlett", "XboxScarlett");
                 PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
+                PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
             }
 
             abstract class Platform
@@ -195,6 +197,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
             }
 
+            class PS5 : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.PS5;
+            }
+
             class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -238,6 +245,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Switch:
                             name = "Switch";
+                            break;
+                        case PlatformType.PS5:
+                            name = "PlayStation 5";
                             break;
                         default:
                             name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());

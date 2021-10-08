@@ -182,6 +182,10 @@ bool CompileScriptsStep::Perform(CookingData& data)
         platform = TEXT("Switch");
         architecture = TEXT("ARM64");
         break;
+    case BuildPlatform::PS5:
+        platform = TEXT("PS5");
+        architecture = TEXT("x64");
+        break;
     default:
         LOG(Error, "Unknown or unsupported build platform.");
         return true;

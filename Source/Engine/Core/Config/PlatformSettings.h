@@ -29,3 +29,6 @@
 #if PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchPlatformSettings.h"
 #endif
+#if PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5PlatformSettings.h"
+#endif

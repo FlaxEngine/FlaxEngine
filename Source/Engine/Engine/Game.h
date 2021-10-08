@@ -12,6 +12,8 @@
 #include "Linux/LinuxGame.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Engine/PS4Game.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Engine/PS5Game.h"
 #elif PLATFORM_XBOX_ONE
 #include "Platforms/XboxOne/Engine/Engine/XboxOneGame.h"
 #elif PLATFORM_XBOX_SCARLETT

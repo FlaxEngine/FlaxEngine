@@ -138,6 +138,7 @@
     <Compile Include="Platforms\Android\*.cs" />
     <Compile Include="Platforms\Linux\*.cs" />
     <Compile Include="..\..\Platforms\PS4\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\PS5\Flax.Build\*.cs" />
     <Compile Include="Platforms\Unix\*.cs" />
     <Compile Include="Platforms\UWP\*.cs" />
     <Compile Include="Platforms\Windows\*.cs" />

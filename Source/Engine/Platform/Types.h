@@ -93,6 +93,30 @@ class PS4Window;
 typedef PS4Window Window;
 class PS4Network;
 typedef PS4Network Network;
+
+#elif PLATFORM_PS5
+
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class UnixCriticalSection;
+typedef UnixCriticalSection CriticalSection;
+class UnixConditionVariable;
+typedef UnixConditionVariable ConditionVariable;
+class PS5FileSystem;
+typedef PS5FileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class UnixFile;
+typedef UnixFile File;
+class PS5Platform;
+typedef PS5Platform Platform;
+class PS5Thread;
+typedef PS5Thread Thread;
+class PS5Window;
+typedef PS5Window Window;
+class PS5Network;
+typedef PS5Network Network;
+
 #elif PLATFORM_XBOX_ONE
 
 class ClipboardBase;

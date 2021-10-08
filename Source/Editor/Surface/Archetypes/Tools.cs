@@ -1346,9 +1346,9 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Platform Switch",
                 Description = "Gets the input value based on the runtime-platform type",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 180),
+                Size = new Vector2(220, 200),
                 ConnectionsHints = ConnectionsHint.Value,
-                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
                 DependentBoxes = new[] { 0 },
                 Elements = new[]
                 {
@@ -1362,6 +1362,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(6, "Xbox Scarlett", true, null, 7),
                     NodeElementArchetype.Factory.Input(7, "Android", true, null, 8),
                     NodeElementArchetype.Factory.Input(8, "Switch", true, null, 9),
+                    NodeElementArchetype.Factory.Input(9, "PlayStation 5", true, null, 10),
                 }
             },
             new NodeArchetype

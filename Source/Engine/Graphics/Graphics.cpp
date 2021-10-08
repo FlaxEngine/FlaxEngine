@@ -30,6 +30,9 @@ extern GPUDevice* CreateGPUDeviceDX12();
 #if GRAPHICS_API_PS4
 extern GPUDevice* CreateGPUDevicePS4();
 #endif
+#if GRAPHICS_API_PS5
+extern GPUDevice* CreateGPUDevicePS5();
+#endif
 
 class GraphicsService : public EngineService
 {
@@ -132,6 +135,10 @@ bool GraphicsService::Init()
 #if GRAPHICS_API_PS4
         if (!device)
             device = CreateGPUDevicePS4();
+#endif
+#if GRAPHICS_API_PS5
+        if (!device)
+            device = CreateGPUDevicePS5();
 #endif
     }
 

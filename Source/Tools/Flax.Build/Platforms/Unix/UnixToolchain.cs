@@ -182,6 +182,7 @@ namespace Flax.Build.Platforms
                 default: throw new InvalidArchitectureException(architecture);
                 }
             case TargetPlatform.PS4: return (string)Utilities.GetStaticValue("Flax.Build.Platforms.PS4Toolchain", "ToolchainName");
+            case TargetPlatform.PS5: return (string)Utilities.GetStaticValue("Flax.Build.Platforms.PS5Toolchain", "ToolchainName");
             case TargetPlatform.Android:
                 switch (architecture)
                 {

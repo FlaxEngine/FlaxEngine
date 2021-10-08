@@ -32,6 +32,7 @@ public class TextureTool : EngineModule
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
             useStb = true;

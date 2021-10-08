@@ -42,6 +42,9 @@
 #if PLATFORM_TOOLS_PS4
 #include "Platforms/PS4/Editor/PlatformTools/PS4PlatformTools.h"
 #endif
+#if PLATFORM_TOOLS_PS5
+#include "Platforms/PS5/Editor/PlatformTools/PS5PlatformTools.h"
+#endif
 #if PLATFORM_TOOLS_XBOX_ONE
 #include "Platforms/XboxOne/Editor/PlatformTools/XboxOnePlatformTools.h"
 #endif
@@ -123,6 +126,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Android ARM64");
     case BuildPlatform::Switch:
         return TEXT("Switch");
+    case BuildPlatform::PS5:
+        return TEXT("PlayStation 5");
     default:
         return TEXT("?");
     }
@@ -313,6 +318,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #if PLATFORM_TOOLS_SWITCH
         case BuildPlatform::Switch:
             result = New<SwitchPlatformTools>();
+            break;
+#endif
+#if PLATFORM_TOOLS_PS5
+        case BuildPlatform::PS5:
+            result = New<PS5PlatformTools>();
             break;
 #endif
         }

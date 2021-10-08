@@ -32,6 +32,7 @@ namespace Flax.Build
             TargetPlatform.XboxOne,
             TargetPlatform.Linux,
             TargetPlatform.PS4,
+            TargetPlatform.PS5,
             TargetPlatform.XboxScarlett,
             TargetPlatform.Android,
             TargetPlatform.Switch,

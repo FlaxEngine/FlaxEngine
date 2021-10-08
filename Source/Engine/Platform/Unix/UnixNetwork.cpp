@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_UNIX && !PLATFORM_PS4
+#if PLATFORM_UNIX && !PLATFORM_PS4 && !PLATFORM_PS5
 
 #include "UnixNetwork.h"
 #include "Engine/Core/Log.h"

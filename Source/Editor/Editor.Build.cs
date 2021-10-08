@@ -57,6 +57,7 @@ public class Editor : EditorModule
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "UWP", "PLATFORM_TOOLS_UWP");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxOne", "PLATFORM_TOOLS_XBOX_ONE", "PLATFORM_TOOLS_GDK");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS5", "PLATFORM_TOOLS_PS5");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT", "PLATFORM_TOOLS_GDK");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Switch", "PLATFORM_TOOLS_SWITCH");

@@ -93,6 +93,7 @@ namespace Flax.Build
             case TargetPlatform.UWP: return "PLATFORM_UWP";
             case TargetPlatform.Linux: return "PLATFORM_LINUX";
             case TargetPlatform.PS4: return "PLATFORM_PS4";
+            case TargetPlatform.PS5: return "PLATFORM_PS5";
             case TargetPlatform.XboxScarlett: return "PLATFORM_XBOX_SCARLETT";
             case TargetPlatform.Android: return "PLATFORM_ANDROID";
             case TargetPlatform.Switch: return "PLATFORM_SWITCH";

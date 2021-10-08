@@ -10,6 +10,8 @@
 #include "Unix/UnixCriticalSection.h"
 #elif PLATFORM_PS4
 #include "Unix/UnixCriticalSection.h"
+#elif PLATFORM_PS5
+#include "Unix/UnixCriticalSection.h"
 #elif PLATFORM_XBOX_ONE
 #include "Win32/Win32CriticalSection.h"
 #elif PLATFORM_XBOX_SCARLETT

@@ -238,6 +238,7 @@ namespace Flax.Deps
             }
             case TargetPlatform.Linux:
             case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
             {
                 cmdLine = "CMakeLists.txt";
                 break;

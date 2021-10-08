@@ -99,6 +99,7 @@ namespace FlaxEditor
             case BuildPlatform.XboxOne: return PlatformType.XboxOne;
             case BuildPlatform.LinuxX64: return PlatformType.Linux;
             case BuildPlatform.PS4: return PlatformType.PS4;
+            case BuildPlatform.PS5: return PlatformType.PS5;
             case BuildPlatform.AndroidARM64: return PlatformType.Android;
             case BuildPlatform.XboxScarlett: return PlatformType.XboxScarlett;
             case BuildPlatform.Switch: return PlatformType.Switch;

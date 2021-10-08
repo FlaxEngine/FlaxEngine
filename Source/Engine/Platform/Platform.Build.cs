@@ -56,6 +56,10 @@ public class Platform : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform"));
             break;
+        case TargetPlatform.PS5:
+            options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Platform"));
+            break;
         case TargetPlatform.XboxOne:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Win32"));
             options.SourcePaths.Add(Path.Combine(FolderPath, "GDK"));
@@ -86,6 +90,7 @@ public class Platform : EngineModule
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform", "XboxOnePlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxScarlett", "Engine", "Platform", "XboxScarlettPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform", "PS4PlatformSettings.h"));
+            AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Platform", "PS5PlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform", "SwitchPlatformSettings.h"));
         }
     }

@@ -239,6 +239,7 @@ namespace Flax.Build
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Linux: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.PS4: return targetArchitecture == TargetArchitecture.x64;
+            case TargetPlatform.PS5: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Android: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
             default: return false;

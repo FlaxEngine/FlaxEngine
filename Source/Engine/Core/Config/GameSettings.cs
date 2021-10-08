@@ -10,6 +10,7 @@ namespace FlaxEditor.Content.Settings
     partial class GameSettings
     {
         internal const string PS4PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS4PlatformSettings";
+        internal const string PS5PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS5PlatformSettings";
         internal const string XboxOnePlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxOnePlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
         internal const string SwitchPlatformSettingsTypename = "FlaxEditor.Content.Settings.SwitchPlatformSettings";
@@ -168,6 +169,14 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset SwitchPlatform;
 #endif
 
+#if FLAX_EDITOR || PLATFORM_PS5
+        /// <summary>
+        /// Reference to PS5 Platform Settings asset. Used to apply configuration on PS5 platform.
+        /// </summary>
+        [EditorOrder(2080), EditorDisplay("Platform Settings", "PlayStation 5"), AssetReference(PS5PlatformSettingsTypename, true), Tooltip("Reference to PS5 Platform Settings asset")]
+        public JsonAsset PS5Platform;
+#endif
+
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
         /// </summary>
@@ -282,6 +291,10 @@ namespace FlaxEditor.Content.Settings
             if (type.FullName == SwitchPlatformSettingsTypename)
                 return LoadAsset(gameSettings.SwitchPlatform, SwitchPlatformSettingsTypename) as T;
 #endif
+#if FLAX_EDITOR || PLATFORM_PS5
+            if (type.FullName == PS5PlatformSettingsTypename)
+                return LoadAsset(gameSettings.PS5Platform, PS5PlatformSettingsTypename) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -374,6 +387,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.AndroidPlatform, obj);
             if (type.FullName == SwitchPlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.SwitchPlatform, obj);
+            if (type.FullName == PS5PlatformSettingsTypename)
+                return SaveAsset(gameSettings, ref gameSettings.PS5Platform, obj);
             if (type == typeof(AudioSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Audio, obj);
 

@@ -10,6 +10,8 @@
 #include "Unix/UnixNetwork.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Network.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5Network.h"
 #elif PLATFORM_XBOX_ONE
 #include "Win32/Win32Network.h"
 #elif PLATFORM_XBOX_SCARLETT
