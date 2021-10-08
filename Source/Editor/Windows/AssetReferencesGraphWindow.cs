@@ -216,7 +216,7 @@ namespace FlaxEditor.Windows
                 asset = FlaxEngine.Content.LoadAsync<Asset>(assetId);
             if (asset == null || asset.IsVirtual)
                 return;
-            while (asset && !asset.IsLoaded)
+            while (asset && !asset.IsLoaded && !asset.LastLoadFailed)
             {
                 if (_token.IsCancellationRequested)
                     return;
@@ -358,13 +358,24 @@ namespace FlaxEditor.Windows
             _progress = 100.0f;
 
             // Update UI
-            FlaxEngine.Scripting.InvokeOnUpdate(() => _surface.Init(_nodes));
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
+            {
+                _surface.Init(_nodes);
+                _loadingLabel.Visible = false;
+            });
         }
 
         private void Load()
         {
-            LoadInner();
-            FlaxEngine.Scripting.InvokeOnUpdate(() => _loadingLabel.Visible = false);
+            try
+            {
+                LoadInner();
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+                Close();
+            }
         }
 
         /// <inheritdoc />
