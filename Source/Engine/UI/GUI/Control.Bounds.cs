@@ -236,7 +236,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets center position of the control relative to the upper-left corner of its container.
         /// </summary>
-        public Vector2 Center => _bounds.Center;
+        [HideInEditor, NoSerialize]
+        public Vector2 Center
+        {
+            get => _bounds.Center;
+            set => Location = value - Size * 0.5f;
+        }
 
         /// <summary>
         /// Gets or sets control's bounds rectangle.
