@@ -110,6 +110,13 @@ public:
     /// </summary>
     API_PROPERTY() String GetDataFolderPath() const;
 
+    /// <summary>
+    /// Gets the asset references (scene asset). Supported only in Editor.
+    /// </summary>
+    /// <seealso cref="Asset.GetReferences"/>
+    /// <returns>The collection of the asset ids referenced by this asset.</returns>
+    API_FUNCTION() Array<Guid, HeapAllocation> GetAssetReferences() const;
+
 #endif
 
 private:

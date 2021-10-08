@@ -122,6 +122,21 @@ String Scene::GetDataFolderPath() const
     return Globals::ProjectContentFolder / TEXT("SceneData") / GetFilename();
 }
 
+Array<Guid> Scene::GetAssetReferences() const
+{
+    Array<Guid> result;
+    const auto asset = Content::Load<SceneAsset>(GetID());
+    if (asset)
+    {
+        asset->GetReferences(result);
+    }
+    else
+    {
+        // TODO: serialize scene to json and collect refs
+    }
+    return result;
+}
+
 #endif
 
 MeshCollider* Scene::TryGetCsgCollider()

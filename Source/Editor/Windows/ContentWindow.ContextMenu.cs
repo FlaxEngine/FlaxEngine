@@ -100,6 +100,7 @@ namespace FlaxEditor.Windows
                     {
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
                         cm.AddButton("Select actors using this asset", () => Editor.SceneEditing.SelectActorsUsingAsset(assetItem.ID));
+                        cm.AddButton("Show asset references graph", () => Editor.Windows.Open(new AssetReferencesGraphWindow(Editor, assetItem)));
                     }
 
                     if (Editor.CanExport(item.Path))
