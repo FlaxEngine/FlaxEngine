@@ -912,7 +912,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     void* interfaceIt = nullptr;
     int32 interfacesCount = 0;
     MonoClass* klass = mclass->GetNative();
-    while (interfaceKlass = mono_class_get_interfaces(klass, &interfaceIt))
+    while ((interfaceKlass = mono_class_get_interfaces(klass, &interfaceIt)))
     {
         const ScriptingTypeHandle interfaceType = FindType(interfaceKlass);
         if (interfaceType)
@@ -924,7 +924,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
         interfaces = (ScriptingType::InterfaceImplementation*)Allocator::Allocate((interfacesCount + 1) * sizeof(ScriptingType::InterfaceImplementation));
         interfacesCount = 0;
         interfaceIt = nullptr;
-        while (interfaceKlass = mono_class_get_interfaces(klass, &interfaceIt))
+        while ((interfaceKlass = mono_class_get_interfaces(klass, &interfaceIt)))
         {
             const ScriptingTypeHandle interfaceTypeHandle = FindType(interfaceKlass);
             if (!interfaceTypeHandle)

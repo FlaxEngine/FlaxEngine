@@ -30,8 +30,10 @@ private:
                 return &Distortion;
             case DrawPass::Forward:
                 return &Default;
+#if USE_EDITOR
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
+#endif
             default:
                 return nullptr;
             }
