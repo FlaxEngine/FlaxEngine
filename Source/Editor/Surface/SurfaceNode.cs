@@ -156,7 +156,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="width">The width.</param>
         /// <param name="height">The height.</param>
-        protected void Resize(float width, float height)
+        public void Resize(float width, float height)
         {
             Size = CalculateNodeSize(width, height);
 
@@ -176,7 +176,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Automatically resizes the node to match the title size and all the elements for best fit of the node dimensions.
         /// </summary>
-        protected void ResizeAuto()
+        public void ResizeAuto()
         {
             var width = 0.0f;
             var height = 0.0f;

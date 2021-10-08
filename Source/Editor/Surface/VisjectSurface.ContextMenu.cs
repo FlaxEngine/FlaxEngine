@@ -141,8 +141,11 @@ namespace FlaxEditor.Surface
             // Create secondary context menu
             var menu = new FlaxEditor.GUI.ContextMenu.ContextMenu();
 
-            menu.AddButton("Save", _onSave).Enabled = CanEdit;
-            menu.AddSeparator();
+            if (_onSave != null)
+            {
+                menu.AddButton("Save", _onSave).Enabled = CanEdit;
+                menu.AddSeparator();
+            }
             _cmCopyButton = menu.AddButton("Copy", Copy);
             menu.AddButton("Paste", Paste).Enabled = CanEdit && CanPaste();
             _cmDuplicateButton = menu.AddButton("Duplicate", Duplicate);
@@ -219,13 +222,9 @@ namespace FlaxEditor.Surface
             }
             menu.AddSeparator();
 
-            _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () =>
-            {
-                FormatGraph(SelectedNodes);
-            });
-            _cmFormatNodesConnectionButton.Enabled = HasNodesSelection;
+            _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () => { FormatGraph(SelectedNodes); });
+            _cmFormatNodesConnectionButton.Enabled = CanEdit && HasNodesSelection;
 
-            menu.AddSeparator();
             _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
             {
                 var nodes = ((List<SurfaceNode>)menu.Tag);
