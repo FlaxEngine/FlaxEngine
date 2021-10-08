@@ -74,6 +74,12 @@ public:
     API_FUNCTION() static bool GetAssetInfo(const StringView& path, API_PARAM(Out) AssetInfo& info);
 
     /// <summary>
+    /// Finds all the asset IDs. Uses asset registry.
+    /// </summary>
+    /// <returns>The list of all asset IDs.</returns>
+    API_FUNCTION() static Array<Guid, HeapAllocation> GetAllAssets();
+
+    /// <summary>
     /// Finds all the asset IDs by type (exact type, without inheritance checks). Uses asset registry.
     /// </summary>
     /// <param name="type">The asset type.</param>

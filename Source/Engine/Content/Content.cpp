@@ -322,6 +322,13 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 #endif
 }
 
+Array<Guid> Content::GetAllAssets()
+{
+    Array<Guid> result;
+    Cache.GetAll(result);
+    return result;
+}
+
 Array<Guid> Content::GetAllAssetsByType(const MClass* type)
 {
     Array<Guid> result;

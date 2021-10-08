@@ -174,6 +174,12 @@ public:
     }
 
     /// <summary>
+    /// Gets the asset ids.
+    /// </summary>
+    /// <param name="result">The result array.</param>
+    void GetAll(Array<Guid, HeapAllocation>& result) const;
+
+    /// <summary>
     /// Gets the asset ids that match the given typename.
     /// </summary>
     /// <param name="typeName">The asset typename.</param>
