@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Double2.h"
 #include "Double3.h"
@@ -106,4 +106,12 @@ Int2 Double2::FloorToInt(const Double2& v)
 double Double2::TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2)
 {
     return Math::Abs((v0.X * (v1.Y - v2.Y) + v1.X * (v2.Y - v0.Y) + v2.X * (v0.Y - v1.Y)) / 2.);
+}
+
+double Double2::Angle(const Double2& from, const Double2& to)
+{
+    const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
+    if (Math::Abs(dot) > (1.0 - ZeroTolerance))
+        return dot > 0.0 ? 0.0 : PI;
+    return Math::Acos(dot);
 }

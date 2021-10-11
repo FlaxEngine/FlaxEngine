@@ -54,6 +54,14 @@ Double4::Double4(const Vector3& xyz, double w)
 {
 }
 
+Double4::Double4(const Vector4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
+    , Z(xyzw.Z)
+    , W(xyzw.W)
+{
+}
+
 Double4::Double4(const Int2& xy, double z, double w)
     : X(static_cast<double>(xy.X))
     , Y(static_cast<double>(xy.Y))

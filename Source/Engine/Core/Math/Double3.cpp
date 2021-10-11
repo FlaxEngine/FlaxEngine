@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Double2.h"
 #include "Double3.h"
@@ -45,6 +45,20 @@ Double3::Double3(const Vector2& xy)
 {
 }
 
+Double3::Double3(const Vector3& xyz)
+    : X(xyz.X)
+    , Y(xyz.Y)
+    , Z(xyz.Z)
+{
+}
+
+Double3::Double3(const Vector4& xyzw)
+    : X(xyzw.X)
+    , Y(xyzw.Y)
+    , Z(xyzw.Z)
+{
+}
+
 Double3::Double3(const Int2& xy, double z)
     : X(static_cast<double>(xy.X))
     , Y(static_cast<double>(xy.Y))
@@ -63,13 +77,6 @@ Double3::Double3(const Int4& xyzw)
     : X(static_cast<double>(xyzw.X))
     , Y(static_cast<double>(xyzw.Y))
     , Z(static_cast<double>(xyzw.Z))
-{
-}
-
-Double3::Double3(const Vector4& xyzw)
-    : X(xyzw.X)
-    , Y(xyzw.Y)
-    , Z(xyzw.Z)
 {
 }
 
@@ -382,4 +389,12 @@ void Double3::FindBestAxisVectors(Double3& firstAxis, Double3& secondAxis) const
 double Double3::TriangleArea(const Double3& v0, const Double3& v1, const Double3& v2)
 {
     return (v2 - v0 ^ v1 - v0).Length() * 0.5;
+}
+
+double Double3::Angle(const Double3& from, const Double3& to)
+{
+    const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
+    if (Math::Abs(dot) > (1.0 - ZeroTolerance))
+        return dot > 0.0 ? 0.0 : PI;
+    return Math::Acos(dot);
 }

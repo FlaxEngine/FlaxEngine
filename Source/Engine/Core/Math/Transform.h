@@ -312,6 +312,16 @@ public:
     {
         return Vector3::Transform(Vector3::Down, Orientation);
     }
+    
+    FORCE_INLINE Vector3 GetForward() const
+    {
+        return Vector3::Transform(Vector3::Forward, Orientation);
+    }
+
+    FORCE_INLINE Vector3 GetBackward() const
+    {
+        return Vector3::Transform(Vector3::Backward, Orientation);
+    }
 
 public:
 

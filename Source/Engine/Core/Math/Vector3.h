@@ -935,13 +935,8 @@ public:
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
-    static float Angle(const Vector3& from, const Vector3& to)
-    {
-        const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
-        if (Math::Abs(dot) > (1.0f - ZeroTolerance))
-            return dot > 0.0f ? 0.0f : PI;
-        return Math::Acos(dot);
-    }
+    static float Angle(const Vector3& from, const Vector3& to);
+
 };
 
 inline Vector3 operator+(float a, const Vector3& b)
