@@ -189,20 +189,13 @@ namespace FlaxEngine
         {
             switch (index)
             {
-            case 0:
-                return pLeft;
-            case 1:
-                return pRight;
-            case 2:
-                return pTop;
-            case 3:
-                return pBottom;
-            case 4:
-                return pNear;
-            case 5:
-                return pFar;
-            default:
-                return new Plane();
+            case 0: return pLeft;
+            case 1: return pRight;
+            case 2: return pTop;
+            case 3: return pBottom;
+            case 4: return pNear;
+            case 5: return pFar;
+            default: return new Plane();
             }
         }
 
@@ -398,8 +391,7 @@ namespace FlaxEngine
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back:
-                    return ContainmentType.Disjoint;
+                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
                 case PlaneIntersectionType.Intersecting:
                     result = PlaneIntersectionType.Intersecting;
                     break;
@@ -407,10 +399,8 @@ namespace FlaxEngine
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting:
-                return ContainmentType.Intersects;
-            default:
-                return ContainmentType.Contains;
+            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+            default: return ContainmentType.Contains;
             }
         }
 
@@ -565,8 +555,7 @@ namespace FlaxEngine
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back:
-                    return ContainmentType.Disjoint;
+                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
                 case PlaneIntersectionType.Intersecting:
                     result = PlaneIntersectionType.Intersecting;
                     break;
@@ -574,10 +563,8 @@ namespace FlaxEngine
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting:
-                return ContainmentType.Intersects;
-            default:
-                return ContainmentType.Contains;
+            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+            default: return ContainmentType.Contains;
             }
         }
 
