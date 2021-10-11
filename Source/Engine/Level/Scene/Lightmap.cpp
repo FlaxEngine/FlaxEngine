@@ -111,7 +111,11 @@ void Lightmap::EnsureSize(int32 size)
             ImportTexture::Options options;
             options.Type = TextureFormatType::HdrRGBA;
             options.IndependentChannels = true;
+#if PLATFORM_WINDOWS
             options.Compress = _manager->GetScene()->GetLightmapSettings().CompressLightmaps;
+#else
+            options.Compress = false; // TODO: use better BC7 compressor that would handle alpha more precisely (otherwise lightmaps have artifacts, see TextureTool.stb.cpp)
+#endif
             options.IsAtlas = false;
             options.sRGB = false;
             options.NeverStream = false;
