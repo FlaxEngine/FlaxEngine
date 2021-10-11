@@ -131,14 +131,16 @@ public:
     // Init
     // @param xy X and Y values in the vector
     // @param zw Z and W values in the vector
-    // @param z Z component value
-    // @param w W component value
     explicit Double4(const Vector2& xy, const Vector2& zw);
 
     // Init
     // @param xyz X, Y and Z values in the vector
     // @param w W component value
     explicit Double4(const Vector3& xyz, double w);
+    
+    // Init
+    // @param xyzw Vector4 value
+    explicit Double4(const Vector4& xyzw);
 
     // Init
     // @param xy X and Y values in the vector
@@ -152,7 +154,7 @@ public:
     explicit Double4(const Int3& xyz, double w);
     
     // Init
-    // @param color Int4 value
+    // @param xyzw Int4 value
     explicit Double4(const Int4& xyzw);
 
     // Init

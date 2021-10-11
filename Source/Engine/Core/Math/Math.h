@@ -411,6 +411,15 @@ namespace Math
         return (T)(a * (1.0f - alpha) + b * alpha);
     }
 
+    // Calculates the linear parameter t that produces the interpolation value within the range [a, b].
+    template<class T, class U>
+    static T InverseLerp(const T& a, const T& b, const U& value)
+    {
+        if (a == b)
+            return (T)0;
+        return Saturate((value - a) / (b - a));
+    }
+    
     // Performs smooth (cubic Hermite) interpolation between 0 and 1
     // @param amount Value between 0 and 1 indicating interpolation amount
     static float SmoothStep(float amount)
