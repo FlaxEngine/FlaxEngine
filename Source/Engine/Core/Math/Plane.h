@@ -97,14 +97,9 @@ public:
 public:
 
     /// <summary>
-    /// Changes the coefficients of the normal vector of the plane to make it of unit length
+    /// Changes the coefficients of the normal vector of the plane to make it of unit length.
     /// </summary>
-    void Normalize()
-    {
-        const float magnitude = Normal.InvLength();
-        Normal *= magnitude;
-        D *= magnitude;
-    }
+    void Normalize();
 
     void Negate()
     {

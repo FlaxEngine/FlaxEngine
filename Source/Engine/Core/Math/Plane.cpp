@@ -29,6 +29,17 @@ String Plane::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
+void Plane::Normalize()
+{
+    const float length = Normal.Length();
+    if (!Math::IsZero(length))
+    {
+        const float rcp = 1.0f / length;
+        Normal *= rcp;
+        D *= rcp;
+    }
+}
+
 void Plane::Constlection(Matrix& result) const
 {
     const float x = Normal.X;

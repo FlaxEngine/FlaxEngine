@@ -214,12 +214,15 @@ namespace FlaxEngine
         /// </summary>
         public void Normalize()
         {
-            float magnitude = 1.0f / (float)Math.Sqrt(Normal.X * Normal.X + Normal.Y * Normal.Y + Normal.Z * Normal.Z);
-
-            Normal.X *= magnitude;
-            Normal.Y *= magnitude;
-            Normal.Z *= magnitude;
-            D *= magnitude;
+            float length = (float)Math.Sqrt(Normal.X * Normal.X + Normal.Y * Normal.Y + Normal.Z * Normal.Z);
+            if (!Mathf.IsZero(length))
+            {
+                float rcp = 1.0f / length;
+                Normal.X *= rcp;
+                Normal.Y *= rcp;
+                Normal.Z *= rcp;
+                D *= rcp;
+            }
         }
 
         /// <summary>
