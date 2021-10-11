@@ -5,6 +5,7 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Int2.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -375,14 +376,14 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     // Load image data
     if (type == ImageType::Internal)
     {
+        if (!options.InternalLoad.IsBinded() || options.InternalLoad(textureData))
+            return true;
         if (options.FlipY)
         {
+            // TODO: impl this
             errorMsg = TEXT("Flipping images imported from Internal source is not supported by stb.");
             return true;
         }
-
-        MISSING_CODE("Importing internal textures with STB.");
-        return true;
     }
     else
     {
@@ -684,6 +685,7 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
     auto components = PixelFormatExtensions::ComputeComponentsCount(format);
     auto srcMipWidth = srcMip.RowPitch / formatSize;
     auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
+    auto sampler = GetSampler(format);
 
     // Allocate memory
     dstMip.RowPitch = dstMipWidth * formatSize;
@@ -742,6 +744,20 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
         break;
     }
     default:
+        if (sampler)
+        {
+            const Int2 srcSize(srcMipWidth, srcMipHeight);
+            for (int32 y = 0; y < dstMipHeight; y++)
+            {
+                for (int32 x = 0; x < dstMipWidth; x++)
+                {
+                    const Vector2 uv((float)x / dstMipWidth, (float)y / dstMipHeight);
+                    Color color = SamplePoint(sampler, uv, srcMip.Data.Get(), srcSize, srcMip.RowPitch);
+                    Store(sampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
+                }
+            }
+            return false;
+        }
         LOG(Warning, "Cannot resize image. Unsupported format {0}", static_cast<int32>(format));
         return true;
     }

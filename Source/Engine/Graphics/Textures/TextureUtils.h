@@ -30,7 +30,12 @@ public:
             case TextureFormatType::HdrRGBA:
                 return PixelFormat::BC7_UNorm;
             case TextureFormatType::HdrRGB:
+#if PLATFORM_LINUX
+                // TODO: support BC6H compression for Linux Editor
+                return PixelFormat::BC7_UNorm;
+#else
                 return PixelFormat::BC6H_Uf16;
+#endif
             default:
                 return PixelFormat::Unknown;
             }

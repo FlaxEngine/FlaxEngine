@@ -610,7 +610,20 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         },
         [](const void* ptr, const Color& color)
         {
-            *(FloatR11G11B10*)ptr = Float1010102(color.R, color.G, color.B, color.A);
+            *(FloatR11G11B10*)ptr = FloatR11G11B10(color.R, color.G, color.B);
+        },
+    },
+    {
+        PixelFormat::R10G10B10A2_UNorm,
+        sizeof(Float1010102),
+        [](const void* ptr)
+        {
+            const Vector3 rgb = ((Float1010102*)ptr)->ToVector3();
+            return Color(rgb.X, rgb.Y, rgb.Z);
+        },
+        [](const void* ptr, const Color& color)
+        {
+            *(Float1010102*)ptr = Float1010102(color.R, color.G, color.B, color.A);
         },
     },
 };
