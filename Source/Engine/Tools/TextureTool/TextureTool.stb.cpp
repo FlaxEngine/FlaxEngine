@@ -45,9 +45,9 @@
 #include <ThirdParty/stb/stb_dxt.h>
 
 #if USE_EDITOR
-
+// Compression libs for Editor
 #include <ThirdParty/detex/detex.h>
-
+#include <ThirdParty/bc7enc16/bc7enc16.h>
 #endif
 
 static void stbWrite(void* context, void* data, int size)
@@ -523,6 +523,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
         return true;
     }
 
+#if USE_EDITOR
     if (PixelFormatExtensions::IsCompressed(dstFormat))
     {
         int32 bytesPerBlock;
@@ -538,6 +539,14 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
             break;
         }
         bool isDstSRGB = PixelFormatExtensions::IsSRGB(dstFormat);
+
+        // bc7enc init
+        bc7enc16_compress_block_params params;
+        if (dstFormat == PixelFormat::BC7_UNorm || dstFormat == PixelFormat::BC7_UNorm_sRGB)
+        {
+            bc7enc16_compress_block_params_init(&params);
+            bc7enc16_compress_block_init();
+        }
 
         // Compress all array slices
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
@@ -582,25 +591,30 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         }
 
                         // Compress block
+                        byte* dstBlock = dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock;
                         switch (dstFormat)
                         {
                         case PixelFormat::BC1_UNorm:
                         case PixelFormat::BC1_UNorm_sRGB:
-                            stb_compress_dxt_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock, 0, STB_DXT_HIGHQUAL);
+                            stb_compress_dxt_block(dstBlock, (byte*)&srcBlock, 0, STB_DXT_HIGHQUAL);
                             break;
                         case PixelFormat::BC3_UNorm:
                         case PixelFormat::BC3_UNorm_sRGB:
-                            stb_compress_dxt_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock, 1, STB_DXT_HIGHQUAL);
+                            stb_compress_dxt_block(dstBlock, (byte*)&srcBlock, 1, STB_DXT_HIGHQUAL);
                             break;
                         case PixelFormat::BC4_UNorm:
                             for (int32 i = 1; i < 16; i++)
                                 ((byte*)&srcBlock)[i] = srcBlock[i].R;
-                            stb_compress_bc4_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock);
+                            stb_compress_bc4_block(dstBlock, (byte*)&srcBlock);
                             break;
                         case PixelFormat::BC5_UNorm:
                             for (int32 i = 0; i < 16; i++)
                                 ((uint16*)&srcBlock)[i] = srcBlock[i].R << 8 | srcBlock[i].G;
-                            stb_compress_bc5_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock);
+                            stb_compress_bc5_block(dstBlock, (byte*)&srcBlock);
+                            break;
+                        case PixelFormat::BC7_UNorm:
+                        case PixelFormat::BC7_UNorm_sRGB:
+                            bc7enc16_compress_block(dstBlock, &srcBlock, &params);
                             break;
                         default:
                             LOG(Warning, "Cannot compress image. Unsupported format {0}", static_cast<int32>(dstFormat));
@@ -612,6 +626,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
         }
     }
     else
+#endif
     {
         int32 bytesPerPixel = PixelFormatExtensions::SizeInBytes(dstFormat);
         auto dstSampler = TextureTool::GetSampler(dstFormat);
