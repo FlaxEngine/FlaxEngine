@@ -34,6 +34,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   #define DETEX_HELPER_SHARED_IMPORT __declspec(dllimport)
   #define DETEX_HELPER_SHARED_EXPORT __declspec(dllexport)
   #define DETEX_HELPER_SHARED_LOCAL
+  #define DETEX_INLINE_ONLY __forceinline
 #else
   #if __GNUC__ >= 4
     #define DETEX_HELPER_SHARED_IMPORT __attribute__ ((visibility ("default")))
@@ -44,6 +45,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     #define DETEX_HELPER_SHARED_EXPORT
     #define DETEX_HELPER_SHARED_LOCAL
   #endif
+  #define DETEX_INLINE_ONLY __attribute__((always_inline)) inline
 #endif
 
 /* Now we use the generic helper definitions above to define DETEX_API and DETEX_LOCAL. */
@@ -72,7 +74,6 @@ __BEGIN_DECLS
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DETEX_INLINE_ONLY __attribute__((always_inline)) inline
 #define DETEX_RESTRICT __restrict
 
 /* Maximum uncompressed block size in bytes. */

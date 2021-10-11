@@ -317,7 +317,7 @@ static unsigned int stb__MatchColorsBlock(unsigned char *block, unsigned char *c
 static void stb__OptimizeColorsBlock(unsigned char *block, unsigned short *pmax16, unsigned short *pmin16)
 {
   int mind = 0x7fffffff,maxd = -0x7fffffff;
-  unsigned char *minp, *maxp;
+  unsigned char *minp = nullptr, *maxp = nullptr;
   double magn;
   int v_r,v_g,v_b;
   static const int nIterPower = 4;
