@@ -388,7 +388,7 @@ public:
     {
         ScopeLock lock(CachedLogDataLocker);
 
-        if (CachedLogData.IsEmpty())
+        if (CachedLogData.IsEmpty() || CachedLogData.Get() == nullptr)
             return 0;
 
         int32 count = 0;
