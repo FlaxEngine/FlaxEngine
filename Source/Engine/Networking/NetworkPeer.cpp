@@ -23,7 +23,7 @@ void NetworkPeer::Initialize(const NetworkConfig& config)
     ASSERT(Config.NetworkDriver != nullptr);
     ASSERT(Config.ConnectionsLimit > 0);
     ASSERT(Config.MessageSize > 32); // TODO: Adjust this, not sure what the lowest limit should be.
-    ASSERT(Config.MessagePoolSize > 128);
+    ASSERT(Config.MessagePoolSize > 128); 
 
     // TODO: Dynamic message pool allocation
     // Setup messages
@@ -38,7 +38,7 @@ void NetworkPeer::Initialize(const NetworkConfig& config)
     NetworkDriver = ToInterface<INetworkDriver>(Config.NetworkDriver);
     NetworkDriver->Initialize(this, Config);
 
-    LOG(Info, "NetworkManager initialized using driver = {0}", static_cast<int>(Config.NetworkDriverType));
+    LOG(Info, "NetworkManager initialized using driver = {0}", NetworkDriver->DriverName());
 }
 
 void NetworkPeer::Shutdown()
