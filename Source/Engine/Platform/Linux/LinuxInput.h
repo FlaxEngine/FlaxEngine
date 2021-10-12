@@ -35,16 +35,13 @@ class LinuxInput
         string handler;
         bool isGamepad;
     };
-    const char* InputDevicesFile = "/proc/bus/input/devices";
-    InputDevice inputDevices[LINUXINPUT_MAX_GAMEPADS];
-    LinuxGamepad *linuxGamepads[LINUXINPUT_MAX_GAMEPADS];
-    int foundGamepads;
     public:
-    void UpdateState();
-    void DetectGamePads();
-    void DumpDevices();
-    static void Update();
-    static LinuxInput *singleton;
+    static InputDevice inputDevices[LINUXINPUT_MAX_GAMEPADS];
+    static LinuxGamepad *linuxGamepads[LINUXINPUT_MAX_GAMEPADS];
+    static int foundGamepads;
+    static void UpdateState();
+    static void DetectGamePads();
+    static void DumpDevices();
 };
 
 #endif

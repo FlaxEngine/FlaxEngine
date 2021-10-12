@@ -2219,7 +2219,7 @@ void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
 
-	LinuxInput::Update();
+	LinuxInput::UpdateState();
 
     if (!xDisplay)
         return;

@@ -12,7 +12,7 @@ using namespace std;
 void LinuxInput::DetectGamePads()
 {
     string line;
-    std::ifstream devs(LinuxInput::InputDevicesFile);
+    std::ifstream devs("/proc/bus/input/devices");
     
     InputDevice * inputDevice = new InputDevice();
     foundGamepads = 0;
@@ -94,15 +94,6 @@ void LinuxInput::UpdateState()
     {
         linuxGamepads[i]->UpdateState();
     }
-}
-
-static void Update()
-{
-    if (LinuxInput::singleton == nullptr)
-    {
-        LinuxInput::singleton = new LinuxInput();
-    }
-    LinuxInput::singleton->UpdateState();
 }
 
 // from WindowsInput.cpp
