@@ -2062,6 +2062,8 @@ namespace Flax.Build.Bindings
 
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
+            if (buildData.Platform is Platforms.WindowsPlatformBase)
+                contents.AppendLine("#pragma warning(disable: 4996)").AppendLine(); // Ignore deprecated warnings
             contents.AppendLine("#include \"Engine/Scripting/Scripting.h\"");
             contents.AppendLine("#include \"Engine/Scripting/InternalCalls.h\"");
             contents.AppendLine("#include \"Engine/Scripting/ManagedCLR/MUtils.h\"");

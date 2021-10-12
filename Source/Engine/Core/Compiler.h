@@ -19,7 +19,7 @@
 #define ALIGN_BEGIN(_align)
 #define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
-#define DEPRECATED
+#define DEPRECATED [[deprecated]]
 
 #pragma clang diagnostic ignored "-Wswitch"
 #pragma clang diagnostic ignored "-Wmacro-redefined"
@@ -44,7 +44,7 @@
 #define ALIGN_BEGIN(_align)
 #define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
-#define DEPRECATED __attribute__((deprecated))
+#define DEPRECATED [[deprecated]]
 
 #elif defined(__INTEL_COMPILER)
 

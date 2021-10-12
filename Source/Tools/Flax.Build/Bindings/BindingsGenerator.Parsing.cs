@@ -496,6 +496,21 @@ namespace Flax.Build.Bindings
             if (token.Value != "class")
                 throw new Exception($"Invalid API_CLASS usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
@@ -574,6 +589,21 @@ namespace Flax.Build.Bindings
             if (token.Value != "class")
                 throw new Exception($"Invalid API_INTERFACE usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
@@ -629,7 +659,7 @@ namespace Flax.Build.Bindings
             var tagParams = ParseTagParameters(ref context);
             context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' or 'FORCE_INLINE' or 'virtual'
+            // Read specifiers
             var isForceInline = false;
             while (true)
             {
@@ -647,6 +677,11 @@ namespace Flax.Build.Bindings
                 else if (!desc.IsVirtual && token.Value == "virtual")
                 {
                     desc.IsVirtual = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
                     context.Tokenizer.NextToken();
                 }
                 else
@@ -781,6 +816,7 @@ namespace Flax.Build.Bindings
                 propertyInfo.Getter = functionInfo;
             else
                 propertyInfo.Setter = functionInfo;
+            propertyInfo.IsDeprecated |= functionInfo.IsDeprecated;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)
             {
@@ -1044,9 +1080,9 @@ namespace Flax.Build.Bindings
             var tagParams = ParseTagParameters(ref context);
             context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' or 'mutable'
+            // Read specifiers
             Token token;
-            var isMutable = false;
+            bool isMutable = false, isVolatile = false;
             while (true)
             {
                 token = context.Tokenizer.CurrentToken;
@@ -1058,6 +1094,16 @@ namespace Flax.Build.Bindings
                 else if (!isMutable && token.Value == "mutable")
                 {
                     isMutable = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!isVolatile && token.Value == "volatile")
+                {
+                    isVolatile = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
                     context.Tokenizer.NextToken();
                 }
                 else

@@ -475,7 +475,7 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null, bool isDeprecated = false)
         {
             var writeTooltip = true;
             var writeDefaultValue = true;
@@ -491,6 +491,11 @@ namespace Flax.Build.Bindings
             {
                 // Write attribute for C++ calling code
                 contents.Append(indent).AppendLine("[Unmanaged]");
+            }
+            if (isDeprecated || apiTypeInfo.IsDeprecated)
+            {
+                // Deprecated type
+                contents.Append(indent).AppendLine("[Obsolete]");
             }
 
             if (canUseTooltip &&
@@ -537,7 +542,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated);
         }
 
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
