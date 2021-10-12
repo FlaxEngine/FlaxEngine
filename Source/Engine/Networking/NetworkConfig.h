@@ -4,6 +4,8 @@
 
 #include "Engine/Platform/Network.h"
 
+class PersistentScriptingObject;
+
 /// <summary>
 /// Network driver implementations enum.
 /// </summary>
@@ -33,7 +35,12 @@ public:
     /// </summary>
     API_FIELD()
     NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
-    // TODO: Expose INetworkDriver as a ref not enum, when C++/C# interfaces are done.
+
+    /// <summary>
+    /// The network driver instance that will be used to create and manage the peer, send and receive messages.
+    /// </summary>
+    API_FIELD()
+    PersistentScriptingObject* NetworkDriver = nullptr;
 
 public:
     /// <summary>
