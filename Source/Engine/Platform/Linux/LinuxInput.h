@@ -29,16 +29,7 @@ class LinuxGamepad : public Gamepad
 
 class LinuxInput
 {
-    struct InputDevice {
-        u_int32_t uid[4];
-        string name;
-        string handler;
-        bool isGamepad;
-    };
     public:
-    static InputDevice inputDevices[LINUXINPUT_MAX_GAMEPADS];
-    static LinuxGamepad *linuxGamepads[LINUXINPUT_MAX_GAMEPADS];
-    static int foundGamepads;
     static void UpdateState();
     static void DetectGamePads();
     static void DumpDevices();

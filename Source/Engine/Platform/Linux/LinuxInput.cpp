@@ -9,12 +9,24 @@
 
 using namespace std;
 
+struct LinuxInputDevice {
+    u_int32_t uid[4];
+    string name;
+    string handler;
+    bool isGamepad;
+};
+
+static int foundGamepads;
+static float lastUpdateTime;
+static LinuxInputDevice inputDevices[LINUXINPUT_MAX_GAMEPADS];
+static LinuxGamepad *linuxGamepads[LINUXINPUT_MAX_GAMEPADS];
+
 void LinuxInput::DetectGamePads()
 {
     string line;
     std::ifstream devs("/proc/bus/input/devices");
     
-    InputDevice * inputDevice = new InputDevice();
+    LinuxInputDevice * inputDevice = new LinuxInputDevice();
     foundGamepads = 0;
     if (devs.is_open())
     {
@@ -70,7 +82,7 @@ void LinuxInput::DetectGamePads()
             else if (line.size() == 0)
             {
                 if (!inputDevice->isGamepad) delete inputDevice;
-                inputDevice = new InputDevice();
+                inputDevice = new LinuxInputDevice();
             }
         }
         devs.close();
@@ -79,21 +91,29 @@ void LinuxInput::DetectGamePads()
 
 void LinuxInput::UpdateState()
 {
-    for (int i = 0; i < foundGamepads; i++)
+    const float time = (float)Platform::GetTimeSeconds();
+    if (time - lastUpdateTime > 10.0f)
     {
-        if (linuxGamepads[i] == NULL)
+        DetectGamePads();
+        lastUpdateTime = time;
+        for (int i = 0; i < foundGamepads; i++)
         {
-            linuxGamepads[i] = new LinuxGamepad(inputDevices[i].uid, inputDevices[i].name);
-            linuxGamepads[i]->dev = inputDevices->handler;
-            linuxGamepads[i]->fd = -1;
-            Input::Gamepads.Add(linuxGamepads[i]);
-            Input::OnGamepadsChanged();
+            if (linuxGamepads[i] == NULL)
+            {
+                linuxGamepads[i] = new LinuxGamepad(inputDevices[i].uid, inputDevices[i].name);
+                linuxGamepads[i]->dev = inputDevices->handler;
+                linuxGamepads[i]->fd = -1;
+                Input::Gamepads.Add(linuxGamepads[i]);
+                Input::OnGamepadsChanged();
+                cout << "Gamepad added." << endl;
+            }
         }
     }
+    /*
     for (int i = 0; i < foundGamepads; i++)
     {
         linuxGamepads[i]->UpdateState();
-    }
+    }*/
 }
 
 // from WindowsInput.cpp
@@ -119,12 +139,14 @@ bool LinuxGamepad::UpdateState()
     if (fd < 0)
     {
         fd = open(dev.c_str(), O_RDONLY|O_NONBLOCK);
+        cout << "opened " << dev << endl;
     }
     input_event event;
     for (int i = 0; i < LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME; i++)
     {
         ssize_t r = read(fd, &event, sizeof(event));
         if (r <= 0) break;
+        cout << "got an event " << event.type << ", code " << event.code << ", value " << event.value << endl;
         if (event.type == EV_KEY)
         {
             switch (event.code) {
