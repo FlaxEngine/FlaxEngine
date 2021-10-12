@@ -3,6 +3,7 @@
 #include <string>
 #include "/usr/include/linux/input-event-codes.h"
 #include "/usr/include/linux/input.h"
+#include "Engine/Input/Input.h"
 #include "Engine/Input/Gamepad.h"
 
 using namespace std;
@@ -42,6 +43,8 @@ class LinuxInput
     void UpdateState();
     void DetectGamePads();
     void DumpDevices();
+    static void Update();
+    static LinuxInput *singleton;
 };
 
 #endif

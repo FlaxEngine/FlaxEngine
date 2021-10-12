@@ -4,6 +4,7 @@
 
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
+#include "LinuxInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -2217,6 +2218,8 @@ void LinuxPlatform::BeforeRun()
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
+
+	LinuxInput::Update();
 
     if (!xDisplay)
         return;

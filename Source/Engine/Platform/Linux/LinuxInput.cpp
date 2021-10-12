@@ -86,12 +86,23 @@ void LinuxInput::UpdateState()
             linuxGamepads[i] = new LinuxGamepad(inputDevices[i].uid, inputDevices[i].name);
             linuxGamepads[i]->dev = inputDevices->handler;
             linuxGamepads[i]->fd = -1;
+            Input::Gamepads.Add(linuxGamepads[i]);
+            Input::OnGamepadsChanged();
         }
     }
     for (int i = 0; i < foundGamepads; i++)
     {
         linuxGamepads[i]->UpdateState();
     }
+}
+
+static void Update()
+{
+    if (LinuxInput::singleton == nullptr)
+    {
+        LinuxInput::singleton = new LinuxInput();
+    }
+    LinuxInput::singleton->UpdateState();
 }
 
 // from WindowsInput.cpp
