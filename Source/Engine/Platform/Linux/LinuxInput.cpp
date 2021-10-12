@@ -113,7 +113,7 @@ float NormalizeInputAxis(const int axisVal)
     return float(axisVal) / norm;
 }
 
-LinuxGamepad::LinuxGamepad(uint32_t uid[4], string name) : Gamepad(Guid(uid[0], uid[1], uid[2], uid[3]), String(name.c_str()))
+LinuxGamepad::LinuxGamepad(u_int32_t uid[4], string name) : Gamepad(Guid(uid[0], uid[1], uid[2], uid[3]), String(name.c_str()))
 {
     fd = -1;
 }

@@ -19,7 +19,7 @@ class LinuxGamepad : public Gamepad
         float Axis[32];
     };
     public:
-    LinuxGamepad(uint32_t uid[], string name);
+    LinuxGamepad(u_int32_t uid[], string name);
     ~LinuxGamepad();
     int fd;
     string dev;
@@ -30,7 +30,7 @@ class LinuxGamepad : public Gamepad
 class LinuxInput
 {
     struct InputDevice {
-        uint32_t uid[4];
+        u_int32_t uid[4];
         string name;
         string handler;
         bool isGamepad;
