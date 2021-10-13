@@ -102,7 +102,7 @@ void LinuxInput::DetectGamePads()
 void LinuxInput::UpdateState()
 {
     const float time = (float)Platform::GetTimeSeconds();
-    if (time - lastUpdateTime > 10.0f)
+    if (time - lastUpdateTime > 30.0f)
     {
         DetectGamePads();
         lastUpdateTime = time;
@@ -239,7 +239,17 @@ bool LinuxGamepad::UpdateState()
             }
         }
     }
-    return caughtEvents == 0;
+    if (caughtEvents > 0)
+    {
+        LOG(Info, "Caught events: {}", caughtEvents);
+        cout << "left stick x: " << _state.Axis[(int32)GamepadAxis::LeftStickX] << endl;
+        cout << "left stick y: " << _state.Axis[(int32)GamepadAxis::LeftStickY] << endl;
+        cout << "left trigger: " << _state.Axis[(int32)GamepadAxis::LeftTrigger] << endl;
+        cout << "right stick x: " << _state.Axis[(int32)GamepadAxis::RightStickX] << endl;
+        cout << "right stick y: " << _state.Axis[(int32)GamepadAxis::RightStickY] << endl;
+        cout << "right trigger: " << _state.Axis[(int32)GamepadAxis::RightTrigger] << endl;
+    }
+    return false; //caughtEvents == 0;
 }
 
 void LinuxInput::DumpDevices()
