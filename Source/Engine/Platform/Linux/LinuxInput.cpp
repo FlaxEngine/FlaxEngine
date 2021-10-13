@@ -102,7 +102,7 @@ void LinuxInput::DetectGamePads()
 void LinuxInput::UpdateState()
 {
     const float time = (float)Platform::GetTimeSeconds();
-    if (time - lastUpdateTime > 30.0f)
+    if (time - lastUpdateTime > 5.0f)
     {
         DetectGamePads();
         lastUpdateTime = time;
@@ -126,7 +126,7 @@ void LinuxInput::UpdateState()
             }
             */
         }
-        LOG(Info, "found gamepads: {}, known to Input: {}", foundGamepads, Input::GetGamepadsCount());
+        //LOG(Info, "found gamepads: {}, known to Input: {}", foundGamepads, Input::GetGamepadsCount());
     }
     /*
     for (int i = 0; i < foundGamepads; i++)
@@ -143,9 +143,23 @@ float NormalizeInputAxis(const int axisVal)
     return float(axisVal) / norm;
 }
 
+float NormalizeInputTrigger(const int axisVal)
+{
+    // Normalize [-32768..32767] -> [-1..1]
+    return float(axisVal) / 1023.0f;
+}
+
 LinuxGamepad::LinuxGamepad(u_int32_t uid[4], string name) : Gamepad(Guid(uid[0], uid[1], uid[2], uid[3]), String(name.c_str()))
 {
     fd = -1;
+    for (int i = 0; i < (int32)GamepadButton::MAX; i++)
+    {
+        _state.Buttons[i] = 0;
+    }
+    for (int i = 0; i < (int32)GamepadAxis::MAX; i++)
+    {
+        _state.Axis[i] = 0;
+    }
 }
 
 LinuxGamepad::~LinuxGamepad()
@@ -219,8 +233,8 @@ bool LinuxGamepad::UpdateState()
                     _state.Buttons[(int32)GamepadButton::LeftStickDown] = event.value > TRIGGER_THRESHOLD;
                     break;
                 case ABS_Z:
-                    _state.Axis[(int32)GamepadAxis::LeftTrigger] = NormalizeInputAxis(event.value);
-                    _state.Buttons[(int32)GamepadButton::LeftTrigger] = event.value > TRIGGER_THRESHOLD;
+                    _state.Axis[(int32)GamepadAxis::LeftTrigger] = NormalizeInputTrigger(event.value);
+                    _state.Buttons[(int32)GamepadButton::LeftTrigger] = event.value > 2;
                     break;
                 case ABS_RX:
                     _state.Axis[(int32)GamepadAxis::RightStickX] = NormalizeInputAxis(event.value);
@@ -233,8 +247,8 @@ bool LinuxGamepad::UpdateState()
                     _state.Buttons[(int32)GamepadButton::RightStickDown] = event.value > TRIGGER_THRESHOLD;
                     break;
                 case ABS_RZ:
-                    _state.Axis[(int32)GamepadAxis::RightTrigger] = NormalizeInputAxis(event.value);
-                    _state.Buttons[(int32)GamepadButton::RightTrigger] = event.value > TRIGGER_THRESHOLD;
+                    _state.Axis[(int32)GamepadAxis::RightTrigger] = NormalizeInputTrigger(event.value);
+                    _state.Buttons[(int32)GamepadButton::RightTrigger] = event.value > 2;
                     break;
             }
         }
@@ -248,6 +262,8 @@ bool LinuxGamepad::UpdateState()
         cout << "right stick x: " << _state.Axis[(int32)GamepadAxis::RightStickX] << endl;
         cout << "right stick y: " << _state.Axis[(int32)GamepadAxis::RightStickY] << endl;
         cout << "right trigger: " << _state.Axis[(int32)GamepadAxis::RightTrigger] << endl;
+        cout << "button A: " << _state.Buttons[(int32)GamepadButton::A] << endl;
+        cout << "layout A: " << (int32)Layout.Buttons[(int32)GamepadButton::A] << endl;
     }
     return false; //caughtEvents == 0;
 }
