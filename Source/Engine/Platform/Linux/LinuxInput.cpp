@@ -30,7 +30,6 @@ void LinuxInput::Init() {
     foundGamepads = 0;
     // this will delay gamepad detection
     lastUpdateTime = Platform::GetTimeSeconds();
-    LOG(Info, "LinuxInput::Init called");
 }
 
 void LinuxInput::DetectGamePads()
@@ -96,7 +95,7 @@ void LinuxInput::DetectGamePads()
         }
         devs.close();
     }
-    DumpDevices();
+    //DumpDevices();
 };
 
 void LinuxInput::UpdateState()
@@ -172,7 +171,7 @@ bool LinuxGamepad::UpdateState()
     if (fd < 0)
     {
         fd = open(dev.c_str(), O_RDONLY|O_NONBLOCK);
-        cout << "opened " << dev << endl;
+        //cout << "opened " << dev << endl;
     }
     input_event event;
     int caughtEvents = 0;
@@ -200,7 +199,7 @@ bool LinuxGamepad::UpdateState()
             break;
         }
         caughtEvents++;
-        cout << "got an event " << event.type << ", code " << event.code << ", value " << event.value << endl;
+        //cout << "got an event " << event.type << ", code " << event.code << ", value " << event.value << endl;
         if (event.type == EV_KEY)
         {
             switch (event.code) {
