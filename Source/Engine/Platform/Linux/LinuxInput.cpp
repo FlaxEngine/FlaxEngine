@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "LinuxInput.h"
+#include "Engine/Core/Log.h"
 
 using namespace std;
 
@@ -21,12 +22,22 @@ static float lastUpdateTime;
 static LinuxInputDevice inputDevices[LINUXINPUT_MAX_GAMEPADS];
 static LinuxGamepad *linuxGamepads[LINUXINPUT_MAX_GAMEPADS];
 
+void LinuxInput::Init() {
+    for (int i = 0; i < LINUXINPUT_MAX_GAMEPADS; i++)
+    {
+        linuxGamepads[i] = nullptr;
+    }
+    foundGamepads = 0;
+    // this will delay gamepad detection
+    lastUpdateTime = Platform::GetTimeSeconds();
+    LOG(Info, "LinuxInput::Init called");
+}
+
 void LinuxInput::DetectGamePads()
 {
     string line;
     std::ifstream devs("/proc/bus/input/devices");
     
-    LinuxInputDevice * inputDevice = new LinuxInputDevice();
     foundGamepads = 0;
     if (devs.is_open())
     {
@@ -35,7 +46,7 @@ void LinuxInput::DetectGamePads()
             if (line[0] == 'N')
             {
                 int quoteIndex = line.find('"');
-                inputDevice->name = line.substr(quoteIndex+1, line.length() - quoteIndex - 2);
+                inputDevices[foundGamepads].name = line.substr(quoteIndex+1, line.length() - quoteIndex - 2);
             } else if (line[0] == 'I')
             {
                 int startIndex = 0;
@@ -43,7 +54,7 @@ void LinuxInput::DetectGamePads()
                     int equalsIndex = line.find('=', startIndex);
                     if (equalsIndex > 0) {
                         istringstream part(line.substr(equalsIndex+1, 4));
-                        part >> std::hex >> inputDevice->uid[i];
+                        part >> std::hex >> inputDevices[foundGamepads].uid[i];
                     }
                     startIndex = equalsIndex+1;
                 }
@@ -53,7 +64,7 @@ void LinuxInput::DetectGamePads()
                 if (eventIndex > 0) {
                     int end = line.find(' ', eventIndex);
                     if (end > 0) {
-                        inputDevice->handler = "/dev/input/" + line.substr(eventIndex, end - eventIndex);
+                        inputDevices[foundGamepads].handler = "/dev/input/" + line.substr(eventIndex, end - eventIndex);
                     }
                 }
             } else if (line[0] == 'B')
@@ -72,21 +83,20 @@ void LinuxInput::DetectGamePads()
                         if (group.eof()) break;
                     }
                     if (foundGroups < 5) msb = 0;
-                    inputDevice->isGamepad = (msb & 1lu<<48) > 0;
-                    if (inputDevice->isGamepad)
-                    {
-                        inputDevices[foundGamepads++] = *inputDevice;
-                    }
+                    inputDevices[foundGamepads].isGamepad = (msb & 1lu<<48) > 0;
+                    
                 }
-            }
-            else if (line.size() == 0)
+            } else if (line.length() == 0)
             {
-                if (!inputDevice->isGamepad) delete inputDevice;
-                inputDevice = new LinuxInputDevice();
+                if (inputDevices[foundGamepads].isGamepad && foundGamepads < (LINUXINPUT_MAX_GAMEPADS-1))
+                    {
+                        foundGamepads++;
+                    }
             }
         }
         devs.close();
     }
+    DumpDevices();
 };
 
 void LinuxInput::UpdateState()
@@ -98,16 +108,25 @@ void LinuxInput::UpdateState()
         lastUpdateTime = time;
         for (int i = 0; i < foundGamepads; i++)
         {
-            if (linuxGamepads[i] == NULL)
+            if (linuxGamepads[i] == nullptr)
             {
                 linuxGamepads[i] = new LinuxGamepad(inputDevices[i].uid, inputDevices[i].name);
-                linuxGamepads[i]->dev = inputDevices->handler;
+                linuxGamepads[i]->dev = inputDevices[i].handler;
                 linuxGamepads[i]->fd = -1;
                 Input::Gamepads.Add(linuxGamepads[i]);
                 Input::OnGamepadsChanged();
-                cout << "Gamepad added." << endl;
+                LOG(Info, "Gamepad {} added", linuxGamepads[i]->GetName());
+                //cout << "Gamepad added." << endl;
             }
+            /*
+            if (Input::GetGamepadsCount() <= i) {
+                Input::Gamepads.Add(linuxGamepads[i]);
+                Input::OnGamepadsChanged();
+                LOG(Info, "Gamepad {} added again", linuxGamepads[i]->GetName());
+            }
+            */
         }
+        LOG(Info, "found gamepads: {}, known to Input: {}", foundGamepads, Input::GetGamepadsCount());
     }
     /*
     for (int i = 0; i < foundGamepads; i++)
@@ -142,10 +161,31 @@ bool LinuxGamepad::UpdateState()
         cout << "opened " << dev << endl;
     }
     input_event event;
+    int caughtEvents = 0;
     for (int i = 0; i < LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME; i++)
     {
         ssize_t r = read(fd, &event, sizeof(event));
-        if (r <= 0) break;
+        if (r < 0)
+        {
+            if (errno != EAGAIN) {
+                LOG(Warning, "Lost connection to gamepad, errno={0}", errno);
+                close(fd);
+                fd = -1;
+            }
+            break;
+        }
+        if (r == 0) break;
+        if (r < sizeof(event) || r != 24)
+        {
+            LOG(Warning, "got a shortened package from the kernel {0}", r);
+            break;
+        }
+        if (event.type > EV_MAX)
+        {
+            LOG(Warning, "got an invalid event type from the kernel {0}", event.type);
+            break;
+        }
+        caughtEvents++;
         cout << "got an event " << event.type << ", code " << event.code << ", value " << event.value << endl;
         if (event.type == EV_KEY)
         {
@@ -199,7 +239,7 @@ bool LinuxGamepad::UpdateState()
             }
         }
     }
-    return false;
+    return caughtEvents == 0;
 }
 
 void LinuxInput::DumpDevices()

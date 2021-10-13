@@ -33,6 +33,7 @@ class LinuxInput
     static void UpdateState();
     static void DetectGamePads();
     static void DumpDevices();
+    static void Init();
 };
 
 #endif

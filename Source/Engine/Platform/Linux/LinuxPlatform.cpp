@@ -2208,6 +2208,8 @@ bool LinuxPlatform::Init()
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
 
+	LinuxInput::Init();
+
     return false;
 }
 
