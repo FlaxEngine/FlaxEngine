@@ -12,6 +12,7 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Parser/ShaderMeta.h"
 
 /// <summary>
@@ -28,6 +29,7 @@ public:
     /// <returns>True if failed, otherwise false</returns>
     static bool Export(ShaderCompilationContext* context)
     {
+        PROFILE_CPU();
 #if USE_EDITOR
         static String ShadersDebugInfoFolder = Globals::ProjectCacheFolder / TEXT("Shaders/Debug");
 #else

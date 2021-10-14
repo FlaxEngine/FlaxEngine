@@ -6,6 +6,7 @@
 
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Utilities/TextProcessing.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
 #include "ShaderFunctionReader.CB.h"
 #include "ShaderFunctionReader.VS.h"
@@ -31,6 +32,7 @@ ShaderProcessing::Parser::~Parser()
 
 bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel, ShaderMeta* result)
 {
+    PROFILE_CPU("Shader.Parse");
     Parser parser(targetName, source, sourceLength, macros, featureLevel);
     parser.Process(result);
     return parser.Failed();

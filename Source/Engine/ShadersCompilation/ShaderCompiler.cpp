@@ -248,12 +248,18 @@ void ShaderCompiler::DisposeIncludedFilesCache()
 bool ShaderCompiler::CompileShaders()
 {
     auto meta = _context->Meta;
+#if BUILD_DEBUG
+#define PROFILE_COMPILE_SHADER(s) ZoneTransientN(___tracy_scoped_zone, s.Name.Get(), true);
+#else
+#define PROFILE_COMPILE_SHADER(s)
+#endif
 
     // Generate vertex shaders cache
     for (int32 i = 0; i < meta->VS.Count(); i++)
     {
         auto& shader = meta->VS[i];
         ASSERT(shader.GetStage() == ShaderStage::Vertex && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader, &WriteCustomDataVS))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -266,6 +272,7 @@ bool ShaderCompiler::CompileShaders()
     {
         auto& shader = meta->HS[i];
         ASSERT(shader.GetStage() == ShaderStage::Hull && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader, &WriteCustomDataHS))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -278,6 +285,7 @@ bool ShaderCompiler::CompileShaders()
     {
         auto& shader = meta->DS[i];
         ASSERT(shader.GetStage() == ShaderStage::Domain && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -290,6 +298,7 @@ bool ShaderCompiler::CompileShaders()
     {
         auto& shader = meta->GS[i];
         ASSERT(shader.GetStage() == ShaderStage::Geometry && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -302,6 +311,7 @@ bool ShaderCompiler::CompileShaders()
     {
         auto& shader = meta->PS[i];
         ASSERT(shader.GetStage() == ShaderStage::Pixel && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -314,6 +324,7 @@ bool ShaderCompiler::CompileShaders()
     {
         auto& shader = meta->CS[i];
         ASSERT(shader.GetStage() == ShaderStage::Compute && (shader.Flags & ShaderFlags::Hidden) == 0);
+        PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
             LOG(Error, "Failed to compile \'{0}\'", String(shader.Name));
@@ -321,6 +332,7 @@ bool ShaderCompiler::CompileShaders()
         }
     }
 
+#undef PROFILE_COMPILE_SHADER
     return false;
 }
 
