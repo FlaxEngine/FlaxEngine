@@ -9,7 +9,7 @@ class PersistentScriptingObject;
 /// <summary>
 /// Network driver implementations enum.
 /// </summary>
-API_ENUM(Namespace="FlaxEngine.Networking") DEPRECATED enum class NetworkDriverType
+API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverType
 {
     /// <summary>
     /// Invalid network driver implementation.
