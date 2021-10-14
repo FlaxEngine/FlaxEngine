@@ -246,7 +246,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the target view offset (text scrolling offset).
         /// </summary>
-        [NoAnimate, NoSerialize]
+        [NoAnimate, NoSerialize, HideInEditor]
         public Vector2 TargetViewOffset
         {
             get => _targetViewOffset;
