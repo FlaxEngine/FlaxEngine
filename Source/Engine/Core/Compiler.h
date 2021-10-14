@@ -20,6 +20,11 @@
 #define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
 #define DEPRECATED [[deprecated]]
+#define PRAGMA_DISABLE_DEPRECATION_WARNINGS \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic warning \"-Wdeprecated-declarations\"")
+#define PRAGMA_ENABLE_DEPRECATION_WARNINGS \
+    _Pragma("clang diagnostic pop")
 
 #pragma clang diagnostic ignored "-Wswitch"
 #pragma clang diagnostic ignored "-Wmacro-redefined"
@@ -45,30 +50,8 @@
 #define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
 #define DEPRECATED [[deprecated]]
-
-#elif defined(__INTEL_COMPILER)
-
-#define DLLEXPORT ??
-#define DLLIMPORT ??
-#if _WIN32
-#define THREADLOCAL __declspec(thread)
-#else
-#define THREADLOCAL __thread
-#endif
-#define STDCALL __stdcall
-#define CDECL __cdecl
-#define RESTRICT
-#define INLINE inline
-#define FORCE_INLINE inline
-#define FORCE_NOINLINE
-#define NO_RETURN ??
-#define PACK_BEGIN() ??
-#define PACK_END() ??
-#define ALIGN_BEGIN(_align) ??
-#define ALIGN_END(_align) ??
-#define OFFSET_OF(X, Y) ??
-#define DEPRECATED ??
-#define __PRETTY_FUNCTION__ ??
+#define PRAGMA_DISABLE_DEPRECATION_WARNINGS
+#define PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 #elif defined(_MSC_VER)
 
@@ -94,6 +77,12 @@
 #define DEPRECATED __declspec(deprecated)
 #undef __PRETTY_FUNCTION__
 #define __PRETTY_FUNCTION__ __FUNCSIG__
+#define PRAGMA_DISABLE_DEPRECATION_WARNINGS \
+			__pragma(warning(push)) \
+			__pragma(warning(disable: 4995)) \
+			__pragma(warning(disable: 4996))
+#define PRAGMA_ENABLE_DEPRECATION_WARNINGS \
+			__pragma (warning(pop))
 
 #pragma warning(disable: 4251)
 

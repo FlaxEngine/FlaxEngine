@@ -1311,6 +1311,7 @@ namespace Flax.Build.Bindings
             contents.Append("true").AppendLine();
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
+            contents.AppendLine("#pragma warning disable 0612"); // Disable Obsolete warnings in generated code
             var headerPos = contents.Length;
 
             CSharpUsedNamespaces.Clear();
