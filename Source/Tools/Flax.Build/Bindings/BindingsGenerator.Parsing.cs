@@ -871,6 +871,21 @@ namespace Flax.Build.Bindings
             if (token.Value != "class")
                 context.Tokenizer.PreviousToken();
 
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
