@@ -115,23 +115,9 @@ void LinuxInput::UpdateState()
                 Input::Gamepads.Add(linuxGamepads[i]);
                 Input::OnGamepadsChanged();
                 LOG(Info, "Gamepad {} added", linuxGamepads[i]->GetName());
-                //cout << "Gamepad added." << endl;
             }
-            /*
-            if (Input::GetGamepadsCount() <= i) {
-                Input::Gamepads.Add(linuxGamepads[i]);
-                Input::OnGamepadsChanged();
-                LOG(Info, "Gamepad {} added again", linuxGamepads[i]->GetName());
-            }
-            */
         }
-        //LOG(Info, "found gamepads: {}, known to Input: {}", foundGamepads, Input::GetGamepadsCount());
     }
-    /*
-    for (int i = 0; i < foundGamepads; i++)
-    {
-        linuxGamepads[i]->UpdateState();
-    }*/
 }
 
 // from WindowsInput.cpp
@@ -144,7 +130,7 @@ float NormalizeInputAxis(const int axisVal)
 
 float NormalizeInputTrigger(const int axisVal)
 {
-    // Normalize [-32768..32767] -> [-1..1]
+    // Normalize [-1023..1023] -> [-1..1]
     return float(axisVal) / 1023.0f;
 }
 
@@ -252,6 +238,7 @@ bool LinuxGamepad::UpdateState()
             }
         }
     }
+    /*
     if (caughtEvents > 0)
     {
         LOG(Info, "Caught events: {}", caughtEvents);
@@ -264,7 +251,8 @@ bool LinuxGamepad::UpdateState()
         cout << "button A: " << _state.Buttons[(int32)GamepadButton::A] << endl;
         cout << "layout A: " << (int32)Layout.Buttons[(int32)GamepadButton::A] << endl;
     }
-    return false; //caughtEvents == 0;
+    */
+    return false;
 }
 
 void LinuxInput::DumpDevices()

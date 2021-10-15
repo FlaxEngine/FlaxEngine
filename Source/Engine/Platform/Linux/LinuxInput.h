@@ -9,7 +9,7 @@
 using namespace std;
 
 #define LINUXINPUT_MAX_GAMEPADS 8
-#define LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME 10
+#define LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME 32
 #define TRIGGER_THRESHOLD 1000
 
 class LinuxGamepad : public Gamepad
