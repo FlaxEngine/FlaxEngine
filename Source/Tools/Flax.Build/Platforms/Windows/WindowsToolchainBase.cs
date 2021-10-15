@@ -455,10 +455,6 @@ namespace Flax.Build.Platforms
                 if (compileEnvironment.RuntimeChecks && !compileEnvironment.CompileAsWinRT)
                     commonArgs.Add("/RTC1");
 
-                // Enable Additional Security Checks
-                if (compileEnvironment.RuntimeChecks)
-                    commonArgs.Add("/sdl");
-
                 // Inline Function Expansion
                 if (compileEnvironment.Inlining)
                     commonArgs.Add("/Ob2");
@@ -548,7 +544,6 @@ namespace Flax.Build.Platforms
                     commonArgs.Add("/WX-");
 
                 // Show warnings
-                // TODO: compile with W4 and fix all warnings
                 commonArgs.Add("/W3");
 
                 // Silence macro redefinition warning

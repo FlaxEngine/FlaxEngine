@@ -374,8 +374,10 @@ namespace ShaderProcessing
             }
             else
             {
-                parser->OnError(String::Format(TEXT("Invalid shader function \'isVisible\' option value \'{0}\'."), String(token.ToString())));
-                return;
+                // Undefined macro (fallback into hidden shader)
+                current.Flags = ShaderFlags::Hidden;
+                //parser->OnError(String::Format(TEXT("Invalid shader function \'isVisible\' option value \'{0}\'."), String(token.ToString())));
+                //return;
             }
             text.ReadToken(&token);
             token = parser->GetMacros().GetValue(token);
