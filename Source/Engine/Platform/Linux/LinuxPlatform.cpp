@@ -29,7 +29,6 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
-#include "Engine/Core/Log.h"
 #include "IncludeX11.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
