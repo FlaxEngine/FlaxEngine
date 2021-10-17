@@ -313,8 +313,6 @@ static inline uint32 Utf8ToUtf32Codepoint(const char* src, int32 length)
 
 void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 len)
 {
-    if (len == 0)
-        return;
     const char* const u8end = from + len;
     const char* u8cur = from;
     char16_t* u16cur = to;
@@ -338,8 +336,6 @@ void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 len)
         }
         u8cur += len;
     }
-    if (u16cur != nullptr)
-        *u16cur = 0;
 }
 
 static const char32_t kByteMask = 0x000000BF;
