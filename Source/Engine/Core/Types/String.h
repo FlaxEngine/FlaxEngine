@@ -48,6 +48,7 @@ public:
     /// <returns>The character</returns>
     FORCE_INLINE T& operator[](int32 index)
     {
+        ASSERT(index >= 0 && index < _length);
         return _data[index];
     }
 
@@ -58,6 +59,7 @@ public:
     /// <returns>The character</returns>
     FORCE_INLINE const T& operator[](int32 index) const
     {
+        ASSERT(index >= 0 && index < _length);
         return _data[index];
     }
 
@@ -441,14 +443,8 @@ public:
     /// <returns>Number of replacements made (in other words number of occurences of searchText).</returns>
     int32 Replace(const T* searchText, int32 searchTextLength, const T* replacementText, int32 replacementTextLength, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
     {
-        if (!HasChars())
+        if (!HasChars() || searchTextLength == 0)
             return 0;
-
-        if (searchTextLength == 0)
-        {
-            ASSERT(false);  // Empty search text never makes sense, and is always sign of a bug in calling code.
-            return 0;
-        }
 
         int32 replacedCount = 0;
 
