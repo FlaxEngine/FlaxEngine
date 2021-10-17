@@ -330,7 +330,22 @@ bool LinuxFileSystem::MoveFile(const StringView& dst, const StringView& src, boo
         return true;
     }
 
-    return rename(StringAsANSI<>(*src, src.Length()).Get(), StringAsANSI<>(*dst, dst.Length()).Get()) != 0;
+    if (overwrite)
+    {
+        unlink(StringAsANSI<>(*dst, dst.Length()).Get());
+    }
+    if (rename(StringAsANSI<>(*src, src.Length()).Get(), StringAsANSI<>(*dst, dst.Length()).Get()) != 0)
+    {
+        if (errno == EXDEV)
+        {
+            if(!CopyFile(dst, src)) {
+                unlink(StringAsANSI<>(*src, src.Length()).Get());
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
