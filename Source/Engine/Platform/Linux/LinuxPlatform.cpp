@@ -4,6 +4,7 @@
 
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
+#include "LinuxInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -2206,6 +2207,7 @@ bool LinuxPlatform::Init()
 
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
+	LinuxInput::Init();
 
     return false;
 }
@@ -2217,6 +2219,8 @@ void LinuxPlatform::BeforeRun()
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
+
+	LinuxInput::UpdateState();
 
     if (!xDisplay)
         return;
