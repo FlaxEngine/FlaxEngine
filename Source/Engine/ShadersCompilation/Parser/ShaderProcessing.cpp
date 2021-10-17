@@ -32,7 +32,7 @@ ShaderProcessing::Parser::~Parser()
 
 bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel, ShaderMeta* result)
 {
-    PROFILE_CPU("Shader.Parse");
+    PROFILE_CPU_NAMED("Shader.Parse");
     Parser parser(targetName, source, sourceLength, macros, featureLevel);
     parser.Process(result);
     return parser.Failed();
