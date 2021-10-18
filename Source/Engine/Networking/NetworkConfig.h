@@ -4,10 +4,12 @@
 
 #include "Engine/Platform/Network.h"
 
+class PersistentScriptingObject;
+
 /// <summary>
 /// Network driver implementations enum.
 /// </summary>
-API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkDriverType
+API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverType
 {
     /// <summary>
     /// Invalid network driver implementation.
@@ -32,8 +34,13 @@ public:
     /// To allow two peers to connect, they must use the same host.
     /// </summary>
     API_FIELD()
-    NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
-    // TODO: Expose INetworkDriver as a ref not enum, when C++/C# interfaces are done.
+    DEPRECATED NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
+
+    /// <summary>
+    /// The network driver instance that will be used to create and manage the peer, send and receive messages.
+    /// </summary>
+    API_FIELD()
+    PersistentScriptingObject* NetworkDriver = nullptr;
 
 public:
     /// <summary>

@@ -19,6 +19,7 @@ DECLARE_SCRIPTING_TYPE(ENetDriver);
 public:
 
     // [INetworkDriver]
+    String DriverName() override { return String("ENetDriver"); }
     void Initialize(NetworkPeer* host, const NetworkConfig& config) override;
     void Dispose() override;
     bool Listen() override;
