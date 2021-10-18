@@ -238,6 +238,7 @@ void StaticModel::Draw(RenderContext& renderContext)
                     SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
                 }
             }
+            _vertexColorsDirty = false;
         }
 
 #if USE_EDITOR
