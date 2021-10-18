@@ -151,7 +151,7 @@ public:
     /// </summary>
     /// <param name="config">The configuration to create and setup new peer.</param>
     /// <returns>The peer.</returns>
-    /// <remarks>Peer should be destroyed using <see cref="ShutdownPeer"/> once it is no longer in use.</remarks>
+    /// <remarks>Peer should be destroyed using <see cref="ShutdownPeer"/> once it is no longer in use. Returns null if failed to create a peer (eg. config is invalid).</remarks>
     API_FUNCTION()
     static NetworkPeer* CreatePeer(const NetworkConfig& config);
 
@@ -189,7 +189,7 @@ public:
 
 private:
 
-    void Initialize(const NetworkConfig& config);
+    bool Initialize(const NetworkConfig& config);
     void Shutdown();
     void CreateMessageBuffers();
     void DisposeMessageBuffers();

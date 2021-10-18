@@ -55,7 +55,7 @@ ENetDriver::ENetDriver(const SpawnParams& params)
 {
 }
 
-void ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
+bool ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 {
     _networkHost = host;
     _config = config;
@@ -64,9 +64,11 @@ void ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
     if (enet_initialize() != 0)
     {
         LOG(Error, "Failed to initialize ENet driver!");
+        return true;
     }
 
-    LOG(Info, "Initialized ENet driver!");
+    LOG(Info, "Initialized ENet driver");
+    return false;
 }
 
 void ENetDriver::Dispose()

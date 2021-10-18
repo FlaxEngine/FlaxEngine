@@ -32,7 +32,8 @@ public:
     /// </summary>
     /// <param name="host">The peer that this driver has been assigned to.</param>
     /// <param name="config">The network config to use to configure this driver.</param>
-    API_FUNCTION() virtual void Initialize(NetworkPeer* host, const NetworkConfig& config) = 0;
+    /// <returns>True if failed to initialize network driver, false otherwise.</returns>
+    API_FUNCTION() virtual bool Initialize(NetworkPeer* host, const NetworkConfig& config) = 0;
 
     /// <summary>
     /// Disposes this driver making it no longer usable.
