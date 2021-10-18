@@ -343,7 +343,6 @@ bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
     char buffer[4096];
     ssize_t readSize;
     int cachedError;
-    off_t offset = 0;
 
     srcFile = open(srcANSI.Get(), O_RDONLY);
     if (srcFile < 0)
