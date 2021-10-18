@@ -96,7 +96,7 @@ bool FeatureData::Init()
             if (c == '@')
                 break;
         }
-        const Char* end = &contents[i];
+        const Char* end = contents.Get() + i;
 
         // Set input
         Inputs[inIndex].Set(start, (int32)(end - start));
