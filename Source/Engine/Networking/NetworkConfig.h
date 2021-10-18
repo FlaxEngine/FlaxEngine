@@ -4,7 +4,7 @@
 
 #include "Engine/Platform/Network.h"
 
-class PersistentScriptingObject;
+class ScriptingObject;
 
 /// <summary>
 /// Network driver implementations enum.
@@ -28,7 +28,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverT
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfig
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
-public:
+
     /// <summary>
     /// The network driver that will be used to create the peer.
     /// To allow two peers to connect, they must use the same host.
@@ -37,12 +37,12 @@ public:
     DEPRECATED NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
 
     /// <summary>
-    /// The network driver instance that will be used to create and manage the peer, send and receive messages.
+    /// The network driver instance (implements INetworkDriver) that will be used to create and manage the peer, send and receive messages.
     /// </summary>
+    /// <remarks>Object is managed by the created network peer (will be deleted on peer shutdown).</remarks>
     API_FIELD()
-    PersistentScriptingObject* NetworkDriver = nullptr;
+    ScriptingObject* NetworkDriver;
 
-public:
     /// <summary>
     /// The upper limit on how many peers can join when we're listening.
     /// </summary>
@@ -55,21 +55,21 @@ public:
     /// <remarks>Set it to "any" when you want to listen at all available addresses.</remarks>
     /// <remarks>Only IPv4 is supported.</remarks>
     API_FIELD()
-    String Address = String("127.0.0.1");
+    String Address = String(TEXT("127.0.0.1"));
 
     /// <summary>
     /// The port to connect to or listen at.
     /// </summary>
     API_FIELD()
     uint16 Port = 7777;
-    
+
     /// <summary>
     /// The size of a message buffer in bytes.
     /// Should be lower than the MTU (maximal transmission unit) - typically 1500 bytes.
     /// </summary>
     API_FIELD()
     uint16 MessageSize = 1500;
-    
+
     /// <summary>
     /// The amount of pooled messages that can be used at once (receiving and sending!).
     /// </summary>

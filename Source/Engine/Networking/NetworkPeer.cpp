@@ -2,9 +2,7 @@
 
 #include "NetworkPeer.h"
 #include "NetworkEvent.h"
-
 #include "Drivers/ENetDriver.h"
-
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -18,6 +16,11 @@ namespace
 void NetworkPeer::Initialize(const NetworkConfig& config)
 {
     Config = config;
+
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (Config.NetworkDriver == nullptr && Config.NetworkDriverType == NetworkDriverType::ENet)
+        Config.NetworkDriver = New<ENetDriver>();
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     ASSERT(NetworkDriver == nullptr);
     ASSERT(Config.NetworkDriver != nullptr);
@@ -36,6 +39,7 @@ void NetworkPeer::Initialize(const NetworkConfig& config)
 
     // Setup network driver
     NetworkDriver = ToInterface<INetworkDriver>(Config.NetworkDriver);
+    ASSERT(NetworkDriver);
     NetworkDriver->Initialize(this, Config);
 
     LOG(Info, "NetworkManager initialized using driver = {0}", NetworkDriver->DriverName());
