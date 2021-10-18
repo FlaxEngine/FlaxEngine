@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Types.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
@@ -18,6 +19,14 @@ public:
     /// </summary>
     virtual ~INetworkDriver() = default;
 
+    /// <summary>
+    /// Return name of this network driver implementation.
+    /// </summary>
+    API_FUNCTION() virtual String DriverName()
+    {
+        return String("Unknown");
+    }
+    
     /// <summary>
     /// Initializes the instance of this network driver using given configuration.
     /// </summary>
