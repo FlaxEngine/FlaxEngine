@@ -2810,9 +2810,9 @@ int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& wor
 	StringAnsi cmdLineAnsi;
 	if (workingDir.HasChars())
 	{
-		cmdLineAnsi += "chmod ";
+		cmdLineAnsi += "cd \"";
 		cmdLineAnsi += StringAnsi(workingDir);
-		cmdLineAnsi += "; ";
+		cmdLineAnsi += "\"; ";
 	}
 	cmdLineAnsi += StringAnsi(cmdLine);
 
