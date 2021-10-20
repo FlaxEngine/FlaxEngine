@@ -28,6 +28,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -140,6 +141,21 @@ namespace Flax.Deps.Dependencies
                     Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "ORBIS");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "PS4", "lib", libraryFileName), Path.Combine(depsFolder, libraryFileName));
+
+                    break;
+                }
+                case TargetPlatform.PS5:
+                {
+                    // Get the build data files
+                    Utilities.DirectoryCopy(
+                                            Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg"),
+                                            Path.Combine(root, "PS5"), true, true);
+
+                    // Build for PS5
+                    var solutionPath = Path.Combine(root, "PS5", "libogg_static.sln");
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "PROSPERO");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    Utilities.FileCopy(Path.Combine(root, "PS5", "lib", libraryFileName), Path.Combine(depsFolder, libraryFileName));
 
                     break;
                 }

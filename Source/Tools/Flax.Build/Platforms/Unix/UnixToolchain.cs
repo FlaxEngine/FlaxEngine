@@ -97,7 +97,11 @@ namespace Flax.Build.Platforms
                 ToolsetRoot = toolchainSubDir == null ? Path.Combine(toolchainRoots, ArchitectureName) : Path.Combine(toolchainRoots, toolchainSubDir);
                 ClangPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "clang++"))) + exeExtension;
                 if (!File.Exists(ClangPath))
+                    ClangPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "clang"))) + exeExtension;
+                if (!File.Exists(ClangPath))
                     ClangPath = Path.Combine(ToolsetRoot, "bin/clang++") + exeExtension;
+                if (!File.Exists(ClangPath))
+                    ClangPath = Path.Combine(ToolsetRoot, "bin/clang") + exeExtension;
                 ArPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ar"))) + exeExtension;
                 LlvmArPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}", "llvm-ar"))) + exeExtension;
                 RanlibPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ranlib"))) + exeExtension;

@@ -31,6 +31,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -152,6 +153,12 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
+            case TargetPlatform.PS5:
+                binariesSubDir = "ps5";
+                buildPlatform = "PROSPERO";
+                suppressBitsPostfix = true;
+                binariesPrefix = "lib";
+                break;
             case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett:
                 binariesSubDir = "win.x86_64.vc142.md";
@@ -209,8 +216,9 @@ namespace Flax.Deps.Dependencies
             switch (targetPlatform)
             {
             case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
                 // Hack: PS4 uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
-                Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\ps4"), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
+                Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\" + binariesSubDir), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
                 break;
             case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett:
@@ -320,7 +328,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // Get the source
-            CloneGitRepoSingleBranch(root, "https://github.com/NVIDIAGameWorks/PhysX.git", "4.1");
+            CloneGitRepoSingleBranch(root, "https://github.com/FlaxEngine/PhysX.git", "flax-master");
 
             foreach (var platform in options.Platforms)
             {
@@ -345,6 +353,12 @@ namespace Flax.Deps.Dependencies
                 {
                     Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
                     Build(options, "ps4", platform, TargetArchitecture.x64);
+                    break;
+                }
+                case TargetPlatform.PS5:
+                {
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                    Build(options, "ps5", platform, TargetArchitecture.x64);
                     break;
                 }
                 case TargetPlatform.XboxScarlett:
