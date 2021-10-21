@@ -726,9 +726,9 @@ public:
 public:
 
     /// <summary>
-    /// Starts a new process.
+    /// Starts a new process (runs app).
     /// </summary>
-    /// <param name="filename">The path to the file.</param>
+    /// <param name="filename">The path to the executable file.</param>
     /// <param name="args">Custom arguments for command line</param>
     /// <param name="workingDir">The custom name of the working directory</param>
     /// <param name="hiddenWindow">True if start process with hidden window</param>
@@ -737,7 +737,7 @@ public:
     API_FUNCTION() static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
 
     /// <summary>
-    /// Starts a new process. Waits for it's end and captures its output.
+    /// Starts a new process (runs commandline). Waits for it's end and captures its output.
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>
@@ -746,7 +746,7 @@ public:
     API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
 
     /// <summary>
-    /// Starts a new process. Waits for it's end and captures its output.
+    /// Starts a new process (runs commandline). Waits for it's end and captures its output.
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>
