@@ -2771,74 +2771,93 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
-int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput) {
+int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+{
 	int fildes[2];
 	int32 returnCode = 0;
-	//String cmdLine(commandLine);
-	if (logOutput && pipe(fildes) < 0) {
-		LOG(Warning, "cannot create a pipe, errno={}", errno);
+	if (logOutput && pipe(fildes) < 0)
+    {
+		LOG(Warning, "Failed to create a pipe, errno={}", errno);
 	}
 
 	pid_t pid = fork();
-	if (pid < 0) {
-		LOG(Warning, "cannot fork, errno={}", errno);
+	if (pid < 0)
+    {
+		LOG(Warning, "Failed to fork a process, errno={}", errno);
 		return errno;
-	} else if (pid == 0) {
+	}
+    else if (pid == 0)
+    {
 		// child process
 		int ret;
 		const char* const cmd[] = { "sh", "-c", StringAnsi(cmdLine).GetText(), (char *)0 };
 		// we could use the execve and supply a list of variable assignments but as we would have to build
 		// and quote the values there is hardly any benefit over using setenv() calls
-		if (!environment.IsEmpty()) {
-			for (auto& e : environment) {
-				setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
-			}
-		}
-		if (workingDir.HasChars()) {
-			if (chdir(StringAnsi(workingDir).GetText()) != 0) {
-				LOG(Warning, "cannot set working dir to {}, errno={}", workingDir, errno);
-			}
-		}
-		if (logOutput) {
+        for (auto& e : environment)
+        {
+            setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
+        }
+
+        if (workingDir.HasChars() && chdir(StringAnsi(workingDir).GetText()) != 0)
+        {
+            LOG(Warning, "Failed to set working directory to {}, errno={}", workingDir, errno);
+        }
+		if (logOutput)
+        {
 			close(fildes[0]); // close the reading end of the pipe
 			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
 			dup2(STDOUT_FILENO, STDERR_FILENO); // redirect stderr to stdout
 		}
 
 		ret = execv("/bin/sh", (char **)cmd);
-		if (ret < 0) {
+		if (ret < 0)
+        {
 			LOG(Warning, " failed, errno={}", errno);
 		}
-	} else {
+	}
+    else
+    {
 		// parent process
 		LOG(Info, "{} started, pid={}", cmdLine, pid);
-		if (waitForEnd) {
+		if (waitForEnd)
+        {
 			int stat_loc;
-			if (logOutput) {
+			if (logOutput)
+            {
 				char lineBuffer[1024];
 				close(fildes[1]); // close the writing end of the pipe
 				FILE *stdPipe = fdopen(fildes[0], "r");
-				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL) {
+				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
+                {
 					char *p = lineBuffer + strlen(lineBuffer)-1;
 					if (*p == '\n') *p=0;
 					Log::Logger::Write(LogType::Info, String(lineBuffer));
 				}
 			}
-			if (waitpid(pid, &stat_loc, 0) < 0) {
-				LOG(Warning, "waiting for pid {} failed, errno={}", pid, errno);
+			if (waitpid(pid, &stat_loc, 0) < 0)
+            {
+				LOG(Warning, "Waiting for pid {} failed, errno={}", pid, errno);
 				returnCode = errno;
-			} else {
-				if (WIFEXITED(stat_loc)) {
+			}
+            else
+            {
+				if (WIFEXITED(stat_loc))
+                {
 					int error = WEXITSTATUS(stat_loc);
-					if (error != 0) {
-						LOG(Warning, "command exited with error code={}", error);
+					if (error != 0)
+                    {
+						LOG(Warning, "Command exited with error code={}", error);
 						returnCode = error;
 					}
-				} else if (WIFSIGNALED(stat_loc)) {
-					LOG(Warning, "command was killed by signal#{}", WTERMSIG(stat_loc));
+				}
+                else if (WIFSIGNALED(stat_loc))
+                {
+					LOG(Warning, "Command was killed by signal#{}", WTERMSIG(stat_loc));
 					returnCode = EPIPE;
-				} else if (WIFSTOPPED(stat_loc)) {
-					LOG(Warning, "command was stopped by signal#{}", WSTOPSIG(stat_loc));
+				}
+                else if (WIFSTOPPED(stat_loc))
+                {
+					LOG(Warning, "Command was stopped by signal#{}", WSTOPSIG(stat_loc));
 					returnCode = EPIPE;
 				}
 			}
@@ -2848,7 +2867,6 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
 	return returnCode;
 }
 
-// this will not log output by default
 int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
 {
 	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
@@ -2857,13 +2875,11 @@ int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& 
 	return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
 }
 
-// this will log output
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
     return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
 }
 
-// this will log output
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
 {
 	return LinuxProcess(cmdLine, workingDir, environment, true, true);
