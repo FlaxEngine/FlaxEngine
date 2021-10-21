@@ -102,6 +102,9 @@ Operating system defines, see http://sourceforge.net/p/predef/wiki/OperatingSyst
 #define PX_IOS 1
 #elif defined(__APPLE__)
 #define PX_OSX 1
+#elif defined(__PROSPERO__)
+#define PX_PS4 1
+#define PX_PS5 1
 #elif defined(__ORBIS__)
 #define PX_PS4 1
 #elif defined(__NX__)

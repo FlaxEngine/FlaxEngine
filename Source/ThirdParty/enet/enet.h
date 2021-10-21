@@ -140,7 +140,7 @@
 #else
     #include <sys/types.h>
     #include <sys/socket.h>
-    #if PLATFORM_PS4
+    #if PLATFORM_PS4 || PLATFORM_PS5
     #define ENET_IPV6 0
     #include <netinet/in.h>
     in_addr in4addr_any = { 0 };

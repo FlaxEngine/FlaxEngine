@@ -58,8 +58,8 @@ public class Graphics : EngineModule
         case TargetPlatform.UWP:
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
             break;
-            case TargetPlatform.XboxOne:
-            case TargetPlatform.XboxScarlett:
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
             options.PrivateDependencies.Add("GraphicsDeviceDX12");
             break;
         case TargetPlatform.Linux:

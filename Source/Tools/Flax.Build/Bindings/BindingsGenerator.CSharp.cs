@@ -185,7 +185,7 @@ namespace Flax.Build.Bindings
 
             // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
             if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
-                return typeInfo.GenericArgs[0].Type.Replace("::", ".");
+                return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
             // Array or Span
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)

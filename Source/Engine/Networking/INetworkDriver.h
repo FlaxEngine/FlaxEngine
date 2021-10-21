@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Types.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
@@ -19,11 +20,20 @@ public:
     virtual ~INetworkDriver() = default;
 
     /// <summary>
+    /// Return name of this network driver implementation.
+    /// </summary>
+    API_FUNCTION() virtual String DriverName()
+    {
+        return String("Unknown");
+    }
+    
+    /// <summary>
     /// Initializes the instance of this network driver using given configuration.
     /// </summary>
     /// <param name="host">The peer that this driver has been assigned to.</param>
     /// <param name="config">The network config to use to configure this driver.</param>
-    API_FUNCTION() virtual void Initialize(NetworkPeer* host, const NetworkConfig& config) = 0;
+    /// <returns>True if failed to initialize network driver, false otherwise.</returns>
+    API_FUNCTION() virtual bool Initialize(NetworkPeer* host, const NetworkConfig& config) = 0;
 
     /// <summary>
     /// Disposes this driver making it no longer usable.

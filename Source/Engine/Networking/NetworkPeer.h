@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Types.h"
 #include "NetworkConfig.h"
-
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 
 /// <summary>
 /// Low-level network peer class. Provides server-client communication functions, message processing and sending.
@@ -17,6 +16,7 @@ API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
     friend class NetworkManager;
 public:
+
     int HostId = -1;
     NetworkConfig Config;
     INetworkDriver* NetworkDriver = nullptr;
@@ -25,22 +25,17 @@ public:
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
+
     /// <summary>
     /// Initializes a new instance of the <see cref="NetworkPeer"/> class.
     /// </summary>
-    NetworkPeer() : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    NetworkPeer()
+        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
-    
-private:
-    void Initialize(const NetworkConfig& config);
-    void Shutdown();
-    
-private:
-    void CreateMessageBuffers();
-    void DisposeMessageBuffers();
 
 public:
+
     /// <summary>
     /// Starts listening for incoming connections.
     /// Once this is called, this peer becomes a server.
@@ -151,13 +146,12 @@ public:
     API_FUNCTION()
     bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets);
 
-public:
     /// <summary>
     /// Creates new peer using given configuration.
     /// </summary>
     /// <param name="config">The configuration to create and setup new peer.</param>
     /// <returns>The peer.</returns>
-    /// <remarks>Peer should be destroyed using <see cref="ShutdownPeer"/> once it is no longer in use.</remarks>
+    /// <remarks>Peer should be destroyed using <see cref="ShutdownPeer"/> once it is no longer in use. Returns null if failed to create a peer (eg. config is invalid).</remarks>
     API_FUNCTION()
     static NetworkPeer* CreatePeer(const NetworkConfig& config);
 
@@ -167,8 +161,9 @@ public:
     /// <param name="peer">The peer to destroy.</param>
     API_FUNCTION()
     static void ShutdownPeer(NetworkPeer* peer);
-    
+
 public:
+
     bool IsValid() const
     {
         return NetworkDriver != nullptr && HostId >= 0;
@@ -181,6 +176,7 @@ public:
     }
 
 public:
+
     FORCE_INLINE bool operator==(const NetworkPeer& other) const
     {
         return HostId == other.HostId;
@@ -190,5 +186,11 @@ public:
     {
         return HostId != other.HostId;
     }
-};
 
+private:
+
+    bool Initialize(const NetworkConfig& config);
+    void Shutdown();
+    void CreateMessageBuffers();
+    void DisposeMessageBuffers();
+};

@@ -29,6 +29,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -186,6 +187,24 @@ namespace Flax.Deps.Dependencies
                                    Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
                                    Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
                 break;
+            case TargetPlatform.PS5:
+                buildDir = Path.Combine(rootMsvcLib, "PS5");
+                binariesToCopy = new[]
+                {
+                    new Binary("libvorbis.a", "libvorbis"),
+                };
+                vcxprojPaths = new[]
+                {
+                    Path.Combine(buildDir, "libvorbis", "libvorbis_static.vcxproj"),
+                };
+                buildPlatform = "PROSPERO";
+                Utilities.DirectoryCopy(
+                                        Path.Combine(GetBinariesFolder(options, platform), "Data", "vorbis"),
+                                        buildDir, true, true);
+                Utilities.FileCopy(
+                                   Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
+                                   Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
+                break;
             case TargetPlatform.XboxOne:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
                 binariesToCopy = binariesToCopyWindows;
@@ -277,6 +296,11 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.PS4:
                 {
                     BuildMsbuild(options, TargetPlatform.PS4, TargetArchitecture.x64);
+                    break;
+                }
+                case TargetPlatform.PS5:
+                {
+                    BuildMsbuild(options, TargetPlatform.PS5, TargetArchitecture.x64);
                     break;
                 }
                 case TargetPlatform.XboxScarlett:

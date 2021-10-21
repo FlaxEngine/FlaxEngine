@@ -431,6 +431,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
     /// </summary>
     API_ENUM() enum class ColorWrite
     {
+        // No color writing.
+        None = 0,
+
         // Allow data to be stored in the red component.
         Red = 1,
         // Allow data to be stored in the green component.
