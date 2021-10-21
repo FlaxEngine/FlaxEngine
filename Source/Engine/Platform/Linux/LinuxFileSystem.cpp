@@ -338,7 +338,8 @@ bool LinuxFileSystem::MoveFile(const StringView& dst, const StringView& src, boo
     {
         if (errno == EXDEV)
         {
-            if(!CopyFile(dst, src)) {
+            if (!CopyFile(dst, src))
+            {
                 unlink(StringAsANSI<>(*src, src.Length()).Get());
                 return false;
             }

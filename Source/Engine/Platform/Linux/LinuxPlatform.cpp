@@ -836,7 +836,6 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 
 int32 CalculateDpi()
 {
-	//Vector2 size = Platform::GetDesktopSize();
 	// in X11 a screen is not necessarily identical to a desktop
 	// so we need to stick to one type for pixel and physical size query
 
@@ -847,7 +846,6 @@ int32 CalculateDpi()
 	double ydpi = (heightMM ? X11_DisplayHeight(xDisplay, screenIdx) / (double)heightMM * 25.4 : 0);
 	if (xdpi || ydpi)
 		return (int32)Math::Ceil((xdpi + ydpi) / (xdpi && ydpi ? 2 : 1));
-	
 	return 96;
 }
 
