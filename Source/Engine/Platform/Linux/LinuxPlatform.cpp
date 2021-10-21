@@ -212,7 +212,9 @@ static int X11_MessageBoxInit(MessageBoxData* data)
 	if (data->font_set == nullptr)
 	{
 		LINUX_DIALOG_PRINT("Couldn't load font %s", MessageBoxFont);
-		return 1;
+		data->font_set = X11::XCreateFontSet(data->display, "fixed", &missing, &num_missing, NULL);
+		if (missing != nullptr) X11::XFreeStringList(missing);
+		//return 1;
 	}
 
 	return 0;
