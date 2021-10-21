@@ -34,6 +34,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sched.h>
@@ -2770,80 +2771,118 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+{
+	int fildes[2];
+	int32 returnCode = 0;
+	if (logOutput && pipe(fildes) < 0)
+    {
+		LOG(Warning, "Failed to create a pipe, errno={}", errno);
+	}
+
+	pid_t pid = fork();
+	if (pid < 0)
+    {
+		LOG(Warning, "Failed to fork a process, errno={}", errno);
+		return errno;
+	}
+    else if (pid == 0)
+    {
+		// child process
+		int ret;
+		const char* const cmd[] = { "sh", "-c", StringAnsi(cmdLine).GetText(), (char *)0 };
+		// we could use the execve and supply a list of variable assignments but as we would have to build
+		// and quote the values there is hardly any benefit over using setenv() calls
+        for (auto& e : environment)
+        {
+            setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
+        }
+
+        if (workingDir.HasChars() && chdir(StringAnsi(workingDir).GetText()) != 0)
+        {
+            LOG(Warning, "Failed to set working directory to {}, errno={}", workingDir, errno);
+        }
+		if (logOutput)
+        {
+			close(fildes[0]); // close the reading end of the pipe
+			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
+			dup2(STDOUT_FILENO, STDERR_FILENO); // redirect stderr to stdout
+		}
+
+		ret = execv("/bin/sh", (char **)cmd);
+		if (ret < 0)
+        {
+			LOG(Warning, " failed, errno={}", errno);
+		}
+	}
+    else
+    {
+		// parent process
+		LOG(Info, "{} started, pid={}", cmdLine, pid);
+		if (waitForEnd)
+        {
+			int stat_loc;
+			if (logOutput)
+            {
+				char lineBuffer[1024];
+				close(fildes[1]); // close the writing end of the pipe
+				FILE *stdPipe = fdopen(fildes[0], "r");
+				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
+                {
+					char *p = lineBuffer + strlen(lineBuffer)-1;
+					if (*p == '\n') *p=0;
+					Log::Logger::Write(LogType::Info, String(lineBuffer));
+				}
+			}
+			if (waitpid(pid, &stat_loc, 0) < 0)
+            {
+				LOG(Warning, "Waiting for pid {} failed, errno={}", pid, errno);
+				returnCode = errno;
+			}
+            else
+            {
+				if (WIFEXITED(stat_loc))
+                {
+					int error = WEXITSTATUS(stat_loc);
+					if (error != 0)
+                    {
+						LOG(Warning, "Command exited with error code={}", error);
+						returnCode = error;
+					}
+				}
+                else if (WIFSIGNALED(stat_loc))
+                {
+					LOG(Warning, "Command was killed by signal#{}", WTERMSIG(stat_loc));
+					returnCode = EPIPE;
+				}
+                else if (WIFSTOPPED(stat_loc))
+                {
+					LOG(Warning, "Command was stopped by signal#{}", WSTOPSIG(stat_loc));
+					returnCode = EPIPE;
+				}
+			}
+		}
+	}
+
+	return returnCode;
+}
+
 int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
 {
-	String command(filename);
-	if (args.HasChars())
-		command += TEXT(" ") + String(args);
-    LOG(Info, "Command: {0}", command);
-    if (workingDir.HasChars())
-    {
-        LOG(Info, "Working directory: {0}", workingDir);
-    }
-
-	// TODO: support workingDir
-	// TODO: support hiddenWindow
-	// TODO: support waitForEnd
-
-	StringAnsi commandAnsi(command);
-	system(commandAnsi.GetText());
-    return 0;
+	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
+	String cmdLine(filename);
+	if (args.HasChars()) cmdLine = cmdLine + TEXT(" ") + args;
+	return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
 }
 
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
-    return RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+    return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
 }
 
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
 {
-    LOG(Info, "Command: {0}", cmdLine);
-    if (workingDir.HasChars())
-    {
-        LOG(Info, "Working directory: {0}", workingDir);
-    }
-
-	// TODO: support environment
-	// TODO: support hiddenWindow
-
-	String dir = GetWorkingDirectory();
-	StringAnsi cmdLineAnsi;
-	if (workingDir.HasChars())
-	{
-		cmdLineAnsi += "cd \"";
-		cmdLineAnsi += StringAnsi(workingDir);
-		cmdLineAnsi += "\"; ";
-	}
-	cmdLineAnsi += StringAnsi(cmdLine);
-
-    FILE* pipe = popen(cmdLineAnsi.GetText(), "r");
-    if (!pipe)
-	{
-        LOG(Warning, "Cannot start process '{0}'", cmdLine);
-        return 1;
-	}
-
-	char rawData[256];
-	StringAnsi pathAnsi;
-	Array<Char> logData;
-	while (fgets(rawData, sizeof(rawData), pipe) != NULL)
-	{
-		logData.Clear();
-		int32 rawDataLength = StringUtils::Length(rawData);
-		if (rawDataLength == 0)
-			continue;
-		if (rawData[rawDataLength - 1] == '\0')
-			rawDataLength--;
-		if (rawData[rawDataLength - 1] == '\n')
-			rawDataLength--;
-		logData.Resize(rawDataLength + 1);
-		StringUtils::ConvertANSI2UTF16(rawData, logData.Get(), rawDataLength);
-		logData.Last() = '\0';
-		Log::Logger::Write(LogType::Info, StringView(logData.Get(), rawDataLength));
-	}
-
-	int32 result = pclose(pipe);
-    return result;
+	return LinuxProcess(cmdLine, workingDir, environment, true, true);
 }
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)
