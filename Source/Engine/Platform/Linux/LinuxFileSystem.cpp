@@ -12,6 +12,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <cerrno>
@@ -366,24 +367,37 @@ bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
     if (dstFile < 0)
         goto out_error;
 
-    while (readSize = read(srcFile, buffer, sizeof(buffer)), readSize > 0)
+    // first try the kernel method
+    struct stat statBuf;
+    fstat(srcFile, &statBuf);
+    readSize = 1;
+    while (readSize > 0)
     {
-        char* ptr = buffer;
-        ssize_t writeSize;
-
-        do
+        readSize = sendfile(dstFile, srcFile, 0, statBuf.st_size);
+    }
+    // sendfile could fail for example if the input file is not nmap'able
+    // in this case we fall back to the read/write loop
+    if (readSize < 0)
+    {
+        while (readSize = read(srcFile, buffer, sizeof(buffer)), readSize > 0)
         {
-            writeSize = write(dstFile, ptr, readSize);
-            if (writeSize >= 0)
+            char* ptr = buffer;
+            ssize_t writeSize;
+
+            do
             {
-                readSize -= writeSize;
-                ptr += writeSize;
-            }
-            else if (errno != EINTR)
-            {
-                goto out_error;
-            }
-        } while (readSize > 0);
+                writeSize = write(dstFile, ptr, readSize);
+                if (writeSize >= 0)
+                {
+                    readSize -= writeSize;
+                    ptr += writeSize;
+                }
+                else if (errno != EINTR)
+                {
+                    goto out_error;
+                }
+            } while (readSize > 0);
+        }
     }
 
     if (readSize == 0)
