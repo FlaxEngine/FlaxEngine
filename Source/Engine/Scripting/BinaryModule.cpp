@@ -53,6 +53,19 @@ const ScriptingType& ScriptingTypeHandle::GetType() const
     return Module->Types[TypeIndex];
 }
 
+bool ScriptingTypeHandle::IsSubclassOf(ScriptingTypeHandle c) const
+{
+    auto type = *this;
+    if (type == c)
+        return false;
+    for (; type; type = type.GetType().GetBaseType())
+    {
+        if (type == c)
+            return true;
+    }
+    return false;
+}
+
 bool ScriptingTypeHandle::IsAssignableFrom(ScriptingTypeHandle c) const
 {
     while (c)
