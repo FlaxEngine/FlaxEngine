@@ -167,6 +167,7 @@ namespace Flax.Build
 
         public static event Action<TaskGraph, BuildOptions> PreBuild;
         public static event Action<TaskGraph, BuildOptions> PostBuild;
+        public static event Action<TaskGraph, BuildData> BuildBindings;
 
         /// <summary>
         /// Collects the modules required by the given target to build (includes dependencies).
@@ -224,6 +225,20 @@ namespace Flax.Build
             }
 
             return buildData.Modules;
+        }
+
+        private static void OnBuildBindings(BuildData buildData, TaskGraph graph)
+        {
+            if (buildData.Target.IsPreBuilt)
+                return;
+            using (new ProfileEventScope("BuildBindings"))
+            {
+                if (EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                {
+                    BuildTargetBindings(graph, buildData);
+                }
+                BuildBindings?.Invoke(graph, buildData);
+            }
         }
 
         private static void LinkNativeBinary(BuildData buildData, BuildOptions buildOptions, string outputPath)
@@ -794,13 +809,7 @@ namespace Flax.Build
             }
 
             // Build scripting API bindings
-            using (new ProfileEventScope("BuildBindings"))
-            {
-                if (!buildData.Target.IsPreBuilt)
-                {
-                    BuildTargetBindings(rules, graph, buildData);
-                }
-            }
+            OnBuildBindings(buildData, graph);
 
             // Link modules into a target
             var outputTargetFilePath = target.GetOutputFilePath(targetBuildOptions);
@@ -835,7 +844,7 @@ namespace Flax.Build
                     var binaryModuleInfo = new BuildTargetBinaryModuleInfo
                     {
                         Name = binaryModule.Key,
-                        ManagedPath = Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll"),
+                        ManagedPath = EngineConfiguration.WithCSharp(targetBuildOptions) ? Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll") : string.Empty,
                     };
                     switch (target.LinkType)
                     {
@@ -1069,11 +1078,7 @@ namespace Flax.Build
             }
 
             // Build scripting API bindings
-            using (new ProfileEventScope("BuildBindings"))
-            {
-                if (!buildData.Target.IsPreBuilt)
-                    BuildTargetBindings(rules, graph, buildData);
-            }
+            OnBuildBindings(buildData, graph);
 
             // Link modules into a target
             var outputTargetFilePath = target.GetOutputFilePath(targetBuildOptions);
@@ -1099,7 +1104,7 @@ namespace Flax.Build
                     var binaryModuleInfo = new BuildTargetBinaryModuleInfo
                     {
                         Name = binaryModule.Key,
-                        ManagedPath = Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll"),
+                        ManagedPath = EngineConfiguration.WithCSharp(targetBuildOptions) ? Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll") : string.Empty,
                     };
 
                     binaryModuleInfo.NativePathProcessed = string.Empty;

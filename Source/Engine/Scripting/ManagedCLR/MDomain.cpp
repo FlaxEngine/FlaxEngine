@@ -1,38 +1,31 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MDomain.h"
-
-#if USE_MONO
-
 #include "MCore.h"
 #include "MAssembly.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/threads.h>
+#endif
 
-MDomain::MDomain(const MString& domainName, MonoDomain* monoDomain)
-    : _monoDomain(monoDomain)
-    , _domainName(domainName)
-    , _coreInstance(MCore::Instance())
-{
-}
+extern MDomain* MActiveDomain;
 
-MonoDomain* MDomain::GetNative() const
+MDomain::MDomain(const MString& domainName)
+    : _domainName(domainName)
 {
-    return _monoDomain;
 }
 
 bool MDomain::SetCurrentDomain(bool force)
 {
-    ASSERT(_monoDomain);
-    const auto monoBool = mono_domain_set(_monoDomain, force) != 0;
-    if (monoBool)
-    {
-        _coreInstance->_activeDomain = this;
-    }
-    return monoBool;
+#if USE_MONO
+    if (mono_domain_set(_monoDomain, force) == 0)
+        return false;
+#endif
+    MActiveDomain = this;
+    return true;
 }
 
 MAssembly* MDomain::CreateEmptyAssembly(const MString& assemblyName, const MAssemblyOptions options)
@@ -72,10 +65,12 @@ MAssembly* MDomain::GetAssembly(const MString& assemblyName) const
 
 void MDomain::Dispatch() const
 {
+#if USE_MONO
     if (!IsInMainThread())
     {
         mono_thread_attach(_monoDomain);
     }
+#endif
 }
 
 MClass* MDomain::FindClass(const StringAnsiView& fullname) const
@@ -90,5 +85,3 @@ MClass* MDomain::FindClass(const StringAnsiView& fullname) const
     }
     return nullptr;
 }
-
-#endif

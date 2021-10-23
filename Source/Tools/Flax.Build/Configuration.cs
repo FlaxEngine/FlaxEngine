@@ -212,4 +212,21 @@ namespace Flax.Build
         /// </summary>
         public static List<string> CustomDefines = new List<string>();
     }
+
+    /// <summary>
+    /// The engine configuration options.
+    /// </summary>
+    public static partial class EngineConfiguration
+    {
+        /// <summary>
+        /// True if managed C# scripting should be enabled, otherwise false. Engine without C# is partially supported and can be used when porting to a new platform before implementing C# runtime on it.
+        /// </summary>
+        [CommandLine("useCSharp", "0 to disable C# support in build")]
+        public static bool UseCSharp = true;
+
+        public static bool WithCSharp(NativeCpp.BuildOptions options)
+        {
+            return UseCSharp || options.Target.IsEditor;
+        }
+    }
 }

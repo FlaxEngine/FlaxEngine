@@ -1,9 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MAssembly.h"
-
-#if USE_MONO
-
 #include "MClass.h"
 #include "MDomain.h"
 #include "MUtils.h"
@@ -19,14 +16,14 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
 #include <ThirdParty/mono-2.0/mono/metadata/tokentype.h>
+#endif
 
 MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const MAssemblyOptions& options)
-    : _monoAssembly(nullptr)
-    , _monoImage(nullptr)
-    , _domain(domain)
+    : _domain(domain)
     , _isLoaded(false)
     , _isLoading(false)
     , _isDependency(false)
@@ -83,6 +80,8 @@ bool MAssembly::Load(const String& assemblyPath)
     return false;
 }
 
+#if USE_MONO
+
 bool MAssembly::Load(MonoImage* monoImage)
 {
     if (IsLoaded())
@@ -116,6 +115,8 @@ bool MAssembly::Load(MonoImage* monoImage)
     return false;
 }
 
+#endif
+
 void MAssembly::Unload(bool isReloading)
 {
     if (!IsLoaded())
@@ -125,6 +126,7 @@ void MAssembly::Unload(bool isReloading)
     Unloading(this);
 
     // Close runtime
+#if USE_MONO
     if (_monoImage)
     {
         if (isReloading)
@@ -143,6 +145,7 @@ void MAssembly::Unload(bool isReloading)
         _monoAssembly = nullptr;
         _monoImage = nullptr;
     }
+#endif
 
     // Cleanup
     _debugData.Resize(0);
@@ -190,6 +193,8 @@ MClass* MAssembly::GetClass(const StringAnsiView& fullname) const
     return result;
 }
 
+#if USE_MONO
+
 MClass* MAssembly::GetClass(MonoClass* monoClass) const
 {
     if (monoClass == nullptr || !IsLoaded() || mono_class_get_image(monoClass) != _monoImage)
@@ -226,11 +231,16 @@ MonoReflectionAssembly* MAssembly::GetNative() const
     return mono_assembly_get_object(mono_domain_get(), _monoAssembly);
 }
 
+#endif
+
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
     PROFILE_CPU();
+    const auto startTime = DateTime::NowUTC();
+
+#if USE_MONO
 #if TRACY_ENABLE
     const StringAnsiView monoImageName(mono_image_get_name(_monoImage));
     ZoneText(*monoImageName, monoImageName.Length());
@@ -239,9 +249,6 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     if (_hasCachedClasses)
         return _classes;
     ASSERT(_classes.IsEmpty());
-
-    const auto startTime = DateTime::NowUTC();
-
     const int32 numRows = mono_image_get_table_rows(_monoImage, MONO_TABLE_TYPEDEF);
     _classes.EnsureCapacity(numRows * 4);
     for (int32 i = 1; i < numRows; i++) // Skip <Module> class
@@ -256,6 +263,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
         auto mclass = New<MClass>(this, klass, fullname);
         _classes.Add(fullname, mclass);
     }
+#endif
 
     const auto endTime = DateTime::NowUTC();
     LOG(Info, "Caching classes for assembly {0} took {1}ms", String(_name), (int32)(endTime - startTime).GetTotalMilliseconds());
@@ -271,6 +279,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
 bool MAssembly::LoadDefault(const String& assemblyPath)
 {
+#if USE_MONO
     // With this method of loading we need to make sure, we won't try to load assembly again if its loaded somewhere.
     auto assembly = mono_domain_assembly_open(_domain->GetNative(), assemblyPath.ToStringAnsi().Get());
     if (!assembly)
@@ -283,17 +292,18 @@ bool MAssembly::LoadDefault(const String& assemblyPath)
         mono_assembly_close(assembly);
         return true;
     }
-
-    // Register in domain
-    _domain->_assemblies[_name] = this;
-
-    // Set state
     _monoAssembly = assembly;
     _monoImage = assemblyImage;
+#endif
+
+    // Set state
     _isDependency = false;
     _hasCachedClasses = false;
     _isFileLocked = true;
     _assemblyPath = assemblyPath;
+   
+    // Register in domain
+    _domain->_assemblies[_name] = this;
 
     return false;
 }
@@ -307,6 +317,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     Array<byte> data;
     File::ReadAllBytes(assemblyPath, data);
 
+#if USE_MONO
     // Init Mono image
     MonoImageOpenStatus status;
     const auto name = assemblyPath.ToStringAnsi();
@@ -359,10 +370,11 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
     }
 #endif
 #endif
-
-    // Set state
     _monoAssembly = assembly;
     _monoImage = assemblyImage;
+#endif
+
+    // Set state
     _isDependency = false;
     _hasCachedClasses = false;
     _isFileLocked = false;
@@ -379,7 +391,7 @@ void MAssembly::OnLoading()
 
     // Pick a domain
     if (_domain == nullptr)
-        _domain = MCore::Instance()->GetActiveDomain();
+        _domain = MCore::GetActiveDomain();
 }
 
 void MAssembly::OnLoaded(const DateTime& startTime)
@@ -405,5 +417,3 @@ void MAssembly::OnLoadFailed()
 
     LoadFailed(this);
 }
-
-#endif

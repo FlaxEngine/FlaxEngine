@@ -64,6 +64,7 @@ VariantType::VariantType(Types type, _MonoClass* klass)
 {
     Type = type;
     TypeName = nullptr;
+#if USE_MONO
     if (klass)
     {
         MString typeName;
@@ -72,6 +73,7 @@ VariantType::VariantType(Types type, _MonoClass* klass)
         TypeName = static_cast<char*>(Allocator::Allocate(length));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
     }
+#endif
 }
 
 VariantType::VariantType(const VariantType& other)
@@ -517,11 +519,23 @@ Variant::Variant(Asset* v)
     }
 }
 
+#if USE_MONO
+
 Variant::Variant(_MonoObject* v)
     : Type(VariantType::ManagedObject, v ? mono_object_get_class(v) : nullptr)
 {
     AsUint = v ? mono_gchandle_new(v, true) : 0;
 }
+
+#else
+
+Variant::Variant(_MonoObject* v)
+    : Type(VariantType::ManagedObject, nullptr)
+{
+    AsUint = 0;
+}
+
+#endif
 
 Variant::Variant(const StringView& v)
     : Type(VariantType::String)
@@ -788,8 +802,8 @@ Variant::~Variant()
     case VariantType::Dictionary:
         Delete(AsDictionary);
         break;
-#if USE_MONO
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
         break;
@@ -912,7 +926,9 @@ Variant& Variant::operator=(const Variant& other)
             AsDictionary = New<Dictionary<Variant, Variant>>(*other.AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         AsUint = other.AsUint ? mono_gchandle_new(mono_gchandle_get_target(other.AsUint), true) : 0;
+#endif
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -1015,9 +1031,6 @@ bool Variant::operator==(const Variant& other) const
                     return false;
             }
             return true;
-        case VariantType::ManagedObject:
-            // TODO: invoke C# Equality logic?
-            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
         case VariantType::Typename:
             if (AsBlob.Data == nullptr && other.AsBlob.Data == nullptr)
                 return true;
@@ -1026,6 +1039,11 @@ bool Variant::operator==(const Variant& other) const
             if (other.AsBlob.Data == nullptr)
                 return false;
             return AsBlob.Length == other.AsBlob.Length && StringUtils::Compare(static_cast<const char*>(AsBlob.Data), static_cast<const char*>(other.AsBlob.Data), AsBlob.Length - 1) == 0;
+        case VariantType::ManagedObject:
+#if USE_MONO
+            // TODO: invoke C# Equality logic?
+            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
+#endif
         default:
             return false;
         }
@@ -1115,7 +1133,9 @@ Variant::operator bool() const
     case VariantType::Asset:
         return AsAsset != nullptr;
     case VariantType::ManagedObject:
+#if USE_MONO
         return AsUint != 0 && mono_gchandle_get_target(AsUint) != nullptr;
+#endif
     default:
         return false;
     }
@@ -1461,7 +1481,9 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
+#if USE_MONO
         return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#endif
     default:
         return nullptr;
     }
@@ -1504,7 +1526,11 @@ Variant::operator ScriptingObject*() const
 
 Variant::operator _MonoObject*() const
 {
+#if USE_MONO
     return Type.Type == VariantType::ManagedObject && AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#else
+    return nullptr;
+#endif
 }
 
 Variant::operator Asset*() const
@@ -2011,8 +2037,10 @@ void Variant::SetType(const VariantType& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
+#endif
         break;
     default: ;
     }
@@ -2105,8 +2133,10 @@ void Variant::SetType(VariantType&& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
+#endif
         break;
     default: ;
     }
@@ -2245,6 +2275,7 @@ void Variant::SetObject(ScriptingObject* object)
 
 void Variant::SetManagedObject(_MonoObject* object)
 {
+#if USE_MONO
     if (object)
     {
         if (Type.Type != VariantType::ManagedObject)
@@ -2257,6 +2288,7 @@ void Variant::SetManagedObject(_MonoObject* object)
             SetType(VariantType(VariantType::ManagedObject));
         AsUint = 0;
     }
+#endif
 }
 
 void Variant::SetAsset(Asset* asset)
@@ -2338,10 +2370,12 @@ String Variant::ToString() const
         return (*(Ray*)AsBlob.Data).ToString();
     case VariantType::Matrix:
         return (*(Matrix*)AsBlob.Data).ToString();
-    case VariantType::ManagedObject:
-        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
     case VariantType::Typename:
         return String((const char*)AsBlob.Data, AsBlob.Length ? AsBlob.Length - 1 : 0);
+    case VariantType::ManagedObject:
+#if USE_MONO
+        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
+#endif
     default:
         return String::Empty;
     }
@@ -3110,6 +3144,7 @@ void Variant::AllocStructure()
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         *((int16*)AsBlob.Data) = 0;
     }
+#if USE_MONO
     else if (const auto mclass = Scripting::FindClass(typeName))
     {
         // Fallback to C#-only types
@@ -3134,6 +3169,7 @@ void Variant::AllocStructure()
             AsBlob.Length = 0;
         }
     }
+#endif
     else
     {
         if (typeName.Length() != 0)
@@ -3213,10 +3249,12 @@ uint32 GetHash(const Variant& key)
         return GetHash(*(Color*)key.AsData);
     case VariantType::Guid:
         return GetHash(*(Guid*)key.AsData);
-    case VariantType::ManagedObject:
-        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
     case VariantType::Typename:
         return GetHash((const char*)key.AsBlob.Data);
+    case VariantType::ManagedObject:
+#if USE_MONO
+        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
+#endif
     default:
         return 0;
     }

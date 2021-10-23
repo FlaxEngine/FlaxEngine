@@ -260,6 +260,7 @@ void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
 
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 {
+#if USE_MONO
     // Restore all tracks
     for (int32 j = 0; j < anim->Tracks.Count(); j++)
     {
@@ -293,7 +294,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
                 || state.RestoreStateIndex == -1
                 || (state.Field == nullptr && state.Property == nullptr))
                 break;
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
+            MObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
             if (!instance)
                 break;
 
@@ -318,7 +319,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             {
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     state.ManagedObject = state.Property->GetValue(instance, &exception);
                     if (exception)
                     {
@@ -341,7 +342,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             // Set the value
             if (state.Property)
             {
-                MonoObject* exception = nullptr;
+                MObject* exception = nullptr;
                 state.Property->SetValue(instance, value, &exception);
                 if (exception)
                 {
@@ -353,16 +354,17 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             {
                 state.Field->SetValue(instance, value);
             }
-
             break;
         }
         default: ;
         }
     }
+#endif
 }
 
 bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexOffset, SceneAnimation* anim, float time, const SceneAnimation::Track& track, TrackInstance& state, void* target)
 {
+#if USE_MONO
     switch (track.Type)
     {
     case SceneAnimation::Track::Types::KeyframesProperty:
@@ -511,17 +513,18 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     case SceneAnimation::Track::Types::ObjectProperty:
     {
         // Cache the sub-object pointer for the sub-tracks
-        state.ManagedObject = *(MonoObject**)target;
+        state.ManagedObject = *(MObject**)target;
         return false;
     }
     default: ;
     }
-
+#endif
     return true;
 }
 
 void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset, CallStack& callStack)
 {
+#if USE_MONO
     const float fps = anim->FramesPerSecond;
 #if !BUILD_RELEASE || USE_EDITOR
     callStack.Add(anim);
@@ -827,7 +830,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 break;
 
             // Skip if parent object is missing
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
+            MObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
             if (!instance)
                 break;
 
@@ -860,7 +863,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             {
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     auto boxed = state.Property->GetValue(instance, &exception);
                     if (exception)
                     {
@@ -876,7 +879,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     }
                     else
                     {
-                        *(MonoObject**)value = boxed;
+                        *(MObject**)value = boxed;
                     }
                 }
                 else
@@ -900,7 +903,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     }
                     case SceneAnimation::Track::Types::ObjectReferenceProperty:
                     {
-                        auto obj = Scripting::FindObject(*(MonoObject**)value);
+                        auto obj = Scripting::FindObject(*(MObject**)value);
                         auto id = obj ? obj->GetID() : Guid::Empty;
                         _restoreData.Add((byte*)&id, sizeof(Guid));
                         break;
@@ -922,7 +925,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     value = (void*)*(intptr*)value;
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     state.Property->SetValue(instance, value, &exception);
                     if (exception)
                     {
@@ -995,7 +998,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
 
                         // Invoke the method
                         Variant result;
-                        MonoObject* exception = nullptr;
+                        MObject* exception = nullptr;
                         mono_runtime_invoke((MonoMethod*)state.Method, instance, paramsData, &exception);
                         if (exception)
                         {
@@ -1064,6 +1067,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
         default: ;
         }
     }
+#endif
 }
 
 void SceneAnimationPlayer::Tick()

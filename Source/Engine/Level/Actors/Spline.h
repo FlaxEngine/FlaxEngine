@@ -368,8 +368,10 @@ protected:
 private:
 
     // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) void GetKeyframes(MonoArray* data);
     API_FUNCTION(NoProxy) void SetKeyframes(MonoArray* data);
+#endif
 
 public:
 

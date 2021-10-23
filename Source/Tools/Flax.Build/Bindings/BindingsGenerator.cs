@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Flax.Build.NativeCpp;
@@ -34,7 +35,19 @@ namespace Flax.Build.Bindings
             /// The generated C# file path that contains a API bindings wrapper code to setup the glue code.
             /// </summary>
             public string GeneratedCSharpFilePath;
+
+            /// <summary>
+            /// The custom data per-scripting language.
+            /// </summary>
+            public Dictionary<string, string> CustomScriptingData;
         }
+
+        public delegate void GenerateModuleBindingsDelegate(BuildData buildData, IGrouping<string, Module> binaryModule);
+
+        public delegate void GenerateBinaryModuleBindingsDelegate(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings);
+
+        public static event GenerateModuleBindingsDelegate GenerateModuleBindings;
+        public static event GenerateBinaryModuleBindingsDelegate GenerateBinaryModuleBindings;
 
         public static ModuleInfo ParseModule(BuildData buildData, Module module, BuildOptions moduleOptions = null)
         {
@@ -513,7 +526,7 @@ namespace Flax.Build.Bindings
                 buildData.Modules.TryGetValue(moduleInfo.Module, out var moduleBuildInfo);
 
                 // Ensure that generated files are included into build
-                if (!moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
+                if (EngineConfiguration.WithCSharp(buildData.TargetOptions) && !moduleBuildInfo.SourceFiles.Contains(bindings.GeneratedCSharpFilePath))
                     moduleBuildInfo.SourceFiles.Add(bindings.GeneratedCSharpFilePath);
             }
 
@@ -533,10 +546,12 @@ namespace Flax.Build.Bindings
                 Log.Verbose($"Generating API bindings for {module.Name} ({moduleInfo.Name})");
                 using (new ProfileEventScope("Cpp"))
                     GenerateCpp(buildData, moduleInfo, ref bindings);
-                using (new ProfileEventScope("CSharp"))
-                    GenerateCSharp(buildData, moduleInfo, ref bindings);
-
-                // TODO: add support for extending this code and support generating bindings for other scripting languages
+                if (EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                {
+                    using (new ProfileEventScope("CSharp"))
+                        GenerateCSharp(buildData, moduleInfo, ref bindings);
+                }
+                GenerateBinaryModuleBindings?.Invoke(buildData, moduleInfo, ref bindings);
             }
         }
 
@@ -552,9 +567,11 @@ namespace Flax.Build.Bindings
                     // Generate bindings for binary module
                     Log.Verbose($"Generating binary module bindings for {binaryModule.Key}");
                     GenerateCpp(buildData, binaryModule);
-                    GenerateCSharp(buildData, binaryModule);
-
-                    // TODO: add support for extending this code and support generating bindings for other scripting languages
+                    if (EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                    {
+                        GenerateCSharp(buildData, binaryModule);
+                    }
+                    GenerateModuleBindings?.Invoke(buildData, binaryModule);
                 }
             }
         }

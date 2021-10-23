@@ -183,7 +183,7 @@ int32 JobSystemThread::Run()
             // Ensure to have C# thread attached to this thead (late init due to MCore being initialized after Job System)
             if (attachMonoThread && !mono_domain_get())
             {
-                const auto domain = MCore::Instance()->GetActiveDomain();
+                const auto domain = MCore::GetActiveDomain();
                 mono_thread_attach(domain->GetNative());
                 attachMonoThread = false;
             }

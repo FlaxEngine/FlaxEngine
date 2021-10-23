@@ -13,9 +13,6 @@ class NativeBinaryModule;
 struct ScriptingTypeHandle;
 struct ScriptingTypeInitializer;
 struct ScriptingObjectSpawnParams;
-typedef struct _MonoClass MonoClass;
-typedef struct _MonoObject MonoObject;
-typedef struct _MonoType MonoType;
 
 /// <summary>
 /// The safe handle to the scripting type contained in the scripting assembly.
@@ -113,8 +110,8 @@ struct FLAXENGINE_API ScriptingType
     typedef void (*Ctor)(void* ptr);
     typedef void (*Dtor)(void* ptr);
     typedef void (*Copy)(void* dst, void* src);
-    typedef MonoObject* (*Box)(void* ptr);
-    typedef void (*Unbox)(void* ptr, MonoObject* managed);
+    typedef MObject* (*Box)(void* ptr);
+    typedef void (*Unbox)(void* ptr, MObject* managed);
     typedef void (*GetField)(void* ptr, const String& name, Variant& value);
     typedef void (*SetField)(void* ptr, const String& name, const Variant& value);
     typedef void* (*GetInterfaceWrapper)(ScriptingObject* obj);

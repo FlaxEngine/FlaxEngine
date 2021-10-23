@@ -605,7 +605,7 @@ void EngineImpl::InitMainWindow()
         return;
     }
 
-#if !USE_EDITOR
+#if !USE_EDITOR && !COMPILE_WITHOUT_CSHARP
     // Inform the managed runtime about the window (game can link GUI to it)
     auto scriptingClass = Scripting::GetStaticClass();
     ASSERT(scriptingClass);
@@ -613,7 +613,7 @@ void EngineImpl::InitMainWindow()
     ASSERT(setWindowMethod);
     void* params[1];
     params[0] = Engine::MainWindow->GetOrCreateManagedInstance();
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     setWindowMethod->Invoke(nullptr, params, &exception);
     if (exception)
     {

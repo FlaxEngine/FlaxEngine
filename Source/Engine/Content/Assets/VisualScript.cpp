@@ -310,10 +310,17 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
                 const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
                 if (StringUtils::Compare(typeNameAnsi.Get(), obj.Type.GetTypeName()) != 0)
                 {
+#if USE_MONO
                     MonoClass* klass = Scripting::FindClassNative(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
                     MonoClass* objKlass = MUtils::GetClass(obj);
                     if (!klass || !objKlass || mono_class_is_subclass_of(objKlass, klass, false) == 0)
                         obj = Value::Null;
+#else
+                    const ScriptingTypeHandle type = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
+                    const ScriptingTypeHandle objType = Scripting::FindScriptingType(obj.Type.GetTypeName());
+                    if (!type || !objType || objType.IsSubclassOf(type))
+                        obj = Value::Null;
+#endif
                 }
             }
 
@@ -448,6 +455,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
                 }
                 else
                 {
+#if !COMPILE_WITHOUT_CSHARP
                     // Fallback to C#-only types
                     const auto mclass = Scripting::FindClass(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
                     if (mclass)
@@ -461,6 +469,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
                         }
                     }
                     else
+#endif
                     {
                         if (typeName.HasChars())
                         {

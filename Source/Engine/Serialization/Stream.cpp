@@ -356,6 +356,7 @@ void ReadStream::ReadVariant(Variant* data)
             // Json
             StringAnsi json;
             ReadStringAnsi(&json, -71);
+#if USE_MONO
             MCore::AttachThread();
             MonoClass* klass = MUtils::GetClass(data->Type);
             if (!klass)
@@ -376,6 +377,7 @@ void ReadStream::ReadVariant(Variant* data)
                 data->SetManagedObject(obj);
             else
                 *data = MUtils::UnboxVariant(obj);
+#endif
         }
         else
         {
@@ -706,6 +708,7 @@ void WriteStream::WriteVariant(const Variant& data)
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
+#if USE_MONO
         MonoObject* obj;
         if (data.Type.Type == VariantType::Structure)
             obj = MUtils::BoxVariant(data);
@@ -721,6 +724,7 @@ void WriteStream::WriteVariant(const Variant& data)
             WriteStringAnsi(StringAnsiView(json.GetString(), (int32)json.GetSize()), -71);
         }
         else
+#endif
         {
             WriteByte(0);
         }

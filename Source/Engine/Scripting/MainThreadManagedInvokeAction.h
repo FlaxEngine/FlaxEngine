@@ -71,6 +71,7 @@ public:
             AddParam(val);
         }
 
+#if USE_MONO
         FORCE_INLINE void AddParam(const String& value)
         {
             MonoString* val = MUtils::ToString(value);
@@ -94,6 +95,7 @@ public:
             MonoString* val = MUtils::ToString(value, domain);
             AddParam(val);
         }
+#endif
 
         void GetParams(void* params[8])
         {
@@ -109,7 +111,7 @@ public:
 
 private:
 
-    MonoObject* _instance;
+    MObject* _instance;
     MMethod* _method;
     void* _methodThunk;
     LogType _exceptionLevel;
@@ -117,7 +119,7 @@ private:
 
 public:
 
-    MainThreadManagedInvokeAction(MonoObject* instance, MMethod* method, LogType exceptionLevel)
+    MainThreadManagedInvokeAction(MObject* instance, MMethod* method, LogType exceptionLevel)
         : _instance(instance)
         , _method(method)
         , _methodThunk(nullptr)
@@ -126,7 +128,7 @@ public:
     {
     }
 
-    MainThreadManagedInvokeAction(MonoObject* instance, MMethod* method, LogType exceptionLevel, const ParamsBuilder& params)
+    MainThreadManagedInvokeAction(MObject* instance, MMethod* method, LogType exceptionLevel, const ParamsBuilder& params)
         : _instance(instance)
         , _method(method)
         , _methodThunk(nullptr)
@@ -153,7 +155,7 @@ public:
     /// <param name="instance">The managed instance object.</param>
     /// <param name="exceptionLevel">The exception logging error level.</param>
     /// <returns>The created task.</returns>
-    static MainThreadManagedInvokeAction* Invoke(MMethod* method, MonoObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
+    static MainThreadManagedInvokeAction* Invoke(MMethod* method, MObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
 
     /// <summary>
     /// Starts the new task or invokes this action now if already running on a main thread.
@@ -163,7 +165,7 @@ public:
     /// <param name="instance">The managed instance object.</param>
     /// <param name="exceptionLevel">The exception logging error level.</param>
     /// <returns>The created task.</returns>
-    static MainThreadManagedInvokeAction* Invoke(MMethod* method, ParamsBuilder& params, MonoObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
+    static MainThreadManagedInvokeAction* Invoke(MMethod* method, ParamsBuilder& params, MObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
 
     /// <summary>
     /// Starts the new task or invokes this action now if already running on a main thread.
@@ -181,7 +183,7 @@ public:
     /// <param name="params">The method parameters.</param>
     /// <param name="instance">The managed instance object.</param>
     /// <param name="exceptionLevel">The exception logging error level.</param>
-    static void InvokeNow(MMethod* method, ParamsBuilder& params, MonoObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
+    static void InvokeNow(MMethod* method, ParamsBuilder& params, MObject* instance = nullptr, LogType exceptionLevel = LogType::Error);
 
 protected:
 

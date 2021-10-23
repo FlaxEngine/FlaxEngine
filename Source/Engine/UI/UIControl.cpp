@@ -6,8 +6,13 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/Serialization.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
+#if COMPILE_WITHOUT_CSHARP
+#define UICONTROL_INVOKE(event)
+#else
 // Cached methods (FlaxEngine.CSharp.dll is loaded only once)
 MMethod* UIControl_Serialize = nullptr;
 MMethod* UIControl_SerializeDiff = nullptr;
@@ -22,7 +27,7 @@ MMethod* UIControl_EndPlay = nullptr;
 #define UICONTROL_INVOKE(event) \
 	if (HasManagedInstance()) \
 	{ \
-	    MonoObject* exception = nullptr; \
+	    MObject* exception = nullptr; \
 	    UIControl_##event->Invoke(GetManagedInstance(), nullptr, &exception); \
 	    if (exception) \
 	    { \
@@ -30,10 +35,12 @@ MMethod* UIControl_EndPlay = nullptr;
 		    ex.Log(LogType::Error, TEXT("UICanvas::" #event)); \
 	    } \
 	}
+#endif
 
 UIControl::UIControl(const SpawnParams& params)
     : Actor(params)
 {
+#if !COMPILE_WITHOUT_CSHARP
     if (UIControl_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
@@ -47,6 +54,7 @@ UIControl::UIControl(const SpawnParams& params)
         UIControl_BeginPlay = mclass->GetMethod("BeginPlay");
         UIControl_EndPlay = mclass->GetMethod("EndPlay");
     }
+#endif
 }
 
 #if USE_EDITOR
@@ -66,11 +74,12 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(UIControl);
 
+#if !COMPILE_WITHOUT_CSHARP
     void* params[2];
     MonoString* controlType = nullptr;
     params[0] = &controlType;
     params[1] = other ? other->GetOrCreateManagedInstance() : nullptr;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     const auto method = other ? UIControl_SerializeDiff : UIControl_Serialize;
     const auto invokeResultStr = (MonoString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
@@ -107,6 +116,7 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     const auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
     stream.RawValue(invokeResultChars);
     mono_free(invokeResultChars);
+#endif
 }
 
 void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -114,6 +124,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     // Base
     Actor::Deserialize(stream, modifier);
 
+#if !COMPILE_WITHOUT_CSHARP
     MonoReflectionType* typeObj = nullptr;
     const auto controlMember = stream.FindMember("Control");
     if (controlMember != stream.MemberEnd())
@@ -140,7 +151,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
         void* args[2];
         args[0] = mono_string_new(mono_domain_get(), str);
         args[1] = typeObj;
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
         UIControl_Deserialize->Invoke(GetOrCreateManagedInstance(), args, &exception);
         if (exception)
         {
@@ -148,6 +159,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
             ex.Log(LogType::Error, TEXT("UIControl::Deserialize"));
         }
     }
+#endif
 }
 
 void UIControl::OnParentChanged()

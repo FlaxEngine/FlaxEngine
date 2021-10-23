@@ -6,6 +6,8 @@
 #include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 
+#if USE_MONO
+
 namespace UtilsInternal
 {
     MonoObject* ExtractArrayFromList(MonoObject* obj)
@@ -70,9 +72,12 @@ namespace FlaxLogWriterInternal
     }
 }
 
+#endif
+
 void registerFlaxEngineInternalCalls()
 {
     AnimGraphExecutor::initRuntime();
+#if USE_MONO
     ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCopy", &Platform::MemoryCopy);
     ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryClear", &Platform::MemoryClear);
     ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCompare", &Platform::MemoryCompare);
@@ -81,4 +86,5 @@ void registerFlaxEngineInternalCalls()
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_Log", &DebugLogHandlerInternal::Log);
     ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogException", &DebugLogHandlerInternal::LogException);
     ADD_INTERNAL_CALL("FlaxEngine.FlaxLogWriter::Internal_WriteStringToLog", &FlaxLogWriterInternal::WriteStringToLog);
+#endif
 }

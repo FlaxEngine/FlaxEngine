@@ -18,8 +18,10 @@
 #include "ManagedCLR/MCore.h"
 #endif
 #include "FlaxEngine.Gen.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
 #define ScriptingObject_unmanagedPtr "__unmanagedPtr"
 #define ScriptingObject_id "__internalId"
@@ -54,14 +56,18 @@ ScriptingObject::~ScriptingObject()
     }
 }
 
-MonoObject* ScriptingObject::GetManagedInstance() const
+MObject* ScriptingObject::GetManagedInstance() const
 {
+#if USE_MONO
     return _gcHandle ? mono_gchandle_get_target(_gcHandle) : nullptr;
+#else
+    return nullptr;
+#endif
 }
 
-MonoObject* ScriptingObject::GetOrCreateManagedInstance() const
+MObject* ScriptingObject::GetOrCreateManagedInstance() const
 {
-    MonoObject* managedInstance = GetManagedInstance();
+    MObject* managedInstance = GetManagedInstance();
     if (!managedInstance)
     {
         const_cast<ScriptingObject*>(this)->CreateManaged();
@@ -144,9 +150,10 @@ void* ScriptingObject::ToInterface(ScriptingObject* obj, const ScriptingTypeHand
     return result;
 }
 
-ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
+ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 {
     ScriptingObject* ptr = nullptr;
+#if USE_MONO
     if (obj)
     {
         // TODO: cache the field offset from object and read directly from object pointer
@@ -154,6 +161,7 @@ ScriptingObject* ScriptingObject::ToNative(MonoObject* obj)
         CHECK_RETURN(ptrField, nullptr);
         mono_field_get_value(obj, ptrField, &ptr);
     }
+#endif
     return ptr;
 }
 
@@ -191,7 +199,9 @@ void ScriptingObject::OnManagedInstanceDeleted()
     // Release the handle
     if (_gcHandle)
     {
+#if USE_MONO
         mono_gchandle_free(_gcHandle);
+#endif
         _gcHandle = 0;
     }
 
@@ -211,6 +221,8 @@ void ScriptingObject::OnScriptingDispose()
     // Delete C++ object
     DeleteObject();
 }
+
+#if USE_MONO
 
 MonoObject* ScriptingObject::CreateManagedInternal()
 {
@@ -254,8 +266,11 @@ MonoObject* ScriptingObject::CreateManagedInternal()
     return managedInstance;
 }
 
+#endif
+
 void ScriptingObject::DestroyManaged()
 {
+#if USE_MONO
     // Get managed instance
     const auto managedInstance = GetManagedInstance();
 
@@ -279,6 +294,9 @@ void ScriptingObject::DestroyManaged()
         mono_gchandle_free(_gcHandle);
         _gcHandle = 0;
     }
+#else
+    _gcHandle = 0;
+#endif
 }
 
 void ScriptingObject::RegisterObject()
@@ -319,6 +337,8 @@ bool ScriptingObject::CanCast(MClass* from, MClass* to)
     return from->IsSubClassOf(to);
 }
 
+#if USE_MONO
+
 bool ScriptingObject::CanCast(MClass* from, MonoClass* to)
 {
     if (!from && !to)
@@ -332,6 +352,8 @@ bool ScriptingObject::CanCast(MClass* from, MonoClass* to)
 
     return from->IsSubClassOf(to);
 }
+
+#endif
 
 void ScriptingObject::OnDeleteObject()
 {
@@ -358,6 +380,7 @@ ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)
 
 void ManagedScriptingObject::CreateManaged()
 {
+#if USE_MONO
     MonoObject* managedInstance = CreateManagedInternal();
     if (managedInstance)
     {
@@ -368,6 +391,11 @@ void ManagedScriptingObject::CreateManaged()
         if (!IsRegistered())
             RegisterObject();
     }
+#else
+    // Ensure to be registered
+    if (!IsRegistered())
+        RegisterObject();
+#endif
 }
 
 PersistentScriptingObject::PersistentScriptingObject(const SpawnParams& params)
@@ -385,7 +413,9 @@ void PersistentScriptingObject::OnManagedInstanceDeleted()
     // Cleanup
     if (_gcHandle)
     {
+#if USE_MONO
         mono_gchandle_free(_gcHandle);
+#endif
         _gcHandle = 0;
     }
 
@@ -404,6 +434,7 @@ void PersistentScriptingObject::OnScriptingDispose()
 
 void PersistentScriptingObject::CreateManaged()
 {
+#if USE_MONO
     MonoObject* managedInstance = CreateManagedInternal();
     if (managedInstance)
     {
@@ -414,11 +445,18 @@ void PersistentScriptingObject::CreateManaged()
         if (!IsRegistered())
             RegisterObject();
     }
+#else
+    // Ensure to be registered
+    if (!IsRegistered())
+        RegisterObject();
+#endif
 }
 
 class ScriptingObjectInternal
 {
 public:
+    
+#if !COMPILE_WITHOUT_CSHARP
 
     static MonoObject* Create1(MonoReflectionType* type)
     {
@@ -675,6 +713,14 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ChangeID);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetUnmanagedInterface", &GetUnmanagedInterface);
     }
+
+#else
+
+    static void InitRuntime()
+    {
+    }
+
+#endif
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)
     {

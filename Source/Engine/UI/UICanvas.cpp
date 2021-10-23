@@ -5,8 +5,13 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Serialization/Serialization.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
+#if COMPILE_WITHOUT_CSHARP
+#define UICANVAS_INVOKE(event)
+#else
 // Cached methods (FlaxEngine.CSharp.dll is loaded only once)
 MMethod* UICanvas_Serialize = nullptr;
 MMethod* UICanvas_SerializeDiff = nullptr;
@@ -24,7 +29,7 @@ MMethod* UICanvas_ParentChanged = nullptr;
     auto instance = GetManagedInstance(); \
     if (instance) \
     { \
-	    MonoObject* exception = nullptr; \
+	    MObject* exception = nullptr; \
 	    UICanvas_##event->Invoke(instance, nullptr, &exception); \
 	    if (exception) \
 	    { \
@@ -32,10 +37,12 @@ MMethod* UICanvas_ParentChanged = nullptr;
 		    ex.Log(LogType::Error, TEXT("UICanvas::" #event)); \
 	    } \
     }
+#endif
 
 UICanvas::UICanvas(const SpawnParams& params)
     : Actor(params)
 {
+#if !COMPILE_WITHOUT_CSHARP
     Platform::MemoryBarrier();
     if (UICanvas_Serialize == nullptr)
     {
@@ -52,6 +59,7 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
     }
+#endif
 }
 
 #if USE_EDITOR
@@ -71,10 +79,11 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(UICanvas);
 
+#if !COMPILE_WITHOUT_CSHARP
     stream.JKEY("V");
     void* params[1];
     params[0] = other ? other->GetOrCreateManagedInstance() : nullptr;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     auto method = other ? UICanvas_SerializeDiff : UICanvas_Serialize;
     auto invokeResultStr = (MonoString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
@@ -93,6 +102,7 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
         stream.RawValue(invokeResultChars);
         mono_free(invokeResultChars);
     }
+#endif
 }
 
 void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -100,6 +110,7 @@ void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
     // Base
     Actor::Deserialize(stream, modifier);
 
+#if !COMPILE_WITHOUT_CSHARP
     // Handle C# object data serialization
     const auto dataMember = stream.FindMember("V");
     if (dataMember != stream.MemberEnd())
@@ -110,7 +121,7 @@ void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
         const auto str = buffer.GetString();
         void* args[1];
         args[0] = mono_string_new(mono_domain_get(), str);
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
         UICanvas_Deserialize->Invoke(GetOrCreateManagedInstance(), args, &exception);
         if (exception)
         {
@@ -118,6 +129,7 @@ void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
             ex.Log(LogType::Error, TEXT("UICanvas::Deserialize"));
         }
     }
+#endif
 
     if (IsDuringPlay())
     {

@@ -16,7 +16,6 @@
 class FLAXENGINE_API MAssembly
 {
     friend MDomain;
-
 public:
 
     typedef Dictionary<MString, MClass*> ClassesDictionary;
@@ -24,8 +23,8 @@ public:
 private:
 
 #if USE_MONO
-    MonoAssembly* _monoAssembly;
-    MonoImage* _monoImage;
+    MonoAssembly* _monoAssembly = nullptr;
+    MonoImage* _monoImage = nullptr;
 #endif
     MDomain* _domain;
 
@@ -98,7 +97,6 @@ public:
     /// <summary>
     /// Returns true if assembly is during loading state.
     /// </summary>
-    /// <returns>True if is loading, otherwise false.</returns>
     FORCE_INLINE bool IsLoading() const
     {
         return _isLoading != 0;
@@ -107,7 +105,6 @@ public:
     /// <summary>
     /// Returns true if assembly has been loaded.
     /// </summary>
-    /// <returns>True if is loaded, otherwise false.</returns>
     FORCE_INLINE bool IsLoaded() const
     {
         return _isLoaded != 0;
@@ -116,7 +113,6 @@ public:
     /// <summary>
     /// Gets the assembly name.
     /// </summary>
-    /// <returns>The assembly name.</returns>
     FORCE_INLINE const MString& GetName() const
     {
         return _name;
@@ -125,7 +121,6 @@ public:
     /// <summary>
     /// Gets the assembly name as string.
     /// </summary>
-    /// <returns>The assembly name.</returns>
     String ToString() const;
 
     /// <summary>
@@ -134,7 +129,6 @@ public:
     /// <remarks>
     /// If assembly was made from scratch (empty), path will return null.
     /// </remarks>
-    /// <returns>The assembly path.</returns>
     FORCE_INLINE const String& GetAssemblyPath() const
     {
         return _assemblyPath;
@@ -143,20 +137,15 @@ public:
     /// <summary>
     /// Gets the parent domain.
     /// </summary>
-    /// <returns>The domain object.</returns>
     FORCE_INLINE MDomain* GetDomain() const
     {
         return _domain;
     }
 
-public:
-
 #if USE_MONO
-
     /// <summary>
     /// Gets the Mono assembly.
     /// </summary>
-    /// <returns>The Mono assembly.</returns>
     FORCE_INLINE MonoAssembly* GetMonoAssembly() const
     {
         return _monoAssembly;
@@ -165,24 +154,21 @@ public:
     /// <summary>
     /// Gets the Mono image.
     /// </summary>
-    /// <returns>The Mono image.</returns>
     FORCE_INLINE MonoImage* GetMonoImage() const
     {
         return _monoImage;
     }
-
 #endif
-
-public:
 
     /// <summary>
     /// Gets the options that assembly was created with.
     /// </summary>
-    /// <returns>The options.</returns>
     FORCE_INLINE const MAssemblyOptions& GetOptions() const
     {
         return _options;
     }
+
+public:
 
     /// <summary>
     /// Loads assembly for domain.
@@ -192,14 +178,12 @@ public:
     bool Load(const String& assemblyPath);
 
 #if USE_MONO
-
     /// <summary>
     /// Loads assembly for domain.
     /// </summary>
     /// <param name="monoImage">The assembly image.</param>
     /// <returns>True if cannot load, otherwise false.</returns>
     bool Load(MonoImage* monoImage);
-
 #endif
 
     /// <summary>
@@ -218,7 +202,6 @@ public:
     MClass* GetClass(const StringAnsiView& typeName) const;
 
 #if USE_MONO
-
     /// <summary>
     /// Converts an internal mono representation of a class into engine class.
     /// </summary>
@@ -231,7 +214,6 @@ public:
     /// </summary>
     /// <returns>The native assembly object.</returns>
     MonoReflectionAssembly* GetNative() const;
-
 #endif
 
     /// <summary>
@@ -241,8 +223,6 @@ public:
     const ClassesDictionary& GetClasses() const;
 
 private:
-
-#if USE_MONO
 
     /// <summary>
     /// Loads the assembly for domain.
@@ -255,8 +235,6 @@ private:
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
     bool LoadWithImage(const String& assemblyPath);
-
-#endif
 
     void OnLoading();
     void OnLoaded(const struct DateTime& startTime);

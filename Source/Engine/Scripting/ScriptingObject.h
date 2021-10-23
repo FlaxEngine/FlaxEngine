@@ -62,12 +62,12 @@ public:
     /// <summary>
     /// Gets the managed instance object.
     /// </summary>
-    MonoObject* GetManagedInstance() const;
+    MObject* GetManagedInstance() const;
 
     /// <summary>
     /// Gets the managed instance object or creates it if missing.
     /// </summary>
-    MonoObject* GetOrCreateManagedInstance() const;
+    MObject* GetOrCreateManagedInstance() const;
 
     /// <summary>
     /// Determines whether managed instance is alive.
@@ -117,9 +117,9 @@ public:
         return (T*)ToInterface(obj, T::TypeInitializer);
     }
 
-    static ScriptingObject* ToNative(MonoObject* obj);
+    static ScriptingObject* ToNative(MObject* obj);
 
-    static MonoObject* ToManaged(ScriptingObject* obj)
+    static MObject* ToManaged(ScriptingObject* obj)
     {
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
@@ -139,7 +139,9 @@ public:
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
     static bool CanCast(MClass* from, MClass* to);
+#if USE_MONO
     static bool CanCast(MClass* from, MonoClass* to);
+#endif
 
     template<typename T>
     static T* Cast(ScriptingObject* obj)
@@ -154,10 +156,12 @@ public:
         return CanCast(GetClass(), type);
     }
 
+#if USE_MONO
     bool Is(MonoClass* klass) const
     {
         return CanCast(GetClass(), klass);
     }
+#endif
 
     template<typename T>
     bool Is() const
@@ -186,7 +190,6 @@ public:
     /// <summary>
     /// Determines whether this object is registered or not (can be found by the queries and used in a game).
     /// </summary>
-    /// <returns><c>true</c> if this instance is registered; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsRegistered() const
     {
         return (Flags & ObjectFlags::IsRegistered) != 0;
@@ -204,10 +207,12 @@ public:
 
 protected:
 
+#if USE_MONO
     /// <summary>
     /// Create a new managed object.
     /// </summary>
     MonoObject* CreateManagedInternal();
+#endif
 
 public:
 

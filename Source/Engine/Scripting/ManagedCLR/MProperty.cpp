@@ -1,13 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MProperty.h"
-
-#if USE_MONO
-
 #include "Engine/Core/Math/Math.h"
 #include "MMethod.h"
 #include "MClass.h"
 #include "MType.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 
 MProperty::MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass)
@@ -29,6 +27,8 @@ MProperty::MProperty(MonoProperty* monoProperty, const char* name, MClass* paren
     GetSetMethod();
 }
 
+#endif
+
 MProperty::~MProperty()
 {
     if (_getMethod)
@@ -48,18 +48,17 @@ MMethod* MProperty::GetGetMethod()
 {
     if (!_hasGetMethod)
         return nullptr;
-
     if (_getMethod == nullptr)
     {
+#if USE_MONO
         auto method = mono_property_get_get_method(_monoProperty);
         if (method != nullptr)
         {
             _hasGetMethod = true;
             return _getMethod = New<MMethod>(method, _parentClass);
         }
-        return nullptr;
+#endif
     }
-
     return _getMethod;
 }
 
@@ -67,18 +66,17 @@ MMethod* MProperty::GetSetMethod()
 {
     if (!_hasSetMethod)
         return nullptr;
-
     if (_setMethod == nullptr)
     {
+#if USE_MONO
         auto method = mono_property_get_set_method(_monoProperty);
         if (method != nullptr)
         {
             _hasSetMethod = true;
             return _setMethod = New<MMethod>(method, _parentClass);
         }
-        return nullptr;
+#endif
     }
-
     return _setMethod;
 }
 
@@ -112,20 +110,27 @@ bool MProperty::IsStatic()
     return false;
 }
 
-MonoObject* MProperty::GetValue(MonoObject* instance, MonoObject** exception)
+MObject* MProperty::GetValue(MObject* instance, MObject** exception)
 {
+#if USE_MONO
     return mono_property_get_value(_monoProperty, instance, nullptr, exception);
+#else
+    return nullptr;
+#endif
 }
 
-void MProperty::SetValue(MonoObject* instance, void* value, MonoObject** exception)
+void MProperty::SetValue(MObject* instance, void* value, MObject** exception)
 {
+#if USE_MONO
     void* params[1];
     params[0] = value;
     mono_property_set_value(_monoProperty, instance, params, exception);
+#endif
 }
 
 bool MProperty::HasAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_property_get_parent(_monoProperty);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_property(parentClass, _monoProperty);
     if (attrInfo == nullptr)
@@ -134,10 +139,14 @@ bool MProperty::HasAttribute(MClass* monoClass) const
     const bool hasAttr = mono_custom_attrs_has_attr(attrInfo, monoClass->GetNative()) != 0;
     mono_custom_attrs_free(attrInfo);
     return hasAttr;
+#else
+    return false;
+#endif
 }
 
 bool MProperty::HasAttribute() const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_property_get_parent(_monoProperty);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_property(parentClass, _monoProperty);
     if (attrInfo == nullptr)
@@ -150,10 +159,14 @@ bool MProperty::HasAttribute() const
     }
     mono_custom_attrs_free(attrInfo);
     return false;
+#else
+    return false;
+#endif
 }
 
-MonoObject* MProperty::GetAttribute(MClass* monoClass) const
+MObject* MProperty::GetAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_property_get_parent(_monoProperty);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_property(parentClass, _monoProperty);
     if (attrInfo == nullptr)
@@ -162,14 +175,18 @@ MonoObject* MProperty::GetAttribute(MClass* monoClass) const
     MonoObject* foundAttr = mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative());
     mono_custom_attrs_free(attrInfo);
     return foundAttr;
+#else
+    return nullptr;
+#endif
 }
 
-const Array<MonoObject*>& MProperty::GetAttributes()
+const Array<MObject*>& MProperty::GetAttributes()
 {
     if (_hasCachedAttributes)
         return _attributes;
 
     _hasCachedAttributes = true;
+#if USE_MONO
     MonoClass* parentClass = mono_property_get_parent(_monoProperty);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_property(parentClass, _monoProperty);
     if (attrInfo == nullptr)
@@ -179,9 +196,8 @@ const Array<MonoObject*>& MProperty::GetAttributes()
     const auto length = (uint32)mono_array_length(monoAttributesArray);
     _attributes.Resize(length);
     for (uint32 i = 0; i < length; i++)
-        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
+        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject *, i);
     mono_custom_attrs_free(attrInfo);
+#endif
     return _attributes;
 }
-
-#endif

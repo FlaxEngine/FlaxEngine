@@ -68,7 +68,7 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no object linked).
     /// </summary>
-    FORCE_INLINE MonoObject* GetManagedInstance() const
+    FORCE_INLINE MObject* GetManagedInstance() const
     {
         return _object ? _object->GetOrCreateManagedInstance() : nullptr;
     }
@@ -84,7 +84,7 @@ public:
     /// <summary>
     /// Gets the managed instance object or creates it if missing or null if not assigned.
     /// </summary>
-    FORCE_INLINE MonoObject* GetOrCreateManagedInstance() const
+    FORCE_INLINE MObject* GetOrCreateManagedInstance() const
     {
         return _object ? _object->GetOrCreateManagedInstance() : nullptr;
     }

@@ -8,6 +8,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/BinaryModule.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/debug-helpers.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
@@ -15,7 +16,7 @@
 struct ManagedBitArray
 {
     template<typename AllocationType = HeapAllocation>
-    static MonoObject* ToManaged(const BitArray<AllocationType>& data)
+    static MObject* ToManaged(const BitArray<AllocationType>& data)
     {
 #if 0
 		// TODO: use actual System.Collections.BitArray for BitArray interop
@@ -53,3 +54,5 @@ struct ManagedBitArray
 #endif
     }
 };
+
+#endif

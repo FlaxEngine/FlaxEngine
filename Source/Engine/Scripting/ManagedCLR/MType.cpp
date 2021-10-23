@@ -2,9 +2,7 @@
 
 #include "MType.h"
 #include "MUtils.h"
-
 #if USE_MONO
-
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 
 String MType::ToString() const
@@ -40,6 +38,13 @@ bool MType::IsByRef() const
 {
     ASSERT(_monoType);
     return mono_type_is_byref(_monoType) != 0;
+}
+
+#else
+
+String MType::ToString() const
+{
+    return String::Empty;
 }
 
 #endif

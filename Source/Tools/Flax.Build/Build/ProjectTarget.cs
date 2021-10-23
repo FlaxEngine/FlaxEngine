@@ -67,6 +67,12 @@ namespace Flax.Build
             options.CompileEnv.IncludePaths.Add(Path.Combine(Project.ProjectFolderPath, "Source"));
             options.LinkEnv.LibraryPaths.Add(depsRoot);
 
+            // Ensure to propagate no-C# scripting define to the whole codebase
+            if (!EngineConfiguration.WithCSharp(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITHOUT_CSHARP");
+            }
+
             // Add include paths for referenced projects sources
             foreach (var reference in Project.References)
             {

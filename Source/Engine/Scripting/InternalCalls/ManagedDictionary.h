@@ -11,6 +11,7 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/MException.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 struct FLAXENGINE_API ManagedDictionary
@@ -93,7 +94,7 @@ struct FLAXENGINE_API ManagedDictionary
         void* params[2];
         params[0] = genericType;
         params[1] = genericArgs;
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
         auto dictionaryType = makeGenericMethod->Invoke(nullptr, params, &exception);
         if (exception)
         {
@@ -127,7 +128,7 @@ struct FLAXENGINE_API ManagedDictionary
         params[0] = Instance;
         params[1] = key;
         params[2] = value;
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
         mono_runtime_invoke(addDictionaryItemMethod->GetNative(), Instance, params, &exception);
         if (exception)
         {
@@ -159,3 +160,5 @@ struct FLAXENGINE_API ManagedDictionary
         return mono_runtime_invoke(getItemMethod, Instance, params, nullptr);
     }
 };
+
+#endif

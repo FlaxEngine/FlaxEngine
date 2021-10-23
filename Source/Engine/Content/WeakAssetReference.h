@@ -50,7 +50,7 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no asset set).
     /// </summary>
-    FORCE_INLINE MonoObject* GetManagedInstance() const
+    FORCE_INLINE MObject* GetManagedInstance() const
     {
         return _asset ? _asset->GetOrCreateManagedInstance() : nullptr;
     }

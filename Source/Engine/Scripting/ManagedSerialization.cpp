@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "ManagedSerialization.h"
+#if USE_MONO
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/Json.h"
 #include "Engine/Serialization/JsonWriter.h"
@@ -26,7 +27,7 @@ void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, Mon
     params[1] = &isManagedOnly;
 
     // Call serialization tool
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     // TODO: use method thunk
     auto invokeResultStr = (MonoString*)StdTypesContainer::Instance()->Json_Serialize->Invoke(nullptr, params, &exception);
     if (exception)
@@ -64,7 +65,7 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
     params[2] = &isManagedOnly;
 
     // Call serialization tool
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     // TODO: use method thunk
     auto invokeResultStr = (MonoString*)StdTypesContainer::Instance()->Json_SerializeDiff->Invoke(nullptr, params, &exception);
     if (exception)
@@ -115,7 +116,7 @@ void ManagedSerialization::Deserialize(const StringAnsiView& data, MonoObject* o
     args[2] = (void*)&len;
 
     // Call serialization tool
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     // TODO: use method thunk
     StdTypesContainer::Instance()->Json_Deserialize->Invoke(nullptr, args, &exception);
     if (exception)
@@ -124,3 +125,5 @@ void ManagedSerialization::Deserialize(const StringAnsiView& data, MonoObject* o
         ex.Log(LogType::Error, TEXT("ManagedSerialization::Deserialize"));
     }
 }
+
+#endif

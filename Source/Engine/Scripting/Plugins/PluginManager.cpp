@@ -44,13 +44,14 @@ PluginManagerService PluginManagerServiceInstance;
 
 void PluginManagerImpl::LoadPlugin(MClass* klass, bool isEditor)
 {
+#if !COMPILE_WITHOUT_CSHARP
     if (Internal_LoadPlugin == nullptr)
     {
         Internal_LoadPlugin = PluginManager::GetStaticClass()->GetMethod("Internal_LoadPlugin", 2);
         ASSERT(Internal_LoadPlugin);
     }
 
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     void* params[2];
     params[0] = MUtils::GetType(klass->GetNative());
     params[1] = &isEditor;
@@ -59,6 +60,7 @@ void PluginManagerImpl::LoadPlugin(MClass* klass, bool isEditor)
     {
         DebugLog::LogException(exception);
     }
+#endif
 }
 
 void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
@@ -113,10 +115,11 @@ void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
 
 void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
 {
+#if !COMPILE_WITHOUT_CSHARP
     // Cleanup plugins from this assembly
     const auto disposeMethod = PluginManager::GetStaticClass()->GetMethod("Internal_Dispose", 1);
     ASSERT(disposeMethod);
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     void* params[1];
     params[0] = assembly->GetNative();
     disposeMethod->Invoke(nullptr, params, &exception);
@@ -124,6 +127,7 @@ void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
     {
         DebugLog::LogException(exception);
     }
+#endif
 }
 
 void PluginManagerImpl::OnBinaryModuleLoaded(BinaryModule* module)
@@ -169,13 +173,15 @@ void PluginManagerService::Dispose()
 
     PROFILE_CPU_NAMED("Dispose Plugins");
 
+#if !COMPILE_WITHOUT_CSHARP
     // Cleanup all plugins
     const auto disposeMethod = PluginManager::GetStaticClass()->GetMethod("Internal_Dispose");
     ASSERT(disposeMethod);
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     disposeMethod->Invoke(nullptr, nullptr, &exception);
     if (exception)
     {
         DebugLog::LogException(exception);
     }
+#endif
 }

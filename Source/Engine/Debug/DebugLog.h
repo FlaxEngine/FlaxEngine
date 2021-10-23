@@ -50,7 +50,7 @@ public:
     /// Logs a formatted exception message to the Flax Console.
     /// </summary>
     /// <param name="exceptionObject">Runtime Exception.</param>
-    static void LogException(MonoObject* exceptionObject);
+    static void LogException(MObject* exceptionObject);
 
 public:
 

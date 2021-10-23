@@ -17,7 +17,11 @@ namespace Flax.Build.Plugins
             base.Init();
 
             BindingsGenerator.GenerateCppScriptWrapperFunction += OnGenerateCppScriptWrapperFunction;
-            BindingsGenerator.CppScriptObjectVirtualWrapperMethodsPostfixes.Add("_VisualScriptWrapper");
+            BindingsGenerator.ScriptingLangInfos.Add(new BindingsGenerator.ScriptingLangInfo
+            {
+                Enabled = true,
+                VirtualWrapperMethodsPostfix = "_VisualScriptWrapper",
+            });
         }
 
         private void OnGenerateCppScriptWrapperFunction(Builder.BuildData buildData, VirtualClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex, StringBuilder contents)

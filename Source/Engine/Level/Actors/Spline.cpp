@@ -4,7 +4,9 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Core/Math/Matrix.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#endif
 
 Spline::Spline(const SpawnParams& params)
     : Actor(params)
@@ -437,6 +439,8 @@ void Spline::UpdateSpline()
     SplineUpdated();
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
 void Spline::GetKeyframes(MonoArray* data)
 {
     Platform::MemoryCopy(mono_array_addr_with_size(data, sizeof(Keyframe), 0), Curve.GetKeyframes().Get(), sizeof(Keyframe) * Curve.GetKeyframes().Count());
@@ -449,6 +453,8 @@ void Spline::SetKeyframes(MonoArray* data)
     Platform::MemoryCopy(Curve.GetKeyframes().Get(), mono_array_addr_with_size(data, sizeof(Keyframe), 0), sizeof(Keyframe) * count);
     UpdateSpline();
 }
+
+#endif
 
 #if USE_EDITOR
 

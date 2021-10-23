@@ -29,10 +29,10 @@ protected:
     void* _cachedThunk = nullptr;
 #endif
 
-    Array<MonoObject*> _attributes;
-
     int32 _hasCachedAttributes : 1;
     int32 _isStatic : 1;
+
+    Array<MObject*> _attributes;
 
 public:
 
@@ -48,8 +48,6 @@ public:
     SourceLocationData ProfilerData;
 #endif
 
-#if USE_MONO
-
     /// <summary>
     /// Invokes the method on the provided object instance. This does not respect polymorphism and will invoke the exact method of the class this object was retrieved from.Use invokeVirtual() if you need polymorphism.
     /// </summary>
@@ -59,10 +57,10 @@ public:
     /// <param name="instance">Instance of the object to invoke the method on. Can be null for static methods.</param>
     /// <param name="params">Array of parameters to pass to the method. Caller must ensure they match method
     /// parameter count and type.For value types parameters should be pointers to the
-    /// values and for reference types they should be pointers to MonoObject.</param>
+    /// values and for reference types they should be pointers to MObject.</param>
     /// <param name="exception">An optional pointer to the exception value to store exception object reference.</param>
     /// <returns>A boxed return value, or null if method has no return value.</returns>
-    MonoObject* Invoke(void* instance, void** params, MonoObject** exception) const;
+    MObject* Invoke(void* instance, void** params, MObject** exception) const;
 
     /// <summary>
     /// Invokes the method on the provided object instance. If the instance has an override of this method it  will be called.
@@ -74,16 +72,13 @@ public:
     /// <param name="params">
     /// Array of parameters to pass to the method. Caller must ensure they match method
     ///	parameter count and type. For value types parameters should be pointers to the
-    /// values and for reference types they should be pointers to MonoObject.
+    /// values and for reference types they should be pointers to MObject.
     /// </param>
     /// <param name="exception">An optional pointer to the exception value to store exception object reference.</param>
     /// <returns>A boxed return value, or null if method has no return value.</returns>
-    MonoObject* InvokeVirtual(MonoObject* instance, void** params, MonoObject** exception) const;
-
-#endif
+    MObject* InvokeVirtual(MObject* instance, void** params, MObject** exception) const;
 
 #if !USE_MONO_AOT
-
     /// <summary>
     /// Gets a thunk for this method. A thunk is a C++ like function pointer that you can use for calling the method.
     /// </summary>
@@ -93,7 +88,6 @@ public:
     /// </remarks>
     /// <returns>The method thunk pointer.</returns>
     void* GetThunk();
-
 #endif
 
     /// <summary>
@@ -153,7 +147,6 @@ public:
     }
 
 #if USE_MONO
-
     /// <summary>
     /// Gets the Mono method handle.
     /// </summary>
@@ -161,7 +154,6 @@ public:
     {
         return _monoMethod;
     }
-
 #endif
 
 public:
@@ -184,11 +176,11 @@ public:
     /// </summary>
     /// <param name="monoClass">The attribute Class to take.</param>
     /// <returns>The attribute object.</returns>
-    MonoObject* GetAttribute(MClass* monoClass) const;
+    MObject* GetAttribute(MClass* monoClass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given method. Returns null if the method doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MonoObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes();
 };

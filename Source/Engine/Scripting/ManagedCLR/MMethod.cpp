@@ -1,12 +1,10 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MMethod.h"
-
-#if USE_MONO
-
 #include "MType.h"
 #include "MClass.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
 
@@ -68,17 +66,27 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
 #endif
 }
 
-MonoObject* MMethod::Invoke(void* instance, void** params, MonoObject** exception) const
+#endif
+
+MObject* MMethod::Invoke(void* instance, void** params, MObject** exception) const
 {
+#if USE_MONO
     PROFILE_CPU_SRC_LOC(ProfilerData);
     return mono_runtime_invoke(_monoMethod, instance, params, exception);
+#else
+    return nullptr;
+#endif
 }
 
-MonoObject* MMethod::InvokeVirtual(MonoObject* instance, void** params, MonoObject** exception) const
+MObject* MMethod::InvokeVirtual(MObject* instance, void** params, MObject** exception) const
 {
+#if USE_MONO
     PROFILE_CPU_SRC_LOC(ProfilerData);
     MonoMethod* virtualMethod = mono_object_get_virtual_method(instance, _monoMethod);
     return mono_runtime_invoke(virtualMethod, instance, params, exception);
+#else
+    return nullptr;
+#endif
 }
 
 #if !USE_MONO_AOT
@@ -87,7 +95,9 @@ void* MMethod::GetThunk()
 {
     if (!_cachedThunk)
     {
+#if USE_MONO
         _cachedThunk = mono_method_get_unmanaged_thunk(_monoMethod);
+#endif
     }
     return _cachedThunk;
 }
@@ -96,35 +106,52 @@ void* MMethod::GetThunk()
 
 MType MMethod::GetReturnType() const
 {
+#if USE_MONO
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     MonoType* returnType = mono_signature_get_return_type(sig);
     return MType(returnType);
+#else
+    return MType();
+#endif
 }
 
 int32 MMethod::GetParametersCount() const
 {
+#if USE_MONO
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     return mono_signature_get_param_count(sig);
+#else
+    return 0;
+#endif
 }
 
 MType MMethod::GetParameterType(int32 paramIdx) const
 {
+#if USE_MONO
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     ASSERT_LOW_LAYER(paramIdx >= 0 && paramIdx < (int32)mono_signature_get_param_count(sig));
     void* it = nullptr;
     mono_signature_get_params(sig, &it);
     return MType(((MonoType**)it)[paramIdx]);
+#else
+    return MType();
+#endif
 }
 
 bool MMethod::GetParameterIsOut(int32 paramIdx) const
 {
+#if USE_MONO
     MonoMethodSignature* sig = mono_method_signature(_monoMethod);
     ASSERT_LOW_LAYER(paramIdx >= 0 && paramIdx < (int32)mono_signature_get_param_count(sig));
     return mono_signature_param_is_out(sig, paramIdx) != 0;
+#else
+    return false;
+#endif
 }
 
 bool MMethod::HasAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_method(_monoMethod);
     if (attrInfo == nullptr)
         return false;
@@ -132,10 +159,14 @@ bool MMethod::HasAttribute(MClass* monoClass) const
     const bool hasAttr = mono_custom_attrs_has_attr(attrInfo, monoClass->GetNative()) != 0;
     mono_custom_attrs_free(attrInfo);
     return hasAttr;
+#else
+    return false;
+#endif
 }
 
 bool MMethod::HasAttribute() const
 {
+#if USE_MONO
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_method(_monoMethod);
     if (attrInfo == nullptr)
         return false;
@@ -146,11 +177,13 @@ bool MMethod::HasAttribute() const
         return true;
     }
     mono_custom_attrs_free(attrInfo);
+#endif
     return false;
 }
 
-MonoObject* MMethod::GetAttribute(MClass* monoClass) const
+MObject* MMethod::GetAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_method(_monoMethod);
     if (attrInfo == nullptr)
         return nullptr;
@@ -158,14 +191,18 @@ MonoObject* MMethod::GetAttribute(MClass* monoClass) const
     MonoObject* foundAttr = mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative());
     mono_custom_attrs_free(attrInfo);
     return foundAttr;
+#else
+    return false;
+#endif
 }
 
-const Array<MonoObject*>& MMethod::GetAttributes()
+const Array<MObject*>& MMethod::GetAttributes()
 {
     if (_hasCachedAttributes)
         return _attributes;
 
     _hasCachedAttributes = true;
+#if USE_MONO
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_method(_monoMethod);
     if (attrInfo == nullptr)
         return _attributes;
@@ -176,7 +213,6 @@ const Array<MonoObject*>& MMethod::GetAttributes()
     for (uint32 i = 0; i < length; i++)
         _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
     mono_custom_attrs_free(attrInfo);
+#endif
     return _attributes;
 }
-
-#endif

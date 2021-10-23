@@ -3,6 +3,7 @@
 #include "GameCooker.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Scripting/MainThreadManagedInvokeAction.h"
+#include "Engine/Scripting/ManagedCLR/MTypes.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -450,7 +451,7 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
     }
 
     MCore::AttachThread();
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     auto list = (MonoArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
     if (exception)
     {
@@ -486,7 +487,7 @@ bool GameCookerImpl::Build()
         Steps.Add(New<PostProcessStep>());
     }
 
-    MCore::Instance()->AttachThread();
+    MCore::AttachThread();
 
     // Build Started
     CallEvent(GameCooker::EventType::BuildStarted);

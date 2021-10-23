@@ -8,6 +8,9 @@
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
+
+#if USE_MONO
+
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
@@ -498,3 +501,5 @@ namespace MUtils
 
     extern void* VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed);
 };
+
+#endif

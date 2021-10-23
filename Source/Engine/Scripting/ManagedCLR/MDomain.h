@@ -17,7 +17,6 @@ class FLAXENGINE_API MDomain
 {
     friend MCore;
     friend MAssembly;
-
 public:
 
     typedef Dictionary<MString, MAssembly*> AssembliesDictionary;
@@ -27,37 +26,42 @@ private:
 #if USE_MONO
     MonoDomain* _monoDomain;
 #endif
-
     MString _domainName;
     AssembliesDictionary _assemblies;
-    MCore* _coreInstance;
+
+public:
+
+    MDomain(const MString& domainName);
 
 public:
 
 #if USE_MONO
-    MDomain(const MString& domainName, MonoDomain* monoDomain);
-#endif
-
-public:
-
-#if USE_MONO
-
     /// <summary>
-    /// Gets native domain class
+    /// Gets native domain class.
     /// </summary>
-    /// <returns>The native domain.</returns>
-    MonoDomain* GetNative() const;
-
+    FORCE_INLINE MonoDomain* GetNative() const
+    {
+        return _monoDomain;
+    }
 #endif
 
     /// <summary>
     /// Gets current domain name
     /// </summary>
-    /// <returns>The name.</returns>
     FORCE_INLINE const MString& GetName() const
     {
         return _domainName;
     }
+
+    /// <summary>
+    /// Gets the current domain assemblies.
+    /// </summary>
+    FORCE_INLINE const AssembliesDictionary& GetAssemblies() const
+    {
+        return _assemblies;
+    }
+
+public:
 
     /// <summary>
     /// Create assembly container from current domain
@@ -72,15 +76,6 @@ public:
     /// </summary>
     /// <param name="assemblyName">Assembly name</param>
     void RemoveAssembly(const MString& assemblyName);
-
-    /// <summary>
-    /// Gets the current domain assemblies.
-    /// </summary>
-    /// <returns>The assemblies.</returns>
-    FORCE_INLINE const AssembliesDictionary& GetAssemblies() const
-    {
-        return _assemblies;
-    }
 
     /// <summary>
     /// Gets current domain assembly.

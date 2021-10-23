@@ -11,7 +11,9 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
 void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)
 {
@@ -316,6 +318,8 @@ ScriptingObject* SkinnedMesh::GetParentModel()
     return _model;
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
 template<typename IndexType>
 bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj)
 {
@@ -561,3 +565,5 @@ bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 type
     ConvertMeshData(mesh, type, resultObj, data.Get());
     return false;
 }
+
+#endif

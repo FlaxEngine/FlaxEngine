@@ -43,7 +43,7 @@ private:
     struct TrackInstance
     {
         ScriptingObjectReference<ScriptingObject> Object;
-        MonoObject* ManagedObject = nullptr;
+        MObject* ManagedObject = nullptr;
         MProperty* Property = nullptr;
         MField* Field = nullptr;
         void* Method = nullptr;

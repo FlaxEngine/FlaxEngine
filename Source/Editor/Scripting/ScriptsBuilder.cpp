@@ -456,7 +456,7 @@ void ScriptsBuilderImpl::CallCompileEvent(EventData& data)
                 LOG(Fatal, "Invalid Editor assembly!");
             }
         }
-        /*MonoObject* exception = nullptr;
+        /*MObject* exception = nullptr;
         void* args[1];
         args[0] = &data.Type;
         Internal_OnEvent->Invoke(nullptr, args, &exception);

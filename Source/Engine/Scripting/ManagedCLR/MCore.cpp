@@ -1,9 +1,6 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MCore.h"
-
-#if USE_MONO
-
 #include "MDomain.h"
 #include "MClass.h"
 #include "Engine/Core/Log.h"
@@ -16,6 +13,7 @@
 #include "Engine/Platform/Thread.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#if USE_MONO
 #ifdef USE_MONO_AOT_MODULE
 #include "Engine/Core/Types/TimeSpan.h"
 #endif
@@ -33,15 +31,24 @@
 #if !USE_MONO_DYNAMIC_LIB
 #include <ThirdParty/mono-2.0/mono/utils/mono-dl-fallback.h>
 #endif
+#endif
 
 #ifdef USE_MONO_AOT_MODULE
 void* MonoAotModuleHandle = nullptr;
 #endif
 
-MCore::MCore()
-    : _rootDomain(nullptr)
-    , _activeDomain(nullptr)
+MDomain* MRootDomain = nullptr;
+MDomain* MActiveDomain = nullptr;
+Array<MDomain*, InlinedAllocation<4>> MDomains;
+
+MDomain* MCore::GetRootDomain()
 {
+    return MRootDomain;
+}
+
+MDomain* MCore::GetActiveDomain()
+{
+    return MActiveDomain;
 }
 
 MDomain* MCore::CreateDomain(const MString& domainName)
@@ -51,49 +58,55 @@ MDomain* MCore::CreateDomain(const MString& domainName)
     return nullptr;
 #endif
 
-    for (int32 i = 0; i < _domains.Count(); i++)
+    for (int32 i = 0; i < MDomains.Count(); i++)
     {
-        if (_domains[i]->GetName() == domainName)
-            return _domains[i];
+        if (MDomains[i]->GetName() == domainName)
+            return MDomains[i];
     }
-
+    
+    auto domain = New<MDomain>(domainName);
+#if USE_MONO
     const auto monoDomain = mono_domain_create_appdomain((char*)domainName.Get(), nullptr);
 #if MONO_DEBUG_ENABLE
     mono_debug_domain_create(monoDomain);
 #endif
     ASSERT(monoDomain);
-    auto domain = New<MDomain>(domainName, monoDomain);
-    _domains.Add(domain);
+    domain->_monoDomain = monoDomain;
+#endif
+    MDomains.Add(domain);
     return domain;
 }
 
 void MCore::UnloadDomain(const MString& domainName)
 {
     int32 i = 0;
-    for (; i < _domains.Count(); i++)
+    for (; i < MDomains.Count(); i++)
     {
-        if (_domains[i]->GetName() == domainName)
+        if (MDomains[i]->GetName() == domainName)
             break;
     }
-    if (i == _domains.Count())
+    if (i == MDomains.Count())
         return;
 
-    auto domain = _domains[i];
+    auto domain = MDomains[i];
+#if USE_MONO
 #if MONO_DEBUG_ENABLE
     //mono_debug_domain_unload(domain->GetNative());
 #endif
-    //mono_domain_finalize(_monoScriptsDomain, 2000);
-
-    MonoObject* exception = nullptr;
+    //mono_domain_finalize(domain->GetNative(), 2000);
+    MObject* exception = nullptr;
     mono_domain_try_unload(domain->GetNative(), &exception);
     if (exception)
     {
         MException ex(exception);
         ex.Log(LogType::Fatal, TEXT("Scripting::Release"));
     }
+#endif
     Delete(domain);
-    _domains.RemoveAtKeepOrder(i);
+    MDomains.RemoveAtKeepOrder(i);
 }
+
+#if USE_MONO
 
 #if 0
 
@@ -254,7 +267,7 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
 
     if (currentDomain.IsEmpty())
     {
-        auto domain = MCore::Instance()->GetActiveDomain();
+        auto domain = MCore::GetActiveDomain();
         if (domain != nullptr)
         {
             currentDomain = domain->GetName().Get();
@@ -443,7 +456,7 @@ bool MCore::LoadEngine()
 #endif
 
         // Connects to mono engine callback system
-        mono_trace_set_log_handler(OnLogCallback, this);
+        mono_trace_set_log_handler(OnLogCallback, nullptr);
         mono_trace_set_print_handler(OnPrintCallback);
         mono_trace_set_printerr_handler(OnPrintErrorCallback);
     }
@@ -505,7 +518,7 @@ bool MCore::LoadEngine()
     }
 #endif
 
-    // Init Mono
+// Init Mono
 #if PLATFORM_ANDROID
     const char* monoVersion = "mobile";
 #else
@@ -513,8 +526,9 @@ bool MCore::LoadEngine()
 #endif
     auto monoRootDomain = mono_jit_init_version("Flax", monoVersion);
     ASSERT(monoRootDomain);
-    _rootDomain = New<MDomain>("Root", monoRootDomain);
-    _domains.Add(_rootDomain);
+    MRootDomain = New<MDomain>("Root");
+    MRootDomain->_monoDomain = monoRootDomain;
+    MDomains.Add(MRootDomain);
 
     auto exePath = Platform::GetExecutableFilePath();
     auto configDir = StringUtils::GetDirectoryName(exePath).ToStringAnsi();
@@ -553,29 +567,29 @@ void MCore::UnloadEngine()
     Thread::ThreadExiting.Unbind<OnThreadExiting>();
 
     // Only root domain should be alive at this point
-    for (auto domain : _domains)
+    for (auto domain : MDomains)
     {
-        if (domain != _rootDomain)
+        if (domain != MRootDomain)
             Delete(domain);
     }
-    _domains.Clear();
+    MDomains.Clear();
 
-    if (_rootDomain)
+    if (MRootDomain)
     {
 #if PLATFORM_WINDOWS && USE_EDITOR
         // TODO: reduce issues with hot-reloading C# DLLs because sometimes it crashes on exit
         __try
 #endif
         {
-            mono_jit_cleanup(_rootDomain->GetNative());
+            mono_jit_cleanup(MRootDomain->GetNative());
         }
 #if PLATFORM_WINDOWS && USE_EDITOR
         __except (MonoHackSehExceptionHandler(nullptr))
         {
         }
 #endif
-        Delete(_rootDomain);
-        _rootDomain = nullptr;
+        Delete(MRootDomain);
+        MRootDomain = nullptr;
     }
 
 #ifdef USE_MONO_AOT_MODULE
@@ -591,39 +605,65 @@ void MCore::UnloadEngine()
 #endif
 }
 
+#else
+
+bool MCore::LoadEngine()
+{
+    MRootDomain = New<MDomain>("Root");
+    MDomains.Add(MRootDomain);
+    return false;
+}
+
+void MCore::UnloadEngine()
+{
+    MDomains.ClearDelete();
+    MRootDomain = nullptr;
+}
+
+#endif
+
 void MCore::AttachThread()
 {
+#if USE_MONO
     if (!IsInMainThread() && !mono_domain_get())
     {
-        const auto domain = Instance()->GetActiveDomain();
+        const auto domain = GetActiveDomain();
         ASSERT(domain);
         mono_thread_attach(domain->GetNative());
     }
+#endif
 }
 
 void MCore::ExitThread()
 {
+#if USE_MONO
     if (!IsInMainThread() && mono_domain_get())
     {
         LOG(Info, "Thread 0x{0:x} exits the managed runtime", Platform::GetCurrentThreadID());
         mono_thread_exit();
     }
+#endif
 }
 
 void MCore::GC::Collect()
 {
+#if USE_MONO
     PROFILE_CPU();
     mono_gc_collect(mono_gc_max_generation());
+#endif
 }
 
 void MCore::GC::Collect(int32 generation)
 {
+#if USE_MONO
     PROFILE_CPU();
     mono_gc_collect(generation);
+#endif
 }
 
 void MCore::GC::WaitForPendingFinalizers()
 {
+#if USE_MONO
     PROFILE_CPU();
     if (mono_gc_pending_finalizers())
     {
@@ -633,9 +673,10 @@ void MCore::GC::WaitForPendingFinalizers()
             Platform::Sleep(1);
         } while (mono_gc_pending_finalizers());
     }
+#endif
 }
 
-#if PLATFORM_WIN32 && !USE_MONO_DYNAMIC_LIB
+#if USE_MONO && PLATFORM_WIN32 && !USE_MONO_DYNAMIC_LIB
 
 // Export Mono functions
 #pragma comment(linker, "/export:mono_add_internal_call")
@@ -2107,7 +2148,5 @@ void MCore::GC::WaitForPendingFinalizers()
 #pragma comment(linker, "/export:mono_value_box")
 #pragma comment(linker, "/export:mono_jit_info_get_code_start")
 #pragma comment(linker, "/export:mono_jit_info_get_code_size")
-
-#endif
 
 #endif

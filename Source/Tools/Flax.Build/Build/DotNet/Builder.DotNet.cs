@@ -15,7 +15,7 @@ namespace Flax.Build
             throw new NotImplementedException("TODO: building C# targets");
         }
 
-        private static void BuildTargetBindings(RulesAssembly rules, TaskGraph graph, BuildData buildData)
+        private static void BuildTargetBindings(TaskGraph graph, BuildData buildData)
         {
             var workspaceRoot = buildData.TargetOptions.WorkingDirectory;
             var args = new List<string>();

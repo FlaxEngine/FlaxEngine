@@ -1,11 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MEvent.h"
-
-#if USE_MONO
-
 #include "MType.h"
 #include "MClass.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 
 MEvent::MEvent(MonoEvent* monoEvent, const char* name, MClass* parentClass)
@@ -24,13 +22,14 @@ MEvent::MEvent(MonoEvent* monoEvent, const char* name, MClass* parentClass)
 #endif
 }
 
+#endif
+
 MType MEvent::GetType()
 {
     if (GetAddMethod() != nullptr)
         return GetAddMethod()->GetReturnType();
     if (GetRemoveMethod() != nullptr)
         return GetRemoveMethod()->GetReturnType();
-    CRASH;
     return MType();
 }
 
@@ -40,12 +39,14 @@ MMethod* MEvent::GetAddMethod()
         return nullptr;
     if (_addMethod == nullptr)
     {
+#if USE_MONO
         auto addMonoMethod = mono_event_get_add_method(_monoEvent);
         if (addMonoMethod != nullptr)
         {
             _hasAddMonoMethod = true;
             return _addMethod = New<MMethod>(addMonoMethod, _parentClass);
         }
+#endif
     }
     return _addMethod;
 }
@@ -56,19 +57,21 @@ MMethod* MEvent::GetRemoveMethod()
         return nullptr;
     if (_removeMethod == nullptr)
     {
+#if USE_MONO
         auto removeMonoMethod = mono_event_get_remove_method(_monoEvent);
         if (removeMonoMethod)
         {
             _hasRemoveMonoMethod = true;
             return _removeMethod = New<MMethod>(removeMonoMethod, _parentClass);
         }
-        return nullptr;
+#endif
     }
     return _removeMethod;
 }
 
 bool MEvent::HasAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_event_get_parent(_monoEvent);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_event(parentClass, _monoEvent);
     if (attrInfo == nullptr)
@@ -77,10 +80,14 @@ bool MEvent::HasAttribute(MClass* monoClass) const
     const bool hasAttr = mono_custom_attrs_has_attr(attrInfo, monoClass->GetNative()) != 0;
     mono_custom_attrs_free(attrInfo);
     return hasAttr;
+#else
+    return false;
+#endif
 }
 
 bool MEvent::HasAttribute() const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_event_get_parent(_monoEvent);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_event(parentClass, _monoEvent);
     if (attrInfo == nullptr)
@@ -93,10 +100,14 @@ bool MEvent::HasAttribute() const
     }
     mono_custom_attrs_free(attrInfo);
     return false;
+#else
+    return false;
+#endif
 }
 
-MonoObject* MEvent::GetAttribute(MClass* monoClass) const
+MObject* MEvent::GetAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_event_get_parent(_monoEvent);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_event(parentClass, _monoEvent);
     if (attrInfo == nullptr)
@@ -105,14 +116,18 @@ MonoObject* MEvent::GetAttribute(MClass* monoClass) const
     MonoObject* foundAttr = mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative());
     mono_custom_attrs_free(attrInfo);
     return foundAttr;
+#else
+    return false;
+#endif
 }
 
-const Array<MonoObject*>& MEvent::GetAttributes()
+const Array<MObject*>& MEvent::GetAttributes()
 {
     if (_hasCachedAttributes)
         return _attributes;
 
     _hasCachedAttributes = true;
+#if USE_MONO
     MonoClass* parentClass = mono_event_get_parent(_monoEvent);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_event(parentClass, _monoEvent);
     if (attrInfo == nullptr)
@@ -122,9 +137,8 @@ const Array<MonoObject*>& MEvent::GetAttributes()
     const auto length = (uint32)mono_array_length(monoAttributesArray);
     _attributes.Resize(length);
     for (uint32 i = 0; i < length; i++)
-        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
+        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject *, i);
     mono_custom_attrs_free(attrInfo);
+#endif
     return _attributes;
 }
-
-#endif

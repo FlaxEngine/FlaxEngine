@@ -281,7 +281,7 @@ public:
     /// Gets managed instance object (or null if no object linked).
     /// </summary>
     /// <returns>The managed object instance.</returns>
-    MonoObject* GetManagedInstance() const
+    MObject* GetManagedInstance() const
     {
         auto object = Get();
         return object ? object->GetOrCreateManagedInstance() : nullptr;
@@ -301,7 +301,7 @@ public:
     /// Gets the managed instance object or creates it if missing or null if not assigned.
     /// </summary>
     /// <returns>The Mono managed object.</returns>
-    MonoObject* GetOrCreateManagedInstance() const
+    MObject* GetOrCreateManagedInstance() const
     {
         auto object = Get();
         return object ? object->GetOrCreateManagedInstance() : nullptr;

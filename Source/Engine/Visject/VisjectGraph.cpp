@@ -523,6 +523,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
+#if !COMPILE_WITHOUT_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
@@ -559,6 +560,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
             else if (typeName.HasChars())
+#endif
             {
                 OnError(node, box, String::Format(TEXT("Missing type '{0}'"), typeName));
             }
@@ -609,6 +611,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
+#if !COMPILE_WITHOUT_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
@@ -646,6 +649,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
             else if (typeName.HasChars())
+#endif
             {
                 OnError(node, box, String::Format(TEXT("Missing type '{0}'"), typeName));
             }

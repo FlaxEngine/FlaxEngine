@@ -22,6 +22,8 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 
+#if USE_MONO
+
 struct _MonoType
 {
     union
@@ -846,3 +848,5 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
     failed = true;
     return nullptr;
 }
+
+#endif

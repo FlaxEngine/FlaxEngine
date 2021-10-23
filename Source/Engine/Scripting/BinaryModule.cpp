@@ -21,8 +21,12 @@ Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> Scrip
 
 ManagedBinaryModule* GetBinaryModuleCorlib()
 {
+#if COMPILE_WITHOUT_CSHARP
+    return nullptr;
+#else
     static ManagedBinaryModule assembly("corlib", MAssemblyOptions(false)); // Don't precache all corlib classes
     return &assembly;
+#endif
 }
 
 ScriptingTypeHandle::ScriptingTypeHandle(const ScriptingTypeInitializer& initializer)
@@ -698,6 +702,8 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     return object;
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
 namespace
 {
     MMethod* FindMethod(MClass* mclass, const MMethod* referenceMethod)
@@ -719,6 +725,8 @@ namespace
     }
 }
 
+#endif
+
 MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature)
 {
     if (!mclass)
@@ -726,6 +734,7 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
     const auto& methods = mclass->GetMethods();
     for (MMethod* method : methods)
     {
+#if USE_MONO
         MonoMethodSignature* sig = mono_method_signature(method->GetNative());
         if (method->IsStatic() != signature.IsStatic ||
             method->GetName() != signature.Name ||
@@ -746,9 +755,12 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
         }
         if (isValid && MUtils::GetClass(signature.ReturnType) == mono_class_from_mono_type(mono_signature_get_return_type(sig)))
             return method;
+#endif
     }
     return nullptr;
 }
+
+#if USE_MONO
 
 ManagedBinaryModule* ManagedBinaryModule::FindModule(MonoClass* klass)
 {
@@ -782,6 +794,8 @@ ScriptingTypeHandle ManagedBinaryModule::FindType(MonoClass* klass)
     return ScriptingTypeHandle();
 }
 
+#endif
+
 void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 {
     PROFILE_CPU();
@@ -793,6 +807,7 @@ void ManagedBinaryModule::OnLoading(MAssembly* assembly)
 
 void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 {
+#if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
 
@@ -849,10 +864,12 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
             InitType(mclass);
         }
     }
+#endif
 }
 
 void ManagedBinaryModule::InitType(MClass* mclass)
 {
+#if !COMPILE_WITHOUT_CSHARP
     // Skip if already initialized
     const MString& typeName = mclass->GetFullName();
     if (TypeNameToTypeIndex.ContainsKey(typeName))
@@ -992,6 +1009,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
         // Move to the next entry (table is null terminated)
         scriptVTable++;
     }
+#endif
 }
 
 void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
@@ -1020,7 +1038,9 @@ void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
             type.Script.ScriptVTable = nullptr;
         }
     }
+#if !COMPILE_WITHOUT_CSHARP
     ClassToTypeIndex.Clear();
+#endif
 }
 
 const StringAnsi& ManagedBinaryModule::GetName() const
@@ -1030,7 +1050,11 @@ const StringAnsi& ManagedBinaryModule::GetName() const
 
 bool ManagedBinaryModule::IsLoaded() const
 {
+#if COMPILE_WITHOUT_CSHARP
+    return true;
+#else
     return Assembly->IsLoaded();
+#endif
 }
 
 void* ManagedBinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams)
@@ -1047,6 +1071,7 @@ void* ManagedBinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, con
 
 bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Span<Variant> paramValues, Variant& result)
 {
+#if USE_MONO
     const auto mMethod = (MMethod*)method;
     MonoMethodSignature* signature = mono_method_signature(mMethod->GetNative());
     void* signatureParams = nullptr;
@@ -1101,7 +1126,7 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     }
 
     // Invoke the method
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     MonoObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MonoObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
     if (exception)
     {
@@ -1164,10 +1189,14 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     }
 
     return false;
+#else
+    return true;
+#endif
 }
 
 void ManagedBinaryModule::GetMethodSignature(void* method, ScriptingTypeMethodSignature& signature)
 {
+#if USE_MONO
     const auto mMethod = (MMethod*)method;
     signature.Name = mMethod->GetName();
     signature.IsStatic = mMethod->IsStatic();
@@ -1183,6 +1212,7 @@ void ManagedBinaryModule::GetMethodSignature(void* method, ScriptingTypeMethodSi
         param.Type = MoveTemp(MUtils::UnboxVariantType(((MonoType**)signatureParams)[paramIdx]));
         param.IsOut = mono_signature_param_is_out(sig, paramIdx) != 0;
     }
+#endif
 }
 
 void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name)
@@ -1193,14 +1223,17 @@ void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, cons
 
 void ManagedBinaryModule::GetFieldSignature(void* field, ScriptingTypeFieldSignature& fieldSignature)
 {
+#if USE_MONO
     const auto mField = (MField*)field;
     fieldSignature.Name = mField->GetName();
     fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mField->GetType().GetNative()));
     fieldSignature.IsStatic = mField->IsStatic();
+#endif
 }
 
 bool ManagedBinaryModule::GetFieldValue(void* field, const Variant& instance, Variant& result)
 {
+#if USE_MONO
     const auto mField = (MField*)field;
 
     // Get instance object
@@ -1225,10 +1258,14 @@ bool ManagedBinaryModule::GetFieldValue(void* field, const Variant& instance, Va
     MonoObject* resultObject = mField->GetValueBoxed(instanceObject);
     result = MUtils::UnboxVariant(resultObject);
     return false;
+#else
+    return true;
+#endif
 }
 
 bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Variant& value)
 {
+#if USE_MONO
     const auto mField = (MField*)field;
 
     // Get instance object
@@ -1253,6 +1290,9 @@ bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Va
     bool failed = false;
     mField->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mField->GetType(), failed));
     return failed;
+#else
+    return true;
+#endif
 }
 
 void ManagedBinaryModule::Destroy(bool isReloading)

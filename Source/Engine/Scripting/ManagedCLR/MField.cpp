@@ -1,11 +1,9 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "MField.h"
-
-#if USE_MONO
-
 #include "MType.h"
 #include "MClass.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
 
@@ -48,33 +46,52 @@ MField::MField(MonoClassField* monoField, const char* name, MClass* parentClass)
     _isStatic = (flags & MONO_FIELD_ATTR_STATIC) != 0;
 }
 
+#endif
+
 MType MField::GetType() const
 {
+#if USE_MONO
     return MType(_monoType);
+#else
+    return MType();
+#endif
 }
 
 int32 MField::GetOffset() const
 {
+#if USE_MONO
     return mono_field_get_offset(_monoField) - sizeof(MonoObject);
+#else
+    return 0;
+#endif
 }
 
-void MField::GetValue(MonoObject* instance, void* result) const
+void MField::GetValue(MObject* instance, void* result) const
 {
+#if USE_MONO
     mono_field_get_value(instance, _monoField, result);
+#endif
 }
 
-MonoObject* MField::GetValueBoxed(MonoObject* instance) const
+MObject* MField::GetValueBoxed(MObject* instance) const
 {
+#if USE_MONO
     return mono_field_get_value_object(mono_domain_get(), _monoField, instance);
+#else
+    return nullptr;
+#endif
 }
 
-void MField::SetValue(MonoObject* instance, void* value) const
+void MField::SetValue(MObject* instance, void* value) const
 {
+#if USE_MONO
     mono_field_set_value(instance, _monoField, value);
+#endif
 }
 
 bool MField::HasAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_field_get_parent(_monoField);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_field(parentClass, _monoField);
     if (attrInfo == nullptr)
@@ -83,10 +100,14 @@ bool MField::HasAttribute(MClass* monoClass) const
     const bool hasAttr = mono_custom_attrs_has_attr(attrInfo, monoClass->GetNative()) != 0;
     mono_custom_attrs_free(attrInfo);
     return hasAttr;
+#else
+    return false;
+#endif
 }
 
 bool MField::HasAttribute() const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_field_get_parent(_monoField);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_field(parentClass, _monoField);
     if (attrInfo == nullptr)
@@ -98,11 +119,13 @@ bool MField::HasAttribute() const
         return true;
     }
     mono_custom_attrs_free(attrInfo);
+#endif
     return false;
 }
 
-MonoObject* MField::GetAttribute(MClass* monoClass) const
+MObject* MField::GetAttribute(MClass* monoClass) const
 {
+#if USE_MONO
     MonoClass* parentClass = mono_field_get_parent(_monoField);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_field(parentClass, _monoField);
     if (attrInfo == nullptr)
@@ -111,14 +134,18 @@ MonoObject* MField::GetAttribute(MClass* monoClass) const
     MonoObject* foundAttr = mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative());
     mono_custom_attrs_free(attrInfo);
     return foundAttr;
+#else
+    return nullptr;
+#endif
 }
 
-const Array<MonoObject*>& MField::GetAttributes()
+const Array<MObject*>& MField::GetAttributes()
 {
     if (_hasCachedAttributes)
         return _attributes;
 
     _hasCachedAttributes = true;
+#if USE_MONO
     MonoClass* parentClass = mono_field_get_parent(_monoField);
     MonoCustomAttrInfo* attrInfo = mono_custom_attrs_from_field(parentClass, _monoField);
     if (attrInfo == nullptr)
@@ -130,7 +157,6 @@ const Array<MonoObject*>& MField::GetAttributes()
     for (uint32 i = 0; i < length; i++)
         _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
     mono_custom_attrs_free(attrInfo);
+#endif
     return _attributes;
 }
-
-#endif

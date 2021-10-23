@@ -13,7 +13,11 @@ public class Scripting : EngineModule
     {
         base.Setup(options);
 
-        options.PublicDependencies.Add("mono");
+        if (EngineConfiguration.WithCSharp(options))
+        {
+            options.PublicDependencies.Add("mono");
+        }
+
         options.PrivateDependencies.Add("Utilities");
     }
 }

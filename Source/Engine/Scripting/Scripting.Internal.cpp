@@ -14,7 +14,11 @@
 #endif
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
+#endif
+
+#if USE_MONO
 
 namespace ProfilerInternal
 {
@@ -99,9 +103,12 @@ namespace ProfilerInternal
     }
 }
 
+#endif
+
 class ScriptingInternal
 {
 public:
+#if USE_MONO
     static bool HasGameModulesLoaded()
     {
         return Scripting::HasGameModulesLoaded();
@@ -117,9 +124,11 @@ public:
         ASSERT(IsInMainThread());
         ObjectsRemovalService::Flush();
     }
+#endif
 
     static void InitRuntime()
     {
+#if USE_MONO
         // Scripting API
         ADD_INTERNAL_CALL("FlaxEngine.Scripting::HasGameModulesLoaded", &HasGameModulesLoaded);
         ADD_INTERNAL_CALL("FlaxEngine.Scripting::IsTypeFromGameScripts", &IsTypeFromGameScripts);
@@ -130,6 +139,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEvent", &ProfilerInternal::EndEvent);
         ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEventGPU", &ProfilerInternal::BeginEventGPU);
         ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEventGPU", &ProfilerInternal::EndEventGPU);
+#endif
     }
 };
 

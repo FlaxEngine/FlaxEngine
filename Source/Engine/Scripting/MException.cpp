@@ -2,11 +2,14 @@
 
 #include "MException.h"
 #include "ManagedCLR/MUtils.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#endif
 
-MException::MException(MonoObject* exception)
+MException::MException(MObject* exception)
     : InnerException(nullptr)
 {
+#if USE_MONO
     ASSERT(exception);
 
     MonoClass* exceptionClass = mono_object_get_class(exception);
@@ -25,6 +28,7 @@ MException::MException(MonoObject* exception)
     MonoObject* innerException = (MonoObject*)mono_runtime_invoke(innerExceptionGetter, exception, nullptr, nullptr);
     if (innerException)
         InnerException = New<MException>(innerException);
+#endif
 }
 
 MException::~MException()

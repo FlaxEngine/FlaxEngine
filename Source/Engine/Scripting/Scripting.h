@@ -47,12 +47,12 @@ public:
 public:
 
     /// <summary>
-    /// Gets mono root domain
+    /// Gets the root domain.
     /// </summary>
     static MDomain* GetRootDomain();
 
     /// <summary>
-    /// Gets scripts domain
+    /// Gets the scripts domain (it can be the root domain if not using separate domain for scripting).
     /// </summary>
     static MDomain* GetScriptsDomain();
 
@@ -70,17 +70,23 @@ public:
     static void Release();
 
 #if USE_EDITOR
-
     /// <summary>
     /// Reloads scripts.
     /// </summary>
     /// <param name="canTriggerSceneReload">True if allow to scene scripts reload callback, otherwise it won't be possible.</param>
     static void Reload(bool canTriggerSceneReload = true);
-
 #endif
 
 public:
 
+    /// <summary>
+    /// Finds the class with given fully qualified name within whole assembly.
+    /// </summary>
+    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
+    /// <returns>The MClass object or null if missing.</returns>
+    static MClass* FindClass(const StringAnsiView& fullname);
+    
+#if USE_MONO
     /// <summary>
     /// Finds the class from the given Mono class object within whole assembly.
     /// </summary>
@@ -89,18 +95,12 @@ public:
     static MClass* FindClass(MonoClass* monoClass);
 
     /// <summary>
-    /// Finds the class with given fully qualified name within whole assembly.
-    /// </summary>
-    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
-    /// <returns>The MClass object or null if missing.</returns>
-    static MClass* FindClass(const StringAnsiView& fullname);
-
-    /// <summary>
     /// Finds the native class with given fully qualified name within whole assembly.
     /// </summary>
     /// <param name="fullname">The full name of the type eg: System.Int64.</param>
     /// <returns>The MClass object or null if missing.</returns>
     static MonoClass* FindClassNative(const StringAnsiView& fullname);
+#endif
 
     /// <summary>
     /// Finds the scripting type of the given fullname by searching loaded scripting assemblies.
@@ -161,7 +161,7 @@ public:
     /// </summary>
     /// <param name="managedInstance">The managed instance pointer.</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* FindObject(const MonoObject* managedInstance);
+    static ScriptingObject* FindObject(const MObject* managedInstance);
 
     /// <summary>
     /// Event called by the internal call on a finalizer thread when the managed objects gets deleted by the GC.

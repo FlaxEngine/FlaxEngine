@@ -258,7 +258,9 @@ private:
 
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
+#if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateMeshUInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI);
+#endif
 };

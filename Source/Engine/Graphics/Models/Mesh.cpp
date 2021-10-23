@@ -11,7 +11,9 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
 namespace
 {
@@ -106,6 +108,8 @@ namespace
         return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vertices, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, triangles);
     }
 
+#if !COMPILE_WITHOUT_CSHARP
+
     template<typename IndexType>
     bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
     {
@@ -132,6 +136,8 @@ namespace
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
+
+#endif
 }
 
 bool Mesh::HasVertexColors() const
@@ -591,6 +597,8 @@ ScriptingObject* Mesh::GetParentModel()
     return _model;
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
 bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
 {
     return ::UpdateMesh<uint32>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
@@ -763,3 +771,5 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
     ConvertMeshData(mesh, type, resultObj, data.Get());
     return false;
 }
+
+#endif
