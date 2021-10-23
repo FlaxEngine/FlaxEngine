@@ -374,6 +374,9 @@ namespace Flax.Build.Bindings
                                 }
 
                                 // Very simple defines processing
+                                var negate = tokenValue[0] == '!';
+                                if (negate)
+                                    tokenValue = tokenValue.Substring(1);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines.Keys);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PublicDefinitions);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PrivateDefinitions);
@@ -383,6 +386,8 @@ namespace Flax.Build.Bindings
                                 tokenValue = tokenValue.Replace("||", "|");
                                 if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|")
                                     tokenValue = "0";
+                                if (negate)
+                                    tokenValue = tokenValue == "1" ? "0" : "1";
 
                                 condition += tokenValue;
                                 token = tokenizer.NextToken(true);
