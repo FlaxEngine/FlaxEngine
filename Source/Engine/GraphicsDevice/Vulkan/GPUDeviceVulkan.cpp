@@ -1137,15 +1137,17 @@ GPUDevice* GPUDeviceVulkan::Create()
     uint32 gpuCount = 0;
     VALIDATE_VULKAN_RESULT(vkEnumeratePhysicalDevices(Instance, &gpuCount, nullptr));
     ASSERT(gpuCount >= 1);
-    Array<VkPhysicalDevice> gpus;
-    gpus.AddZeroed(gpuCount);
+    Array<VkPhysicalDevice, InlinedAllocation<4>> gpus;
+    gpus.Resize(gpuCount);
     VALIDATE_VULKAN_RESULT(vkEnumeratePhysicalDevices(Instance, &gpuCount, gpus.Get()));
-    Array<GPUAdapterVulkan> adapters;
-    adapters.EnsureCapacity(gpuCount);
+    Array<GPUAdapterVulkan, InlinedAllocation<4>> adapters;
+    adapters.Resize(gpuCount);
     for (uint32 gpuIndex = 0; gpuIndex < gpuCount; gpuIndex++)
     {
-        GPUAdapterVulkan adapter(gpus[gpuIndex]);
-        adapters.Add(adapter);
+        GPUAdapterVulkan& adapter = adapters[gpuIndex];
+        adapter.Gpu = gpus[gpuIndex];
+        vkGetPhysicalDeviceProperties(adapter.Gpu, &adapter.GpuProps);
+        adapter.Description = adapter.GpuProps.deviceName;
 
         const Char* type;
         switch (adapter.GpuProps.deviceType)
@@ -1490,7 +1492,7 @@ bool GPUDeviceVulkan::Init()
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueCount, QueueFamilyProps.Get());
 
     // Query device features
-    vkGetPhysicalDeviceFeatures(Adapter->Gpu, &PhysicalDeviceFeatures);
+    vkGetPhysicalDeviceFeatures(gpu, &PhysicalDeviceFeatures);
 
     // Get extensions and layers
     Array<const char*> deviceExtensions;

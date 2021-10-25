@@ -312,7 +312,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, nullptr));
         ASSERT(presentModesCount > 0);
 
-        Array<VkPresentModeKHR> presentModes;
+        Array<VkPresentModeKHR, InlinedAllocation<4>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
 

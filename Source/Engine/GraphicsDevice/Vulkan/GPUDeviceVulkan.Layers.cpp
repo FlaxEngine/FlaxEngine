@@ -179,6 +179,16 @@ static bool FindLayerExtension(const Array<LayerExtension>& list, const char* ex
     return FindLayerExtension(list, extensionName, dummy);
 }
 
+static bool ListContains(const Array<const char*>& list, const char* name)
+{
+    for (const char* element : list)
+    {
+        if (!StringUtils::Compare(element, name))
+            return true;
+    }
+    return false;
+}
+
 void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
 {
     VkResult result;
@@ -486,6 +496,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 #endif
 
+    // Find all extensions
     Array<const char*> availableExtensions;
     {
         for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
@@ -512,19 +523,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
     TrimDuplicates(availableExtensions);
 
-    const auto ListContains = [](const Array<const char*>& list, const char* name)
-    {
-        for (const char* element : list)
-        {
-            if (!StringUtils::Compare(element, name))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
+    // Pick extensions to use
     Array<const char*> platformExtensions;
     VulkanPlatform::GetDeviceExtensions(platformExtensions, outDeviceLayers);
     for (const char* extension : platformExtensions)
@@ -535,7 +534,6 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
             break;
         }
     }
-
     for (uint32 i = 0; i < ARRAY_COUNT(GDeviceExtensions) && GDeviceExtensions[i] != nullptr; i++)
     {
         if (ListContains(availableExtensions, GDeviceExtensions[i]))
