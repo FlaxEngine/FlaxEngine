@@ -4,7 +4,7 @@
 
 #include "Types/BaseTypes.h"
 #include "Types/String.h"
-#if _MSC_VER
+#if _MSC_VER && PLATFORM_SIMD_SSE4_2
 #include <intrin.h>
 #endif
 
@@ -53,7 +53,7 @@ namespace Utilities
         // [Reference: https://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer]
 #ifdef __GNUC_
         return __builtin_popcount(x);
-#elif _MSC_VER
+#elif _MSC_VER && PLATFORM_SIMD_SSE4_2
         return __popcnt(x);
 #else
         x = x - ((x >> 1) & 0x55555555);

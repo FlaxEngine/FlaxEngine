@@ -192,8 +192,20 @@ API_ENUM() enum class ArchitectureType
 #define PLATFORM_APPLE_FAMILY (PLATFORM_IOS || PLATFORM_OSX)
 
 // SIMD defines
-#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || (defined (__EMSCRIPTEN__) && defined(__SSE2__))
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(__SSE2__)
 #define PLATFORM_SIMD_SSE2 1
+#if defined(__SSE3__)
+#define PLATFORM_SIMD_SSE3 1
+#endif
+#if defined(__SSE4__)
+#define PLATFORM_SIMD_SSE4 1
+#endif
+#if defined(__SSE4_1__)
+#define PLATFORM_SIMD_SSE4_1 1
+#endif
+#if defined(__SSE4_2__)
+#define PLATFORM_SIMD_SSE4_2 1
+#endif
 #endif
 #if defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON)
 #define PLATFORM_SIMD_NEON 1
