@@ -57,7 +57,7 @@ namespace FlaxEditor.Windows
             b = contextMenu.AddButton("Duplicate", Editor.SceneEditing.Duplicate);
             b.Enabled = hasSthSelected;
 
-            if (Editor.SceneEditing.SelectionCount == 1)
+            if (isSingleActorSelected)
             {
                 var convertMenu = contextMenu.AddChildMenu("Convert");
                 var convertActorCm = convertMenu.ContextMenu;
@@ -100,7 +100,7 @@ namespace FlaxEditor.Windows
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&
-                        (Editor.SceneEditing.Selection[0] as ActorNode).CanCreatePrefab &&
+                        ((ActorNode)Editor.SceneEditing.Selection[0]).CanCreatePrefab &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
 
             bool hasPrefabLink = canEditScene && isSingleActorSelected && (Editor.SceneEditing.Selection[0] as ActorNode).HasPrefabLink;

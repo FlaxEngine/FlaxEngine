@@ -143,7 +143,23 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Custom options
-
+            bool showCustomNodeOptions = Editor.SceneEditing.Selection.Count == 1;
+            if (!showCustomNodeOptions && Editor.SceneEditing.Selection.Count != 0)
+            {
+                showCustomNodeOptions = true;
+                for (int i = 1; i < Editor.SceneEditing.Selection.Count; i++)
+                {
+                    if (Editor.SceneEditing.Selection[0].GetType() != Editor.SceneEditing.Selection[i].GetType())
+                    {
+                        showCustomNodeOptions = false;
+                        break;
+                    }
+                }
+            }
+            if (showCustomNodeOptions)
+            {
+                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu);
+            }
             ContextMenuShow?.Invoke(contextMenu);
 
             return contextMenu;
