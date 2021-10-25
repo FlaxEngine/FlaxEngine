@@ -245,12 +245,20 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs an explicit conversion from <see cref="Color32" /> to <see cref="Int4" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int4(Color32 value)
+        {
+            return new Int4(value.R, value.G, value.B, value.A);
+        }
+
+        /// <summary>
         /// Performs an explicit conversion from <see cref="Color32"/> to <see cref="Vector4"/>.
         /// </summary>
         /// <param name="c">The color.</param>
-        /// <returns>
-        /// The result of the conversion.
-        /// </returns>
+        /// <returns>The result of the conversion.</returns>
         public static explicit operator Vector4(Color32 c)
         {
             return new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, c.A / 255f);
