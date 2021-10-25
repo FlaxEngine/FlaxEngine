@@ -1783,6 +1783,33 @@ bool GPUDeviceVulkan::Init()
         VALIDATE_VULKAN_RESULT(vmaCreateAllocator(&allocatorInfo, &Allocator));
     }
 
+#if defined(VK_KHR_display) && 0
+    // Enumerate displays and supported video resolutions
+    uint32_t displaysCount;
+    // TODO: for some reason vkGetPhysicalDeviceDisplayPropertiesKHR returns 0 displays (on NVIDIA 1070)
+    if (vkGetPhysicalDeviceDisplayPropertiesKHR && vkGetPhysicalDeviceDisplayPropertiesKHR(gpu, &displaysCount, nullptr) == VK_SUCCESS && displaysCount != 0)
+    {
+        Array<VkDisplayPropertiesKHR, InlinedAllocation<4>> displays;
+        displays.Resize(displaysCount);
+        vkGetPhysicalDeviceDisplayPropertiesKHR(gpu, &displaysCount, displays.Get());
+        ASSERT_LOW_LAYER(displaysCount == displays.Count());
+        Array<VkDisplayModePropertiesKHR, InlinedAllocation<32>> displayProperties;
+        for (auto& display : displays)
+        {
+            LOG(Info, "Video output '{0}' {1}x{2}", String(display.displayName), display.physicalResolution.width, display.physicalResolution.height);
+
+            uint32_t propertiesCount = 0;
+            vkGetDisplayModePropertiesKHR(gpu, display.display, &propertiesCount, nullptr);
+            displayProperties.Resize(propertiesCount);
+            vkGetDisplayModePropertiesKHR(gpu, display.display, &propertiesCount, displayProperties.Get());
+            for (auto& displayProperty : displayProperties)
+            {
+                //..
+            }
+        }
+    }
+#endif
+
     // Prepare stuff
     FenceManager.Init(this);
     UniformBufferUploader = New<UniformBufferUploaderVulkan>(this);

@@ -37,6 +37,9 @@ static const char* GInstanceExtensions[] =
 #if VK_EXT_validation_cache
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
+#if defined(VK_KHR_display) && 0
+    VK_KHR_DISPLAY_EXTENSION_NAME,
+#endif
     nullptr
 };
 
