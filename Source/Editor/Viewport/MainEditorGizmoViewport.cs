@@ -473,7 +473,15 @@ namespace FlaxEditor.Viewport
 
         private void OnPostRender(GPUContext context, RenderContext renderContext)
         {
-            if (renderContext.View.Mode != ViewMode.Default)
+            bool renderPostFx = true;
+            switch (renderContext.View.Mode)
+            {
+            case ViewMode.Default:
+            case ViewMode.PhysicsColliders:
+                renderPostFx = false;
+                break;
+            }
+            if (renderPostFx)
             {
                 var task = renderContext.Task;
 
