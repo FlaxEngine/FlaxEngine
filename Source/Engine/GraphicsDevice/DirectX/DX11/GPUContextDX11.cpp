@@ -685,7 +685,7 @@ void GPUContextDX11::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
             LOG_DIRECTX_RESULT(result);
             return;
         }
-        Platform::MemoryCopy(map.pData, data, size);
+        Platform::MemoryCopy((byte*)map.pData + offset, data, size);
         _context->Unmap(bufferDX11->GetResource(), 0);
     }
     else
