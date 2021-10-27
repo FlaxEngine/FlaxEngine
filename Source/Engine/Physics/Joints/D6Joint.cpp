@@ -98,7 +98,7 @@ void D6Joint::SetLimitSwing(const LimitConeRange& value)
     if (_joint)
     {
         auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), value.ContactDist);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), value.ContactDist);
         limit.stiffness = value.Spring.Stiffness;
         limit.damping = value.Spring.Damping;
         limit.restitution = value.Restitution;
@@ -457,7 +457,7 @@ PxJoint* D6Joint::CreateJoint(JointData& data)
 
     {
         const auto& value = _limitSwing;
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI), value.ContactDist);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI -ZeroTolerance), value.ContactDist);
         limit.stiffness = value.Spring.Stiffness;
         limit.damping = value.Spring.Damping;
         limit.restitution = value.Restitution;
