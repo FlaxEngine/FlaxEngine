@@ -220,9 +220,7 @@ float GetAngle(float angle, D6JointMotion motion)
 void D6Joint::OnDebugDrawSelected()
 {
     const Vector3 source = GetPosition();
-    const Vector3 target = GetTargetPosition();
     const Quaternion sourceRotation = GetOrientation();
-    const Quaternion targetRotation = GetTargetOrientation();
     const float swingSize = 15.0f;
     const float twistSize = 9.0f;
     const Color swingColor = Color::Green.AlphaMultiplied(0.6f);
@@ -258,7 +256,7 @@ void D6Joint::OnDebugDrawSelected()
         // Twist is limited
         const float lower = _limitTwist.Lower * DegreesToRadians;
         const float upper = Math::Max(lower, _limitTwist.Upper * DegreesToRadians);
-        DEBUG_DRAW_ARC(source, sourceRotation * Quaternion::Euler(0, 0, lower), twistSize, upper - lower, twistColor, 0, false);
+        DEBUG_DRAW_ARC(source, sourceRotation * Quaternion::RotationYawPitchRoll(0, 0, lower), twistSize, upper - lower, twistColor, 0, false);
     }
 
     // Base
