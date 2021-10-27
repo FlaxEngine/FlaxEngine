@@ -169,6 +169,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
+        public override string ToString()
+        {
+            return ((Vector2)this).ToString();
+        }
+
+        /// <summary>
         /// Performs an explicit conversion from <see cref="Vector3"/> to <see cref="Half3"/>.
         /// </summary>
         /// <param name="value">The value.</param>

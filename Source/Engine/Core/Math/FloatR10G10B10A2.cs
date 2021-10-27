@@ -118,13 +118,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Converts the value of the object to its equivalent string representation.
+        /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>The string representation of the value of this instance.</returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            Vector4 num = this;
-            return num.ToString(CultureInfo.CurrentCulture);
+            return ToVector4().ToString();
         }
 
         /// <summary>
