@@ -44,7 +44,7 @@ public:
     API_PROPERTY() void SetRadius(float value);
 
     /// <summary>
-    /// Gets the height of the capsule, measured in the object's local space.
+    /// Gets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
     /// <remarks>
     /// The capsule height will be scaled by the actor's world scale.
@@ -56,7 +56,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the height of the capsule, measured in the object's local space.
+    /// Sets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
     /// <remarks>
     /// The capsule height will be scaled by the actor's world scale.
