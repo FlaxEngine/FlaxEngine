@@ -350,21 +350,15 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
 {
     DebugDrawCall drawCall;
     drawCall.StartVertex = vertexCounter;
-
-    Vertex vv[2];
-    for (int32 i = 0; i < list.Count(); i++)
-    {
-        const DebugLine& l = list[i];
-        vv[0].Position = l.Start;
-        vv[0].Color = l.Color;
-        vv[1].Position = l.End;
-        vv[1].Color = vv[0].Color;
-        DebugDrawVB->Write(vv, sizeof(Vertex) * 2);
-    }
-
     drawCall.VertexCount = list.Count() * 2;
     vertexCounter += drawCall.VertexCount;
-
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    for (int32 i = 0, j = 0; i < list.Count(); i++)
+    {
+        const DebugLine& l = list[i];
+        dst[j++] = { l.Start, l.Color };
+        dst[j++] = { l.End, l.Color };
+    }
     return drawCall;
 }
 
@@ -372,23 +366,16 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
 {
     DebugDrawCall drawCall;
     drawCall.StartVertex = vertexCounter;
-
-    Vertex vv[3];
-    for (int32 i = 0; i < list.Count(); i++)
-    {
-        const DebugTriangle& l = list[i];
-        vv[0].Position = l.V0;
-        vv[0].Color = l.Color;
-        vv[1].Position = l.V1;
-        vv[1].Color = vv[0].Color;
-        vv[2].Position = l.V2;
-        vv[2].Color = vv[0].Color;
-        DebugDrawVB->Write(vv, sizeof(Vertex) * 3);
-    }
-
     drawCall.VertexCount = list.Count() * 3;
     vertexCounter += drawCall.VertexCount;
-
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    for (int32 i = 0, j = 0; i < list.Count(); i++)
+    {
+        const DebugTriangle& l = list[i];
+        dst[j++] = { l.V0, l.Color };
+        dst[j++] = { l.V1, l.Color };
+        dst[j++] = { l.V2, l.Color };
+    }
     return drawCall;
 }
 
@@ -401,6 +388,18 @@ DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Arra
     drawCall.StartVertex = drawCallA.StartVertex;
     drawCall.VertexCount = drawCallA.VertexCount + drawCallB.VertexCount;
     return drawCall;
+}
+
+FORCE_INLINE DebugTriangle* AppendTriangles(int32 count, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    const int32 startIndex = list->Count();
+    list->AddUninitialized(count);
+    return list->Get() + startIndex;
 }
 
 inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext, const Vector3& viewUp, const Matrix& f, const Matrix& vp, const Viewport& viewport, GPUContext* context, GPUTextureView* target, GPUTextureView* depthBuffer)
@@ -1107,7 +1106,6 @@ void DebugDraw::DrawSphere(const BoundingSphere& sphere, const Color& color, flo
         t.V0 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
         t.V1 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
         t.V2 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
-
         list->Add(t);
     }
 }
@@ -1171,20 +1169,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        t.V0 = vertices[i++];
-        t.V1 = vertices[i++];
-        t.V2 = vertices[i++];
-        list->Add(t);
+        t.V0 = vertices.Get()[i++];
+        t.V1 = vertices.Get()[i++];
+        t.V2 = vertices.Get()[i++];
+        *dst++ = t;
     }
 }
 
@@ -1195,20 +1186,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Matrix& trans
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        Vector3::Transform(vertices[i++], transform, t.V0);
-        Vector3::Transform(vertices[i++], transform, t.V1);
-        Vector3::Transform(vertices[i++], transform, t.V2);
-        list->Add(t);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V0);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V1);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V2);
+        *dst++ = t;
     }
 }
 
@@ -1229,20 +1213,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        t.V0 = vertices[indices[i++]];
-        t.V1 = vertices[indices[i++]];
-        t.V2 = vertices[indices[i++]];
-        list->Add(t);
+        t.V0 = vertices[indices.Get()[i++]];
+        t.V1 = vertices[indices.Get()[i++]];
+        t.V2 = vertices[indices.Get()[i++]];
+        *dst++ = t;
     }
 }
 
@@ -1253,20 +1230,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        Vector3::Transform(vertices[indices[i++]], transform, t.V0);
-        Vector3::Transform(vertices[indices[i++]], transform, t.V1);
-        Vector3::Transform(vertices[indices[i++]], transform, t.V2);
-        list->Add(t);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V0);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V1);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V2);
+        *dst++ = t;
     }
 }
 
@@ -1287,20 +1257,13 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Color& co
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        t.V0 = vertices[i++];
-        t.V1 = vertices[i++];
-        t.V2 = vertices[i++];
-        list->Add(t);
+        t.V0 = vertices.Get()[i++];
+        t.V1 = vertices.Get()[i++];
+        t.V2 = vertices.Get()[i++];
+        *dst++ = t;
     }
 }
 
@@ -1316,20 +1279,13 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Span<int3
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        t.V0 = vertices[indices[i++]];
-        t.V1 = vertices[indices[i++]];
-        t.V2 = vertices[indices[i++]];
-        list->Add(t);
+        t.V0 = vertices[indices.Get()[i++]];
+        t.V1 = vertices[indices.Get()[i++]];
+        t.V2 = vertices[indices.Get()[i++]];
+        *dst++ = t;
     }
 }
 
