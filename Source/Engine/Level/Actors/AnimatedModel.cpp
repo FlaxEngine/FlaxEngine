@@ -116,6 +116,8 @@ void AnimatedModel::PreInitSkinningData()
 
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     nodesTransformation = GraphInstance.NodesPose;
     if (worldSpace)
     {
@@ -127,8 +129,8 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
 
 void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
 {
-    if (GraphInstance.NodesPose.Count() == 0)
-        return;
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     CHECK(nodesTransformation.Count() == GraphInstance.NodesPose.Count());
     GraphInstance.NodesPose = nodesTransformation;
     if (worldSpace)
@@ -143,6 +145,8 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
 
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     if (nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count())
         nodeTransformation = GraphInstance.NodesPose[nodeIndex];
     else
@@ -158,6 +162,8 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
 
 int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
     int32 result = -1;
     float closest = MAX_float;
