@@ -89,6 +89,18 @@ void Joint::SetTargetAnchorRotation(const Quaternion& value)
     }
 }
 
+void Joint::SetJointLocation(const Vector3& location)
+{
+    if (GetParent())
+    {
+        SetLocalPosition(GetParent()->GetTransform().WorldToLocal(location));
+    }
+    if (Target)
+    {
+        SetTargetAnchor(Target->GetTransform().WorldToLocal(location));
+    }
+}
+
 void Joint::GetCurrentForce(Vector3& linear, Vector3& angular) const
 {
     if (_joint && _joint->getConstraint())

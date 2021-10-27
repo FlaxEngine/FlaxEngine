@@ -36,8 +36,6 @@ public:
     API_FIELD(Attributes="EditorOrder(0), DefaultValue(null), EditorDisplay(\"Joint\")")
     ScriptingObjectReference<Actor> Target;
 
-public:
-
     /// <summary>
     /// Gets the break force. Determines the maximum force the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
@@ -131,6 +129,13 @@ public:
     }
 
     /// <summary>
+    /// Sets the location of the joint by automatically computing local position and target anchor to place a joint at the given location (world-space).
+    /// </summary>
+    /// <remarks>Use this utility to automatically place joint at the given location after setting up joint parent and target.</remarks>
+    /// <param name="location">The joint location to set (world-space).</param>
+    API_FUNCTION() void SetJointLocation(const Vector3& location);
+
+    /// <summary>
     /// Gets the current force applied by the solver to maintain all constraints.
     /// </summary>
     /// <param name="linear">The result linear force.</param>
@@ -141,8 +146,6 @@ public:
     /// Creates native join object.
     /// </summary>
     void Create();
-
-public:
 
     /// <summary>
     /// Occurs when a joint gets broken during simulation.
