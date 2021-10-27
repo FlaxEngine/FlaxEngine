@@ -95,7 +95,8 @@ namespace FlaxEditor.Gizmo
             // Get mouse ray and try to hit any object
             var ray = Owner.MouseRay;
             var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-            bool selectColliders = (Owner.RenderTask.View.Flags & ViewFlags.PhysicsDebug) == ViewFlags.PhysicsDebug;
+            var renderView = Owner.RenderTask.View;
+            bool selectColliders = (renderView.Flags & ViewFlags.PhysicsDebug) == ViewFlags.PhysicsDebug || renderView.Mode == ViewMode.PhysicsColliders;
             SceneGraphNode.RayCastData.FlagTypes rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.None;
             if (!selectColliders)
                 rayCastFlags |= SceneGraphNode.RayCastData.FlagTypes.SkipColliders;
