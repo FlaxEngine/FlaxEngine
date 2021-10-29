@@ -10,6 +10,11 @@
 FLAXENGINE_API bool IsInMainThread();
 
 /// <summary>
+/// Returns the number of threads in the task thread pool.
+/// </summary>
+FLAXENGINE_API int32 NumThreadPoolThreads();
+
+/// <summary>
 /// Scope locker for critical section.
 /// </summary>
 class ScopeLock
