@@ -84,6 +84,11 @@ inline float Cm2ToM2(float v)
     return v / (100.0f * 100.0f);
 }
 
+inline float KgPerM3ToKgPerCm3(float v)
+{
+	return v / (100.0f * 100.0f * 100.0f);
+}
+
 inline float RpmToRadPerS(float v)
 {
     return v * (PI / 30.0f);

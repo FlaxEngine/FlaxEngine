@@ -352,6 +352,7 @@ void PhysicalMaterial::UpdatePhysXMaterial()
     {
         _material->setStaticFriction(Friction);
         _material->setDynamicFriction(Friction);
+
         const PhysicsCombineMode useFrictionCombineMode = OverrideFrictionCombineMode ? FrictionCombineMode : _frictionCombineMode;
         _material->setFrictionCombineMode(static_cast<PxCombineMode::Enum>(useFrictionCombineMode));
 
@@ -374,10 +375,6 @@ bool PhysicsService::Init()
     // Init PhysX foundation object
     _foundation = PxCreateFoundation(PX_PHYSICS_VERSION, PhysXAllocatorCallback, PhysXErrorCallback);
     CHECK_INIT(_foundation, "PxCreateFoundation failed!");
-
-#if PHYSX_MEMORY_STATS
-	_foundation->setReportAllocationNames(true);
-#endif
 
     // Config
     ToleranceScale.length = 100;

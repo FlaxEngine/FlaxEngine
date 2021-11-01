@@ -66,6 +66,12 @@ public:
     API_FIELD(Attributes="HideInEditor")
     bool OverrideRestitutionCombineMode = false;
 
+    /// <summary>
+    /// Physical material density in kilograms per cubic meter (kg/m^3). Higher density means a higher weight of the object using this material. Wood is around 700, water is 1000, steel is around 8000.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Physical Material\")")
+    float Density = 1000.0f;
+
 public:
 
     /// <summary>

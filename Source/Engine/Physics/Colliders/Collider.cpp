@@ -237,7 +237,10 @@ void Collider::Attach(RigidBody* rigidBody)
     _cachedLocalPoseRot = _localTransform.Orientation;
     _shape->setLocalPose(PxTransform(C2P(_cachedLocalPosePos), C2P(_cachedLocalPoseRot)));
     if (rigidBody->IsDuringPlay())
+    {
         rigidBody->UpdateBounds();
+        rigidBody->UpdateMass();
+    }
 }
 
 void Collider::UpdateLayerBits()

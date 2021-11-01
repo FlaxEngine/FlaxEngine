@@ -1,9 +1,11 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "RigidBody.h"
+#include "PxMaterial.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Serialization/Serialization.h"
 #include <ThirdParty/PhysX/extensions/PxRigidBodyExt.h>
 #include <ThirdParty/PhysX/PxRigidActor.h>
@@ -133,6 +135,11 @@ void RigidBody::SetMaxAngularVelocity(float value)
         _actor->setMaxAngularVelocity(value);
 }
 
+bool RigidBody::GetOverrideMass() const
+{
+    return _overrideMass != 0;
+}
+
 void RigidBody::SetOverrideMass(bool value)
 {
     if (value == GetOverrideMass())
@@ -141,6 +148,11 @@ void RigidBody::SetOverrideMass(bool value)
     _overrideMass = value;
 
     UpdateMass();
+}
+
+float RigidBody::GetMass() const
+{
+    return _mass;
 }
 
 void RigidBody::SetMass(float value)
@@ -156,15 +168,18 @@ void RigidBody::SetMass(float value)
     UpdateMass();
 }
 
+float RigidBody::GetMassScale() const
+{
+    return _massScale;
+}
+
 void RigidBody::SetMassScale(float value)
 {
     if (Math::NearEqual(value, _massScale))
         return;
 
     _massScale = value;
-
-    if (!_overrideMass)
-        UpdateMass();
+    UpdateMass();
 }
 
 void RigidBody::SetCenterOfMassOffset(const Vector3& value)
@@ -267,44 +282,51 @@ void RigidBody::WakeUp() const
 
 void RigidBody::UpdateMass()
 {
-    // Skip if no actor created
     if (_actor == nullptr)
         return;
 
-    // Physical material
-    float densityKGPerCubicUU = 1.0f;
-    float raiseMassToPower = 0.75f;
-    // TODO: link physical material or expose density parameter
-
-    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU);
-
-    // Grab old mass so we can apply new mass while maintaining inertia tensor
-    const float oldMass = _actor->getMass();
-    float newMass;
-
-    if (_overrideMass == false)
+    if (_overrideMass)
     {
-        const float usePow = Math::Clamp<float>(raiseMassToPower, ZeroTolerance, 1.0f);
-        newMass = Math::Pow(oldMass, usePow);
-
-        // Apply user-defined mass scaling
-        newMass *= Math::Clamp<float>(_massScale, 0.01f, 100.0f);
-
-        _mass = newMass;
+        // Use fixed mass
+        PxRigidBodyExt::setMassAndUpdateInertia(*_actor, Math::Max(_mass * _massScale, 0.001f));
     }
     else
     {
-        // Min weight of 1g
-        newMass = Math::Max(_mass, 0.001f);
+        // Calculate per-shape densities (convert kg/m^3 into engine units)
+        const float minDensity = 0.08375f; // Hydrogen density
+        const float defaultDensity = 1000.0f; // Water density
+        Array<float, InlinedAllocation<32>> densities;
+        for (uint32 i = 0; i < _actor->getNbShapes(); i++)
+        {
+            PxShape* shape;
+            _actor->getShapes(&shape, 1, i);
+            if (shape->getFlags() & PxShapeFlag::eSIMULATION_SHAPE)
+            {
+                float density = defaultDensity;
+                PxMaterial* material;
+                if (shape->getMaterials(&material, 1, 0) == 1)
+                {
+                    if (const auto mat = (PhysicalMaterial*)material->userData)
+                    {
+                        density = Math::Max(mat->Density, minDensity);
+                    }
+                }
+                densities.Add(KgPerM3ToKgPerCm3(density));
+            }
+        }
+        if (densities.IsEmpty())
+            densities.Add(KgPerM3ToKgPerCm3(defaultDensity));
+
+        // Auto calculated mass
+        PxRigidBodyExt::updateMassAndInertia(*_actor, densities.Get(), densities.Count());
+        _mass = _actor->getMass();
+        const float massScale = Math::Max(_massScale, 0.001f);
+        if (!Math::IsOne(massScale))
+        {
+            _mass *= massScale;
+            _actor->setMass(_mass);
+        }
     }
-
-    ASSERT(newMass > 0.0f);
-
-    const float massRatio = newMass / oldMass;
-    const PxVec3 inertiaTensor = _actor->getMassSpaceInertiaTensor();
-
-    _actor->setMassSpaceInertiaTensor(inertiaTensor * massRatio);
-    _actor->setMass(newMass);
 }
 
 void RigidBody::AddForce(const Vector3& force, ForceMode mode) const
