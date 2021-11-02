@@ -524,7 +524,10 @@ namespace FlaxEditor.Gizmo
                 if (hit != null)
                 {
                     // Skip snapping selection to itself
-                    if (IsSelected(hit))
+                    bool isSelected = false;
+                    for (var e = hit; e != null && !isSelected; e = e.ParentNode)
+                        isSelected |= IsSelected(e);
+                    if (isSelected)
                     {
                         GetSelectedObjectsBounds(out var selectionBounds, out _);
                         ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
