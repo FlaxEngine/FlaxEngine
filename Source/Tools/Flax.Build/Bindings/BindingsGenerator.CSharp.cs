@@ -53,7 +53,7 @@ namespace Flax.Build.Bindings
             { "MonoArray", "Array" },
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, bool attribute = false)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
@@ -85,7 +85,12 @@ namespace Flax.Build.Bindings
 
             // Numbers
             if (float.TryParse(value, out _) || (value[value.Length - 1] == 'f' && float.TryParse(value.Substring(0, value.Length - 1), out _)))
+            {
+                // If the value type is different than the value (eg. value is int but the field is float) then cast it for the [DefaultValue] attribute
+                if (valueType != null && attribute)
+                    return $"({GenerateCSharpNativeToManaged(buildData, valueType, caller)}){value}";
                 return value;
+            }
 
             value = value.Replace("::", ".");
             var dot = value.LastIndexOf('.');
@@ -475,7 +480,7 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes, string[] comment, bool canUseTooltip, bool useUnmanaged, string defaultValue = null, bool isDeprecated = false)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, bool isDeprecated = false, TypeInfo defaultValueType = null)
         {
             var writeTooltip = true;
             var writeDefaultValue = true;
@@ -529,20 +534,20 @@ namespace Flax.Build.Bindings
             if (writeDefaultValue)
             {
                 // Write default value attribute
-                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo, true);
+                defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, defaultValue, apiTypeInfo, defaultValueType, true);
                 if (defaultValue != null)
                     contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue, false, defaultValueType);
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated, defaultValueType);
         }
 
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
@@ -764,7 +769,7 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
                 }
 
-                GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue);
+                GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -778,7 +783,7 @@ namespace Flax.Build.Bindings
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
                 if (!useUnmanaged)
                 {
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
@@ -906,7 +911,7 @@ namespace Flax.Build.Bindings
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
 
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
                         if (!string.IsNullOrEmpty(defaultValue))
                             contents.Append(" = ").Append(defaultValue);
                     }
@@ -970,7 +975,7 @@ namespace Flax.Build.Bindings
                             contents.Append(' ');
                             contents.Append(parameterInfo.Name);
 
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo);
+                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
                             if (!string.IsNullOrEmpty(defaultValue))
                                 contents.Append(" = ").Append(defaultValue);
                         }
@@ -1048,7 +1053,7 @@ namespace Flax.Build.Bindings
                 foreach (var comment in fieldInfo.Comment)
                     contents.Append(indent).Append(comment).AppendLine();
 
-                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue);
+                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
                     contents.Append("public ");
@@ -1257,7 +1262,7 @@ namespace Flax.Build.Bindings
                     contents.Append(' ');
                     contents.Append(parameterInfo.Name);
 
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo, parameterInfo.Type);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                 }
