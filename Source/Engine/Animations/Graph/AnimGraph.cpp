@@ -273,6 +273,9 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             animResult = GetEmptyNodes();
     }
 
+    // Allow for external override of the local pose (eg. by the ragdoll)
+    data.LocalPoseOverride(animResult);
+
     // Calculate the global poses for the skeleton nodes
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");

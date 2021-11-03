@@ -75,7 +75,7 @@ struct RootMotionData
 /// Container for skeleton nodes transformation hierarchy and any other required data. 
 /// Unified layout for both local and model transformation spaces.
 /// </summary>
-struct AnimGraphImpulse
+struct FLAXENGINE_API AnimGraphImpulse
 {
     /// <summary>
     /// The skeleton nodes transformation hierarchy nodes. Size always matches the Anim Graph skeleton description.
@@ -245,7 +245,7 @@ public:
 /// <summary>
 /// The animation graph instance data storage. Required to update the animation graph.
 /// </summary>
-class AnimGraphInstanceData
+class FLAXENGINE_API AnimGraphInstanceData
 {
 public:
 
@@ -346,6 +346,11 @@ public:
     /// The object that represents the instance data source (used by Custom Nodes and debug flows).
     /// </summary>
     ScriptingObject* Object;
+
+    /// <summary>
+    /// The custom event called after local pose evaluation.
+    /// </summary>
+    Delegate<AnimGraphImpulse*> LocalPoseOverride;
 
 public:
 
