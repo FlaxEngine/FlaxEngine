@@ -101,6 +101,28 @@ void Joint::SetJointLocation(const Vector3& location)
     }
 }
 
+FORCE_INLINE Quaternion WorldToLocal(const Quaternion& world, const Quaternion& orientation)
+{
+    Quaternion rot;
+    const Quaternion invRotation = world.Conjugated();
+    Quaternion::Multiply(invRotation, orientation, rot);
+    rot.Normalize();
+    return rot;
+}
+
+void Joint::SetJointOrientation(const Quaternion& orientation)
+{
+    if (GetParent())
+    {
+        SetLocalOrientation(WorldToLocal(GetParent()->GetOrientation(), orientation));
+    }
+    if (Target)
+    {
+        //SetTargetAnchor(Target->GetTransform().WorldToLocal(orientation));
+        SetTargetAnchorRotation(WorldToLocal(Target->GetOrientation(), orientation));
+    }
+}
+
 void Joint::GetCurrentForce(Vector3& linear, Vector3& angular) const
 {
     if (_joint && _joint->getConstraint())

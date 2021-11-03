@@ -136,6 +136,13 @@ public:
     API_FUNCTION() void SetJointLocation(const Vector3& location);
 
     /// <summary>
+    /// Sets the orientation of the joint by automatically computing local orientation and target anchor orientation to orient a joint at the given rotation (world-space).
+    /// </summary>
+    /// <remarks>Use this utility to automatically rotate joint at the given location after setting up joint parent and target.</remarks>
+    /// <param name="orientation">The joint orientation to set (world-space).</param>
+    API_FUNCTION() void SetJointOrientation(const Quaternion& orientation);
+
+    /// <summary>
     /// Gets the current force applied by the solver to maintain all constraints.
     /// </summary>
     /// <param name="linear">The result linear force.</param>
