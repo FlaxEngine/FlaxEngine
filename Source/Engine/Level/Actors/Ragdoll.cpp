@@ -39,6 +39,9 @@ float Ragdoll::InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& local
         node.Decompose(nodeT);
         localOffset = nodeT.WorldToLocal(rigidBody->GetLocalTransform());
         _bonesOffsets[rigidBody] = localOffset;
+
+        // Initialize body
+        rigidBody->SetSolverIterationCounts(PositionSolverIterations, VelocitySolverIterations);
     }
     return weight;
 }

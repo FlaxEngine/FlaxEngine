@@ -31,6 +31,20 @@ public:
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"Ragdoll\")")
     Dictionary<String, float> BonesWeights;
 
+    /// <summary>
+    /// The minimum number of position iterations the physics solver should perform for bodies in this ragdoll. Higher values improve stability but affect performance.
+    /// </summary>
+    /// <seealso cref="RigidBody.SetSolverIterationCounts"/>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Ragdoll\"), Limit(1, 255)")
+    uint8 PositionSolverIterations = 8;
+
+    /// <summary>
+    /// The minimum number of velocity iterations the physics solver should perform for bodies in this ragdoll. Higher values improve stability but affect performance.
+    /// </summary>
+    /// <seealso cref="RigidBody.SetSolverIterationCounts"/>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Ragdoll\"), Limit(1, 255)")
+    uint8 VelocitySolverIterations = 2;
+
 public:
 
     /// <summary>
