@@ -295,6 +295,14 @@ namespace FlaxEditor.SceneGraph
         {
         }
 
+        /// <summary>
+        /// Action called after converting actor in editor.
+        /// </summary>
+        /// <param name="source">The source actor node from which this node was converted.</param>
+        public virtual void PostConvert(ActorNode source)
+        {
+        }
+
         /// <inheritdoc />
         protected override void OnParentChanged()
         {

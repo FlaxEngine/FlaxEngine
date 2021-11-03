@@ -430,6 +430,7 @@ namespace FlaxEditor.Modules
             var actorNode = Editor.Instance.Scene.GetActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
+            actorNode.PostConvert(oldNode);
 
             actorNode.PostSpawn();
             Editor.Scene.MarkSceneEdited(actor.Scene);
