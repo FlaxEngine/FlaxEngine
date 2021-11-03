@@ -1426,18 +1426,16 @@ Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
 void Actor::LookAt(const Vector3& worldPos)
 {
     const Quaternion orientation = LookingAt(worldPos);
-
     SetOrientation(orientation);
 }
 
 void Actor::LookAt(const Vector3& worldPos, const Vector3& worldUp)
 {
     const Quaternion orientation = LookingAt(worldPos, worldUp);
-
     SetOrientation(orientation);
 }
 
-Quaternion Actor::LookingAt(const Vector3& worldPos)
+Quaternion Actor::LookingAt(const Vector3& worldPos) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
@@ -1464,7 +1462,7 @@ Quaternion Actor::LookingAt(const Vector3& worldPos)
     return orientation;
 }
 
-Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp)
+Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)

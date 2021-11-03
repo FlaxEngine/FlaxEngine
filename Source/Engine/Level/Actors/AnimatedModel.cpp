@@ -21,8 +21,8 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _counter(0)
     , _lastMinDstSqr(MAX_float)
     , _lastUpdateFrame(0)
-    , GraphInstance(this)
 {
+    GraphInstance.Object = this;
     _world = Matrix::Identity;
     UpdateBounds();
 

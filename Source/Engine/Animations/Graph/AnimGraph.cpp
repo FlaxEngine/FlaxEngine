@@ -272,13 +272,13 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         if (animResult == nullptr)
             animResult = GetEmptyNodes();
     }
-    Transform* nodesTransformations = animResult->Nodes.Get();
 
     // Calculate the global poses for the skeleton nodes
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");
 
         data.NodesPose.Resize(_skeletonNodesCount, false);
+        Transform* nodesTransformations = animResult->Nodes.Get();
 
         // Note: this assumes that nodes are sorted (parents first)
         for (int32 nodeIndex = 0; nodeIndex < _skeletonNodesCount; nodeIndex++)
@@ -286,7 +286,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
             if (parentIndex != -1)
             {
-                nodesTransformations[nodeIndex] = nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex]);
+                nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex], nodesTransformations[nodeIndex]);
             }
             nodesTransformations[nodeIndex].GetWorld(data.NodesPose[nodeIndex]);
         }

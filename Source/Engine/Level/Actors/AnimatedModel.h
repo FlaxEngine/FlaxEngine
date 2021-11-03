@@ -177,7 +177,7 @@ public:
     /// Performs the full animation update. The actual update will be performed during gameplay tick.
     /// </summary>
     API_FUNCTION() void UpdateAnimation();
-    
+
     /// <summary>
     /// Called after animation gets updated (new skeleton pose).
     /// </summary>

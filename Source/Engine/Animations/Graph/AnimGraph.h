@@ -303,17 +303,6 @@ public:
 public:
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AnimGraphInstanceData"/> class.
-    /// </summary>
-    /// <param name="object">The object that represents the instance data source.</param>
-    AnimGraphInstanceData(ScriptingObject* object)
-        : Object(object)
-    {
-    }
-
-public:
-
-    /// <summary>
     /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
     uint32 Version = 0;
