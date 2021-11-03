@@ -118,7 +118,6 @@ void Joint::SetJointOrientation(const Quaternion& orientation)
     }
     if (Target)
     {
-        //SetTargetAnchor(Target->GetTransform().WorldToLocal(orientation));
         SetTargetAnchorRotation(WorldToLocal(Target->GetOrientation(), orientation));
     }
 }

@@ -220,12 +220,15 @@ float GetAngle(float angle, D6JointMotion motion)
 void D6Joint::OnDebugDrawSelected()
 {
     const Vector3 source = GetPosition();
-    const Quaternion sourceRotation = GetOrientation();
+    const Quaternion xRot = Quaternion::LookRotation(Vector3::UnitX, Vector3::UnitY);
+    const Quaternion sourceRotation = GetOrientation() * xRot;
+    const Vector3 target = GetTargetPosition();
+    const Quaternion targetRotation = GetTargetOrientation() * xRot;
     const float swingSize = 15.0f;
     const float twistSize = 9.0f;
     const Color swingColor = Color::Green.AlphaMultiplied(0.6f);
     const Color twistColor = Color::Yellow.AlphaMultiplied(0.5f);
-    DebugDraw::DrawWireArrow(source, sourceRotation, swingSize / 100.0f * 0.5f, Color::Red, 0, false);
+    DebugDraw::DrawWireArrow(target, targetRotation, swingSize / 100.0f * 0.5f, Color::Red, 0, false);
     if (_motion[(int32)D6JointAxis::SwingY] == D6JointMotion::Locked && _motion[(int32)D6JointAxis::SwingZ] == D6JointMotion::Locked)
     {
         // Swing is locked
@@ -455,7 +458,7 @@ PxJoint* D6Joint::CreateJoint(JointData& data)
 
     {
         const auto& value = _limitSwing;
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI -ZeroTolerance), value.ContactDist);
+        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), value.ContactDist);
         limit.stiffness = value.Spring.Stiffness;
         limit.damping = value.Spring.Damping;
         limit.restitution = value.Restitution;
