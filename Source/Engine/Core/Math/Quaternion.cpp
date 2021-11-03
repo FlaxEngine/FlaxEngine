@@ -227,6 +227,23 @@ void Quaternion::Billboard(const Vector3& objectPosition, const Vector3& cameraP
     RotationMatrix(matrix, result);
 }
 
+Quaternion Quaternion::FromDirection(const Vector3& direction)
+{
+    Quaternion orientation;
+    if (Vector3::Dot(direction, Vector3::Up) >= 0.999f)
+    {
+        RotationAxis(Vector3::Left, PI_OVER_2, orientation);
+    }
+    else
+    {
+        Vector3 right, up;
+        Vector3::Cross(direction, Vector3::Up, right);
+        Vector3::Cross(right, direction, up);
+        LookRotation(direction, up, orientation);
+    }
+    return orientation;
+}
+
 void Quaternion::LookRotation(const Vector3& forward, const Vector3& up, Quaternion& result)
 {
     Vector3 forwardNorm = forward;

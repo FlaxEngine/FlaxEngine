@@ -588,6 +588,13 @@ public:
     static void Billboard(const Vector3& objectPosition, const Vector3& cameraPosition, const Vector3& cameraUpVector, const Vector3& cameraForwardVector, Quaternion& result);
 
     /// <summary>
+    /// Calculates the orientation from the direction vector.
+    /// </summary>
+    /// <param name="direction">The direction vector (normalized).</param>
+    /// <returns>The orientation.</returns>
+    static Quaternion FromDirection(const Vector3& direction);
+
+    /// <summary>
     /// Creates a rotation with the specified forward and upwards directions.
     /// </summary>
     /// <param name="forward">The forward direction. Direction to orient towards.</param>
