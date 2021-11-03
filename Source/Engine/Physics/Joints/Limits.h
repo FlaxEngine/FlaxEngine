@@ -46,11 +46,6 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const SpringParameters& other) const
     {
         return Stiffness == other.Stiffness && Damping == other.Damping;
@@ -128,18 +123,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitLinearRange& other) const
     {
-        return Lower == other.Lower
-                && Upper == other.Upper
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Lower == other.Lower && Upper == other.Upper && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -205,17 +191,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitLinear& other) const
     {
-        return Extent == other.Extent
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Extent == other.Extent && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -290,18 +268,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitAngularRange& other) const
     {
-        return Lower == other.Lower
-                && Upper == other.Upper
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Lower == other.Lower && Upper == other.Upper && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -376,17 +345,8 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitConeRange& other) const
     {
-        return YLimitAngle == other.YLimitAngle
-                && ZLimitAngle == other.ZLimitAngle
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return YLimitAngle == other.YLimitAngle && ZLimitAngle == other.ZLimitAngle && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };

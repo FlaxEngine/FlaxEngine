@@ -148,17 +148,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(D6JointDrive);
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const D6JointDrive& other) const
     {
-        return Stiffness == other.Stiffness
-                && Damping == other.Damping
-                && ForceLimit == other.ForceLimit
-                && Acceleration == other.Acceleration;
+        return Stiffness == other.Stiffness && Damping == other.Damping && ForceLimit == other.ForceLimit && Acceleration == other.Acceleration;
     }
 };
 
