@@ -219,6 +219,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public event Action<LayoutElementsContainer> AfterLayout;
 
+        /// <summary>
+        /// The Editor context that owns this presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editor scan use it for more specific features.
+        /// </summary>
+        public object Owner;
+
         private bool _buildOnUpdate;
 
         /// <summary>
@@ -226,9 +231,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="undo">The undo. It's optional.</param>
         /// <param name="noSelectionText">The custom text to display when no object is selected. Default is No selection.</param>
-        public CustomEditorPresenter(Undo undo, string noSelectionText = null)
+        /// <param name="owner">The owner of the presenter.</param>
+        public CustomEditorPresenter(Undo undo, string noSelectionText = null, object owner = null)
         {
             Undo = undo;
+            Owner = owner;
             Panel = new PresenterPanel(this);
             Editor = new RootEditor(noSelectionText);
             Editor.Initialize(this, this, null);

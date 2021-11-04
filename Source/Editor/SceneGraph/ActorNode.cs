@@ -179,12 +179,12 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Gets a value indicating whether this actor can be used to create prefab from it (as a root).
         /// </summary>
-        public virtual bool CanCreatePrefab => (Actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;
+        public virtual bool CanCreatePrefab => (_actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;
 
         /// <summary>
         /// Gets a value indicating whether this actor has a valid linkage to the prefab asset.
         /// </summary>
-        public virtual bool HasPrefabLink => Actor.HasPrefabLink;
+        public virtual bool HasPrefabLink => _actor.HasPrefabLink;
 
         /// <inheritdoc />
         public override string Name => _actor.Name;

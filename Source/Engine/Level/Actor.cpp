@@ -1515,6 +1515,8 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
         // By default we collect actors and scripts (they are ManagedObjects recognized by the id)
 
         auto actor = actors[i];
+        if (!actor)
+            continue;
         ids.Add(actor->GetID());
         for (int32 j = 0; j < actor->Scripts.Count(); j++)
         {
@@ -1534,6 +1536,8 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
     for (int32 i = 0; i < actors.Count(); i++)
     {
         Actor* actor = actors[i];
+        if (!actor)
+            continue;
 
         WriteObjectToBytes(actor, buffer, output);
 

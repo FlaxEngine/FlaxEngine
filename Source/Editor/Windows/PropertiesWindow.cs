@@ -31,7 +31,7 @@ namespace FlaxEditor.Windows
             Title = "Properties";
             AutoFocus = true;
 
-            Presenter = new CustomEditorPresenter(editor.Undo);
+            Presenter = new CustomEditorPresenter(editor.Undo, null, this);
             Presenter.Panel.Parent = this;
             Presenter.GetUndoObjects += GetUndoObjects;
             Presenter.CacheExpandedGroups = true;

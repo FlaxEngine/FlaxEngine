@@ -82,7 +82,7 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 for (int i = 0; i < parent.ChildrenCount; i++)
                 {
-                    if (parent.Children[i] is ActorTreeNode child)
+                    if (parent.Children[i] is ActorTreeNode child && child.Actor)
                         child._orderInParent = child.Actor.OrderInParent;
                 }
                 parent.SortChildren();
@@ -193,7 +193,7 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             // Update hidden state
             var actor = Actor;
-            if (actor != null && !_hasSearchFilter)
+            if (actor && !_hasSearchFilter)
             {
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
             }
@@ -209,22 +209,25 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 Color color = Style.Current.Foreground;
                 var actor = Actor;
-                if (actor != null && actor.HasPrefabLink)
+                if (actor)
                 {
-                    // Prefab
-                    color = Style.Current.ProgressNormal;
-                }
+                    if (actor.HasPrefabLink)
+                    {
+                        // Prefab
+                        color = Style.Current.ProgressNormal;
+                    }
 
-                if (actor != null && !actor.IsActiveInHierarchy)
-                {
-                    // Inactive
-                    return Style.Current.ForegroundGrey;
-                }
+                    if (!actor.IsActiveInHierarchy)
+                    {
+                        // Inactive
+                        return Style.Current.ForegroundGrey;
+                    }
 
-                if (actor?.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
-                {
-                    // Static
-                    return color * 0.85f;
+                    if (actor.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
+                    {
+                        // Static
+                        return color * 0.85f;
+                    }
                 }
 
                 // Default

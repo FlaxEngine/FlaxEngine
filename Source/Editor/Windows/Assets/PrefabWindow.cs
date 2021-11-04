@@ -148,7 +148,7 @@ namespace FlaxEditor.Windows.Assets
             _viewport.TransformGizmo.ModeChanged += UpdateToolstrip;
 
             // Prefab properties editor
-            _propertiesEditor = new CustomEditorPresenter(_undo);
+            _propertiesEditor = new CustomEditorPresenter(_undo, null, this);
             _propertiesEditor.Panel.Parent = _split2.Panel2;
             _propertiesEditor.Modified += MarkAsEdited;
 

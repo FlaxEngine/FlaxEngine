@@ -47,6 +47,11 @@ namespace FlaxEditor.GUI
             public event Action<Item> Clicked;
 
             /// <summary>
+            /// The tint color of the text.
+            /// </summary>
+            public Color TintColor = Color.White;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="Item"/> class.
             /// </summary>
             public Item()
@@ -129,7 +134,7 @@ namespace FlaxEditor.GUI
                 }
 
                 // Draw name
-                Render2D.DrawText(style.FontSmall, Name, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, Name, textRect, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
             }
 
             /// <inheritdoc />
