@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 
@@ -34,12 +36,26 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void OnCreateRagdoll()
         {
-            // Settings
-            var minBoneSize = 20.0f; // The minimum size for the bone bounds to be used for physical bodies generation
-            var minValidSize = 0.0001f; // The minimum size of the bone bounds to be included (used to skip too small, degenerated or invalid bones)
-            var collisionMargin = 1.01f; // The scale of the collision body dimensions (relative to the visual dimensions of the bones)
+            BuildRagdoll((AnimatedModel)Actor, null);
+            TreeNode.ExpandAll(true);
+        }
 
-            var actor = (AnimatedModel)Actor;
+        internal class RebuildOptions
+        {
+            [DefaultValue(20.0f), Limit(0), Tooltip("The minimum size for the bone bounds to be used for physical bodies generation.")]
+            public float MinBoneSize = 20.0f;
+
+            [DefaultValue(0.0001f), Limit(0), Tooltip("The minimum size of the bone bounds to be included (used to skip too small, degenerated or invalid bones).")]
+            public float MinValidSize = 0.0001f;
+
+            [DefaultValue(1.01f), Limit(0.001f, 2.0f), Tooltip("The scale of the collision body dimensions (relative to the visual dimensions of the bones).")]
+            public float CollisionMargin = 1.01f;
+        }
+
+        internal static void BuildRagdoll(AnimatedModel actor, RebuildOptions options = null, Ragdoll ragdoll = null, string boneNameToBuild = null)
+        {
+            if (options == null)
+                options = new RebuildOptions();
             var model = actor.SkinnedModel;
             if (!model || model.WaitForLoaded())
             {
@@ -120,8 +136,12 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
                 var boneBoxSize = (boneBounds.Size * 0.5f).Length;
                 var boneMergedSize = bonesMergedSizes[boneIndex] += boneBoxSize;
-                if (boneMergedSize < minBoneSize && boneMergedSize >= minValidSize)
+                if (boneMergedSize < options.MinBoneSize && boneMergedSize >= options.MinValidSize)
                 {
+                    // Don't merge bone that was selected for rebuild
+                    if (boneNameToBuild != null && boneNameToBuild == nodes[bone.NodeIndex].Name)
+                        continue;
+
                     if (bone.ParentIndex != -1)
                     {
                         // Merge it into parent
@@ -159,7 +179,7 @@ namespace FlaxEditor.SceneGraph.Actors
             int forcedRootBoneIndex = -1, firstParentBoneIndex = -1;
             for (int boneIndex = 0; boneIndex < bones.Length; ++boneIndex)
             {
-                if (bonesMergedSizes[boneIndex] > minBoneSize)
+                if (bonesMergedSizes[boneIndex] > options.MinBoneSize)
                 {
                     var parentIndex = bones[boneIndex].ParentIndex;
                     if (parentIndex == -1)
@@ -181,26 +201,45 @@ namespace FlaxEditor.SceneGraph.Actors
 
             // TODO: add undo support
 
-            // Spawn ragdoll actor
-            var ragdoll = new Ragdoll
+            var boneBodies = new RigidBody[bones.Length];
+
+            if (ragdoll == null)
             {
-                StaticFlags = StaticFlags.None,
-                Name = "Ragdoll",
-                Parent = actor,
-            };
+                // Spawn ragdoll actor
+                ragdoll = new Ragdoll
+                {
+                    StaticFlags = StaticFlags.None,
+                    Name = "Ragdoll",
+                    Parent = actor,
+                };
+            }
+            else
+            {
+                // Reuse existing bones for joints
+                var children = ragdoll.Children;
+                for (int boneIndex = 0; boneIndex < bones.Length; ++boneIndex)
+                {
+                    ref var bone = ref bones[boneIndex];
+                    var node = nodes[bone.NodeIndex];
+                    boneBodies[boneIndex] = (RigidBody)children.FirstOrDefault(x => x is RigidBody && x.Name == node.Name);
+                }
+            }
 
             // Spawn physical bodies for bones
-            var boneBodies = new RigidBody[bones.Length];
             for (int boneIndex = 0; boneIndex < bones.Length; ++boneIndex)
             {
                 ref var boneVertices = ref bonesVertices[boneIndex];
                 if (boneVertices == null || boneVertices.Count == 0)
                     continue;
                 var boneBounds = bonesBounds[boneIndex];
-                if (bonesMergedSizes[boneIndex] < minBoneSize && boneIndex != forcedRootBoneIndex)
+                if (bonesMergedSizes[boneIndex] < options.MinBoneSize && boneIndex != forcedRootBoneIndex && boneNameToBuild == null)
                     continue;
                 ref var bone = ref bones[boneIndex];
                 ref var node = ref nodes[bone.NodeIndex];
+                if (boneNameToBuild != null && boneNameToBuild != node.Name)
+                    continue;
+                if (boneBodies[boneIndex] != null)
+                    continue;
 
                 // Calculate bone orientation based on the variance of the vertices
                 var covarianceMatrix = CalculateCovarianceMatrix(boneVertices);
@@ -234,13 +273,13 @@ namespace FlaxEditor.SceneGraph.Actors
                 var collider = new BoxCollider
                 {
                     Name = "Box",
-                    Size = boneLocalBoundsSize * collisionMargin,
+                    Size = boneLocalBoundsSize * options.CollisionMargin,
                 };
 #elif false
                 var collider = new SphereCollider
                 {
                     Name = "Sphere",
-                    Radius = boneLocalBoundsSize.MaxValue * 0.5f * collisionMargin,
+                    Radius = boneLocalBoundsSize.MaxValue * 0.5f * options.CollisionMargin,
                 };
 #elif true
                 var collider = new CapsuleCollider
@@ -249,20 +288,20 @@ namespace FlaxEditor.SceneGraph.Actors
                 };
                 if (boneLocalBoundsSize.X > boneLocalBoundsSize.Y && boneLocalBoundsSize.X > boneLocalBoundsSize.Z)
                 {
-                    collider.Height = boneLocalBoundsSize.X * collisionMargin;
-                    collider.Radius = Mathf.Max(boneLocalBoundsSize.Y, boneLocalBoundsSize.Z) * 0.5f * collisionMargin;
+                    collider.Height = boneLocalBoundsSize.X * options.CollisionMargin;
+                    collider.Radius = Mathf.Max(boneLocalBoundsSize.Y, boneLocalBoundsSize.Z) * 0.5f * options.CollisionMargin;
                 }
                 else if (boneLocalBoundsSize.Y > boneLocalBoundsSize.X && boneLocalBoundsSize.Y > boneLocalBoundsSize.Z)
                 {
                     collider.LocalOrientation = Quaternion.Euler(0, 0, 90);
-                    collider.Height = boneLocalBoundsSize.Y * collisionMargin;
-                    collider.Radius = Mathf.Max(boneLocalBoundsSize.X, boneLocalBoundsSize.Z) * 0.5f * collisionMargin;
+                    collider.Height = boneLocalBoundsSize.Y * options.CollisionMargin;
+                    collider.Radius = Mathf.Max(boneLocalBoundsSize.X, boneLocalBoundsSize.Z) * 0.5f * options.CollisionMargin;
                 }
                 else
                 {
                     collider.LocalOrientation = Quaternion.Euler(0, 90, 0);
-                    collider.Height = boneLocalBoundsSize.Z * collisionMargin;
-                    collider.Radius = Mathf.Max(boneLocalBoundsSize.X, boneLocalBoundsSize.Y) * 0.5f * collisionMargin;
+                    collider.Height = boneLocalBoundsSize.Z * options.CollisionMargin;
+                    collider.Radius = Mathf.Max(boneLocalBoundsSize.X, boneLocalBoundsSize.Y) * 0.5f * options.CollisionMargin;
                 }
                 collider.Height = Mathf.Max(collider.Height - collider.Radius * 2.0f, 0.0f);
 #endif
@@ -286,16 +325,8 @@ namespace FlaxEditor.SceneGraph.Actors
 #else
                     var joint = new D6Joint
                     {
-                        LimitSwing = new LimitConeRange
-                        {
-                            YLimitAngle = 45.0f,
-                            ZLimitAngle = 45.0f,
-                        },
-                        LimitTwist = new LimitAngularRange
-                        {
-                            Lower = -15.0f,
-                            Upper = 15.0f,
-                        },
+                        LimitSwing = new LimitConeRange(45.0f, 45.0f),
+                        LimitTwist = new LimitAngularRange(-15.0f, 15.0f),
                     };
                     joint.SetMotion(D6JointAxis.X, D6JointMotion.Locked);
                     joint.SetMotion(D6JointAxis.Y, D6JointMotion.Locked);
@@ -325,8 +356,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
             }
 
-            TreeNode.ExpandAll(true);
-            Editor.Instance.Scene.MarkSceneEdited(Root?.ParentScene);
+            Editor.Instance.Scene.MarkSceneEdited(actor.Scene);
         }
 
         private static unsafe Matrix CalculateCovarianceMatrix(List<SkinnedMesh.Vertex0> vertices)
