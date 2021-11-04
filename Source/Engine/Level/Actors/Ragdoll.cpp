@@ -42,6 +42,7 @@ float Ragdoll::InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& local
 
         // Initialize body
         rigidBody->SetSolverIterationCounts(PositionSolverIterations, VelocitySolverIterations);
+        rigidBody->SetMaxDepenetrationVelocity(MaxDepenetrationVelocity);
     }
     return weight;
 }

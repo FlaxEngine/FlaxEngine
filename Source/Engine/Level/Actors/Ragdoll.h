@@ -42,8 +42,15 @@ public:
     /// The minimum number of velocity iterations the physics solver should perform for bodies in this ragdoll. Higher values improve stability but affect performance.
     /// </summary>
     /// <seealso cref="RigidBody.SetSolverIterationCounts"/>
-    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Ragdoll\"), Limit(1, 255)")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Ragdoll\"), Limit(1, 255)")
     uint8 VelocitySolverIterations = 2;
+
+    /// <summary>
+    /// The maximum depenetration velocity when ragdoll's rigidbody moving out of penetrating state. Using this property can smooth objects moving out of colliding state and prevent unstable motion.
+    /// </summary>
+    /// <seealso cref="RigidBody.MaxDepenetrationVelocity"/>
+    API_FIELD(Attributes="EditorOrder(120), EditorDisplay(\"Ragdoll\"), Limit(0)")
+    float MaxDepenetrationVelocity = MAX_float;
 
 public:
 
