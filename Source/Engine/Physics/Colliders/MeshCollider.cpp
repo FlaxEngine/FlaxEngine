@@ -69,6 +69,8 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
+        if (!view.CullingFrustum.Intersects(_sphere))
+            return;
         if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         {
             Array<Vector3>* vertexBuffer;

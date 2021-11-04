@@ -90,6 +90,8 @@ bool SplineCollider::CanBeTrigger() const
 
 void SplineCollider::DrawPhysicsDebug(RenderView& view)
 {
+    if (!view.CullingFrustum.Intersects(_sphere))
+        return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         DebugDraw::DrawTriangles(_vertexBuffer, _indexBuffer, Color::CornflowerBlue, 0, true);
     else

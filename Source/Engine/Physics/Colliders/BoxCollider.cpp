@@ -29,6 +29,8 @@ void BoxCollider::SetSize(const Vector3& value)
 
 void BoxCollider::DrawPhysicsDebug(RenderView& view)
 {
+    if (!view.CullingFrustum.Intersects(_sphere))
+        return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         DebugDraw::DrawBox(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else

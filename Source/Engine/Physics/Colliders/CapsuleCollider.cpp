@@ -41,6 +41,8 @@ void CapsuleCollider::SetHeight(const float value)
 
 void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
 {
+    if (!view.CullingFrustum.Intersects(_sphere))
+        return;
     Quaternion rot;
     Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rot);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
