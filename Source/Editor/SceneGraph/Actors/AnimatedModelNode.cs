@@ -321,6 +321,7 @@ namespace FlaxEditor.SceneGraph.Actors
 #endif
                     joint.SetJointLocation(actor.Transform.LocalToWorld(jointPose.TranslationVector));
                     joint.SetJointOrientation(actor.Transform.Orientation * Quaternion.RotationMatrix(jointPose));
+                    joint.EnableAutoAnchor = true; // Use automatic target anchor to make it easier to setup joint in editor when working with ragdolls
                 }
             }
 
