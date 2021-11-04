@@ -364,6 +364,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                     obj->SetParent(nullptr);
 
                     sceneObjects.Value->RemoveAtKeepOrder(i);
+                    deserializeSceneObjectIndex--;
                     existingObjectsCount--;
                 }
             }
