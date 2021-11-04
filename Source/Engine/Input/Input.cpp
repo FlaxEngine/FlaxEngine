@@ -508,11 +508,14 @@ float Input::GetGamepadAxis(InputGamepadIndex gamepad, GamepadAxis axis)
 {
     if (gamepad == InputGamepadIndex::All)
     {
+        float val = 0;
         for (auto g : Gamepads)
         {
-            if (g->GetAxis(axis))
-                return true;
+            val += g->GetAxis(axis);
+            if(val >= 1)
+                return 1;
         }
+        return val;
     }
     else
     {
