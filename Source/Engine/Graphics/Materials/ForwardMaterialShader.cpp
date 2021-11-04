@@ -169,14 +169,17 @@ bool ForwardMaterialShader::Load()
     }
 
 #if USE_EDITOR
-    // Quad Overdraw
-    psDesc.VS = _shader->GetVS("VS");
-    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
-    _cache.QuadOverdraw.Init(psDesc);
-    psDesc.VS = _shader->GetVS("VS", 1);
-    _cacheInstanced.Depth.Init(psDesc);
-    psDesc.VS = _shader->GetVS("VS_Skinned");
-    _cache.QuadOverdrawSkinned.Init(psDesc);
+    if (_shader->HasShader("PS_QuadOverdraw"))
+    {
+        // Quad Overdraw
+        psDesc.VS = _shader->GetVS("VS");
+        psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+        _cache.QuadOverdraw.Init(psDesc);
+        psDesc.VS = _shader->GetVS("VS", 1);
+        _cacheInstanced.Depth.Init(psDesc);
+        psDesc.VS = _shader->GetVS("VS_Skinned");
+        _cache.QuadOverdrawSkinned.Init(psDesc);
+    }
 #endif
 
     // Check if use transparent distortion pass

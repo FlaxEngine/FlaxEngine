@@ -211,14 +211,17 @@ bool ParticleMaterialShader::Load()
     auto vsRibbon = _shader->GetVS("VS_Ribbon");
 
 #if USE_EDITOR
-    // Quad Overdraw
-    psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
-    psDesc.VS = vsSprite;
-    _cacheSprite.QuadOverdraw.Init(psDesc);
-    psDesc.VS = vsMesh;
-    _cacheModel.QuadOverdraw.Init(psDesc);
-    psDesc.VS = vsRibbon;
-    _cacheRibbon.QuadOverdraw.Init(psDesc);
+    if (_shader->HasShader("PS_QuadOverdraw"))
+    {
+        // Quad Overdraw
+        psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+        psDesc.VS = vsSprite;
+        _cacheSprite.QuadOverdraw.Init(psDesc);
+        psDesc.VS = vsMesh;
+        _cacheModel.QuadOverdraw.Init(psDesc);
+        psDesc.VS = vsRibbon;
+        _cacheRibbon.QuadOverdraw.Init(psDesc);
+    }
 #endif
 
     // Check if use transparent distortion pass
