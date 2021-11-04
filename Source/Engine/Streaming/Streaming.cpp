@@ -155,6 +155,13 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
                 resource->RequestStreamingUpdate();
                 return;
             }
+            else if (resource->GetAllocatedResidency() < targetResidency)
+            {
+                // Allocation failed (eg. texture format is not supported or run out of memory)
+                resource->Streaming.TargetResidency = 0;
+                resource->Streaming.LastUpdate = DateTime::MaxValue().Ticks;
+                return;
+            }
         }
 
         // Calculate residency level to stream in (resources may want to increase/decrease it's quality in steps rather than at once)

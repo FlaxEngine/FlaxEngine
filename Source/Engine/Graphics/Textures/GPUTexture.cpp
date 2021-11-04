@@ -497,6 +497,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     if (OnInit())
     {
         ReleaseGPU();
+        _desc.Clear();
+        _residentMipLevels = 0;
         LOG(Warning, "Cannot initialize texture. Description: {0}", desc.ToString());
         return true;
     }
