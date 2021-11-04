@@ -5,6 +5,9 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Physics/Actors/RigidBody.h"
 #include "Engine/Serialization/Serialization.h"
+#if USE_EDITOR
+#include "Engine/Physics/Joints/Joint.h"
+#endif
 
 Ragdoll::Ragdoll(const SpawnParams& params)
     : Actor(params)
@@ -43,6 +46,17 @@ float Ragdoll::InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& local
         // Initialize body
         rigidBody->SetSolverIterationCounts(PositionSolverIterations, VelocitySolverIterations);
         rigidBody->SetMaxDepenetrationVelocity(MaxDepenetrationVelocity);
+
+#if USE_EDITOR
+        for (auto child : rigidBody->Children)
+        {
+            auto joint = Cast<Joint>(child);
+            if (joint && joint->Target == nullptr && joint->IsActiveInHierarchy())
+            {
+                LOG(Warning, "Ragdol joint '{0}' has missing target", joint->GetNamePath());
+            }
+        }
+#endif
     }
     return weight;
 }
