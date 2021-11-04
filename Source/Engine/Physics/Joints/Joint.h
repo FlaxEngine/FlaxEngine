@@ -26,7 +26,8 @@ protected:
     float _breakTorque;
     Vector3 _targetAnchor;
     Quaternion _targetAnchorRotation;
-    bool _enableCollision;
+    bool _enableCollision = true;
+    bool _enableAutoAnchor = false;
 
 public:
 
@@ -79,12 +80,23 @@ public:
     API_PROPERTY() void SetEnableCollision(bool value);
 
     /// <summary>
+    /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(39), DefaultValue(false), EditorDisplay(\"Joint\")")
+    bool GetEnableAutoAnchor() const;
+
+    /// <summary>
+    /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
+    /// </summary>
+    API_PROPERTY() void SetEnableAutoAnchor(bool value);
+
+    /// <summary>
     /// Gets the target anchor.
     /// </summary>
     /// <remarks>
     /// This is the relative pose which locates the joint frame relative to the target actor.
     /// </remarks>
-    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Joint\")")
+    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Joint\"), VisibleIf(nameof(EnableAutoAnchor), true)")
     FORCE_INLINE Vector3 GetTargetAnchor() const
     {
         return _targetAnchor;
@@ -104,7 +116,7 @@ public:
     /// <remarks>
     /// This is the relative pose rotation which locates the joint frame relative to the target actor.
     /// </remarks>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorDisplay(\"Joint\")")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorDisplay(\"Joint\"), VisibleIf(nameof(EnableAutoAnchor), true)")
     FORCE_INLINE Quaternion GetTargetAnchorRotation() const
     {
         return _targetAnchorRotation;

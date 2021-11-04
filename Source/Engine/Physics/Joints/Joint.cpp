@@ -19,7 +19,6 @@ Joint::Joint(const SpawnParams& params)
     , _breakTorque(MAX_float)
     , _targetAnchor(Vector3::Zero)
     , _targetAnchorRotation(Quaternion::Identity)
-    , _enableCollision(true)
 {
     Target.Changed.Bind<Joint, &Joint::OnTargetChanged>(this);
 }
@@ -30,7 +29,6 @@ void Joint::SetBreakForce(float value)
         return;
 
     _breakForce = value;
-
     if (_joint)
     {
         _joint->setBreakForce(_breakForce, _breakTorque);
@@ -43,7 +41,6 @@ void Joint::SetBreakTorque(float value)
         return;
 
     _breakTorque = value;
-
     if (_joint)
     {
         _joint->setBreakForce(_breakForce, _breakTorque);
@@ -56,11 +53,20 @@ void Joint::SetEnableCollision(bool value)
         return;
 
     _enableCollision = value;
-
     if (_joint)
     {
         _joint->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, value);
     }
+}
+
+bool Joint::GetEnableAutoAnchor() const
+{
+    return _enableAutoAnchor;
+}
+
+void Joint::SetEnableAutoAnchor(bool value)
+{
+    _enableAutoAnchor = value;
 }
 
 void Joint::SetTargetAnchor(const Vector3& value)
@@ -69,8 +75,7 @@ void Joint::SetTargetAnchor(const Vector3& value)
         return;
 
     _targetAnchor = value;
-
-    if (_joint)
+    if (_joint && !_enableAutoAnchor)
     {
         _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
     }
@@ -82,8 +87,7 @@ void Joint::SetTargetAnchorRotation(const Quaternion& value)
         return;
 
     _targetAnchorRotation = value;
-
-    if (_joint)
+    if (_joint && !_enableAutoAnchor)
     {
         _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
     }
@@ -155,6 +159,12 @@ void Joint::Create()
     data.Rot0 = _localTransform.Orientation;
     data.Pos1 = _targetAnchor;
     data.Rot1 = _targetAnchorRotation;
+    if (_enableAutoAnchor && target)
+    {
+        // Place target anchor at the joint location
+        data.Pos1 = Target->GetTransform().WorldToLocal(GetPosition());
+        data.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
+    }
     _joint = CreateJoint(data);
     _joint->userData = this;
 
@@ -206,6 +216,8 @@ Vector3 Joint::GetTargetPosition() const
     Vector3 position = _targetAnchor;
     if (Target)
     {
+        if (_enableAutoAnchor)
+            position = Target->GetTransform().WorldToLocal(GetPosition());
         position = Target->GetOrientation() * position + Target->GetPosition();
     }
     return position;
@@ -216,6 +228,8 @@ Quaternion Joint::GetTargetOrientation() const
     Quaternion rotation = _targetAnchorRotation;
     if (Target)
     {
+        if (_enableAutoAnchor)
+            rotation = WorldToLocal(Target->GetOrientation(), GetOrientation());
         rotation = Target->GetOrientation() * rotation;
     }
     return rotation;
@@ -259,6 +273,7 @@ void Joint::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
     SERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
     SERIALIZE_MEMBER(EnableCollision, _enableCollision);
+    SERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
 }
 
 void Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -272,6 +287,7 @@ void Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
     DESERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
     DESERIALIZE_MEMBER(EnableCollision, _enableCollision);
+    DESERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
 }
 
 void Joint::BeginPlay(SceneBeginData* data)
