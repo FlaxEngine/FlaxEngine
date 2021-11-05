@@ -425,7 +425,7 @@ namespace Flax.Build.Bindings
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append("ref ");
 
-                var convertFunc = CppParamsWrappersCache[i];
+                var convertFunc = GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller);
                 var paramName = isSetter ? "value" : parameterInfo.Name;
                 if (string.IsNullOrWhiteSpace(convertFunc) || parameterInfo.IsOut)
                 {
