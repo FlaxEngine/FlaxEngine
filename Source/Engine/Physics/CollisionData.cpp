@@ -133,6 +133,53 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelData* modelData, 
 
 #endif
 
+bool CollisionData::GetModelTriangle(uint32 faceIndex, MeshBase*& mesh, uint32& meshTriangleIndex) const
+{
+    mesh = nullptr;
+    meshTriangleIndex = MAX_uint32;
+    if (!IsLoaded())
+        return false;
+    ScopeLock lock(Locker);
+    if (_triangleMesh && faceIndex < _triangleMesh->getNbTriangles())
+    {
+        if (const PxU32* remap = _triangleMesh->getTrianglesRemap())
+        {
+            // Get source triangle index from the triangle mesh
+            meshTriangleIndex = remap[faceIndex];
+
+            // Check if model was used when cooking
+            AssetReference<ModelBase> model;
+            model = _options.Model;
+            if (!model)
+                return true;
+
+            // Follow code-path similar to CollisionCooking.cpp to pick a mesh that contains this triangle (collision is cooked from merged all source meshes from the model)
+            if (model->WaitForLoaded())
+                return false;
+            const int32 lodIndex = Math::Clamp(_options.ModelLodIndex, 0, model->GetLODsCount());
+            Array<MeshBase*> meshes;
+            model->GetMeshes(meshes, lodIndex);
+            uint32 triangleCounter = 0;
+            for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
+            {
+                MeshBase* m = meshes[meshIndex];
+                if ((_options.MaterialSlotsMask & (1 << m->GetMaterialSlotIndex())) == 0)
+                    continue;
+                const uint32 count = m->GetTriangleCount();
+                if (meshTriangleIndex - triangleCounter <= count)
+                {
+                    mesh = m;
+                    meshTriangleIndex -= triangleCounter;
+                    return true;
+                }
+                triangleCounter += count;
+            }
+        }
+    }
+
+    return false;
+}
+
 void CollisionData::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
     vertexBuffer.Clear();
@@ -298,6 +345,7 @@ CollisionData::LoadResult CollisionData::load(const SerializedOptions* options, 
     _options.ModelLodIndex = options->ModelLodIndex;
     _options.ConvexFlags = options->ConvexFlags;
     _options.ConvexVertexLimit = options->ConvexVertexLimit < 4 ? 255 : options->ConvexVertexLimit;
+    _options.MaterialSlotsMask = options->MaterialSlotsMask == 0 ? MAX_uint32 : options->MaterialSlotsMask;
 
     // Load data (rest of the chunk is a cooked collision data)
     if (_options.Type == CollisionDataType::None && dataSize > 0)

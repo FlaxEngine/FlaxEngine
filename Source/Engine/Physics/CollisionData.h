@@ -8,6 +8,7 @@
 class Model;
 class ModelBase;
 class ModelData;
+class MeshBase;
 
 namespace physx
 {
@@ -104,42 +105,37 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
     /// <summary>
     /// The data type.
     /// </summary>
-    API_FIELD() CollisionDataType Type;
+    API_FIELD() CollisionDataType Type = CollisionDataType::None;
 
     /// <summary>
     /// The source model asset id.
     /// </summary>
-    API_FIELD() Guid Model;
+    API_FIELD() Guid Model = Guid::Empty;
 
     /// <summary>
     /// The source model LOD index.
     /// </summary>
-    API_FIELD() int32 ModelLodIndex;
+    API_FIELD() int32 ModelLodIndex = 0;
 
     /// <summary>
     /// The cooked collision bounds.
     /// </summary>
-    API_FIELD() BoundingBox Box;
+    API_FIELD() BoundingBox Box = BoundingBox::Zero;
 
     /// <summary>
     /// The convex generation flags.
     /// </summary>
-    API_FIELD() ConvexMeshGenerationFlags ConvexFlags;
+    API_FIELD() ConvexMeshGenerationFlags ConvexFlags = ConvexMeshGenerationFlags::None;
 
     /// <summary>
     /// The convex vertices limit (maximum amount).
     /// </summary>
-    API_FIELD() int32 ConvexVertexLimit;
+    API_FIELD() int32 ConvexVertexLimit = 0;
 
-    CollisionDataOptions()
-    {
-        Type = CollisionDataType::None;
-        Model = Guid::Empty;
-        ModelLodIndex = 0;
-        Box = BoundingBox::Zero;
-        ConvexFlags = ConvexMeshGenerationFlags::None;
-        ConvexVertexLimit = 0;
-    }
+    /// <summary>
+    /// The source model material slots mask. One bit per-slot. Can be used to exclude particular material slots from collision cooking.
+    /// </summary>
+    API_FIELD() uint32 MaterialSlotsMask = MAX_uint32;
 };
 
 /// <summary>
@@ -160,7 +156,8 @@ public:
         int32 ModelLodIndex;
         ConvexMeshGenerationFlags ConvexFlags;
         int32 ConvexVertexLimit;
-        byte Padding[96];
+        uint32 MaterialSlotsMask;
+        byte Padding[92];
     };
 
     static_assert(sizeof(SerializedOptions) == 128, "Invalid collision data options size. Change the padding.");
@@ -258,6 +255,16 @@ public:
     bool CookCollision(CollisionDataType type, ModelData* modelData, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit);
 
 #endif
+
+    /// <summary>
+    /// Extracts the triangle index of the original mesh data used for cooking this collision data. Can be used to get vertex attributes of the triangle mesh hit by the raycast.
+    /// </summary>
+    /// <remarks>Supported only for collision data built as triangle mesh and without <see cref="ConvexMeshGenerationFlags.SuppressFaceRemapTable"/> flag set.</remarks>
+    /// <param name="faceIndex">The face index of the collision mesh.</param>
+    /// <param name="mesh">The result source mesh used to build this collision data (can be null if collision data was cooked using custom geometry without source Model set).</param>
+    /// <param name="meshTriangleIndex">The result triangle index of the source geometry used to build this collision data.</param>
+    /// <returns>True if got a valid triangle index, otherwise false.</returns>
+    API_FUNCTION() bool GetModelTriangle(uint32 faceIndex, API_PARAM(Out) MeshBase*& mesh, API_PARAM(Out) uint32& meshTriangleIndex) const;
 
     /// <summary>
     /// Extracts the collision data geometry into list of triangles.

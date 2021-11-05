@@ -23,7 +23,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
     /// <summary>
     /// The collider that was hit.
     /// </summary>
-    API_FIELD() PhysicsColliderActor* Collider;
+    API_FIELD() PhysicsColliderActor* Collider = nullptr;
 
     /// <summary>
     /// The normal of the surface the ray hit.
@@ -43,6 +43,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
     /// <summary>
     /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
     /// </summary>
+    /// <seealso cref="CollisionData.GetModelTriangle" />
     API_FIELD() uint32 FaceIndex;
 
     /// <summary>

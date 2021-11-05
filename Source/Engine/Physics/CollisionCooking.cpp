@@ -366,6 +366,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
     outputOptions.ModelLodIndex = arg.ModelLodIndex;
     outputOptions.ConvexFlags = arg.ConvexFlags;
     outputOptions.ConvexVertexLimit = arg.ConvexVertexLimit;
+    outputOptions.MaterialSlotsMask = arg.MaterialSlotsMask;
 
     return false;
 }
