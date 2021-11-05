@@ -47,9 +47,7 @@ API_ENUM(Attributes="Flags") enum class ConvexMeshGenerationFlags
     None = 0,
 
     /// <summary>
-    /// Disables the convex mesh validation to speed-up hull creation. 
-    /// Creating a convex mesh with invalid input data without prior validation
-    /// may result in undefined behavior.
+    /// Disables the convex mesh validation to speed-up hull creation. Creating a convex mesh with invalid input data without prior validation may result in undefined behavior.
     /// </summary>
     SkipValidation = 1,
 
@@ -73,17 +71,25 @@ API_ENUM(Attributes="Flags") enum class ConvexMeshGenerationFlags
     UsePlaneShifting = 2,
 
     /// <summary>
-    /// Inertia tensor computation is faster using SIMD code, but the precision is lower, which may result 
-    /// in incorrect inertia for very thin hulls.
+    /// Inertia tensor computation is faster using SIMD code, but the precision is lower, which may result in incorrect inertia for very thin hulls.
     /// </summary>
     UseFastInteriaComputation = 4,
 
     /// <summary>
     /// Convex hull input vertices are shifted to be around origin to provide better computation stability.
-    /// It is recommended to provide input vertices around the origin, otherwise use this flag to improve
-    /// numerical stability.
+    /// It is recommended to provide input vertices around the origin, otherwise use this flag to improve numerical stability.
     /// </summary>
     ShiftVertices = 8,
+
+    /// <summary>
+    /// If checked, the face remap table is not created. This saves a significant amount of memory, but disabled ability to remap the cooked collision geometry into original mesh using raycast hit info.
+    /// </summary>
+    SuppressFaceRemapTable = 16,
+
+    /// <summary>
+    /// The combination of flags that improve the collision data cooking performance at the cost of quality and features. Recommend for runtime dynamic or deformable objects that need quick collision updates.
+    /// </summary>
+    FastCook = SkipValidation | UseFastInteriaComputation | SuppressFaceRemapTable,
 };
 
 DECLARE_ENUM_OPERATORS(ConvexMeshGenerationFlags);
@@ -170,7 +176,6 @@ public:
     /// <summary>
     /// Gets the options.
     /// </summary>
-    /// <returns>The options.</returns>
     API_PROPERTY() FORCE_INLINE const CollisionDataOptions& GetOptions() const
     {
         return _options;
@@ -208,6 +213,7 @@ public:
     /// <param name="materialSlotsMask">The source model material slots mask. One bit per-slot. Can be used to exclude particular material slots from collision cooking.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
+    /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool CookCollision(CollisionDataType type, ModelBase* model, int32 modelLodIndex = 0, uint32 materialSlotsMask = MAX_uint32, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
@@ -221,6 +227,7 @@ public:
     /// <param name="triangles">The source data index buffer (triangles list). Uses 32-bit stride buffer. Cannot be empty. Length must be multiple of 3 (as 3 vertices build a triangle).</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
+    /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
@@ -234,6 +241,7 @@ public:
     /// <param name="triangles">The source data index buffer (triangles list). Uses 32-bit stride buffer. Cannot be empty. Length must be multiple of 3 (as 3 vertices build a triangle).</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
+    /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
@@ -246,6 +254,7 @@ public:
     /// <param name="modelData">The custom geometry.</param>
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
+    /// <returns>True if failed, otherwise false.</returns>
     bool CookCollision(CollisionDataType type, ModelData* modelData, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit);
 
 #endif

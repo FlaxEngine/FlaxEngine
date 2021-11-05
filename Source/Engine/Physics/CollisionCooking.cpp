@@ -15,7 +15,8 @@
 #define CONVEX_VERTEX_MIN 8
 #define CONVEX_VERTEX_MAX 255
 #define ENSURE_CAN_COOK \
-	if (Physics::GetCooking() == nullptr) \
+    auto cooking = Physics::GetCooking(); \
+    if (cooking == nullptr) \
 	{ \
 		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use collision generation at runtime."); \
 		return true; \
@@ -45,11 +46,14 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
         desc.flags |= PxConvexFlag::Enum::eFAST_INERTIA_COMPUTATION;
     if (input.ConvexFlags & ConvexMeshGenerationFlags::ShiftVertices)
         desc.flags |= PxConvexFlag::Enum::eSHIFT_VERTICES;
+    PxCookingParams cookingParams = cooking->getParams();
+    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
+    cooking->setParams(cookingParams);
 
     // Perform cooking
     PxDefaultMemoryOutputStream outputStream;
     PxConvexMeshCookingResult::Enum result;
-    if (!Physics::GetCooking()->cookConvexMesh(desc, outputStream, &result))
+    if (!cooking->cookConvexMesh(desc, outputStream, &result))
     {
         LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", result, input.VertexCount);
         return true;
@@ -76,11 +80,14 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
     desc.triangles.stride = 3 * (input.Is16bitIndexData ? sizeof(uint16) : sizeof(uint32));
     desc.triangles.data = input.IndexData;
     desc.flags = input.Is16bitIndexData ? PxMeshFlag::e16_BIT_INDICES : (PxMeshFlag::Enum)0;
+    PxCookingParams cookingParams = cooking->getParams();
+    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
+    cooking->setParams(cookingParams);
 
     // Perform cooking
     PxDefaultMemoryOutputStream outputStream;
     PxTriangleMeshCookingResult::Enum result;
-    if (!Physics::GetCooking()->cookTriangleMesh(desc, outputStream, &result))
+    if (!cooking->cookTriangleMesh(desc, outputStream, &result))
     {
         LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", result, input.VertexCount, input.IndexCount);
         return true;
