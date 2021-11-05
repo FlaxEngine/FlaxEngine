@@ -236,51 +236,59 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseDown(location, button))
+                return true;
+
             if (button == MouseButton.Left && !_isPressed)
             {
                 OnPressBegin();
                 return true;
             }
-
-            return base.OnMouseDown(location, button);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (button == MouseButton.Left && _isPressed)
             {
                 OnPressEnd();
                 OnClick();
                 return true;
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnTouchDown(Vector2 location, int pointerId)
         {
+            if (base.OnTouchDown(location, pointerId))
+                return true;
+
             if (!_isPressed)
             {
                 OnPressBegin();
                 return true;
             }
-
-            return base.OnTouchDown(location, pointerId);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnTouchUp(Vector2 location, int pointerId)
         {
+            if (base.OnTouchUp(location, pointerId))
+                return true;
+
             if (_isPressed)
             {
                 OnPressEnd();
                 OnClick();
                 return true;
             }
-
-            return base.OnTouchUp(location, pointerId);
+            return false;
         }
 
         /// <inheritdoc />

@@ -547,23 +547,25 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left)
             {
                 _touchDown = true;
+                Focus();
                 return true;
             }
-
             return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (_touchDown && button == MouseButton.Left)
             {
                 _touchDown = false;
                 ShowPopup();
                 return true;
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />

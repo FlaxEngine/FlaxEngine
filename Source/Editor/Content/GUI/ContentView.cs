@@ -598,6 +598,14 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+            return AutoFocus && Focus(this);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseWheel(Vector2 location, float delta)
         {
             // Check if pressing control key

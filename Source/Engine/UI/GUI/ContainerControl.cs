@@ -783,10 +783,8 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire events
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
-                        // Wheel
                         if (child.OnMouseWheel(childLocation, delta))
                         {
                             return true;
@@ -794,8 +792,7 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
-
-            return base.OnMouseWheel(location, delta);
+            return false;
         }
 
         /// <inheritdoc />
@@ -807,10 +804,8 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
-                        // Send event further
                         if (child.OnMouseDown(childLocation, button))
                         {
                             return true;
@@ -818,8 +813,7 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
-
-            return base.OnMouseDown(location, button);
+            return false;
         }
 
         /// <inheritdoc />
@@ -831,10 +825,8 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
-                        // Send event further
                         if (child.OnMouseUp(childLocation, button))
                         {
                             return true;
@@ -842,8 +834,7 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />
@@ -855,10 +846,8 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
-                        // Send event further
                         if (child.OnMouseDoubleClick(childLocation, button))
                         {
                             return true;
@@ -866,8 +855,7 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
-
-            return base.OnMouseDoubleClick(location, button);
+            return false;
         }
 
         /// <inheritdoc />

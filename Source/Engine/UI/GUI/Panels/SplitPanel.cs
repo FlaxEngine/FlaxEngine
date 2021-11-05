@@ -169,29 +169,31 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
-            {
-                if (_splitterRect.Contains(location))
-                {
-                    // Start moving splitter
-                    StartTracking();
-                    return false;
-                }
-            }
+            if (base.OnMouseDown(location, button))
+                return true;
 
-            return base.OnMouseDown(location, button);
+            if (button == MouseButton.Left && _splitterRect.Contains(location))
+            {
+                // Start moving splitter
+                StartTracking();
+                Focus();
+                return false;
+            }
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (_splitterClicked)
             {
                 EndTracking();
                 return true;
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />

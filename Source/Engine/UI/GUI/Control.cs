@@ -653,7 +653,7 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            return _autoFocus && Focus(this);
+            return false;
         }
 
         /// <summary>
