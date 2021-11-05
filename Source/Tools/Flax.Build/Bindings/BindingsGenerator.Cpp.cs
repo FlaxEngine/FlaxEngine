@@ -358,10 +358,8 @@ namespace Flax.Build.Bindings
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
             {
-                typeInfo.IsArray = false;
-                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { typeInfo, }, };
+                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
                 var result = GenerateCppWrapperNativeToManaged(buildData, arrayType, caller, out type, functionInfo);
-                typeInfo.IsArray = true;
                 return result.Replace("{0}", $"Span<{typeInfo.Type}>({{0}}, {typeInfo.ArraySize})");
             }
 
@@ -533,10 +531,8 @@ namespace Flax.Build.Bindings
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
             {
-                typeInfo.IsArray = false;
-                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { typeInfo, }, };
+                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
                 var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, functionInfo, out needLocalVariable);
-                typeInfo.IsArray = true;
                 return result + ".Get()";
             }
 
@@ -776,6 +772,12 @@ namespace Flax.Build.Bindings
 
                 CppParamsThatNeedConversion[i] = false;
                 CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
+
+                // Out parameters that need additional converting will be converted at the native side (eg. object reference)
+                var isOutWithManagedConverter = parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller));
+                if (isOutWithManagedConverter)
+                    managedType = "MonoObject*";
+
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
@@ -894,9 +896,11 @@ namespace Flax.Build.Bindings
                     var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
                     if (apiType != null)
                     {
-                        // TODO: maybe for Out-only params we could skip copying from managed data? see RayCastHit usage converted here from RayCastHitManaged
-                        contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
-                        if (parameterInfo.Type.IsPtr)
+                        if (parameterInfo.IsOut)
+                            contents.AppendFormat("        {1} {0}Temp;", parameterInfo.Name, new TypeInfo(parameterInfo.Type) { IsRef = false }.GetFullNameNative(buildData, caller)).AppendLine();
+                        else
+                            contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
+                        if (parameterInfo.Type.IsPtr && !parameterInfo.Type.IsRef)
                             callParams += "&";
                         callParams += parameterInfo.Name;
                         callParams += "Temp";

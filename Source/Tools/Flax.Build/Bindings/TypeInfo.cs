@@ -11,7 +11,7 @@ namespace Flax.Build.Bindings
     /// <summary>
     /// The native type information for bindings generator.
     /// </summary>
-    public class TypeInfo : IEquatable<TypeInfo>, IBindingsCache
+    public class TypeInfo : IEquatable<TypeInfo>, IBindingsCache, ICloneable
     {
         public string Type;
         public bool IsConst;
@@ -32,6 +32,23 @@ namespace Flax.Build.Bindings
         /// Gets a value indicating whether this type is constant reference to a value.
         /// </summary>
         public bool IsConstRef => IsRef && IsConst;
+
+        public TypeInfo()
+        {
+        }
+
+        public TypeInfo(TypeInfo other)
+        {
+            Type = other.Type;
+            IsConst = other.IsConst;
+            IsRef = other.IsRef;
+            IsPtr = other.IsPtr;
+            IsArray = other.IsArray;
+            IsBitField = other.IsBitField;
+            ArraySize = other.ArraySize;
+            BitSize = other.BitSize;
+            GenericArgs = other.GenericArgs != null ? new List<TypeInfo>(other.GenericArgs) : null;
+        }
 
         /// <summary>
         /// Gets a value indicating whether this type is POD (plain old data).
@@ -182,6 +199,12 @@ namespace Flax.Build.Bindings
                     hashCode = (hashCode * 397) ^ GenericArgs.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            return new TypeInfo(this);
         }
     }
 }

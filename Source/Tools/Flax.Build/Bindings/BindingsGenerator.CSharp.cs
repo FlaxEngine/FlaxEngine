@@ -362,6 +362,11 @@ namespace Flax.Build.Bindings
                     contents.Append("out ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append("ref ");
+
+                // Out parameters that need additional converting will be converted at the native side (eg. object reference)
+                if (parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller)))
+                    nativeType = parameterInfo.Type.Type;
+
                 contents.Append(nativeType);
                 contents.Append(' ');
                 contents.Append(parameterInfo.Name);
@@ -399,16 +404,15 @@ namespace Flax.Build.Bindings
             {
                 contents.Append("return ");
             }
-
             contents.Append("Internal_").Append(functionInfo.UniqueName).Append('(');
 
+            // Pass parameters
             var separator = false;
             if (!functionInfo.IsStatic)
             {
                 contents.Append("__unmanagedPtr");
                 separator = true;
             }
-
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
@@ -416,29 +420,29 @@ namespace Flax.Build.Bindings
                     contents.Append(", ");
                 separator = true;
 
-                var convertFunc = GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller);
-                if (string.IsNullOrWhiteSpace(convertFunc))
-                {
-                    if (parameterInfo.IsOut)
-                        contents.Append("out ");
-                    else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
-                        contents.Append("ref ");
+                if (parameterInfo.IsOut)
+                    contents.Append("out ");
+                else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
+                    contents.Append("ref ");
 
+                var convertFunc = CppParamsWrappersCache[i];
+                var paramName = isSetter ? "value" : parameterInfo.Name;
+                if (string.IsNullOrWhiteSpace(convertFunc) || parameterInfo.IsOut)
+                {
                     // Pass value
-                    contents.Append(isSetter ? "value" : parameterInfo.Name);
+                    contents.Append(paramName);
                 }
                 else
                 {
-                    if (parameterInfo.IsOut)
-                        throw new Exception($"Cannot use Out meta on parameter {parameterInfo} in function {functionInfo.Name} in {caller}.");
                     if (parameterInfo.IsRef)
-                        throw new Exception($"Cannot use Ref meta on parameter {parameterInfo} in function {functionInfo.Name} in {caller}.");
+                        throw new Exception($"Cannot use Ref meta on parameter {parameterInfo} in function {functionInfo.Name} in {caller}. Use API_PARAM(Out) if you want to pass it as a result reference.");
 
                     // Convert value
-                    contents.Append(string.Format(convertFunc, isSetter ? "value" : parameterInfo.Name));
+                    contents.Append(string.Format(convertFunc, paramName));
                 }
             }
 
+            // Pass additional parameters
             var customParametersCount = functionInfo.Glue.CustomParameters?.Count ?? 0;
             for (var i = 0; i < customParametersCount; i++)
             {
@@ -448,7 +452,7 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 var convertFunc = GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller);
-                if (string.IsNullOrWhiteSpace(convertFunc))
+                if (string.IsNullOrWhiteSpace(convertFunc) || parameterInfo.IsOut)
                 {
                     if (parameterInfo.IsOut)
                         contents.Append("out ");
@@ -466,6 +470,8 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append(");");
+
+            // Return result
             if (functionInfo.Glue.UseReferenceForResult)
             {
                 contents.Append(" return resultAsRef;");
