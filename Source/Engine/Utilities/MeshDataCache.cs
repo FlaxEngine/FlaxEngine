@@ -39,6 +39,11 @@ namespace FlaxEngine.Utilities
         public MeshData[][] MeshDatas => _meshDatasInProgress ? null : _meshDatas;
 
         /// <summary>
+        /// Occurs when mesh data gets downloaded (called on async thread).
+        /// </summary>
+        public event Action Finished;
+
+        /// <summary>
         /// Requests the mesh data.
         /// </summary>
         /// <param name="model">The model to get it's data.</param>
@@ -122,6 +127,8 @@ namespace FlaxEngine.Utilities
                         };
                     }
                 }
+
+                Finished?.Invoke();
             }
             catch (Exception ex)
             {
