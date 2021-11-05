@@ -20,12 +20,14 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
 protected:
 
     ModelBase* _model;
-    bool _use16BitIndexBuffer;
     BoundingBox _box;
     BoundingSphere _sphere;
+    int32 _index;
+    int32 _lodIndex;
     uint32 _vertices;
     uint32 _triangles;
     int32 _materialSlotIndex;
+    bool _use16BitIndexBuffer;
 
     explicit MeshBase(const SpawnParams& params)
         : PersistentScriptingObject(params)
@@ -37,9 +39,25 @@ public:
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>
-    FORCE_INLINE ModelBase* GetModelBase() const
+    API_PROPERTY() FORCE_INLINE ModelBase* GetModelBase() const
     {
         return _model;
+    }
+
+    /// <summary>
+    /// Gets the mesh parent LOD index.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetLODIndex() const
+    {
+        return _lodIndex;
+    }
+
+    /// <summary>
+    /// Gets the mesh index.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetIndex() const
+    {
+        return _index;
     }
 
     /// <summary>

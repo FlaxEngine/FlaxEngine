@@ -23,8 +23,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
 
-    int32 _index;
-    int32 _lodIndex;
     bool _hasLightmapUVs;
     GPUBuffer* _vertexBuffers[3];
     GPUBuffer* _indexBuffer;
@@ -61,25 +59,8 @@ public:
     }
 
     /// <summary>
-    /// Gets the mesh parent LOD index.
-    /// </summary>
-    FORCE_INLINE int32 GetLODIndex() const
-    {
-        return _lodIndex;
-    }
-
-    /// <summary>
-    /// Gets the mesh index.
-    /// </summary>
-    FORCE_INLINE int32 GetIndex() const
-    {
-        return _index;
-    }
-
-    /// <summary>
     /// Gets the index buffer.
     /// </summary>
-    /// <returns>The buffer.</returns>
     FORCE_INLINE GPUBuffer* GetIndexBuffer() const
     {
         return _indexBuffer;

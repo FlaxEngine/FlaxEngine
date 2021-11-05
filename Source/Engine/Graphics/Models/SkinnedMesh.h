@@ -19,8 +19,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedMesh, MeshBase);
 protected:
 
-    int32 _index;
-    int32 _lodIndex;
     GPUBuffer* _vertexBuffer;
     GPUBuffer* _indexBuffer;
     mutable Array<byte> _cachedIndexBuffer;
@@ -50,14 +48,6 @@ public:
     FORCE_INLINE SkinnedModel* GetSkinnedModel() const
     {
         return (SkinnedModel*)_model;
-    }
-
-    /// <summary>
-    /// Gets the mesh index.
-    /// </summary>
-    FORCE_INLINE int32 GetIndex() const
-    {
-        return _index;
     }
 
     /// <summary>
