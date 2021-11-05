@@ -41,7 +41,12 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
     API_FIELD() Vector3 Point;
 
     /// <summary>
-    /// The barycentric coordinates of hit point, for triangle mesh and height field.
+    /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
+    /// </summary>
+    API_FIELD() uint32 FaceIndex;
+
+    /// <summary>
+    /// The barycentric coordinates of hit triangle. Valid only for triangle mesh and height field.
     /// </summary>
     API_FIELD() Vector2 UV;
 

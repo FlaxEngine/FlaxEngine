@@ -140,6 +140,7 @@ void RayCastHit::Gather(const PxRaycastHit& hit)
     Normal = P2C(hit.normal);
     Distance = hit.distance;
     Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
+    FaceIndex = hit.faceIndex;
     UV.X = hit.u;
     UV.Y = hit.v;
 }
@@ -150,6 +151,7 @@ void RayCastHit::Gather(const PxSweepHit& hit)
     Normal = P2C(hit.normal);
     Distance = hit.distance;
     Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
+    FaceIndex = hit.faceIndex;
     UV = Vector2::Zero;
 }
 
