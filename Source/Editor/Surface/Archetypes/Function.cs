@@ -1762,17 +1762,19 @@ namespace FlaxEditor.Surface.Archetypes
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
                 }
-                var typeName = (string)Values[2];
-                var isStatic = (bool)Values[3];
                 ScriptType type;
+                bool isStatic;
                 if (fieldInfo)
                 {
                     type = fieldInfo.ValueType;
+                    isStatic = fieldInfo.IsStatic;
                     SetValue(2, type.TypeName);
-                    SetValue(3, type.IsStatic);
+                    SetValue(3, isStatic);
                 }
                 else
                 {
+                    var typeName = (string)Values[2];
+                    isStatic = (bool)Values[3];
                     type = TypeUtils.GetType(typeName);
                 }
                 if (type)
@@ -1851,17 +1853,19 @@ namespace FlaxEditor.Surface.Archetypes
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
                 }
-                var typeName = (string)Values[2];
-                var isStatic = (bool)Values[3];
                 ScriptType type;
+                bool isStatic;
                 if (fieldInfo)
                 {
                     type = fieldInfo.ValueType;
+                    isStatic = fieldInfo.IsStatic;
                     SetValue(2, type.TypeName);
-                    SetValue(3, type.IsStatic);
+                    SetValue(3, isStatic);
                 }
                 else
                 {
+                    var typeName = (string)Values[2];
+                    isStatic = (bool)Values[3];
                     type = TypeUtils.GetType(typeName);
                 }
                 AddBox(false, 2, 0, string.Empty, new ScriptType(typeof(void)), false);
