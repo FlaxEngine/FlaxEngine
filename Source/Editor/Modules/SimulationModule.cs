@@ -69,11 +69,6 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
-        /// Checks if play mode should start only with single frame update and then enter step mode.
-        /// </summary>
-        public bool ShouldPlayModeStartWithStep => Editor.UI.IsPauseButtonChecked;
-
-        /// <summary>
         /// Returns true if play mode has been requested.
         /// </summary>
         public bool IsPlayModeRequested => _isPlayModeRequested;
@@ -242,10 +237,9 @@ namespace FlaxEditor.Modules
                         _isPlayModeRequested = false;
 
                         // Enter play mode
+                        var shouldPlayModeStartWithStep = Editor.UI.IsPauseButtonChecked;
                         Editor.StateMachine.GoToState<PlayingState>();
-
-                        // Check if move just by one frame
-                        if (ShouldPlayModeStartWithStep)
+                        if (shouldPlayModeStartWithStep)
                         {
                             RequestPausePlay();
                         }
