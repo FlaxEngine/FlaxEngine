@@ -422,9 +422,10 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
 		const auto flags = 0;
 		const auto data = tile.Data.Get();
 #endif
-        if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
+        const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
+        if (dtStatusFailed(result))
         {
-            LOG(Warning, "Could not add tile to navmesh {0}.", Properties.Name);
+            LOG(Warning, "Could not add tile to navmesh {0} (error: {1}).", Properties.Name, result & ~DT_FAILURE);
         }
     }
 }
@@ -740,8 +741,9 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
 	const auto flags = 0;
 	const auto data = tile->Data.Get();
 #endif
-    if (dtStatusFailed(_navMesh->addTile(data, dataSize, flags, 0, nullptr)))
+    const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
+    if (dtStatusFailed(result))
     {
-        LOG(Warning, "Could not add tile to navmesh {0}.", Properties.Name);
+        LOG(Warning, "Could not add tile to navmesh {0} (error: {1}).", Properties.Name, result & ~DT_FAILURE);
     }
 }
