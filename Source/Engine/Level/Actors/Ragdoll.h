@@ -59,6 +59,16 @@ public:
     /// </summary>
     API_PROPERTY() float GetTotalMass() const;
 
+    /// <summary>
+    /// Sets the linear velocity of all rigidbodies in the ragdoll.
+    /// </summary>
+    API_FUNCTION() void SetLinearVelocity(const Vector3& value) const;
+
+    /// <summary>
+    /// Sets the angular velocity of all rigidbodies in the ragdoll (in radians per second).
+    /// </summary>
+    API_FUNCTION() void SetAngularVelocity(const Vector3& value) const;
+
 private:
 
     float InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& localPose);

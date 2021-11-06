@@ -27,6 +27,28 @@ float Ragdoll::GetTotalMass() const
     return result;
 }
 
+void Ragdoll::SetLinearVelocity(const Vector3& value) const
+{
+    for (auto child : Children)
+    {
+        const auto rigidBody = Cast<RigidBody>(child);
+        if (!rigidBody || !rigidBody->IsActiveInHierarchy())
+            continue;
+        rigidBody->SetLinearVelocity(value);
+    }
+}
+
+void Ragdoll::SetAngularVelocity(const Vector3& value) const
+{
+    for (auto child : Children)
+    {
+        const auto rigidBody = Cast<RigidBody>(child);
+        if (!rigidBody || !rigidBody->IsActiveInHierarchy())
+            continue;
+        rigidBody->SetAngularVelocity(value);
+    }
+}
+
 float Ragdoll::InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& localOffset)
 {
     // Bones with 0 weight are non-simulated (kinematic)
