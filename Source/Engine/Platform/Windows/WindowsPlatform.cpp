@@ -9,6 +9,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/BatteryInfo.h"
+#include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -55,9 +56,9 @@ void DbgHelpUnlock()
 
 namespace
 {
-    String UserLocale, ComputerName, UserName, WindowsName;
+    String UserLocale, ComputerName, WindowsName;
     HANDLE EngineMutex = nullptr;
-    Rectangle VirtualScreenBounds = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
+    Rectangle VirtualScreenBounds(0.0f, 0.0f, 0.0f, 0.0f);
     int32 VersionMajor = 0;
     int32 VersionMinor = 0;
     int32 VersionBuild = 0;
@@ -647,10 +648,12 @@ bool WindowsPlatform::Init()
     }
 
     // Get user name string
+    String userName;
     if (GetUserNameW(buffer, &tmp))
     {
-        UserName = String(buffer);
+        userName = String(buffer);
     }
+    OnPlatformUserAdd(New<User>(userName));
 
     WindowsInput::Init();
 
@@ -792,11 +795,6 @@ String WindowsPlatform::GetUserLocaleName()
 String WindowsPlatform::GetComputerName()
 {
     return ComputerName;
-}
-
-String WindowsPlatform::GetUserName()
-{
-    return UserName;
 }
 
 bool WindowsPlatform::GetHasFocus()

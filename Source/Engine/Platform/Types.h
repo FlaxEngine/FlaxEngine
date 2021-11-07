@@ -24,6 +24,8 @@ class WindowsWindow;
 typedef WindowsWindow Window;
 class Win32Network;
 typedef Win32Network Network;
+class UserBase;
+typedef UserBase User;
 
 #elif PLATFORM_UWP
 
@@ -47,6 +49,8 @@ class UWPWindow;
 typedef UWPWindow Window;
 class Win32Network;
 typedef Win32Network Network;
+class UserBase;
+typedef UserBase User;
 
 #elif PLATFORM_LINUX
 
@@ -70,6 +74,8 @@ class LinuxWindow;
 typedef LinuxWindow Window;
 class UnixNetwork;
 typedef UnixNetwork Network;
+class UserBase;
+typedef UserBase User;
 
 #elif PLATFORM_PS4
 
@@ -93,6 +99,8 @@ class PS4Window;
 typedef PS4Window Window;
 class PS4Network;
 typedef PS4Network Network;
+class PS4User;
+typedef PS4User User;
 
 #elif PLATFORM_PS5
 
@@ -116,6 +124,8 @@ class PS5Window;
 typedef PS5Window Window;
 class PS5Network;
 typedef PS5Network Network;
+class PS5User;
+typedef PS5User User;
 
 #elif PLATFORM_XBOX_ONE
 
@@ -139,6 +149,8 @@ class GDKWindow;
 typedef GDKWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
+class GDKUser;
+typedef GDKUser User;
 
 #elif PLATFORM_XBOX_SCARLETT
 
@@ -162,6 +174,8 @@ class GDKWindow;
 typedef GDKWindow Window;
 class NetworkBase;
 typedef NetworkBase Network;
+class GDKUser;
+typedef GDKUser User;
 
 #elif PLATFORM_ANDROID
 
@@ -185,6 +199,8 @@ class AndroidWindow;
 typedef AndroidWindow Window;
 class UnixNetwork;
 typedef UnixNetwork Network;
+class UserBase;
+typedef UserBase User;
 
 #elif PLATFORM_SWITCH
 
@@ -208,6 +224,8 @@ class SwitchWindow;
 typedef SwitchWindow Window;
 class SwitchNetwork;
 typedef SwitchNetwork Network;
+class UserBase;
+typedef UserBase User;
 
 #else
 

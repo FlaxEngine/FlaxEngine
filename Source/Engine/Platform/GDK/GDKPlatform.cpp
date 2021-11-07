@@ -8,6 +8,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/BatteryInfo.h"
+#include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -30,26 +31,6 @@ void* GDKPlatform::Instance = nullptr;
 Delegate<> GDKPlatform::OnSuspend;
 Delegate<> GDKPlatform::OnResume;
 
-struct User
-{
-    XUserHandle UserHandle;
-    XUserLocalId LocalId;
-    Array<APP_LOCAL_DEVICE_ID, FixedAllocation<32>> AssociatedDevices;
-
-    void Set(XUserHandle userHandle, XUserLocalId localId)
-    {
-        UserHandle = userHandle;
-        LocalId = localId;
-        AssociatedDevices.Clear();
-    }
-
-    void Unset()
-    {
-        XUserCloseHandle(UserHandle);
-        AssociatedDevices.Clear();
-    }
-};
-
 namespace
 {
     bool IsSuspended = false;
@@ -58,9 +39,22 @@ namespace
     PAPPSTATE_REGISTRATION Plm = {};
     String UserLocale, ComputerName;
     XTaskQueueHandle TaskQueue = nullptr;
-    Array<User, FixedAllocation<8>> Users;
     XTaskQueueRegistrationToken UserChangeEventCallbackToken;
     XTaskQueueRegistrationToken UserDeviceAssociationChangedCallbackToken;
+}
+
+User* FindUser(const XUserLocalId& id)
+{
+    User* result = nullptr;
+    for (auto& user : Platform::Users)
+    {
+        if (user->LocalId.value == id.value)
+        {
+            result = user;
+            break;
+        }
+    }
+    return result;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -76,7 +70,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         // Complete deferral
         SetEvent(PlmSuspendComplete);
 
-        (void)WaitForSingleObject(PlmSignalResume, INFINITE);
+        WaitForSingleObject(PlmSignalResume, INFINITE);
 
         IsSuspended = false;
         LOG(Info, "Resuming application");
@@ -100,23 +94,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-void CALLBACK UserChangeEventCallback(_In_opt_ void* context,_In_ XUserLocalId userLocalId, _In_ XUserChangeEvent event)
+void CALLBACK UserChangeEventCallback(_In_opt_ void* context, _In_ XUserLocalId userLocalId, _In_ XUserChangeEvent event)
 {
     LOG(Info, "User event (userLocalId: {0}, event: {1})", userLocalId.value, (int32)event);
 
+    auto user = FindUser(userLocalId);
     switch (event)
     {
     case XUserChangeEvent::SignedInAgain:
         break;
     case XUserChangeEvent::SignedOut:
-        for (int32 i = 0; i < Users.Count(); i++)
+        if (user)
         {
-            if (Users[i].LocalId.value == userLocalId.value)
-            {
-                Users[i].Unset();
-                Users.RemoveAt(i);
-                break;
-            }
+            // Logout
+            OnPlatformUserRemove(user);
         }
         break;
     default: ;
@@ -134,20 +125,6 @@ String ToString(const APP_LOCAL_DEVICE_ID& deviceId)
                           *reinterpret_cast<const unsigned int*>(&deviceId.value[20]),
                           *reinterpret_cast<const unsigned int*>(&deviceId.value[24]),
                           *reinterpret_cast<const unsigned int*>(&deviceId.value[28]));
-}
-
-User* FindUser(const XUserLocalId& id)
-{
-    User* result = nullptr;
-    for (auto& user : Users)
-    {
-        if (user.LocalId.value == id.value)
-        {
-            result = &user;
-            break;
-        }
-    }
-    return result;
 }
 
 void CALLBACK UserDeviceAssociationChangedCallback(_In_opt_ void* context,_In_ const XUserDeviceAssociationChange* change)
@@ -185,7 +162,7 @@ void OnMainWindowCreated(HWND hWnd)
             PostMessage(reinterpret_cast<HWND>(context), WM_USER, 0, 0);
 
             // To defer suspend, you must wait to exit this callback
-            (void)WaitForSingleObject(PlmSuspendComplete, INFINITE);
+            WaitForSingleObject(PlmSuspendComplete, INFINITE);
         }
         else
         {
@@ -209,9 +186,9 @@ void CALLBACK AddUserComplete(_In_ XAsyncBlock* ab)
 
         if (FindUser(localId) == nullptr)
         {
-            // Add user
-            auto& user = Users.AddOne();
-            user.Set(userHandle, userLocalId);
+            // Login
+            auto user = New<User>(userHandle, userLocalId, String::Empty);
+            OnPlatformUserAdd(user);
         }
     }
 
@@ -506,11 +483,6 @@ String GDKPlatform::GetComputerName()
     return ComputerName;
 }
 
-String GDKPlatform::GetUserName()
-{
-    return String::Empty;
-}
-
 bool GDKPlatform::GetHasFocus()
 {
     return !IsSuspended;
@@ -524,7 +496,7 @@ bool GDKPlatform::CanOpenUrl(const StringView& url)
 void GDKPlatform::OpenUrl(const StringView& url)
 {
     const StringAsANSI<> urlANSI(url.Get(), url.Length());
-    XLaunchUri(Users[0].UserHandle, urlANSI.Get());
+    XLaunchUri(Users[0]->UserHandle, urlANSI.Get());
 }
 
 struct GetMonitorBoundsData

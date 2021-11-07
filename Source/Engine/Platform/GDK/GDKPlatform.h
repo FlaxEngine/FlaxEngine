@@ -60,7 +60,6 @@ public:
     static int32 GetDpi();
     static String GetUserLocaleName();
     static String GetComputerName();
-    static String GetUserName();
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);

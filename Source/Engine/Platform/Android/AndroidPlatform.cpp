@@ -956,12 +956,6 @@ String AndroidPlatform::GetComputerName()
     return DeviceModel;
 }
 
-String AndroidPlatform::GetUserName()
-{
-    // TODO: add support for username on Android
-    return String::Empty;
-}
-
 bool AndroidPlatform::GetHasFocus()
 {
     return HasFocus;

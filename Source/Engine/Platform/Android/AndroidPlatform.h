@@ -110,7 +110,6 @@ public:
     static ScreenOrientationType GetScreenOrientationType();
     static String GetUserLocaleName();
     static String GetComputerName();
-    static String GetUserName();
     static bool GetHasFocus();
     static bool GetIsPaused();
     static bool CanOpenUrl(const StringView& url);

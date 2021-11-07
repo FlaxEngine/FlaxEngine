@@ -21,6 +21,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/Clipboard.h"
 #include "Engine/Platform/IGuiData.h"
+#include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
@@ -51,7 +52,7 @@
 CPUInfo UnixCpu;
 int ClockSource;
 Guid DeviceId;
-String UserLocale, ComputerName, UserName, HomeDir;
+String UserLocale, ComputerName, HomeDir;
 byte MacAddress[6];
 
 #define UNIX_APP_BUFF_SIZE 256
@@ -2014,6 +2015,10 @@ bool LinuxPlatform::Init()
     UnixCpu.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
     ASSERT(UnixCpu.CacheLineSize && Math::IsPowerOfTwo(UnixCpu.CacheLineSize));
 
+    // Get user name string
+    getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
+    OnPlatformUserAdd(New<User>(String(buffer));
+
     UnixGetMacAddress(MacAddress);
 
     // Generate unique device ID
@@ -2053,10 +2058,6 @@ bool LinuxPlatform::Init()
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
     ComputerName = String(buffer);
-
-    // Get user name string
-    getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
-    UserName = String(buffer);
 
     // Get home dir
     struct passwd pw;
@@ -2601,11 +2602,6 @@ String LinuxPlatform::GetUserLocaleName()
 String LinuxPlatform::GetComputerName()
 {
     return ComputerName;
-}
-
-String LinuxPlatform::GetUserName()
-{
-    return UserName;
 }
 
 bool LinuxPlatform::GetHasFocus()

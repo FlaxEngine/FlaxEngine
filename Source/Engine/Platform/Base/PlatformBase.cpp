@@ -5,6 +5,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/User.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
@@ -40,6 +41,9 @@ static_assert(sizeof(float) == 4, "Invalid float type size.");
 static_assert(sizeof(double) == 8, "Invalid double type size.");
 
 float PlatformBase::CustomDpiScale = 1.0f;
+Array<User*, FixedAllocation<8>> PlatformBase::Users;
+Delegate<User*> PlatformBase::UserAdded;
+Delegate<User*> PlatformBase::UserRemoved;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -100,6 +104,22 @@ const Char* ToString(ThreadPriority value)
     default:
         return TEXT("");
     }
+}
+
+UserBase::UserBase(const String& name)
+    : UserBase(SpawnParams(Guid::New(), TypeInitializer), name)
+{
+}
+
+UserBase::UserBase(const SpawnParams& params, const String& name)
+    : PersistentScriptingObject(params)
+    , _name(name)
+{
+}
+
+String UserBase::GetName() const
+{
+    return _name;
 }
 
 bool PlatformBase::Init()
@@ -460,6 +480,11 @@ NetworkConnectionType PlatformBase::GetNetworkConnectionType()
 ScreenOrientationType PlatformBase::GetScreenOrientationType()
 {
     return ScreenOrientationType::Unknown;
+}
+
+String PlatformBase::GetUserName()
+{
+    return Users.Count() != 0 ? Users[0]->GetName() : String::Empty;
 }
 
 bool PlatformBase::GetIsPaused()

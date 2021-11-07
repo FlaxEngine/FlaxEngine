@@ -595,7 +595,7 @@ public:
     API_PROPERTY() static ScreenOrientationType GetScreenOrientationType();
 
     /// <summary>
-    /// Gets the current  locale culture (eg. "pl-PL" or "en-US").
+    /// Gets the current locale culture (eg. "pl-PL" or "en-US").
     /// </summary>
     API_PROPERTY() static String GetUserLocaleName() = delete;
 
@@ -607,7 +607,7 @@ public:
     /// <summary>
     /// Gets the user name.
     /// </summary>
-    API_PROPERTY() static String GetUserName() = delete;
+    API_PROPERTY() static String GetUserName();
 
     /// <summary>
     /// Returns true if app has user focus.
@@ -624,6 +624,23 @@ public:
     /// </summary>
     /// <param name="result">The result.</param>
     static void CreateGuid(Guid& result);
+
+public:
+
+    /// <summary>
+    /// The list of users.
+    /// </summary>
+    API_FIELD(ReadOnly) static Array<User*, FixedAllocation<8>> Users;
+
+    /// <summary>
+    /// Event called when user gets added (eg. logged in).
+    /// </summary>
+    API_EVENT() static Delegate<User*> UserAdded;
+
+    /// <summary>
+    /// Event called when user gets removed (eg. logged out).
+    /// </summary>
+    API_EVENT() static Delegate<User*> UserRemoved;
 
 public:
 
