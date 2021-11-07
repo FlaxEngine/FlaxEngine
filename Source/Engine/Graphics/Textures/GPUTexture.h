@@ -153,7 +153,7 @@ public:
     }
 
     /// <summary>	
-    /// Gets the number of resident mipmap levels in the texture. (already uploaded to the GPU).
+    /// Gets the number of resident mipmap levels in the texture (already uploaded to the GPU).
     /// </summary>	
     API_PROPERTY() FORCE_INLINE int32 ResidentMipLevels() const
     {
@@ -283,27 +283,24 @@ public:
     }
 
     /// <summary>
-    /// Checks if texture contains sRGB colors data
+    /// Checks if texture contains sRGB colors data.
     /// </summary>
-    /// <returns>True if texture contains sRGB colors data, otherwise false</returns>
     FORCE_INLINE bool IsSRGB() const
     {
         return _sRGB;
     }
 
     /// <summary>
-    /// Checks if texture is normal texture asset (not render target or unordered access or depth buffer or sth else)
+    /// Checks if texture is normal texture asset (not render target or unordered access or depth buffer or sth else).
     /// </summary>
-    /// <returns>True if it is a regular texture, otherwise false</returns>
     FORCE_INLINE bool IsRegularTexture() const
     {
         return _desc.Flags == GPUTextureFlags::ShaderResource;
     }
 
     /// <summary>
-    /// Checks if texture is a staging buffer (supports direct CPU access)
+    /// Checks if texture is a staging buffer (supports direct CPU access).
     /// </summary>
-    /// <returns>True if texture is a staging buffer (supports direct CPU access), otherwise false</returns>
     FORCE_INLINE bool IsStaging() const
     {
         return _desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::StagingReadback;
@@ -554,9 +551,10 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch = 0) = 0;
 
-public:
-
-    void SetResidentMipLevels(int32 count);
+    /// <summary>
+    /// Sets the number of resident mipmap levels in the texture (already uploaded to the GPU).
+    /// </summary>
+    API_PROPERTY() void SetResidentMipLevels(int32 count);
 
 protected:
 

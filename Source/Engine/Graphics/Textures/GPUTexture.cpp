@@ -792,9 +792,9 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
 
 void GPUTexture::SetResidentMipLevels(int32 count)
 {
-    ASSERT(IsRegularTexture() && IsAllocated());
-    ASSERT(Math::IsInRange(count, 0, MipLevels()));
-
+    count = Math::Clamp(count, 0, MipLevels());
+    if (_residentMipLevels == count || !IsRegularTexture())
+        return;
     _residentMipLevels = count;
     onResidentMipsChanged();
 }
