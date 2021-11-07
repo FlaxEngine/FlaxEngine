@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Platform/Defines.h"
+
 // Forward declarations
 class Scripting;
 struct ScriptingType;

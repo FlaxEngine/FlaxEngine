@@ -117,7 +117,7 @@ MObject* MEvent::GetAttribute(MClass* monoClass) const
     mono_custom_attrs_free(attrInfo);
     return foundAttr;
 #else
-    return false;
+    return nullptr;
 #endif
 }
 

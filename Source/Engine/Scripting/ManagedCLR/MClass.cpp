@@ -69,6 +69,7 @@ MClass::MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const MStr
 
 MClass::~MClass()
 {
+#if !COMPILE_WITHOUT_CSHARP
 #if USE_MONO
     if (_attrInfo)
         mono_custom_attrs_free((MonoCustomAttrInfo*)_attrInfo);
@@ -78,6 +79,7 @@ MClass::~MClass()
     _methods.ClearDelete();
     _attributes.ClearDelete();
     _events.ClearDelete();
+#endif
 }
 
 bool MClass::IsGeneric() const
@@ -397,7 +399,7 @@ MObject* MClass::GetAttribute(MClass* monoClass)
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     return attrInfo ? mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative()) : nullptr;
 #else
-    return false;
+    return nullptr;
 #endif
 }
 

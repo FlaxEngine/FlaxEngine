@@ -8,6 +8,7 @@ class ScriptingObject;
 
 /// <summary>
 /// Network driver implementations enum.
+/// [Deprecated in v1.3]
 /// </summary>
 API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverType
 {
@@ -32,6 +33,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
     /// <summary>
     /// The network driver that will be used to create the peer.
     /// To allow two peers to connect, they must use the same host.
+    /// [Deprecated in v1.3]
     /// </summary>
     API_FIELD()
     DEPRECATED NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
