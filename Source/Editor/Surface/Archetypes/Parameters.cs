@@ -209,7 +209,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Add elements and calculate node size if type changes
                 var selected = GetSelected();
-                var type = selected.Type;
+                var type = selected?.Type ?? ScriptType.Null;
                 if (type != _layoutType || type.Type == typeof(Texture))
                 {
                     var elements = GetElementArchetypes(selected);
