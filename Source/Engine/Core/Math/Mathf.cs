@@ -540,6 +540,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Returns signed fractional part of a float.
+        /// </summary>
+        /// <param name="value">Floating point value to convert.</param>
+        /// <returns>A float between [0 ; 1) for nonnegative input. A float between [-1; 0) for negative input.</returns>
+        public static float Frac(float value)
+        {
+            return value - (int)value;
+        }
+
+        /// <summary>
         /// Gradually changes a value towards a desired goal over time with smoothing.
         /// </summary>
         /// <param name="current">The current value.</param>
