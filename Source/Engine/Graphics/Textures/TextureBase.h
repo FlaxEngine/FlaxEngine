@@ -6,6 +6,7 @@
 #include "StreamingTexture.h"
 
 class TextureData;
+class TextureMipData;
 
 /// <summary>
 /// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
@@ -152,6 +153,58 @@ public:
     /// <param name="copyData">True if copy asset data to the result buffer, otherwise texture data will be linked to the internal storage (then the data is valid while asset is loaded and there is no texture data copy operations - faster).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
     bool GetTextureData(TextureData& result, bool copyData = true);
+
+    /// <summary>
+    /// Loads the texture data from the asset (single mip).
+    /// </summary>
+    /// <param name="result">The result data.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <param name="copyData">True if copy asset data to the result buffer, otherwise texture data will be linked to the internal storage (then the data is valid while asset is loaded and there is no texture data copy operations - faster).</param>
+    /// <returns>True if cannot load data, otherwise false.</returns>
+    bool GetTextureMipData(TextureMipData& result, int32 mipIndex = 0, int32 arrayIndex = 0, bool copyData = true);
+
+    /// <summary>
+    /// Gets the texture pixels as Color32 array.
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The result texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color32>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+
+    /// <summary>
+    /// Gets the texture pixels as Color array.
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The result texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+
+    /// <summary>
+    /// Sets the texture pixels as Color32 array (asset must be virtual and already initialized).
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <param name="generateMips">Enables automatic mip-maps generation (fast point filter) based on the current mip (will generate lower mips).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool SetPixels(const Span<Color32>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0, bool generateMips = false);
+
+    /// <summary>
+    /// Sets the texture pixels as Color array (asset must be virtual and already initialized).
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <param name="generateMips">Enables automatic mip-maps generation (fast point filter) based on the current mip (will generate lower mips).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool SetPixels(const Span<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0, bool generateMips = false);
 
     /// <summary>
     /// Initializes the texture with specified initialize data source (asset must be virtual).

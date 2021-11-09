@@ -25,6 +25,9 @@ public:
     TextureMipData& operator=(const TextureMipData& other);
     TextureMipData& operator=(TextureMipData&& other) noexcept;
 
+    bool GetPixels(Array<Color32>& pixels, int32 width, int32 height, PixelFormat format) const;
+    bool GetPixels(Array<Color>& pixels, int32 width, int32 height, PixelFormat format) const;
+
     template<typename T>
     T& Get(int32 x, int32 y)
     {

@@ -11,6 +11,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
 
 TextureMipData::TextureMipData()
@@ -56,6 +57,115 @@ TextureMipData& TextureMipData::operator=(TextureMipData&& other) noexcept
     Lines = other.Lines;
     Data = MoveTemp(other.Data);
     return *this;
+}
+
+bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height, PixelFormat format) const
+{
+    const int32 size = width * height;
+    if (Data.IsInvalid() || size < 1)
+        return true;
+    pixels.Resize(size);
+    byte* dst = (byte*)pixels.Get();
+    const int32 dstRowSize = width * sizeof(Color32);
+    const byte* src = Data.Get();
+    const int32 srcRowSize = RowPitch;
+    switch (format)
+    {
+    case PixelFormat::R8G8B8A8_SInt:
+    case PixelFormat::R8G8B8A8_Typeless:
+    case PixelFormat::R8G8B8A8_SNorm:
+    case PixelFormat::R8G8B8A8_UInt:
+    case PixelFormat::R8G8B8A8_UNorm:
+    case PixelFormat::R8G8B8A8_UNorm_sRGB:
+    case PixelFormat::R8G8_B8G8_UNorm:
+    case PixelFormat::B8G8R8A8_Typeless:
+    case PixelFormat::B8G8R8A8_UNorm:
+    case PixelFormat::B8G8R8A8_UNorm_sRGB:
+    case PixelFormat::B8G8R8X8_Typeless:
+    case PixelFormat::B8G8R8X8_UNorm:
+    case PixelFormat::B8G8R8X8_UNorm_sRGB:
+        if (srcRowSize == dstRowSize)
+            Platform::MemoryCopy(dst, src, size);
+        else
+        {
+            for (uint32 row = 0; row < Lines; row++)
+            {
+                Platform::MemoryCopy(dst, src, dstRowSize);
+                dst += dstRowSize;
+                src += srcRowSize;
+            }
+        }
+        break;
+    default:
+    {
+        // Try to use texture sampler utility
+        auto sampler = TextureTool::GetSampler(format);
+        if (sampler)
+        {
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    Color c = TextureTool::SamplePoint(sampler, x, y, src, RowPitch);
+                    *(Color32*)(dst + dstRowSize * y + x * sizeof(Color32)) = Color32(c);
+                }
+            }
+            return false;
+        }
+        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        return true;
+    }
+    }
+    return false;
+}
+
+bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, PixelFormat format) const
+{
+    const int32 size = width * height;
+    if (Data.IsInvalid() || size < 1)
+        return true;
+    pixels.Resize(size);
+    byte* dst = (byte*)pixels.Get();
+    const int32 dstRowSize = width * sizeof(Color);
+    const byte* src = Data.Get();
+    const int32 srcRowSize = RowPitch;
+    switch (format)
+    {
+    case PixelFormat::R32G32B32A32_Typeless:
+    case PixelFormat::R32G32B32A32_Float:
+        if (srcRowSize == dstRowSize)
+            Platform::MemoryCopy(dst, src, size);
+        else
+        {
+            for (uint32 row = 0; row < Lines; row++)
+            {
+                Platform::MemoryCopy(dst, src, dstRowSize);
+                dst += dstRowSize;
+                src += srcRowSize;
+            }
+        }
+        break;
+    default:
+    {
+        // Try to use texture sampler utility
+        auto sampler = TextureTool::GetSampler(format);
+        if (sampler)
+        {
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    Color c = TextureTool::SamplePoint(sampler, x, y, src, RowPitch);
+                    *(Color*)(dst + dstRowSize * y + x * sizeof(Color)) = c;
+                }
+            }
+            return false;
+        }
+        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        return true;
+    }
+    }
+    return false;
 }
 
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
@@ -196,6 +306,245 @@ bool TextureBase::GetTextureData(TextureData& result, bool copyData)
                 mip.Data.Link(mipData.Get() + (arraySlice * slicePitch), slicePitch);
         }
     }
+
+    return false;
+}
+
+bool TextureBase::GetTextureMipData(TextureMipData& result, int32 mipIndex, int32 arrayIndex, bool copyData)
+{
+    PROFILE_CPU_NAMED("Texture.GetTextureMipData");
+    if (!IsVirtual() && WaitForLoaded())
+    {
+        LOG(Error, "Asset load failed.");
+        return true;
+    }
+    if (mipIndex < 0 || mipIndex > GetMipLevels() || arrayIndex < 0 || arrayIndex > GetArraySize())
+    {
+        Log::ArgumentOutOfRangeException();
+        return true;
+    }
+
+    // Get raw texture data
+    int32 rowPitch, slicePitch;
+    BytesContainer mipData = GetMipData(mipIndex, rowPitch, slicePitch);
+    if (mipData.IsInvalid())
+    {
+        LOG(Error, "Failed to get texture mip data.");
+        return true;
+    }
+    if (mipData.Length() != slicePitch * _texture.TotalArraySize())
+    {
+        LOG(Error, "Invalid custom texture data (slice pitch * array size is different than data bytes count).");
+        return true;
+    }
+
+    // Fill result
+    result.RowPitch = rowPitch;
+    result.DepthPitch = slicePitch;
+    result.Lines = Math::Max(1, Height() >> mipIndex);
+    if (copyData)
+        result.Data.Copy(mipData.Get() + (arrayIndex * slicePitch), slicePitch);
+    else
+        result.Data.Link(mipData.Get() + (arrayIndex * slicePitch), slicePitch);
+    return false;
+}
+
+bool TextureBase::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    PROFILE_CPU_NAMED("Texture.GetPixels");
+    ScopeLock lock(Locker);
+
+    // Get mip data
+    auto dataLock = LockData();
+    TextureMipData mipData;
+    if (GetTextureMipData(mipData, mipIndex, arrayIndex, false))
+        return true;
+    const int32 mipWidth = Math::Max(1, Width() >> mipIndex);
+    const int32 mipHeight = Math::Max(1, Height() >> mipIndex);
+
+    // Convert into pixels
+    return mipData.GetPixels(pixels, mipWidth, mipHeight, Format());
+}
+
+bool TextureBase::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    PROFILE_CPU_NAMED("Texture.GetPixels");
+
+    // Get mip data
+    auto dataLock = LockData();
+    TextureMipData mipData;
+    if (GetTextureMipData(mipData, mipIndex, arrayIndex, false))
+        return true;
+    const int32 mipWidth = Math::Max(1, Width() >> mipIndex);
+    const int32 mipHeight = Math::Max(1, Height() >> mipIndex);
+
+    // Convert into pixels
+    return mipData.GetPixels(pixels, mipWidth, mipHeight, Format());
+}
+
+bool TextureBase::SetPixels(const Span<Color32>& pixels, int32 mipIndex, int32 arrayIndex, bool generateMips)
+{
+    PROFILE_CPU_NAMED("Texture.SetPixels");
+    if (!IsVirtual())
+    {
+        LOG(Error, "Texture must be virtual.");
+        return true;
+    }
+    ScopeLock lock(Locker);
+    if (_customData == nullptr || Width() == 0)
+    {
+        LOG(Error, "Texture must be initialized.");
+        return true;
+    }
+    const PixelFormat format = Format();
+    const int32 width = Math::Max(1, Width() >> mipIndex);
+    const int32 height = Math::Max(1, Height() >> mipIndex);
+    auto& mipData = _customData->Mips[mipIndex];
+    const int32 rowPitch = mipData.RowPitch;
+    const int32 sliceSize = mipData.SlicePitch;
+    if (pixels.Length() != width * height)
+    {
+        Log::ArgumentOutOfRangeException();
+        return true;
+    }
+
+    // Convert pixels to the texture format
+    ASSERT(mipData.Data.IsAllocated());
+    byte* dst = mipData.Data.Get() + sliceSize * arrayIndex;
+    bool error = true;
+    switch (format)
+    {
+    case PixelFormat::R8G8B8A8_SInt:
+    case PixelFormat::R8G8B8A8_Typeless:
+    case PixelFormat::R8G8B8A8_SNorm:
+    case PixelFormat::R8G8B8A8_UInt:
+    case PixelFormat::R8G8B8A8_UNorm:
+    case PixelFormat::R8G8B8A8_UNorm_sRGB:
+    case PixelFormat::R8G8_B8G8_UNorm:
+    case PixelFormat::B8G8R8A8_Typeless:
+    case PixelFormat::B8G8R8A8_UNorm:
+    case PixelFormat::B8G8R8A8_UNorm_sRGB:
+    case PixelFormat::B8G8R8X8_Typeless:
+    case PixelFormat::B8G8R8X8_UNorm:
+    case PixelFormat::B8G8R8X8_UNorm_sRGB:
+        if (rowPitch == width * sizeof(Color32))
+        {
+            Platform::MemoryCopy(dst, pixels.Get(), sliceSize);
+            error = false;
+        }
+        break;
+    }
+    if (error)
+    {
+        // Try to use texture sampler utility
+        auto sampler = TextureTool::GetSampler(format);
+        if (sampler)
+        {
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    Color c(pixels.Get()[x + y * width]);
+                    TextureTool::Store(sampler, x, y, dst, rowPitch, c);
+                }
+            }
+            error = false;
+        }
+    }
+    if (error)
+    {
+        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        return true;
+    }
+
+    // Generate mips optionally
+    if (generateMips && mipIndex + 1 < _customData->Mips.Count())
+    {
+        for (int32 i = mipIndex + 1; i < _customData->Mips.Count(); i++)
+            _customData->GenerateMip(i);
+    }
+
+    // Request texture data streaming to GPU
+    _texture.GetTexture()->SetResidentMipLevels(0);
+    _texture.RequestStreamingUpdate();
+
+    return false;
+}
+
+bool TextureBase::SetPixels(const Span<Color>& pixels, int32 mipIndex, int32 arrayIndex, bool generateMips)
+{
+    PROFILE_CPU_NAMED("Texture.SetPixels");
+    if (!IsVirtual())
+    {
+        LOG(Error, "Texture must be virtual.");
+        return true;
+    }
+    ScopeLock lock(Locker);
+    if (_customData == nullptr || Width() == 0)
+    {
+        LOG(Error, "Texture must be initialized.");
+        return true;
+    }
+    const PixelFormat format = Format();
+    const int32 width = Math::Max(1, Width() >> mipIndex);
+    const int32 height = Math::Max(1, Height() >> mipIndex);
+    auto& mipData = _customData->Mips[mipIndex];
+    const int32 rowPitch = mipData.RowPitch;
+    const int32 sliceSize = mipData.SlicePitch;
+    if (pixels.Length() != width * height)
+    {
+        Log::ArgumentOutOfRangeException();
+        return true;
+    }
+
+    // Convert pixels to the texture format
+    ASSERT(mipData.Data.IsAllocated());
+    byte* dst = mipData.Data.Get() + sliceSize * arrayIndex;
+    bool error = true;
+    switch (format)
+    {
+    case PixelFormat::R32G32B32A32_Typeless:
+    case PixelFormat::R32G32B32A32_Float:
+        if (rowPitch == width * sizeof(Color))
+        {
+            Platform::MemoryCopy(dst, pixels.Get(), sliceSize);
+            error = false;
+        }
+        break;
+    }
+    if (error)
+    {
+        // Try to use texture sampler utility
+        auto sampler = TextureTool::GetSampler(format);
+        if (sampler)
+        {
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    Color c(pixels.Get()[x + y * width]);
+                    TextureTool::Store(sampler, x, y, dst, rowPitch, c);
+                }
+            }
+            error = false;
+        }
+    }
+    if (error)
+    {
+        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        return true;
+    }
+
+    // Generate mips optionally
+    if (generateMips && mipIndex + 1 < _customData->Mips.Count())
+    {
+        for (int32 i = mipIndex + 1; i < _customData->Mips.Count(); i++)
+            _customData->GenerateMip(i);
+    }
+
+    // Request texture data streaming to GPU
+    _texture.GetTexture()->SetResidentMipLevels(0);
+    _texture.RequestStreamingUpdate();
 
     return false;
 }

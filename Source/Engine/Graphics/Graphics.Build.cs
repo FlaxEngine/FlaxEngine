@@ -84,6 +84,7 @@ public class Graphics : EngineModule
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
+        options.PrivateDependencies.Add("TextureTool");
         if (options.Target.IsEditor)
         {
             options.PublicDependencies.Add("ModelTool");
