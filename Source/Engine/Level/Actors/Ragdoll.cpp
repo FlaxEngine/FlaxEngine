@@ -220,7 +220,7 @@ void Ragdoll::OnEnable()
     GetScene()->Ticking.FixedUpdate.AddTick<Ragdoll, &Ragdoll::OnFixedUpdate>(this);
 
     // Initialize bones
-    if (_animatedModel)
+    if (_animatedModel && _animatedModel->SkinnedModel && _animatedModel->SkinnedModel->IsLoaded())
     {
         if (_animatedModel->GraphInstance.NodesPose.IsEmpty())
             _animatedModel->PreInitSkinningData();
