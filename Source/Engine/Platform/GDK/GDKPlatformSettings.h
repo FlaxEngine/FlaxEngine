@@ -19,6 +19,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GDKPlatformSettings);
 public:
 
     /// <summary>
+    /// Game identity name stored in game package manifest (for store). If empty the product name will be used from Game Settings.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"General\")")
+    String Name;
+
+    /// <summary>
     /// Game publisher identity name stored in game package manifest (for store).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"General\")")
@@ -113,6 +119,7 @@ public:
     // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override
     {
+        DESERIALIZE(Name);
         DESERIALIZE(PublisherName);
         DESERIALIZE(PublisherDisplayName);
         DESERIALIZE(Square150x150Logo);

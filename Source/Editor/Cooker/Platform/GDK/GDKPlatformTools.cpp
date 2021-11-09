@@ -167,7 +167,6 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     const auto gameSettings = GameSettings::Get();
     const auto project = Editor::Project;
     const Char* executableFilename = TEXT("FlaxGame.exe");
-    const String name = gameSettings->ProductName;
     const String assetsFolder = data.DataOutputPath / TEXT("Assets");
     if (!FileSystem::DirectoryExists(assetsFolder))
         FileSystem::CreateDirectory(assetsFolder);
@@ -190,8 +189,10 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     const String configFilePath = data.DataOutputPath / TEXT("MicrosoftGame.config");
     LOG(Info, "Generating config file to \"{0}\"", configFilePath);
     {
+        // Process name to be valid
         StringBuilder sb;
         Array<Char> validName;
+        const String& name = platformSettings->Name.HasChars() ? platformSettings->Name : gameSettings->ProductName;
         for (int32 i = 0; i < name.Length() && validName.Count() <= 50; i++)
         {
             auto c = name[i];
