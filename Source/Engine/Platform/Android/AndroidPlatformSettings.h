@@ -5,6 +5,9 @@
 #if PLATFORM_ANDROID || USE_EDITOR
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
+#include "Engine/Scripting/SoftObjectReference.h"
+
+class Texture;
 
 /// <summary>
 /// Android platform settings.
@@ -27,10 +30,10 @@ public:
     Array<String> Permissions;
 
     /// <summary>
-    /// Custom icon texture (asset id) to use for the application (overrides the default one).
+    /// Custom icon texture to use for the application (overrides the default one).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1030), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Other\")")
-    Guid OverrideIcon;
+    API_FIELD(Attributes="EditorOrder(1030), EditorDisplay(\"Other\")")
+    SoftObjectReference<Texture> OverrideIcon;
 
 public:
 

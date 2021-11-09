@@ -5,6 +5,9 @@
 #if PLATFORM_WINDOWS || USE_EDITOR
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
+#include "Engine/Scripting/SoftObjectReference.h"
+
+class Texture;
 
 /// <summary>
 /// Windows platform settings.
@@ -51,10 +54,10 @@ public:
     bool ForceSingleInstance = false;
 
     /// <summary>
-    /// Custom icon texture (asset id) to use for the application (overrides the default one).
+    /// Custom icon texture to use for the application (overrides the default one).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1030), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Other\")")
-    Guid OverrideIcon;
+    API_FIELD(Attributes="EditorOrder(1030), EditorDisplay(\"Other\")")
+    SoftObjectReference<Texture> OverrideIcon;
 
     /// <summary>
     /// Enables support for DirectX 12. Disabling it reduces compiled shaders count.

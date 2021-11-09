@@ -6,6 +6,9 @@
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Scripting/SoftObjectReference.h"
+
+class Texture;
 
 /// <summary>
 /// GDK platform settings.
@@ -28,34 +31,34 @@ public:
     String PublisherDisplayName;
 
     /// <summary>
-    /// Application small logo texture of size 150x150 px (asset id).
+    /// Application small logo texture of size 150x150 px.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(200), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Visuals\")")
-    Guid Square150x150Logo;
+    API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Visuals\")")
+    SoftObjectReference<Texture> Square150x150Logo;
 
     /// <summary>
-    /// Application large logo texture of size 480x480 px (asset id).
+    /// Application large logo texture of size 480x480 px.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(205), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Visuals\")")
-    Guid Square480x480Logo;
+    API_FIELD(Attributes="EditorOrder(205), EditorDisplay(\"Visuals\")")
+    SoftObjectReference<Texture> Square480x480Logo;
 
     /// <summary>
-    /// Application small logo texture of size 44x44 px (asset id).
+    /// Application small logo texture of size 44x44 px.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(210), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Visuals\")")
-    Guid Square44x44Logo;
+    API_FIELD(Attributes="EditorOrder(210), EditorDisplay(\"Visuals\")")
+    SoftObjectReference<Texture> Square44x44Logo;
 
     /// <summary>
-    /// Application splash screen texture (asset id).
+    /// Application splash screen texture.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(220), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Visuals\")")
-    Guid SplashScreenImage;
+    API_FIELD(Attributes="EditorOrder(220), EditorDisplay(\"Visuals\")")
+    SoftObjectReference<Texture> SplashScreenImage;
 
     /// <summary>
-    /// Application store logo texture (asset id).
+    /// Application store logo texture.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(230), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Visuals\")")
-    Guid StoreLogo;
+    API_FIELD(Attributes="EditorOrder(230), EditorDisplay(\"Visuals\")")
+    SoftObjectReference<Texture> StoreLogo;
 
     /// <summary>
     /// Application background color.
